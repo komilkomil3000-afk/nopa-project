@@ -1,0 +1,671 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.logAdminAction = logAdminAction;
+exports.getUsers = getUsers;
+exports.getUserMetrics = getUserMetrics;
+exports.createUser = createUser;
+exports.updateUser = updateUser;
+exports.toggleBlockUser = toggleBlockUser;
+exports.deleteUser = deleteUser;
+exports.overridePasswordOrOtp = overridePasswordOrOtp;
+exports.exportUsersCsv = exportUsersCsv;
+exports.getZarikLedger = getZarikLedger;
+exports.adjustZarik = adjustZarik;
+exports.getZarikAnalytics = getZarikAnalytics;
+exports.getEconomyHub = getEconomyHub;
+exports.getRolePermissions = getRolePermissions;
+exports.updateRolePermissions = updateRolePermissions;
+exports.getCaravansAdmin = getCaravansAdmin;
+exports.getMentorScorecards = getMentorScorecards;
+exports.createGlobalAnnouncement = createGlobalAnnouncement;
+exports.getAuditLogs = getAuditLogs;
+exports.getMentorEvaluations = getMentorEvaluations;
+exports.grantUserLevel = grantUserLevel;
+const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const prisma = new client_1.PrismaClient();
+// Memory Cache for Zarik Analytics (invalidated upon adjustments)
+let zarikAnalyticsCache = null;
+const CACHE_TTL = 30000; // 30 seconds
+// Utility function to log to AuditLog
+async function logAdminAction(actorId, actorName, action, targetEntity, targetEntityId, details, ipAddress) {
+    try {
+        await prisma.auditLog.create({
+            data: {
+                actorId,
+                actorName,
+                action,
+                targetEntity,
+                targetEntityId,
+                details,
+                ipAddress: ipAddress || '127.0.0.1',
+            },
+        });
+    }
+    catch (error) {
+        console.error('Failed to write audit log:', error);
+    }
+}
+// 1. HIGH-SCALE USER & CONTACT DIRECTORY
+async function getUsers(req, res) {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const search = req.query.search || '';
+        const role = req.query.role || '';
+        const caravanId = req.query.caravanId || '';
+        const levelFrame = parseInt(req.query.levelFrame) || null;
+        const skip = (page - 1) * limit;
+        // Build Prisma query filters
+        const whereClause = {};
+        if (search) {
+            whereClause.OR = [
+                { name: { contains: search } },
+                { phoneNumber: { contains: search } },
+            ];
+        }
+        if (role) {
+            whereClause.role = role;
+        }
+        if (caravanId) {
+            whereClause.caravanId = caravanId;
+        }
+        if (levelFrame !== null) {
+            whereClause.levelFrame = levelFrame;
+        }
+        // Get paginated users and total count in parallel
+        const [users, totalCount] = await prisma.$transaction([
+            prisma.user.findMany({
+                where: whereClause,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    caravan: true,
+                    submissions: {
+                        select: { id: true, status: true },
+                    },
+                },
+            }),
+            prisma.user.count({ where: whereClause }),
+        ]);
+        // Check RBAC to see if we should mask phone numbers for this admin
+        const actorRole = req.user?.role || 'admin';
+        const permission = await prisma.rolePermission.findUnique({
+            where: { roleName: actorRole },
+        });
+        const shouldMask = permission?.maskPhoneNumbers ?? false;
+        const sanitizedUsers = users.map((u) => {
+            const completionRate = u.submissions.length > 0
+                ? Math.round((u.submissions.filter((s) => s.status === 'approved').length /
+                    u.submissions.length) *
+                    100)
+                : 0;
+            return {
+                id: u.id,
+                name: u.name,
+                phoneNumber: shouldMask ? u.phoneNumber.replace(/(\d{4})\d{4}(\d{3})/, '$1****$2') : u.phoneNumber,
+                role: u.role,
+                zarikBalance: u.zarikBalance,
+                levelFrame: u.levelFrame,
+                caravanName: u.caravan?.name || 'فاقد کاروان',
+                caravanId: u.caravanId,
+                blocked: u.blocked,
+                createdAt: u.createdAt,
+                completionRate,
+            };
+        });
+        res.json({
+            users: sanitizedUsers,
+            total: totalCount,
+            page,
+            pages: Math.ceil(totalCount / limit),
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getUserMetrics(req, res) {
+    try {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const [totalUsers, activeUsers, inactiveUsers] = await Promise.all([
+            prisma.user.count(),
+            prisma.user.count({ where: { lastActiveTimestamp: { gte: thirtyDaysAgo } } }),
+            prisma.user.count({ where: { lastActiveTimestamp: { lt: thirtyDaysAgo } } }),
+        ]);
+        res.json({ total: totalUsers, active: activeUsers, inactive: inactiveUsers });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function createUser(req, res) {
+    try {
+        const { name, phoneNumber, password, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
+        if (!name || !phoneNumber || !password || !role) {
+            return res.status(400).json({ error: 'وارد کردن تمامی فیلدهای اجباری الزامی است' });
+        }
+        const existingUser = await prisma.user.findFirst({ where: { phoneNumber } });
+        if (existingUser) {
+            return res.status(400).json({ error: 'کاربری با این شماره همراه قبلا ثبت نام کرده است' });
+        }
+        const passwordHash = bcryptjs_1.default.hashSync(password, 10);
+        const user = await prisma.user.create({
+            data: {
+                name,
+                phoneNumber,
+                passwordHash,
+                role,
+                caravanId: caravanId || null,
+                levelFrame: levelFrame || 1,
+                mentorLevel: mentorLevel || 1,
+                nationalId: nationalId || null,
+                dateOfBirth: dateOfBirth || null,
+            },
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'CREATE_USER', 'User', user.id, `ایجاد کاربر جدید: ${name} با نقش ${role}`, req.ip || '127.0.0.1');
+        res.status(201).json({ message: 'کاربر با موفقیت ایجاد شد', userId: user.id });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function updateUser(req, res) {
+    try {
+        const { id } = req.params;
+        const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
+        const user = await prisma.user.update({
+            where: { id },
+            data: {
+                name,
+                role,
+                caravanId: caravanId || null,
+                levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
+                mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
+                nationalId: nationalId || undefined,
+                dateOfBirth: dateOfBirth || undefined,
+            },
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'UPDATE_USER', 'User', id, `ویرایش مشخصات کاربر: ${name}`, req.ip || '127.0.0.1');
+        await prisma.notification.create({
+            data: {
+                userId: id,
+                title: 'بروزرسانی حساب کاربری 🔄',
+                message: 'مدیریت اطلاعات حساب کاربری شما را ویرایش کرد.',
+                type: 'alert'
+            }
+        });
+        res.json({ message: 'مشخصات کاربر با موفقیت ویرایش شد', user });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function toggleBlockUser(req, res) {
+    try {
+        const { id } = req.params;
+        const { blocked } = req.body;
+        const user = await prisma.user.update({
+            where: { id },
+            data: { blocked },
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', blocked ? 'BLOCK_USER' : 'UNBLOCK_USER', 'User', id, `${blocked ? 'مسدودسازی' : 'رفع مسدودسازی'} کاربر ${user.name}`, req.ip || '127.0.0.1');
+        res.json({ message: `کاربر با موفقیت ${blocked ? 'مسدود' : 'فعال'} شد` });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function deleteUser(req, res) {
+    try {
+        const { id } = req.params;
+        // Check custom permissions first
+        const actorRole = req.user?.role || 'admin';
+        const permission = await prisma.rolePermission.findUnique({
+            where: { roleName: actorRole },
+        });
+        if (permission?.lockUserDeletions) {
+            return res.status(403).json({ error: 'شما دسترسی حذف کاربر را ندارید' });
+        }
+        const user = await prisma.user.delete({ where: { id } });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'DELETE_USER', 'User', id, `حذف کاربر ${user.name}`, req.ip || '127.0.0.1');
+        res.json({ message: 'کاربر با موفقیت حذف شد' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function overridePasswordOrOtp(req, res) {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+        if (!password) {
+            return res.status(400).json({ error: 'رمز عبور جدید الزامی است' });
+        }
+        const passwordHash = bcryptjs_1.default.hashSync(password, 10);
+        const user = await prisma.user.update({
+            where: { id },
+            data: { passwordHash },
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'OVERRIDE_PASSWORD', 'User', id, `تغییر رمز عبور کاربر ${user.name}`, req.ip || '127.0.0.1');
+        res.json({ message: 'گذرواژه با موفقیت بازنویسی شد' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// STREAMING CHUNKED EXPORT TO CSV FOR 500+ RECORDS
+async function exportUsersCsv(req, res) {
+    try {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', 'attachment; filename="users_export.csv"');
+        res.setHeader('Transfer-Encoding', 'chunked');
+        // UTF-8 BOM for Excel Farsi display
+        res.write('\ufeff');
+        res.write('شناسه,نام,شماره همراه,نقش,موجودی زریک,سطح,تاریخ ثبت‌نام\n');
+        let skip = 0;
+        const batchSize = 100;
+        let hasMore = true;
+        while (hasMore) {
+            const users = await prisma.user.findMany({
+                take: batchSize,
+                skip: skip,
+                orderBy: { name: 'asc' },
+            });
+            if (users.length === 0) {
+                hasMore = false;
+                break;
+            }
+            for (const u of users) {
+                res.write(`"${u.id}","${u.name}","${u.phoneNumber}","${u.role}",${u.zarikBalance},${u.levelFrame},"${u.createdAt.toISOString()}"\n`);
+            }
+            skip += batchSize;
+        }
+        res.end();
+    }
+    catch (error) {
+        console.error('CSV Export Error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({ error: error.message });
+        }
+    }
+}
+// 2. ZARIK LEDGER & CATEGORIZED REWARDS
+async function getZarikLedger(req, res) {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const category = req.query.category || '';
+        const skip = (page - 1) * limit;
+        const whereClause = {};
+        if (category) {
+            whereClause.category = category;
+        }
+        const [transactions, totalCount] = await prisma.$transaction([
+            prisma.zarikTransaction.findMany({
+                where: whereClause,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.zarikTransaction.count({ where: whereClause }),
+        ]);
+        // Fetch user names for transactions
+        const userIds = Array.from(new Set(transactions.map((t) => t.userId)));
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, phoneNumber: true },
+        });
+        const userMap = new Map(users.map((u) => [u.id, u]));
+        const enrichedTransactions = transactions.map((t) => {
+            const u = userMap.get(t.userId);
+            return {
+                ...t,
+                userName: u?.name || 'کاربر ناشناس',
+                userPhone: u?.phoneNumber || 'ناشناس',
+            };
+        });
+        res.json({
+            transactions: enrichedTransactions,
+            total: totalCount,
+            page,
+            pages: Math.ceil(totalCount / limit),
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function adjustZarik(req, res) {
+    try {
+        const { userId, amount, category, reason } = req.body;
+        if (!userId || amount === undefined || !category || !reason) {
+            return res.status(400).json({ error: 'تمام اطلاعات تراکنش (شناسه کاربر، مقدار، دسته‌بندی و دلیل) الزامی است' });
+        }
+        // Check permission
+        const actorRole = req.user?.role || 'admin';
+        const permission = await prisma.rolePermission.findUnique({
+            where: { roleName: actorRole },
+        });
+        if (permission?.restrictZarik) {
+            return res.status(403).json({ error: 'شما دسترسی انجام عملیات تراکنش زریک را ندارید' });
+        }
+        const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+        if (!targetUser) {
+            return res.status(404).json({ error: 'کاربر مورد نظر یافت نشد' });
+        }
+        const newBalance = targetUser.zarikBalance + amount;
+        if (newBalance < 0) {
+            return res.status(400).json({ error: 'موجودی کاربر نمی‌تواند منفی شود' });
+        }
+        // Transaction execution
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: userId },
+                data: { zarikBalance: newBalance },
+            }),
+            prisma.zarikTransaction.create({
+                data: {
+                    userId,
+                    amount,
+                    category,
+                    reason,
+                    createdBy: req.user?.phoneNumber || 'Admin',
+                },
+            }),
+            prisma.notification.create({
+                data: {
+                    userId,
+                    title: 'تراکنش زریک 💰',
+                    message: `موجودی شما تغییر کرد. مقدار: ${amount > 0 ? '+' : ''}${amount} زریک. بابت: ${reason}`,
+                    type: 'reward'
+                }
+            })
+        ]);
+        // Invalidate Cache
+        zarikAnalyticsCache = null;
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', amount > 0 ? 'DEPOSIT_ZARIK' : 'DEDUCT_ZARIK', 'User', userId, `تغییر زریک به مقدار ${amount} در دسته ${category} به دلیل: ${reason}`, req.ip || '127.0.0.1');
+        res.json({ message: 'تراکنش با موفقیت ثبت و موجودی ویرایش شد', balance: newBalance });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getZarikAnalytics(req, res) {
+    try {
+        const now = Date.now();
+        if (zarikAnalyticsCache && now < zarikAnalyticsCache.expiry) {
+            return res.json(zarikAnalyticsCache.data);
+        }
+        // Calculate metrics
+        const totalCirculation = await prisma.user.aggregate({
+            _sum: { zarikBalance: true },
+        });
+        const topWealthy = await prisma.user.findMany({
+            take: 5,
+            orderBy: { zarikBalance: 'desc' },
+            select: { name: true, zarikBalance: true },
+        });
+        const categoriesDistribution = await prisma.zarikTransaction.groupBy({
+            by: ['category'],
+            _sum: { amount: true },
+            _count: { id: true },
+        });
+        const result = {
+            circulation: totalCirculation._sum.zarikBalance || 0,
+            topWealthy,
+            distributions: categoriesDistribution.map((c) => ({
+                category: c.category,
+                totalAmount: c._sum.amount || 0,
+                count: c._count.id,
+            })),
+            timestamp: new Date(),
+        };
+        zarikAnalyticsCache = {
+            data: result,
+            expiry: now + CACHE_TTL,
+        };
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getEconomyHub(req, res) {
+    try {
+        const aggregates = await prisma.user.aggregate({
+            _sum: {
+                zarikBalance: true,
+                nakh: true,
+                beyragh: true,
+                farsh: true,
+            },
+        });
+        const topIndividuals = await prisma.user.findMany({
+            take: 5,
+            orderBy: { zarikBalance: 'desc' },
+            select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true },
+        });
+        res.json({
+            totalZarik: aggregates._sum.zarikBalance || 0,
+            totalNakh: aggregates._sum.nakh || 0,
+            totalBeyragh: aggregates._sum.beyragh || 0,
+            totalFarsh: aggregates._sum.farsh || 0,
+            topWealthy: topIndividuals,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// 3. ROLE-BASED ACCESS CONTROL (RBAC)
+async function getRolePermissions(req, res) {
+    try {
+        const roles = await prisma.rolePermission.findMany();
+        res.json(roles);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function updateRolePermissions(req, res) {
+    try {
+        const { roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent } = req.body;
+        const updated = await prisma.rolePermission.upsert({
+            where: { roleName },
+            update: { maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent },
+            create: { roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent },
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'UPDATE_RBAC', 'RolePermission', roleName, `بروزرسانی دسترسی‌های نقش ${roleName}`, req.ip || '127.0.0.1');
+        res.json({ message: 'دسترسی نقش با موفقیت بروزرسانی شد', role: updated });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// 4. CARAVANS & MENTORS OPERATIONS CENTER
+async function getCaravansAdmin(req, res) {
+    try {
+        const caravans = await prisma.caravan.findMany({
+            include: {
+                mentor: { select: { name: true } },
+            },
+        });
+        res.json(caravans);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getMentorScorecards(req, res) {
+    try {
+        const mentors = await prisma.user.findMany({
+            where: { role: 'mentor' },
+            include: {
+                ratingsReceived: true,
+                mentoredCaravans: true,
+            },
+        });
+        const scorecards = await Promise.all(mentors.map(async (m) => {
+            // Satisfaction rating average
+            const totalRatings = m.ratingsReceived.length;
+            const avgRating = totalRatings > 0
+                ? parseFloat((m.ratingsReceived.reduce((sum, r) => sum + r.ratingValue, 0) /
+                    totalRatings).toFixed(2))
+                : 5.0;
+            // Pending reviews count
+            const pendingCount = await prisma.submission.count({
+                where: {
+                    challenge: { createdByMentorId: m.id },
+                    status: 'pending',
+                },
+            });
+            return {
+                id: m.id,
+                name: m.name,
+                avgRating,
+                totalRatings,
+                pendingReviews: pendingCount,
+                caravansCount: m.mentoredCaravans.length,
+                academicDegree: m.academicDegree,
+                academicCertificates: m.academicCertificates,
+            };
+        }));
+        res.json(scorecards);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// 5. EDUCATIONAL CONTENT & GLOBAL ANNOUNCEMENTS
+async function createGlobalAnnouncement(req, res) {
+    try {
+        const { title, message, caravanId } = req.body;
+        if (!title || !message) {
+            return res.status(400).json({ error: 'عنوان و متن اطلاعیه الزامی است' });
+        }
+        let targetUsers = [];
+        if (caravanId) {
+            const users = await prisma.user.findMany({
+                where: { caravanId },
+                select: { id: true },
+            });
+            targetUsers = users.map((u) => u.id);
+        }
+        else {
+            const users = await prisma.user.findMany({
+                select: { id: true },
+            });
+            targetUsers = users.map((u) => u.id);
+        }
+        const notificationsData = targetUsers.map((uid) => ({
+            userId: uid,
+            title,
+            message,
+            type: 'alert',
+        }));
+        await prisma.notification.createMany({
+            data: notificationsData,
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'BROADCAST_ANNOUNCEMENT', 'Notification', 'global', `ارسال اطلاعیه: ${title} به ${targetUsers.length} کاربر`, req.ip || '127.0.0.1');
+        res.json({ message: 'اطلاعیه با موفقیت برای کاربران ارسال شد' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// 6. SYSTEM AUDIT LOGS
+async function getAuditLogs(req, res) {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const action = req.query.action || '';
+        const skip = (page - 1) * limit;
+        const whereClause = {};
+        if (action) {
+            whereClause.action = action;
+        }
+        const [logs, totalCount] = await prisma.$transaction([
+            prisma.auditLog.findMany({
+                where: whereClause,
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' },
+            }),
+            prisma.auditLog.count({ where: whereClause }),
+        ]);
+        res.json({
+            logs,
+            total: totalCount,
+            page,
+            pages: Math.ceil(totalCount / limit),
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// 7. MENTOR EVALUATIONS & PERKS
+async function getMentorEvaluations(req, res) {
+    try {
+        const mentors = await prisma.user.findMany({
+            where: { role: 'mentor' },
+            include: {
+                mentoredCaravans: { select: { id: true, name: true, memberCount: true } },
+                ratingsReceived: { select: { ratingValue: true } }
+            }
+        });
+        const evaluatedMentors = mentors.map(m => {
+            const avgRating = m.ratingsReceived.length > 0
+                ? m.ratingsReceived.reduce((sum, r) => sum + r.ratingValue, 0) / m.ratingsReceived.length
+                : 0;
+            return {
+                id: m.id,
+                name: m.name,
+                mentorLevel: m.mentorLevel,
+                activeCaravans: m.mentoredCaravans.length,
+                avgRating: avgRating.toFixed(1),
+                totalRatings: m.ratingsReceived.length,
+                // Mock task velocity for now
+                taskVelocity: (Math.random() * (48 - 12) + 12).toFixed(1) + ' hrs'
+            };
+        });
+        // Rank mentors by avg rating
+        evaluatedMentors.sort((a, b) => parseFloat(b.avgRating) - parseFloat(a.avgRating));
+        // Assign global rank
+        const rankedMentors = evaluatedMentors.map((m, idx) => ({ ...m, globalRank: idx + 1 }));
+        res.json(rankedMentors);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function grantUserLevel(req, res) {
+    try {
+        const { targetUserId, levelFrame, zarikBonus } = req.body;
+        const user = await prisma.user.update({
+            where: { id: targetUserId },
+            data: {
+                levelFrame,
+                zarikBalance: { increment: zarikBonus || 0 }
+            }
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'GRANT_LEVEL', 'User', targetUserId, `ارتقا سطح به ${levelFrame} و هدیه زریک ${zarikBonus}`, req.ip || '127.0.0.1');
+        await prisma.notification.create({
+            data: {
+                userId: targetUserId,
+                title: 'ارتقا سطح کاربری 🌟',
+                message: `سطح کاربری شما به قاب ${levelFrame} ارتقا یافت!${zarikBonus ? ` و ${zarikBonus} زریک پاداش گرفتید.` : ''}`,
+                type: 'reward'
+            }
+        });
+        res.json({ message: 'عملیات با موفقیت انجام شد', data: user });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}

@@ -1,0 +1,1907 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل مدیریت اختصاصی نپا | Nopa Custom CRM</title>
+  <link rel="stylesheet" href="/admin/style.css">
+  <!-- Fonts & Icons (Local) -->
+  <link rel="stylesheet" href="/admin/libs/fontawesome/css/all.min.css">
+  <!-- Chart.js (Local) -->
+  <script src="/admin/libs/chartjs/chart.umd.js"></script>
+</head>
+<body>
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card glass">
+      <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <h1>سامانه اختصاصی نپا</h1>
+      </div>
+      <h2>ورود به پنل مدیریت</h2>
+      <p>جهت دسترسی به دایرکتوری، مالی و تنظیمات امنیتی وارد شوید</p>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label>شماره همراه</label>
+          <input type="text" id="login-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۱" value="09120000001" required>
+        </div>
+        <div class="form-group">
+          <label>گذرواژه</label>
+          <input type="password" id="login-password" class="input-ctrl" placeholder="******" value="123456" required>
+        </div>
+        <button type="submit" class="btn-primary">ورود به پنل کاربری</button>
+        <div id="login-error" class="error-msg">شماره همراه یا رمز عبور نامعتبر است</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. DASHBOARD APP LAYOUT -->
+  <div id="app-layout">
+    <!-- Sidebar Container -->
+    <div id="sidebar-container">
+      <aside class="sidebar glass" id="sidebar">
+        <div class="brand">
+          <div class="brand-icon"><i class="fa-solid fa-flag"></i></div>
+          <h1>مدیریت نپا</h1>
+          <button id="btn-sidebar-collapse" class="btn-icon"><i class="fa-solid fa-bars"></i></button>
+        </div>
+      
+      <ul class="menu-list accordion">
+        <!-- Module A -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-user-tie"></i>
+            <span class="menu-text">مرکز ارزیابی راهبران</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item" data-tab="mentors-profile-tab"><i class="fa-solid fa-id-card"></i><span class="menu-text">پروفایل و شناسنامه</span></li>
+            <li class="menu-item" data-tab="mentors-tickets-tab"><i class="fa-solid fa-inbox"></i><span class="menu-text">میزکار و تیکت‌ها</span></li>
+            <li class="menu-item" data-tab="mentors-docs-tab"><i class="fa-solid fa-file-check"></i><span class="menu-text">تایید مدارک و گواهینامه‌ها</span></li>
+            <li class="menu-item" data-tab="mentors-league-tab"><i class="fa-solid fa-ranking-star"></i><span class="menu-text">لیگ و ارزیابی</span></li>
+          </ul>
+        </li>
+
+        <!-- Module B -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-users-gear"></i>
+            <span class="menu-text">مخاطبان و سرمایه‌ها</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item active" data-tab="users-tab"><i class="fa-solid fa-users"></i><span class="menu-text">دایرکتوری مخاطبان</span></li>
+            <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و سرمایه‌ها</span></li>
+            <li class="menu-item" data-tab="levels-tab"><i class="fa-solid fa-layer-group"></i><span class="menu-text">سطوح و گواهینامه‌ها</span></li>
+          </ul>
+        </li>
+
+        <!-- Module C -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-compass"></i>
+            <span class="menu-text">مدیریت کاروان‌ها</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item" data-tab="caravans-tab"><i class="fa-solid fa-plus-square"></i><span class="menu-text">فهرست و ساخت کاروان</span></li>
+            <li class="menu-item" data-tab="caravan-members-tab"><i class="fa-solid fa-people-arrows"></i><span class="menu-text">مدیریت اعضا و انتقال</span></li>
+            <li class="menu-item" data-tab="caravan-league-tab"><i class="fa-solid fa-trophy"></i><span class="menu-text">لیگ و تبدیل سرمایه‌ها</span></li>
+          </ul>
+        </li>
+
+        <!-- Module D -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-book-open"></i>
+            <span class="menu-text">مدیریت کلاس و آزمون</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item" data-tab="lms-tab"><i class="fa-solid fa-graduation-cap"></i><span class="menu-text">ساختار منزلگاه و کلاس‌ها</span></li>
+            <li class="menu-item" data-tab="form-builder-tab"><i class="fa-solid fa-wpforms"></i><span class="menu-text">فرم‌ساز داینامیک</span></li>
+          </ul>
+        </li>
+
+        <!-- Module E -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="menu-text">تنظیمات سیستم</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item" data-tab="roles-tab"><i class="fa-solid fa-user-lock"></i><span class="menu-text">نقش‌ها و دسترسی‌ها (RBAC)</span></li>
+            <li class="menu-item" data-tab="notifications-tab"><i class="fa-solid fa-bell"></i><span class="menu-text">تنظیمات پیام‌رسانی</span></li>
+            <li class="menu-item" data-tab="audit-tab"><i class="fa-solid fa-clock-rotate-left"></i><span class="menu-text">امنیت و گزارشات سیستم</span></li>
+          </ul>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar" id="current-user-avatar">مد</div>
+          <div class="user-info">
+            <h4 id="current-user-name">مدیر سیستم</h4>
+            <p id="current-user-role">نقش: Super Admin</p>
+          </div>
+        </div>
+        <button id="btn-logout-ctrl" class="btn-logout" title="خروج"><i class="fa-solid fa-sign-out-alt"></i> <span class="menu-text">خروج از سیستم</span></button>
+      </div>
+      </aside>
+      <div id="sidebar-resizer"></div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <!-- Top header bar -->
+      <header class="top-bar">
+        <div class="page-title">
+          <h2 id="tab-title-text">دایرکتوری کاربران</h2>
+          <p id="tab-desc-text">مشاهده، فیلتر، ویرایش و مدیریت اطلاعات ۵۰۰+ کاربر نپا</p>
+        </div>
+      </header>
+
+      <!-- TAB 0: ANALYTICS DASHBOARD -->
+      <section id="analytics-tab" class="tab-panel" style="display: none;">
+        <div class="actions-header glass" style="margin-bottom: 20px;">
+          <div class="filters-group">
+            <select id="analytics-timeframe" class="select-ctrl">
+              <option value="weekly">هفتگی</option>
+              <option value="daily">روزانه</option>
+              <option value="monthly">ماهانه</option>
+              <option value="annual">سالانه</option>
+            </select>
+          </div>
+          <button id="btn-refresh-analytics" class="btn-action"><i class="fa-solid fa-sync"></i> بروزرسانی آمار</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">مجموع زریک در گردش</div>
+              <div class="stat-value" id="analytics-total-circulation">0</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">نرخ تکمیل ایستگاه‌ها</div>
+              <div class="stat-value" id="analytics-completion-rate">0%</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">میانگین رضایت از مربیان</div>
+              <div class="stat-value" id="analytics-mentor-rating">0</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+          </div>
+        </div>
+
+        <div class="ledger-grid" style="margin-top: 20px;">
+          <div class="panel-card glass">
+            <div class="panel-title">شاخص‌های مالی و اقتصاد زریک</div>
+            <canvas id="analyticsEconomyChart" style="max-height: 300px;"></canvas>
+          </div>
+          <div class="panel-card glass">
+            <div class="panel-title">نمودار تعامل و تکمیل دوره‌ها</div>
+            <canvas id="analyticsEngagementChart" style="max-height: 300px;"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 1: USERS DIRECTORY -->
+      <section id="users-tab" class="tab-panel active-panel">
+        <div class="stats-grid">
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">کل کاربران فعال</div>
+              <div class="stat-value" id="stats-total-users">۵۰۰+</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">تعداد مربیان</div>
+              <div class="stat-value" id="stats-total-mentors">۱۲</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">زریک در گردش</div>
+              <div class="stat-value" id="stats-total-zarik">۱۸,۵۰۰</div>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+          </div>
+        </div>
+
+        <div class="actions-header glass">
+          <div class="filters-group">
+            <div class="search-box">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" id="user-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام یا شماره...">
+            </div>
+            <select id="filter-role-ctrl" class="select-ctrl">
+              <option value="">نقش (همه)</option>
+              <option value="student">دانش‌آموز</option>
+              <option value="mentor">مربی</option>
+              <option value="admin">مدیر</option>
+            </select>
+            <select id="filter-caravan-ctrl" class="select-ctrl">
+              <option value="">کاروان (همه)</option>
+            </select>
+            <select id="filter-level-ctrl" class="select-ctrl">
+              <option value="">سطح (همه)</option>
+              <option value="1">سطح ۱</option>
+              <option value="2">سطح ۲</option>
+              <option value="3">سطح ۳</option>
+              <option value="4">سطح ۴</option>
+              <option value="5">سطح ۵</option>
+            </select>
+          </div>
+          <div>
+            <button id="btn-add-user-modal" class="btn-action btn-add"><i class="fa-solid fa-plus"></i>ایجاد کاربر</button>
+            <!-- Removed broken User Analytics button per request -->
+            <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
+              <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+              <div class="dropdown-content">
+                <a href="#" onclick="exportData('users', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                <a href="#" onclick="exportData('users', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="#" onclick="exportData('users', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container glass">
+          <table class="data-table" id="users-data-table">
+            <thead>
+              <tr>
+                <th>نام کاربر</th>
+                <th>شماره همراه</th>
+                <th>نقش</th>
+                <th>کاروان</th>
+                <th>موجودی زریک</th>
+                <th>سطح</th>
+                <th>پیشرفت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination-wrapper">
+          <div class="page-info" id="users-page-info">صفحه ۱ از ۱۰ (کل ۵۲ کاربر)</div>
+          <div class="page-buttons">
+            <button id="btn-prev-users" class="page-btn"><i class="fa-solid fa-chevron-right"></i> قبلی</button>
+            <button id="btn-next-users" class="page-btn">بعدی <i class="fa-solid fa-chevron-left"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: MENTOR DOCUMENTS -->
+      <section id="mentors-docs-tab" class="tab-panel" style="display: none;">
+        <div class="actions-header glass">
+          <div class="filters-group">
+            <h3 style="margin:0;">صف انتظار تایید مدارک مربیان</h3>
+          </div>
+          <div>
+            <button id="btn-refresh-mentor-docs" class="btn-action"><i class="fa-solid fa-sync"></i> بارگذاری مجدد</button>
+          </div>
+        </div>
+
+        <div class="table-container glass">
+          <table class="data-table" id="mentor-docs-table">
+            <thead>
+              <tr>
+                <th>مربی</th>
+                <th>فایل</th>
+                <th>نوع</th>
+                <th>بارگذاری‌شده</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 2: REWARDS & LEDGER -->
+      <section id="rewards-tab" class="tab-panel" style="display: none;">
+        <div class="ledger-grid">
+          <!-- Adjustments and Analytics -->
+          <div>
+            <div class="panel-card glass" style="margin-bottom: 20px;">
+              <div class="panel-title">مرکز اقتصاد پلتفرم (Economy Hub)</div>
+              <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="stat-card glass" style="padding:15px;">
+                  <div><div class="stat-label">زریک</div><div class="stat-value" id="eco-zarik" style="font-size:20px; color:#fbbf24;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:15px;">
+                  <div><div class="stat-label">نخ</div><div class="stat-value" id="eco-nakh" style="font-size:20px; color:#a78bfa;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:15px;">
+                  <div><div class="stat-label">فرش</div><div class="stat-value" id="eco-farsh" style="font-size:20px; color:#ef4444;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:15px;">
+                  <div><div class="stat-label">بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:20px; color:#3b82f6;">0</div></div>
+                </div>
+              </div>
+              <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px;">۵ ثروتمند برتر پلتفرم</h4>
+              <div class="table-container" style="margin-bottom:0;">
+                <table class="data-table" id="wealthy-leaderboard">
+                  <thead><tr><th>نام</th><th>زریک</th><th>نخ</th><th>فرش</th><th>بیرق</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel-card glass">
+              <div class="panel-title">نمودارهای اقتصاد زریک</div>
+              <div style="display: flex; gap: 20px;">
+                <div style="flex: 1; height: 260px;">
+                  <canvas id="wealthChart"></canvas>
+                </div>
+                <div style="flex: 1; height: 260px;">
+                  <canvas id="velocityChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card glass">
+              <div class="panel-title">ریزنمرات تراکنش‌ها</div>
+              <div class="actions-header glass" style="margin-bottom: 15px; padding: 10px 20px;">
+                <select id="filter-ledger-cat" class="select-ctrl">
+                  <option value="">تمام دسته‌بندی‌ها</option>
+                  <option value="Quiz Rewards">جوایز آزمون</option>
+                  <option value="Skill Tasks">چالش مهارتی</option>
+                  <option value="Mentor Bonuses">پاداش مربی</option>
+                  <option value="Special Campaigns">کمپین ویژه</option>
+                </select>
+                <div class="dropdown-wrapper" style="display:inline-block; position:relative; margin-right: auto;">
+                  <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+                  <div class="dropdown-content">
+                    <a href="#" onclick="exportData('ledger', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                    <a href="#" onclick="exportData('ledger', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                    <a href="#" onclick="exportData('ledger', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                  </div>
+                </div>
+              </div>
+              <div class="table-container">
+                <table class="data-table" id="ledger-data-table">
+                  <thead>
+                    <tr>
+                      <th>کاربر</th>
+                      <th>شماره همراه</th>
+                      <th>مقدار تراکنش</th>
+                      <th>دسته‌بندی</th>
+                      <th>دلیل تراکنش</th>
+                      <th>ثبت‌کننده</th>
+                      <th>زمان</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- Ledger rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Adjust Zarik Utility Sidebar -->
+          <div>
+            <div class="panel-card glass">
+              <div class="panel-title">مدیریت تراکنش زریک</div>
+              <form id="zarik-adjust-form">
+                <div class="form-group">
+                  <label>نام یا شناسه کاربر هدف</label>
+                  <select id="zarik-target-user" class="select-ctrl" style="width: 100%;" required>
+                    <option value="">انتخاب کاربر...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>نوع دارایی</label>
+              <select id="adj-asset-type" class="select-ctrl" style="width:100%;">
+                <option value="zarik">زریک (سکه)</option>
+                <option value="nakh">کلاف نخ</option>
+                <option value="beyragh">بیرق</option>
+                <option value="farsh">فرش</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>مبلغ تغییر (مثبت یا منفی)</label>
+                  <input type="number" id="zarik-amount" class="input-ctrl" placeholder="مثال: ۲۰۰ یا -۱۰۰" required>
+                </div>
+                <div class="form-group">
+                  <label>دسته‌بندی پاداش</label>
+                  <select id="zarik-category" class="select-ctrl" style="width: 100%;" required>
+                    <option value="Quiz Rewards">Quiz Rewards (آزمون)</option>
+                    <option value="Skill Tasks">Skill Tasks (چالش مهارتی)</option>
+                    <option value="Mentor Bonuses">Mentor Bonuses (پاداش مربی)</option>
+                    <option value="Special Campaigns">Special Campaigns (کمپین ویژه)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>دلیل تراکنش (پیوست سند حسابرسی)</label>
+                  <input type="text" id="zarik-reason" class="input-ctrl" placeholder="دلیل واریز/کسر..." required>
+                </div>
+                <button type="submit" class="btn-primary">اعمال تراکنش و ثبت لاگ</button>
+              </form>
+            </div>
+
+            <div class="panel-card glass" style="margin-top:12px;">
+              <div class="panel-title">قوانین پاداش دینامیک</div>
+              <form id="reward-rules-form">
+                <div class="form-group">
+                  <label>کلید قانون (مثال: station_reward_zarik)</label>
+                  <input type="text" id="rule-key" class="input-ctrl" required>
+                </div>
+                <div class="form-group">
+                  <label>حداقل</label>
+                  <input type="number" id="rule-min" class="input-ctrl" required>
+                </div>
+                <div class="form-group">
+                  <label>حداکثر</label>
+                  <input type="number" id="rule-max" class="input-ctrl" required>
+                </div>
+                <button class="btn-primary" type="submit">ذخیره قانون</button>
+              </form>
+              <div style="margin-top:10px;">
+                <h5>قوانین فعلی</h5>
+                <ul id="rule-list" style="padding-left:12px;"></ul>
+              </div>
+            </div>
+            
+            <div class="panel-card glass" style="margin-top: 20px;">
+              <div class="panel-title">تخصیص پروموشن زریک</div>
+              <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">اعطای توکن هدیه به کاربران جهت کمپین‌های تبلیغاتی</p>
+              <form id="zarik-promo-form">
+                <div class="form-group">
+                  <input type="text" id="promo-target-user" class="input-ctrl" placeholder="شناسه کاربر" required>
+                </div>
+                <div class="form-group">
+                  <input type="number" id="promo-amount" class="input-ctrl" placeholder="تعداد زریک اهدایی" required>
+                </div>
+                <div class="form-group">
+                  <input type="text" id="promo-reason" class="input-ctrl" placeholder="توضیحات کمپین" required>
+                </div>
+                <button type="submit" class="btn-primary" style="background-color: #10B981;">اعطای زریک</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: RBAC MATRIX -->
+      <section id="roles-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass">
+          <div class="panel-title">ماتریس سطوح دسترسی مدیران (RBAC Security)</div>
+          <div class="rbac-matrix">
+            <!-- Super Admin -->
+            <div class="role-card glass">
+              <div class="role-header">
+                <h3>مدیر کل (Super Admin)</h3>
+                <span class="badge badge-admin">مدیر سیستم</span>
+              </div>
+              <div class="permission-list">
+                <div class="permission-item">
+                  <span>نمایش کامل شماره همراه</span>
+                  <label class="switch">
+                    <input type="checkbox" id="perm-super-phone" checked disabled>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>امکان تغییر تراکنش زریک</span>
+                  <label class="switch">
+                    <input type="checkbox" id="perm-super-zarik" checked disabled>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>حذف فیزیکی کاربران</span>
+                  <label class="switch">
+                    <input type="checkbox" id="perm-super-delete" checked disabled>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Caravan Supervisor -->
+            <div class="role-card glass">
+              <div class="role-header">
+                <h3>راهبر کاروان (Supervisor)</h3>
+                <span class="badge badge-mentor">تعدیل شده</span>
+              </div>
+              <div class="permission-list">
+                <div class="permission-item">
+                  <span>نمایش کامل شماره همراه</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="maskPhoneNumbers">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>امکان تغییر تراکنش زریک</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="restrictZarik">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>حذف فیزیکی کاربران</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Caravan Supervisor" data-perm="lockUserDeletions">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Content Manager -->
+            <div class="role-card glass">
+              <div class="role-header">
+                <h3>مدیر محتوا (Content Manager)</h3>
+                <span class="badge badge-student">محدود شده</span>
+              </div>
+              <div class="permission-list">
+                <div class="permission-item">
+                  <span>نمایش کامل شماره همراه</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="maskPhoneNumbers">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>امکان تغییر تراکنش زریک</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="restrictZarik">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="permission-item">
+                  <span>حذف فیزیکی کاربران</span>
+                  <label class="switch">
+                    <input type="checkbox" class="role-perm-toggle" data-role="Content Manager" data-perm="lockUserDeletions">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card glass" style="margin-top: 20px;">
+          <div class="panel-title">اقدامات پیشگیرانه و مقابله با تهدید (Threat Response)</div>
+          <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            
+            <div style="flex: 1; min-width: 300px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;">
+              <h4><i class="fa-solid fa-ban"></i> مدیریت لیست سیاه (Blacklist)</h4>
+              <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">مسدودسازی بر اساس IP یا شماره تلفن</p>
+              <form id="blacklist-form">
+                <div class="form-group">
+                  <select id="bl-type" class="select-ctrl" required>
+                    <option value="ip">آدرس IP</option>
+                    <option value="phone">شماره تلفن</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <input type="text" id="bl-value" class="input-ctrl" placeholder="مقدار (مثلا 192.168.1.1 یا 0912...)" required>
+                </div>
+                <div class="form-group">
+                  <input type="text" id="bl-reason" class="input-ctrl" placeholder="دلیل مسدودسازی">
+                </div>
+                <button type="submit" class="btn-primary" style="background-color: #ef4444;">افزودن به لیست سیاه</button>
+              </form>
+            </div>
+
+            <div style="flex: 1; min-width: 300px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;">
+              <h4><i class="fa-solid fa-user-shield"></i> ابطال نشست‌ها (Session Revocation)</h4>
+              <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">ابطال توکن‌های فعال کاربران در صورت سرقت اطلاعات</p>
+              <div class="form-group">
+                <input type="text" id="revoke-target-user" class="input-ctrl" placeholder="شناسه کاربر (خالی برای ابطال همگانی)">
+              </div>
+              <button id="btn-revoke-sessions" class="btn-primary" style="background-color: #f59e0b;">ابطال نشست(ها)</button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: CARAVANS & MENTORS -->
+      <section id="caravans-tab" class="tab-panel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3>کاروان‌های ثبت شده</h3>
+          <div style="display: flex; gap: 10px;">
+            <button id="btn-create-caravan" class="btn-primary" style="background-color: #10b981;" onclick="openCaravanWizard()"><i class="fa-solid fa-plus"></i> ساخت کاروان جدید</button>
+            <button id="btn-bulk-transfer-modal" class="btn-primary" style="background-color: #8b5cf6;"><i class="fa-solid fa-exchange-alt"></i> انتقال گروهی اعضا</button>
+          </div>
+        </div>
+        
+        <div class="actions-header glass" style="margin-bottom: 20px;">
+          <div class="filters-group">
+            <select id="filter-caravan-mentor-level" class="select-ctrl">
+              <option value="">همه مربیان</option>
+              <option value="1">راهبر مقدماتی (سطح ۱)</option>
+              <option value="2">راهبر ارشد (سطح ۲)</option>
+              <option value="3">راهبر ممتاز (سطح ۳)</option>
+            </select>
+          </div>
+          <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
+            <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+            <div class="dropdown-content">
+              <a href="#" onclick="exportData('caravans', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+              <a href="#" onclick="exportData('caravans', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+              <a href="#" onclick="exportData('caravans', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="caravans-grid" id="caravans-container">
+          <!-- Caravan cards -->
+        </div>
+
+        <h3 style="margin-bottom: 20px; margin-top: 40px;">دموگرافی و تحصیلات مربیان</h3>
+        <div class="panel-card glass" style="margin-bottom: 20px; display:flex; justify-content:center;">
+          <div style="width: 300px; height: 300px;">
+            <canvas id="mentorDemographicsChart"></canvas>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 20px; margin-top: 20px;">عملکرد و ساختار کاروان‌ها</h3>
+        <div class="table-container glass">
+          <table class="data-table" id="caravan-performance-table">
+            <thead>
+              <tr>
+                <th>نام کاروان</th>
+                <th>راهبر(ان)</th>
+                <th>اعضا / ظرفیت</th>
+                <th>مجموع ثروت (زریک، کلاف، فرش، بیرق)</th>
+                <th>درصد پیشرفت مسیر</th>
+                <th>آخرین فعالیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 5: CONTENT & ANNOUNCEMENTS -->
+      <section id="content-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="max-width: 600px;">
+          <div class="panel-title">ارسال اطلاعیه سراسری (Jarchi Broadcast)</div>
+          <form id="announcement-broadcast-form">
+            <div class="form-group">
+              <label>عنوان اطلاعیه</label>
+              <input type="text" id="announcement-title" class="input-ctrl" placeholder="مثال: شروع ایستگاه دوم مسابقه" required>
+            </div>
+            <div class="form-group">
+              <label>ارسال برای کاروان</label>
+              <select id="announcement-caravan" class="select-ctrl" style="width: 100%;">
+                <option value="">کل ۵۰۰+ کاربر (سراسری)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>متن پیام اطلاعیه</label>
+              <textarea id="announcement-message" class="input-ctrl" rows="5" placeholder="متن پیام خود را بنویسید..." required></textarea>
+            </div>
+            <button type="submit" class="btn-primary">ارسال پیام و نوتیفیکیشن</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 6: AUDIT LOGS -->
+      <section id="audit-tab" class="tab-panel" style="display: none;">
+        <div class="actions-header glass" style="margin-bottom: 20px;">
+          <div class="filters-group">
+            <select id="filter-audit-action" class="select-ctrl">
+              <option value="">تمام عملیات‌ها</option>
+              <option value="CREATE_USER">ایجاد کاربر</option>
+              <option value="UPDATE_USER">ویرایش کاربر</option>
+              <option value="BLOCK_USER">مسدودسازی</option>
+              <option value="DEPOSIT_ZARIK">واریز زریک</option>
+              <option value="DEDUCT_ZARIK">کسر زریک</option>
+              <option value="BROADCAST_ANNOUNCEMENT">ارسال اطلاعیه</option>
+              <option value="REVOKE_SESSIONS">ابطال نشست‌ها</option>
+            </select>
+          </div>
+          <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
+            <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+            <div class="dropdown-content">
+              <a href="#" onclick="exportData('audit', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+              <a href="#" onclick="exportData('audit', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+              <a href="#" onclick="exportData('audit', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+            </div>
+          </div>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="audit-logs-table">
+            <thead>
+              <tr>
+                <th>نام مدیر</th>
+                <th>عملیات</th>
+                <th>موجودیت هدف</th>
+                <th>جزئیات تغییرات</th>
+                <th>آدرس IP</th>
+                <th>تاریخ و زمان</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Audit logs rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 8: NOTIFICATIONS -->
+      <section id="notifications-tab" class="tab-panel" style="display: none;">
+        <div class="ledger-grid">
+        <div class="panel-card glass">
+          <div class="panel-title">سامانه هوشمند اطلاع‌رسانی (Tri-Channel Broadcast)</div>
+          <p style="font-size: 13px; color: #ccc; margin-bottom: 20px;">قابلیت ارسال اعلان درون‌برنامه‌ای، پیامک و ایمیل با پشتیبانی از متغیرهای داینامیک: {user_name} و {zarik_balance}</p>
+          
+          <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+             <button id="btn-load-templates" class="btn-action"><i class="fa-solid fa-list"></i> بارگذاری الگوها</button>
+          </div>
+          
+          <form id="notification-broadcast-form">
+            <div class="form-group">
+              <label>عنوان پیام (نوتیفیکیشن یا سابجکت ایمیل)</label>
+              <input type="text" id="notif-title" class="input-ctrl" placeholder="سلام {user_name}، جایزه جدید!" required>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+              <div class="form-group" style="flex: 1;">
+                <label>جامعه هدف (Audience)</label>
+                <select id="notif-audience" class="select-ctrl" style="width: 100%;">
+                  <option value="all">همه کاربران (۵۰۰+)</option>
+                  <option value="mentors">فقط مربیان</option>
+                  <option value="caravan">کاروان خاص</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1; display: none;" id="notif-caravan-container">
+                <label>انتخاب کاروان</label>
+                <select id="notif-target-caravan" class="select-ctrl" style="width: 100%;">
+                  <!-- Dynamically populated -->
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>کانال ارتباطی (Channel)</label>
+              <select id="notif-channel" class="select-ctrl" style="width: 100%;">
+                <option value="in_app">درون برنامه‌ای (In-App Push)</option>
+                <option value="sms">پیامک (SMS)</option>
+                <option value="email">ایمیل (Email)</option>
+                <option value="all">تمامی کانال‌ها (همزمان)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>متن قالب پیام (Message Template)</label>
+              <textarea id="notif-message" class="input-ctrl" rows="5" placeholder="شما تا کنون {zarik_balance} زریک جمع آوری کرده‌اید..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn-primary" style="background-color: #3b82f6;">اجرای کمپین ارسال</button>
+          </form>
+        </div>
+        
+        <div>
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div class="panel-title">عملیات و وضعیت کانال‌ها (Channel Overrides)</div>
+            <div class="permission-list" id="channel-overrides-list">
+               <!-- Checkboxes generated dynamically via JS -->
+            </div>
+          </div>
+          
+          <div class="panel-card glass">
+            <div class="panel-title">لاگ‌های ارسال (Delivery History)</div>
+            <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+              <table class="data-table" id="notification-logs-table">
+                <thead>
+                  <tr>
+                    <th>کانال</th>
+                    <th>هدف</th>
+                    <th>وضعیت</th>
+                    <th>زمان</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Delivery Logs -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        </div> <!-- End of ledger-grid -->
+      </section>
+
+      <!-- TAB 7: MEDIA & ASSETS -->
+      <section id="media-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">آپلود رسانه جدید (ویدیو، تصویر، بنر)</div>
+          <form id="media-upload-form" enctype="multipart/form-data">
+            <div class="form-group">
+              <label>انتخاب فایل</label>
+              <input type="file" id="media-file-input" class="input-ctrl" required style="padding-top: 10px;">
+            </div>
+            <div class="form-group">
+              <label>نوع محتوا</label>
+              <select id="media-asset-type" class="select-ctrl" style="width:100%;">
+                <option value="general">عمومی (General)</option>
+                <option value="course_video">ویدیوی آموزشی (Course Video)</option>
+                <option value="banner">بنر اپلیکیشن (Banner)</option>
+                <option value="avatar">آواتار (Avatar)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>عنوان سرفصل یا بنر (اختیاری)</label>
+              <input type="text" id="media-title" class="input-ctrl">
+            </div>
+            <div class="form-group">
+              <label>نام استاد / راهبر (اختیاری)</label>
+              <input type="text" id="media-instructor" class="input-ctrl">
+            </div>
+            <button type="submit" class="btn-primary" id="btn-upload-media">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود فایل و ثبت متادیتا
+            </button>
+            <div id="media-upload-progress" style="display: none; margin-top: 10px; color: #D946EF; font-size: 0.9rem;">در حال آپلود... لطفا صبر کنید</div>
+          </form>
+        </div>
+
+        <div class="table-container glass">
+          <div class="panel-title" style="padding: 15px;">گالری رسانه‌های آپلود شده</div>
+          <table class="data-table" id="media-gallery-table">
+            <thead>
+              <tr>
+                <th>نام فایل</th>
+                <th>نوع فایل</th>
+                <th>حجم</th>
+                <th>لینک مستقیم</th>
+                <th>تاریخ آپلود</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Media assets rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CHAT OVERSIGHT TAB -->
+      <section id="chat-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت گفتگوها و چت‌ها</div>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <input type="text" id="chat-filter-caravanId" class="input-ctrl" placeholder="فیلتر با شناسه کاروان...">
+            <button class="btn-primary" id="btn-load-chats"><i class="fa-solid fa-magnifying-glass"></i> جستجو</button>
+          </div>
+        </div>
+
+        <div class="table-container glass">
+          <table class="data-table" id="chat-logs-table">
+            <thead>
+              <tr>
+                <th>تاریخ ارسال</th>
+                <th>فرستنده</th>
+                <th>گیرنده (کاروان / مستقیم)</th>
+                <th>متن پیام</th>
+                <th>فایل ضمیمه</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Chat logs rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- PLACEHOLDER TABS FOR NEW SECTIONS -->
+      <!-- Mentors -->
+      <section id="mentors-profile-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">پروفایل و شناسنامه راهبران</div>
+          <button class="btn-primary" onclick="showMentorModal()">
+            <i class="fa-solid fa-plus"></i> ثبت راهبر جدید
+          </button>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="mentors-table">
+            <thead>
+              <tr>
+                <th>آواتار</th>
+                <th>نام و نام خانوادگی</th>
+                <th>موبایل</th>
+                <th>کد ملی</th>
+                <th>مدرک تحصیلی</th>
+                <th>کاروان</th>
+                <th>سطح</th>
+                <th>امتیاز (ستاره)</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="mentors-tickets-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">میزکار و تیکت‌های راهبران</div>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="mentor-tickets-table">
+            <thead>
+              <tr>
+                <th>دانش‌آموز</th>
+                <th>دسته‌بندی</th>
+                <th>موضوع</th>
+                <th>وضعیت</th>
+                <th>تاریخ</th>
+                <th>رتبه (ستاره)</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="mentors-league-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">لیگ و ارزیابی راهبران</div>
+          <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+             <input type="text" id="mentor-league-search" class="input-ctrl" placeholder="جستجوی نام یا موبایل...">
+             <select id="mentor-league-filter" class="select-ctrl">
+               <option value="all">فیلتر (همه)</option>
+               <option value="weekly">هفتگی</option>
+               <option value="monthly">ماهانه</option>
+             </select>
+             <select id="mentor-league-sort" class="select-ctrl">
+               <option value="rating">بیشترین ستاره</option>
+               <option value="progress">پیشرفت کاروان</option>
+               <option value="activity">امتیاز فعالیت</option>
+               <option value="level">سطح مربی</option>
+             </select>
+             <button class="btn-primary" onclick="loadMentorLeague()"><i class="fa-solid fa-filter"></i> اعمال فیلتر</button>
+             <button class="btn-action" onclick="exportMentorLeague()" style="margin-right: auto;"><i class="fa-solid fa-file-export"></i> خروجی CSV</button>
+          </div>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="mentor-league-table">
+            <thead>
+              <tr>
+                <th>رتبه</th>
+                <th>نام راهبر</th>
+                <th>موبایل</th>
+                <th>کاروان</th>
+                <th>میانگین ستاره</th>
+                <th>امتیاز فعالیت</th>
+                <th>پیشرفت کاروان</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- LMS -->
+      <section id="stations-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت منزلگاه‌ها</div>
+          <form id="station-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>پکیج والد</label>
+              <select id="station-pkg-id" class="select-ctrl"></select>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>عنوان منزلگاه</label>
+              <input type="text" id="station-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>تاریخ آزادسازی (مثبت: روزهای بعد از ثبت‌نام، یا تاریخ دقیق)</label>
+              <input type="date" id="station-release-date" class="input-ctrl">
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>زمان آزادسازی</label>
+              <input type="time" id="station-release-time" class="input-ctrl">
+            </div>
+            <button type="submit" class="btn-primary">ثبت منزلگاه</button>
+          </form>
+        </div>
+        
+        <div class="panel-card glass">
+          <div class="panel-title">لیست منزلگاه‌ها</div>
+          <table class="data-table" id="stations-table">
+            <thead>
+              <tr>
+                <th>ترتیب</th>
+                <th>عنوان</th>
+                <th>زیرعنوان</th>
+                <th>تاریخ انتشار</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Stations will be rendered here -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="classes-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت کلاس‌ها و رسانه‌ها</div>
+          <form id="class-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>منزلگاه والد</label>
+              <select id="class-subcourse-id" class="select-ctrl"></select>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>عنوان کلاس</label>
+              <input type="text" id="class-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>نام مدرس</label>
+              <input type="text" id="class-teacher" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>فایل رسانه (آپلود)</label>
+              <input type="file" id="class-media" class="input-ctrl">
+            </div>
+            <button type="submit" class="btn-primary">ثبت کلاس</button>
+          </form>
+        </div>
+        <div class="table-container glass">
+           <table class="data-table" id="classes-table">
+             <thead>
+               <tr>
+                 <th>عنوان کلاس</th>
+                 <th>مدرس</th>
+                 <th>منزلگاه</th>
+                 <th>لینک ویدیو</th>
+               </tr>
+             </thead>
+             <tbody>
+             </tbody>
+           </table>
+        </div>
+      </section>
+
+      <section id="quizzes-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">آزمون‌ها و چالش‌ها</div>
+          <form id="quiz-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>عنوان آزمون/چالش</label>
+              <input type="text" id="quiz-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>پاداش زریک</label>
+              <input type="number" id="quiz-reward" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>حداقل نمره قبولی</label>
+              <input type="number" id="quiz-pass-score" class="input-ctrl" required>
+            </div>
+            <button type="submit" class="btn-primary">ثبت آزمون</button>
+          </form>
+        </div>
+        <div class="table-container glass">
+           <table class="data-table" id="quizzes-table">
+             <thead>
+               <tr>
+                 <th>عنوان آزمون</th>
+                 <th>پاداش زریک</th>
+                 <th>نمره قبولی</th>
+               </tr>
+             </thead>
+             <tbody>
+             </tbody>
+           </table>
+        </div>
+      </section>
+
+      <!-- Students -->
+      <section id="levels-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت سطوح فریم</div>
+          <form id="level-adjust-form" style="display:flex; gap: 10px; margin-top: 15px; align-items: end;">
+            <div class="form-group" style="flex:1;">
+              <label>کد کاربر</label>
+              <input type="text" id="level-user-id" class="input-ctrl" required placeholder="شناسه کاربر">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>سطح فریم جدید</label>
+              <select id="level-frame-select" class="select-ctrl">
+                <option value="1">سطح ۱ (ورودی)</option>
+                <option value="2">سطح ۲ (پایه)</option>
+                <option value="3">سطح ۳ (ارشد)</option>
+                <option value="4">سطح ۴ (خبره)</option>
+                <option value="5">سطح ۵ (استاد)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary">اعمال تغییر سطح</button>
+          </form>
+        </div>
+
+        <div class="panel-card glass">
+          <div class="panel-title">دایرکتوری گواهینامه‌ها و سطوح کاربران</div>
+          <div class="actions-header glass" style="margin-bottom: 15px; padding: 10px 20px;">
+            <input type="text" id="search-levels-input" class="input-ctrl search-box" placeholder="جستجو در گواهینامه‌ها..." style="width:250px;">
+            <div class="dropdown-wrapper" style="display:inline-block; position:relative; margin-right: auto;">
+              <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+              <div class="dropdown-content">
+                <a href="#" onclick="exportData('levels', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                <a href="#" onclick="exportData('levels', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="#" onclick="exportData('levels', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              </div>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="levels-data-table">
+              <thead>
+                <tr>
+                  <th>نام کاربر</th>
+                  <th>شماره همراه</th>
+                  <th>سطح فریم فعلی</th>
+                  <th>آخرین گواهینامه</th>
+                  <th>وضعیت تکمیل پروفایل</th>
+                  <th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <!-- Caravans -->
+      <section id="caravan-members-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px; display: flex; gap: 20px; align-items: end;">
+          <div style="flex: 2;">
+            <label>جستجو در اعضای کاروان (نام کاربر، نام کاروان، شماره تماس)</label>
+            <input type="text" id="search-caravan-members" class="input-ctrl" placeholder="جستجو..." onkeyup="filterCaravanMembers()">
+          </div>
+          <div style="flex: 1;">
+            <button class="btn-primary" onclick="loadCaravanMembersRoster()"><i class="fa-solid fa-search"></i> جستجو</button>
+          </div>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+             <div class="panel-title">پنل تنظیم محدودیت و ظرفیت</div>
+          </div>
+          <form id="global-capacity-form" style="display: flex; gap: 10px; align-items: end;" onsubmit="saveGlobalCapacity(event)">
+             <div class="form-group" style="flex: 1;">
+               <label>حداکثر ظرفیت پیش‌فرض هر کاروان</label>
+               <input type="number" id="global-capacity-input" class="input-ctrl" required placeholder="مثال: 25">
+             </div>
+             <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> ذخیره ظرفیت</button>
+          </form>
+        </div>
+        
+        <div class="table-container glass" style="margin-bottom: 20px;">
+          <table class="data-table" id="caravan-roster-table">
+            <thead>
+              <tr>
+                <th>نام دانش‌آموز</th>
+                <th>شماره تماس</th>
+                <th>کاروان فعلی</th>
+                <th>آخرین فعالیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+               <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">انتقال دسته جمعی مخاطبان کاروان</div>
+          <form id="bulk-transfer-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end;">
+            <div class="form-group" style="flex:1;">
+              <label>کد کاربران (با کاما جدا کنید)</label>
+              <input type="text" id="bulk-user-ids" class="input-ctrl" required placeholder="مثال: id1, id2, id3">
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>کد کاروان مقصد</label>
+              <input type="text" id="bulk-target-caravan" class="input-ctrl" required placeholder="شناسه کاروان جدید">
+            </div>
+            <button type="submit" class="btn-primary">انتقال کاربران</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="caravan-league-tab" class="tab-panel" style="display: none;">
+        <div class="actions-header glass" style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+           <div class="panel-title">لیگ کاروان‌ها و تبدیل سرمایه‌ها</div>
+           <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="caravan-league-sort" class="select-ctrl" onchange="loadCaravanLeague()">
+                 <option value="progress">رده‌بندی بر اساس پیشرفت مسیر</option>
+                 <option value="wealth">رده‌بندی بر اساس سرمایه (زریک، نخ و...)</option>
+              </select>
+              <button class="btn-action btn-export" onclick="exportData('caravan_league', 'csv')"><i class="fa-solid fa-file-csv"></i> خروجی CSV</button>
+           </div>
+        </div>
+
+        <div class="table-container glass" style="margin-bottom: 40px;">
+          <table class="data-table" id="caravan-league-table">
+            <thead>
+              <tr>
+                <th>رتبه</th>
+                <th>نام کاروان</th>
+                <th>راهبر</th>
+                <th>تعداد اعضا / ظرفیت</th>
+                <th>پیشرفت مسیر</th>
+                <th>مجموع ثروت</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">تایید درخواست‌های تبدیل راهبران</div>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="asset-conversions-table">
+            <thead>
+              <tr>
+                <th>نام راهبر</th>
+                <th>کاروان</th>
+                <th>درخواست</th>
+                <th>وضعیت</th>
+                <th>تاریخ</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- LMS -->
+      <section id="lms-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت منزلگاه‌ها (Station Management Builder)</div>
+          <form id="lms-station-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsStation(event)">
+            <input type="hidden" id="lms-station-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>شماره/ایندکس منزلگاه</label>
+              <input type="number" id="lms-station-order" class="input-ctrl" required placeholder="مثال: 1">
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>عنوان منزلگاه</label>
+              <input type="text" id="lms-station-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>تاریخ و زمان آزادسازی (Unlock Scheduler)</label>
+              <div style="display:flex; gap:10px;">
+                 <input type="date" id="lms-station-release-date" class="input-ctrl">
+                 <input type="time" id="lms-station-release-time" class="input-ctrl">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">ذخیره منزلگاه</button>
+          </form>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">دسته تفکیکی کلاس‌ها (Class Categories)</div>
+          <form id="lms-category-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsCategory(event)">
+            <input type="hidden" id="lms-category-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>منزلگاه والد</label>
+              <select id="lms-cat-station-id" class="select-ctrl" required></select>
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>عنوان دسته (مانند پودمان مهارتی)</label>
+              <input type="text" id="lms-cat-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>ایندکس</label>
+              <input type="number" id="lms-cat-order" class="input-ctrl" required>
+            </div>
+            <button type="submit" class="btn-primary">ذخیره دسته‌بندی</button>
+          </form>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مجموعه کلاس‌ها / نشست‌ها (Class Sessions) و محدودیت‌ها</div>
+          <form id="lms-session-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsSession(event)">
+            <input type="hidden" id="lms-session-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>دسته‌بندی والد</label>
+              <select id="lms-sess-category-id" class="select-ctrl" required></select>
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>عنوان کلاس</label>
+              <input type="text" id="lms-sess-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>Min Watch Threshold (%)</label>
+              <input type="number" id="lms-sess-watch-min" class="input-ctrl" value="70">
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>Min Pass Score</label>
+              <input type="number" id="lms-sess-pass-score" class="input-ctrl" value="0">
+            </div>
+            <button type="submit" class="btn-primary">ذخیره کلاس</button>
+          </form>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">مدیریت کلیپ‌های ویدیویی (Video Clips)</div>
+          <form id="lms-clip-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsClip(event)">
+            <input type="hidden" id="lms-clip-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>کلاس والد (Session)</label>
+              <select id="lms-clip-session-id" class="select-ctrl" required></select>
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>عنوان کلیپ</label>
+              <input type="text" id="lms-clip-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>ترتیب نمایش (Order)</label>
+              <input type="number" id="lms-clip-order" class="input-ctrl" value="1" required>
+            </div>
+            <div class="form-group" style="flex:2; min-width:250px;">
+              <label>آپلود فایل ویدیو</label>
+              <input type="file" id="lms-clip-file" accept="video/*" class="input-ctrl" onchange="uploadClipMedia(this)">
+              <input type="hidden" id="lms-clip-url" required>
+              <small id="lms-clip-upload-status" style="color: #10B981;"></small>
+            </div>
+            <button type="submit" class="btn-primary" id="btn-save-clip">ذخیره کلیپ</button>
+          </form>
+        </div>
+
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">آزمون و چالش پایان کلاس (Exam Binder)</div>
+          <form id="lms-quiz-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsQuiz(event)">
+            <input type="hidden" id="lms-quiz-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>کلاس والد</label>
+              <select id="lms-quiz-session-id" class="select-ctrl" required></select>
+            </div>
+            <div class="form-group" style="flex:2; min-width:200px;">
+              <label>عنوان آزمون</label>
+              <input type="text" id="lms-quiz-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>پاداش زریک</label>
+              <input type="number" id="lms-quiz-zarik" class="input-ctrl" value="0">
+            </div>
+            <button type="submit" class="btn-primary">ذخیره آزمون</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- DYNAMIC FORM BUILDER -->
+      <section id="form-builder-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">فرم‌ساز داینامیک و تعیین محل نمایش</div>
+          <form id="dyn-form-builder" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitDynamicForm(event)">
+            <input type="hidden" id="dyn-form-id">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>عنوان فرم</label>
+              <input type="text" id="dyn-form-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>کارکرد فرم (Purpose)</label>
+              <input type="text" id="dyn-form-purpose" class="input-ctrl" placeholder="نظرسنجی کیفیت کلاس...">
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>محل قرارگیری در اپ (Placement)</label>
+              <select id="dyn-form-placement" class="select-ctrl" required>
+                <option value="HOME_SCREEN_OVERLAY">HOME_SCREEN_OVERLAY (صفحه اصلی)</option>
+                <option value="AFTER_CLASS_SURVEY">AFTER_CLASS_SURVEY (پس از کلاس)</option>
+                <option value="MENTOR_EVALUATION">MENTOR_EVALUATION (ارزیابی مربی)</option>
+                <option value="PROFILE_TAB">PROFILE_TAB (پروفایل)</option>
+                <option value="DRAWER_MENU">DRAWER_MENU (منوی کناری)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>مخاطب هدف</label>
+              <select id="dyn-form-audience" class="select-ctrl" required>
+                <option value="ALL_USERS">همه کاربران</option>
+                <option value="STUDENTS_ONLY">فقط دانش‌آموزان</option>
+                <option value="MENTORS_ONLY">فقط مربیان</option>
+                <option value="SPECIFIC_CARAVAN">کاروان خاص</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> ایجاد/ذخیره فرم</button>
+          </form>
+        </div>
+
+        <div class="table-container glass" style="margin-bottom: 20px;">
+          <table class="data-table" id="dyn-forms-table">
+            <thead>
+              <tr>
+                <th>عنوان فرم</th>
+                <th>محل قرارگیری</th>
+                <th>مخاطب</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- System / RBAC -->
+      <section id="roles-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">نقش‌ها و دسترسی‌ها (RBAC)</div>
+          <div class="table-container glass" style="margin-top: 15px;">
+            <table class="data-table" id="roles-table">
+              <thead>
+                <tr>
+                  <th>نقش</th>
+                  <th>مخفی‌سازی موبایل</th>
+                  <th>محدودیت زریک</th>
+                  <th>قفل حذف کاربر</th>
+                  <th>مدیریت محتوا</th>
+                  <th>پیام و چت</th>
+                  <th>شرکت در کلاس</th>
+                  <th>ارزیابی تکالیف</th>
+                  <th>تبدیل سرمایه</th>
+                  <th>ایجاد چالش</th>
+                  <th>آمار کلی</th>
+                  <th>مدیریت کاربران</th>
+                  <th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="notifications-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">تنظیمات پیام‌رسانی</div>
+          <form id="broadcast-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
+            <div class="form-group" style="flex:1; min-width:200px;">
+              <label>عنوان پیام</label>
+              <input type="text" id="bc-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:2; min-width:300px;">
+              <label>متن پیام</label>
+              <input type="text" id="bc-message" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="flex:1; min-width:150px;">
+              <label>مخاطب هدف</label>
+              <select id="bc-target" class="select-ctrl">
+                <option value="all">همه کاربران</option>
+                <option value="students">فقط دانش‌آموزان</option>
+                <option value="mentors">فقط مربیان</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary">ارسال پیام گروهی</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="audit-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">امنیت و گزارشات سیستم (Audit Logs)</div>
+          
+          <div style="margin-top: 15px; display: flex; gap: 15px;">
+             <button class="btn-primary" onclick="loadAuditLogs('student')">فعالیت مخاطبان</button>
+             <button class="btn-primary" onclick="loadAuditLogs('mentor')">فعالیت راهبران</button>
+             <button class="btn-primary" onclick="loadAuditLogs('super_mentor')">فعالیت سوپر راهبران</button>
+             <button class="btn-primary" onclick="loadAuditLogs('admin')">فعالیت مدیران</button>
+          </div>
+
+          <form id="audit-filter-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
+             <div class="form-group">
+                <label>جستجو (نام/آی‌پی/توضیحات)</label>
+                <input type="text" id="audit-search" class="input-ctrl">
+             </div>
+             <div class="form-group">
+                <label>نوع عملیات</label>
+                <input type="text" id="audit-action-filter" class="input-ctrl">
+             </div>
+             <input type="hidden" id="audit-active-role" value="student">
+             <button type="submit" class="btn-primary"><i class="fa-solid fa-filter"></i> فیلتر</button>
+             <button type="button" class="btn-secondary" onclick="exportAuditLogs()"><i class="fa-solid fa-download"></i> خروجی اکسل</button>
+          </form>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="audit-logs-table">
+            <thead>
+              <tr>
+                <th>تاریخ/زمان</th>
+                <th>اکتور</th>
+                <th>نقش</th>
+                <th>عملیات</th>
+                <th>هدف</th>
+                <th>جزئیات</th>
+                <th>آی‌پی</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- DETAILS DRAWER -->
+  <div class="drawer-overlay" id="user-drawer-overlay"></div>
+  <div class="drawer-content" id="user-detail-drawer">
+    <div class="drawer-header">
+      <h3 id="drawer-user-name">نام کاربر</h3>
+      <button class="modal-close" id="btn-close-drawer">&times;</button>
+    </div>
+    <div id="drawer-body-info">
+      <!-- Drawer stats info -->
+    </div>
+  </div>
+
+  <!-- ADD/EDIT USER MODAL -->
+  <div class="modal-overlay" id="user-modal-overlay">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3 id="modal-user-title">ایجاد کاربر جدید</h3>
+        <button class="modal-close" id="btn-close-user-modal">&times;</button>
+      </div>
+      <form id="user-modal-form">
+        <input type="hidden" id="edit-user-id">
+        <div class="form-group">
+          <label>نام و نام خانوادگی</label>
+          <input type="text" id="modal-user-name" class="input-ctrl" required>
+        </div>
+        <div class="form-group" id="phone-field-group">
+          <label>شماره همراه</label>
+          <input type="text" id="modal-user-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
+        </div>
+        <div class="form-group" id="password-field-group">
+          <label>رمز عبور</label>
+          <input type="password" id="modal-user-password" class="input-ctrl" required>
+        </div>
+        <div class="form-group">
+          <label>نقش کاربری</label>
+          <select id="modal-user-role" class="select-ctrl" style="width: 100%;" required>
+            <option value="student">دانش‌آموز</option>
+            <option value="mentor">مربی</option>
+            <option value="admin">مدیر</option>
+          </select>
+        </div>
+        <div class="form-group" id="mentor-level-group" style="display:none;">
+          <label>سطح مربی (ویژه مربیان)</label>
+          <select id="modal-user-mentor-level" class="select-ctrl" style="width: 100%; margin-bottom:15px;">
+            <option value="1">سطح ۱: یاور (Junior)</option>
+            <option value="2">سطح ۲: استاد (Senior)</option>
+            <option value="3">سطح ۳: راهنمای کل (Master)</option>
+          </select>
+          <label>مدرک تحصیلی (Academic Degree)</label>
+          <input type="text" id="modal-user-degree" class="input-ctrl" placeholder="لیسانس مهندسی نرم‌افزار" style="margin-bottom:15px;">
+          <label>مدارک و گواهی‌نامه‌ها</label>
+          <input type="text" id="modal-user-certificates" class="input-ctrl" placeholder="مدرک PMP, آیلتس 7">
+        </div>
+        <div class="form-group">
+          <label>کاروان</label>
+          <select id="modal-user-caravan" class="select-ctrl" style="width: 100%;">
+            <option value="">فاقد کاروان</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>کد ملی</label>
+          <input type="text" id="modal-user-national-id" class="input-ctrl" placeholder="اختیاری">
+        </div>
+        <div class="form-group">
+          <label>تاریخ تولد (شمسی)</label>
+          <input type="text" id="modal-user-dob" class="input-ctrl" placeholder="۱۳۸۰/۰۵/۱۲">
+        </div>
+        <div class="form-group">
+          <label>سطح فریم (۱ تا ۵)</label>
+          <input type="number" id="modal-user-level" class="input-ctrl" min="1" max="5" value="1" required>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 15px;">ذخیره اطلاعات کاربر</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD MENTOR MODAL -->
+  <div class="modal-overlay" id="mentor-modal-overlay">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3 id="mentor-modal-title">ثبت راهبر جدید</h3>
+        <button class="modal-close" id="btn-close-mentor-modal">&times;</button>
+      </div>
+      <form id="mentor-form" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        <input type="hidden" id="modal-mentor-id">
+        <div class="form-group">
+          <label>نام و نام خانوادگی</label>
+          <input type="text" id="modal-mentor-name" class="input-ctrl" required>
+        </div>
+        <div class="form-group">
+          <label>شماره موبایل</label>
+          <input type="text" id="modal-mentor-phone" class="input-ctrl" required>
+        </div>
+        <div class="form-group">
+          <label>کد ملی</label>
+          <input type="text" id="modal-mentor-national-id" class="input-ctrl">
+        </div>
+        <div class="form-group">
+          <label>مدرک تحصیلی</label>
+          <select id="modal-mentor-degree" class="select-ctrl">
+             <option value="">انتخاب کنید...</option>
+             <option value="دکتری">دکتری</option>
+             <option value="ارشد">ارشد</option>
+             <option value="کارشناسی">کارشناسی</option>
+             <option value="حوزوی">حوزوی</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>شناسه کاروان (اختیاری)</label>
+          <input type="text" id="modal-mentor-caravan" class="input-ctrl">
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap: 10px;">
+          <input type="checkbox" id="modal-mentor-5stars" style="transform: scale(1.5);">
+          <label>اعطای ۵ ستاره تکمیل پروفایل (پیش‌فرض)</label>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap: 10px;">
+          <input type="checkbox" id="modal-mentor-super" style="transform: scale(1.5);">
+          <label>ارتقا به سوپر راهبر (دسترسی به تمام کاروان‌ها)</label>
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 15px;">ذخیره اطلاعات راهبر</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD STUDENT MODAL -->
+  <div class="modal-overlay" id="student-modal-overlay">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3 id="student-modal-title">ثبت / ویرایش مخاطب</h3>
+        <button class="modal-close" id="btn-close-student-modal">&times;</button>
+      </div>
+      <form id="student-form" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
+        <input type="hidden" id="modal-student-id">
+        <div class="form-group">
+          <label>نام و نام خانوادگی</label>
+          <input type="text" id="modal-student-name" class="input-ctrl" required>
+        </div>
+        <div class="form-group">
+          <label>شماره موبایل (اکانت اصلی خانواده)</label>
+          <input type="text" id="modal-student-phone" class="input-ctrl" required>
+        </div>
+        <div class="form-group">
+          <label>کد ملی</label>
+          <input type="text" id="modal-student-national-id" class="input-ctrl">
+        </div>
+        <div class="form-group">
+          <label>تاریخ تولد</label>
+          <input type="text" id="modal-student-dob" class="input-ctrl" placeholder="مثال: ۱۳۸۰/۰۱/۰۱">
+        </div>
+        <div class="form-group">
+          <label>شناسه کاروان (اختیاری)</label>
+          <input type="text" id="modal-student-caravan" class="input-ctrl">
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top: 15px;">ذخیره اطلاعات مخاطب</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- METRICS MODAL -->
+  <div class="modal-overlay" id="metrics-modal-overlay">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3>تحلیل فعالیت ۳۰ روز اخیر</h3>
+        <button class="modal-close" id="btn-close-metrics-modal">&times;</button>
+      </div>
+      <div id="metrics-modal-body" style="text-align: center;">
+        <p>در حال بارگذاری...</p>
+      </div>
+    </div>
+  </div>
+
+    <!-- Mentor Document Approve/Reject Modal -->
+    <div id="mentor-doc-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-content glass" style="max-width:820px;">
+        <div class="modal-header">
+          <h3 id="mentor-doc-modal-title">بررسی مدرک مربی</h3>
+          <button class="modal-close" id="btn-close-mentor-doc-modal">&times;</button>
+        </div>
+        <div style="padding:16px;">
+          <div id="mentor-doc-preview" style="margin-bottom:12px; max-height:420px; overflow:auto;"></div>
+          <div class="form-group">
+            <label>یادداشت ادمین (در صورت رد، علت را بنویسید)</label>
+            <textarea id="mentor-doc-admin-note" class="input-ctrl" rows="4"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer" style="display:flex; gap:8px; justify-content:flex-end; padding:12px;">
+          <button class="btn-primary" id="btn-approve-mentor-doc">تایید و ثبت در پروفایل</button>
+          <button class="btn-action" id="btn-reject-mentor-doc" style="background:#ef4444; color:white;">رد مدرک</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Caravan Builder Wizard Modal -->
+    <div id="caravan-wizard-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-content glass" style="max-width:800px;">
+        <div class="modal-header">
+          <h3>ساخت کاروان جدید</h3>
+          <button class="modal-close" onclick="closeCaravanWizard()">&times;</button>
+        </div>
+        <form id="caravan-wizard-form" onsubmit="submitCaravan(event)">
+          <div style="padding: 16px;">
+            <div class="form-group">
+              <label>نام کاروان</label>
+              <input type="text" id="cw-name" class="input-ctrl" required>
+            </div>
+            <div class="form-group" style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <label>سقف ظرفیت اعضا</label>
+                <input type="number" id="cw-capacity" class="input-ctrl">
+              </div>
+              <div style="flex:1;">
+                <label>ایستگاه هدف (شناسه)</label>
+                <input type="text" id="cw-target-station" class="input-ctrl">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>راهبر کاروان</label>
+              <select id="cw-mentor" class="select-ctrl" required>
+                <!-- Populated via JS -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label>توضیحات و اهداف</label>
+              <textarea id="cw-description" class="input-ctrl" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>لینک کانال / گروه اجتماعی کاروان</label>
+              <input type="text" id="cw-social-link" class="input-ctrl" placeholder="https://t.me/nopa_caravan">
+            </div>
+            <div class="form-group">
+              <label>اعضای کاروان (شناسه دانش‌آموزان - با کاما جدا کنید)</label>
+              <input type="text" id="cw-students" class="input-ctrl" placeholder="id1, id2, ...">
+            </div>
+          </div>
+          <div class="modal-footer" style="padding:16px;">
+            <button type="submit" class="btn-primary" style="width: 100%;">ایجاد کاروان</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Ticket Drawer Modal -->
+    <div id="ticket-drawer-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-content glass" style="max-width:820px; width:90%; display:flex; flex-direction:column; background: rgba(30, 41, 59, 0.95);">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <h3 id="ticket-drawer-title">جزئیات تیکت</h3>
+          <button class="modal-close" onclick="closeTicketDrawer()">&times;</button>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; gap:16px; max-height:520px; overflow-y:auto;">
+          <div id="ticket-thread-container"></div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <label style="color:var(--text-muted);">پاسخ به تیکت</label>
+            <textarea id="ticket-reply-text" class="input-ctrl" rows="4" placeholder="متن پاسخ را وارد کنید..."></textarea>
+            <button class="btn-primary" id="btn-submit-ticket-reply" style="align-self:flex-end;">ارسال پاسخ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Caravan Operations Drawer Modal (Glassmorphic) -->
+    <div id="caravan-drawer-modal" class="modal-overlay" style="display:none;">
+      <div class="modal-content glass" style="max-width:900px; display:flex; flex-direction:column; background: rgba(30, 41, 59, 0.9);">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <h3 id="cd-title">داشبورد کاروان</h3>
+          <button class="modal-close" onclick="closeCaravanDrawer()">&times;</button>
+        </div>
+        <div style="padding:20px; display:flex; gap:20px; height: 500px; overflow-y: auto;">
+          <!-- Column 1: Structure & Wealth -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+             <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; align-items:center; gap:15px;">
+                   <img id="cd-mentor-avatar" src="https://via.placeholder.com/60" style="border-radius:50%; width:60px; height:60px;">
+                   <div>
+                     <h4 id="cd-mentor-name" style="margin:0; color:var(--text-color);">نام راهبر</h4>
+                     <p style="margin:0; font-size:12px; color:var(--text-muted);">راهبر ارشد</p>
+                   </div>
+                </div>
+             </div>
+             
+             <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <h4>وضعیت ظرفیت</h4>
+                <div style="width:100%; background: rgba(0,0,0,0.2); border-radius:10px; height:20px; margin-top:10px;">
+                   <div id="cd-capacity-bar" style="background: #3b82f6; width: 50%; height:100%; border-radius:10px;"></div>
+                </div>
+                <p id="cd-capacity-text" style="text-align:center; font-size:12px; margin-top:5px;">25 / 50 نفر</p>
+             </div>
+             
+             <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <h4>مجموع ثروت</h4>
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                  <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> زریک: <span id="cd-wealth-zarik">0</span></span>
+                  <span style="color:#d946ef;"><i class="fa-solid fa-gem"></i> نخ: <span id="cd-wealth-nakh">0</span></span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                  <span style="color:#0ea5e9;"><i class="fa-solid fa-cube"></i> فرش: <span id="cd-wealth-farsh">0</span></span>
+                  <span style="color:#f43f5e;"><i class="fa-solid fa-flag"></i> بیرق: <span id="cd-wealth-beyragh">0</span></span>
+                </div>
+             </div>
+          </div>
+          
+          <!-- Column 2: Progress & Broadcast -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:20px;">
+             <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                <h4>پیشرفت مسیر آموزشی</h4>
+                <div style="display:flex; align-items:center; gap:10px; margin-top:15px;">
+                   <div style="flex:1; background:rgba(0,0,0,0.2); height:8px; border-radius:4px;">
+                     <div id="cd-progress-bar" style="background:#10b981; width:70%; height:100%; border-radius:4px;"></div>
+                   </div>
+                   <span id="cd-progress-text" style="font-size:14px; font-weight:bold;">70%</span>
+                </div>
+             </div>
+             
+             <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); flex:1; display:flex; flex-direction:column;">
+                <h4><i class="fa-solid fa-bullhorn"></i> ارسال پیام گروهی (Broadcast)</h4>
+                <p style="font-size:12px; color:var(--text-muted);">این پیام به صورت Notification درون برنامه‌ای برای تمامی اعضای کاروان ارسال خواهد شد.</p>
+                <div style="margin-top:10px; flex:1; display:flex; flex-direction:column; gap:10px;">
+                   <input type="text" id="cd-broadcast-title" class="input-ctrl" placeholder="عنوان پیام">
+                   <textarea id="cd-broadcast-msg" class="input-ctrl" placeholder="متن پیام..." style="flex:1; resize:none;"></textarea>
+                   <button class="btn-primary" onclick="sendCaravanBroadcast()"><i class="fa-solid fa-paper-plane"></i> ارسال به همه</button>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+    /* Basic dropdown styling for export button */
+    .dropdown-wrapper:hover .dropdown-content { display: block; }
+    .dropdown-content {
+      display: none; position: absolute; right: 0; background: var(--bg-card); min-width: 120px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 100; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+    .dropdown-content a {
+      color: white; padding: 10px 15px; text-decoration: none; display: block; font-size: 12px;
+    }
+    .dropdown-content a:hover { background: rgba(139, 92, 246, 0.2); }
+  </style>
+
+  <script src="/admin/app.js"></script>
+</body>
+</html>
+
+
+

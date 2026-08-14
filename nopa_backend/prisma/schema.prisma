@@ -1,0 +1,624 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                           String         @id @default(uuid())
+  phoneNumber                  String
+  passwordHash                 String
+  role                         String         // "student" | "mentor" | "admin"
+  name                         String
+  avatarUrl                    String?
+  zarikBalance                 Int            @default(0)
+  levelFrame                   Int            @default(1)
+  mentorLevel                  Int            @default(1) // 1: Junior, 2: Senior, 3: Master
+  nationalId                   String?
+  dateOfBirth                  String?
+  totalTransactions            Int            @default(0)
+  totalZarikPurchases          Int            @default(0)
+  identityVerified             Boolean        @default(false)
+  lastActiveTimestamp          DateTime       @default(now())
+  caravanId                    String?
+  hasEvaluatedMentorThisSeason Boolean        @default(false)
+  createdAt                    DateTime       @default(now())
+  blocked                      Boolean        @default(false)
+  isDualRole                   Boolean        @default(false) // True if user is both Student and Mentor
+  
+  // Security & Billing Additions
+  tokenVersion                 Int            @default(0)
+  failedLoginAttempts          Int            @default(0)
+  lockoutUntil                 DateTime?
+  hasPrePaidClasses            Boolean        @default(true)
+  
+  // Mentor Demographics & Tangible Assets
+  city                           String?
+  bio                            String?
+  academicDegree                 String?
+  academicCertificates           String?
+  accountStatus                  String         @default("ACTIVE") // ACTIVE, SUSPENDED, RESTRICTED
+  nakh                           Int            @default(0)
+  beyragh                        Int            @default(0)
+  farsh                          Int            @default(0)
+  
+  // Relations
+  certificates                 Certificate[]
+  caravan                      Caravan?       @relation("CaravanMembers", fields: [caravanId], references: [id], onDelete: SetNull)
+  mentoredCaravans             Caravan[]      @relation("CaravanMentor")
+  mentorDocuments              MentorDocument[]
+  submissions                  Submission[]
+  quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
+  quizReviews                  QuizSubmission[] @relation("MentorQuizReviews")
+  formSubmissions              FormSubmission[]
+
+  ratingsGiven                 MentorRating[] @relation("RatingStudent")
+  ratingsReceived              MentorRating[] @relation("RatingMentor")
+  notifications                Notification[]
+  zarikTransactions            ZarikTransaction[]
+  adminMessages                AdminMessage[]
+  messagesSent                 ChatMessage[]  @relation("ChatSender")
+  messagesReceived             ChatMessage[]  @relation("ChatReceiver")
+  supportTickets               SupportTicket[] @relation("TicketStudent")
+  supportReplies               SupportTicketReply[] @relation("ReplyMentor")
+  assetConversions             AssetConversionRequest[]
+  mentorFeedbacks              MentorFeedback[] @relation("MentorFeedbacks")
+  sessionWatchRecords          SessionWatchRecord[]
+  videoBookmarks               VideoBookmark[]
+  
+  evaluationsGiven             MentorEvaluation[] @relation("EvaluationsStudent")
+  evaluationsReceived          MentorEvaluation[] @relation("EvaluationsMentor")
+  studentNotes                 PrivateStudentNote[] @relation("StudentNotes")
+  mentorNotesWritten           PrivateStudentNote[] @relation("MentorNotes")
+  
+  @@index([phoneNumber])
+  @@index([role])
+  @@index([caravanId])
+  @@index([zarikBalance])
+  @@index([createdAt])
+}
+
+model Caravan {
+  id              String  @id @default(uuid())
+  name            String
+  mentorId        String?
+  memberCount     Int     @default(0)
+  overallProgress Float   @default(0.0)
+  groupPoints     Int     @default(0)
+  status          String  @default("active") // "active" | "suspended"
+  capacityLimit   Int     @default(25)
+  socialGroupLink String?
+  
+  description     String?
+  coverImageUrl   String?
+  targetStationId String?
+
+  // Relations
+  mentor          User?         @relation("CaravanMentor", fields: [mentorId], references: [id], onDelete: SetNull)
+  members         User[]        @relation("CaravanMembers")
+  chatMessages    ChatMessage[]
+  assetConversions AssetConversionRequest[]
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AssetConversionRequest {
+  id              String   @id @default(uuid())
+  caravanId       String
+  requestedBy     String
+  status          String   @default("pending") // "pending" | "approved" | "rejected"
+  note            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  caravan         Caravan  @relation(fields: [caravanId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+}
+
+model Challenge {
+  id                String       @id @default(uuid())
+  title             String
+  description       String
+  type              String       // "quiz" | "skill" | "file"
+  questions         String?      // JSON string representation of questions
+  rewardZarik       Int          @default(0)
+  createdByMentorId String
+  createdAt         DateTime     @default(now())
+
+  // Relations
+  submissions       Submission[]
+}
+
+model Submission {
+  id             String    @id @default(uuid())
+  challengeId    String
+  studentId      String
+  answerText     String?
+  fileUrl        String?
+  status         String    @default("pending") // "pending" | "approved" | "rejected"
+  score          Int       @default(0)
+  mentorFeedback String?
+  submittedAt    DateTime  @default(now())
+
+  // Relations
+  challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  student        User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model MentorRating {
+  id                       String   @id @default(uuid())
+  mentorId                 String
+  studentId                String
+  ratingValue              Int      // 1 to 5
+  guidanceFeedback         String?
+  seasonEvaluationComments String?
+  createdAt                DateTime @default(now())
+
+  // Relations
+  mentor                   User     @relation("RatingMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+  student                  User     @relation("RatingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("alert") // "alert" | "reward" | "challenge"
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ZarikTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Int
+  category  String   // "Quiz Rewards" | "Skill Tasks" | "Mentor Bonuses" | "Special Campaigns"
+  reason    String
+  createdBy String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  actorId        String
+  actorName      String
+  actorRole      String   @default("student") // STUDENT, MENTOR, SUPER_MENTOR, ADMIN
+  action         String
+  targetEntity   String
+  targetEntityId String
+  details        String
+  ipAddress      String
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+model RolePermission {
+  roleName             String   @id
+  maskPhoneNumbers     Boolean  @default(false)
+  restrictZarik        Boolean  @default(false)
+  lockUserDeletions    Boolean  @default(false)
+  manageContent        Boolean  @default(false)
+  manageMentors        Boolean  @default(false)
+  manageStudents       Boolean  @default(false)
+  manageCaravans       Boolean  @default(false)
+  manageSystem         Boolean  @default(false)
+  canSendMessage       Boolean  @default(false)
+  canJoinClasses       Boolean  @default(false)
+  canScoreAndEvaluate  Boolean  @default(false)
+  canConvertAssets     Boolean  @default(false)
+  canCreateChallenges  Boolean  @default(false)
+  canViewGlobalAnalytics Boolean @default(false)
+  canManageUsers       Boolean  @default(false)
+}
+
+model MediaAsset {
+  id         String   @id @default(uuid())
+  filename   String
+  url        String
+  mimeType   String
+  size       Int
+  assetType  String   @default("general") // "general" | "course_video" | "banner" | "avatar"
+  title      String?
+  instructor String?
+  duration   Int?
+  createdAt  DateTime @default(now())
+}
+
+model Certificate {
+  id           String   @id @default(uuid())
+  userId       String
+  title        String
+  verifyId     String
+  issuedAt     DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MentorDocument {
+  id           String   @id @default(uuid())
+  userId       String
+  filename     String
+  url          String
+  mimeType     String
+  status       String   @default("pending") // pending | approved | rejected
+  rejectReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RewardRule {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  min       Int
+  max       Int
+  metadata  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MentorRewardRule {
+  id            String   @id @default(uuid())
+  mentorId      String?  // If null, applies to all mentors
+  caravanId     String?
+  stationId     String?  // Refers to SubCourseStation id or Class id
+  rewardType    String   // CHALLENGE | BONUS | QUIZ
+  maxGrantLimit Int
+  timeframe     String   // DAILY | PER_STATION | TOTAL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([mentorId])
+  @@index([caravanId])
+}
+
+// ==================== NEW LMS HIERARCHY ====================
+
+model Station {
+  id                  String   @id @default(uuid())
+  title               String
+  subtitle            String?
+  description         String?
+  iconUrl             String?
+  orderIndex          Int      @default(0)
+  releaseDate         DateTime?
+  releaseTime         String?
+  scoringCriteriaJson String?  // e.g. JSON storing rules for rewards
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  categories          ClassCategory[]
+}
+
+model ClassCategory {
+  id         String   @id @default(uuid())
+  stationId  String
+  title      String
+  orderIndex Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  station    Station        @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  sessions   ClassSession[]
+}
+
+model ClassSession {
+  id                String   @id @default(uuid())
+  categoryId        String
+  title             String
+  description       String?
+  videoUrl          String?
+  instructor        String?
+  minWatchThreshold Float    @default(70.0)
+  minPassScore      Int      @default(0)
+  maxZarikReward    Int      @default(0)
+  maxPointsReward   Int      @default(0)
+  orderIndex        Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category          ClassCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  quiz              Quiz?
+  watchRecords      SessionWatchRecord[]
+  videoBookmarks    VideoBookmark[]
+  videoClips        VideoClip[]
+
+  @@index([categoryId])
+  @@index([orderIndex])
+}
+
+model VideoClip {
+  id           String       @id @default(uuid())
+  sessionId    String
+  title        String
+  videoUrl     String
+  clipOrder    Int          @default(0)
+  duration     Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId])
+  @@index([clipOrder])
+}
+
+model VideoBookmark {
+  id           String       @id @default(uuid())
+  sessionId    String
+  userId       String
+  videoSeconds Int
+  noteText     String
+  createdAt    DateTime     @default(now())
+  
+  session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+model Quiz {
+  id           String   @id @default(uuid())
+  sessionId    String   @unique
+  title        String
+  questionsJson String? // JSON array of questions
+  rewardZarik  Int      @default(0)
+  rewardNakh   Int      @default(0)
+  rewardFarsh  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  submissions  QuizSubmission[]
+}
+
+model QuizSubmission {
+  id              String   @id @default(uuid())
+  quizId          String
+  studentId       String
+  mentorId        String?
+  status          String   @default("PENDING")
+  score           Int      @default(0)
+  answersJson     String?  // The actual answers submitted
+  submittedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  quiz            Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student         User      @relation("StudentQuizSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  mentor          User?     @relation("MentorQuizReviews", fields: [mentorId], references: [id], onDelete: SetNull)
+  feedbacks       MentorFeedback[]
+
+  @@index([quizId])
+  @@index([studentId])
+}
+
+model SessionWatchRecord {
+  id                String       @id @default(uuid())
+  userId            String
+  sessionId         String
+  watchedPercentage Float        @default(0.0)
+  lastWatchedAt     DateTime     @default(now())
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session           ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([userId])
+}
+
+
+model MentorFeedback {
+  id               String         @id @default(uuid())
+  submissionId     String
+  mentorId         String
+  comment          String
+  isPrivate        Boolean        @default(false)
+  parentFeedbackId String?
+  createdAt        DateTime       @default(now())
+
+  submission       QuizSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  mentor           User                 @relation("MentorFeedbacks", fields: [mentorId], references: [id], onDelete: Cascade)
+  replies          MentorFeedback[]      @relation("FeedbackReplies")
+  parentFeedback   MentorFeedback?      @relation("FeedbackReplies", fields: [parentFeedbackId], references: [id])
+
+  @@index([submissionId])
+  @@index([mentorId])
+}
+
+model Blacklist {
+  id        String   @id @default(uuid())
+  type      String   // "ip" | "phone"
+  value     String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model NotificationTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  titleTpl    String
+  messageTpl  String
+  channel     String   // "in_app" | "sms" | "email"
+  createdAt   DateTime @default(now())
+}
+
+model NotificationLog {
+  id             String   @id @default(uuid())
+  templateId     String?
+  channel        String
+  targetAudience String
+  status         String   // "success" | "failed"
+  error          String?
+  createdAt      DateTime @default(now())
+}
+
+model ChannelOverride {
+  id        String   @id @default(uuid())
+  channel   String   @unique // "sms" | "email" | "in_app"
+  isEnabled Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+model AdminMessage {
+  id          String   @id @default(uuid())
+  userId      String
+  category    String   // "Mentor Complaint" | "System Bug" | "Financial Issue" | "General Suggestion"
+  message     String
+  status      String   @default("Pending") // "Pending" | "Investigating" | "Resolved"
+  priority    String   @default("Normal") // "Normal" | "Urgent"
+  adminReply  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model ChatMessage {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String?
+  caravanId   String?
+  messageText String
+  fileUrl     String?
+  fileType    String?  // "image" | "audio" | "document"
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  sender      User     @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User?    @relation("ChatReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  caravan     Caravan? @relation(fields: [caravanId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([caravanId])
+  @@index([createdAt])
+}
+
+model SupportTicket {
+  id            String   @id @default(uuid())
+  studentId     String
+  category      String
+  subject       String
+  status        String   @default("open") // "open" | "resolved"
+  ratingGiven   Int?
+  voiceUrl      String?
+  attachmentUrl String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  student       User     @relation("TicketStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  replies       SupportTicketReply[]
+}
+
+model SupportTicketReply {
+  id            String   @id @default(uuid())
+  ticketId      String
+  mentorId      String?
+  message       String
+  voiceUrl      String?
+  attachmentUrl String?
+  createdAt     DateTime @default(now())
+
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  mentor        User?         @relation("ReplyMentor", fields: [mentorId], references: [id], onDelete: SetNull)
+}
+// ==================== DYNAMIC FORM ENGINE ====================
+
+model DynamicForm {
+  id             String   @id @default(uuid())
+  title          String
+  purpose        String?
+  placement      String   // HOME_SCREEN_OVERLAY, AFTER_CLASS_SURVEY, MENTOR_EVALUATION, PROFILE_TAB, DRAWER_MENU
+  targetAudience String   // ALL_USERS, STUDENTS_ONLY, MENTORS_ONLY, SPECIFIC_CARAVAN
+  targetCaravanId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  fields         FormField[]
+  submissions    FormSubmission[]
+}
+
+model FormField {
+  id          String   @id @default(uuid())
+  formId      String
+  type        String   // text, textarea, radio, checkbox, rating, file, date
+  label       String
+  isRequired  Boolean  @default(false)
+  orderIndex  Int      @default(0)
+  optionsJson String?  // JSON array for choice types
+  createdAt   DateTime @default(now())
+
+  form        DynamicForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+}
+
+model FormSubmission {
+  id          String   @id @default(uuid())
+  formId      String
+  userId      String
+  answersJson String   // The user's answers mapped to field ids or labels
+  submittedAt DateTime @default(now())
+
+  form        DynamicForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([formId])
+  @@index([userId])
+}
+
+model MentorEvaluation {
+  id                  String   @id @default(uuid())
+  studentId           String
+  mentorId            String
+  stationId           String?
+  rating              Int      // 1 to 5
+  responsivenessScore Int      // 1 to 5
+  guidanceScore       Int      // 1 to 5
+  feedbackText        String?
+  createdAt           DateTime @default(now())
+
+  student             User     @relation("EvaluationsStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  mentor              User     @relation("EvaluationsMentor", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([studentId])
+}
+
+model PrivateStudentNote {
+  id        String   @id @default(uuid())
+  mentorId  String
+  studentId String
+  noteText  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mentor    User     @relation("MentorNotes", fields: [mentorId], references: [id], onDelete: Cascade)
+  student   User     @relation("StudentNotes", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([studentId])
+}
