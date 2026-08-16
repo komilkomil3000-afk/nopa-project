@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/station.dart';
 import '../services/app_state_repository.dart';
+import '../services/api_service.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -12,51 +13,48 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   final Set<int> _expandedIndices = {};
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _stations = [];
 
-  // Custom list of stations for the map
-  final List<Map<String, dynamic>> mapStations = [
-    {
-      'title': 'کاروانسرای غبارگرفته',
-      'subtitle': '۴ کلاس - تکمیل شده',
-      'status': 'completed', // completed, current, locked
-      'statusLabel': 'تکمیل',
-      'icon': 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
-      'accentColor': const Color(0xFF10B981), // Green
-      'teacher': 'استاد علوی',
-      'progressText': '۱۰۰٪ تکمیل شده',
-    },
-    {
-      'title': 'روستای مدفون در شن',
-      'subtitle': '۴ کلاس - تکمیل شده',
-      'status': 'completed',
-      'statusLabel': 'تکمیل',
-      'icon': 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?w=200',
-      'accentColor': const Color(0xFF10B981),
-      'teacher': 'استاد محمدی',
-      'progressText': '۱۰۰٪ تکمیل شده',
-    },
-    {
-      'title': 'رصدخانه',
-      'subtitle': '۴ کلاس - در حال برگزاری',
-      'status': 'current',
-      'statusLabel': 'جاری',
-      'icon': 'https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?w=200',
-      'accentColor': const Color(0xFFFFD54F), // Gold/Yellow
-      'teacher': 'استاد رضایی',
-      'progressText': '۷۵٪ در حال برگزاری',
-    },
-    {
-      'title': 'مسجد بین دو راهی',
-      'subtitle': '۴ کلاس - قفل',
-      'status': 'locked',
-      'statusLabel': 'قفل',
-      'icon': 'https://images.unsplash.com/photo-1538370965046-79c0d6907d47?w=200',
-      'accentColor': Colors.grey,
-      'teacher': 'استاد حسینی',
-      'progressText': '۰٪ قفل شده',
+  @override
+  void initState() {
+    super.initState();
+    _fetchStationsData();
+  }
+
+  Future<void> _fetchStationsData() async {
+    try {
+      final stations = await HttpApiService().getStations();
+      if (mounted) {
+        setState(() {
+          _stations = stations;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-  ];
+  }
 
+  bool _isStationLocked(Map<String, dynamic> station) {
+    if (station['releaseDate'] != null) {
+      try {
+        final releaseDateTime = DateTime.parse(station['releaseDate']);
+        if (releaseDateTime.isAfter(DateTime.now())) {
+          return true;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return false;
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
@@ -93,24 +91,39 @@ class _MapScreenState extends State<MapScreen> {
             const SizedBox(height: 25),
             
             // Map list of stations
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: mapStations.length,
-              separatorBuilder: (context, index) => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Center(
-                  child: Text(
-                    '↓',
-                    style: TextStyle(color: Colors.white30, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              itemBuilder: (context, index) {
-                final item = mapStations[index];
-                return _buildMapStationCard(context, index, item);
-              },
-            ),
+            _isLoading
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD54F))),
+                  )
+                : (_stations.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: Text(
+                            'هنوز منزلگاهی ثبت نشده است',
+                            style: TextStyle(color: Colors.white60, fontFamily: 'Vazirmatn'),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _stations.length,
+                        separatorBuilder: (context, index) => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Center(
+                            child: Text(
+                              '↓',
+                              style: TextStyle(color: Colors.white30, fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = _stations[index];
+                          return _buildMapStationCard(context, index, item);
+                        },
+                      )),
             const SizedBox(height: 40),
           ],
         ),
@@ -160,11 +173,17 @@ class _MapScreenState extends State<MapScreen> {
 
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {
-    bool isCompleted = item['status'] == 'completed';
-    bool isCurrent = item['status'] == 'current';
-    bool isLocked = item['status'] == 'locked';
-    Color accentColor = item['accentColor'];
-    bool isExpanded = _expandedIndices.contains(index);
+    final bool isLocked = _isStationLocked(item);
+    final bool isCompleted = !isLocked && index == 0;
+    final bool isCurrent = !isLocked && !isCompleted;
+    final Color accentColor = isLocked
+        ? Colors.grey
+        : (isCompleted ? const Color(0xFF10B981) : const Color(0xFFFFD54F));
+    final bool isExpanded = _expandedIndices.contains(index);
+
+    final int totalCls = item['categories'] != null
+        ? (item['categories'] as List).fold<int>(0, (prev, el) => prev + (el['sessions'] != null ? (el['sessions'] as List).length : 0))
+        : 0;
 
     return Container(
       width: double.infinity,
@@ -207,14 +226,14 @@ class _MapScreenState extends State<MapScreen> {
                         context,
                         '/station_detail',
                         arguments: Station(
-                          id: index.toString(),
-                          title: item['title'],
-                          teacher: item['teacher'],
+                          id: item['id'] ?? '',
+                          title: item['title'] ?? '',
+                          teacher: item['teacher'] ?? 'استاد نپا',
                           progress: isCompleted ? 1.0 : (isCurrent ? 0.75 : 0.0),
                           isLocked: isLocked,
                           isCurrent: isCurrent,
-                          imageUrl: item['icon'],
-                          classesCount: '۴ کلاس',
+                          imageUrl: item['iconUrl'] ?? 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
+                          classesCount: '$totalCls کلاس',
                         ),
                       );
                     }
@@ -234,7 +253,7 @@ class _MapScreenState extends State<MapScreen> {
                           child: isCompleted
                               ? const Icon(Icons.check, color: Color(0xFF10B981), size: 18)
                               : (isCurrent
-                                  ? const Text('۱', style: TextStyle(color: Color(0xFFFFD54F), fontWeight: FontWeight.bold, fontSize: 13))
+                                  ? Text('${index + 1}', style: const TextStyle(color: Color(0xFFFFD54F), fontWeight: FontWeight.bold, fontSize: 13))
                                   : const Icon(Icons.lock, color: Colors.white30, size: 16)),
                         ),
                       ),
@@ -248,7 +267,7 @@ class _MapScreenState extends State<MapScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              item['title'],
+                              item['title'] ?? '',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 color: isLocked ? Colors.white30 : Colors.white,
@@ -259,8 +278,10 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              item['subtitle'],
+                              item['description'] ?? 'بدون توضیحات',
                               textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: isLocked ? Colors.white24 : Colors.white60,
                                 fontSize: 12,
@@ -283,7 +304,7 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            item['icon'],
+                            item['iconUrl'] ?? 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
                             fit: BoxFit.cover,
                             color: isLocked ? Colors.black54 : null,
                             colorBlendMode: isLocked ? BlendMode.saturation : null,
@@ -316,17 +337,17 @@ class _MapScreenState extends State<MapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '👤 استاد راهنما: ${item['teacher']}',
+                          '👤 استاد راهنما: ${item['teacher'] ?? 'استاد نپا'}',
                           style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Vazirmatn'),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
-                          '📚 کلاس‌ها: ۴ کلاس مهارتی و رسانه‌ای',
-                          style: TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Vazirmatn'),
+                        Text(
+                          '📚 کلاس‌ها: $totalCls کلاس در دسته‌بندی‌های آموزشی',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Vazirmatn'),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '📊 پیشرفت منزلگاه: ${item['progressText']}',
+                          '📊 پیشرفت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? '۷۵٪ در حال برگزاری' : '۰٪ قفل شده')}',
                           style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
                         ),
                       ],
@@ -388,7 +409,7 @@ class _MapScreenState extends State<MapScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                item['statusLabel'],
+                isLocked ? 'قفل' : (isCompleted ? 'تکمیل' : 'جاری'),
                 style: TextStyle(
                   color: isCurrent ? Colors.black : Colors.white,
                   fontSize: 11,

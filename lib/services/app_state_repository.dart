@@ -83,6 +83,21 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> logout() async {
+    await _apiService.logout();
+    currentUser = UserModel(
+      id: 'loading',
+      name: 'در حال بارگذاری...',
+      phoneNumber: '',
+      role: UserRole.member,
+      zarik: 0,
+      nakh: 0,
+      beyragh: 0,
+      farsh: 0,
+    );
+    notifyListeners();
+  }
+
   // Current Logged-in User
   UserModel currentUser = UserModel(
     id: 'loading',
@@ -420,6 +435,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
             beyragh: currentUser.beyragh,
             farsh: currentUser.farsh,
             hasEvaluatedMentorThisSeason: currentUser.hasEvaluatedMentorThisSeason,
+            userCode: currentUser.userCode,
           );
         }
       }
@@ -453,6 +469,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       beyragh: currentUser.beyragh,
       farsh: currentUser.farsh,
       hasEvaluatedMentorThisSeason: currentUser.hasEvaluatedMentorThisSeason,
+      userCode: currentUser.userCode,
     );
     notifyListeners();
   }

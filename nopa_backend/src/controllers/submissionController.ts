@@ -20,7 +20,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
         studentId: req.user.id,
         answerText,
         fileUrl,
-        status: 'pending'
+        status: 'PENDING_REVIEW'
       }
     });
 
@@ -59,12 +59,12 @@ export async function submitTask(req: AuthRequest, res: Response) {
 
 export async function getPendingSubmissions(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || req.user.role !== 'mentor') {
-      return res.status(403).json({ error: 'تنها راهبران به این بخش دسترسی دارند' });
+    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+      return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
     }
 
     const submissions = await prisma.submission.findMany({
-      where: { status: 'pending' },
+      where: { status: { in: ['pending', 'PENDING_REVIEW'] } },
       include: {
         challenge: true,
         student: true
@@ -81,8 +81,8 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
 
 export async function reviewSubmission(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || req.user.role !== 'mentor') {
-      return res.status(403).json({ error: 'تنها راهبران می‌توانند تکالیف را تصحیح کنند' });
+    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+      return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
     }
 
     const { id } = req.params;
@@ -101,26 +101,40 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
     }
 
-    const updatedSubmission = await prisma.submission.update({
-      where: { id },
-      data: {
-        status,
-        score: score || 0,
-        mentorFeedback
-      }
-    });
+    const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
 
-    const reward = submission.challenge.rewardZarik || 200;
-
-    if (status === 'approved') {
-      // Credit student wallet and increment assets
-      await prisma.user.update({
-        where: { id: submission.studentId },
+    let updatedSubmission;
+    await prisma.$transaction(async (tx) => {
+      updatedSubmission = await tx.submission.update({
+        where: { id },
         data: {
-          zarikBalance: { increment: reward }
+          status,
+          score: status === 'approved' ? reward : 0,
+          mentorFeedback
         }
       });
-    }
+
+      if (status === 'approved') {
+        // Credit student wallet and increment assets
+        await tx.user.update({
+          where: { id: submission.studentId },
+          data: {
+            zarikBalance: { increment: reward }
+          }
+        });
+
+        // Log transaction in ZarikTransaction
+        await tx.zarikTransaction.create({
+          data: {
+            userId: submission.studentId,
+            amount: reward,
+            category: 'Skill Tasks',
+            reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
+            createdBy: req.user!.id
+          }
+        });
+      }
+    });
 
     // Trigger notification
     await prisma.notification.create({

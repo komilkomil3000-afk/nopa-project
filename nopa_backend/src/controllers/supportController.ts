@@ -27,8 +27,19 @@ export async function getTickets(req: AuthRequest, res: Response) {
     const isMentor = req.user!.role === 'mentor';
     
     let tickets;
+    const { caravanId, userId, status } = req.query;
+    
+    let adminWhere: any = {};
+    if (userId) adminWhere.studentId = userId;
+    if (status) adminWhere.status = status;
+    if (caravanId) {
+      const usersInCaravan = await prisma.user.findMany({ where: { caravanId: String(caravanId) }, select: { id: true } });
+      adminWhere.studentId = { in: usersInCaravan.map(u => u.id) };
+    }
+
     if (req.user!.role === 'admin') {
       tickets = await prisma.supportTicket.findMany({
+        where: adminWhere,
         include: { replies: true, student: { select: { name: true, avatarUrl: true } } },
         orderBy: { createdAt: 'desc' }
       });

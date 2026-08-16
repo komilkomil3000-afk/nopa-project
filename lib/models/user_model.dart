@@ -20,6 +20,7 @@ class UserModel {
   final int totalTransactions;
   final int totalZarikPurchases;
   final String? socialGroupLink;
+  final int? userCode;
 
   UserModel({
     required this.id,
@@ -41,8 +42,8 @@ class UserModel {
     this.totalTransactions = 0,
     this.totalZarikPurchases = 0,
     this.socialGroupLink,
+    this.userCode,
   });
 
   int get zarikBalance => zarik;
 }
-

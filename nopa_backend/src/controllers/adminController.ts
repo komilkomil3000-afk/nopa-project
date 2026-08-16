@@ -240,6 +240,12 @@ export async function createUser(req: AuthRequest, res: Response) {
     }
 
     const passwordHash = bcrypt.hashSync(password, 10);
+    const maxUser = await prisma.user.findFirst({
+      orderBy: { userCode: 'desc' },
+      where: { userCode: { not: null } }
+    });
+    const nextUserCode = maxUser && maxUser.userCode ? maxUser.userCode + 1 : 110100;
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -253,6 +259,7 @@ export async function createUser(req: AuthRequest, res: Response) {
         dateOfBirth: dateOfBirth || null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
+        userCode: nextUserCode
       },
     });
 

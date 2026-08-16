@@ -28,7 +28,8 @@ export async function getMe(req: AuthRequest, res: Response) {
       avatarUrl: user.avatarUrl,
       hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
       identityVerified: user.identityVerified,
-      socialGroupLink: user.caravan?.socialGroupLink
+      socialGroupLink: user.caravan?.socialGroupLink,
+      userCode: user.userCode
     });
   } catch (error) {
     console.error('getMe error:', error);

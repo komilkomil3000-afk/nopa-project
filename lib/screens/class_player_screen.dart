@@ -9,6 +9,9 @@ import '../services/app_state_repository.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../widgets/reward_popup.dart';
+import 'dart:async';
+import 'dart:convert';
+import '../services/audio_exclusivity_service.dart';
 
 class ClassPlayerScreen extends StatefulWidget {
   const ClassPlayerScreen({super.key});
@@ -27,14 +30,47 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
   bool _isVideoInitialized = false;
   bool _hasVideoError = false;
   bool _isQuizUnlocked = false;
+  double _playbackSpeed = 1.0;
+  Timer? _heartbeatTimer;
+
   // ignore: unused_field
   List<Map<String, dynamic>> _bookmarks = [];
   // ignore: unused_field
   bool _isLoadingBookmarks = false;
 
+  bool _argumentsLoaded = false;
+
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_argumentsLoaded) {
+      _argumentsLoaded = true;
+      _loadClassPlayerArguments();
+    }
+  }
+
+  void _loadClassPlayerArguments() {
+    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      final passedClasses = args['classes'] as List?;
+      final initialIndex = args['initialIndex'] as int? ?? 0;
+      
+      if (passedClasses != null && passedClasses.isNotEmpty) {
+        setState(() {
+          _classes = passedClasses.map((c) => c as Map<String, dynamic>).toList();
+          _currentClassIndex = initialIndex;
+          _isLoadingClasses = false;
+        });
+        _initializeVideo();
+        return;
+      }
+    }
+    
     _fetchClasses();
   }
 
@@ -188,16 +224,41 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
       return;
     }
 
-    final resolvedUrl = HttpApiService().resolveMediaUrl(url);
+    String resolvedUrl = HttpApiService().resolveMediaUrl(url);
+    if (resolvedUrl.contains('localhost') || resolvedUrl.contains('127.0.0.1')) {
+      final baseUrl = HttpApiService().baseUrl;
+      final hostIp = Uri.parse(baseUrl).host;
+      resolvedUrl = resolvedUrl.replaceAll('localhost', hostIp).replaceAll('127.0.0.1', hostIp);
+    }
+    
     _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(resolvedUrl))
-      ..initialize().then((_) {
+      ..initialize().then((_) async {
         if (!mounted) return;
+        
+        final progress = await HttpApiService().getWatchProgress(currentClass['id']);
+        int resumePos = 0;
+        bool isUnlocked = false;
+        if (progress != null) {
+          resumePos = (progress['resumePosition'] as num?)?.toInt() ?? 0;
+          isUnlocked = (progress['watchedPercentage'] as num? ?? 0.0) >= 70.0;
+        }
+
         setState(() {
           _isVideoInitialized = true;
-          _isQuizUnlocked = false;
+          _isQuizUnlocked = isUnlocked;
         });
+
+        if (resumePos > 0) {
+          await _videoPlayerController.seekTo(Duration(seconds: resumePos));
+        }
+
+        _videoPlayerController.setPlaybackSpeed(_playbackSpeed);
         _videoPlayerController.addListener(_videoListener);
+        AudioExclusivityService.registerVideoController(_videoPlayerController);
+        
         _videoPlayerController.play();
+        AudioExclusivityService.onVideoPlay();
+        _startHeartbeatTimer();
       }).catchError((error) {
         debugPrint('Video init error: $error');
         if (mounted) {
@@ -239,9 +300,39 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
     }
   }
 
+  void _startHeartbeatTimer() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_isVideoInitialized && _videoPlayerController.value.isPlaying) {
+        final currentClass = _classes[_currentClassIndex];
+        final pos = _videoPlayerController.value.position.inSeconds;
+        final dur = _videoPlayerController.value.duration.inSeconds;
+        if (dur > 0) {
+          final res = await HttpApiService().sendWatchHeartbeat(currentClass['id'], pos, dur);
+          if (res != null && mounted) {
+            final double watchedPercent = (res['watchedPercentage'] as num?)?.toDouble() ?? 0.0;
+            setState(() {
+              _isQuizUnlocked = watchedPercent >= 70.0;
+            });
+          }
+        }
+      }
+    });
+  }
+
+  void _stopHeartbeatTimer() {
+    _heartbeatTimer?.cancel();
+  }
+
   @override
   void dispose() {
+    _stopHeartbeatTimer();
     _videoPlayerController.removeListener(_videoListener);
+    AudioExclusivityService.unregisterVideoController(_videoPlayerController);
     _videoPlayerController.dispose();
     super.dispose();
   }
@@ -279,6 +370,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                     _videoPlayerController.pause();
                   } else {
                     _videoPlayerController.play();
+                    AudioExclusivityService.onVideoPlay();
                   }
                 });
               },
@@ -286,7 +378,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
             Expanded(
               child: VideoProgressIndicator(
                 _videoPlayerController,
-                allowScrubbing: true,
+                allowScrubbing: false,
                 colors: const VideoProgressColors(
                   playedColor: Color(0xFFD946EF),
                   bufferedColor: Colors.white24,
@@ -305,6 +397,27 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                   style: const TextStyle(color: Colors.white, fontSize: 10),
                 );
               },
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton<double>(
+              initialValue: _playbackSpeed,
+              tooltip: 'سرعت پخش',
+              icon: Text(
+                '${_playbackSpeed}x',
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+              onSelected: (double speed) {
+                setState(() {
+                  _playbackSpeed = speed;
+                  _videoPlayerController.setPlaybackSpeed(speed);
+                });
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 1.0, child: Text('1.0x')),
+                const PopupMenuItem(value: 1.25, child: Text('1.25x')),
+                const PopupMenuItem(value: 1.5, child: Text('1.5x')),
+                const PopupMenuItem(value: 2.0, child: Text('2.0x')),
+              ],
             ),
           ],
         ),
@@ -794,45 +907,58 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
   }
 
   void _showClassExamDialog(String teacherName) {
-    int currentQuestionIndex = 0;
-    int correctAnswersCount = 0;
-    int selectedAns = -1;
+    final currentClass = _classes[_currentClassIndex];
+    final quiz = currentClass['quiz'];
+    List<dynamic> quizQuestions = [];
+    if (quiz != null && quiz['questionsJson'] != null) {
+      try {
+        quizQuestions = jsonDecode(quiz['questionsJson']);
+      } catch (e) {
+        debugPrint('Error parsing questionsJson: $e');
+      }
+    }
+    
+    // Fallback if no questions are configured
+    if (quizQuestions.isEmpty) {
+      quizQuestions = [
+        {
+          'q': 'کدام مورد جز ارکان اهداف پنج‌گانه SMART نیست؟',
+          'options': ['دستیابی آسان بدون تلاش زیاد', 'زمان‌دار بودن و مشخص بودن هدف', 'قابل اندازه‌گیری بودن پیشرفت'],
+          'correct': 0,
+        },
+        {
+          'q': 'منظور از حرف M در اهداف SMART چیست؟',
+          'options': ['اندازه‌گیری پذیر (Measurable)', 'مدیریت‌پذیر (Manageable)', 'انگیزه‌بخش (Motivating)'],
+          'correct': 0,
+        },
+        {
+          'q': 'کدام گزینه یک هدف زمان‌دار (Time-bound) را نشان می‌دهد؟',
+          'options': ['من باید در آزمون‌های درسی‌ام نمرات عالی کسب کنم', 'من تا انتهای بهمن ماه فصل اول ریاضی را تمام می‌کنم', 'من تلاش زیادی برای افزایش معدل خواهم کرد'],
+          'correct': 1,
+        },
+        {
+          'q': 'چرا اهداف باید واقع‌گرایانه (Realistic) باشند؟',
+          'options': ['تا بتوانیم با حداقل تلاش به آن‌ها برسیم', 'تا انگیزه خود را به خاطر سختی بیش از حد از دست ندهیم', 'تا دیگران ما را بابت اهدافمان مسخره نکنند'],
+          'correct': 1,
+        },
+        {
+          'q': 'اولین گام برای ترسیم نقشه مسیر موفقیت کاروان چیست؟',
+          'options': ['تخصیص پاداش‌های زریک به اعضا', 'مشخص کردن مقصد نهایی و خرد کردن اهداف به مراحل کوچک‌تر', 'شروع حرکت بدون برنامه‌ریزی قبلی'],
+          'correct': 1,
+        },
+      ];
+    }
 
-    final List<Map<String, dynamic>> quizQuestions = [
-      {
-        'q': 'کدام مورد جز ارکان اهداف پنج‌گانه SMART نیست؟',
-        'options': ['دستیابی آسان بدون تلاش زیاد', 'زمان‌دار بودن و مشخص بودن هدف', 'قابل اندازه‌گیری بودن پیشرفت'],
-        'correct': 0,
-      },
-      {
-        'q': 'منظور از حرف M در اهداف SMART چیست؟',
-        'options': ['اندازه‌گیری پذیر (Measurable)', 'مدیریت‌پذیر (Manageable)', 'انگیزه‌بخش (Motivating)'],
-        'correct': 0,
-      },
-      {
-        'q': 'کدام گزینه یک هدف زمان‌دار (Time-bound) را نشان می‌دهد؟',
-        'options': ['من باید در آزمون‌های درسی‌ام نمرات عالی کسب کنم', 'من تا انتهای بهمن ماه فصل اول ریاضی را تمام می‌کنم', 'من تلاش زیادی برای افزایش معدل خواهم کرد'],
-        'correct': 1,
-      },
-      {
-        'q': 'چرا اهداف باید واقع‌گرایانه (Realistic) باشند؟',
-        'options': ['تا بتوانیم با حداقل تلاش به آن‌ها برسیم', 'تا انگیزه خود را به خاطر سختی بیش از حد از دست ندهیم', 'تا دیگران ما را بابت اهدافمان مسخره نکنند'],
-        'correct': 1,
-      },
-      {
-        'q': 'اولین گام برای ترسیم نقشه مسیر موفقیت کاروان چیست؟',
-        'options': ['تخصیص پاداش‌های زریک به اعضا', 'مشخص کردن مقصد نهایی و خرد کردن اهداف به مراحل کوچک‌تر', 'شروع حرکت بدون برنامه‌ریزی قبلی'],
-        'correct': 1,
-      },
-    ];
+    int currentQuestionIndex = 0;
+    final List<int> userAnswers = List.filled(quizQuestions.length, -1);
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          final currentClass = _classes[_currentClassIndex];
           final question = quizQuestions[currentQuestionIndex];
+          final selectedAns = userAnswers[currentQuestionIndex];
           
           return Dialog(
             backgroundColor: const Color(0xFF1E1435),
@@ -847,7 +973,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'سوال ${currentQuestionIndex + 1} از ۵',
+                        'سوال ${currentQuestionIndex + 1} از ${quizQuestions.length}',
                         style: const TextStyle(color: Color(0xFFEC4899), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
                       ),
                       const Text(
@@ -867,7 +993,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                   ...List.generate((question['options'] as List).length, (idx) {
                     bool isSel = selectedAns == idx;
                     return GestureDetector(
-                      onTap: () => setDialogState(() => selectedAns = idx),
+                      onTap: () => setDialogState(() => userAnswers[currentQuestionIndex] = idx),
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -898,56 +1024,65 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                     width: double.infinity,
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: selectedAns == -1 ? null : () {
-                        // Check answer
-                        if (selectedAns == question['correct']) {
-                          correctAnswersCount++;
-                        }
-                        
-                        if (currentQuestionIndex < 4) {
+                      onPressed: selectedAns == -1 ? null : () async {
+                        if (currentQuestionIndex < quizQuestions.length - 1) {
                           setDialogState(() {
                             currentQuestionIndex++;
-                            selectedAns = -1;
                           });
                         } else {
                           // Final Question Completed!
-                          Navigator.pop(context);
-                          final reward = correctAnswersCount * 10;
-                          final repository = Provider.of<AppRepository>(context, listen: false);
-                          repository.currentUser = UserModel(
-                            id: repository.currentUser.id,
-                            name: repository.currentUser.name,
-                            phoneNumber: repository.currentUser.phoneNumber,
-                            role: repository.currentUser.role,
-                            zarik: repository.currentUser.zarik + reward,
-                            nakh: repository.currentUser.nakh,
-                            beyragh: repository.currentUser.beyragh,
-                            farsh: repository.currentUser.farsh,
-                            hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(child: CircularProgressIndicator()),
                           );
-                          repository.submitAssignment(SubmissionModel(
-                            id: 's_exam_${DateTime.now().millisecondsSinceEpoch}',
-                            challengeId: 'class_exam_$_currentClassIndex',
-                            studentId: repository.currentUser.id,
-                            studentName: repository.currentUser.name,
-                            answerText: 'شرکت در آزمون کلاس: ${currentClass['title']}. پاسخ صحیح: $correctAnswersCount از ۵.',
-                            submittedAt: DateTime.now(),
-                            status: 'approved',
-                            scoreFeedback: 'آزمون مهارتی ثبت شد! $reward+ زریک پاداش دریافت کردید! 🎉🪙',
-                          ));
-                          
-                          if (mounted) {
-                            RewardPopup.show(
-                              context,
-                              message: 'شما به $correctAnswersCount سوال از ۵ سوال پاسخ درست دادید.',
-                              zarikAmount: reward,
+
+                          final res = await HttpApiService().submitClassSessionQuiz(currentClass['id'], userAnswers);
+                          if (!context.mounted) return;
+                          Navigator.pop(context); // Close loading indicator
+                          Navigator.pop(context); // Close quiz dialog
+
+                          if (res != null) {
+                            final score = res['score'] as int? ?? 0;
+                            final total = res['total'] as int? ?? quizQuestions.length;
+                            final passed = res['passed'] as bool? ?? false;
+                            final rewardZarik = res['rewardZarik'] as int? ?? 0;
+
+                            if (rewardZarik > 0) {
+                              final repository = Provider.of<AppRepository>(context, listen: false);
+                              repository.currentUser = UserModel(
+                                id: repository.currentUser.id,
+                                name: repository.currentUser.name,
+                                phoneNumber: repository.currentUser.phoneNumber,
+                                role: repository.currentUser.role,
+                                zarik: repository.currentUser.zarik + rewardZarik,
+                                nakh: repository.currentUser.nakh,
+                                beyragh: repository.currentUser.beyragh,
+                                farsh: repository.currentUser.farsh,
+                                hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
+                                userCode: repository.currentUser.userCode,
+                              );
+                            }
+
+                            if (mounted) {
+                              RewardPopup.show(
+                                context,
+                                message: passed
+                                    ? 'شما در آزمون کلاس قبول شدید! نمره: $score از $total'
+                                    : 'شما در این آزمون قبول نشدید. نمره: $score از $total. لطفا پس از تماشای ویدیو مجددا تلاش کنید.',
+                                zarikAmount: rewardZarik,
+                              );
+                            }
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('خطا در ثبت آزمون در سرور', style: TextStyle(fontFamily: 'Vazirmatn')), backgroundColor: Colors.red),
                             );
                           }
                         }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6)),
                       child: Text(
-                        currentQuestionIndex < 4 ? 'مرحله بعدی ➡️' : 'ثبت و مشاهده نتیجه 🏁', 
+                        currentQuestionIndex < quizQuestions.length - 1 ? 'مرحله بعدی ➡️' : 'ثبت و مشاهده نتیجه 🏁', 
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')
                       ),
                     ),

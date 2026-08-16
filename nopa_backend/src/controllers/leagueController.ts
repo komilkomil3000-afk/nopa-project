@@ -12,17 +12,51 @@ export async function getCaravanLeague(req: Request, res: Response) {
           select: { name: true }
         },
         members: {
-          select: { zarikBalance: true, nakh: true, farsh: true, beyragh: true }
+          select: { id: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true }
         }
       }
     });
 
-    const rankedCaravans = caravans.map(c => {
-      const totalWealth = c.members.reduce((sum, m) => sum + m.zarikBalance + m.nakh * 100 + m.farsh * 1000 + m.beyragh * 500, 0); // Approx wealth score
+    const totalSessions = await prisma.classSession.count({ where: { isDeleted: false } });
+    const totalQuizzes = await prisma.quiz.count();
+    const totalAvailableCurriculumItems = totalSessions + totalQuizzes;
+
+    const rankedCaravans = await Promise.all(caravans.map(async c => {
+      const totalWealth = c.members.reduce((sum, m) => sum + m.zarikBalance + m.nakh * 100 + m.farsh * 1000 + m.beyragh * 500, 0);
       const totalZarik = c.members.reduce((sum, m) => sum + m.zarikBalance, 0);
       const totalNakh = c.members.reduce((sum, m) => sum + m.nakh, 0);
       const totalFarsh = c.members.reduce((sum, m) => sum + m.farsh, 0);
       const totalBeyragh = c.members.reduce((sum, m) => sum + m.beyragh, 0);
+
+      let caravanProgress = 0;
+      const totalMembers = c.members.length;
+
+      if (totalMembers > 0 && totalAvailableCurriculumItems > 0) {
+        let passedQuizzesCount = 0;
+        let watchedSessionsCount = 0;
+
+        for (const member of c.members) {
+          const passedQuizzes = await prisma.quizSubmission.count({
+            where: {
+              studentId: member.id,
+              OR: [{ score: { gt: 0 } }, { status: 'approved' }]
+            }
+          });
+
+          const watchedSessions = await prisma.sessionWatchRecord.count({
+            where: {
+              userId: member.id,
+              watchedPercentage: { gte: 70.0 }
+            }
+          });
+
+          passedQuizzesCount += passedQuizzes;
+          watchedSessionsCount += watchedSessions;
+        }
+
+        const calcProgress = ((passedQuizzesCount + watchedSessionsCount) / (totalAvailableCurriculumItems * totalMembers)) * 100;
+        caravanProgress = Math.min(100, parseFloat(calcProgress.toFixed(2)));
+      }
 
       return {
         id: c.id,
@@ -30,11 +64,11 @@ export async function getCaravanLeague(req: Request, res: Response) {
         mentorName: c.mentor?.name || '-',
         memberCount: c.memberCount,
         capacityLimit: c.capacityLimit,
-        overallProgress: c.overallProgress,
+        overallProgress: caravanProgress,
         totalWealth,
         assets: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh }
       };
-    });
+    }));
 
     if (sortBy === 'wealth') {
       rankedCaravans.sort((a, b) => b.totalWealth - a.totalWealth);

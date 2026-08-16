@@ -11,6 +11,7 @@ import 'package:audioplayers/audioplayers.dart';
 
 import '../services/app_state_repository.dart';
 import '../services/theme_provider.dart';
+import '../services/audio_exclusivity_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -516,8 +517,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
-        _buildSettingTile('خروج از حساب کاربری', Icons.logout, () {
-          Navigator.pushReplacementNamed(context, '/auth');
+        _buildSettingTile('خروج از حساب کاربری', Icons.logout, () async {
+          await Provider.of<AppRepository>(context, listen: false).logout();
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/auth');
+          }
         }, isDestructive: true),
       ],
     );
@@ -668,8 +672,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       setState(() {
-                        if (nameCtrl.text.isNotEmpty)
+                        if (nameCtrl.text.isNotEmpty) {
                           _mentorName = nameCtrl.text;
+                        }
                         _mentorPhone = phoneCtrl.text;
                         _mentorCountry = countryCtrl.text;
                         _mentorNationalId = nationalIdCtrl.text;
@@ -1686,8 +1691,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ContactUsDialog.show(context);
           },
         ),
-        _buildSettingTile('خروج از حساب', Icons.logout, () {
-          Navigator.pushReplacementNamed(context, '/auth');
+        _buildSettingTile('خروج از حساب', Icons.logout, () async {
+          await Provider.of<AppRepository>(context, listen: false).logout();
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/auth');
+          }
         }, isDestructive: true),
       ],
     );
@@ -2387,6 +2395,12 @@ class _SupportTicketDialogState extends State<SupportTicketDialog> {
   final _audioPlayer = AudioPlayer();
   bool _isRecording = false;
   String? _audioPath;
+
+  @override
+  void initState() {
+    super.initState();
+    AudioExclusivityService.registerAudioPlayer(_audioPlayer);
+  }
 
   @override
   void dispose() {

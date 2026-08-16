@@ -57,6 +57,17 @@ class CustomDrawer extends StatelessWidget {
                           fontFamily: 'Vazirmatn',
                         ),
                       ),
+                      if (currentUser.userCode != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'شناسه: ${currentUser.userCode}',
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                            fontFamily: 'Vazirmatn',
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Text(
                         displayRole,

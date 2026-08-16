@@ -44,6 +44,12 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
         data
       });
     } else {
+      const maxUser = await prisma.user.findFirst({
+        orderBy: { userCode: 'desc' },
+        where: { userCode: { not: null } }
+      });
+      const nextUserCode = maxUser && maxUser.userCode ? maxUser.userCode + 1 : 110100;
+
       user = await prisma.user.create({
         data: {
           name,
@@ -53,7 +59,8 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
           passwordHash: bcrypt.hashSync('123456', 10),
           academicDegree,
           academicCertificates: certificates,
-          caravanId: caravanId || null
+          caravanId: caravanId || null,
+          userCode: nextUserCode
         }
       });
     }

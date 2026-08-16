@@ -29,6 +29,12 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
         if (!user || user.blocked || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
           return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
         }
+
+        // Validate active session token in database
+        const activeSession = await prisma.userSession.findUnique({ where: { token } });
+        if (!activeSession) {
+          return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
+        }
         
         // Also check IP blacklist as an extra layer
         const clientIp = req.ip || req.connection.remoteAddress || 'unknown';

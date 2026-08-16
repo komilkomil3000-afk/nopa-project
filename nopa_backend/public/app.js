@@ -407,8 +407,120 @@ function switchTab(tabId) {
     loadChats();
   } else if (tabId === 'levels-tab') {
     loadLevels();
+  } else if (tabId === 'mentors-tickets-tab') {
+    if (typeof loadTickets === 'function') loadTickets();
+  } else if (tabId === 'submissions-tab') {
+    if (typeof loadSubmissions === 'function') loadSubmissions();
   }
 }
+
+// Caravan Drawer
+async function openCaravanDrawer(caravanId) {
+  try {
+    const res = await request(`/api/v1/admin/caravans/${caravanId}`);
+    if (!res.ok) return alert('خطا در دریافت اطلاعات کاروان');
+    const caravan = await res.json();
+    
+    document.getElementById('cd-title').textContent = `داشبورد کاروان: ${caravan.name}`;
+    document.getElementById('cd-mentor-name').textContent = caravan.mentor?.name || 'بدون راهبر';
+    document.getElementById('cd-capacity-text').textContent = `${caravan.memberCount || 0} / ${caravan.capacityLimit || 50} نفر`;
+    document.getElementById('cd-capacity-bar').style.width = `${Math.min(100, ((caravan.memberCount || 0) / (caravan.capacityLimit || 50)) * 100)}%`;
+    
+    document.getElementById('cd-wealth-zarik').textContent = caravan.assets?.zarik || 0;
+    document.getElementById('cd-wealth-nakh').textContent = caravan.assets?.nakh || 0;
+    document.getElementById('cd-wealth-farsh').textContent = caravan.assets?.farsh || 0;
+    document.getElementById('cd-wealth-beyragh').textContent = caravan.assets?.beyragh || 0;
+    
+    const progress = caravan.overallProgress || 0;
+    document.getElementById('cd-progress-text').textContent = `${progress}%`;
+    document.getElementById('cd-progress-bar').style.width = `${progress}%`;
+    
+    document.getElementById('caravan-drawer-modal').style.display = 'flex';
+  } catch (err) {
+    console.error(err);
+    alert('خطا در ارتباط با سرور');
+  }
+}
+
+function closeCaravanDrawer() {
+  document.getElementById('caravan-drawer-modal').style.display = 'none';
+}
+
+// Tickets
+async function loadTickets() {
+  try {
+    const res = await request('/api/v1/admin/tickets');
+    if (!res.ok) return;
+    const tickets = await res.json();
+    const tbody = document.querySelector('#mentor-tickets-table tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = tickets.map(t => `
+      <tr>
+        <td>${t.student?.name || 'ناشناس'}</td>
+        <td>${t.category}</td>
+        <td>${t.subject}</td>
+        <td><span class="badge ${t.status === 'OPEN' ? 'badge-warning' : 'badge-success'}">${t.status}</span></td>
+        <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td>${t.rating || '-'}</td>
+        <td>
+          <button class="page-btn btn-view" onclick="alert('نمایش جزئیات به زودی')"><i class="fa-solid fa-eye"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Error loading tickets', e);
+  }
+}
+
+// Submissions
+async function loadSubmissions() {
+  try {
+    const res = await request('/api/v1/admin/submissions');
+    if (!res.ok) return;
+    const submissions = await res.json();
+    const tbody = document.querySelector('#admin-submissions-table tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = submissions.map(s => `
+      <tr>
+        <td>${s.user?.name || 'ناشناس'}</td>
+        <td>${s.challengeId || 'تکلیف کلاسی'}</td>
+        <td>${s.content || '-'}</td>
+        <td>${s.attachmentUrl ? `<a href="${s.attachmentUrl}" target="_blank">دانلود</a>` : '-'}</td>
+        <td>${new Date(s.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td>${s.rewardZarik || 0}</td>
+        <td>
+          ${s.status === 'PENDING' ? `
+            <button class="page-btn btn-success" onclick="reviewSubmission('${s.id}', true)"><i class="fa-solid fa-check"></i> تایید</button>
+            <button class="page-btn btn-danger" onclick="reviewSubmission('${s.id}', false)"><i class="fa-solid fa-times"></i> رد</button>
+          ` : `<span class="badge ${s.status === 'APPROVED' ? 'badge-success' : 'badge-danger'}">${s.status}</span>`}
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error('Error loading submissions', e);
+  }
+}
+
+window.reviewSubmission = async function(id, isApproved) {
+  try {
+    const res = await request(`/api/v1/admin/submissions/${id}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isApproved })
+    });
+    if (res.ok) {
+      alert(isApproved ? 'تکلیف تایید شد' : 'تکلیف رد شد');
+      loadSubmissions();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'خطا در ارزیابی');
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 // Load Caravans
 async function loadCaravans() {
@@ -462,7 +574,7 @@ async function loadUsers() {
     tbody.innerHTML = '';
 
     if (data.users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">هیچ کاربری یافت نشد</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">هیچ کاربری یافت نشد</td></tr>';
       return;
     }
 
@@ -477,10 +589,11 @@ async function loadUsers() {
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td>${u.userCode || '-'}</td>
         <td><strong>${u.name}</strong> ${blockBadge}</td>
         <td style="font-family: monospace;">${u.phoneNumber}</td>
         <td>${roleBadge}</td>
-        <td>${u.caravanName}</td>
+        <td>${u.caravanName || '-'}</td>
         <td><strong style="color: var(--color-neon-blue);">${u.zarikBalance.toLocaleString()}</strong></td>
         <td>${u.levelFrame}</td>
         <td>
@@ -548,6 +661,7 @@ async function viewUserDetails(userId) {
             <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${user.name.substring(0,2)}</div>
             <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'مدیر' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
             <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${user.phoneNumber}</div>
+            <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
             <div style="text-align: right; font-size: 13px;">
               <p><strong>زریک:</strong> <span style="color:var(--color-neon-blue);">${payload.balances.zarik.toLocaleString()}</span></p>
@@ -2727,73 +2841,486 @@ async function loadCaravanLeague() {
   } catch(e) { console.error(e); }
 }
 
+window.lmsStations = [];
+
 async function loadLmsData() {
   try {
     const res = await request('/api/v1/admin/lms/stations');
     const stations = await res.json();
+    window.lmsStations = stations;
     
-    const catStationSelect = document.getElementById('lms-cat-station-id');
-    const sessCatSelect = document.getElementById('lms-sess-category-id');
-    const quizSessSelect = document.getElementById('lms-quiz-session-id');
-    
-    if(catStationSelect) catStationSelect.innerHTML = stations.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-    
-    let cats = [];
-    stations.forEach(s => cats.push(...s.categories));
-    if(sessCatSelect) sessCatSelect.innerHTML = cats.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-    
-    let sessions = [];
-    cats.forEach(c => sessions.push(...c.sessions));
-    if(quizSessSelect) quizSessSelect.innerHTML = sessions.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-    
+    const tbody = document.querySelector('#stations-table tbody');
+    if(tbody) {
+      tbody.innerHTML = '';
+      stations.forEach(s => {
+        const releaseStr = s.releaseDate ? `${new Date(s.releaseDate).toLocaleDateString('fa-IR')} ${s.releaseTime || ''}` : 'فوری/آزاد';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${s.orderIndex}</strong></td>
+          <td>${s.title}</td>
+          <td>${releaseStr}</td>
+          <td>${s.categories ? s.categories.length : 0} دسته</td>
+          <td>
+            <button class="page-btn btn-edit" style="background:#8b5cf6; color:white;" onclick="editLmsStation('${s.id}')"><i class="fa-solid fa-edit"></i> ویرایش</button>
+            <button class="page-btn btn-danger" onclick="deleteLmsStation('${s.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
   } catch(e) { console.error(e); }
 }
 
-async function submitLmsStation(e) {
+function initNewStation() {
+  document.getElementById('lms-station-id').value = '';
+  document.getElementById('lms-station-title').value = '';
+  document.getElementById('lms-station-order').value = '0';
+  document.getElementById('lms-station-release-date').value = '';
+  document.getElementById('lms-station-release-time').value = '';
+  document.getElementById('lms-station-desc').value = '';
+  document.getElementById('lms-station-icon').value = '';
+  
+  document.getElementById('builder-categories-container').innerHTML = '';
+  document.getElementById('lms-builder-title').innerText = 'ایجاد منزلگاه جدید';
+  document.getElementById('lms-builder-card').style.display = 'block';
+  
+  // Scroll to builder
+  document.getElementById('lms-builder-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelLmsBuilder() {
+  document.getElementById('lms-builder-card').style.display = 'none';
+}
+
+function addCategoryUI(catData = null) {
+  const container = document.getElementById('builder-categories-container');
+  const catId = catData && catData.id ? catData.id : 'new_' + Math.random().toString(36).substring(2, 9);
+  const catTitle = catData ? catData.title : '';
+  const catOrder = catData ? catData.orderIndex : container.children.length;
+  
+  const catDiv = document.createElement('div');
+  catDiv.className = 'builder-category-item';
+  catDiv.dataset.id = catId;
+  catDiv.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; position: relative;';
+  catDiv.innerHTML = `
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+      <span style="color: #EC4899; font-weight: bold; font-size: 13px;">دسته کلاس:</span>
+      <input type="text" class="input-ctrl cat-title-input" value="${catTitle}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
+      <input type="number" class="input-ctrl cat-order-input" value="${catOrder}" required placeholder="ترتیب" style="width: 70px; height: 32px; font-size: 12px;">
+      <button type="button" class="btn-primary" style="background: #10B981; padding: 4px 10px; font-size: 11px; height: 32px;" onclick="addClassUI(this.closest('.builder-category-item'))"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
+      <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" onclick="this.closest('.builder-category-item').remove()"><i class="fa-solid fa-trash"></i> حذف دسته</button>
+    </div>
+    <div class="category-classes-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px; padding-right: 15px; border-right: 2px dashed rgba(255,255,255,0.1);">
+      <!-- Classes populated here -->
+    </div>
+  `;
+  container.appendChild(catDiv);
+  
+  if (catData && catData.sessions) {
+    catData.sessions.forEach(sess => {
+      addClassUI(catDiv, sess);
+    });
+  }
+}
+
+function addClassUI(catEl, classData = null) {
+  const container = catEl.querySelector('.category-classes-container');
+  const classId = classData && classData.id ? classData.id : 'new_' + Math.random().toString(36).substring(2, 9);
+  const classTitle = classData ? classData.title : '';
+  const classDesc = classData ? (classData.description || '') : '';
+  const minWatch = classData ? (classData.minWatchThreshold || 70) : 70;
+  const minPass = classData ? (classData.minPassScore || 0) : 0;
+  const maxZarik = classData ? (classData.maxZarikReward || 0) : 0;
+  const classOrder = classData ? classData.orderIndex : container.children.length;
+  
+  const classDiv = document.createElement('div');
+  classDiv.className = 'builder-class-item';
+  classDiv.dataset.id = classId;
+  classDiv.style.cssText = 'background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px; padding: 12px;';
+  classDiv.innerHTML = `
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px;">
+      <div class="form-group" style="grid-column: span 2;">
+        <label style="font-size: 10px; color: #8b5cf6;">عنوان کلاس / درس</label>
+        <input type="text" class="input-ctrl class-title-input" value="${classTitle}" required style="height: 30px; font-size: 11px;">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label style="font-size: 10px; color: #8b5cf6;">خلاصه/توضیح کلاس</label>
+        <input type="text" class="input-ctrl class-desc-input" value="${classDesc}" style="height: 30px; font-size: 11px;">
+      </div>
+      <div class="form-group">
+        <label style="font-size: 10px; color: #8b5cf6;">حداقل درصد تماشا</label>
+        <input type="number" class="input-ctrl class-watch-input" value="${minWatch}" required style="height: 30px; font-size: 11px;">
+      </div>
+      <div class="form-group">
+        <label style="font-size: 10px; color: #8b5cf6;">ترتیب کلاس</label>
+        <input type="number" class="input-ctrl class-order-input" value="${classOrder}" required style="height: 30px; font-size: 11px;">
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+      <button type="button" class="btn-primary" style="background:#f59e0b; padding: 3px 8px; font-size: 10px;" onclick="addClipUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
+      <button type="button" class="btn-primary" style="background:#e040fb; padding: 3px 8px; font-size: 10px;" onclick="addQuizUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
+      <button type="button" class="page-btn btn-danger" style="padding: 3px 8px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-class-item').remove()"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
+    </div>
+    
+    <!-- Video parts container -->
+    <div class="class-clips-container" style="display: flex; flex-direction: column; gap: 8px; margin: 10px 10px 0 0; padding-left: 10px; border-left: 2px solid rgba(245,158,11,0.2);">
+      <!-- Video parts clips populated here -->
+    </div>
+    
+    <!-- Quiz container -->
+    <div class="class-quiz-container" style="margin-top: 10px;">
+      <!-- Quiz populated here -->
+    </div>
+  `;
+  container.appendChild(classDiv);
+  
+  if (classData) {
+    if (classData.videoClips) {
+      classData.videoClips.forEach(clip => {
+        addClipUI(classDiv, clip);
+      });
+    }
+    if (classData.quiz) {
+      addQuizUI(classDiv, classData.quiz);
+    }
+  }
+}
+
+window.uploadClipMediaDirect = async function(input) {
+  if (!input.files || input.files.length === 0) return;
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('assetType', 'course_video');
+  
+  const parent = input.parentElement;
+  const statusEl = parent.querySelector('.clip-upload-status');
+  const urlInput = parent.querySelector('.clip-url-input');
+  
+  statusEl.innerText = 'در حال آپلود...';
+  statusEl.style.color = '#10B981';
+  
+  try {
+    const res = await fetch('/api/v1/media/upload', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+    const data = await res.json();
+    if (data.url) {
+      urlInput.value = data.url;
+      statusEl.innerText = 'آپلود موفق!';
+    } else {
+      statusEl.innerText = 'خطا در آپلود';
+      statusEl.style.color = 'red';
+    }
+  } catch(e) {
+    console.error(e);
+    statusEl.innerText = 'خطا در آپلود';
+    statusEl.style.color = 'red';
+  }
+}
+
+function addClipUI(classEl, clipData = null) {
+  const container = classEl.querySelector('.class-clips-container');
+  const clipId = clipData && clipData.id ? clipData.id : 'new_' + Math.random().toString(36).substring(2, 9);
+  const clipTitle = clipData ? clipData.title : '';
+  const clipUrl = clipData ? clipData.videoUrl : '';
+  const clipDur = clipData ? (clipData.duration || 0) : 0;
+  const clipOrder = clipData ? clipData.clipOrder : container.children.length;
+  
+  const clipDiv = document.createElement('div');
+  clipDiv.className = 'builder-clip-item';
+  clipDiv.dataset.id = clipId;
+  clipDiv.style.cssText = 'background: rgba(245,158,11,0.03); border: 1px solid rgba(245,158,11,0.08); border-radius: 6px; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;';
+  clipDiv.innerHTML = `
+    <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">پارت/کلیپ:</span>
+    <input type="text" class="input-ctrl clip-title-input" value="${clipTitle}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-url-input" value="${clipUrl}" required placeholder="آدرس مستقیم ویدیو" style="flex:2; min-width:150px; height:28px; font-size:11px;">
+    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه)" style="width:75px; height:28px; font-size:11px;">
+    <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
+    <div style="display: flex; align-items: center; gap: 5px;">
+      <input type="file" onchange="uploadClipMediaDirect(this)" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
+      <small class="clip-upload-status" style="font-size: 9px; color: #10B981;"></small>
+    </div>
+    <button type="button" class="page-btn btn-danger" style="padding: 2px 6px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-clip-item').remove()"><i class="fa-solid fa-times"></i> حذف پارت</button>
+  `;
+  container.appendChild(clipDiv);
+}
+
+function addQuizUI(classEl, quizData = null) {
+  const container = classEl.querySelector('.class-quiz-container');
+  // Check if quiz already exists
+  if (container.children.length > 0) return;
+  
+  const quizId = quizData && quizData.id ? quizData.id : 'new_' + Math.random().toString(36).substring(2, 9);
+  const quizTitle = quizData ? quizData.title : 'آزمون پایان کلاس';
+  const rewardZarik = quizData ? (quizData.rewardZarik || 0) : 10;
+  let qJson = [];
+  if (quizData && quizData.questionsJson) {
+    try {
+      qJson = typeof quizData.questionsJson === 'string' ? JSON.parse(quizData.questionsJson) : quizData.questionsJson;
+    } catch(e) { console.error('questionsJson parse error', e); }
+  }
+
+  const quizDiv = document.createElement('div');
+  quizDiv.className = 'builder-quiz-item';
+  quizDiv.dataset.id = quizId;
+  quizDiv.style.cssText = 'background: rgba(224,64,251,0.03); border: 1px solid rgba(224,64,251,0.08); border-radius: 6px; padding: 10px;';
+  quizDiv.innerHTML = `
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
+      <span style="font-size: 11px; color: #e040fb; font-weight: bold;">آزمون ارزیابی:</span>
+      <input type="text" class="input-ctrl quiz-title-input" value="${quizTitle}" required placeholder="عنوان آزمون" style="flex:2; height:28px; font-size:11px;">
+      <input type="number" class="input-ctrl quiz-zarik-input" value="${rewardZarik}" required placeholder="پاداش زریک" style="width:85px; height:28px; font-size:11px;">
+      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" onclick="addQuizQuestionUI(this.closest('.builder-quiz-item'))"><i class="fa-solid fa-plus"></i> افزودن سوال</button>
+      <button type="button" class="page-btn btn-danger" style="padding:2px 8px; font-size:9px; margin-right: auto;" onclick="this.closest('.builder-quiz-item').remove()"><i class="fa-solid fa-times"></i> حذف آزمون</button>
+    </div>
+    
+    <div class="quiz-questions-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; padding-right: 10px; border-right: 2px dashed rgba(224,64,251,0.2);">
+      <!-- Questions list -->
+    </div>
+  `;
+  container.appendChild(quizDiv);
+  
+  if (qJson.length > 0) {
+    qJson.forEach(q => {
+      addQuizQuestionUI(quizDiv, q);
+    });
+  } else {
+    // Add one empty question by default
+    addQuizQuestionUI(quizDiv);
+  }
+}
+
+function addQuizQuestionUI(quizEl, qData = null) {
+  const container = quizEl.querySelector('.quiz-questions-container');
+  const qText = qData ? qData.q : '';
+  const options = qData && qData.options ? qData.options : ['', '', '', ''];
+  const correctIdx = qData ? (qData.correct || 0) : 0;
+  
+  const qDiv = document.createElement('div');
+  qDiv.className = 'builder-question-item';
+  qDiv.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 5px; padding: 8px;';
+  qDiv.innerHTML = `
+    <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
+      <span style="font-size: 10px; color: #ccc;">صورت سوال:</span>
+      <input type="text" class="input-ctrl question-text-input" value="${qText}" required placeholder="متن سوال ارزیابی را وارد کنید" style="flex:1; height:26px; font-size:10px;">
+      <button type="button" class="page-btn btn-danger" style="padding:1px 5px; font-size:9px;" onclick="this.closest('.builder-question-item').remove()"><i class="fa-solid fa-trash"></i></button>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-right: 15px;">
+      <div style="display:flex; align-items:center; gap:5px;">
+        <input type="radio" name="correct_radio_${Math.random()}" class="correct-option-radio" value="0" ${correctIdx === 0 ? 'checked' : ''}>
+        <input type="text" class="input-ctrl option-input" value="${options[0] || ''}" required placeholder="گزینه ۱" style="height:24px; font-size:10px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:5px;">
+        <input type="radio" name="${Math.random()}" class="correct-option-radio" value="1" ${correctIdx === 1 ? 'checked' : ''}>
+        <input type="text" class="input-ctrl option-input" value="${options[1] || ''}" required placeholder="گزینه ۲" style="height:24px; font-size:10px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:5px;">
+        <input type="radio" name="${Math.random()}" class="correct-option-radio" value="2" ${correctIdx === 2 ? 'checked' : ''}>
+        <input type="text" class="input-ctrl option-input" value="${options[2] || ''}" required placeholder="گزینه ۳" style="height:24px; font-size:10px;">
+      </div>
+      <div style="display:flex; align-items:center; gap:5px;">
+        <input type="radio" name="${Math.random()}" class="correct-option-radio" value="3" ${correctIdx === 3 ? 'checked' : ''}>
+        <input type="text" class="input-ctrl option-input" value="${options[3] || ''}" required placeholder="گزینه ۴" style="height:24px; font-size:10px;">
+      </div>
+    </div>
+  `;
+  
+  // Set shared radio name per question
+  const radioName = 'correct_radio_' + Math.random().toString(36).substring(2, 9);
+  qDiv.querySelectorAll('.correct-option-radio').forEach(r => r.name = radioName);
+  
+  container.appendChild(qDiv);
+}
+
+function editLmsStation(stationId) {
+  const station = window.lmsStations.find(s => s.id === stationId);
+  if (!station) return;
+  
+  document.getElementById('lms-station-id').value = station.id;
+  document.getElementById('lms-station-title').value = station.title;
+  document.getElementById('lms-station-order').value = station.orderIndex;
+  document.getElementById('lms-station-release-date').value = station.releaseDate ? station.releaseDate.substring(0, 10) : '';
+  document.getElementById('lms-station-release-time').value = station.releaseTime || '';
+  document.getElementById('lms-station-desc').value = station.description || '';
+  document.getElementById('lms-station-icon').value = station.iconUrl || '';
+  
+  const container = document.getElementById('builder-categories-container');
+  container.innerHTML = '';
+  
+  document.getElementById('lms-builder-title').innerText = `ویرایش منزلگاه: ${station.title}`;
+  document.getElementById('lms-builder-card').style.display = 'block';
+  
+  if (station.categories) {
+    station.categories.forEach(cat => {
+      addCategoryUI(cat);
+    });
+  }
+  
+  document.getElementById('lms-builder-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function deleteLmsStation(stationId) {
+  if (confirm('آیا از حذف این منزلگاه و تمام پارت‌های ویدیو و آزمون‌های آن مطمئن هستید؟ این عملیات غیرقابل بازگشت است.')) {
+    try {
+      const res = await request(`/api/v1/admin/lms/stations/${stationId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        alert('منزلگاه با موفقیت حذف شد');
+        loadLmsData();
+        cancelLmsBuilder();
+      } else {
+        alert('خطا در حذف منزلگاه');
+      }
+    } catch(e) {
+      console.error(e);
+      alert('خطا در ارتباط با سرور');
+    }
+  }
+}
+
+async function submitLmsStationUnified(e) {
   e.preventDefault();
+  
   const id = document.getElementById('lms-station-id').value;
-  const orderIndex = document.getElementById('lms-station-order').value;
   const title = document.getElementById('lms-station-title').value;
+  const orderIndex = document.getElementById('lms-station-order').value;
   const releaseDate = document.getElementById('lms-station-release-date').value;
   const releaseTime = document.getElementById('lms-station-release-time').value;
+  const description = document.getElementById('lms-station-desc').value;
+  const iconUrl = document.getElementById('lms-station-icon').value;
+  
+  // Serialize Categories
+  const categories = [];
+  const catItems = document.querySelectorAll('.builder-category-item');
+  
+  catItems.forEach(catEl => {
+    const catId = catEl.dataset.id.startsWith('new_') ? null : catEl.dataset.id;
+    const catTitle = catEl.querySelector('.cat-title-input').value;
+    const catOrder = catEl.querySelector('.cat-order-input').value;
+    
+    // Serialize Sessions (Classes)
+    const sessions = [];
+    const classItems = catEl.querySelectorAll('.builder-class-item');
+    
+    classItems.forEach(classEl => {
+      const classId = classEl.dataset.id.startsWith('new_') ? null : classEl.dataset.id;
+      const classTitle = classEl.querySelector('.class-title-input').value;
+      const classDesc = classEl.querySelector('.class-desc-input').value;
+      const classWatch = classEl.querySelector('.class-watch-input').value;
+      const classOrder = classEl.querySelector('.class-order-input').value;
+      
+      // Serialize Clips
+      const videoClips = [];
+      const clipItems = classEl.querySelectorAll('.builder-clip-item');
+      clipItems.forEach(clipEl => {
+        const clipId = clipEl.dataset.id.startsWith('new_') ? null : clipEl.dataset.id;
+        const clipTitle = clipEl.querySelector('.clip-title-input').value;
+        const clipUrl = clipEl.querySelector('.clip-url-input').value;
+        const clipDur = clipEl.querySelector('.clip-duration-input').value;
+        const clipOrder = clipEl.querySelector('.clip-order-input').value;
+        
+        videoClips.push({
+          id: clipId,
+          title: clipTitle,
+          videoUrl: clipUrl,
+          duration: Number(clipDur),
+          clipOrder: Number(clipOrder)
+        });
+      });
+      
+      // Serialize Quiz
+      let quiz = null;
+      const quizEl = classEl.querySelector('.builder-quiz-item');
+      if (quizEl) {
+        const quizId = quizEl.dataset.id.startsWith('new_') ? null : quizEl.dataset.id;
+        const quizTitle = quizEl.querySelector('.quiz-title-input').value;
+        const quizZarik = quizEl.querySelector('.quiz-zarik-input').value;
+        
+        // Serialize Questions
+        const questions = [];
+        const qItems = quizEl.querySelectorAll('.builder-question-item');
+        qItems.forEach(qEl => {
+          const qText = qEl.querySelector('.question-text-input').value;
+          const options = [];
+          qEl.querySelectorAll('.option-input').forEach(optEl => {
+            options.push(optEl.value);
+          });
+          
+          let correctIdx = 0;
+          const radios = qEl.querySelectorAll('.correct-option-radio');
+          radios.forEach((r, rIdx) => {
+            if (r.checked) correctIdx = rIdx;
+          });
+          
+          questions.push({
+            q: qText,
+            options,
+            correct: correctIdx
+          });
+        });
+        
+        quiz = {
+          id: quizId,
+          title: quizTitle,
+          questionsJson: JSON.stringify(questions),
+          rewardZarik: Number(quizZarik)
+        };
+      }
+      
+      sessions.push({
+        id: classId,
+        title: classTitle,
+        description: classDesc,
+        minWatchThreshold: Number(classWatch),
+        orderIndex: Number(classOrder),
+        videoClips,
+        quiz
+      });
+    });
+    
+    categories.push({
+      id: catId,
+      title: catTitle,
+      orderIndex: Number(catOrder),
+      sessions
+    });
+  });
+  
+  const payload = {
+    id: id || undefined,
+    title,
+    orderIndex,
+    releaseDate: releaseDate || null,
+    releaseTime: releaseTime || null,
+    description,
+    iconUrl,
+    categories
+  };
   
   try {
-    const res = await request('/api/v1/admin/lms/stations', {
-      method: 'POST', body: JSON.stringify({ id, orderIndex, title, releaseDate, releaseTime })
+    const url = id ? `/api/v1/admin/lms/stations/${id}` : '/api/v1/admin/lms/stations';
+    const method = id ? 'PUT' : 'POST';
+    
+    const res = await request(url, {
+      method,
+      body: JSON.stringify(payload)
     });
-    if(res.ok) { alert('منزلگاه ذخیره شد'); document.getElementById('lms-station-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsCategory(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-category-id').value;
-  const stationId = document.getElementById('lms-cat-station-id').value;
-  const title = document.getElementById('lms-cat-title').value;
-  const orderIndex = document.getElementById('lms-cat-order').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/categories', {
-      method: 'POST', body: JSON.stringify({ id, stationId, title, orderIndex })
-    });
-    if(res.ok) { alert('دسته‌بندی ذخیره شد'); document.getElementById('lms-category-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsSession(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-session-id').value;
-  const categoryId = document.getElementById('lms-sess-category-id').value;
-  const title = document.getElementById('lms-sess-title').value;
-  const minWatchThreshold = document.getElementById('lms-sess-watch-min').value;
-  const minPassScore = document.getElementById('lms-sess-pass-score').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/sessions', {
-      method: 'POST', body: JSON.stringify({ id, categoryId, title, minWatchThreshold, minPassScore })
-    });
-    if(res.ok) { alert('کلاس ذخیره شد'); document.getElementById('lms-session-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
+    
+    if (res.ok) {
+      alert('کل ساختار منزلگاه با موفقیت ذخیره شد');
+      cancelLmsBuilder();
+      loadLmsData();
+    } else {
+      const data = await res.json();
+      alert('خطا در ذخیره ساختار: ' + (data.error || 'خطای ناشناخته'));
+    }
+  } catch(e) {
+    console.error(e);
+    alert('خطای شبکه در ارتباط با سرور');
+  }
 }
 
 async function submitLmsQuiz(e) {
@@ -2922,89 +3449,7 @@ async function loadCaravanLeague() {
   } catch(e) { console.error(e); }
 }
 
-async function loadLmsData() {
-  try {
-    const res = await request('/api/v1/admin/lms/stations');
-    const stations = await res.json();
-    
-    const catStationSelect = document.getElementById('lms-cat-station-id');
-    const sessCatSelect = document.getElementById('lms-sess-category-id');
-    const quizSessSelect = document.getElementById('lms-quiz-session-id');
-    
-    if(catStationSelect) catStationSelect.innerHTML = stations.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-    
-    let cats = [];
-    stations.forEach(s => cats.push(...s.categories));
-    if(sessCatSelect) sessCatSelect.innerHTML = cats.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
-    
-    let sessions = [];
-    cats.forEach(c => sessions.push(...c.sessions));
-    if(quizSessSelect) quizSessSelect.innerHTML = sessions.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-    
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsStation(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-station-id').value;
-  const orderIndex = document.getElementById('lms-station-order').value;
-  const title = document.getElementById('lms-station-title').value;
-  const releaseDate = document.getElementById('lms-station-release-date').value;
-  const releaseTime = document.getElementById('lms-station-release-time').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/stations', {
-      method: 'POST', body: JSON.stringify({ id, orderIndex, title, releaseDate, releaseTime })
-    });
-    if(res.ok) { alert('منزلگاه ذخیره شد'); document.getElementById('lms-station-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsCategory(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-category-id').value;
-  const stationId = document.getElementById('lms-cat-station-id').value;
-  const title = document.getElementById('lms-cat-title').value;
-  const orderIndex = document.getElementById('lms-cat-order').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/categories', {
-      method: 'POST', body: JSON.stringify({ id, stationId, title, orderIndex })
-    });
-    if(res.ok) { alert('دسته‌بندی ذخیره شد'); document.getElementById('lms-category-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsSession(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-session-id').value;
-  const categoryId = document.getElementById('lms-sess-category-id').value;
-  const title = document.getElementById('lms-sess-title').value;
-  const minWatchThreshold = document.getElementById('lms-sess-watch-min').value;
-  const minPassScore = document.getElementById('lms-sess-pass-score').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/sessions', {
-      method: 'POST', body: JSON.stringify({ id, categoryId, title, minWatchThreshold, minPassScore })
-    });
-    if(res.ok) { alert('کلاس ذخیره شد'); document.getElementById('lms-session-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
-
-async function submitLmsQuiz(e) {
-  e.preventDefault();
-  const id = document.getElementById('lms-quiz-id').value;
-  const sessionId = document.getElementById('lms-quiz-session-id').value;
-  const title = document.getElementById('lms-quiz-title').value;
-  const rewardZarik = document.getElementById('lms-quiz-zarik').value;
-  
-  try {
-    const res = await request('/api/v1/admin/lms/quizzes', {
-      method: 'POST', body: JSON.stringify({ id, sessionId, title, rewardZarik })
-    });
-    if(res.ok) { alert('آزمون ذخیره شد'); document.getElementById('lms-quiz-form').reset(); loadLmsData(); }
-  } catch(e) { console.error(e); }
-}
+// Deprecated legacy LMS functions replaced by Unified Visual Form Builder
 
 // FORM BUILDER LOGIC
 async function loadDynForms() {
@@ -3209,3 +3654,76 @@ window.submitLmsClip = async function(e) {
     alert('خطا در ارتباط با سرور');
   }
 }
+
+document.querySelector('[data-tab="submissions-tab"]')?.addEventListener('click', loadAdminSubmissions);
+
+async function loadAdminSubmissions() {
+  try {
+    const res = await fetch('/api/v1/submissions/pending', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const list = await res.json();
+    const tbody = document.querySelector('#admin-submissions-table tbody');
+    if (!tbody) return;
+    
+    if (!res.ok) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">خطا در بارگذاری داده‌ها</td></tr>`;
+      return;
+    }
+    
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">هیچ تکلیف معلقی یافت نشد</td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = list.map(s => `
+      <tr>
+        <td>${s.student?.name || 'نامشخص'}</td>
+        <td>${s.challenge?.title || 'نامشخص'}</td>
+        <td>${s.answerText || '-'}</td>
+        <td>${s.fileUrl ? `<a href="${s.fileUrl}" target="_blank" class="btn-action"><i class="fa-solid fa-download"></i> دانلود</a>` : '-'}</td>
+        <td>${new Date(s.submittedAt).toLocaleDateString('fa-IR')}</td>
+        <td>${s.challenge?.rewardZarik || 200}</td>
+        <td>
+          <button class="btn-primary btn-sm" onclick="reviewAdminSubmission('${s.id}', true, ${s.challenge?.rewardZarik || 200})">تایید <i class="fa-solid fa-check"></i></button>
+          <button class="btn-danger btn-sm" onclick="reviewAdminSubmission('${s.id}', false, 0)">رد <i class="fa-solid fa-xmark"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+window.reviewAdminSubmission = async function(id, approve, defaultReward) {
+  const score = approve ? (prompt('میزان پاداش زریک:', defaultReward) || defaultReward) : 0;
+  const feedback = prompt('یادداشت / فیدبک ارزیابی:', approve ? 'تایید شد' : 'رد شد. لطفا مجدد تلاش کنید.');
+  
+  if (score === null || feedback === null) return; // cancel
+  
+  try {
+    const res = await fetch(`/api/v1/submissions/${id}/review`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: approve ? 'approved' : 'rejected',
+        score: Number(score),
+        mentorFeedback: feedback
+      })
+    });
+    
+    if (res.ok) {
+      alert('ارزیابی با موفقیت ثبت شد');
+      loadAdminSubmissions();
+    } else {
+      const data = await res.json();
+      alert('خطا در ارزیابی: ' + (data.error || 'خطای ناشناخته'));
+    }
+  } catch (error) {
+    console.error(error);
+    alert('خطای اتصال به سرور');
+  }
+};

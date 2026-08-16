@@ -18,23 +18,45 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   Map<String, List<Map<String, dynamic>>> _classCategories = {};
   bool _loadingCategories = true;
 
+  Station? _station;
+
   @override
-  void initState() {
-    super.initState();
-    _loadClassCategories();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_station == null) {
+      _station = ModalRoute.of(context)!.settings.arguments as Station;
+      _loadClassCategories();
+    }
   }
 
   Future<void> _loadClassCategories() async {
+    if (_station == null) return;
     try {
-      final classes = await HttpApiService().getClasses();
+      final stations = await HttpApiService().getStations();
+      final stationData = stations.firstWhere((s) => s['id'] == _station!.id, orElse: () => {});
       final Map<String, List<Map<String, dynamic>>> map = {};
-      for (final c in classes) {
-        final t = c['type'] ?? 'other';
-        map.putIfAbsent(t, () => []).add(c);
+      
+      if (stationData.containsKey('categories') && stationData['categories'] != null) {
+        final categoriesList = stationData['categories'] as List;
+        for (final cat in categoriesList) {
+          final catTitle = cat['title'] ?? 'کلاس‌ها';
+          final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
+          map[catTitle] = sessions;
+        }
       }
-      if (mounted) setState(() { _classCategories = map; _loadingCategories = false; });
+      
+      if (mounted) {
+        setState(() {
+          _classCategories = map;
+          _loadingCategories = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _loadingCategories = false; });
+      if (mounted) {
+        setState(() {
+          _loadingCategories = false;
+        });
+      }
     }
   }
 
@@ -265,39 +287,58 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   Widget _buildExpandableClasses() {
     if (_loadingCategories) return const Center(child: CircularProgressIndicator());
     if (_classCategories.isEmpty) {
-      return Container(padding: const EdgeInsets.all(12), child: const Text('هیچ کلاسی برای این منزلگاه یافت نشد', style: TextStyle(color: Colors.white54)));
+      return Container(
+        padding: const EdgeInsets.all(12),
+        child: const Text(
+          'هیچ کلاسی برای این منزلگاه یافت نشد',
+          style: TextStyle(color: Colors.white54, fontFamily: 'Vazirmatn'),
+        ),
+      );
     }
 
     final entries = _classCategories.entries.toList();
     return Column(
       children: entries.map((e) {
-        final title = _mapTypeToTitle(e.key);
-        final lessons = e.value.map<Widget>((c) => _buildLessonRow(
-          title: c['title'] ?? c['name'] ?? '-',
-          status: c['status'] ?? 'در انتظار',
-          statusColor: const Color(0xFF8B5CF6),
-          participated: false,
-          reward: (c['rewardZarik'] as num?)?.toInt() ?? 0,
-        )).toList();
-        return Column(children: [_buildCustomClassCategory(title: title, count: e.value.length, lessons: lessons), const SizedBox(height: 12)]);
+        final categoryTitle = e.key;
+        final categorySessions = e.value;
+        
+        final List<Widget> lessons = [];
+        for (int i = 0; i < categorySessions.length; i++) {
+          final c = categorySessions[i];
+          final hasQuiz = c['quiz'] != null;
+          final zarikReward = (c['maxZarikReward'] as num?)?.toInt() ?? 
+                              (hasQuiz ? (c['quiz']['rewardZarik'] as num?)?.toInt() ?? 0 : 0);
+          
+          lessons.add(_buildLessonRow(
+            title: c['title'] ?? c['name'] ?? '-',
+            status: 'آماده شروع',
+            statusColor: const Color(0xFF8B5CF6),
+            participated: false,
+            reward: zarikReward,
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/class_player',
+                arguments: {
+                  'classes': categorySessions,
+                  'initialIndex': i,
+                },
+              );
+            },
+          ));
+        }
+
+        return Column(
+          children: [
+            _buildCustomClassCategory(title: categoryTitle, count: categorySessions.length, lessons: lessons),
+            const SizedBox(height: 12),
+          ],
+        );
       }).toList(),
     );
   }
 
-  String _mapTypeToTitle(String type) {
-    switch (type) {
-      case 'skill':
-        return 'کلاس‌های مهارتی';
-      case 'media':
-      case 'video':
-        return 'کلاس‌های رسانه‌ای';
-      case 'insight':
-      case 'بینشی':
-        return 'کلاس‌های بینشی';
-      default:
-        return 'کلاس‌ها';
-    }
-  }
+
 
   Widget _buildCustomClassCategory({
     required String title,
@@ -344,12 +385,11 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     required Color statusColor,
     required bool participated,
     required int reward,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        Navigator.pushNamed(context, '/class_player');
-      },
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10.0),
         child: Row(

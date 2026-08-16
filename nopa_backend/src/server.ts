@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { apiLimiter } from './middleware/rateLimit';
 import { errorHandler } from './middleware/error';
 import apiRouter from './routes/api';
+import prisma from './config/db';
 
 import path from 'path';
 
@@ -27,7 +28,7 @@ app.use(express.json());
 app.use('/admin', express.static(path.join(__dirname, '../public')));
 app.use('/admin/libs/chartjs', express.static(path.join(__dirname, '../node_modules/chart.js/dist')));
 app.use('/admin/libs/fontawesome', express.static(path.join(__dirname, '../node_modules/@fortawesome/fontawesome-free')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API Rate Limiter
 app.use('/api/', apiLimiter);
@@ -40,15 +41,33 @@ app.get('/health', (req, res) => {
 // API Routes prefix
 app.use('/api/v1', apiRouter);
 
-// Prepare fallback support for /api/v2/ architecture
-// app.use('/api/v2', apiRouterV2);
-
 // Global Error Handler Middleware
 app.use(errorHandler);
+
+async function runAuditLogCleanup() {
+  try {
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const result = await prisma.auditLog.deleteMany({
+      where: {
+        createdAt: {
+          lt: threeDaysAgo
+        }
+      }
+    });
+    console.log(`[AuditLog TTL] Purged ${result.count} logs older than 3 days.`);
+  } catch (error) {
+    console.error('AuditLog TTL cleanup failed:', error);
+  }
+}
 
 // Start server on all network interfaces so devices on the same LAN can reach it.
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`[OFFLINE SERVER ACTIVE] Admin CRM live at: http://localhost:${PORT}/admin`);
   console.log(`🚀 Nopa Backend Service is running on http://0.0.0.0:${PORT}`);
   console.log(`🏥 Health check at http://0.0.0.0:${PORT}/health`);
+  
+  // Run audit log TTL cleanup on startup and schedule every hour
+  runAuditLogCleanup();
+  setInterval(runAuditLogCleanup, 3600000);
 });

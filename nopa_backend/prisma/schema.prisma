@@ -34,6 +34,12 @@ model User {
   failedLoginAttempts          Int            @default(0)
   lockoutUntil                 DateTime?
   hasPrePaidClasses            Boolean        @default(true)
+  countryCode                  String         @default("+98")
+  registrationCompleted        Boolean        @default(false)
+  userCode                     Int?           @unique
+  isDeleted                    Boolean        @default(false)
+  deletedAt                    DateTime?
+  sessions                     UserSession[]
   
   // Mentor Demographics & Tangible Assets
   city                           String?
@@ -81,6 +87,16 @@ model User {
   @@index([createdAt])
 }
 
+model UserSession {
+  id         String   @id @default(uuid())
+  userId     String
+  token      String   @unique
+  deviceInfo String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
 model Caravan {
   id              String  @id @default(uuid())
   name            String
@@ -91,6 +107,8 @@ model Caravan {
   status          String  @default("active") // "active" | "suspended"
   capacityLimit   Int     @default(25)
   socialGroupLink String?
+  isDeleted       Boolean @default(false)
+  deletedAt       DateTime?
   
   description     String?
   coverImageUrl   String?
@@ -336,9 +354,11 @@ model ClassSession {
   orderIndex        Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  isDeleted         Boolean  @default(false)
+  deletedAt         DateTime?
 
   category          ClassCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  quiz              Quiz?
+  quizzes           Quiz[]
   watchRecords      SessionWatchRecord[]
   videoBookmarks    VideoBookmark[]
   videoClips        VideoClip[]
@@ -380,8 +400,9 @@ model VideoBookmark {
 
 model Quiz {
   id           String   @id @default(uuid())
-  sessionId    String   @unique
+  sessionId    String
   title        String
+  orderIndex   Int      @default(0)
   questionsJson String? // JSON array of questions
   rewardZarik  Int      @default(0)
   rewardNakh   Int      @default(0)
@@ -417,8 +438,10 @@ model SessionWatchRecord {
   id                String       @id @default(uuid())
   userId            String
   sessionId         String
-  watchedPercentage Float        @default(0.0)
-  lastWatchedAt     DateTime     @default(now())
+  watchedPercentage   Float        @default(0.0)
+  lastPositionSeconds Int          @default(0)
+  watchedSeconds      Int          @default(0)
+  lastWatchedAt       DateTime     @default(now())
 
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   session           ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

@@ -1,5 +1,18 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as os from 'os';
+
+function getLocalIp(): string {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]!) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 const prisma = new PrismaClient();
 
@@ -7,6 +20,7 @@ async function main() {
   console.log('Seeding initial data (upserting to avoid data loss)...');
 
   const passwordHash = await bcrypt.hash('123456', 10);
+  const localIp = getLocalIp();
 
   const seedUsers = [
     {
@@ -17,6 +31,7 @@ async function main() {
       zarikBalance: 0,
       levelFrame: 1,
       identityVerified: true,
+      userCode: 110100,
     },
     {
       name: 'سارا عارف',
@@ -26,6 +41,7 @@ async function main() {
       zarikBalance: 0,
       levelFrame: 1,
       identityVerified: true,
+      userCode: 110101,
     },
     {
       name: 'استاد علی',
@@ -36,6 +52,7 @@ async function main() {
       zarikBalance: 0,
       levelFrame: 1,
       identityVerified: true,
+      userCode: 110102,
     },
     {
       name: 'مدیر کل',
@@ -45,6 +62,7 @@ async function main() {
       zarikBalance: 0,
       levelFrame: 1,
       identityVerified: true,
+      userCode: 110103,
     },
     {
       name: 'سوپر ادمین',
@@ -54,11 +72,11 @@ async function main() {
       zarikBalance: 0,
       levelFrame: 1,
       identityVerified: true,
+      userCode: 110104,
     },
   ];
 
   for (const user of seedUsers) {
-    // We cannot use upsert natively with non-unique fields, so we do a findFirst + create
     const existing = await prisma.user.findFirst({
       where: { phoneNumber: user.phoneNumber, name: user.name },
     });
@@ -67,7 +85,11 @@ async function main() {
       console.log(`Seeding User: ${user.name} (${user.phoneNumber})...`);
       await prisma.user.create({ data: user });
     } else {
-      console.log(`User already exists, skipping: ${user.name} (${user.phoneNumber})`);
+      console.log(`Updating existing User: ${user.name} (${user.phoneNumber}) with userCode: ${user.userCode}...`);
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { userCode: user.userCode }
+      });
     }
   }
 
@@ -102,47 +124,105 @@ async function main() {
     console.log('Created Station 2');
   }
 
-  // Add Category to Station 1
-  let category1 = await prisma.classCategory.findFirst({ where: { title: 'دوره آموزشی مقدماتی', stationId: station1.id } });
+  // Category 1
+  let category1 = await prisma.classCategory.findFirst({ where: { title: 'کلاسهای مهارتی', stationId: station1.id } });
   if (!category1) {
     category1 = await prisma.classCategory.create({
       data: {
         stationId: station1.id,
-        title: 'دوره آموزشی مقدماتی',
+        title: 'کلاسهای مهارتی',
         orderIndex: 1,
       }
     });
-    console.log('Created Category 1');
+    console.log('Created Category 1: کلاسهای مهارتی');
   }
 
-  // Add Session to Category 1
-  let session1 = await prisma.classSession.findFirst({ where: { title: 'جلسه اول: آشنایی', categoryId: category1.id } });
-  if (!session1) {
-    session1 = await prisma.classSession.create({
+  // Category 2
+  let category2 = await prisma.classCategory.findFirst({ where: { title: 'کلاسهای رسانه‌ای', stationId: station2.id } });
+  if (!category2) {
+    category2 = await prisma.classCategory.create({
       data: {
-        categoryId: category1.id,
-        title: 'جلسه اول: آشنایی',
-        description: 'معرفی اولیه طرح و اهداف',
-        instructor: 'استاد علی',
+        stationId: station2.id,
+        title: 'کلاسهای رسانه‌ای',
         orderIndex: 1,
       }
     });
-    console.log('Created Session 1');
+    console.log('Created Category 2: کلاسهای رسانه‌ای');
   }
 
-  // Add Video Clip to Session 1
-  let clip1 = await prisma.videoClip.findFirst({ where: { title: 'بخش اول: مقدمه', sessionId: session1.id } });
-  if (!clip1) {
-    clip1 = await prisma.videoClip.create({
-      data: {
-        sessionId: session1.id,
-        title: 'بخش اول: مقدمه',
-        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-        clipOrder: 1,
-        duration: 60,
+  const sampleQuestions = JSON.stringify([
+    {
+      question: "مفهوم اصلی مطرح شده در این بخش چیست؟",
+      options: ["تمرکز", "مدیریت زمان", "هدف‌گذاری", "هیچکدام"],
+      correctIndex: 2
+    },
+    {
+      question: "کدام گزینه صحیح است؟",
+      options: ["الف", "ب", "ج", "د"],
+      correctIndex: 1
+    }
+  ]);
+
+  const generateSession = async (categoryId: string, sessionIndex: number, categoryTitle: string) => {
+    const sessionTitle = `جلسه ${sessionIndex}: ${categoryTitle}`;
+    let session = await prisma.classSession.findFirst({ where: { title: sessionTitle, categoryId } });
+    if (!session) {
+      session = await prisma.classSession.create({
+        data: {
+          categoryId,
+          title: sessionTitle,
+          description: `توضیحات ${sessionTitle}`,
+          instructor: 'استاد علی',
+          orderIndex: sessionIndex,
+          maxZarikReward: 500,
+        }
+      });
+      console.log(`Created ${sessionTitle}`);
+
+      // Create exactly 3 Video Clips
+      for (let i = 1; i <= 3; i++) {
+        await prisma.videoClip.create({
+          data: {
+            sessionId: session.id,
+            title: `بخش ${i}`,
+            videoUrl: `http://${localIp}:5000/uploads/test_video.mp4`,
+            clipOrder: i,
+            duration: 1200,
+          }
+        });
       }
-    });
-    console.log('Created Video Clip 1');
+
+      // Create 2 Quizzes (after Part 1, after Part 2)
+      await prisma.quiz.create({
+        data: {
+          sessionId: session.id,
+          title: `آزمون بین‌قسمتی ۱ (پس از بخش ۱)`,
+          orderIndex: 1,
+          questionsJson: sampleQuestions,
+          rewardZarik: 100,
+        }
+      });
+
+      await prisma.quiz.create({
+        data: {
+          sessionId: session.id,
+          title: `آزمون بین‌قسمتی ۲ (پس از بخش ۲)`,
+          orderIndex: 2,
+          questionsJson: sampleQuestions,
+          rewardZarik: 150,
+        }
+      });
+    }
+  };
+
+  // Category 1 -> 2 Class Sessions
+  for (let i = 1; i <= 2; i++) {
+    await generateSession(category1.id, i, 'مهارتی');
+  }
+
+  // Category 2 -> 4 Class Sessions
+  for (let i = 1; i <= 4; i++) {
+    await generateSession(category2.id, i, 'رسانه‌ای');
   }
 
   console.log('Seeding complete for LMS!');

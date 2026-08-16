@@ -28,13 +28,15 @@ import {
   setAccountStatus,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateQuiz, seedStations } from '../controllers/lmsController';
+import { getStations, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateQuiz, seedStations, deleteStation } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
-import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAssetConversionsAdmin } from '../controllers/caravanController';
+import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
 import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, createMentorRewardRule, deleteMentorRewardRule } from '../controllers/rewardController';
+import { getTickets } from '../controllers/supportController';
+import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -105,8 +107,12 @@ router.post('/caravans/:id/members/:studentId', addMemberToCaravan as any);
 router.delete('/caravans/:id/members/:studentId', removeMemberFromCaravan as any);
 router.post('/caravans/:id/broadcast', broadcastToCaravan as any);
 
+router.get('/caravans/requests', getCaravanRequests as any);
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
 router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
+router.get('/tickets', getTickets as any);
+router.get('/submissions', getPendingSubmissions as any);
+router.post('/submissions/:id/review', reviewSubmission as any);
 router.get('/mentors/scorecards', getMentorScorecards as any);
 router.get('/mentors', getMentors as any);
 router.post('/mentors', createOrUpdateMentor as any);
@@ -145,10 +151,17 @@ import { createQuizMock } from '../controllers/quizController';
 // 6. LMS and Form Builder
 router.get('/lms/stations', getStations as any);
 router.post('/lms/stations', createOrUpdateStation as any);
+router.put('/lms/stations/:id', createOrUpdateStation as any);
+router.delete('/lms/stations/:id', deleteStation as any);
 router.post('/lms/stations/seed', seedStations as any);
 router.post('/lms/categories', createOrUpdateCategory as any);
 router.post('/lms/sessions', createOrUpdateSession as any);
 router.post('/lms/quizzes', createOrUpdateQuiz as any);
+
+// Non-prefixed alias routes for robustness
+router.post('/stations', createOrUpdateStation as any);
+router.put('/stations/:id', createOrUpdateStation as any);
+router.delete('/stations/:id', deleteStation as any);
 
 router.get('/forms', getForms as any);
 router.post('/forms', createOrUpdateForm as any);

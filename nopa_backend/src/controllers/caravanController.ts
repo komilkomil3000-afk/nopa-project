@@ -304,3 +304,40 @@ export async function broadcastToCaravan(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export async function getCaravanRequests(req: AuthRequest, res: Response) {
+  try {
+    const isMentor = req.user?.role === 'mentor';
+    let whereAsset: any = { status: 'pending' };
+    let whereTicket: any = { category: 'Caravan Transfer' };
+    
+    if (isMentor) {
+      whereAsset.requestedBy = req.user?.id;
+      whereTicket.studentId = req.user?.id;
+    }
+
+    const assetRequests = await prisma.assetConversionRequest.findMany({
+      where: whereAsset,
+      include: {
+        caravan: { select: { name: true } },
+        user: { select: { name: true, phoneNumber: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const transferRequests = await prisma.supportTicket.findMany({
+      where: whereTicket,
+      include: {
+        student: { select: { name: true, phoneNumber: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      assetConversions: assetRequests,
+      transferRequests: transferRequests
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}

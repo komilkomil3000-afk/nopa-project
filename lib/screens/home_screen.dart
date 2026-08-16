@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            if (user != null) _buildUserInfoCard(user),
+            _buildUserInfoCard(user),
             const SizedBox(height: 24),
             const Text('منزلگاه‌های من', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),

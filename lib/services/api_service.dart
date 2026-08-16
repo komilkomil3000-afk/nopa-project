@@ -4,6 +4,7 @@ import 'dart:io' as io show File;
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class HttpApiService {
   static final String _envHost = const String.fromEnvironment('NOPA_BACKEND_HOST');
@@ -46,6 +47,13 @@ class HttpApiService {
   }
 
   Future<void> checkBackendHealth() async {
+    try {
+      _token = await _secureStorage.read(key: 'auth_token');
+      debugPrint('🔑 Loaded cached token from secure storage: ${_token != null ? "exists" : "null"}');
+    } catch (e) {
+      debugPrint('Failed to read token from secure storage: $e');
+    }
+
     final hosts = await _buildHostCandidates();
     debugPrint('🔗 Probing host candidates: $hosts');
     for (final host in hosts) {
@@ -65,13 +73,19 @@ class HttpApiService {
     debugPrint('🔗 Failed to find a health endpoint; falling back to http://$_defaultHost:5000');
   }
 
+  static const _secureStorage = FlutterSecureStorage();
   String? _token;
 
   String? get token => _token;
   bool get isAuthenticated => _token != null;
 
-  void setToken(String? token) {
+  Future<void> setToken(String? token) async {
     _token = token;
+    if (token != null) {
+      await _secureStorage.write(key: 'auth_token', value: token);
+    } else {
+      await _secureStorage.delete(key: 'auth_token');
+    }
   }
 
   Map<String, String> _getHeaders() {
@@ -99,9 +113,10 @@ class HttpApiService {
     }
   }
 
-  Future<dynamic> login(String phoneNumber, {String? role}) async {
+  Future<dynamic> login(String phoneNumber, {String? password, String? role}) async {
     try {
-      final bodyMap = {'phoneNumber': phoneNumber};
+      final bodyMap = <String, dynamic>{'phoneNumber': phoneNumber};
+      if (password != null) bodyMap['password'] = password;
       if (role != null) bodyMap['role'] = role;
       
       final response = await http.post(
@@ -118,6 +133,7 @@ class HttpApiService {
 
       if (response.statusCode == 200) {
         _token = data['token'];
+        await _secureStorage.write(key: 'auth_token', value: _token);
         return {'status': 'success', 'data': data};
       }
       
@@ -125,6 +141,60 @@ class HttpApiService {
     } catch (e) {
       debugPrint('Login error: $e');
       return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
+    }
+  }
+
+  Future<dynamic> register({
+    required String fullName,
+    required String phoneNumber,
+    required String countryCode,
+    required String city,
+    required String dateOfBirth,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'fullName': fullName,
+          'phoneNumber': phoneNumber,
+          'countryCode': countryCode,
+          'city': city,
+          'dateOfBirth': dateOfBirth,
+          'password': password,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        _token = data['token'];
+        await _secureStorage.write(key: 'auth_token', value: _token);
+        return {'status': 'success', 'data': data};
+      }
+      
+      return {'status': 'error', 'message': data['message'] ?? data['error'] ?? 'خطایی در ثبت‌نام رخ داده است'};
+    } catch (e) {
+      debugPrint('Register error: $e');
+      return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
+    }
+  }
+
+  Future<bool> logout() async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/logout'),
+        headers: _getHeaders(),
+      );
+      _token = null;
+      await _secureStorage.delete(key: 'auth_token');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('Logout error: $e');
+      _token = null;
+      await _secureStorage.delete(key: 'auth_token');
+      return false;
     }
   }
 
@@ -187,6 +257,7 @@ class HttpApiService {
           avatarUrl: data['avatarUrl'],
           identityVerified: data['identityVerified'] ?? false,
           socialGroupLink: data['socialGroupLink'],
+          userCode: data['userCode'],
         );
       }
       return null;
@@ -532,6 +603,66 @@ class HttpApiService {
       debugPrint('Error adding bookmark: $e');
       return false;
     }
+  }
+
+  Future<Map<String, dynamic>?> sendWatchHeartbeat(String sessionId, int currentPositionSeconds, int durationSeconds) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/lms/sessions/$sessionId/heartbeat'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'currentPositionSeconds': currentPositionSeconds,
+          'durationSeconds': durationSeconds,
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('sendWatchHeartbeat error: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> getWatchProgress(String sessionId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/lms/sessions/$sessionId/progress'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+        },
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('getWatchProgress error: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> submitClassSessionQuiz(String sessionId, List<int> answers) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/lms/sessions/$sessionId/submit-quiz'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'answers': answers,
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('submitClassSessionQuiz error: $e');
+    }
+    return null;
   }
 }
 

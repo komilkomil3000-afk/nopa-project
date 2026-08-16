@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 import { authLimiter } from '../middleware/rateLimit';
-import { login, verifyPhone, changePassword } from '../controllers/authController';
+import { login, verifyPhone, changePassword, register, logout } from '../controllers/authController';
 import { getMe, getMentorById, completeProfile } from '../controllers/userController';
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
 import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
-import { getStations, getBookmarks, addBookmark } from '../controllers/lmsController';
+import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz } from '../controllers/lmsController';
 import { getForms, submitForm } from '../controllers/formController';
 import { getCaravanLeague, getWealthiestLeague, getMentorLeague } from '../controllers/leagueController';
 import { evaluateMentor } from '../controllers/evaluationController';
@@ -21,8 +21,11 @@ import adminRouter from './admin';
 const router = Router();
 
 // A. Auth & User Profile Routes
-router.post('/auth/verify-phone', authLimiter, verifyPhone as any);
-router.post('/auth/login', authLimiter, login as any);
+router.use('/auth', authLimiter);
+router.post('/auth/verify-phone', verifyPhone as any);
+router.post('/auth/login', login as any);
+router.post('/auth/register', register as any);
+router.post('/auth/logout', authenticateJWT as any, logout as any);
 router.post('/auth/change-password', authenticateJWT as any, changePassword as any);
 router.get('/users/me', authenticateJWT as any, getMe as any);
 router.get('/users/mentor/:id', authenticateJWT as any, getMentorById as any);
@@ -35,8 +38,8 @@ router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as
 
 // C. Submissions Routes
 router.post('/submissions', authenticateJWT as any, submitTask as any);
-router.get('/submissions/pending', authenticateJWT as any, authorizeRoles('mentor') as any, getPendingSubmissions as any);
-router.patch('/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor') as any, reviewSubmission as any);
+router.get('/submissions/pending', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getPendingSubmissions as any);
+router.patch('/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewSubmission as any);
 
 // D. Leagues Routes
 router.get('/leagues/caravans', authenticateJWT as any, getCaravanLeague);
@@ -66,6 +69,9 @@ router.get('/courses', authenticateJWT as any, getStations as any);
 router.get('/courses/hierarchy', authenticateJWT as any, getStations as any);
 router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as any);
 router.post('/lms/bookmarks', authenticateJWT as any, addBookmark as any);
+router.post('/lms/sessions/:id/heartbeat', authenticateJWT as any, heartbeatSessionWatch as any);
+router.get('/lms/sessions/:id/progress', authenticateJWT as any, getSessionWatchProgress as any);
+router.post('/lms/sessions/:id/submit-quiz', authenticateJWT as any, submitSessionQuiz as any);
 router.get('/forms', authenticateJWT as any, getForms as any);
 router.post('/forms/submit', authenticateJWT as any, submitForm as any);
 

@@ -102,6 +102,7 @@
           <ul class="accordion-content">
             <li class="menu-item" data-tab="lms-tab"><i class="fa-solid fa-graduation-cap"></i><span class="menu-text">ساختار منزلگاه و کلاس‌ها</span></li>
             <li class="menu-item" data-tab="form-builder-tab"><i class="fa-solid fa-wpforms"></i><span class="menu-text">فرم‌ساز داینامیک</span></li>
+            <li class="menu-item" data-tab="submissions-tab"><i class="fa-solid fa-list-check"></i><span class="menu-text">بررسی تکالیف معلق</span></li>
           </ul>
         </li>
 
@@ -250,9 +251,9 @@
             <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
               <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
               <div class="dropdown-content">
-                <a href="#" onclick="exportData('users', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                <a href="#" onclick="exportData('users', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                <a href="#" onclick="exportData('users', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                <a href="javascript:void(0)" onclick="exportData('users', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                <a href="javascript:void(0)" onclick="exportData('users', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="javascript:void(0)" onclick="exportData('users', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
               </div>
             </div>
           </div>
@@ -262,6 +263,7 @@
           <table class="data-table" id="users-data-table">
             <thead>
               <tr>
+                <th>شناسه</th>
                 <th>نام کاربر</th>
                 <th>شماره همراه</th>
                 <th>نقش</th>
@@ -370,9 +372,9 @@
                 <div class="dropdown-wrapper" style="display:inline-block; position:relative; margin-right: auto;">
                   <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
                   <div class="dropdown-content">
-                    <a href="#" onclick="exportData('ledger', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                    <a href="#" onclick="exportData('ledger', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                    <a href="#" onclick="exportData('ledger', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                    <a href="javascript:void(0)" onclick="exportData('ledger', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                    <a href="javascript:void(0)" onclick="exportData('ledger', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                    <a href="javascript:void(0)" onclick="exportData('ledger', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
                   </div>
                 </div>
               </div>
@@ -640,9 +642,9 @@
           <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
             <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
             <div class="dropdown-content">
-              <a href="#" onclick="exportData('caravans', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-              <a href="#" onclick="exportData('caravans', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-              <a href="#" onclick="exportData('caravans', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              <a href="javascript:void(0)" onclick="exportData('caravans', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+              <a href="javascript:void(0)" onclick="exportData('caravans', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+              <a href="javascript:void(0)" onclick="exportData('caravans', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
             </div>
           </div>
         </div>
@@ -721,9 +723,9 @@
           <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
             <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
             <div class="dropdown-content">
-              <a href="#" onclick="exportData('audit', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-              <a href="#" onclick="exportData('audit', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-              <a href="#" onclick="exportData('audit', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              <a href="javascript:void(0)" onclick="exportData('audit', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+              <a href="javascript:void(0)" onclick="exportData('audit', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+              <a href="javascript:void(0)" onclick="exportData('audit', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
             </div>
           </div>
         </div>
@@ -1152,9 +1154,9 @@
             <div class="dropdown-wrapper" style="display:inline-block; position:relative; margin-right: auto;">
               <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
               <div class="dropdown-content">
-                <a href="#" onclick="exportData('levels', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                <a href="#" onclick="exportData('levels', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                <a href="#" onclick="exportData('levels', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                <a href="javascript:void(0)" onclick="exportData('levels', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                <a href="javascript:void(0)" onclick="exportData('levels', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="javascript:void(0)" onclick="exportData('levels', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
               </div>
             </div>
           </div>
@@ -1288,116 +1290,83 @@
       </section>
       <!-- LMS -->
       <section id="lms-tab" class="tab-panel" style="display: none;">
+        <!-- Stations List Table -->
         <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">مدیریت منزلگاه‌ها (Station Management Builder)</div>
-          <form id="lms-station-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsStation(event)">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+            <div class="panel-title">ساختار منزلگاه‌ها (Stations Management)</div>
+            <button type="button" class="btn-primary" onclick="initNewStation()"><i class="fa-solid fa-plus"></i> ایجاد منزلگاه جدید</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table" id="stations-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px;">ایندکس</th>
+                  <th>نام منزلگاه</th>
+                  <th>زمان آزادسازی</th>
+                  <th>توضیحات</th>
+                  <th style="width: 150px;">عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Unified Visual Form Builder -->
+        <div class="panel-card glass" id="lms-builder-card" style="display: none; margin-bottom: 20px;">
+          <div class="panel-title" id="lms-builder-title">ایجاد منزلگاه جدید</div>
+          
+          <form id="lms-unified-form" onsubmit="submitLmsStationUnified(event)" style="margin-top: 15px;">
             <input type="hidden" id="lms-station-id">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>شماره/ایندکس منزلگاه</label>
-              <input type="number" id="lms-station-order" class="input-ctrl" required placeholder="مثال: 1">
-            </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>عنوان منزلگاه</label>
-              <input type="text" id="lms-station-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>تاریخ و زمان آزادسازی (Unlock Scheduler)</label>
-              <div style="display:flex; gap:10px;">
-                 <input type="date" id="lms-station-release-date" class="input-ctrl">
-                 <input type="time" id="lms-station-release-time" class="input-ctrl">
+            
+            <!-- Station Root Fields -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+              <div class="form-group">
+                <label>عنوان منزلگاه (نام منزلگاه)</label>
+                <input type="text" id="lms-station-title" class="input-ctrl" required placeholder="مثال: کاروانسرای اول">
+              </div>
+              <div class="form-group">
+                <label>ترتیب/ایندکس (ترتیب)</label>
+                <input type="number" id="lms-station-order" class="input-ctrl" required placeholder="مثال: 1" value="0">
+              </div>
+              <div class="form-group">
+                <label>تاریخ آزادسازی</label>
+                <input type="date" id="lms-station-release-date" class="input-ctrl">
+              </div>
+              <div class="form-group">
+                <label>ساعت آزادسازی</label>
+                <input type="time" id="lms-station-release-time" class="input-ctrl">
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>توضیحات منزلگاه</label>
+                <input type="text" id="lms-station-desc" class="input-ctrl" placeholder="توضیحات راهنما برای دانش‌آموزان...">
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>آدرس تصویر بنر کاور (Banner Cover Image)</label>
+                <input type="text" id="lms-station-icon" class="input-ctrl" placeholder="آدرس تصویر بنر...">
               </div>
             </div>
-            <button type="submit" class="btn-primary">ذخیره منزلگاه</button>
-          </form>
-        </div>
 
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">دسته تفکیکی کلاس‌ها (Class Categories)</div>
-          <form id="lms-category-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsCategory(event)">
-            <input type="hidden" id="lms-category-id">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>منزلگاه والد</label>
-              <select id="lms-cat-station-id" class="select-ctrl" required></select>
+            <!-- Categories Builder Container -->
+            <div style="margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #2D1B4E; padding: 10px 15px; border-radius: 8px;">
+                <span style="font-weight: bold; color: white;">دسته‌بندی‌های کلاس‌ها</span>
+                <button type="button" class="btn-primary" style="padding: 4px 10px; font-size: 11px;" onclick="addCategoryUI()"><i class="fa-solid fa-plus"></i> افزودن دسته کلاس</button>
+              </div>
+              
+              <!-- Categories list elements -->
+              <div id="builder-categories-container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
+                <!-- Populated dynamically -->
+              </div>
             </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>عنوان دسته (مانند پودمان مهارتی)</label>
-              <input type="text" id="lms-cat-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:1; min-width:150px;">
-              <label>ایندکس</label>
-              <input type="number" id="lms-cat-order" class="input-ctrl" required>
-            </div>
-            <button type="submit" class="btn-primary">ذخیره دسته‌بندی</button>
-          </form>
-        </div>
 
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">مجموعه کلاس‌ها / نشست‌ها (Class Sessions) و محدودیت‌ها</div>
-          <form id="lms-session-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsSession(event)">
-            <input type="hidden" id="lms-session-id">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>دسته‌بندی والد</label>
-              <select id="lms-sess-category-id" class="select-ctrl" required></select>
+            <!-- Form Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
+              <button type="button" class="page-btn" onclick="cancelLmsBuilder()">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره کامل ساختار منزلگاه</button>
             </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>عنوان کلاس</label>
-              <input type="text" id="lms-sess-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:1; min-width:150px;">
-              <label>Min Watch Threshold (%)</label>
-              <input type="number" id="lms-sess-watch-min" class="input-ctrl" value="70">
-            </div>
-            <div class="form-group" style="flex:1; min-width:150px;">
-              <label>Min Pass Score</label>
-              <input type="number" id="lms-sess-pass-score" class="input-ctrl" value="0">
-            </div>
-            <button type="submit" class="btn-primary">ذخیره کلاس</button>
-          </form>
-        </div>
-
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">مدیریت کلیپ‌های ویدیویی (Video Clips)</div>
-          <form id="lms-clip-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsClip(event)">
-            <input type="hidden" id="lms-clip-id">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>کلاس والد (Session)</label>
-              <select id="lms-clip-session-id" class="select-ctrl" required></select>
-            </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>عنوان کلیپ</label>
-              <input type="text" id="lms-clip-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:1; min-width:150px;">
-              <label>ترتیب نمایش (Order)</label>
-              <input type="number" id="lms-clip-order" class="input-ctrl" value="1" required>
-            </div>
-            <div class="form-group" style="flex:2; min-width:250px;">
-              <label>آپلود فایل ویدیو</label>
-              <input type="file" id="lms-clip-file" accept="video/*" class="input-ctrl" onchange="uploadClipMedia(this)">
-              <input type="hidden" id="lms-clip-url" required>
-              <small id="lms-clip-upload-status" style="color: #10B981;"></small>
-            </div>
-            <button type="submit" class="btn-primary" id="btn-save-clip">ذخیره کلیپ</button>
-          </form>
-        </div>
-
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">آزمون و چالش پایان کلاس (Exam Binder)</div>
-          <form id="lms-quiz-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitLmsQuiz(event)">
-            <input type="hidden" id="lms-quiz-id">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>کلاس والد</label>
-              <select id="lms-quiz-session-id" class="select-ctrl" required></select>
-            </div>
-            <div class="form-group" style="flex:2; min-width:200px;">
-              <label>عنوان آزمون</label>
-              <input type="text" id="lms-quiz-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:1; min-width:150px;">
-              <label>پاداش زریک</label>
-              <input type="number" id="lms-quiz-zarik" class="input-ctrl" value="0">
-            </div>
-            <button type="submit" class="btn-primary">ذخیره آزمون</button>
           </form>
         </div>
       </section>
@@ -1509,6 +1478,31 @@
             </div>
             <button type="submit" class="btn-primary">ارسال پیام گروهی</button>
           </form>
+        </div>
+      </section>
+
+      <section id="submissions-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px;">
+          <div class="panel-title">بررسی پاسخ تکالیف و چالش‌ها</div>
+          <div class="panel-desc">مدیریت و تایید پاسخ‌های ارسالی دانش‌آموزان</div>
+        </div>
+        <div class="table-container glass">
+          <table class="data-table" id="admin-submissions-table">
+            <thead>
+              <tr>
+                <th>دانش‌آموز</th>
+                <th>چالش / تکلیف</th>
+                <th>پاسخ متنی</th>
+                <th>فایل پیوست</th>
+                <th>تاریخ ارسال</th>
+                <th>پاداش پیش‌فرض (زریک)</th>
+                <th>عملیات ارزیابی</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
         </div>
       </section>
 
