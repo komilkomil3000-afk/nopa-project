@@ -521,6 +521,40 @@ class HttpApiService {
     }
   }
 
+  // --- SUPPORT TICKETS ---
+  Future<bool> createSupportTicket(String subject, String category, {String? voicePath}) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/support/tickets'));
+      if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      request.fields['subject'] = subject;
+      request.fields['category'] = category;
+      request.fields['description'] = 'تیکت ایجاد شده از سمت اپلیکیشن';
+      
+      if (voicePath != null) {
+        final multipartFile = await http.MultipartFile.fromPath('voiceFile', voicePath);
+        request.files.add(multipartFile);
+      }
+      
+      final streamed = await request.send();
+      return streamed.statusCode == 201;
+    } catch (e) {
+      debugPrint('createSupportTicket error: $e');
+      return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMyTickets() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/support/tickets'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(jsonDecode(response.body));
+      }
+    } catch (e) {
+      debugPrint('getMyTickets error: $e');
+    }
+    return [];
+  }
+
   // --- CHAT API ---
   Future<List<dynamic>> getDirectMessages(String mentorId) async {
     try {

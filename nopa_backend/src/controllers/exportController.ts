@@ -119,7 +119,12 @@ export const exportData = async (req: Request, res: Response) => {
         </html>
       `;
 
-      const options = { format: 'A4', margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' } };
+      const options = { 
+        format: 'A4', 
+        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' },
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      };
+      // We don't have direct access to pass waitUntil to html-pdf-node without options
       const file = { content: htmlContent };
       
       try {

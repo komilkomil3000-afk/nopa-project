@@ -106,6 +106,16 @@ class JarchiItem extends StatelessWidget {
                             ),
                           ),
                         ],
+                        const SizedBox(height: 16),
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 44),
+                            side: const BorderSide(color: Colors.white38),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('بستن', style: TextStyle(color: Colors.white, fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+                        ),
                       ],
                     ),
                   ),

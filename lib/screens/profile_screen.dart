@@ -12,6 +12,8 @@ import 'package:audioplayers/audioplayers.dart';
 import '../services/app_state_repository.dart';
 import '../services/theme_provider.dart';
 import '../services/audio_exclusivity_service.dart';
+import '../services/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -55,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Section 1: Mentoring Stats Grid
-              _buildMemberHeader(currentUser),
+              _buildMentorStatsGrid(),
 
               const SizedBox(height: 30),
 
@@ -85,6 +87,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMentorStatsGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GridView.count(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.6,
+        children: [
+          _buildStatItem('کاروان‌های تحت مدیریت', '۳', Icons.groups, const Color(0xFF10B981)),
+          _buildStatItem('پوشش محتوایی', '۸۵٪', Icons.pie_chart, const Color(0xFF8B5CF6)),
+          _buildStatItem('امتیاز رضایت‌مندی', '۴.۸ / ۵', Icons.star, const Color(0xFFFFD54F)),
+          _buildStatItem('درخواست‌های بررسی', '۱۲', Icons.pending_actions, const Color(0xFFEC4899)),
+        ],
       ),
     );
   }
@@ -196,196 +218,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMemberHeader(UserModel currentUser) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF26123D), Color(0xFF160E2A)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: GlobalState.getLevelColor(GlobalState.memberLevel),
-              boxShadow: GlobalState.getLevelGlow(GlobalState.memberLevel),
-              border: Border.all(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
-                width: 3,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-                width: 108,
-                height: 108,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 108,
-                  height: 108,
-                  color: Colors.white10,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white30,
-                    size: 54,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            currentUser.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: GlobalState.getLevelColor(
-                GlobalState.memberLevel,
-              ).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: GlobalState.getLevelColor(
-                  GlobalState.memberLevel,
-                ).withValues(alpha: 0.3),
-              ),
-            ),
-            child: Text(
-              'سطح پروفایل: ${GlobalState.getLevelLabel(GlobalState.memberLevel)}',
-              style: TextStyle(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'یاوران علاءالملک',
-                      style: TextStyle(
-                        color: Color(0xFFFFD54F),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      '🐫 عضو کاروان:',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'استاد علوی',
-                      style: TextStyle(
-                        color: Color(0xFFEC4899),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      '👤 راهبر کاروان:',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _showMentorEvaluationDialog(context),
-                  icon: const Icon(Icons.star_border, size: 16),
-                  label: const Text(
-                    'ارزیابی و امتیازدهی به راهبر کاروان ⭐️',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B5CF6),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'سطح ۱۳',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-              Text(
-                '۸۵۰ / ۱۰۰۰ امتیاز تجربه',
-                style: TextStyle(
-                  color: Color(0xFF8B5CF6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'سطح ۱۲',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: const LinearProgressIndicator(
-              value: 0.85,
-              minHeight: 6,
-              backgroundColor: Color(0xFF0F081D),
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMentorCaravansSection() {
     final List<Map<String, dynamic>> caravans = [
@@ -517,6 +349,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
+        _buildSettingTile(
+          'میز کار راهبر (مدیریت تکالیف و تیکت‌ها)',
+          Icons.work_outline,
+          () {
+             Navigator.pushNamed(context, '/mentor_workbench');
+          },
+        ),
+        _buildSettingTile('تغییر رمز عبور', Icons.vpn_key_outlined, () {
+          _showChangePasswordDialog(context);
+        }),
+        _buildSettingTile('تماس با ما', Icons.headset_mic_outlined, () {
+          ContactUsDialog.show(context);
+        }),
         _buildSettingTile('خروج از حساب کاربری', Icons.logout, () async {
           await Provider.of<AppRepository>(context, listen: false).logout();
           if (context.mounted) {
@@ -795,10 +640,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 30),
               _buildMemberCertificatesSection(certificates),
               const SizedBox(height: 30),
+              _buildCaravanSocialGroupButton(context, currentUser),
+              const SizedBox(height: 30),
               _buildSettingsList(context),
               const SizedBox(height: 100),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaravanSocialGroupButton(BuildContext context, UserModel currentUser) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: ElevatedButton.icon(
+        onPressed: () async {
+          final urlStr = currentUser.socialGroupLink ?? 'https://eitaa.com/nopa_group';
+          final uri = Uri.parse(urlStr);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('خطا در باز کردن لینک گروه کاروان.', style: TextStyle(fontFamily: 'Vazirmatn')),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            }
+          }
+        },
+        icon: const Icon(Icons.forum, color: Colors.white),
+        label: const Text(
+          'ورود به گروه پیام‌رسان کاروان',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF10B981),
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
       ),
     );
@@ -1685,8 +1566,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _showChangePasswordDialog(context);
         }),
         _buildSettingTile(
-          'پشتیبانی و تماس با ما',
-          Icons.headset_mic_outlined,
+          'ارسال تیکت پشتیبانی (صوتی/متنی)',
+          Icons.support_agent,
+          () {
+            showDialog(
+              context: context,
+              builder: (context) => const SupportTicketDialog(),
+            );
+          },
+        ),
+        _buildSettingTile(
+          'تماس با ما',
+          Icons.info_outline,
           () {
             ContactUsDialog.show(context);
           },
@@ -2444,14 +2335,15 @@ class _SupportTicketDialogState extends State<SupportTicketDialog> {
       ).showSnackBar(const SnackBar(content: Text('موضوع الزامی است')));
       return;
     }
-    // Upload audio and submit (Mock implementation for UI flow)
-    // ignore: unused_local_variable
-    final repo = Provider.of<AppRepository>(context, listen: false);
-    // await repo.apiService.createSupportTicket(subject, category, voicePath: _audioPath);
-    Navigator.pop(context);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('تیکت با موفقیت ثبت شد')));
+    // Upload audio and submit
+    final success = await HttpApiService().createSupportTicket(subject, 'پشتیبانی عمومی', voicePath: _audioPath);
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(success ? 'تیکت با موفقیت ثبت شد' : 'خطا در ثبت تیکت'),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ));
+    }
   }
 
   @override
