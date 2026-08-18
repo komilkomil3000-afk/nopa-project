@@ -5,6 +5,7 @@ import '../services/app_state_repository.dart';
 import '../widgets/nopa_notification_dialog.dart';
 import '../utils/tasks_repository.dart';
 import '../utils/global_state.dart';
+import '../widgets/create_challenge_dialog.dart';
 
 // Simple static notification manager to simulate real-time notifications
 class NotificationManager {
@@ -78,7 +79,7 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
     if (TasksRepository.shouldAutoOpenCreateChallenge) {
       TasksRepository.shouldAutoOpenCreateChallenge = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showCreateAssignmentDialog(true);
+        CreateChallengeDialog.show(context, onSuccess: () {});
       });
     }
   }
@@ -264,129 +265,7 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
     );
   }
 
-  void _showCreateAssignmentDialog(bool isChallenge) {
-    final TextEditingController titleCtrl = TextEditingController();
-    final TextEditingController descCtrl = TextEditingController();
-    final TextEditingController scoreCtrl = TextEditingController(text: '100');
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF1E1435),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    isChallenge ? 'ایجاد چالش جدید 🏆' : 'ایجاد تکلیف جدید 📌',
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(color: Colors.white10),
-                  const SizedBox(height: 12),
-                  
-                  const Text('عنوان:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: titleCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color(0xFF160E2A),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  const Text('توضیحات:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: descCtrl,
-                    maxLines: 3,
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color(0xFF160E2A),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  const Text('جایزه (زریک):', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: scoreCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: const Color(0xFF160E2A),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  
-                  Container(
-                    width: double.infinity,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (titleCtrl.text.isEmpty) return;
-                        Navigator.pop(context);
-                        
-                        setState(() {
-                          if (!isChallenge) {
-                            _assignments.add({
-                              'id': DateTime.now().toString(),
-                              'title': titleCtrl.text,
-                              'submissionsCount': '۰ از ۱۲ نفر',
-                              'submissions': []
-                            });
-                          }
-                          // Add notification to members
-                          NotificationManager.notifications.add(
-                            isChallenge 
-                                ? 'چالش جدید اضافه شد: ${titleCtrl.text} 🏆' 
-                                : 'تکلیف جدید ابلاغ شد: ${titleCtrl.text} 📌'
-                          );
-                          NotificationManager.hasNewNotification = true;
-                        });
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(isChallenge ? 'چالش جدید با موفقیت ایجاد شد' : 'تکلیف جدید ابلاغ گردید', style: const TextStyle(fontFamily: 'Vazirmatn')),
-                            backgroundColor: const Color(0xFF10B981),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('ایجاد و ابلاغ عمومی', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -468,27 +347,14 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _showCreateAssignmentDialog(true),
+                            onPressed: () => CreateChallengeDialog.show(context, onSuccess: () {}),
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: Color(0xFFFFD54F)),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                             icon: const Icon(Icons.star, color: Color(0xFFFFD54F), size: 16),
-                            label: const Text('ایجاد چالش جدید', style: TextStyle(color: Color(0xFFFFD54F), fontSize: 12, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _showCreateAssignmentDialog(false),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF10B981)),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            icon: const Icon(Icons.add_task, color: Color(0xFF10B981), size: 16),
-                            label: const Text('ایجاد تکلیف جدید', style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold)),
+                            label: const Text('ایجاد چالش / تکلیف جدید', style: TextStyle(color: Color(0xFFFFD54F), fontSize: 12, fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],

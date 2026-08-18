@@ -55,7 +55,7 @@ async function main() {
       userCode: 110102,
     },
     {
-      name: 'مدیر کل',
+      name: 'مدیر ارشد',
       role: 'admin',
       phoneNumber: '09120000001',
       passwordHash,
@@ -65,7 +65,7 @@ async function main() {
       userCode: 110103,
     },
     {
-      name: 'سوپر ادمین',
+      name: 'مدیر ارشد',
       role: 'admin',
       phoneNumber: '09380346668',
       passwordHash,
@@ -78,24 +78,101 @@ async function main() {
 
   for (const user of seedUsers) {
     const existing = await prisma.user.findFirst({
-      where: { phoneNumber: user.phoneNumber, name: user.name },
+      where: { phoneNumber: user.phoneNumber },
     });
     
     if (!existing) {
       console.log(`Seeding User: ${user.name} (${user.phoneNumber})...`);
-      await prisma.user.create({ data: user });
+      await prisma.user.create({
+        data: user,
+      });
     } else {
-      console.log(`Updating existing User: ${user.name} (${user.phoneNumber}) with userCode: ${user.userCode}...`);
+      console.log(`Updating existing User: ${existing.name} (${existing.phoneNumber})...`);
       await prisma.user.update({
         where: { id: existing.id },
-        data: { userCode: user.userCode }
+        data: {
+          name: user.name,
+          role: user.role,
+        },
       });
     }
   }
 
   console.log('Seeding complete for Users!');
 
-  // Seed LMS Data
+  // Fetch created users to use their IDs
+  const studentKomeil = await prisma.user.findFirst({ where: { phoneNumber: '09121111111', name: 'کمیل عارف' } });
+  const studentSara = await prisma.user.findFirst({ where: { phoneNumber: '09121111111', name: 'سارا عارف' } });
+  const mentorAli = await prisma.user.findFirst({ where: { phoneNumber: '09122222222' } });
+
+  if (studentKomeil && studentSara && mentorAli) {
+    let caravanYavaran = await prisma.caravan.findFirst({ where: { name: 'کاروان یاوران' } });
+    if (!caravanYavaran) {
+      caravanYavaran = await prisma.caravan.create({
+        data: {
+          name: 'کاروان یاوران',
+          mentorId: mentorAli.id,
+          memberCount: 2,
+          capacityLimit: 20,
+          overallProgress: 45.5,
+        }
+      });
+      console.log('Created Caravan: کاروان یاوران');
+    }
+
+    // Assign students to caravan
+    await prisma.user.update({ where: { id: studentKomeil.id }, data: { caravanId: caravanYavaran.id } });
+    await prisma.user.update({ where: { id: studentSara.id }, data: { caravanId: caravanYavaran.id } });
+
+    // Seed Evaluations
+    const evalExists = await prisma.mentorEvaluation.findFirst({ where: { studentId: studentKomeil.id, mentorId: mentorAli.id } });
+    if (!evalExists) {
+      await prisma.mentorEvaluation.create({
+        data: {
+          studentId: studentKomeil.id,
+          mentorId: mentorAli.id,
+          rating: 4,
+          responsivenessScore: 5,
+          guidanceScore: 4,
+          feedbackText: 'استاد بسیار عالی و پاسخگو هستند.'
+        }
+      });
+      await prisma.mentorEvaluation.create({
+        data: {
+          studentId: studentSara.id,
+          mentorId: mentorAli.id,
+          rating: 5,
+          responsivenessScore: 5,
+          guidanceScore: 5,
+          feedbackText: 'بهترین راهبر!'
+        }
+      });
+      console.log('Seeded Mentor Evaluations');
+    }
+
+    // Seed Support Tickets
+    const ticketExists = await prisma.supportTicket.findFirst({ where: { studentId: studentKomeil.id } });
+    if (!ticketExists) {
+      const ticket = await prisma.supportTicket.create({
+        data: {
+          studentId: studentKomeil.id,
+          category: 'درخواست راهنمایی تحصیلی',
+          subject: 'مشکل در فهم مبحث ریاضیات گسسته',
+          status: 'open',
+        }
+      });
+      
+      await prisma.supportTicketReply.create({
+        data: {
+          ticketId: ticket.id,
+          mentorId: mentorAli.id,
+          message: 'سلام کمیل جان، لطفاً دقیق‌تر بگو کجای مبحث مشکل داری؟'
+        }
+      });
+      console.log('Seeded Support Tickets');
+    }
+  }
+
   console.log('Seeding Baseline LMS Data...');
   
   let station1 = await prisma.station.findFirst({ where: { title: 'منزلگاه ۱' } });

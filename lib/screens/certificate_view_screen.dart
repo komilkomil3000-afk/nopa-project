@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class CertificateViewScreen extends StatefulWidget {
   final Map<String, dynamic> certificate;
@@ -39,6 +40,140 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
         );
       }
     });
+  }
+
+  void _showPhysicalOrderModal() {
+    final nameCtrl = TextEditingController(text: widget.userName);
+    final addressCtrl = TextEditingController();
+    final postalCodeCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1435),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: 24,
+            right: 24,
+            top: 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  'درخواست نسخه چاپی و فیزیکی 📜',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                ),
+                const SizedBox(height: 16),
+                const Text('نام گیرنده:', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn')),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameCtrl,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(filled: true, fillColor: const Color(0xFF160E2A), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                ),
+                const SizedBox(height: 12),
+                const Text('آدرس دقیق پستی:', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn')),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: addressCtrl,
+                  maxLines: 2,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(filled: true, fillColor: const Color(0xFF160E2A), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                ),
+                const SizedBox(height: 12),
+                const Text('کد پستی:', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn')),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: postalCodeCtrl,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(filled: true, fillColor: const Color(0xFF160E2A), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                ),
+                const SizedBox(height: 12),
+                const Text('شماره تماس گیرنده:', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn')),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(filled: true, fillColor: const Color(0xFF160E2A), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFF8B5CF6).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3))),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text('هزینه چاپ و ارسال: ۸۵,۰۰۰ تومان', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (nameCtrl.text.isEmpty || addressCtrl.text.isEmpty || postalCodeCtrl.text.isEmpty || phoneCtrl.text.isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('لطفاً همه فیلدها را پر کنید', style: TextStyle(fontFamily: 'Vazirmatn')), backgroundColor: Colors.red));
+                        return;
+                      }
+                      
+                      Navigator.pop(ctx);
+                      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                      
+                      try {
+                        final api = HttpApiService();
+                        // Mocking the call since we don't have the cert ID in the UI properly, assuming id exists
+                        final certId = widget.certificate['id'] ?? 'mock_cert_id';
+                        await api.authenticatedPost('/certificates/$certId/physical-order', {
+                          'recipientName': nameCtrl.text,
+                          'postalAddress': addressCtrl.text,
+                          'postalCode': postalCodeCtrl.text,
+                          'phoneNumber': phoneCtrl.text,
+                        });
+                        
+                        if (mounted) {
+                          Navigator.pop(context); // close loader
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('سفارش چاپ با موفقیت ثبت شد و در انتظار پردازش است! 🚚', style: TextStyle(fontFamily: 'Vazirmatn')),
+                              backgroundColor: Color(0xFF10B981),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('خطا در ثبت سفارش', style: TextStyle(fontFamily: 'Vazirmatn')), backgroundColor: Colors.red),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B5CF6), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                    child: const Text('پرداخت و ثبت سفارش 💳', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Vazirmatn')),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -165,6 +300,26 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              
+              // Physical Order Button
+              if (widget.certificate['status'] == 'issued' || widget.certificate['status'] == 'verified')
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: _showPhysicalOrderModal,
+                    icon: const Icon(Icons.local_shipping, color: Colors.white),
+                    label: const Text(
+                      'درخواست نسخه چاپی و فیزیکی 📜',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, fontFamily: 'Vazirmatn'),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B5CF6),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

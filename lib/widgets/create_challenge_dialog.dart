@@ -384,7 +384,7 @@ class _CreateChallengeDialogState extends State<CreateChallengeDialog> {
             borderRadius: BorderRadius.circular(14),
           ),
           child: ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_titleCtrl.text.isEmpty) return;
 
               final repository = Provider.of<AppRepository>(context, listen: false);
@@ -405,10 +405,29 @@ class _CreateChallengeDialogState extends State<CreateChallengeDialog> {
                 createdByMentorId: repository.currentUser.id,
               );
 
-              repository.createChallenge(newChallenge);
+              final success = await repository.apiService.createChallenge(newChallenge);
 
-              Navigator.pop(context);
-              widget.onSuccess();
+              if (!mounted) return;
+
+              if (success) {
+                // Keep local state update for immediate UI feedback if needed, but the main persistence is done
+                repository.createChallenge(newChallenge);
+                Navigator.pop(context);
+                widget.onSuccess();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('چالش با موفقیت در سرور ثبت شد', style: TextStyle(fontFamily: 'Vazirmatn')),
+                    backgroundColor: Color(0xFF10B981),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('خطا در ثبت چالش', style: TextStyle(fontFamily: 'Vazirmatn')),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,

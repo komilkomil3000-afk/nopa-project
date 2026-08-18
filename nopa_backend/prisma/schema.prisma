@@ -39,6 +39,7 @@ model User {
   userCode                     Int?           @unique
   isDeleted                    Boolean        @default(false)
   deletedAt                    DateTime?
+  suspendedUntil               DateTime?
   sessions                     UserSession[]
   
   // Mentor Demographics & Tangible Assets
@@ -46,15 +47,18 @@ model User {
   bio                            String?
   academicDegree                 String?
   academicCertificates           String?
-  accountStatus                  String         @default("ACTIVE") // ACTIVE, SUSPENDED, RESTRICTED
+  accountStatus                  String         @default("ACTIVE") // ACTIVE, SUSPENDED, RESTRICTED, PENDING_VERIFICATION
+  socialMessengerHandle          String?
+  socialPlatform                 String?
   nakh                           Int            @default(0)
   beyragh                        Int            @default(0)
   farsh                          Int            @default(0)
   
   // Relations
   certificates                 Certificate[]
+  physicalOrders               PhysicalCertificateOrder[]
   caravan                      Caravan?       @relation("CaravanMembers", fields: [caravanId], references: [id], onDelete: SetNull)
-  mentoredCaravans             Caravan[]      @relation("CaravanMentor")
+  mentoredCaravans             Caravan[]      @relation("MentorCaravans")
   mentorDocuments              MentorDocument[]
   submissions                  Submission[]
   quizSubmissions              QuizSubmission[] @relation("StudentQuizSubmissions")
@@ -115,7 +119,7 @@ model Caravan {
   targetStationId String?
 
   // Relations
-  mentor          User?         @relation("CaravanMentor", fields: [mentorId], references: [id], onDelete: SetNull)
+  mentor          User?         @relation("MentorCaravans", fields: [mentorId], references: [id], onDelete: SetNull)
   members         User[]        @relation("CaravanMembers")
   chatMessages    ChatMessage[]
   assetConversions AssetConversionRequest[]
@@ -269,6 +273,24 @@ model Certificate {
   verifyId     String
   issuedAt     DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       PhysicalCertificateOrder[]
+}
+
+model PhysicalCertificateOrder {
+  id             String   @id @default(uuid())
+  userId         String
+  certificateId  String
+  recipientName  String
+  postalAddress  String
+  postalCode     String
+  phoneNumber    String
+  status         String   @default("PENDING_PRINT") // PENDING_PRINT, DISPATCHED
+  trackingCode   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certificate    Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }
 
 model MentorDocument {

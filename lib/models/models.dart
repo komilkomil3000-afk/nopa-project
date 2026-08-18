@@ -103,3 +103,15 @@ class MediaBannerModel {
     required this.type,
   });
 }
+
+class MentorDocumentModel {
+  final String id;
+  final String url;
+  final String status;
+
+  MentorDocumentModel({
+    required this.id,
+    required this.url,
+    required this.status,
+  });
+}

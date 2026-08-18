@@ -21,6 +21,7 @@ class UserModel {
   final int totalZarikPurchases;
   final String? socialGroupLink;
   final int? userCode;
+  final List<dynamic>? mentorDocuments;
 
   UserModel({
     required this.id,
@@ -43,6 +44,7 @@ class UserModel {
     this.totalZarikPurchases = 0,
     this.socialGroupLink,
     this.userCode,
+    this.mentorDocuments,
   });
 
   int get zarikBalance => zarik;

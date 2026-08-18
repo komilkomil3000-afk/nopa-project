@@ -233,6 +233,14 @@ class HttpApiService {
     }
   }
 
+  Future<http.Response> authenticatedPost(String path, Map<String, dynamic> body) async {
+    return await http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: _getHeaders(),
+      body: jsonEncode(body),
+    );
+  }
+
   // Get Me
   Future<UserModel?> getMe() async {
     try {
@@ -258,6 +266,7 @@ class HttpApiService {
           identityVerified: data['identityVerified'] ?? false,
           socialGroupLink: data['socialGroupLink'],
           userCode: data['userCode'],
+          mentorDocuments: data['mentorDocuments'],
         );
       }
       return null;
@@ -347,7 +356,7 @@ class HttpApiService {
   Future<List<Map<String, dynamic>>> getMentorLeaderboard() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/mentors/leaderboard'),
+        Uri.parse('$baseUrl/leagues/mentors'),
         headers: _getHeaders(),
       );
 
@@ -664,6 +673,73 @@ class HttpApiService {
     }
     return null;
   }
-}
 
+  Future<Map<String, dynamic>?> getStudentPerformance(String userId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/admin/users/$userId/analytics'),
+        headers: _getHeaders(),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body);
+      }
+    } catch (e) {
+      debugPrint('getStudentPerformance error: $e');
+    }
+    return null;
+  }
+
+  // --- Mentor Tickets & Workbench ---
+  Future<List<Map<String, dynamic>>> getTickets() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/support/tickets'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('HTTP getTickets error: $e');
+      return [];
+    }
+  }
+
+  Future<bool> replyTicket(String ticketId, String replyMessage) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/support/tickets/$ticketId/reply'),
+        headers: _getHeaders(),
+        body: jsonEncode({'message': replyMessage}),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('HTTP replyTicket error: $e');
+      return false;
+    }
+  }
+
+  // --- Create Challenge ---
+  Future<bool> createChallenge(ChallengeModel challenge) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/challenges'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'title': challenge.title,
+          'description': challenge.description,
+          'rewardZarik': challenge.rewardZarik,
+          'type': challenge.type,
+          if (challenge.questions != null) 'questions': challenge.questions,
+        }),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('HTTP createChallenge error: $e');
+      return false;
+    }
+  }
+}
 

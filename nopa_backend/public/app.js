@@ -22,23 +22,66 @@ let analyticsEngagementChart = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-  if (token) {
+  const token = localStorage.getItem('token');
+  const modal = document.getElementById('login-modal');
+
+  if (token && token !== 'dev-bypass') {
+    if (modal) modal.style.setProperty('display', 'none', 'important');
+  }
+
+  const form = document.getElementById('admin-login-form');
+  if (form) {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const phoneInput = form.querySelector('input[type="text"]') || document.getElementById('login-phone');
+      const passInput = form.querySelector('input[type="password"]') || document.getElementById('login-password');
+
+      const phoneNumber = phoneInput ? phoneInput.value.trim() : '09380346668';
+      const password = passInput ? passInput.value.trim() : '123456';
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('nopa_admin_token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
+          const modal = document.getElementById('login-modal');
+          if (modal) modal.style.display = 'none';
+          window.location.reload();
+        } else {
+          alert(data.error || 'اطلاعات ورود اشتباه است');
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('خطا در اتصال به سرور بکاند');
+      }
+    };
+  }
+
+  if (token && token !== 'dev-bypass') {
     showDashboard();
-  } else {
-    showLogin();
   }
   setupEventListeners();
   setupSidebarControls();
 });
 
 function showLogin() {
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app-layout').style.display = 'none';
+  const modal = document.getElementById('login-modal');
+  if (modal) modal.style.display = 'flex';
+  const layout = document.getElementById('app-layout');
+  if (layout) layout.style.display = 'none';
 }
 
 function showDashboard() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-layout').style.display = 'block';
+  const modal = document.getElementById('login-modal');
+  if (modal) modal.style.setProperty('display', 'none', 'important');
+  const layout = document.getElementById('app-layout');
+  if (layout) layout.style.display = 'block';
   
   // Set current user details
   document.getElementById('current-user-avatar').textContent = currentUser.name ? currentUser.name.substring(0, 2) : 'مد';
@@ -51,46 +94,52 @@ function showDashboard() {
   loadAllUsersDropdown();
 }
 
-function setupEventListeners() {
-  // Login Form
-  document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const phoneNumber = document.getElementById('login-phone').value;
-    const password = document.getElementById('login-password').value;
-    const errEl = document.getElementById('login-error');
+window.handleAdminLogin = async function() {
+  const phoneInput = document.getElementById('login-phone') || document.querySelector('input[type="text"]');
+  const passInput = document.getElementById('login-password') || document.querySelector('input[type="password"]');
 
-    try {
-      const res = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, password })
-      });
-      const data = await res.json();
-      
-      if (res.ok) {
-        token = data.token;
-        currentUser = data.user;
-        localStorage.setItem('nopa_admin_token', token);
-        localStorage.setItem('nopa_admin_user', JSON.stringify(currentUser));
-        errEl.style.display = 'none';
-        showDashboard();
-      } else {
-        errEl.textContent = data.error || 'ورود ناموفق بود';
-        errEl.style.display = 'block';
-      }
-    } catch (err) {
-      errEl.textContent = 'خطای اتصال به سرور';
-      errEl.style.display = 'block';
+  const phoneNumber = phoneInput ? phoneInput.value.trim() : '09380346668';
+  const password = passInput ? passInput.value.trim() : '123456';
+
+  try {
+    const res = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phoneNumber, password })
+    });
+    const data = await res.json();
+    if (res.ok && data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('nopa_admin_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
+
+      const modal = document.getElementById('login-modal') || document.getElementById('login-overlay');
+      if (modal) modal.style.setProperty('display', 'none', 'important');
+      const screen = document.getElementById('login-screen');
+      if (screen) screen.style.display = 'none';
+      document.body.classList.remove('modal-open');
+
+      // Trigger initial dashboard load
+      if (typeof loadDashboardStats === 'function') loadDashboardStats();
+      if (typeof loadUsers === 'function') loadUsers();
+      if (typeof loadMentorsTab === 'function') loadMentorsTab();
+      window.location.reload();
+    } else {
+      alert(data.error || 'اطلاعات ورود نادرست است');
     }
-  });
+  } catch (err) {
+    console.error('Login fetch failed:', err);
+    alert('عدم برقراری ارتباط با سرور. مطمئن شوید سرور بکاند فعال است.');
+  }
+};
 
+function setupEventListeners() {
   // Logout Ctrl
   document.getElementById('btn-logout-ctrl').addEventListener('click', () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('nopa_admin_token');
     localStorage.removeItem('nopa_admin_user');
-    token = '';
-    currentUser = {};
-    showLogin();
+    window.location.reload();
   });
 
   // Tab switching
@@ -117,6 +166,161 @@ function setupEventListeners() {
     // Toggle current
     item.classList.toggle('open');
   };
+
+  // 8. Toggle Dark/Light Mode
+function toggleTheme() {
+  document.body.classList.toggle('light-theme');
+}
+
+async function loadMentorsTab() {
+  try {
+    const res = await request('/api/v1/admin/mentors');
+    if (!res.ok) throw new Error('خطا در بارگیری اطلاعات راهبران');
+    const mentors = await res.json();
+    
+    const tbody = document.querySelector('#mentors-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    mentors.forEach(m => {
+      const avatar = m.name ? m.name.substring(0, 2) : 'نا';
+      const roleName = m.role === 'admin' ? 'مدیر ارشد' : 'راهبر';
+      const levelBadge = `<span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">سطح ${m.mentorLevel || 1}</span>`;
+      
+      const ratings = m.ratingsReceived || [];
+      const totalRatings = ratings.length;
+      const avgRating = totalRatings > 0 
+        ? (ratings.reduce((sum, r) => sum + r.ratingValue, 0) / totalRatings).toFixed(1) 
+        : '0.0';
+
+      let caravanStr = 'همه کاروان‌ها';
+      if (m.role === 'admin' || m.role === 'SUPER_ADMIN') {
+        caravanStr = '<span class="badge badge-success">همه کاروان‌ها</span>';
+      } else if (m.mentoredCaravans && m.mentoredCaravans.length > 0) {
+        caravanStr = m.mentoredCaravans.map(c => `<span class="badge badge-student">${c.name}</span>`).join(' ');
+      } else {
+        caravanStr = 'بدون کاروان';
+      }
+
+      let degreeStr = m.academicDegree || 'ثبت نشده';
+      if (m.mentorDocuments && m.mentorDocuments.length > 0) {
+         const lastDoc = m.mentorDocuments[m.mentorDocuments.length - 1];
+         degreeStr += ` (${lastDoc.status === 'approved' ? 'تایید شده' : lastDoc.status === 'rejected' ? 'رد شده' : 'در انتظار'})`;
+      }
+      const uniqueCode = m.userCode ? `NP-${m.userCode}` : `NP-${m.phoneNumber.substring(m.phoneNumber.length - 6)}`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><div class="user-avatar" style="width:40px; height:40px; font-size:14px; margin:0 auto; background: var(--color-neon-blue);">${avatar}</div></td>
+        <td>
+          <strong>${m.name}</strong><br>
+          <span style="font-size:11px; color:var(--text-secondary); cursor:pointer;" onclick="navigator.clipboard.writeText('${uniqueCode}'); alert('کد راهبر کپی شد')">
+            <i class="fa-solid fa-copy"></i> ${uniqueCode}
+          </span>
+        </td>
+        <td style="font-family: monospace;">${m.phoneNumber}</td>
+        <td>${m.nationalId || '-'}</td>
+        <td>${degreeStr}</td>
+        <td>${caravanStr}</td>
+        <td>${levelBadge}</td>
+        <td style="color:var(--color-warning);">${avgRating} <i class="fa-solid fa-star"></i></td>
+        <td style="white-space:nowrap;">
+          <button class="page-btn btn-view" onclick="viewMentorDetails('${m.id}')" title="نمایش پرونده"><i class="fa-solid fa-eye"></i></button>
+          <button class="page-btn btn-edit" onclick="openUserModal('${m.id}', '${m.name}', '${m.role}', '', ${m.levelFrame || 1}, ${m.mentorLevel || 1}, '${m.nationalId || ''}', '${m.dateOfBirth || ''}')" title="ویرایش"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-delete" onclick="moderateMentorModal('${m.id}')" title="حذف/تعلیق"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Failed to load mentors:', err);
+  }
+}
+
+window.moderateMentorModal = function(id) {
+  const action = prompt('نوع عملیات را وارد کنید (soft_delete / permanent_suspend / temp_suspend):');
+  if (!action) return;
+  
+  let suspendedUntil = null;
+  if (action === 'temp_suspend') {
+    suspendedUntil = prompt('تاریخ پایان تعلیق (فرمت YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+    if (!suspendedUntil) return;
+  }
+  
+  request('/api/v1/admin/mentors/' + id + '/moderate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, suspendedUntil })
+  }).then(async res => {
+    if (res.ok) {
+      alert('عملیات با موفقیت انجام شد');
+      loadMentorsTab();
+    } else {
+      const data = await res.json();
+      alert(data.error);
+    }
+  });
+};  
+
+async function loadLevelsAndCertificatesTab() {
+  try {
+    const res = await request('/api/v1/admin/levels-and-certificates');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const tbody = document.querySelector('#levels-data-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    data.data.forEach(user => {
+      const levelNames = { 1: 'تازه وارد', 2: 'نقره‌ای', 3: 'طلایی' };
+      const levelBadge = `<span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
+      
+      const lastCert = user.certificates && user.certificates.length > 0 ? user.certificates[0].title : 'بدون گواهینامه';
+      
+      let physicalReqs = 'ندارد';
+      if (user.physicalOrders && user.physicalOrders.length > 0) {
+        physicalReqs = user.physicalOrders.map(o => `<span class="badge" style="background:${o.status === 'PENDING_PRINT' ? '#fbbf24' : '#10b981'}; color:black;">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${user.name || 'کاربر بدون نام'}</strong></td>
+        <td style="font-family: monospace;">${user.phoneNumber}</td>
+        <td>${levelBadge}</td>
+        <td>${lastCert}</td>
+        <td>${user.registrationCompleted ? '<span style="color:var(--color-success)">تکمیل شده</span>' : '<span style="color:var(--color-danger)">ناقص</span>'}</td>
+        <td>${physicalReqs}</td>
+        <td>
+          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" onclick="promptLevelOverride('${user.id}', ${user.levelFrame})" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Failed to load levels and certificates:', err);
+  }
+}
+
+window.promptLevelOverride = async function(userId, currentLevel) {
+  const newLevel = prompt('سطح جدید را وارد کنید (1=برنزی، 2=نقره‌ای، 3=طلایی):', currentLevel);
+  if (!newLevel) return;
+  try {
+    const res = await request('/api/v1/admin/students/' + userId + '/level-frame', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ levelFrame: parseInt(newLevel) })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('سطح با موفقیت تغییر یافت');
+      loadLevelsAndCertificatesTab();
+    } else {
+      alert(data.error || 'خطا در تغییر سطح');
+    }
+  } catch (err) {
+    alert('خطای شبکه');
+  }
+};
 
   // Filters & Search
   document.getElementById('user-search-input').addEventListener('input', debounce(() => {
@@ -329,9 +533,10 @@ function debounce(func, delay) {
 }
 
 async function request(url, options = {}) {
+  const currentToken = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
   options.headers = {
     ...options.headers,
-    'Authorization': `Bearer ${token}`
+    'Authorization': `Bearer ${currentToken}`
   };
   const res = await fetch(url, options);
   if (res.status === 401 || res.status === 403) {
@@ -360,6 +565,7 @@ function switchTab(tabId) {
   // Set top title
   const titlesMap = {
     'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات ۵۰۰+ کاربر نپا' },
+    'levels-tab': { title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه' },
     'analytics-tab': { title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران' },
     'rewards-tab': { title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک' },
     'roles-tab': { title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا' },
@@ -385,7 +591,9 @@ function switchTab(tabId) {
     loadCaravansTab();
   } else if (tabId === 'audit-tab') {
     loadAuditLogs();
-  } else if (tabId === 'mentors-tab') {
+  } else if (tabId === 'levels-tab') {
+    loadLevelsAndCertificatesTab();
+  } else if (tabId === 'mentors-profile-tab') {
     loadMentorsTab();
   } else if (tabId === 'economy-hub-tab') {
     loadEconomyHubTab();
@@ -409,6 +617,8 @@ function switchTab(tabId) {
     loadLevels();
   } else if (tabId === 'mentors-tickets-tab') {
     if (typeof loadTickets === 'function') loadTickets();
+  } else if (tabId === 'mentors-league-tab') {
+    if (typeof loadMentorLeague === 'function') loadMentorLeague();
   } else if (tabId === 'submissions-tab') {
     if (typeof loadSubmissions === 'function') loadSubmissions();
   }
@@ -892,6 +1102,9 @@ window.viewMentorDetails = async function(mentorId) {
           <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto; background: var(--color-neon-blue);">${user.name.substring(0,2)}</div>
           <div style="margin-top:8px;"><span class="badge badge-mentor">مربی - سطح ${user.mentorLevel || 1}</span></div>
           <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${user.phoneNumber}</div>
+          <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${user.userCode || user.phoneNumber}'); alert('کد راهبر کپی شد')">
+            <i class="fa-solid fa-copy text-primary"></i> <strong style="color:var(--text-primary);">NP-${user.userCode || user.phoneNumber}</strong>
+          </div>
           <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
           <div style="text-align: right; font-size: 13px;">
             <p><strong>رضایت مخاطبین:</strong> <span style="color:var(--color-warning);">4.8 / 5 <i class="fa-solid fa-star"></i></span></p>
@@ -1402,43 +1615,82 @@ async function handleRbacToggle(e) {
 }
 
 // 4. CARAVANS & MENTORS
+window.caravansData = [];
+
 async function loadCaravansTab() {
   try {
     const res = await request('/api/v1/admin/caravans');
-    const caravans = await res.json();
-
-    const container = document.getElementById('caravans-container');
-    container.innerHTML = '';
-
-    caravans.forEach(c => {
-      const percentage = Math.round(c.overallProgress * 100);
-      const card = document.createElement('div');
-      card.className = 'caravan-card glass';
-      card.innerHTML = `
-        <div class="caravan-title">${c.name}</div>
-        <p style="margin-bottom:8px; font-size:13px; color:var(--text-secondary);"><strong>مربی راهبر:</strong> ${c.mentor?.name || 'فاقد مربی'}</p>
-        <p style="margin-bottom:8px; font-size:13px; color:var(--text-secondary);"><strong>اعضای گروه:</strong> ${c.memberCount} نفر</p>
-        <p style="margin-bottom:8px; font-size:13px; color:var(--text-secondary);"><strong>امتیاز تیمی:</strong> ${c.groupPoints} زریک</p>
-        
-        <div style="margin-top:20px;">
-          <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
-            <span>پیشرفت کلی</span>
-            <span>${percentage}%</span>
-          </div>
-          <div class="progress-bar-container" style="margin: 0;">
-            <div class="progress-bar-fill" style="width: ${percentage}%"></div>
-          </div>
-        </div>
-      `;
-      container.appendChild(card);
+    window.caravansData = await res.json();
+    
+    // Populate Mentor Filter
+    const mentorSelect = document.getElementById('caravan-mentor-filter');
+    const mentors = new Set(window.caravansData.map(c => c.mentor?.name || '-').filter(n => n !== '-'));
+    mentorSelect.innerHTML = '<option value="all">همه مربیان</option>';
+    mentors.forEach(m => {
+      mentorSelect.innerHTML += `<option value="${m}">${m}</option>`;
     });
 
+    renderCaravansTable();
   } catch (err) {
     console.error(err);
   }
-  
-  loadCaravanPerformance();
 }
+
+function renderCaravansTable() {
+  const tbody = document.querySelector('#caravan-performance-table tbody');
+  if (!tbody) return;
+
+  const searchQuery = (document.getElementById('caravan-search-input')?.value || '').toLowerCase();
+  const sortBy = document.getElementById('caravan-sort-select')?.value || 'newest';
+  const mentorFilter = document.getElementById('caravan-mentor-filter')?.value || 'all';
+
+  let filtered = window.caravansData.filter(c => {
+    const mName = c.mentor?.name || '-';
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery) || 
+                          mName.toLowerCase().includes(searchQuery) ||
+                          (c.id && c.id.toLowerCase().includes(searchQuery));
+    const matchesMentor = mentorFilter === 'all' || mName === mentorFilter;
+    return matchesSearch && matchesMentor;
+  });
+
+  if (sortBy === 'most_members') {
+    filtered.sort((a, b) => b.memberCount - a.memberCount);
+  } else if (sortBy === 'highest_zarik') {
+    filtered.sort((a, b) => (b.assets?.zarik || 0) - (a.assets?.zarik || 0));
+  } else if (sortBy === 'highest_progress') {
+    filtered.sort((a, b) => b.overallProgress - a.overallProgress);
+  } else {
+    // newest (assuming id based or original order)
+    // No specific sort, keeping original order which could be newest
+  }
+
+  tbody.innerHTML = '';
+  filtered.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.name}</strong></td>
+      <td>${c.mentorName}</td>
+      <td>${c._count?.members || c.membersList?.length || c.memberCount || 0} / ${c.capacityLimit || c.capacity || 50}</td>
+      <td>
+        <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${c.assets?.zarik || c.totalWealth || 0}</span>
+      </td>
+      <td>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+          <span>${c.overallProgress}%</span>
+        </div>
+        <div class="progress-bar-container" style="margin: 0; height: 6px;">
+          <div class="progress-bar-fill" style="width: ${c.overallProgress}%"></div>
+        </div>
+      </td>
+      <td>-</td>
+      <td>
+        <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" onclick="openCaravanDrawer('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 
 // 5. ANNOUNCEMENTS BROADCAST
 async function handleAnnouncementBroadcast(e) {
@@ -1621,20 +1873,30 @@ function setupSidebarControls() {
 // 2. Universal Export Function
 window.exportData = async function(type, format) {
   try {
-    const res = await fetch(`/api/v1/admin/export?type=${type}&format=${format}`, {
+    let url = `/api/v1/admin/export?type=${type}&format=${format}`;
+    
+    // Append current filters for league
+    if (type === 'mentors_league') {
+      const search = document.getElementById('mentor-league-search')?.value || '';
+      const timeframe = document.getElementById('mentor-league-filter')?.value || 'weekly';
+      const sortBy = document.getElementById('mentor-league-sort')?.value || 'rating';
+      url += `&search=${encodeURIComponent(search)}&timeframe=${timeframe}&sortBy=${sortBy}`;
+    }
+
+    const res = await fetch(url, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Export failed');
     
     // Trigger download
     const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+    const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = downloadUrl;
     a.download = `export_${type}.${format === 'excel' ? 'xlsx' : format}`;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(downloadUrl);
     a.remove();
   } catch (error) {
     console.error('Export Error:', error);
@@ -1828,21 +2090,29 @@ async function loadMentors() {
     const mentors = await res.json();
     const tbody = document.querySelector('#mentors-table tbody');
     if (!tbody) return;
-    tbody.innerHTML = mentors.map(m => `
+    tbody.innerHTML = mentors.map(m => {
+      const caravansHtml = m.mentoredCaravans && m.mentoredCaravans.length > 0 
+        ? m.mentoredCaravans.map(c => `<span class="badge" style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:12px;margin:2px;display:inline-block;">${c.name}</span>`).join('') 
+        : '-';
+
+      return `
       <tr>
         <td><img src="${m.avatarUrl || '/assets/default_avatar.png'}" width="40" style="border-radius:50%"></td>
         <td>${m.name}</td>
         <td>${m.phoneNumber}</td>
         <td>${m.nationalId || '-'}</td>
         <td>${m.academicDegree || '-'}</td>
-        <td>${m.caravan ? m.caravan.name : '-'}</td>
+        <td>${caravansHtml}</td>
         <td>${m.mentorLevel}</td>
         <td>${calculateMentorStars(m.ratingsReceived, m.evaluationsReceived)} <i class="fa-solid fa-star" style="color: gold;"></i></td>
         <td>
-          <button class="btn-icon" onclick="editMentor('${m.id}')"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon" title="نمایش پرونده تفصیلی" onclick="viewMentorDossier('${m.id}')" style="color: #3b82f6;"><i class="fa-solid fa-eye"></i></button>
+          <button class="btn-icon" title="ویرایش" onclick="editMentor('${m.id}')" style="color: #10b981;"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon" title="حذف و مسدودسازی" onclick="openMentorModerationModal('${m.id}')" style="color: #ef4444;"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
   } catch(e) {
     console.error(e);
   }
@@ -1862,25 +2132,94 @@ window.showMentorModal = function() {
 
 window.editMentor = async function(id) {
   try {
-    const res = await fetch(`/api/v1/admin/users?role=mentor`, { headers: { 'Authorization': `Bearer ${token}` } });
-    const users = await res.json(); // Reusing the users API as a quick fetch or I can just fetch all mentors
-    // Actually the mentors list is already in memory or I can fetch the specific mentor
     const mentorsRes = await fetch('/api/v1/admin/mentors', { headers: { 'Authorization': `Bearer ${token}` } });
     const mentors = await mentorsRes.json();
     const m = mentors.find(x => x.id === id);
-    if(m) {
-      document.getElementById('modal-mentor-id').value = m.id;
-      document.getElementById('modal-mentor-name').value = m.name;
-      document.getElementById('modal-mentor-phone').value = m.phoneNumber;
-      document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
-      document.getElementById('modal-mentor-degree').value = m.academicDegree || '';
-      document.getElementById('modal-mentor-caravan').value = m.caravanId || '';
-      document.getElementById('modal-mentor-5stars').checked = false; // Usually only for new
-      document.getElementById('mentor-modal-overlay').style.display = 'flex';
-      document.getElementById('mentor-modal-title').innerText = 'ویرایش راهبر';
+    if (!m) return;
+    
+    document.getElementById('modal-mentor-id').value = m.id;
+    document.getElementById('modal-mentor-name').value = m.name;
+    document.getElementById('modal-mentor-phone').value = m.phoneNumber;
+    document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
+    document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
+    document.getElementById('modal-mentor-city').value = m.city || '';
+    document.getElementById('modal-mentor-social-platform').value = m.socialPlatform || '';
+    document.getElementById('modal-mentor-social-handle').value = m.socialMessengerHandle || '';
+    document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
+    document.getElementById('modal-mentor-level').value = m.mentorLevel || '1';
+
+    // Fetch and populate caravans checklist
+    const caravansRes = await fetch('/api/v1/admin/caravans', { headers: { 'Authorization': `Bearer ${token}` } });
+    const caravans = await caravansRes.json();
+    const assignedIds = m.mentoredCaravans?.map(c => c.id) || [];
+    
+    document.getElementById('modal-mentor-caravans-list').innerHTML = caravans.map(c => `
+      <label style="display:flex; align-items:center; gap:5px; color:#fff; font-size:13px; cursor:pointer;">
+        <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
+        ${c.name}
+      </label>
+    `).join('');
+
+    // Populate certificates table
+    const certsTbody = document.getElementById('modal-mentor-certs-tbody');
+    if (m.mentorDocuments && m.mentorDocuments.length > 0) {
+      certsTbody.innerHTML = m.mentorDocuments.map(doc => {
+        let statusTag = '';
+        if (doc.status === 'approved') statusTag = '<span class="badge" style="background:#10b981;color:white;">🟢 تایید شده</span>';
+        else if (doc.status === 'rejected') statusTag = '<span class="badge" style="background:#ef4444;color:white;">🔴 رد شده</span>';
+        else statusTag = '<span class="badge" style="background:#f59e0b;color:white;">🟡 در انتظار</span>';
+
+        return `
+          <tr>
+            <td>${doc.filename}</td>
+            <td><a href="${doc.url}" target="_blank" style="color:#3b82f6;">مشاهده</a></td>
+            <td>${statusTag}</td>
+            <td>
+              ${doc.status === 'pending' ? `
+                <button type="button" class="btn-icon" style="color:#10b981;" onclick="inlineApproveCert('${doc.id}', '${m.id}')" title="تایید"><i class="fa-solid fa-check"></i></button>
+                <button type="button" class="btn-icon" style="color:#ef4444;" onclick="inlineRejectCert('${doc.id}', '${m.id}')" title="رد"><i class="fa-solid fa-times"></i></button>
+              ` : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } else {
+      certsTbody.innerHTML = '<tr><td colspan="4">مدرکی یافت نشد</td></tr>';
     }
+
+    document.getElementById('mentor-modal-overlay').style.display = 'flex';
   } catch(e) {
     console.error(e);
+  }
+}
+
+window.inlineApproveCert = async function(docId, mentorId) {
+  if (!confirm('آیا از تایید این مدرک اطمینان دارید؟')) return;
+  try {
+    const res = await fetch(`/api/v1/admin/mentors/documents/${docId}/approve`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('خطا در تایید مدرک');
+    editMentor(mentorId); // Refresh modal state
+  } catch(e) {
+    alert(e.message);
+  }
+}
+
+window.inlineRejectCert = async function(docId, mentorId) {
+  const reason = prompt('لطفا دلیل رد مدرک را وارد کنید:');
+  if (reason === null) return;
+  try {
+    const res = await fetch(`/api/v1/admin/mentors/documents/${docId}/reject`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason })
+    });
+    if (!res.ok) throw new Error('خطا در رد مدرک');
+    editMentor(mentorId); // Refresh modal state
+  } catch(e) {
+    alert(e.message);
   }
 }
 
@@ -1894,38 +2233,169 @@ document.getElementById('mentor-form')?.addEventListener('submit', async (e) => 
   const name = document.getElementById('modal-mentor-name').value;
   const phoneNumber = document.getElementById('modal-mentor-phone').value;
   const nationalId = document.getElementById('modal-mentor-national-id').value;
-  const academicDegree = document.getElementById('modal-mentor-degree').value;
-  const caravanId = document.getElementById('modal-mentor-caravan').value;
-  const grant5Stars = document.getElementById('modal-mentor-5stars').checked;
+  const dateOfBirth = document.getElementById('modal-mentor-dob').value;
+  const city = document.getElementById('modal-mentor-city').value;
+  const socialPlatform = document.getElementById('modal-mentor-social-platform').value;
+  const socialMessengerHandle = document.getElementById('modal-mentor-social-handle').value;
+  const accountStatus = document.getElementById('modal-mentor-status').value;
+  const mentorLevel = document.getElementById('modal-mentor-level').value;
+
+  const caravanCheckboxes = document.querySelectorAll('.mentor-caravan-checkbox:checked');
+  const caravanIds = Array.from(caravanCheckboxes).map(cb => cb.value);
   
   try {
-    const res = await fetch('/api/v1/admin/mentors', {
-      method: 'POST',
+    const res = await fetch(`/api/v1/admin/mentors/${id}`, {
+      method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name, phoneNumber, nationalId, academicDegree, caravanId })
+      body: JSON.stringify({
+        name,
+        phoneNumber,
+        nationalId,
+        dateOfBirth,
+        city,
+        socialPlatform,
+        socialMessengerHandle,
+        accountStatus,
+        mentorLevel,
+        caravanIds
+      })
     });
-    const data = await res.json();
-    if(data.success && grant5Stars) {
-      await fetch(`/api/v1/admin/mentors/${data.user.id}/grant-stars`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-    }
+    
+    if (!res.ok) throw new Error('خطا در ذخیره اطلاعات راهبر');
+    
     document.getElementById('mentor-modal-overlay').style.display = 'none';
     loadMentors();
-    alert('راهبر با موفقیت ثبت شد');
+    alert('اطلاعات راهبر با موفقیت به‌روزرسانی شد');
   } catch(e) {
-    alert('خطا در ثبت راهبر');
+    alert(e.message);
   }
 });
 
-// Load mentors when their tab is clicked
+// ===================== MENTOR DOSSIER & MODERATION =====================
+
+window.viewMentorDossier = async function(mentorId) {
+  try {
+    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('خطا در دریافت پرونده راهبر');
+    const dossier = await res.json();
+    
+    // Fill Identity
+    document.getElementById('dossier-name').textContent = dossier.identity.name;
+    document.getElementById('dossier-phone').textContent = dossier.identity.phoneNumber;
+    document.getElementById('dossier-national-id').textContent = dossier.identity.nationalId || 'ثبت نشده';
+    document.getElementById('dossier-dob').textContent = dossier.identity.dateOfBirth || 'ثبت نشده';
+    document.getElementById('dossier-degree').textContent = dossier.identity.academicDegree || 'ثبت نشده';
+    document.getElementById('dossier-status').textContent = dossier.identity.isDeleted ? 'حذف شده (Soft-Delete)' : (dossier.identity.suspendedUntil ? 'مسدود موقت' : dossier.identity.accountStatus);
+    
+    if (dossier.identity.academicCertificates) {
+      document.getElementById('dossier-cert-link').href = dossier.identity.academicCertificates;
+      document.getElementById('dossier-cert-link').style.display = 'inline';
+    } else {
+      document.getElementById('dossier-cert-link').style.display = 'none';
+    }
+
+    // Fill Caravans
+    document.getElementById('dossier-caravans-tbody').innerHTML = dossier.caravans.map(c => `
+      <tr>
+        <td>${c.name}</td>
+        <td>${c.memberCount}</td>
+        <td>
+          <div style="width:100%; background:rgba(255,255,255,0.1); border-radius:4px;">
+            <div style="width:${c.progress || 0}%; background:#10b981; height:8px; border-radius:4px;"></div>
+          </div>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="3">فاقد کاروان</td></tr>';
+
+    // Fill Satisfaction
+    document.getElementById('dossier-avg-rating').textContent = dossier.satisfaction.avgRating;
+    document.getElementById('dossier-total-ratings').textContent = dossier.satisfaction.totalRatings;
+    document.getElementById('dossier-ratings-accordion').innerHTML = dossier.satisfaction.breakdown.map((r, idx) => `
+      <div class="accordion-item" style="border:1px solid rgba(255,255,255,0.1); border-radius:8px; margin-bottom:5px;">
+        <div class="accordion-header" style="padding:10px; cursor:pointer;" onclick="toggleAccordion(this)">
+          <div style="display:flex; justify-content:space-between; width:100%;">
+            <span>دانش‌آموز ناشناس</span>
+            <span style="color:#fbbf24;">${r.ratingValue} <i class="fa-solid fa-star"></i></span>
+          </div>
+        </div>
+        <div class="accordion-content" style="padding:10px; font-size:12px; color:#ccc;">${r.feedback || 'بدون توضیح'}</div>
+      </div>
+    `).join('') || '<div style="color:#aaa; font-size:12px;">موردی یافت نشد</div>';
+
+    // Fill Challenges
+    document.getElementById('dossier-challenges-tbody').innerHTML = dossier.challenges.map(ch => `
+      <tr>
+        <td>${ch.title}</td>
+        <td>${ch.type}</td>
+        <td style="color:#fbbf24;">${ch.reward}</td>
+        <td style="color:#10b981;">${ch.stats.reviewed}</td>
+        <td style="color:#f59e0b;">${ch.stats.pending}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">موردی یافت نشد</td></tr>';
+
+    document.getElementById('mentor-dossier-modal').style.display = 'flex';
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
+window.closeMentorDossier = function() {
+  document.getElementById('mentor-dossier-modal').style.display = 'none';
+};
+
+window.openMentorModerationModal = function(mentorId) {
+  document.getElementById('mod-mentor-id').value = mentorId;
+  document.getElementById('mentor-moderation-form').reset();
+  toggleTempSuspendDate(false);
+  document.getElementById('mentor-moderation-modal').style.display = 'flex';
+};
+
+window.closeMentorModerationModal = function() {
+  document.getElementById('mentor-moderation-modal').style.display = 'none';
+};
+
+window.toggleTempSuspendDate = function(show) {
+  document.getElementById('mod-temp-date-container').style.display = show ? 'block' : 'none';
+  if (show) {
+    document.getElementById('mod-suspend-until').required = true;
+  } else {
+    document.getElementById('mod-suspend-until').required = false;
+  }
+};
+
+document.getElementById('mentor-moderation-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('mod-mentor-id').value;
+  const action = document.querySelector('input[name="moderation_action"]:checked').value;
+  const suspendedUntil = document.getElementById('mod-suspend-until').value;
+
+  try {
+    const res = await fetch(`/api/v1/admin/mentors/${id}/moderate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ action, suspendedUntil })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'خطا در ثبت وضعیت');
+    }
+    alert('وضعیت راهبر با موفقیت تغییر یافت');
+    closeMentorModerationModal();
+    loadMentors(); // Refresh table
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+// Hook for Student Drawer Events their tab is clicked
 document.querySelector('[data-tab="mentors-profile-tab"]')?.addEventListener('click', loadMentors);
 
 // 2. Mentors Tickets Tab
 async function loadMentorTickets() {
   try {
-    const res = await fetch('/api/v1/support/tickets', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request('/api/v1/support/tickets');
     const tickets = await res.json();
     const tbody = document.querySelector('#mentor-tickets-table tbody');
     if (!tbody) return;
@@ -2022,7 +2492,7 @@ document.getElementById('btn-submit-ticket-reply')?.addEventListener('click', as
   }
 });
 
-document.querySelector('[data-tab="mentors-tickets-tab"]')?.addEventListener('click', loadMentorTickets);
+// Removed duplicate click listener for mentor tickets
 
 // 3. Mentors League Tab
 window.loadMentorLeague = async function(exportAs = '') {
@@ -2038,7 +2508,7 @@ window.loadMentorLeague = async function(exportAs = '') {
       return;
     }
 
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request(url);
     const scorecards = await res.json();
     const tbody = document.querySelector('#mentor-league-table tbody');
     if (!tbody) return;
@@ -2062,7 +2532,7 @@ window.exportMentorLeague = function() {
   loadMentorLeague('csv');
 }
 
-document.querySelector('[data-tab="mentors-league-tab"]')?.addEventListener('click', loadMentorLeague);
+// Removed duplicate click listener for mentor league
 document.querySelector('[data-tab="mentors-docs-tab"]')?.addEventListener('click', loadMentorDocs);
 
 // ===============================
@@ -2647,62 +3117,118 @@ function downloadCSV(filename, text) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-}async function loadCaravanPerformance() {
-  try {
-    const res = await request('/api/v1/admin/caravans/league');
-    const caravans = await res.json();
-    const tbody = document.querySelector('#caravan-performance-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    caravans.forEach(c => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${c.name}</strong></td>
-        <td>${c.mentorName}</td>
-        <td>${c.memberCount} / ${c.capacityLimit}</td>
-        <td>
-          <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${c.assets?.zarik || 0}</span> |
-          <span style="color:#d946ef;"><i class="fa-solid fa-gem"></i> ${c.assets?.nakh || 0}</span>
-        </td>
-        <td>${c.overallProgress}%</td>
-        <td>-</td>
-        <td>
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" onclick="openCaravanDrawer('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده و عملیات</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) { console.error(err); }
 }
+// Removed loadCaravanPerformance logic to loadCaravansTab
+
+window.pendingCaravanMembers = [];
 
 async function openCaravanWizard() {
   document.getElementById('caravan-wizard-modal').style.display = 'flex';
-  const mentorSelect = document.getElementById('cw-mentor');
-  mentorSelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
-  try {
-    const res = await request('/api/v1/admin/mentors');
-    const mentors = await res.json();
-    mentorSelect.innerHTML = mentors.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
-  } catch(e) {}
+  document.getElementById('cw-mentor-search').value = '';
+  document.getElementById('cw-mentor-id').value = '';
+  document.getElementById('cw-student-search').value = '';
+  document.getElementById('cw-mentor-results').innerHTML = '';
+  document.getElementById('cw-student-results').innerHTML = '';
+  
+  window.pendingCaravanMembers = [];
+  renderPendingMembers();
+
+  // Mentor search logic
+  document.getElementById('cw-mentor-search').oninput = async (e) => {
+    const q = e.target.value.trim();
+    if(q.length < 2) return document.getElementById('cw-mentor-results').innerHTML = '';
+    const res = await request(`/api/v1/admin/mentors`);
+    const allMentors = await res.json();
+    const filtered = allMentors.filter(m => m.name.includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
+    const html = filtered.map(m => `
+      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;" data-id="${m.id}" data-name="${m.name}">
+        <strong>${m.name}</strong> - NP-${m.userCode || m.phoneNumber}
+      </div>
+    `).join('');
+    document.getElementById('cw-mentor-results').innerHTML = html;
+  };
+
+  document.getElementById('cw-mentor-results').onclick = (e) => {
+    const item = e.target.closest('.mentor-result-item');
+    if (item) {
+      document.getElementById('cw-mentor-id').value = item.dataset.id;
+      document.getElementById('cw-mentor-search').value = item.dataset.name;
+      document.getElementById('cw-mentor-results').innerHTML = '';
+    }
+  };
+
+  // Member search logic
+  document.getElementById('cw-student-search').oninput = async (e) => {
+    const q = e.target.value.trim();
+    if(q.length < 2) return document.getElementById('cw-student-results').innerHTML = '';
+    const res = await request(`/api/v1/admin/users?role=student&search=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const students = Array.isArray(data) ? data : data.users;
+    const html = students.filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id)).map(s => `
+      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333; display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${s.name}" data-code="${s.userCode || s.phoneNumber}">
+        <span><strong>${s.name}</strong> - NP-${s.userCode || s.phoneNumber}</span>
+        <i class="fa-solid fa-plus text-primary"></i>
+      </div>
+    `).join('');
+    document.getElementById('cw-student-results').innerHTML = html;
+  };
+
+  document.getElementById('cw-student-results').onclick = (e) => {
+    const item = e.target.closest('.student-result-item');
+    if (item) {
+      window.pendingCaravanMembers.push({ id: item.dataset.id, name: item.dataset.name, code: item.dataset.code });
+      document.getElementById('cw-student-search').value = '';
+      document.getElementById('cw-student-results').innerHTML = '';
+      renderPendingMembers();
+    }
+  };
 }
+
+window.selectMentor = function(id, name) {
+  document.getElementById('cw-mentor-id').value = id;
+  document.getElementById('cw-mentor-search').value = name;
+  document.getElementById('cw-mentor-results').innerHTML = '';
+};
+
+window.addPendingMember = function(id, name, code) {
+  window.pendingCaravanMembers.push({ id, name, code });
+  document.getElementById('cw-student-search').value = '';
+  document.getElementById('cw-student-results').innerHTML = '';
+  renderPendingMembers();
+};
+
+window.removePendingMember = function(id) {
+  window.pendingCaravanMembers = window.pendingCaravanMembers.filter(p => p.id !== id);
+  renderPendingMembers();
+};
+
+function renderPendingMembers() {
+  document.getElementById('cw-pending-count').innerText = window.pendingCaravanMembers.length;
+  document.getElementById('cw-pending-members').innerHTML = window.pendingCaravanMembers.map(p => `
+    <li style="background:var(--primary-color); padding:4px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:5px;">
+      ${p.name} (NP-${p.code})
+      <i class="fa-solid fa-times" style="cursor:pointer;" onclick="removePendingMember('${p.id}')"></i>
+    </li>
+  `).join('');
+}
+
 function closeCaravanWizard() { document.getElementById('caravan-wizard-modal').style.display = 'none'; }
 
 async function submitCaravan(e) {
   e.preventDefault();
   const name = document.getElementById('cw-name').value;
   const capacityLimit = document.getElementById('cw-capacity').value;
-  const targetStationId = document.getElementById('cw-target-station').value;
-  const mentorId = document.getElementById('cw-mentor').value;
+  const mentorId = document.getElementById('cw-mentor-id').value;
   const description = document.getElementById('cw-description').value;
   const socialGroupLink = document.getElementById('cw-social-link').value;
-  const studentsRaw = document.getElementById('cw-students').value;
-  const studentIds = studentsRaw ? studentsRaw.split(',').map(s => s.trim()).filter(s => s) : [];
+  const studentIds = window.pendingCaravanMembers.map(s => s.id);
+
+  if(!mentorId) return alert('لطفاً یک راهبر انتخاب کنید.');
 
   try {
     const res = await request('/api/v1/admin/caravans', {
       method: 'POST',
-      body: JSON.stringify({ name, capacityLimit, targetStationId, mentorId, description, socialGroupLink, studentIds })
+      body: JSON.stringify({ name, capacityLimit, mentorId, description, socialGroupLink, studentIds })
     });
     if (res.ok) {
       alert('کاروان با موفقیت ایجاد شد');
@@ -2716,30 +3242,59 @@ async function submitCaravan(e) {
 }
 
 let currentDrawerCaravanId = null;
-async function openCaravanDrawer(caravanId) {
+window.switchCaravanDrawerTab = function(tabId) {
+  document.querySelectorAll('.cd-tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#caravan-drawer-modal .btn-action').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).style.display = 'block';
+  document.getElementById('btn-' + tabId).classList.add('active');
+};
+
+window.viewCaravanDetails = async function(caravanId) {
   currentDrawerCaravanId = caravanId;
   document.getElementById('caravan-drawer-modal').style.display = 'flex';
+  switchCaravanDrawerTab('cd-roster'); // Default tab
   try {
     const res = await request(`/api/v1/admin/caravans/${caravanId}`);
     const data = await res.json();
     
     document.getElementById('cd-title').textContent = `داشبورد کاروان: ${data.name}`;
-    document.getElementById('cd-mentor-name').textContent = data.mentor?.name || 'بدون راهبر';
+    document.getElementById('cd-mentor-name').innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${data.mentor?.name || data.mentors?.[0]?.name || 'بدون راهبر'}`;
+    document.getElementById('cd-capacity-text').innerHTML = `<i class="fa-solid fa-users"></i> ظرفیت: ${data.membersList?.length || 0} / ${data.capacityLimit} نفر`;
+    document.getElementById('cd-status-text').innerHTML = `<i class="fa-solid fa-circle-info"></i> وضعیت: ${data.status === 'active' ? 'فعال' : 'غیرفعال'}`;
     
-    const capPct = (data.membersList.length / data.capacityLimit) * 100;
-    document.getElementById('cd-capacity-bar').style.width = `${Math.min(capPct, 100)}%`;
-    document.getElementById('cd-capacity-text').textContent = `${data.membersList.length} / ${data.capacityLimit} نفر`;
+    document.getElementById('cd-wealth-zarik').textContent = data.wealth?.zarik || 0;
+    document.getElementById('cd-wealth-nakh').textContent = data.wealth?.nakh || 0;
+    document.getElementById('cd-wealth-farsh').textContent = data.wealth?.farsh || 0;
+    document.getElementById('cd-wealth-beyragh').textContent = data.wealth?.beyragh || 0;
     
-    document.getElementById('cd-wealth-zarik').textContent = data.wealth.zarik;
-    document.getElementById('cd-wealth-nakh').textContent = data.wealth.nakh;
-    document.getElementById('cd-wealth-farsh').textContent = data.wealth.farsh;
-    document.getElementById('cd-wealth-beyragh').textContent = data.wealth.beyragh;
+    document.getElementById('cd-progress-bar').style.width = `${data.overallProgress || 0}%`;
+    document.getElementById('cd-progress-text').textContent = `${data.overallProgress || 0}%`;
     
-    document.getElementById('cd-progress-bar').style.width = `${data.overallProgress}%`;
-    document.getElementById('cd-progress-text').textContent = `${data.overallProgress}%`;
-    
+    // Populate Roster
+    const tbody = document.querySelector('#cd-roster-table tbody');
+    tbody.innerHTML = '';
+    if (data.membersList && data.membersList.length > 0) {
+      data.membersList.forEach(u => {
+        const tr = document.createElement('tr');
+        const roleLabel = u.role === 'student' ? 'مخاطب' : 'راهبر';
+        tr.innerHTML = `
+          <td><strong>${u.name}</strong></td>
+          <td style="font-family: monospace; color: var(--text-secondary);">NP-${u.userCode || u.phoneNumber}</td>
+          <td style="font-family: monospace;">${u.phoneNumber}</td>
+          <td><span class="badge" style="background: rgba(255,255,255,0.1);">${roleLabel}</span></td>
+          <td>سطح ${u.levelFrame || 1}</td>
+          <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${u.zarikBalance || 0}</td>
+          <td>
+            <button class="page-btn" onclick="removeFromCaravan('${caravanId}', '${u.id}')" title="حذف از کاروان"><i class="fa-solid fa-user-minus" style="color: var(--color-danger);"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } else {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">عضوی در این کاروان یافت نشد.</td></tr>';
+    }
   } catch (err) { console.error(err); }
-}
+};
 function closeCaravanDrawer() { document.getElementById('caravan-drawer-modal').style.display = 'none'; }
 
 async function sendCaravanBroadcast() {
@@ -3725,5 +4280,140 @@ window.reviewAdminSubmission = async function(id, approve, defaultReward) {
   } catch (error) {
     console.error(error);
     alert('خطای اتصال به سرور');
+  }
+};
+
+// ===============================
+// BULK TRANSFER MODAL LOGIC
+// ===============================
+
+window.bulkTransferSelectedMembers = [];
+
+window.openBulkTransferModal = async function() {
+  document.getElementById('bulk-transfer-modal').style.display = 'flex';
+  document.getElementById('bt-student-search').value = '';
+  document.getElementById('bt-student-results').innerHTML = '';
+  document.getElementById('bt-target-caravan').innerHTML = '<option value="">در حال بارگذاری...</option>';
+  
+  window.bulkTransferSelectedMembers = [];
+  renderBulkSelectedMembers();
+
+  try {
+    const res = await request('/api/v1/admin/caravans');
+    const caravans = await res.json();
+    
+    let optionsHtml = '<option value="">لطفاً کاروان مقصد را انتخاب کنید</option>';
+    optionsHtml += '<option value="unassign" style="color:red; font-weight:bold;">-- خروج از کاروان فعلی (بدون کاروان) --</option>';
+    
+    caravans.forEach(c => {
+      optionsHtml += `<option value="${c.id}">${c.name} (راهبر: ${c.mentor?.name || 'ندارد'})</option>`;
+    });
+    
+    document.getElementById('bt-target-caravan').innerHTML = optionsHtml;
+  } catch (error) {
+    console.error('Failed to load caravans for transfer modal', error);
+    document.getElementById('bt-target-caravan').innerHTML = '<option value="">خطا در بارگذاری کاروان‌ها</option>';
+  }
+};
+
+window.closeBulkTransferModal = function() {
+  document.getElementById('bulk-transfer-modal').style.display = 'none';
+};
+
+window.renderBulkSelectedMembers = function() {
+  const container = document.getElementById('bt-selected-members');
+  const count = document.getElementById('bt-selected-count');
+  
+  count.innerText = window.bulkTransferSelectedMembers.length;
+  
+  if (window.bulkTransferSelectedMembers.length === 0) {
+    container.innerHTML = '<li style="color: var(--text-secondary); font-size: 13px;">هیچ عضوی انتخاب نشده است.</li>';
+    return;
+  }
+  
+  container.innerHTML = window.bulkTransferSelectedMembers.map(m => `
+    <li style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
+      ${m.name} (NP-${m.code})
+      <i class="fa-solid fa-times" style="cursor:pointer; color: #f43f5e;" onclick="removeBulkSelectedMember('${m.id}')"></i>
+    </li>
+  `).join('');
+};
+
+window.removeBulkSelectedMember = function(id) {
+  window.bulkTransferSelectedMembers = window.bulkTransferSelectedMembers.filter(m => m.id !== id);
+  renderBulkSelectedMembers();
+};
+
+document.getElementById('bt-student-search')?.addEventListener('input', async (e) => {
+  const q = e.target.value.trim();
+  const resultsDiv = document.getElementById('bt-student-results');
+  if (q.length < 2) {
+    resultsDiv.innerHTML = '';
+    return;
+  }
+  
+  try {
+    const res = await request(`/api/v1/admin/users?role=student&search=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const students = Array.isArray(data) ? data : data.users;
+    
+    const html = students.filter(s => !window.bulkTransferSelectedMembers.some(sel => sel.id === s.id)).map(s => `
+      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${s.name}" data-code="${s.userCode || s.phoneNumber}">
+        <span><strong>${s.name}</strong> - NP-${s.userCode || s.phoneNumber} <span style="font-size:10px; color:#aaa;">(${s.caravan?.name || 'بدون کاروان'})</span></span>
+        <i class="fa-solid fa-plus" style="color: #8b5cf6;"></i>
+      </div>
+    `).join('');
+    
+    resultsDiv.innerHTML = html;
+  } catch (error) {
+    console.error('Search failed', error);
+  }
+});
+
+document.getElementById('bt-student-results')?.addEventListener('click', (e) => {
+  const item = e.target.closest('.bt-student-item');
+  if (item) {
+    window.bulkTransferSelectedMembers.push({ 
+      id: item.dataset.id, 
+      name: item.dataset.name, 
+      code: item.dataset.code 
+    });
+    document.getElementById('bt-student-search').value = '';
+    document.getElementById('bt-student-results').innerHTML = '';
+    renderBulkSelectedMembers();
+  }
+});
+
+window.submitBulkTransfer = async function() {
+  const targetCaravanId = document.getElementById('bt-target-caravan').value;
+  const userIds = window.bulkTransferSelectedMembers.map(m => m.id);
+  
+  if (userIds.length === 0) {
+    return alert('لطفاً حداقل یک عضو را برای انتقال انتخاب کنید.');
+  }
+  if (!targetCaravanId) {
+    return alert('لطفاً کاروان مقصد را انتخاب کنید.');
+  }
+  
+  try {
+    const payloadTarget = targetCaravanId === 'unassign' ? null : targetCaravanId;
+    
+    const res = await request('/api/v1/admin/caravans/bulk-transfer', {
+      method: 'POST',
+      body: JSON.stringify({ userIds, targetCaravanId: payloadTarget })
+    });
+    
+    if (res.ok) {
+      alert('اعضا با موفقیت منتقل شدند');
+      closeBulkTransferModal();
+      if (typeof loadCaravansTab === 'function') loadCaravansTab();
+      if (typeof loadCaravanMembersRoster === 'function') loadCaravanMembersRoster();
+    } else {
+      const data = await res.json();
+      alert('خطا در انتقال: ' + (data.error || 'ناشناخته'));
+    }
+  } catch (err) {
+    console.error(err);
+    alert('خطا در ارتباط با سرور');
   }
 };

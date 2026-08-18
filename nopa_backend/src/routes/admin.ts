@@ -26,9 +26,13 @@ import {
   getAssetLeaderboard,
   getAuditLogs,
   setAccountStatus,
+  getMentorDossier,
+  updateMentor,
+  moderateMentor,
+  getLevelsAndCertificates,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateQuiz, seedStations, deleteStation } from '../controllers/lmsController';
+import { getStations, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateQuiz, seedStations, deleteStation, addClipToSession } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
@@ -73,6 +77,7 @@ router.get('/users/metrics', getUserMetrics as any);
 router.post('/students', createOrUpdateStudent as any);
 router.post('/students/:id/adjust-balance', adjustBalance as any);
 router.post('/students/:id/level-frame', adjustLevelFrame as any);
+router.get('/levels-and-certificates', getLevelsAndCertificates as any);
 
 // 2. Zarik Ledger & Categorized Rewards
 router.get('/rewards/ledger', getZarikLedger as any);
@@ -122,6 +127,9 @@ router.get('/mentors/documents/pending', getPendingDocuments as any);
 router.post('/mentors/documents/:id/approve', approveDocument as any);
 router.post('/mentors/documents/:id/reject', rejectDocument as any);
 router.get('/mentors/:id/history', getMentorHistory as any);
+router.get('/mentors/:id/dossier', getMentorDossier as any);
+router.put('/mentors/:id', updateMentor as any);
+router.post('/mentors/:id/moderate', moderateMentor as any);
 router.get('/users/:id/analytics', getUserAnalytics as any);
 
 // 5. Educational Content & Global Announcements
@@ -162,6 +170,11 @@ router.post('/lms/quizzes', createOrUpdateQuiz as any);
 router.post('/stations', createOrUpdateStation as any);
 router.put('/stations/:id', createOrUpdateStation as any);
 router.delete('/stations/:id', deleteStation as any);
+
+router.get('/courses/hierarchy', getStations as any);
+router.post('/courses/subcourses', createOrUpdateCategory as any);
+router.post('/courses/classes', createOrUpdateSession as any);
+router.post('/lms/sessions/:id/clips', addClipToSession as any);
 
 router.get('/forms', getForms as any);
 router.post('/forms', createOrUpdateForm as any);

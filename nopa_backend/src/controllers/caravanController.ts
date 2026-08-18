@@ -28,12 +28,14 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
   try {
     const { userIds, targetCaravanId } = req.body;
     
-    if (!Array.isArray(userIds) || !targetCaravanId) {
+    if (!Array.isArray(userIds) || targetCaravanId === undefined) {
       return res.status(400).json({ error: 'لیست کاربران و شناسه کاروان مقصد الزامی است' });
     }
     
-    const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId } });
-    if (!targetCaravan) return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
+    if (targetCaravanId !== null) {
+      const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId } });
+      if (!targetCaravan) return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
+    }
     
     await prisma.user.updateMany({
       where: { id: { in: userIds } },
@@ -41,7 +43,7 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
     });
     
     // Update member counts (approximate, or recalculate)
-    await logAdminAction(req.user!.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId, `Transferred ${userIds.length} users`, req.ip || '');
+    await logAdminAction(req.user!.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId || 'UNASSIGNED', `Transferred ${userIds.length} users`, req.ip || '');
     res.json({ message: 'اعضا با موفقیت منتقل شدند.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -169,10 +171,7 @@ export async function createCaravan(req: AuthRequest, res: Response) {
         where: { id: { in: studentIds } },
         data: { caravanId: caravan.id }
       });
-      await prisma.caravan.update({
-        where: { id: caravan.id },
-        data: { memberCount: studentIds.length }
-      });
+
     }
 
     await logAdminAction(req.user!.id, 'Admin', 'CREATE_CARAVAN', 'Caravan', caravan.id, `Created caravan ${name}`, req.ip || '');
@@ -189,20 +188,46 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
       where: { id },
       include: {
         mentor: true,
-        members: { select: { id: true, name: true, phoneNumber: true, zarikBalance: true, farsh: true, nakh: true, beyragh: true, sessionWatchRecords: true } }
+        _count: { select: { members: { where: { isDeleted: false } } } },
+        members: { 
+          where: { isDeleted: false },
+          select: { 
+            id: true, name: true, phoneNumber: true, userCode: true,
+            role: true, levelFrame: true,
+            zarikBalance: true, farsh: true, nakh: true, beyragh: true, 
+            sessionWatchRecords: { select: { watchedPercentage: true } },
+            quizSubmissions: { select: { score: true } }
+          } 
+        }
       }
     });
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
     
-    const totalZarik = caravan.members.reduce((sum, m) => sum + m.zarikBalance, 0);
-    const totalNakh = caravan.members.reduce((sum, m) => sum + m.nakh, 0);
-    const totalFarsh = caravan.members.reduce((sum, m) => sum + m.farsh, 0);
-    const totalBeyragh = caravan.members.reduce((sum, m) => sum + m.beyragh, 0);
+    const activeMembers = caravan.members || [];
+    const realMemberCount = caravan._count?.members || activeMembers.length;
+
+    let totalZarik = 0, totalNakh = 0, totalFarsh = 0, totalBeyragh = 0;
+    let totalProgressSum = 0;
+
+    activeMembers.forEach(m => {
+      totalZarik += m.zarikBalance || 0;
+      totalNakh += m.nakh || 0;
+      totalFarsh += m.farsh || 0;
+      totalBeyragh += m.beyragh || 0;
+
+      const watchScores = m.sessionWatchRecords?.reduce((s: any, w: any) => s + (w.watchedPercentage || 0), 0) || 0;
+      const quizScores = m.quizSubmissions?.reduce((s: any, q: any) => s + (q.score || 0), 0) || 0;
+      totalProgressSum += (watchScores + quizScores);
+    });
+
+    const overallProgress = activeMembers.length > 0 ? Math.min(100, Math.round(totalProgressSum / (activeMembers.length * 100))) : 0;
 
     res.json({
       ...caravan,
+      memberCount: realMemberCount,
+      overallProgress,
       wealth: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh },
-      membersList: caravan.members,
+      membersList: activeMembers,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -224,10 +249,7 @@ export async function addMemberToCaravan(req: AuthRequest, res: Response) {
       data: { caravanId: id }
     });
     
-    await prisma.caravan.update({
-      where: { id },
-      data: { memberCount: caravan.members.length + 1 }
-    });
+
 
     res.json({ success: true });
   } catch (error: any) {
@@ -243,12 +265,7 @@ export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
       data: { caravanId: null }
     });
     const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
-    if (caravan) {
-      await prisma.caravan.update({
-        where: { id },
-        data: { memberCount: caravan.members.length }
-      });
-    }
+
     res.json({ success: true });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -269,10 +286,7 @@ export async function transferMember(req: AuthRequest, res: Response) {
       where: { id: studentId },
       data: { caravanId: targetCaravanId }
     });
-    await prisma.caravan.update({
-      where: { id: targetCaravanId },
-      data: { memberCount: targetCaravan.members.length + 1 }
-    });
+
 
     res.json({ success: true });
   } catch (error: any) {

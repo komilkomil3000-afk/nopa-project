@@ -25,6 +25,22 @@ export async function getNotifications(req: AuthRequest, res: Response) {
   }
 }
 
+export async function sendSystemNotification(userId: string, title: string, message: string, type: string = 'info') {
+  try {
+    await prisma.notification.create({
+      data: {
+        userId,
+        title,
+        message,
+        type
+      }
+    });
+  } catch (error) {
+    console.error('Failed to dispatch system notification:', error);
+  }
+}
+
+
 export async function markNotificationAsRead(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {

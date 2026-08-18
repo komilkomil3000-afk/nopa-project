@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { createQuizMock } from './quizController';
+import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 
@@ -58,6 +60,11 @@ export async function getUsers(req: AuthRequest, res: Response) {
         { name: { contains: search } },
         { phoneNumber: { contains: search } },
       ];
+      
+      const parsedSearch = parseInt(search.replace(/^NP-/i, ''));
+      if (!isNaN(parsedSearch)) {
+        whereClause.OR.push({ userCode: parsedSearch });
+      }
     }
 
     if (role) {
@@ -745,18 +752,71 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
     const userRole = req.user?.role;
     const isMentor = userRole === 'mentor';
     
-    let whereClause = {};
+    let whereClause: any = { isDeleted: false };
     if (isMentor) {
-      whereClause = { mentorId: req.user?.id };
+      whereClause.mentorId = req.user?.id;
     }
     
     const caravans = await prisma.caravan.findMany({
       where: whereClause,
       include: {
-        mentor: { select: { name: true } },
+        mentor: { select: { id: true, name: true, phoneNumber: true } },
+        _count: { select: { members: { where: { isDeleted: false } } } },
+        members: {
+          where: { isDeleted: false },
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            role: true,
+            levelFrame: true,
+            zarikBalance: true,
+            nakh: true,
+            beyragh: true,
+            farsh: true,
+            sessionWatchRecords: { select: { watchedPercentage: true } },
+            quizSubmissions: { select: { score: true } }
+          }
+        }
       },
     });
-    res.json(caravans);
+
+    const enrichedCaravans = caravans.map(c => {
+      const activeMembers = c.members || [];
+      const realMemberCount = c._count?.members || activeMembers.length;
+      
+      let totalZarik = 0, totalNakh = 0, totalBeyragh = 0, totalFarsh = 0;
+      let totalProgressSum = 0;
+
+      activeMembers.forEach(m => {
+        totalZarik += m.zarikBalance || 0;
+        totalNakh += m.nakh || 0;
+        totalBeyragh += m.beyragh || 0;
+        totalFarsh += m.farsh || 0;
+
+        const watchScores = m.sessionWatchRecords?.reduce((s: any, w: any) => s + (w.watchedPercentage || 0), 0) || 0;
+        const quizScores = m.quizSubmissions?.reduce((s: any, q: any) => s + (q.score || 0), 0) || 0;
+        totalProgressSum += (watchScores + quizScores);
+      });
+
+      const overallProgress = activeMembers.length > 0 ? Math.min(100, Math.round(totalProgressSum / (activeMembers.length * 100))) : 0;
+
+      return {
+        ...c,
+        memberCount: realMemberCount,
+        _count: c._count,
+        membersList: activeMembers,
+        wealth: {
+          zarik: totalZarik,
+          nakh: totalNakh,
+          beyragh: totalBeyragh,
+          farsh: totalFarsh
+        },
+        overallProgress
+      };
+    });
+
+    res.json(enrichedCaravans);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -808,6 +868,184 @@ export async function getMentorScorecards(req: AuthRequest, res: Response) {
     );
 
     res.json(scorecards);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// ======================= MENTOR DOSSIER & MODERATION ======================= //
+
+export async function getMentorDossier(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const mentor = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        mentoredCaravans: true,
+        ratingsReceived: true,
+      }
+    });
+
+    if (!mentor) {
+      return res.status(404).json({ error: 'راهبر مورد نظر یافت نشد' });
+    }
+
+    // Get challenges created by mentor
+    const challenges = await prisma.challenge.findMany({
+      where: { createdByMentorId: id },
+      include: {
+        submissions: { select: { status: true } }
+      }
+    });
+
+    // Compute stats
+    let totalScore = 0;
+    mentor.ratingsReceived.forEach((r) => totalScore += r.ratingValue);
+    const avgRating = mentor.ratingsReceived.length > 0 ? (totalScore / mentor.ratingsReceived.length).toFixed(1) : '0.0';
+
+    const challengeOperations = challenges.map((ch) => {
+      const reviewed = ch.submissions.filter((s) => s.status !== 'pending').length;
+      const pending = ch.submissions.filter((s) => s.status === 'pending').length;
+      return {
+        id: ch.id,
+        title: ch.title,
+        type: ch.type,
+        createdAt: ch.createdAt,
+        reward: ch.rewardZarik,
+        stats: { reviewed, pending, total: ch.submissions.length }
+      };
+    });
+
+    // Group ratings by caravan if any logic required, here we just return all ratings
+    res.json({
+      identity: {
+        name: mentor.name,
+        phoneNumber: mentor.phoneNumber,
+        nationalId: mentor.nationalId,
+        dateOfBirth: mentor.dateOfBirth,
+        academicDegree: mentor.academicDegree,
+        academicCertificates: mentor.academicCertificates,
+        accountStatus: mentor.accountStatus,
+        isDeleted: mentor.isDeleted,
+        suspendedUntil: mentor.suspendedUntil
+      },
+      caravans: mentor.mentoredCaravans.map((c) => ({
+        id: c.id,
+        name: c.name,
+        memberCount: c.memberCount,
+        progress: c.overallProgress
+      })),
+      satisfaction: {
+        avgRating,
+        totalRatings: mentor.ratingsReceived.length,
+        breakdown: mentor.ratingsReceived // Simplified, the UI can render
+      },
+      challenges: challengeOperations
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function moderateMentor(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { action, suspendedUntil } = req.body; // action: 'soft_delete', 'permanent_suspend', 'temp_suspend'
+
+    if (!['soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
+      return res.status(400).json({ error: 'عملیات نامعتبر است' });
+    }
+
+    if (action === 'soft_delete') {
+      await prisma.user.update({
+        where: { id },
+        data: { isDeleted: true, deletedAt: new Date() }
+      });
+      // Optionally revoke sessions
+      await prisma.userSession.deleteMany({ where: { userId: id } });
+    } else if (action === 'permanent_suspend') {
+      await prisma.user.update({
+        where: { id },
+        data: { accountStatus: 'SUSPENDED' }
+      });
+      // Invalidate active sessions
+      await prisma.userSession.deleteMany({ where: { userId: id } });
+    } else if (action === 'temp_suspend') {
+      if (!suspendedUntil) {
+        return res.status(400).json({ error: 'تاریخ پایان مسدودسازی الزامی است' });
+      }
+      await prisma.user.update({
+        where: { id },
+        data: { suspendedUntil: new Date(suspendedUntil) }
+      });
+      // Invalidate active sessions
+      await prisma.userSession.deleteMany({ where: { userId: id } });
+    }
+
+    await logAdminAction(
+      req.user?.id || 'system',
+      req.user?.phoneNumber || 'Admin',
+      'MODERATE_MENTOR',
+      'User',
+      id,
+      `عملیات مدیریت وضعیت راهبر: ${action}`,
+      req.ip || '127.0.0.1'
+    );
+
+    res.json({ success: true, message: 'عملیات با موفقیت انجام شد' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function updateMentor(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      nationalId,
+      phoneNumber,
+      dateOfBirth,
+      city,
+      socialMessengerHandle,
+      socialPlatform,
+      accountStatus,
+      mentorLevel,
+      caravanIds
+    } = req.body;
+
+    const mentor = await prisma.user.findUnique({ where: { id } });
+    if (!mentor || !['mentor', 'SUPER_MENTOR'].includes(mentor.role)) {
+      return res.status(404).json({ error: 'راهبر یافت نشد' });
+    }
+
+    const data: any = {
+      name,
+      nationalId,
+      phoneNumber,
+      dateOfBirth,
+      city,
+      socialMessengerHandle,
+      socialPlatform,
+      accountStatus,
+      mentorLevel: parseInt(mentorLevel) || 1
+    };
+
+    if (Array.isArray(caravanIds)) {
+      data.mentoredCaravans = {
+        set: caravanIds.map((cId: string) => ({ id: cId }))
+      };
+    }
+
+    const updatedMentor = await prisma.user.update({
+      where: { id },
+      data,
+      include: { mentoredCaravans: true }
+    });
+
+    await sendSystemNotification(id, 'به‌روزرسانی پروفایل', 'پروفایل شما توسط مدیریت به‌روزرسانی شد.', 'info');
+
+    res.json({ success: true, mentor: updatedMentor });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1008,3 +1246,29 @@ export async function setAccountStatus(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export const getLevelsAndCertificates = async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { role: 'student' },
+      select: {
+        id: true,
+        name: true,
+        phoneNumber: true,
+        levelFrame: true,
+        registrationCompleted: true,
+        certificates: {
+          orderBy: { issuedAt: 'desc' },
+          take: 1
+        },
+        physicalOrders: {
+          include: { certificate: true }
+        }
+      }
+    });
+
+    res.json({ success: true, data: users });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};

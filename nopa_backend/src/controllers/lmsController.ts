@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { evaluateStudentProgress } from './certificateController';
 
 export const getStations = async (req: Request, res: Response) => {
   try {
@@ -192,7 +193,8 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
 
 export const createOrUpdateCategory = async (req: Request, res: Response) => {
   try {
-    const { id, stationId, title, orderIndex } = req.body;
+    const { id, stationId, packageId, title, orderIndex } = req.body;
+    const finalStationId = stationId || packageId;
     let category;
     if (id) {
       category = await prisma.classCategory.update({
@@ -201,7 +203,7 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
       });
     } else {
       category = await prisma.classCategory.create({
-        data: { stationId, title, orderIndex: Number(orderIndex || 0) }
+        data: { stationId: finalStationId, title, orderIndex: Number(orderIndex || 0) }
       });
     }
     res.json({ message: 'Saved successfully', data: category });
@@ -213,12 +215,14 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
 
 export const createOrUpdateSession = async (req: Request, res: Response) => {
   try {
-    const { id, categoryId, title, description, videoUrl, instructor, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+    const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+    const finalCategoryId = categoryId || subCourseId;
+    const finalInstructor = instructor || teacher;
     let session;
     if (id) {
       session = await prisma.classSession.update({
         where: { id },
-        data: { title, description, videoUrl, instructor, 
+        data: { title, description, videoUrl, instructor: finalInstructor, 
                 minWatchThreshold: Number(minWatchThreshold || 70), 
                 minPassScore: Number(minPassScore || 0), 
                 maxZarikReward: Number(maxZarikReward || 0), 
@@ -227,7 +231,7 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
       });
     } else {
       session = await prisma.classSession.create({
-        data: { categoryId, title, description, videoUrl, instructor, 
+        data: { categoryId: finalCategoryId, title, description, videoUrl, instructor: finalInstructor, 
                 minWatchThreshold: Number(minWatchThreshold || 70), 
                 minPassScore: Number(minPassScore || 0), 
                 maxZarikReward: Number(maxZarikReward || 0), 
@@ -238,6 +242,28 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
     res.json({ message: 'Saved successfully', data: session });
   } catch (error) {
     console.error('createOrUpdateSession error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const addClipToSession = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, clipOrder, videoUrl } = req.body;
+    
+    const clip = await prisma.videoClip.create({
+      data: {
+        sessionId: id,
+        title,
+        videoUrl,
+        clipOrder: Number(clipOrder || 0),
+        duration: 0
+      }
+    });
+    
+    res.json({ message: 'Clip added successfully', data: clip });
+  } catch (error) {
+    console.error('addClipToSession error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -382,6 +408,9 @@ export const heartbeatSessionWatch = async (req: any, res: Response) => {
       lastPositionSeconds: record.lastPositionSeconds,
       quizUnlocked: record.watchedPercentage >= 70.0
     });
+    
+    // Evaluate progress asynchronously
+    evaluateStudentProgress(userId);
   } catch (error) {
     console.error('heartbeatSessionWatch error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -527,6 +556,9 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       rewardZarik: isFirstPass ? rewardZarik : 0,
       submissionId: submission?.id
     });
+    
+    // Evaluate progress asynchronously
+    evaluateStudentProgress(userId);
   } catch (error) {
     console.error('submitSessionQuiz error:', error);
     res.status(500).json({ error: 'خطایی در تصحیح و ثبت آزمون کلاس رخ داد' });

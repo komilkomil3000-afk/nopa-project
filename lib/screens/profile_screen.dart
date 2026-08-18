@@ -5,6 +5,7 @@ import '../utils/global_state.dart';
 import '../widgets/contact_us_dialog.dart';
 import 'certificate_view_screen.dart';
 import 'mentor_qualification_detail_screen.dart';
+import '../main.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -55,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Section 1: Mentoring Stats Grid
-              _buildMemberHeader(currentUser),
+              _buildMentorStatsGrid(context, currentUser),
 
               const SizedBox(height: 30),
 
@@ -63,9 +64,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildIdentityAndFinancialCards(currentUser),
 
               const SizedBox(height: 30),
-
-              // Section 2: Active Caravans Progress
-              _buildMentorCaravansSection(),
 
               const SizedBox(height: 30),
 
@@ -196,190 +194,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMemberHeader(UserModel currentUser) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF26123D), Color(0xFF160E2A)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-      child: Column(
+  Widget _buildMentorStatsGrid(BuildContext context, UserModel currentUser) {
+    final repo = Provider.of<AppRepository>(context);
+    final activeCaravansCount = repo.caravans.length;
+    
+    // Calculate avg satisfaction rating from mentorRatings
+    final mentorId = currentUser.id;
+    final ratingsForMentor = repo.mentorRatings.where((r) => r.mentorId == mentorId).toList();
+    double total = 0.0;
+    for (var r in ratingsForMentor) {
+      total += r.ratingValue;
+    }
+    double satisfactionScore = (total + (5.0 * 4)) / (ratingsForMentor.length + 4);
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: GlobalState.getLevelColor(GlobalState.memberLevel),
-              boxShadow: GlobalState.getLevelGlow(GlobalState.memberLevel),
-              border: Border.all(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
-                width: 3,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-                width: 108,
-                height: 108,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 108,
-                  height: 108,
-                  color: Colors.white10,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white30,
-                    size: 54,
-                  ),
-                ),
-              ),
+          Expanded(
+            child: _buildStatItem(
+              'امتیاز رضایتمندی',
+              satisfactionScore.toStringAsFixed(1),
+              Icons.star,
+              const Color(0xFFFFD54F),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            currentUser.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: GlobalState.getLevelColor(
-                GlobalState.memberLevel,
-              ).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: GlobalState.getLevelColor(
-                  GlobalState.memberLevel,
-                ).withValues(alpha: 0.3),
+          const SizedBox(width: 16),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _showCaravanSelectorBottomSheet(context, repo),
+              child: _buildStatItem(
+                'کاروان‌های تحت مدیریت',
+                '$activeCaravansCount',
+                Icons.groups,
+                const Color(0xFF8B5CF6),
               ),
-            ),
-            child: Text(
-              'سطح پروفایل: ${GlobalState.getLevelLabel(GlobalState.memberLevel)}',
-              style: TextStyle(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'یاوران علاءالملک',
-                      style: TextStyle(
-                        color: Color(0xFFFFD54F),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      '🐫 عضو کاروان:',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'استاد علوی',
-                      style: TextStyle(
-                        color: Color(0xFFEC4899),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      '👤 راهبر کاروان:',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _showMentorEvaluationDialog(context),
-                  icon: const Icon(Icons.star_border, size: 16),
-                  label: const Text(
-                    'ارزیابی و امتیازدهی به راهبر کاروان ⭐️',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B5CF6),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'سطح ۱۳',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
-              ),
-              Text(
-                '۸۵۰ / ۱۰۰۰ امتیاز تجربه',
-                style: TextStyle(
-                  color: Color(0xFF8B5CF6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'سطح ۱۲',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: const LinearProgressIndicator(
-              value: 0.85,
-              minHeight: 6,
-              backgroundColor: Color(0xFF0F081D),
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
             ),
           ),
         ],
@@ -387,101 +236,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMentorCaravansSection() {
-    final List<Map<String, dynamic>> caravans = [
-      {
-        'name': 'کاروان یاوران علاءالملک',
-        'progress': 0.78,
-        'color': const Color(0xFF8B5CF6),
-      },
-      {
-        'name': 'کاروان عمار نپا',
-        'progress': 0.65,
-        'color': const Color(0xFFEC4899),
-      },
-      {
-        'name': 'کاروان مالک اشتر',
-        'progress': 0.40,
-        'color': const Color(0xFFFFD54F),
-      },
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'وضعیت پیشرفت کاروان‌های تحت پوشش',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
+  void _showCaravanSelectorBottomSheet(BuildContext context, AppRepository repo) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1435),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'انتخاب کاروان فعال',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Vazirmatn',
+                ),
               ),
-            ),
+              const SizedBox(height: 20),
+              if (repo.caravans.isEmpty)
+                const Text('شما در حال حاضر کاروانی تحت مدیریت ندارید', style: TextStyle(color: Colors.white70))
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: repo.caravans.length,
+                  itemBuilder: (context, index) {
+                    final caravan = repo.caravans[index];
+                    final isActive = caravan.id == repo.selectedCaravanId;
+                    return ListTile(
+                      title: Text(caravan.name, style: const TextStyle(color: Colors.white)),
+                      subtitle: Text('${caravan.memberCount} عضو', style: const TextStyle(color: Colors.white70)),
+                      trailing: isActive ? const Icon(Icons.check_circle, color: Color(0xFF10B981)) : null,
+                      onTap: () {
+                        repo.switchCaravan(caravan.id);
+                        Navigator.pop(ctx);
+                        final mainState = ctx.findAncestorStateOfType<MainScreenState>();
+                        if (mainState != null) {
+                          mainState.setIndex(0);
+                        }
+                      },
+                    );
+                  },
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: 14),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: caravans.length,
-          itemBuilder: (context, index) {
-            final c = caravans[index];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1435),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.03)),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${(c['progress'] * 100).toInt()}%',
-                        style: TextStyle(
-                          color: c['color'],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        c['name'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: c['progress'],
-                      minHeight: 5,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).scaffoldBackgroundColor,
-                      valueColor: AlwaysStoppedAnimation<Color>(c['color']),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
+
+
+
+
 
   Widget _buildMentorManagementSection(
     BuildContext context,

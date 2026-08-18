@@ -10,7 +10,10 @@ export async function getMe(req: AuthRequest, res: Response) {
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { caravan: true }
+      include: { 
+        caravan: true,
+        mentorDocuments: true
+      }
     });
 
     if (!user) {
@@ -29,7 +32,8 @@ export async function getMe(req: AuthRequest, res: Response) {
       hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
       identityVerified: user.identityVerified,
       socialGroupLink: user.caravan?.socialGroupLink,
-      userCode: user.userCode
+      userCode: user.userCode,
+      mentorDocuments: user.mentorDocuments
     });
   } catch (error) {
     console.error('getMe error:', error);
@@ -46,41 +50,49 @@ export async function completeProfile(req: AuthRequest, res: Response) {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
 
-    if (user.identityVerified) {
-      return res.status(400).json({ error: 'پروفایل شما قبلا تکمیل شده است' });
-    }
+    const isFirstTime = !user.identityVerified;
 
     if (user.role === 'student') {
       const { nationalId, name, city, dateOfBirth } = req.body;
       if (!nationalId || !name) return res.status(400).json({ error: 'نام و کد ملی الزامی است' });
 
+      const updateData: any = {
+        name,
+        nationalId,
+        dateOfBirth,
+        identityVerified: true,
+      };
+
+      if (isFirstTime) {
+        updateData.zarikBalance = { increment: 200 };
+      }
+
       await prisma.user.update({
         where: { id: user.id },
-        data: {
-          name,
-          nationalId,
-          dateOfBirth,
-          identityVerified: true,
-          zarikBalance: { increment: 200 }
-        }
+        data: updateData
       });
-      return res.json({ success: true, message: 'پروفایل تایید شد و 200 زریک پاداش گرفتید' });
+      return res.json({ success: true, message: isFirstTime ? 'پروفایل تایید شد و 200 زریک پاداش گرفتید' : 'پروفایل با موفقیت بروزرسانی شد' });
     } else if (user.role === 'mentor') {
       const { nationalId, dateOfBirth, city, academicDegree, bio } = req.body;
+      const updateData: any = {
+        nationalId,
+        dateOfBirth,
+        city,
+        academicDegree,
+        bio,
+        identityVerified: true,
+      };
+
+      if (isFirstTime) {
+        updateData.mentorLevel = { increment: 1 };
+        updateData.zarikBalance = { increment: 500 };
+      }
+
       await prisma.user.update({
         where: { id: user.id },
-        data: {
-          nationalId,
-          dateOfBirth,
-          city,
-          academicDegree,
-          bio,
-          identityVerified: true,
-          mentorLevel: { increment: 1 },
-          zarikBalance: { increment: 500 }
-        }
+        data: updateData
       });
-      return res.json({ success: true, message: 'پروفایل راهبر تایید شد و 500 زریک دریافت کردید' });
+      return res.json({ success: true, message: isFirstTime ? 'پروفایل راهبر تایید شد و 500 زریک دریافت کردید' : 'پروفایل با موفقیت بروزرسانی شد' });
     }
 
     res.status(400).json({ error: 'نقش کاربری نامعتبر' });

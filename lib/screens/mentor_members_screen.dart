@@ -13,6 +13,7 @@ class MentorMembersScreen extends StatefulWidget {
 }
 
 class _MarketMember {
+  final String id;
   final String name;
   final String caravan;
   final String lastActive;
@@ -25,6 +26,7 @@ class _MarketMember {
   final String avatarUrl;
 
   _MarketMember({
+    required this.id,
     required this.name,
     required this.caravan,
     required this.lastActive,
@@ -48,6 +50,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
   final List<_MarketMember> _allMembers = [
     // Caravan 1: یاوران علاءالملک
     _MarketMember(
+      id: 'student_1',
       name: 'امیرحسین رضایی',
       caravan: 'یاوران علاءالملک',
       lastActive: '۲ ساعت پیش',
@@ -63,6 +66,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
       ],
     ),
     _MarketMember(
+      id: 'student_2',
       name: 'مریم حسینی',
       caravan: 'یاوران علاءالملک',
       lastActive: '۴ ساعت پیش',
@@ -77,6 +81,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
       ],
     ),
     _MarketMember(
+      id: 'student_3',
       name: 'پرهام علیزاده',
       caravan: 'یاوران علاءالملک',
       lastActive: 'دیروز',
@@ -91,6 +96,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
 
     // Caravan 2: کاروان عمار
     _MarketMember(
+      id: 'student_4',
       name: 'علی علوی',
       caravan: 'کاروان عمار',
       lastActive: '۱ روز پیش',
@@ -105,6 +111,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
       ],
     ),
     _MarketMember(
+      id: 'student_5',
       name: 'فاطمه احمدی',
       caravan: 'کاروان عمار',
       lastActive: '۳۰ دقیقه پیش',
@@ -121,6 +128,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
 
     // Caravan 3: کاروان مالک
     _MarketMember(
+      id: 'student_6',
       name: 'زهرا حسینی',
       caravan: 'کاروان مالک',
       lastActive: '۳ ساعت پیش',
@@ -135,6 +143,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
       ],
     ),
     _MarketMember(
+      id: 'student_7',
       name: 'محمدمهدی کریمی',
       caravan: 'کاروان مالک',
       lastActive: '۲ روز پیش',
@@ -571,9 +580,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                   child: _buildActionCircle(Icons.chat_bubble_outline, disabled: true),
                 ),
                 const SizedBox(width: 8),
-                _buildActionCircle(Icons.insert_drive_file_outlined),
-                const SizedBox(width: 8),
-                _buildActionCircle(Icons.star_border, color: const Color(0xFFFFD54F)),
+                GestureDetector(
+                  onTap: () => _showStudentPerformanceModal(context, member),
+                  child: _buildActionCircle(Icons.insert_drive_file_outlined),
+                ),
               ],
             ),
             const Spacer(),
@@ -633,6 +643,220 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
         color: disabled ? Colors.grey.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.1),
       ),
       child: Icon(icon, color: disabled ? Colors.grey : color, size: 18),
+    );
+  }
+
+  void _showStudentPerformanceModal(BuildContext context, _MarketMember member) async {
+    // Show a loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // Call API via repository
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    // Since we mock users in the UI, if API fails we will show a mock response or an error
+    final dynamic response = await repository.getStudentPerformance(member.id);
+    
+    // ignore: use_build_context_synchronously
+    Navigator.pop(context); // close loader
+
+    if (response == null) {
+      // Show fallback error or mock
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('خطا در دریافت اطلاعات زنده، یا کاربر در دیتابیس یافت نشد.')));
+      // You can call the old _showMemberDetailsDialog here if you want a fallback
+      // ignore: use_build_context_synchronously
+      _showMemberDetailsDialog(member);
+      return;
+    }
+
+    final data = response;
+    final userMap = data['user'] ?? {};
+    final watchRecords = data['watchRecords'] as List? ?? [];
+    final quizzes = data['quizzes'] as List? ?? [];
+    
+    // Parse Real-Data Overview
+    final name = userMap['name'] ?? member.name;
+    final phone = userMap['phoneNumber'] ?? '0912***0000';
+    final zarikBalance = userMap['zarikBalance'] ?? 0;
+    
+    // Calculate station overall progress (mocking out of total 10 classes)
+    final completedClasses = watchRecords.where((r) => r['watchedPercentage'] >= 70).length;
+    final stationProgress = watchRecords.isEmpty ? 0.0 : (completedClasses / watchRecords.length);
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final frameColor = GlobalState.getLevelColor(member.profileLevel);
+        final frameGlow = GlobalState.getLevelGlow(member.profileLevel);
+
+        return Dialog(
+          backgroundColor: const Color(0xFF1E1435),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            width: double.infinity,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        'پرونده عملکرد کارآموز (داده واقعی)',
+                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Colors.white10),
+                  const SizedBox(height: 10),
+                  
+                  // Personal Overview
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(name, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
+                          const SizedBox(height: 4),
+                          Text(
+                            'شماره تماس: $phone',
+                            style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Vazirmatn'),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'موجودی فعال زریک: $zarikBalance',
+                            style: const TextStyle(color: Color(0xFFFFD54F), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 14),
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: frameColor, width: 2),
+                          boxShadow: frameGlow,
+                        ),
+                        child: CircleAvatar(
+                          radius: 22,
+                          backgroundImage: NetworkImage(member.avatarUrl),
+                          onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Station Overall Progress
+                  const Text('میزان پیشرفت در ایستگاه فعال:', style: TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Vazirmatn')),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: stationProgress,
+                      minHeight: 6,
+                      backgroundColor: const Color(0xFF160E2A),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFEC4899)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Chronological Class Attendance List
+                  const Text('📚 روند حضور در کلاس‌ها:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Vazirmatn')),
+                  const SizedBox(height: 8),
+                  if (watchRecords.isEmpty)
+                    const Text('رکوردی یافت نشد', style: TextStyle(color: Colors.white30, fontSize: 11, fontFamily: 'Vazirmatn'))
+                  else
+                    ...watchRecords.map((r) {
+                      final isCompleted = r['watchedPercentage'] >= 70;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF160E2A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(isCompleted ? Icons.check_circle : Icons.cancel, color: isCompleted ? Colors.green : Colors.red, size: 16),
+                            Expanded(
+                              child: Text(
+                                r['session']?['title'] ?? 'کلاس',
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'Vazirmatn'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  
+                  const SizedBox(height: 16),
+
+                  // Challenges & Quizzes Ledger
+                  const Text('📝 دفترچه چالش‌ها و آزمون‌ها:', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Vazirmatn')),
+                  const SizedBox(height: 8),
+                  if (quizzes.isEmpty)
+                    const Text('چالشی ثبت نشده است', style: TextStyle(color: Colors.white30, fontSize: 11, fontFamily: 'Vazirmatn'))
+                  else
+                    ...quizzes.map((q) {
+                      final status = q['status'] ?? 'pending';
+                      final isApproved = status == 'approved';
+                      final isRejected = status == 'rejected';
+                      final score = q['score'] ?? 0;
+                      final challengeName = q['challenge']?['title'] ?? 'چالش';
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF160E2A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              isApproved ? '+$score زریک' : (isRejected ? 'رد شده' : 'در انتظار'),
+                              style: TextStyle(
+                                color: isApproved ? Colors.green : (isRejected ? Colors.red : Colors.orange),
+                                fontSize: 10,
+                                fontFamily: 'Vazirmatn',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                challengeName,
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(color: Colors.white, fontSize: 11, fontFamily: 'Vazirmatn'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

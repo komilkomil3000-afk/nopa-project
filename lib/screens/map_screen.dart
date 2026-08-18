@@ -40,19 +40,6 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  bool _isStationLocked(Map<String, dynamic> station) {
-    if (station['releaseDate'] != null) {
-      try {
-        final releaseDateTime = DateTime.parse(station['releaseDate']);
-        if (releaseDateTime.isAfter(DateTime.now())) {
-          return true;
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    return false;
-  }
 
   @override
   @override
@@ -173,9 +160,24 @@ class _MapScreenState extends State<MapScreen> {
 
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {
-    final bool isLocked = _isStationLocked(item);
-    final bool isCompleted = !isLocked && index == 0;
-    final bool isCurrent = !isLocked && !isCompleted;
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    final userLevelFrame = repository.currentUser.levelFrame;
+
+    bool isLocked = (index + 1) > userLevelFrame;
+    if (!isLocked && item['releaseDate'] != null) {
+      try {
+        final releaseDateTime = DateTime.parse(item['releaseDate']);
+        if (releaseDateTime.isAfter(DateTime.now())) {
+          isLocked = true;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    final bool isCompleted = !isLocked && (index + 1) < userLevelFrame;
+    final bool isCurrent = !isLocked && (index + 1) == userLevelFrame;
+
     final Color accentColor = isLocked
         ? Colors.grey
         : (isCompleted ? const Color(0xFF10B981) : const Color(0xFFFFD54F));
@@ -197,9 +199,14 @@ class _MapScreenState extends State<MapScreen> {
         boxShadow: isCurrent
             ? [
                 BoxShadow(
+                  color: accentColor.withValues(alpha: 0.4),
+                  blurRadius: 15,
+                  spreadRadius: 3,
+                ),
+                BoxShadow(
                   color: accentColor.withValues(alpha: 0.15),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+                  blurRadius: 30,
+                  spreadRadius: 8,
                 )
               ]
             : null,
@@ -254,7 +261,7 @@ class _MapScreenState extends State<MapScreen> {
                               ? const Icon(Icons.check, color: Color(0xFF10B981), size: 18)
                               : (isCurrent
                                   ? Text('${index + 1}', style: const TextStyle(color: Color(0xFFFFD54F), fontWeight: FontWeight.bold, fontSize: 13))
-                                  : const Icon(Icons.lock, color: Colors.white30, size: 16)),
+                                  : const Text('🔒', style: TextStyle(fontSize: 14))),
                         ),
                       ),
                       

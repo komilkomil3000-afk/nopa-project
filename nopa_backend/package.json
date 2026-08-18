@@ -34,6 +34,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^20.19.43",
     "@types/pdfmake": "^0.3.3",
+    "@types/uuid": "^10.0.0",
     "prisma": "^5.12.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"

@@ -21,21 +21,6 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
   Map<String, String> _caravanNameToId = {};
 
 
-  void _handleTicketAction(String id, bool approve) {
-    final repository = Provider.of<AppRepository>(context, listen: false);
-    repository.reviewSubmission(id, approve, 250.0);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          approve ? '🎉 پاداش مبارک! +۲۵۰ زریک به ولت شما اضافه شد' : 'درخواست رد شد',
-          style: const TextStyle(fontFamily: 'Vazirmatn'),
-        ),
-        backgroundColor: approve ? const Color(0xFF10B981) : Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
@@ -504,25 +489,15 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                         children: [
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: () => _handleTicketAction(ticket['id']!, false),
+                              onPressed: () {
+                                context.findAncestorStateOfType<MainScreenState>()?.setIndex(2); // MentorWorkbenchScreen index
+                              },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.redAccent.withValues(alpha: 0.15),
+                                backgroundColor: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
                                 shadowColor: Colors.transparent,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
-                              child: const Text('رد درخواست', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _handleTicketAction(ticket['id']!, true),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('تایید و ثبت', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
+                              child: const Text('انتقال به میزکار جهت بررسی تخصصی', style: TextStyle(color: Color(0xFF8B5CF6), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
                             ),
                           ),
                         ],

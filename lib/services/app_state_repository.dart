@@ -473,5 +473,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     );
     notifyListeners();
   }
+
+  Future<Map<String, dynamic>?> getStudentPerformance(String userId) async {
+    return await _apiService.getStudentPerformance(userId);
+  }
 }
 

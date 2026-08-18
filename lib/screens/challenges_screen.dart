@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
@@ -16,8 +15,6 @@ class ChallengesScreen extends StatefulWidget {
 }
 
 class _ChallengesScreenState extends State<ChallengesScreen> {
-  late Timer _timer;
-  Duration _timeLeft = const Duration(hours: 14, minutes: 25, seconds: 40);
   bool _showArchived = false;
 
   // Mock student stats
@@ -52,28 +49,6 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
   }
 
 
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _timeLeft -= const Duration(seconds: 1);
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    return "${twoDigits(duration.inHours)}:${twoDigits(duration.inMinutes.remainder(60))}:${twoDigits(duration.inSeconds.remainder(60))}";
-  }
 
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
     final TextEditingController textCtrl = TextEditingController();
@@ -515,9 +490,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
             // Top Member stats dashboard
             _buildMemberPerformanceHeader(),
             
-            // Daily reward section
-            _buildDailyCoinSection(),
-            
+
             const SizedBox(height: 20),
             
             // Toggle active / archived
@@ -893,51 +866,4 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
-  Widget _buildDailyCoinSection() {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.purple, AppColors.pink]),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: AppColors.purple.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))],
-      ),
-      child: Column(
-        children: [
-          const Text('پاداش روزانه', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: CircularProgressIndicator(
-                  value: _timeLeft.inSeconds / (24 * 3600),
-                  strokeWidth: 8,
-                  backgroundColor: Colors.white24,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.gold),
-                ),
-              ),
-              const Icon(Icons.monetization_on, color: AppColors.gold, size: 60),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(_formatDuration(_timeLeft), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          const Text('تا پاداش بعدی', style: TextStyle(color: Colors.white70)),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppColors.purple,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('دریافت ۵۰۰ زریک', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
 }

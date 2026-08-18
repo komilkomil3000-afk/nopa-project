@@ -2,17 +2,19 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import prisma from '../config/db';
+import { sendSystemNotification } from './notificationController';
 
 export async function getMentors(req: AuthRequest, res: Response) {
   try {
     const mentors = await prisma.user.findMany({
-      where: { role: 'mentor' },
+      where: { role: { in: ['mentor', 'SUPER_MENTOR', 'admin'] } },
       include: {
         caravan: true,
         ratingsReceived: true,
-        supportReplies: true
+        supportReplies: true,
+        mentorDocuments: true,
+        mentoredCaravans: true
       }
     });
 
@@ -110,6 +112,9 @@ export async function approveDocument(req: AuthRequest, res: Response) {
     const doc = await prisma.mentorDocument.update({ where: { id }, data: { status: 'approved' } });
     // Mark user's identityVerified true when approving primary identity doc
     await prisma.user.update({ where: { id: doc.userId }, data: { identityVerified: true } });
+    
+    await sendSystemNotification(doc.userId, 'تایید گواهینامه', `گواهینامه "${doc.filename}" شما تایید گردید.`, 'info');
+
     res.json({ success: true, doc });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -121,6 +126,9 @@ export async function rejectDocument(req: AuthRequest, res: Response) {
     const { id } = req.params;
     const { reason } = req.body;
     const doc = await prisma.mentorDocument.update({ where: { id }, data: { status: 'rejected', rejectReason: reason || null } });
+    
+    await sendSystemNotification(doc.userId, 'رد گواهینامه', `گواهینامه "${doc.filename}" شما رد شد. علت: ${reason || 'عدم رعایت قوانین'}`, 'alert');
+
     res.json({ success: true, doc });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -161,20 +169,26 @@ export async function assignCaravans(req: AuthRequest, res: Response) {
 
 export async function completeProfile(req: AuthRequest, res: Response) {
   try {
-    const { nationalId, dateOfBirth, city, academicDegree, bio } = req.body;
+    const { nationalId, dateOfBirth, city, academicDegree, bio, academicCertificates } = req.body;
     const userId = req.user!.id;
+
+    const dataToUpdate: any = {
+      nationalId,
+      dateOfBirth,
+      city,
+      academicDegree,
+      bio,
+      identityVerified: true,
+      zarikBalance: { increment: 500 }
+    };
+
+    if (academicCertificates) {
+      dataToUpdate.academicCertificates = academicCertificates;
+    }
 
     await prisma.user.update({
       where: { id: userId },
-      data: {
-        nationalId,
-        dateOfBirth,
-        city,
-        academicDegree,
-        bio,
-        identityVerified: true,
-        zarikBalance: { increment: 500 }
-      }
+      data: dataToUpdate
     });
     res.json({ success: true, message: 'اطلاعات پروفایل با موفقیت تکمیل شد و پاداش زریک دریافت کردید' });
   } catch (error: any) {

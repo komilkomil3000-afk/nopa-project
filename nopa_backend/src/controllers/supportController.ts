@@ -44,11 +44,12 @@ export async function getTickets(req: AuthRequest, res: Response) {
         orderBy: { createdAt: 'desc' }
       });
     } else if (isMentor) {
-      // Mentors see tickets from their caravan students
-      const caravan = await prisma.caravan.findFirst({ where: { mentorId: req.user!.id } });
-      if (!caravan) return res.json([]);
+      // Mentors see tickets from all students in all their assigned caravans
+      const caravans = await prisma.caravan.findMany({ where: { mentorId: req.user!.id } });
+      if (caravans.length === 0) return res.json([]);
       
-      const members = await prisma.user.findMany({ where: { caravanId: caravan.id } });
+      const caravanIds = caravans.map(c => c.id);
+      const members = await prisma.user.findMany({ where: { caravanId: { in: caravanIds } } });
       const memberIds = members.map(m => m.id);
       
       tickets = await prisma.supportTicket.findMany({

@@ -16,6 +16,7 @@ import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaControl
 import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
 import { convertAssets } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
+import { requestPhysicalCertificate } from '../controllers/certificateController';
 import adminRouter from './admin';
 
 const router = Router();
@@ -30,6 +31,7 @@ router.post('/auth/change-password', authenticateJWT as any, changePassword as a
 router.get('/users/me', authenticateJWT as any, getMe as any);
 router.get('/users/mentor/:id', authenticateJWT as any, getMentorById as any);
 router.post('/users/complete-profile', authenticateJWT as any, completeProfile as any);
+router.post('/certificates/:id/physical-order', authenticateJWT as any, requestPhysicalCertificate as any);
 
 // B. Challenges Routes
 router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createChallenge as any);

