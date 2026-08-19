@@ -55,7 +55,7 @@ import { getMentors, createOrUpdateMentor, grantFiveStars } from '../controllers
 import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory, assignCaravans } from '../controllers/mentorController';
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
 import { getSystemSetting, setSystemSetting } from '../controllers/settingController';
-import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails } from '../controllers/caravanController';
+import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan } from '../controllers/caravanController';
 import { getCaravanLeague } from '../controllers/leagueController';
 
 const router = Router();
@@ -109,7 +109,9 @@ router.put('/caravans/:id/status', toggleCaravanStatus as any);
 router.post('/caravans/bulk-transfer', bulkTransferMembers as any);
 router.post('/caravans/transfer', transferMember as any);
 router.post('/caravans/:id/members/:studentId', addMemberToCaravan as any);
+router.post('/caravans/:id/members/bulk-add', bulkAddMembersToCaravan as any);
 router.delete('/caravans/:id/members/:studentId', removeMemberFromCaravan as any);
+router.patch('/caravans/:id', updateCaravan as any);
 router.post('/caravans/:id/broadcast', broadcastToCaravan as any);
 
 router.get('/caravans/requests', getCaravanRequests as any);

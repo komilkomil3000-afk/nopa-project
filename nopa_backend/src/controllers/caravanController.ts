@@ -355,3 +355,34 @@ export async function getCaravanRequests(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export async function updateCaravan(req: AuthRequest, res: Response) {
+  const { id } = req.params;
+  const { mentorId } = req.body;
+  try {
+    const updated = await prisma.caravan.update({
+      where: { id },
+      data: { mentorId }
+    });
+    res.json({ message: 'Caravan updated successfully', caravan: updated });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function bulkAddMembersToCaravan(req: AuthRequest, res: Response) {
+  const { caravanId } = req.params;
+  const { userIds } = req.body;
+  if (!Array.isArray(userIds)) {
+    return res.status(400).json({ error: 'userIds must be an array' });
+  }
+  try {
+    await prisma.user.updateMany({
+      where: { id: { in: userIds } },
+      data: { caravanId }
+    });
+    res.json({ message: 'Users added successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}

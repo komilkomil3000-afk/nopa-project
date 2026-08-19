@@ -48,7 +48,7 @@ export async function login(req: Request, res: Response) {
     // --- SUPER ADMIN BYPASS ---
     // If the phone matches super admins and password is correct, bypass all checks
     // even if not found in DB (which shouldn't happen with proper seed, but as a fallback)
-    if ((corePhone === '9380346668' || corePhone === '9120000001') && password === '123456') {
+    if ((corePhone === '9380346668' || corePhone === '9120000001') && String(password) === '123456') {
       const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
       
       // Attempt to get user from DB if exists, otherwise mock

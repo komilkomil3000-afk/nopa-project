@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const form = document.getElementById('admin-login-form');
   if (form) {
-    form.onsubmit = async (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const phoneInput = form.querySelector('input[type="text"]') || document.getElementById('login-phone');
-      const passInput = form.querySelector('input[type="password"]') || document.getElementById('login-password');
+      const phoneInput = document.getElementById('login-phone') || form.querySelector('input[type="text"]');
+      const passInput = document.getElementById('login-password') || form.querySelector('input[type="password"]');
 
       const phoneNumber = phoneInput ? phoneInput.value.trim() : '09380346668';
       const password = passInput ? passInput.value.trim() : '123456';
@@ -49,10 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok && data.token) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('nopa_admin_token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
+          localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin', identityVerified: true }));
+          currentUser = JSON.parse(localStorage.getItem('nopa_admin_user') || '{}');
+          
           const modal = document.getElementById('login-modal');
-          if (modal) modal.style.display = 'none';
-          window.location.reload();
+          if (modal) modal.style.setProperty('display', 'none', 'important');
+          
+          showDashboard();
         } else {
           alert(data.error || 'اطلاعات ورود اشتباه است');
         }
@@ -60,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Login error:', err);
         alert('خطا در اتصال به سرور بکاند');
       }
-    };
+    });
   }
 
   if (token && token !== 'dev-bypass') {
@@ -174,17 +177,18 @@ function toggleTheme() {
 
 async function loadMentorsTab() {
   try {
-    const res = await request('/api/v1/admin/mentors');
+    const res = await fetch('/api/v1/admin/mentors', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
     if (!res.ok) throw new Error('خطا در بارگیری اطلاعات راهبران');
     const mentors = await res.json();
     
-    const tbody = document.querySelector('#mentors-table tbody');
+    const tbody = document.querySelector('#mentors-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
     
     mentors.forEach(m => {
       const avatar = m.name ? m.name.substring(0, 2) : 'نا';
-      const roleName = m.role === 'admin' ? 'مدیر ارشد' : 'راهبر';
       const levelBadge = `<span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">سطح ${m.mentorLevel || 1}</span>`;
       
       const ratings = m.ratingsReceived || [];
@@ -193,40 +197,26 @@ async function loadMentorsTab() {
         ? (ratings.reduce((sum, r) => sum + r.ratingValue, 0) / totalRatings).toFixed(1) 
         : '0.0';
 
-      let caravanStr = 'همه کاروان‌ها';
-      if (m.role === 'admin' || m.role === 'SUPER_ADMIN') {
-        caravanStr = '<span class="badge badge-success">همه کاروان‌ها</span>';
-      } else if (m.mentoredCaravans && m.mentoredCaravans.length > 0) {
-        caravanStr = m.mentoredCaravans.map(c => `<span class="badge badge-student">${c.name}</span>`).join(' ');
-      } else {
-        caravanStr = 'بدون کاروان';
-      }
-
-      let degreeStr = m.academicDegree || 'ثبت نشده';
-      if (m.mentorDocuments && m.mentorDocuments.length > 0) {
-         const lastDoc = m.mentorDocuments[m.mentorDocuments.length - 1];
-         degreeStr += ` (${lastDoc.status === 'approved' ? 'تایید شده' : lastDoc.status === 'rejected' ? 'رد شده' : 'در انتظار'})`;
-      }
-      const uniqueCode = m.userCode ? `NP-${m.userCode}` : `NP-${m.phoneNumber.substring(m.phoneNumber.length - 6)}`;
+      let caravanStr = m.caravan?.name ? `<span class="badge badge-student">${m.caravan.name}</span>` : 
+                       (m.mentoredCaravans?.[0]?.name ? `<span class="badge badge-student">${m.mentoredCaravans[0].name}</span>` : 'فاقد کاروان');
+      
+      const degreeStr = m.education || m.academicDegree || 'عمومی';
+      const nationalIdStr = m.nationalId || 'ثبت‌نشده';
+      
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><div class="user-avatar" style="width:40px; height:40px; font-size:14px; margin:0 auto; background: var(--color-neon-blue);">${avatar}</div></td>
-        <td>
-          <strong>${m.name}</strong><br>
-          <span style="font-size:11px; color:var(--text-secondary); cursor:pointer;" onclick="navigator.clipboard.writeText('${uniqueCode}'); alert('کد راهبر کپی شد')">
-            <i class="fa-solid fa-copy"></i> ${uniqueCode}
-          </span>
-        </td>
+        <td><div class="user-avatar" style="width:40px; height:40px; font-size:14px; margin:0 auto; background: var(--color-neon-blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">${avatar}</div></td>
+        <td><strong>${m.name || 'کاربر بدون نام'}</strong></td>
         <td style="font-family: monospace;">${m.phoneNumber}</td>
-        <td>${m.nationalId || '-'}</td>
+        <td>${nationalIdStr}</td>
         <td>${degreeStr}</td>
         <td>${caravanStr}</td>
         <td>${levelBadge}</td>
-        <td style="color:var(--color-warning);">${avgRating} <i class="fa-solid fa-star"></i></td>
-        <td style="white-space:nowrap;">
-          <button class="page-btn btn-view" onclick="viewMentorDetails('${m.id}')" title="نمایش پرونده"><i class="fa-solid fa-eye"></i></button>
-          <button class="page-btn btn-edit" onclick="openUserModal('${m.id}', '${m.name}', '${m.role}', '', ${m.levelFrame || 1}, ${m.mentorLevel || 1}, '${m.nationalId || ''}', '${m.dateOfBirth || ''}')" title="ویرایش"><i class="fa-solid fa-edit"></i></button>
-          <button class="page-btn btn-delete" onclick="moderateMentorModal('${m.id}')" title="حذف/تعلیق"><i class="fa-solid fa-trash"></i></button>
+        <td style="color:var(--color-warning);">&#9733; ${avgRating}</td>
+        <td style="white-space:nowrap; display:flex; justify-content:center;">
+          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; margin-left:4px; border:none; cursor:pointer;" onclick="viewMentorDetails('${m.id}')">مشاهده</button>
+          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; margin-left:4px; border:none; cursor:pointer;" onclick="openEditMentorModal('${m.id}')">ویرایش</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="openMentorModerationModal('${m.id}')">مدیریت/حذف</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -597,8 +587,6 @@ function switchTab(tabId) {
     loadMentorsTab();
   } else if (tabId === 'economy-hub-tab') {
     loadEconomyHubTab();
-  } else if (tabId === 'caravan-members-tab') {
-    loadCaravanMembersRoster();
   } else if (tabId === 'caravan-league-tab') {
     loadCaravanLeague();
   } else if (tabId === 'lms-tab') {
@@ -1630,6 +1618,16 @@ async function loadCaravansTab() {
       mentorSelect.innerHTML += `<option value="${m}">${m}</option>`;
     });
 
+    // Populate Caravan Picker
+    const caravanPicker = document.getElementById('target-caravan-picker');
+    if (caravanPicker) {
+      caravanPicker.innerHTML = '<option value="">-- لطفاً یک کاروان انتخاب کنید --</option>';
+      window.caravansData.forEach(c => {
+        caravanPicker.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+      });
+      caravanPicker.onchange = window.loadSelectedCaravanDetails;
+    }
+
     renderCaravansTable();
   } catch (err) {
     console.error(err);
@@ -1684,12 +1682,81 @@ function renderCaravansTable() {
       </td>
       <td>-</td>
       <td>
-        <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" onclick="openCaravanDrawer('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده</button>
+        <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:#3b82f6; color:white; border-radius:6px;" onclick="selectCaravanForManagement('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
+
+window.selectCaravanForManagement = function(id) {
+  const picker = document.getElementById('target-caravan-picker');
+  if (picker) {
+    picker.value = id;
+    if (window.loadSelectedCaravanDetails) {
+      window.loadSelectedCaravanDetails();
+    }
+  }
+};
+
+window.loadSelectedCaravanDetails = async function() {
+  const picker = document.getElementById('target-caravan-picker');
+  if (!picker) return;
+  const cId = picker.value;
+  
+  const mentorEl = document.getElementById('cw-mentor-name');
+  const zarikEl = document.getElementById('caravan-detail-zarik');
+  const milestonesEl = document.getElementById('caravan-detail-milestones');
+  const rosterBody = document.getElementById('caravan-roster-body');
+
+  if (!zarikEl || !milestonesEl || !rosterBody) return;
+
+  if (!cId) {
+    if (mentorEl) mentorEl.innerText = '-';
+    zarikEl.innerHTML = '0 <i class="fa-solid fa-coins"></i>';
+    milestonesEl.innerText = '0';
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
+    return;
+  }
+
+  const caravan = window.caravansData?.find(c => c.id === cId);
+  if (!caravan) return;
+
+  if (mentorEl) {
+    mentorEl.innerText = caravan.mentorName || caravan.mentor?.name || 'فاقد راهبر';
+  }
+
+  zarikEl.innerHTML = `${caravan.assets?.zarik || caravan.totalWealth || 0} <i class="fa-solid fa-coins"></i>`;
+  milestonesEl.innerText = caravan.completedStations || 0;
+
+  rosterBody.innerHTML = '';
+  const members = caravan.membersList || caravan.members || [];
+  if (members.length === 0) {
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
+  } else {
+    members.forEach(m => {
+      const name = m.name || m.user?.name || '-';
+      const phone = m.phoneNumber || m.user?.phoneNumber || '-';
+      const zarik = m.zarik || m.assets?.zarik || 0;
+      const displayId = m.userCode || m.user?.userCode || m.id || '-';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${displayId}</td>
+        <td>${name}</td>
+        <td style="font-family: monospace;">${phone}</td>
+        <td>${zarik}</td>
+        <td style="white-space:nowrap; display:flex; gap:5px;">
+          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('نمایش جزئیات عضو')">نمایش جزئیات</button>
+          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('ویرایش عضو')">ویرایش</button>
+          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('تعلیق موقت')">تعلیق موقت</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('حذف از کاروان')">حذف از کاروان</button>
+        </td>
+      `;
+      rosterBody.appendChild(tr);
+    });
+  }
+};
 
 
 // 5. ANNOUNCEMENTS BROADCAST
@@ -3285,6 +3352,7 @@ window.viewCaravanDetails = async function(caravanId) {
           <td>سطح ${u.levelFrame || 1}</td>
           <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${u.zarikBalance || 0}</td>
           <td>
+            <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue);"><i class="fa-solid fa-eye"></i></button>
             <button class="page-btn" onclick="removeFromCaravan('${caravanId}', '${u.id}')" title="حذف از کاروان"><i class="fa-solid fa-user-minus" style="color: var(--color-danger);"></i></button>
           </td>
         `;
@@ -4416,4 +4484,235 @@ window.submitBulkTransfer = async function() {
     console.error(err);
     alert('خطا در ارتباط با سرور');
   }
+};
+
+window.addStudentToCaravan = async function() {
+  const q = document.getElementById('cw-add-student-input').value.trim();
+  if(!q) return alert('لطفاً نام یا کد ملی را وارد کنید');
+  if(!currentDrawerCaravanId) return alert('خطا: کاروان فعلی مشخص نیست');
+
+  try {
+    const searchRes = await request(`/api/v1/admin/users?role=student&search=${encodeURIComponent(q)}`);
+    const users = await searchRes.json();
+    
+    if(users.length === 0) return alert('دانش‌آموزی یافت نشد');
+    const targetUser = users.find(u => !u.caravanId) || users[0];
+
+    const res = await request(`/api/v1/admin/caravans/${currentDrawerCaravanId}/members/add`, {
+      method: 'PATCH',
+      body: JSON.stringify({ userId: targetUser.id })
+    });
+    
+    if(res.ok) {
+      alert('دانش‌آموز با موفقیت افزوده شد');
+      document.getElementById('cw-add-student-input').value = '';
+      if (typeof viewCaravanDetails === 'function') viewCaravanDetails(currentDrawerCaravanId);
+    } else {
+      const data = await res.json();
+      alert('خطا: ' + (data.error || 'ناشناخته'));
+    }
+  } catch(e) {
+    console.error(e);
+    alert('خطا در ارتباط با سرور');
+  }
+};
+
+window.openCaravanStudentDetails = async function(userId) {
+  try {
+    const res = await request(`/api/v1/admin/users/${userId}/analytics`);
+    if(!res.ok) throw new Error('Failed to fetch user analytics');
+    const data = await res.json();
+    
+    document.getElementById('csd-identity').innerHTML = `
+      <strong>نام:</strong> ${data.name || 'نامشخص'}<br>
+      <strong>کد ملی:</strong> ${data.nationalId || '-'}<br>
+      <strong>شماره تماس:</strong> ${data.phoneNumber || '-'}<br>
+      <strong>شهر:</strong> ${data.city || '-'}<br>
+      <strong>تاریخ ثبت‌نام:</strong> ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('fa-IR') : '-'}<br>
+      <strong>پروفایل فریم:</strong> ${data.levelFrame || 1}
+    `;
+
+    document.getElementById('csd-assets').innerHTML = `
+      <strong>موجودی زریک:</strong> ${data.zarikBalance || 0}<br>
+      <strong>موجودی نخ:</strong> ${data.nakhBalance || 0}<br>
+      <strong>موجودی بیرق:</strong> ${data.beyraghBalance || 0}<br>
+      <strong>موجودی فرش:</strong> ${data.farshBalance || 0}
+    `;
+
+    let progHtml = '';
+    if(data.classProgress && data.classProgress.length > 0) {
+       progHtml = data.classProgress.map(p => `<div>- ${p.sessionName}: ${p.watchPercentage}% | کوییز: ${p.quizScore}</div>`).join('');
+    } else {
+       progHtml = 'داده‌ای موجود نیست';
+    }
+    document.getElementById('csd-progress').innerHTML = progHtml;
+
+    let ticketsHtml = '';
+    if(data.recentTickets && data.recentTickets.length > 0) {
+       ticketsHtml = data.recentTickets.map(t => `<div>- ${t.subject} (${t.status})</div>`).join('');
+    } else {
+       ticketsHtml = 'تیکتی یافت نشد';
+    }
+    document.getElementById('csd-tickets').innerHTML = ticketsHtml;
+
+    document.getElementById('caravan-student-detail-modal').style.display = 'flex';
+  } catch(e) {
+    console.error(e);
+    alert('خطا در دریافت جزئیات دانش‌آموز');
+  }
+};
+
+window.selectedCandidateMembers = new Set();
+
+window.openAddMemberToCaravanModal = function() {
+  const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
+  if (!currentCaravanId) return alert('لطفاً ابتدا یک کاروان را انتخاب کنید');
+  window.selectedCandidateMembers.clear();
+  const countEl = document.getElementById('add-member-selected-count');
+  if (countEl) countEl.innerText = '0';
+  document.getElementById('input-search-candidate-member').value = '';
+  document.getElementById('candidate-members-list').innerHTML = '<p style="text-align:center; color:#64748b; font-size:12px; margin:10px 0;">جهت جستجو شروع به تایپ کنید...</p>';
+  document.getElementById('add-member-to-caravan-modal').style.display = 'flex';
+};
+
+window.closeAddMemberToCaravanModal = function() {
+  document.getElementById('add-member-to-caravan-modal').style.display = 'none';
+};
+
+window.toggleCandidateSelection = function(checkbox, userId) {
+  if (checkbox.checked) {
+    window.selectedCandidateMembers.add(userId);
+  } else {
+    window.selectedCandidateMembers.delete(userId);
+  }
+  const countEl = document.getElementById('add-member-selected-count');
+  if (countEl) countEl.innerText = window.selectedCandidateMembers.size;
+};
+
+window.searchCandidateMembers = async function(query) {
+  const container = document.getElementById('candidate-members-list');
+  if (!query || query.trim().length < 2) {
+    container.innerHTML = '<p style="text-align:center; color:#64748b; font-size:12px; margin:10px 0;">حداقل ۲ کاراکتر وارد کنید...</p>';
+    return;
+  }
+  try {
+    const res = await fetch(`/api/v1/admin/users?search=${encodeURIComponent(query.trim())}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    });
+    const data = await res.json();
+    const users = data.users || (Array.isArray(data) ? data : []);
+    if (users.length === 0) {
+      container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px; margin:10px 0;">کاربری با این مشخصات یافت نشد</p>';
+      return;
+    }
+    container.innerHTML = users.map(u => {
+      const isChecked = window.selectedCandidateMembers.has(u.id) ? 'checked' : '';
+      return `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;">
+          <input type="checkbox" onchange="toggleCandidateSelection(this, '${u.id}')" ${isChecked}>
+          <div>
+            <strong style="color:white;">${u.name}</strong>
+            <span style="color:#94a3b8; font-size:11px; margin-right:6px;">(${u.phoneNumber})</span>
+            <span style="color:#38bdf8; font-size:11px; margin-right:4px;">${u.userCode || u.id}</span>
+          </div>
+        </label>
+      </div>
+    `}).join('');
+  } catch(e) {
+    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px;">خطا در جستجو</p>';
+  }
+};
+
+window.confirmBulkAddUsersToCaravan = async function() {
+  const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
+  if (!currentCaravanId) return;
+  const userIds = Array.from(window.selectedCandidateMembers);
+  if (userIds.length === 0) return alert('هیچ کاربری انتخاب نشده است');
+
+  try {
+    const res = await fetch(`/api/v1/admin/caravans/${currentCaravanId}/members/bulk-add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ userIds })
+    });
+    if (res.ok) {
+      closeAddMemberToCaravanModal();
+      alert('کاربران با موفقیت به کاروان اضافه شدند');
+      if (typeof loadCaravansTab === 'function') loadCaravansTab();
+      setTimeout(() => {
+        const picker = document.getElementById('target-caravan-picker');
+        if (picker) {
+          picker.value = currentCaravanId;
+          if (typeof loadSelectedCaravanDetails === 'function') loadSelectedCaravanDetails();
+        }
+      }, 500);
+    } else {
+      const err = await res.json();
+      alert(err.error || 'خطا در افزودن کاربران');
+    }
+  } catch(e) {
+    alert('خطا در ارتباط با سرور');
+  }
+};
+
+window.updateCaravanMentor = async function() {
+  const currentCaravanId = document.getElementById('target-caravan-picker')?.value;
+  if (!currentCaravanId) return alert('لطفاً ابتدا یک کاروان را انتخاب کنید');
+  const mentorId = document.getElementById('cw-mentor-select')?.value;
+  
+  try {
+    const res = await fetch(`/api/v1/admin/caravans/${currentCaravanId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({ mentorId })
+    });
+    if (res.ok) {
+      closeChangeCaravanMentorModal();
+      alert('راهبر با موفقیت تغییر یافت');
+      if (typeof loadCaravansTab === 'function') loadCaravansTab();
+      setTimeout(() => {
+        const picker = document.getElementById('target-caravan-picker');
+        if (picker) {
+          picker.value = currentCaravanId;
+          if (typeof loadSelectedCaravanDetails === 'function') loadSelectedCaravanDetails();
+        }
+      }, 500);
+    } else {
+      const err = await res.json();
+      alert(err.error || 'خطا در تغییر راهبر');
+    }
+  } catch(e) {
+    alert('خطا در ارتباط با سرور');
+  }
+};
+
+window.openChangeCaravanMentorModal = async function() {
+  const currentCaravanId = document.getElementById('target-caravan-picker')?.value;
+  if (!currentCaravanId) return alert('لطفاً ابتدا یک کاروان را انتخاب کنید');
+  const caravan = window.caravansData?.find(c => c.id === currentCaravanId);
+  const mentorSelect = document.getElementById('cw-mentor-select');
+  
+  document.getElementById('change-caravan-mentor-modal').style.display = 'flex';
+  
+  if (mentorSelect) {
+    mentorSelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
+    try {
+      const res = await fetch('/api/v1/admin/mentors', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+      const mentors = await res.json();
+      mentorSelect.innerHTML = '<option value="">-- بدون راهبر --</option>' + mentors.map(m => `<option value="${m.id}" ${caravan && caravan.mentorId === m.id ? 'selected' : ''}>${m.name}</option>`).join('');
+    } catch(e) {
+      mentorSelect.innerHTML = '<option value="">خطا در بارگذاری</option>';
+    }
+  }
+};
+
+window.closeChangeCaravanMentorModal = function() {
+  document.getElementById('change-caravan-mentor-modal').style.display = 'none';
 };
