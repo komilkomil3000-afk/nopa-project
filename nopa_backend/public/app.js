@@ -3469,30 +3469,81 @@ window.lmsStations = [];
 async function loadLmsData() {
   try {
     const res = await request('/api/v1/admin/lms/stations');
-    const stations = await res.json();
+    let stations = [];
+    if (res.ok) {
+      stations = await res.json();
+    }
     window.lmsStations = stations;
     
     const tbody = document.querySelector('#stations-table tbody');
     if(tbody) {
       tbody.innerHTML = '';
-      stations.forEach(s => {
-        const releaseStr = s.releaseDate ? `${new Date(s.releaseDate).toLocaleDateString('fa-IR')} ${s.releaseTime || ''}` : 'فوری/آزاد';
+      if (stations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">هیچ منزلگاهی یافت نشد</td></tr>';
+        return;
+      }
+      
+      stations.forEach((s, idx) => {
+        const releaseStr = s.releaseDate ? `${new Date(s.releaseDate).toLocaleDateString('fa-IR')} ${s.releaseTime || ''}` : 'فوری / آزاد';
+        
+        let categoriesHtml = '';
+        if (s.categories && s.categories.length > 0) {
+          categoriesHtml = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+          s.categories.forEach(cat => {
+            let mentorStr = cat.mentorName ? ` (مدرس: ${cat.mentorName})` : '';
+            let sessionsCount = cat.sessions ? cat.sessions.length : 0;
+            let totalVideos = 0;
+            let totalQuizzes = 0;
+            
+            if(cat.sessions) {
+              cat.sessions.forEach(sess => {
+                if(sess.videoUrl || (sess.clips && sess.clips.length > 0) || (sess.videoParts && sess.videoParts.length > 0)) totalVideos++;
+                if(sess.quizId || (sess.quizzes && sess.quizzes.length > 0)) totalQuizzes++;
+              });
+            }
+            
+            categoriesHtml += `
+              <div style="background: rgba(30, 41, 59, 0.5); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="color: var(--color-neon-blue); font-weight: bold; font-size: 13px; margin-bottom: 4px;">🛠️ ${cat.title}${mentorStr} - ${sessionsCount} جلسه</div>
+                <div style="color: var(--text-muted); font-size: 11px;">🎥 ${totalVideos} ویدیو | 📝 ${totalQuizzes} آزمون مجزا</div>
+              </div>
+            `;
+          });
+          categoriesHtml += '</div>';
+        } else {
+          categoriesHtml = '<span style="color: var(--text-muted);">بدون کلاس و دسته‌بندی</span>';
+        }
+        
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${s.orderIndex}</strong></td>
-          <td>${s.title}</td>
-          <td>${releaseStr}</td>
-          <td>${s.categories ? s.categories.length : 0} دسته</td>
-          <td>
-            <button class="page-btn btn-edit" style="background:#8b5cf6; color:white;" onclick="editLmsStation('${s.id}')"><i class="fa-solid fa-edit"></i> ویرایش</button>
-            <button class="page-btn btn-danger" onclick="deleteLmsStation('${s.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+          <td style="text-align: center; font-weight: bold; color: var(--color-neon-blue); font-size: 16px;">${s.orderIndex || (idx + 1)}</td>
+          <td style="font-weight: bold;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1;"></span>
+              ${s.title}
+            </div>
+          </td>
+          <td>${categoriesHtml}</td>
+          <td style="text-align: center;"><span class="badge" style="background: rgba(99,102,241,0.1); color: #818cf8;">${releaseStr}</span></td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+              <button class="page-btn btn-edit" style="background:#8b5cf6; color:white; padding: 4px 8px; font-size: 11px;" onclick="editLmsStation('${s.id}')"><i class="fa-solid fa-edit"></i> ویرایش</button>
+              <button class="page-btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteLmsStation('${s.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
-  } catch(e) { console.error(e); }
+  } catch(e) { 
+    console.error('LMS Stations Load Error:', e); 
+    const tbody = document.querySelector('#stations-table tbody');
+    if(tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ef4444; padding: 20px;">خطا در بارگذاری اطلاعات پایگاه داده</td></tr>';
+  }
 }
+
+// Alias requested by user for direct invocation
+window.loadLmsStationsData = loadLmsData;
 
 function initNewStation() {
   document.getElementById('lms-station-id').value = '';
