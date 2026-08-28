@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
+import '../services/api_service.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 enum EventType { mediaClass, skillClass, assignment }
 
@@ -20,105 +22,100 @@ class EducationCalendar extends StatefulWidget {
 }
 
 class _EducationCalendarState extends State<EducationCalendar> {
-  late DateTime _selectedDateTime;
+  late Jalali _selectedDateTime;
   int _selectedDay = 0;
+  bool _isExpanded = false;
+  
+  List<CalendarEvent> _events = [];
+  List<int> _holidays = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _selectedDateTime = DateTime.now();
-    // Convert current day
-    final jalali = _gregorianToJalali(_selectedDateTime.year, _selectedDateTime.month, _selectedDateTime.day);
-    _selectedDay = jalali['day']!;
+    _selectedDateTime = Jalali.now();
+    _selectedDay = _selectedDateTime.day;
+    _fetchEvents();
   }
 
-  // Convert Gregorian to Jalali
-  Map<String, int> _gregorianToJalali(int gy, int gm, int gd) {
-    final List<int> gDaysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    int jy = gy - 621;
-    
-    bool isGregorianLeap = (gy % 4 == 0 && gy % 100 != 0) || (gy % 400 == 0);
-    if (isGregorianLeap) gDaysInMonth[2] = 29;
-    
-    int gDayNo = 0;
-    for (int i = 1; i < gm; i++) {
-      gDayNo += gDaysInMonth[i];
-    }
-    gDayNo += gd;
-    
-    int jDayNo;
-    if (gDayNo > 79) {
-      jDayNo = gDayNo - 79;
-      jy += 1;
-    } else {
-      int jNp = ((gy - 1) % 4 == 0 && (gy - 1) % 100 != 0) || ((gy - 1) % 400 == 0) ? 366 : 365;
-      jDayNo = gDayNo + jNp - 79;
-    }
-    
-    int jm = 1;
-    final List<int> jDaysInMonth = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
-    for (int i = 1; i <= 12; i++) {
-      if (jDayNo <= jDaysInMonth[i]) {
-        jm = i;
-        break;
+  Future<void> _fetchEvents() async {
+    final data = await HttpApiService().getCalendarEvents();
+    if (data != null) {
+      final List<CalendarEvent> loadedEvents = [];
+      if (data['events'] != null) {
+        for (var e in data['events']) {
+          EventType type = EventType.skillClass;
+          if (e['type'] == 'mediaClass') {
+            type = EventType.mediaClass;
+          } else if (e['type'] == 'assignment') {
+            type = EventType.assignment;
+          }
+          
+          int evDay = 1;
+          try {
+            if (e['eventDate'] != null) {
+              final dt = DateTime.parse(e['eventDate']);
+              final jalaliDt = Jalali.fromDateTime(dt);
+              evDay = jalaliDt.day;
+            } else {
+              evDay = e['day'] ?? 1;
+            }
+          } catch (_) {
+            evDay = e['day'] ?? 1;
+          }
+          
+          loadedEvents.add(CalendarEvent(
+            day: evDay,
+            type: type,
+            title: e['title'],
+            time: e['time'],
+          ));
+        }
       }
-      jDayNo -= jDaysInMonth[i];
+      
+      final List<int> loadedHolidays = [];
+      if (data['holidays'] != null) {
+        for (var h in data['holidays']) {
+          loadedHolidays.add(h);
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _events = loadedEvents;
+          _holidays = loadedHolidays;
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-    int jd = jDayNo;
-    
-    return {'year': jy, 'month': jm, 'day': jd};
   }
 
-  int _getPersianWeekdayIndex(int dartWeekday) {
-    switch (dartWeekday) {
-      case DateTime.saturday: return 0;
-      case DateTime.sunday: return 1;
-      case DateTime.monday: return 2;
-      case DateTime.tuesday: return 3;
-      case DateTime.wednesday: return 4;
-      case DateTime.thursday: return 5;
-      case DateTime.friday: return 6;
-      default: return 0;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
-    final jalaliNow = _gregorianToJalali(_selectedDateTime.year, _selectedDateTime.month, _selectedDateTime.day);
-    final int jYear = jalaliNow['year']!;
-    final int jMonth = jalaliNow['month']!;
-    final int jDay = jalaliNow['day']!;
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final jalaliNow = Jalali.now();
+    final int jYear = jalaliNow.year;
+    final int jMonth = jalaliNow.month;
+    final int jDay = jalaliNow.day;
 
     final List<String> jalaliMonthNames = [
       "", "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
     ];
 
-    // Determine days in current Jalali month
-    int daysInMonth = 30;
-    if (jMonth <= 6) {
-      daysInMonth = 31;
-    } else if (jMonth == 12) {
-      // Check Jalali leap year roughly
-      bool isLeap = ((jYear + 1) * 0.24219).frac() < 0.24219; // Simplified check
-      daysInMonth = isLeap ? 30 : 29;
-    }
+    int daysInMonth = jalaliNow.monthLength;
 
-    // Calculate weekday of 1st day of month
-    // Saturday = 0, Sunday = 1, Monday = 2, Tuesday = 3, Wednesday = 4, Thursday = 5, Friday = 6
-    int todayWeekdayIdx = _getPersianWeekdayIndex(_selectedDateTime.weekday);
+    int todayWeekdayIdx = jalaliNow.weekDay - 1;
     int firstDayWeekdayIdx = (todayWeekdayIdx - (jDay - 1)) % 7;
     if (firstDayWeekdayIdx < 0) firstDayWeekdayIdx += 7;
-
-    // Custom events for mock representation
-    final List<CalendarEvent> events = [
-      CalendarEvent(day: 5, type: EventType.mediaClass, title: "کلاس رسانه‌ای ۱ (تفکر انتقادی)", time: "ساعت ۱۵:۰۰"),
-      CalendarEvent(day: 12, type: EventType.skillClass, title: "کلاس مهارتی ۱ (هدف‌گذاری SMART)", time: "ساعت ۱۷:۰۰"),
-      CalendarEvent(day: 18, type: EventType.assignment, title: "مهلت تحویل تمرین کار گروهی نپا", time: "ساعت ۲۳:۵۹"),
-      CalendarEvent(day: 24, type: EventType.mediaClass, title: "کلاس رسانه‌ای ۲ (تولید محتوای خلاق)", time: "ساعت ۱۰:۰۰"),
-    ];
-
-    // Holidays (custom dates inside current month)
-    final List<int> holidays = [15, 29]; // e.g. ولادت امام رضا (ع) و غدیر خم
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -133,7 +130,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
             child: Column(
               children: [
-                // Header (Month & Year)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -149,115 +145,230 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                         const SizedBox(width: 4),
                         const Icon(Icons.today, color: Color(0xFFFFD54F), size: 16),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _isExpanded = !_isExpanded),
+                          child: Icon(_isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.white),
+                        )
                       ],
                     ),
                   ],
                 ),
                 const Divider(color: Colors.white10, height: 24),
                 
-                // Days of week header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: const [
-                    Text("ش", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("ی", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("د", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("س", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("چ", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("پ", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
-                    Text("ج", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Calendar Grid
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: daysInMonth + firstDayWeekdayIdx,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
+                if (_isExpanded)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: const [
+                      Text("ش", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("ی", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("د", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("س", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("چ", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("پ", style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Vazirmatn')),
+                      Text("ج", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    if (index < firstDayWeekdayIdx) {
-                      return const SizedBox.shrink();
-                    }
+                if (_isExpanded) const SizedBox(height: 12),
 
-                    final int currentDayNum = index - firstDayWeekdayIdx + 1;
-                    final bool isCurrentDay = currentDayNum == jDay;
-                    final bool isSelected = currentDayNum == _selectedDay;
-                    
-                    // Friday check
-                    final int weekdayOfCell = index % 7;
-                    final bool isFriday = weekdayOfCell == 6;
-                    final bool isHoliday = holidays.contains(currentDayNum);
-                    
-                    final dayEvents = events.where((e) => e.day == currentDayNum).toList();
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedDay = currentDayNum;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected 
-                              ? const Color(0xFF8B5CF6) 
-                              : (isCurrentDay ? const Color(0xFF8B5CF6).withValues(alpha: 0.2) : Colors.transparent),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isCurrentDay ? const Color(0xFF8B5CF6) : (isHoliday || isFriday ? Colors.redAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
-                            width: isCurrentDay || isSelected ? 1.5 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "$currentDayNum",
-                              style: TextStyle(
-                                color: isSelected 
-                                    ? Colors.white 
-                                    : (isFriday || isHoliday ? Colors.redAccent : (dayEvents.isNotEmpty ? const Color(0xFFFFD54F) : Colors.white70)),
-                                fontWeight: isCurrentDay || isSelected ? FontWeight.bold : FontWeight.normal,
-                                fontSize: 13,
-                              ),
-                            ),
-                            if (dayEvents.isNotEmpty) ...[
-                              const SizedBox(height: 3),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: dayEvents.map((e) => _buildDot(e.type)).toList(),
-                              ),
-                            ],
-                            if (isHoliday) ...[
-                              const SizedBox(height: 2),
-                              const Icon(Icons.star, color: Colors.redAccent, size: 8),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                _isExpanded ? _buildFullMonthGrid(daysInMonth, firstDayWeekdayIdx, jDay) : _build5DayStrip(jDay, daysInMonth),
+                
+                const SizedBox(height: 16),
+                _buildLegend(),
               ],
             ),
           ),
-          
-          // Event Detail Panel
           const SizedBox(height: 20),
-          _buildEventDetailsSection(events, holidays),
+          _buildEventDetailsSection(),
         ],
       ),
     );
   }
 
-  Widget _buildEventDetailsSection(List<CalendarEvent> events, List<int> holidays) {
-    final dayEvents = events.where((e) => e.day == _selectedDay).toList();
-    final isHoliday = holidays.contains(_selectedDay);
+  Widget _build5DayStrip(int jDay, int daysInMonth) {
+    int startDay = jDay - 2;
+    if (startDay < 1) startDay = 1;
+    if (startDay + 4 > daysInMonth) startDay = daysInMonth - 4;
+    
+    List<int> visibleDays = List.generate(5, (index) => startDay + index);
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: visibleDays.map((d) {
+        final bool isCurrentDay = d == jDay;
+        final bool isSelected = d == _selectedDay;
+        final bool isHoliday = _holidays.contains(d);
+        final dayEvents = _events.where((e) => e.day == d).toList();
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDay = d;
+            });
+          },
+          child: Container(
+            width: 45,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isSelected 
+                  ? const Color(0xFF8B5CF6) 
+                  : (isCurrentDay ? const Color(0xFF8B5CF6).withValues(alpha: 0.2) : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCurrentDay ? const Color(0xFF8B5CF6) : (isHoliday ? Colors.redAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
+                width: isCurrentDay || isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "$d",
+                  style: TextStyle(
+                    color: isSelected 
+                        ? Colors.white 
+                        : (isHoliday ? Colors.redAccent : (dayEvents.isNotEmpty ? const Color(0xFFFFD54F) : Colors.white70)),
+                    fontWeight: isCurrentDay || isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+                if (dayEvents.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: dayEvents.map((e) => _buildDot(e.type)).toList(),
+                  ),
+                ],
+                if (isHoliday) ...[
+                  const SizedBox(height: 2),
+                  const Icon(Icons.star, color: Colors.redAccent, size: 8),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildFullMonthGrid(int daysInMonth, int firstDayWeekdayIdx, int jDay) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: daysInMonth + firstDayWeekdayIdx,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+      ),
+      itemBuilder: (context, index) {
+        if (index < firstDayWeekdayIdx) {
+          return const SizedBox.shrink();
+        }
+
+        final int currentDayNum = index - firstDayWeekdayIdx + 1;
+        final bool isCurrentDay = currentDayNum == jDay;
+        final bool isSelected = currentDayNum == _selectedDay;
+        
+        final int weekdayOfCell = index % 7;
+        final bool isFriday = weekdayOfCell == 6;
+        final bool isHoliday = _holidays.contains(currentDayNum);
+        
+        final dayEvents = _events.where((e) => e.day == currentDayNum).toList();
+
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedDay = currentDayNum;
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected 
+                  ? const Color(0xFF8B5CF6) 
+                  : (isCurrentDay ? const Color(0xFF8B5CF6).withValues(alpha: 0.2) : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isCurrentDay ? const Color(0xFF8B5CF6) : (isHoliday || isFriday ? Colors.redAccent.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
+                width: isCurrentDay || isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "$currentDayNum",
+                  style: TextStyle(
+                    color: isSelected 
+                        ? Colors.white 
+                        : (isFriday || isHoliday ? Colors.redAccent : (dayEvents.isNotEmpty ? const Color(0xFFFFD54F) : Colors.white70)),
+                    fontWeight: isCurrentDay || isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+                if (dayEvents.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: dayEvents.map((e) => _buildDot(e.type)).toList(),
+                  ),
+                ],
+                if (isHoliday) ...[
+                  const SizedBox(height: 2),
+                  const Icon(Icons.star, color: Colors.redAccent, size: 8),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 12,
+        children: [
+          _buildLegendItem(const Color(0xFFEF4444), "کلاس مهارتی"), // 🔴 Red
+          _buildLegendItem(const Color(0xFF3B82F6), "کلاس رسانه"), // 🔵 Blue
+          _buildLegendItem(const Color(0xFF10B981), "چالش و تکلیف"), // 🟢 Green
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: 'Vazirmatn')),
+      ],
+    );
+  }
+
+  Widget _buildDot(EventType type) {
+    Color color;
+    switch (type) {
+      case EventType.mediaClass: color = const Color(0xFF3B82F6); break; // Blue
+      case EventType.skillClass: color = const Color(0xFFEF4444); break; // Red
+      case EventType.assignment: color = const Color(0xFF10B981); break; // Green
+    }
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      width: 5,
+      height: 5,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+
+  Widget _buildEventDetailsSection() {
+    final dayEvents = _events.where((e) => e.day == _selectedDay).toList();
+    final isHoliday = _holidays.contains(_selectedDay);
 
     return Container(
       width: double.infinity,
@@ -320,12 +431,16 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 Color typeColor = const Color(0xFF8B5CF6);
                 String typeName = "کلاس";
                 if (event.type == EventType.mediaClass) {
-                  typeColor = const Color(0xFFEC4899);
+                  typeColor = const Color(0xFF3B82F6);
                   typeName = "کلاس رسانه";
                 } else if (event.type == EventType.assignment) {
                   typeColor = const Color(0xFF10B981);
                   typeName = "تحویل تکلیف";
+                } else if (event.type == EventType.skillClass) {
+                  typeColor = const Color(0xFFEF4444);
+                  typeName = "کلاس مهارتی";
                 }
+                
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
@@ -370,21 +485,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDot(EventType type) {
-    Color color;
-    switch (type) {
-      case EventType.mediaClass: color = const Color(0xFFEC4899); break;
-      case EventType.skillClass: color = const Color(0xFFFFD54F); break;
-      case EventType.assignment: color = const Color(0xFF10B981); break;
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      width: 5,
-      height: 5,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

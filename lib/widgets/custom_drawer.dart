@@ -4,6 +4,7 @@ import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
 import '../utils/tasks_repository.dart';
 import '../utils/global_state.dart';
+import '../widgets/safe_avatar.dart';
 import 'contact_us_dialog.dart';
 
 class CustomDrawer extends StatelessWidget {
@@ -82,17 +83,16 @@ class CustomDrawer extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   Container(
-                    width: 54,
-                    height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: frameColor, width: 2),
                       boxShadow: frameGlow,
-                      image: DecorationImage(
-                        image: NetworkImage(avatarUrl),
-          onError: (e, s) => debugPrint('Image load error'),
-          fit: BoxFit.cover,
-                      ),
+                    ),
+                    child: SafeAvatar(
+                      radius: 27,
+                      imageUrl: avatarUrl,
+                      name: displayName,
+                      backgroundColor: Colors.transparent,
                     ),
                   ),
                 ],

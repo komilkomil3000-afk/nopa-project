@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
-import '../models/models.dart';
-
-
 class CreateChallengeDialog extends StatefulWidget {
   final VoidCallback onSuccess;
 
@@ -389,29 +386,25 @@ class _CreateChallengeDialogState extends State<CreateChallengeDialog> {
 
               final repository = Provider.of<AppRepository>(context, listen: false);
 
-              final newChallenge = ChallengeModel(
-                id: 'c_${DateTime.now().millisecondsSinceEpoch}',
-                title: _titleCtrl.text,
-                description: _descCtrl.text,
-                rewardZarik: int.tryParse(_scoreCtrl.text) ?? 200,
-                type: _selectedType,
-                questions: _selectedType == 'multiple_choice'
+              final challengeData = {
+                'title': _titleCtrl.text,
+                'description': _descCtrl.text,
+                'rewardZarik': int.tryParse(_scoreCtrl.text) ?? 200,
+                'verificationType': _selectedType,
+                'questions': _selectedType == 'multiple_choice'
                     ? _mcqQuestions.map((q) => {
                         'q': q['question'] ?? '',
                         'options': List<String>.from(q['options'] ?? []),
                         'correct': q['correctIndex'] ?? 0,
                       }).toList()
                     : null,
-                createdByMentorId: repository.currentUser.id,
-              );
+              };
 
-              final success = await repository.apiService.createChallenge(newChallenge);
+              final success = await repository.apiService.createMentorChallenge(challengeData);
 
               if (!mounted) return;
 
               if (success) {
-                // Keep local state update for immediate UI feedback if needed, but the main persistence is done
-                repository.createChallenge(newChallenge);
                 Navigator.pop(context);
                 widget.onSuccess();
                 ScaffoldMessenger.of(context).showSnackBar(
