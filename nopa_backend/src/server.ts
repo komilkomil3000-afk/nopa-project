@@ -21,7 +21,7 @@ app.use(
     contentSecurityPolicy: false, // Disable CSP to allow external CDNs like Google Fonts, Chart.js, etc.
   })
 );
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // Serve static admin files
@@ -29,6 +29,7 @@ app.use('/admin', express.static(path.join(__dirname, '../public')));
 app.use('/admin/libs/chartjs', express.static(path.join(__dirname, '../node_modules/chart.js/dist')));
 app.use('/admin/libs/fontawesome', express.static(path.join(__dirname, '../node_modules/@fortawesome/fontawesome-free')));
 app.use(express.static(path.join(__dirname, '../public')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API Rate Limiter
 app.use('/api/', apiLimiter);
@@ -39,6 +40,9 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes prefix
+app.use('/api/admin/lms/stations', (req, res) => {
+  res.redirect(307, `/api/v1/lms/stations${req.url === '/' ? '' : req.url}`);
+});
 app.use('/api/v1', apiRouter);
 
 // Global Error Handler Middleware

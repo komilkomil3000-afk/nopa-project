@@ -32,7 +32,7 @@ import {
   getLevelsAndCertificates,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateQuiz, seedStations, deleteStation, addClipToSession } from '../controllers/lmsController';
+import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip as deletePart, createQuestion, updateQuestion, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
@@ -55,7 +55,7 @@ import { getMentors, createOrUpdateMentor, grantFiveStars } from '../controllers
 import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory, assignCaravans } from '../controllers/mentorController';
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
 import { getSystemSetting, setSystemSetting } from '../controllers/settingController';
-import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan } from '../controllers/caravanController';
+import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague } from '../controllers/leagueController';
 
 const router = Router();
@@ -113,6 +113,8 @@ router.post('/caravans/:id/members/bulk-add', bulkAddMembersToCaravan as any);
 router.delete('/caravans/:id/members/:studentId', removeMemberFromCaravan as any);
 router.patch('/caravans/:id', updateCaravan as any);
 router.post('/caravans/:id/broadcast', broadcastToCaravan as any);
+router.delete('/caravans/:id', deleteCaravan as any);
+router.put('/caravans/:id/block-members', blockCaravanMembers as any);
 
 router.get('/caravans/requests', getCaravanRequests as any);
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
@@ -134,8 +136,22 @@ router.put('/mentors/:id', updateMentor as any);
 router.post('/mentors/:id/moderate', moderateMentor as any);
 router.get('/users/:id/analytics', getUserAnalytics as any);
 
-// 5. Educational Content & Global Announcements
+import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
+import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
+import { upload } from '../controllers/mediaController';
+
+// 5. Educational Content, Banners, News & Announcements
 router.post('/announcements/broadcast', createGlobalAnnouncement as any);
+
+router.get('/news', getAdminNews as any);
+router.post('/news', upload.single('image') as any, createNews as any);
+router.put('/news/:id', upload.single('image') as any, updateNews as any);
+router.delete('/news/:id', deleteNews as any);
+
+router.get('/banners', getAdminBanners as any);
+router.post('/banners', upload.single('image') as any, createBanner as any);
+router.put('/banners/:id', upload.single('image') as any, updateBanner as any);
+router.delete('/banners/:id', deleteBanner as any);
 router.post('/notifications/broadcast', broadcastNotification as any);
 router.get('/notifications/templates', getTemplates as any);
 router.post('/notifications/templates', createTemplate as any);
@@ -160,13 +176,30 @@ import { createQuizMock } from '../controllers/quizController';
 // 9. Hierarchical Course Management
 // 6. LMS and Form Builder
 router.get('/lms/stations', getStations as any);
-router.post('/lms/stations', createOrUpdateStation as any);
-router.put('/lms/stations/:id', createOrUpdateStation as any);
+router.get('/lms/classes', getClasses as any);
+router.get('/lms/sessions', getSessions as any);
+router.get('/lms/clips', getClips as any);
+router.get('/lms/quizzes', getQuizzes as any);
+
+router.post('/lms/stations', createStation as any);
+router.put('/lms/stations/:id', updateStation as any);
 router.delete('/lms/stations/:id', deleteStation as any);
-router.post('/lms/stations/seed', seedStations as any);
-router.post('/lms/categories', createOrUpdateCategory as any);
-router.post('/lms/sessions', createOrUpdateSession as any);
-router.post('/lms/quizzes', createOrUpdateQuiz as any);
+
+router.post('/lms/classes', createClass as any);
+router.put('/lms/classes/:id', updateClass as any);
+router.delete('/lms/classes/:id', deleteClass as any);
+
+router.post('/lms/sessions', createSession as any);
+router.put('/lms/sessions/:id', updateSession as any);
+router.delete('/lms/sessions/:id', deleteSession as any);
+
+router.post('/lms/sessions/:id/parts', createPart as any);
+router.put('/lms/sessions/:id/parts/:clipId', updatePart as any);
+router.delete('/lms/parts/:id', deletePart as any);
+
+router.post('/lms/questions', createQuestion as any);
+router.put('/lms/questions/:id', updateQuestion as any);
+router.delete('/lms/questions/:id', deleteQuestion as any);
 
 // Non-prefixed alias routes for robustness
 router.post('/stations', createOrUpdateStation as any);
@@ -176,7 +209,7 @@ router.delete('/stations/:id', deleteStation as any);
 router.get('/courses/hierarchy', getStations as any);
 router.post('/courses/subcourses', createOrUpdateCategory as any);
 router.post('/courses/classes', createOrUpdateSession as any);
-router.post('/lms/sessions/:id/clips', addClipToSession as any);
+router.post('/lms/sessions/:id/clips', createOrUpdateClip as any);
 
 router.get('/forms', getForms as any);
 router.post('/forms', createOrUpdateForm as any);

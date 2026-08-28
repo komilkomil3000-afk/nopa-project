@@ -6,17 +6,28 @@ import { getMe, getMentorById, completeProfile } from '../controllers/userContro
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
 import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
-import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz } from '../controllers/lmsController';
+import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched } from '../controllers/lmsController';
 import { getForms, submitForm } from '../controllers/formController';
+import { getCalendarEvents } from '../controllers/calendarController';
 import { getCaravanLeague, getWealthiestLeague, getMentorLeague } from '../controllers/leagueController';
 import { evaluateMentor } from '../controllers/evaluationController';
 import { getNotifications, markNotificationAsRead } from '../controllers/notificationController';
 import { getMentorAnalytics } from '../controllers/analyticsController';
+import { getNews } from '../controllers/newsController';
+import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
 import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
 import { convertAssets } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
+import { 
+  createMentorChallenge, 
+  getMentorChallenges, 
+  getChallengeSubmissions, 
+  reviewChallengeSubmission,
+  getMentorTicketDetails,
+  replyMentorTicket 
+} from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
 
 const router = Router();
@@ -58,7 +69,11 @@ router.get('/mentors/notes/:studentId', authenticateJWT as any, getPrivateNotes 
 router.get('/notifications', authenticateJWT as any, getNotifications as any);
 router.patch('/notifications/:id/read', authenticateJWT as any, markNotificationAsRead as any);
 
-// G. Admin CRM Routes
+// G. Public/Misc Routes
+router.get('/news', authenticateJWT as any, getNews as any);
+router.get('/banners', authenticateJWT as any, getBanners as any);
+
+// H. Admin CRM Routes
 router.use('/admin', adminRouter);
 
 // H. Media Routes
@@ -66,16 +81,19 @@ router.post('/media/upload', authenticateJWT as any, authorizeRoles('admin','men
 router.get('/media', authenticateJWT as any, authorizeRoles('admin') as any, getMediaAssets as any);
 
 // I. LMS and Forms
-router.get('/classes', authenticateJWT as any, getStations as any);
+router.get('/lms/stations', authenticateJWT as any, getStations as any);
 router.get('/courses', authenticateJWT as any, getStations as any);
 router.get('/courses/hierarchy', authenticateJWT as any, getStations as any);
 router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as any);
 router.post('/lms/bookmarks', authenticateJWT as any, addBookmark as any);
 router.post('/lms/sessions/:id/heartbeat', authenticateJWT as any, heartbeatSessionWatch as any);
+router.get('/lms/user-progress', authenticateJWT as any, getUserProgress as any);
+router.post('/lms/clips/:clipId/watched', authenticateJWT as any, markClipWatched as any);
 router.get('/lms/sessions/:id/progress', authenticateJWT as any, getSessionWatchProgress as any);
 router.post('/lms/sessions/:id/submit-quiz', authenticateJWT as any, submitSessionQuiz as any);
 router.get('/forms', authenticateJWT as any, getForms as any);
 router.post('/forms/submit', authenticateJWT as any, submitForm as any);
+router.get('/calendar/events', authenticateJWT as any, getCalendarEvents as any);
 
 // J. Chat & Messaging Routes
 router.get('/chat/direct/:mentorId', authenticateJWT as any, getDirectMessages as any);
@@ -91,5 +109,15 @@ router.patch('/support/tickets/:id/resolve', authenticateJWT as any, resolveTick
 // L. Caravans & Assets
 router.post('/caravans/convert-assets', authenticateJWT as any, convertAssets as any);
 
+
+// Mentor Workspace Routes
+router.post('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor') as any, createMentorChallenge as any);
+router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor') as any, getMentorChallenges as any);
+router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor') as any, getChallengeSubmissions as any);
+router.post('/mentor/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor') as any, reviewChallengeSubmission as any);
+router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor') as any, getMentorTicketDetails as any);
+router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor') as any, replyMentorTicket as any);
+
 export default router;
+
 

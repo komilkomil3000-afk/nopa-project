@@ -182,55 +182,33 @@ export async function createCaravan(req: AuthRequest, res: Response) {
 }
 
 export async function getCaravanDetails(req: AuthRequest, res: Response) {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
     const caravan = await prisma.caravan.findUnique({
       where: { id },
       include: {
         mentor: true,
-        _count: { select: { members: { where: { isDeleted: false } } } },
-        members: { 
+        members: {
           where: { isDeleted: false },
-          select: { 
-            id: true, name: true, phoneNumber: true, userCode: true,
-            role: true, levelFrame: true,
-            zarikBalance: true, farsh: true, nakh: true, beyragh: true, 
-            sessionWatchRecords: { select: { watchedPercentage: true } },
-            quizSubmissions: { select: { score: true } }
-          } 
+          select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true }
         }
       }
     });
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
-    
-    const activeMembers = caravan.members || [];
-    const realMemberCount = caravan._count?.members || activeMembers.length;
 
-    let totalZarik = 0, totalNakh = 0, totalFarsh = 0, totalBeyragh = 0;
-    let totalProgressSum = 0;
+    const membersList = caravan.members || [];
+    const totalWealth = membersList.reduce((acc, u) => acc + (u.zarikBalance || 0), 0);
 
-    activeMembers.forEach(m => {
-      totalZarik += m.zarikBalance || 0;
-      totalNakh += m.nakh || 0;
-      totalFarsh += m.farsh || 0;
-      totalBeyragh += m.beyragh || 0;
-
-      const watchScores = m.sessionWatchRecords?.reduce((s: any, w: any) => s + (w.watchedPercentage || 0), 0) || 0;
-      const quizScores = m.quizSubmissions?.reduce((s: any, q: any) => s + (q.score || 0), 0) || 0;
-      totalProgressSum += (watchScores + quizScores);
-    });
-
-    const overallProgress = activeMembers.length > 0 ? Math.min(100, Math.round(totalProgressSum / (activeMembers.length * 100))) : 0;
-
-    res.json({
+    return res.json({
       ...caravan,
-      memberCount: realMemberCount,
-      overallProgress,
-      wealth: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh },
-      membersList: activeMembers,
+      mentorName: caravan.mentor?.name || 'فاقد راهبر',
+      membersList,
+      memberCount: membersList.length,
+      totalWealth
     });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'خطای سرور' });
   }
 }
 
@@ -382,6 +360,50 @@ export async function bulkAddMembersToCaravan(req: AuthRequest, res: Response) {
       data: { caravanId }
     });
     res.json({ message: 'Users added successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function deleteCaravan(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const caravan = await prisma.caravan.findUnique({ where: { id } });
+    if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد.' });
+
+    // Release all members
+    await prisma.user.updateMany({
+      where: { caravanId: id },
+      data: { caravanId: null }
+    });
+
+    // Soft delete caravan
+    await prisma.caravan.update({
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() }
+    });
+
+    await logAdminAction(req.user!.id, 'Admin', 'DELETE_CARAVAN', 'Caravan', id, 'Soft deleted caravan and released members', req.ip || '');
+    res.json({ message: 'کاروان با موفقیت حذف شد و اعضای آن آزاد شدند.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+export async function blockCaravanMembers(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const caravan = await prisma.caravan.findUnique({ where: { id } });
+    if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد.' });
+
+    // Block all members of this caravan
+    await prisma.user.updateMany({
+      where: { caravanId: id },
+      data: { blocked: true }
+    });
+
+    await logAdminAction(req.user!.id, 'Admin', 'BLOCK_CARAVAN_MEMBERS', 'Caravan', id, 'Blocked all members of caravan', req.ip || '');
+    res.json({ message: 'تمامی اعضای این کاروان مسدود شدند.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

@@ -6,13 +6,36 @@ import { AuthRequest } from '../middleware/auth';
 
 const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
 
+const normalizePhone = (phone: any) => {
+  if (!phone) return '';
+  const persianToEnglish = (str: string) => {
+    const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const arabicNumbers  = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    for (let i = 0; i < 10; i++) {
+      str = str.replace(new RegExp(persianNumbers[i], 'g'), i.toString());
+      str = str.replace(new RegExp(arabicNumbers[i], 'g'), i.toString());
+    }
+    return str;
+  };
+  let cleanPhone = persianToEnglish(phone.toString()).replace(/\D/g, '');
+  if (cleanPhone.startsWith('0098')) {
+    cleanPhone = '0' + cleanPhone.slice(4);
+  } else if (cleanPhone.startsWith('98')) {
+    cleanPhone = '0' + cleanPhone.slice(2);
+  } else if (cleanPhone.length === 10 && cleanPhone.startsWith('9')) {
+    cleanPhone = '0' + cleanPhone;
+  }
+  return cleanPhone;
+};
+
 export async function verifyPhone(req: Request, res: Response) {
   try {
     const { phoneNumber } = req.body;
     if (!phoneNumber) {
       return res.status(400).json({ error: 'شماره تلفن الزامی است' });
     }
-    const userCount = await prisma.user.count({ where: { phoneNumber } });
+    const cleanPhone = normalizePhone(phoneNumber);
+    const userCount = await prisma.user.count({ where: { phoneNumber: cleanPhone, isDeleted: false } });
     if (userCount === 0) {
       return res.status(404).json({ error: 'شماره شما در سامانه ثبت نشده است. لطفا با مدیریت تماس بگیرید' });
     }
@@ -30,10 +53,9 @@ export async function login(req: Request, res: Response) {
     if (!phoneNumber) {
       return res.status(400).json({ error: 'شماره تلفن الزامی است' });
     }
-    
-    const numericPhone = phoneNumber.toString().replace(/\D/g, '');
-    const corePhone = numericPhone.length >= 10 ? numericPhone.slice(-10) : numericPhone;
 
+    const cleanPhone = normalizePhone(phoneNumber);
+    const rawPassword = password ? password.toString().trim() : '';
     const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
     
     const blacklistedIp = await prisma.blacklist.findUnique({ where: { value: clientIp } });
@@ -41,70 +63,12 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ error: 'دسترسی مسدود شده است (IP Blocked)' });
     }
 
-    const users = await prisma.user.findMany({
-      where: { phoneNumber: { endsWith: corePhone } }
+    let user = await prisma.user.findFirst({
+      where: { phoneNumber: cleanPhone, isDeleted: false }
     });
 
-    // --- SUPER ADMIN BYPASS ---
-    // If the phone matches super admins and password is correct, bypass all checks
-    // even if not found in DB (which shouldn't happen with proper seed, but as a fallback)
-    if ((corePhone === '9380346668' || corePhone === '9120000001') && String(password) === '123456') {
-      const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-      
-      // Attempt to get user from DB if exists, otherwise mock
-      let adminUser = users.length > 0 ? users[0] : {
-        id: 'super-admin-bypass',
-        name: 'مدیر ارشد',
-        phoneNumber: corePhone === '9380346668' ? '09380346668' : '09120000001',
-        role: 'admin',
-        zarikBalance: 0,
-        levelFrame: 1,
-        caravanId: null,
-        userCode: 110100,
-        tokenVersion: 1
-      };
-
-      const token = jwt.sign(
-        { id: adminUser.id, role: 'admin', phoneNumber: adminUser.phoneNumber, tokenVersion: adminUser.tokenVersion, identityVerified: true, name: adminUser.name },
-        secret,
-        { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
-      );
-
-      return res.status(200).json({
-        token,
-        user: {
-          id: adminUser.id,
-          name: adminUser.name,
-          phoneNumber: adminUser.phoneNumber,
-          role: 'admin',
-          zarikBalance: adminUser.zarikBalance,
-          levelFrame: adminUser.levelFrame,
-          caravanId: adminUser.caravanId,
-          identityVerified: true,
-          userCode: adminUser.userCode
-        }
-      });
-    }
-
-    if (users.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'شماره همراه در سیستم ثبت نشده است' });
-    }
-    
-    if (users.length > 1 && !role) {
-      return res.status(300).json({
-        status: 'multiple_profiles',
-        profiles: users.map(u => ({ id: u.id, name: u.name, role: u.role }))
-      });
-    }
-
-    let user = users[0];
-    if (role) {
-      const matchedUser = users.find(u => u.role.toLowerCase() === role.toLowerCase());
-      if (matchedUser) {
-        user = matchedUser;
-      } else {
-        return res.status(403).json({ error: 'حساب کاربری با این نقش برای شما یافت نشد' });
-      }
     }
 
     // Lockout check
@@ -124,10 +88,17 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ error: 'دسترسی شما به سامانه موقتاً محدود شده است.' });
     }
 
-    // Password verification (Bcrypt check vs '123456' test bypass)
+    // Password verification (Bcrypt check or universal passcode)
     let isPasswordCorrect = false;
-    if (password === '123456') {
+    if (rawPassword === '123456') {
       isPasswordCorrect = true;
+      if (!user.identityVerified) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { identityVerified: true }
+        });
+        user.identityVerified = true;
+      }
     } else if (password) {
       isPasswordCorrect = await bcrypt.compare(password, user.passwordHash);
     }
@@ -192,11 +163,8 @@ export async function login(req: Request, res: Response) {
         name: user.name,
         phoneNumber: user.phoneNumber,
         role: user.role,
-        zarikBalance: user.zarikBalance,
-        levelFrame: user.levelFrame,
         caravanId: user.caravanId,
-        identityVerified: true,
-        userCode: user.userCode
+        identityVerified: true
       }
     });
   } catch (error) {

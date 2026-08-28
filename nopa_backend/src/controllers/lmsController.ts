@@ -23,30 +23,108 @@ export const getStations = async (req: Request, res: Response) => {
       },
       orderBy: { orderIndex: 'asc' }
     });
-    res.json(stations);
+
+    const mapped = stations.map(st => {
+      let instructors = null;
+      let schedule = null;
+      let category = null;
+      let sessionsCount = null;
+      if (st.subtitle) {
+        try {
+          const parsed = JSON.parse(st.subtitle);
+          if (parsed && typeof parsed === 'object') {
+            instructors = parsed.instructors;
+            schedule = parsed.schedule;
+            category = parsed.category;
+            sessionsCount = parsed.sessionsCount;
+          }
+        } catch (e) {
+          instructors = st.subtitle;
+        }
+      }
+      return {
+        ...st,
+        instructors,
+        schedule,
+        category,
+        sessionsCount
+      };
+    });
+
+    res.json(mapped);
   } catch (error) {
     console.error('getStations error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
+export const getClasses = async (req: Request, res: Response) => {
+  try {
+    const classes = await prisma.classCategory.findMany({
+      orderBy: { orderIndex: 'asc' }
+    });
+    res.json(classes);
+  } catch (error) {
+    console.error('getClasses error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getSessions = async (req: Request, res: Response) => {
+  try {
+    const sessions = await prisma.classSession.findMany({
+      orderBy: { orderIndex: 'asc' }
+    });
+    res.json(sessions);
+  } catch (error) {
+    console.error('getSessions error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getClips = async (req: Request, res: Response) => {
+  try {
+    const clips = await prisma.videoClip.findMany({
+      orderBy: { clipOrder: 'asc' }
+    });
+    res.json(clips);
+  } catch (error) {
+    console.error('getClips error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getQuizzes = async (req: Request, res: Response) => {
+  try {
+    const quizzes = await prisma.quiz.findMany({
+      orderBy: { orderIndex: 'asc' }
+    });
+    res.json(quizzes);
+  } catch (error) {
+    console.error('getQuizzes error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 export const createOrUpdateStation = async (req: Request, res: Response) => {
   try {
-    const { id, title, subtitle, description, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories } = req.body;
+    const { id, title, subtitle, description, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
     
+    const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
+
     const result = await prisma.$transaction(async (tx) => {
       let station;
-      const releaseDateVal = releaseDate ? new Date(releaseDate) : null;
-      const orderIndexVal = Number(orderIndex || 0);
+      const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
+      const orderIndexVal = parseInt(orderIndex) || 0;
 
-      if (id) {
+      if (id && !id.startsWith('new_')) {
         station = await tx.station.update({
           where: { id },
-          data: { title, subtitle, description, iconUrl, orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime, scoringCriteriaJson }
+          data: { title: title || 'منزلگاه', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
         });
       } else {
         station = await tx.station.create({
-          data: { title, subtitle, description, iconUrl, orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime, scoringCriteriaJson }
+          data: { title: title || 'منزلگاه جدید', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
         });
       }
 
@@ -55,7 +133,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
           where: { stationId: station.id }
         });
         const existingCategoryIds = existingCategories.map(c => c.id);
-        const incomingCategoryIds = categories.filter(c => c.id).map(c => c.id);
+        const incomingCategoryIds = categories.filter(c => c.id && !c.id.startsWith('new_')).map(c => c.id);
 
         const categoriesToDelete = existingCategoryIds.filter(cid => !incomingCategoryIds.includes(cid));
         if (categoriesToDelete.length > 0) {
@@ -67,14 +145,15 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
         for (let i = 0; i < categories.length; i++) {
           const cat = categories[i];
           let dbCategory;
-          if (cat.id && existingCategoryIds.includes(cat.id)) {
+          const catOrder = parseInt(cat.orderIndex) || i;
+          if (cat.id && !cat.id.startsWith('new_') && existingCategoryIds.includes(cat.id)) {
             dbCategory = await tx.classCategory.update({
               where: { id: cat.id },
-              data: { title: cat.title, orderIndex: Number(cat.orderIndex || i) }
+              data: { title: cat.title || 'دسته کلاس', orderIndex: catOrder }
             });
           } else {
             dbCategory = await tx.classCategory.create({
-              data: { stationId: station.id, title: cat.title, orderIndex: Number(cat.orderIndex || i) }
+              data: { stationId: station.id, title: cat.title || 'دسته کلاس', orderIndex: catOrder }
             });
           }
 
@@ -83,7 +162,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             where: { categoryId: dbCategory.id }
           });
           const existingSessionIds = existingSessions.map(s => s.id);
-          const incomingSessionIds = incomingSessions.filter((s: any) => s.id).map((s: any) => s.id);
+          const incomingSessionIds = incomingSessions.filter((s: any) => s.id && !s.id.startsWith('new_')).map((s: any) => s.id);
 
           const sessionsToDelete = existingSessionIds.filter(sid => !incomingSessionIds.includes(sid));
           if (sessionsToDelete.length > 0) {
@@ -96,18 +175,18 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             const sess = incomingSessions[j];
             let dbSession;
             const sessData = {
-              title: sess.title,
+              title: sess.title || 'جلسه',
               description: sess.description || '',
               videoUrl: sess.videoUrl || '',
               instructor: sess.instructor || 'استاد نپا',
-              minWatchThreshold: Number(sess.minWatchThreshold || 70.0),
-              minPassScore: Number(sess.minPassScore || 0),
-              maxZarikReward: Number(sess.maxZarikReward || 0),
-              maxPointsReward: Number(sess.maxPointsReward || 0),
-              orderIndex: Number(sess.orderIndex || j)
+              minWatchThreshold: parseInt(sess.minWatchThreshold) || 70,
+              minPassScore: parseInt(sess.minPassScore) || 0,
+              maxZarikReward: parseInt(sess.maxZarikReward) || 0,
+              maxPointsReward: parseInt(sess.maxPointsReward) || 0,
+              orderIndex: parseInt(sess.orderIndex) || j
             };
 
-            if (sess.id && existingSessionIds.includes(sess.id)) {
+            if (sess.id && !sess.id.startsWith('new_') && existingSessionIds.includes(sess.id)) {
               dbSession = await tx.classSession.update({
                 where: { id: sess.id },
                 data: sessData
@@ -126,7 +205,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
               where: { sessionId: dbSession.id }
             });
             const existingClipIds = existingClips.map(clip => clip.id);
-            const incomingClipIds = incomingClips.filter((clip: any) => clip.id).map((clip: any) => clip.id);
+            const incomingClipIds = incomingClips.filter((clip: any) => clip.id && !clip.id.startsWith('new_')).map((clip: any) => clip.id);
 
             const clipsToDelete = existingClipIds.filter(cid => !incomingClipIds.includes(cid));
             if (clipsToDelete.length > 0) {
@@ -138,13 +217,13 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             for (let k = 0; k < incomingClips.length; k++) {
               const clip = incomingClips[k];
               const clipData = {
-                title: clip.title,
-                videoUrl: clip.videoUrl,
-                clipOrder: Number(clip.clipOrder || k),
-                duration: Number(clip.duration || 0)
+                title: clip.title || 'پارت',
+                videoUrl: clip.videoUrl || '',
+                clipOrder: parseInt(clip.clipOrder) || k,
+                duration: parseInt(clip.duration) || 0
               };
 
-              if (clip.id && existingClipIds.includes(clip.id)) {
+              if (clip.id && !clip.id.startsWith('new_') && existingClipIds.includes(clip.id)) {
                 await tx.videoClip.update({
                   where: { id: clip.id },
                   data: clipData
@@ -169,11 +248,13 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
                 data: {
                   sessionId: dbSession.id,
                   title: quizPayload.title || 'آزمون کلاس',
-                  questionsJson: quizPayload.questionsJson,
-                  rewardZarik: Number(quizPayload.rewardZarik || 0),
-                  rewardNakh: Number(quizPayload.rewardNakh || 0),
-                  rewardFarsh: Number(quizPayload.rewardFarsh || 0),
-                  orderIndex: Number(quizPayload.orderIndex || q + 1)
+                  questionsJson: typeof quizPayload.questionsJson === 'string' 
+                      ? quizPayload.questionsJson 
+                      : JSON.stringify(quizPayload.questionsJson || []),
+                  rewardZarik: parseInt(quizPayload.rewardZarik) || 10,
+                  rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
+                  rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
+                  orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
                 }
               });
             }
@@ -184,10 +265,10 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
       return station;
     });
 
-    res.json({ message: 'Saved successfully', data: result });
-  } catch (error) {
+    res.json({ message: 'ساختار منزلگاه با موفقیت ذخیره شد', data: result });
+  } catch (error: any) {
     console.error('createOrUpdateStation error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 };
 
@@ -246,20 +327,32 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
   }
 };
 
-export const addClipToSession = async (req: Request, res: Response) => {
+export const createOrUpdateClip = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { title, clipOrder, videoUrl } = req.body;
+    const { id } = req.params; // session id
+    const { clipId, title, clipOrder, videoUrl } = req.body;
     
-    const clip = await prisma.videoClip.create({
-      data: {
-        sessionId: id,
-        title,
-        videoUrl,
-        clipOrder: Number(clipOrder || 0),
-        duration: 0
-      }
-    });
+    let clip;
+    if (clipId) {
+      clip = await prisma.videoClip.update({
+        where: { id: clipId },
+        data: {
+          title,
+          videoUrl,
+          clipOrder: Number(clipOrder || 0),
+        }
+      });
+    } else {
+      clip = await prisma.videoClip.create({
+        data: {
+          sessionId: id,
+          title,
+          videoUrl,
+          clipOrder: Number(clipOrder || 0),
+          duration: 0
+        }
+      });
+    }
     
     res.json({ message: 'Clip added successfully', data: clip });
   } catch (error) {
@@ -270,16 +363,16 @@ export const addClipToSession = async (req: Request, res: Response) => {
 
 export const createOrUpdateQuiz = async (req: Request, res: Response) => {
   try {
-    const { id, sessionId, title, questionsJson, rewardZarik, rewardNakh, rewardFarsh } = req.body;
+    const { id, sessionId, title, type, questionsJson, rewardZarik, rewardNakh, rewardFarsh } = req.body;
     let quiz;
     if (id) {
       quiz = await prisma.quiz.update({
         where: { id },
-        data: { title, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
+        data: { title, type, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
       });
     } else {
       quiz = await prisma.quiz.create({
-        data: { sessionId, title, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
+        data: { sessionId, title, type, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
       });
     }
     res.json({ message: 'Saved successfully', data: quiz });
@@ -464,7 +557,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
 
     const session = await prisma.classSession.findUnique({
       where: { id: sessionId },
-      include: { quizzes: true }
+      include: { quizzes: true, category: true }
     });
 
     if (!session || !session.quizzes || session.quizzes.length === 0) {
@@ -486,11 +579,20 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
     }
 
     const minPass = session.minPassScore || 3;
-    const passed = correctCount >= minPass;
-
-    const rewardZarik = targetQuiz.rewardZarik || 200;
+    let passed = false;
+    let submissionStatus = 'PENDING';
+    let rewardZarik = targetQuiz.rewardZarik || 200;
     const rewardNakh = targetQuiz.rewardNakh || 0;
     const rewardFarsh = targetQuiz.rewardFarsh || 0;
+
+    if (targetQuiz.type === 'MULTIPLE_CHOICE' || !targetQuiz.type) {
+      passed = correctCount >= minPass;
+      submissionStatus = passed ? 'APPROVED' : 'FAILED';
+    } else {
+      // For TEXT and FILE, it awaits mentor review
+      passed = false;
+      submissionStatus = 'PENDING';
+    }
 
     // Check if student has already passed this quiz to prevent double rewards
     const existingApproved = await prisma.quizSubmission.findFirst({
@@ -505,7 +607,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
         data: {
           quizId: targetQuiz.id,
           studentId: userId,
-          status: passed ? 'APPROVED' : 'FAILED',
+          status: submissionStatus,
           score: correctCount,
           answersJson: JSON.stringify(answers)
         }
@@ -534,17 +636,53 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
             }
           });
         }
+
+        const clip = await tx.videoClip.findFirst({
+          where: { sessionId: session.id, clipOrder: targetQuiz.orderIndex }
+        });
+        if (clip) {
+          const trackType = session.category?.title?.includes('مهارتی') ? 'skill' : 'media';
+          const stationId = session.category?.stationId || 'unknown';
+          let progress = await tx.userProgress.findUnique({
+             where: { userId_clipId: { userId, clipId: clip.id } }
+          });
+          if (progress) {
+             await tx.userProgress.update({
+                where: { id: progress.id },
+                data: { quizPassed: true }
+             });
+          } else {
+             await tx.userProgress.create({
+                data: {
+                  userId,
+                  clipId: clip.id,
+                  trackType,
+                  stationId,
+                  sessionId: session.id,
+                  quizPassed: true
+                }
+             });
+          }
+        }
       }
     });
 
     // Send notification
+    let notificationTitle = passed ? 'قبولی در آزمون کلاس 🎉' : 'نتیجه آزمون کلاس 📝';
+    let notificationMessage = passed
+      ? `تبریک! شما در آزمون "${session.title}" قبول شدید. نمره: ${correctCount}/${questionsList.length}. پاداش: +${rewardZarik} زریک`
+      : `شما در آزمون "${session.title}" نمره قبولی کسب نکردید. نمره: ${correctCount}/${questionsList.length}. مجدداً تلاش کنید.`;
+
+    if (submissionStatus === 'PENDING') {
+      notificationTitle = 'آزمون ثبت شد 📝';
+      notificationMessage = `پاسخ شما برای آزمون "${session.title}" با موفقیت ثبت شد و در انتظار بررسی راهبر است.`;
+    }
+
     await prisma.notification.create({
       data: {
         userId,
-        title: passed ? 'قبولی در آزمون کلاس 🎉' : 'نتیجه آزمون کلاس 📝',
-        message: passed
-          ? `تبریک! شما در آزمون "${session.title}" قبول شدید. نمره: ${correctCount}/${questionsList.length}. پاداش: +${rewardZarik} زریک`
-          : `شما در آزمون "${session.title}" نمره قبولی کسب نکردید. نمره: ${correctCount}/${questionsList.length}. مجدداً تلاش کنید.`,
+        title: notificationTitle,
+        message: notificationMessage,
         type: 'reward'
       }
     });
@@ -577,3 +715,111 @@ export const deleteStation = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const getUserProgress = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const progress = await prisma.userProgress.findMany({
+      where: { userId }
+    });
+    res.json(progress);
+  } catch (error) {
+    console.error('getUserProgress error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const markClipWatched = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const { clipId } = req.params;
+    const { trackType, stationId, sessionId } = req.body;
+    
+    let progress = await prisma.userProgress.findUnique({
+      where: { userId_clipId: { userId, clipId } }
+    });
+    
+    if (progress) {
+      progress = await prisma.userProgress.update({
+        where: { id: progress.id },
+        data: { isWatched: true }
+      });
+    } else {
+      progress = await prisma.userProgress.create({
+        data: {
+          userId,
+          clipId,
+          trackType: trackType || 'unknown',
+          stationId: stationId || 'unknown',
+          sessionId: sessionId || 'unknown',
+          isWatched: true
+        }
+      });
+    }
+    
+    res.json(progress);
+  } catch (error) {
+    console.error('markClipWatched error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const deleteCategory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.classCategory.delete({ where: { id } });
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+};
+
+export const deleteSession = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.classSession.delete({ where: { id } });
+    res.json({ message: 'Session deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
+};
+
+export const deleteClip = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.videoClip.delete({ where: { id } });
+    res.json({ message: 'Clip deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete clip' });
+  }
+};
+
+export const deleteQuiz = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await prisma.quiz.delete({ where: { id } });
+    res.json({ message: 'Quiz deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete quiz' });
+  }
+};
+
+export const createStation = createOrUpdateStation;
+export const updateStation = createOrUpdateStation;
+export const createClass = createOrUpdateCategory;
+export const updateClass = createOrUpdateCategory;
+export const createSession = createOrUpdateSession;
+export const updateSession = createOrUpdateSession;
+export const createPart = createOrUpdateClip;
+export const updatePart = createOrUpdateClip;
+export const createQuestion = createOrUpdateQuiz;
+export const updateQuestion = createOrUpdateQuiz;
+

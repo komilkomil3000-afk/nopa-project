@@ -760,7 +760,7 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
     const caravans = await prisma.caravan.findMany({
       where: whereClause,
       include: {
-        mentor: { select: { id: true, name: true, phoneNumber: true } },
+        mentor: { select: { id: true, name: true, phoneNumber: true, userCode: true } },
         _count: { select: { members: { where: { isDeleted: false } } } },
         members: {
           where: { isDeleted: false },
@@ -768,6 +768,7 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
             id: true,
             name: true,
             phoneNumber: true,
+            userCode: true,
             role: true,
             levelFrame: true,
             zarikBalance: true,
@@ -803,9 +804,11 @@ export async function getCaravansAdmin(req: AuthRequest, res: Response) {
 
       return {
         ...c,
-        memberCount: realMemberCount,
+        mentorName: c.mentor?.name || 'بدون راهبر',
+        memberCount: activeMembers.length || 0,
         _count: c._count,
-        membersList: activeMembers,
+        membersList: activeMembers || [],
+        totalWealth: totalZarik,
         wealth: {
           zarik: totalZarik,
           nakh: totalNakh,

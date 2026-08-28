@@ -30,19 +30,25 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
         return next();
       }
 
-      try {
-        const user = await prisma.user.findUnique({ where: { id: payload.id } });
-        if (!user || user.blocked || user.isDeleted || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
-          return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
-        }
+        try {
+          const user = await prisma.user.findUnique({ where: { id: payload.id } });
+          const isAdmin = payload.role?.toLowerCase() === 'admin';
 
-        if (user.accountStatus === 'SUSPENDED') {
-          return res.status(403).json({ error: 'حساب کاربری شما مسدود شده است' });
-        }
+          if (!user || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
+            return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
+          }
 
-        if (user.suspendedUntil && new Date(user.suspendedUntil) > new Date()) {
-          return res.status(403).json({ error: 'حساب کاربری شما موقتا مسدود شده است' });
-        }
+          if (!isAdmin) {
+            if (user.blocked || user.isDeleted) {
+              return res.status(401).json({ error: 'حساب شما مسدود یا حذف شده است' });
+            }
+            if (user.accountStatus === 'SUSPENDED') {
+              return res.status(403).json({ error: 'حساب کاربری شما تعلیق شده است' });
+            }
+            if (user.suspendedUntil && new Date(user.suspendedUntil) > new Date()) {
+              return res.status(403).json({ error: 'حساب کاربری شما موقتا مسدود شده است' });
+            }
+          }
 
         // Validate active session token in database
         const activeSession = await prisma.userSession.findUnique({ where: { token } });
@@ -71,6 +77,7 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
 const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
 
 export function authorizeRoles(...roles: string[]) {
+  const lowerRoles = roles.map(r => r.toLowerCase());
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(403).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
@@ -80,7 +87,7 @@ export function authorizeRoles(...roles: string[]) {
       return next();
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!req.user.role || !lowerRoles.includes(req.user.role.toLowerCase())) {
       return res.status(403).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
     }
     next();

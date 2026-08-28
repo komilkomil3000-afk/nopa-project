@@ -10,9 +10,19 @@ export async function getMe(req: AuthRequest, res: Response) {
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { 
-        caravan: true,
-        mentorDocuments: true
+      include: {
+        caravan: {
+          include: { mentor: { select: { id: true, name: true, phoneNumber: true } } }
+        },
+        mentoredCaravans: {
+          include: { members: true }
+        },
+        ratingsReceived: true,
+        evaluationsReceived: true,
+        sessionWatchRecords: true,
+        quizSubmissions: true,
+        mentorDocuments: true,
+        certificates: true
       }
     });
 
@@ -20,20 +30,56 @@ export async function getMe(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'کاربر یافت نشد' });
     }
 
+    // Calculate real station progress dynamically
+    const completedStationsCount = await prisma.sessionWatchRecord.count({
+      where: { userId: user.id, watchedPercentage: { gte: 70 } }
+    });
+
+    let managedMembersCount = 0;
+    let satisfactionScore = 0;
+    let assignedCaravan = null;
+
+    if (user.role === 'mentor' || user.role === 'SUPER_MENTOR') {
+      assignedCaravan = user.mentoredCaravans && user.mentoredCaravans.length > 0 ? user.mentoredCaravans[0] : null;
+      managedMembersCount = assignedCaravan?.members?.length || 0;
+      
+      const totalRatings = user.ratingsReceived?.length || 0;
+      const totalEvaluations = user.evaluationsReceived?.length || 0;
+      
+      const sumRatings = user.ratingsReceived?.reduce((acc, r) => acc + r.ratingValue, 0) || 0;
+      const sumEvals = user.evaluationsReceived?.reduce((acc, e) => acc + e.rating, 0) || 0;
+      
+      const combinedCount = totalRatings + totalEvaluations;
+      satisfactionScore = combinedCount > 0 ? (sumRatings + sumEvals) / combinedCount : 0;
+    }
+
     res.json({
       id: user.id,
       name: user.name,
       phoneNumber: user.phoneNumber,
+      userCode: user.userCode,
       role: user.role,
+      caravanId: assignedCaravan ? assignedCaravan.id : user.caravanId,
+      caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
+      caravanMentor: assignedCaravan ? user.name : (user.caravan?.mentor?.name || 'تعیین نشده'),
+      mentorPhone: assignedCaravan ? user.phoneNumber : (user.caravan?.mentor?.phoneNumber || ''),
+      socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
+      managedMembersCount,
+      satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),
+      completedStationsCount: Math.floor(completedStationsCount / 4), // 4 sessions per station baseline
       zarikBalance: user.zarikBalance,
+      nakh: user.nakh,
+      beyragh: user.beyragh,
+      farsh: user.farsh,
       levelFrame: user.levelFrame,
-      caravanId: user.caravanId,
+      identityVerified: user.identityVerified,
       avatarUrl: user.avatarUrl,
       hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
-      identityVerified: user.identityVerified,
-      socialGroupLink: user.caravan?.socialGroupLink,
-      userCode: user.userCode,
-      mentorDocuments: user.mentorDocuments
+      nationalId: user.nationalId,
+      dateOfBirth: user.dateOfBirth,
+      city: user.city,
+      mentorDocuments: user.mentorDocuments,
+      certificates: user.certificates
     });
   } catch (error) {
     console.error('getMe error:', error);
