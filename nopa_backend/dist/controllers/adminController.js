@@ -3,9 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getLevelsAndCertificates = void 0;
 exports.logAdminAction = logAdminAction;
 exports.getUsers = getUsers;
 exports.getUserMetrics = getUserMetrics;
+exports.getUserAnalytics = getUserAnalytics;
 exports.createUser = createUser;
 exports.updateUser = updateUser;
 exports.toggleBlockUser = toggleBlockUser;
@@ -13,6 +15,9 @@ exports.deleteUser = deleteUser;
 exports.overridePasswordOrOtp = overridePasswordOrOtp;
 exports.exportUsersCsv = exportUsersCsv;
 exports.getZarikLedger = getZarikLedger;
+exports.getAssetLeaderboard = getAssetLeaderboard;
+exports.getRewardRules = getRewardRules;
+exports.upsertRewardRule = upsertRewardRule;
 exports.adjustZarik = adjustZarik;
 exports.getZarikAnalytics = getZarikAnalytics;
 exports.getEconomyHub = getEconomyHub;
@@ -20,23 +25,29 @@ exports.getRolePermissions = getRolePermissions;
 exports.updateRolePermissions = updateRolePermissions;
 exports.getCaravansAdmin = getCaravansAdmin;
 exports.getMentorScorecards = getMentorScorecards;
+exports.getMentorDossier = getMentorDossier;
+exports.moderateMentor = moderateMentor;
+exports.updateMentor = updateMentor;
 exports.createGlobalAnnouncement = createGlobalAnnouncement;
 exports.getAuditLogs = getAuditLogs;
 exports.getMentorEvaluations = getMentorEvaluations;
 exports.grantUserLevel = grantUserLevel;
+exports.setAccountStatus = setAccountStatus;
 const client_1 = require("@prisma/client");
+const notificationController_1 = require("./notificationController");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
 let zarikAnalyticsCache = null;
 const CACHE_TTL = 30000; // 30 seconds
 // Utility function to log to AuditLog
-async function logAdminAction(actorId, actorName, action, targetEntity, targetEntityId, details, ipAddress) {
+async function logAdminAction(actorId, actorName, action, targetEntity, targetEntityId, details, ipAddress, actorRole = 'admin') {
     try {
         await prisma.auditLog.create({
             data: {
                 actorId,
                 actorName,
+                actorRole,
                 action,
                 targetEntity,
                 targetEntityId,
@@ -66,6 +77,10 @@ async function getUsers(req, res) {
                 { name: { contains: search } },
                 { phoneNumber: { contains: search } },
             ];
+            const parsedSearch = parseInt(search.replace(/^NP-/i, ''));
+            if (!isNaN(parsedSearch)) {
+                whereClause.OR.push({ userCode: parsedSearch });
+            }
         }
         if (role) {
             whereClause.role = role;
@@ -143,21 +158,99 @@ async function getUserMetrics(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+async function getUserAnalytics(req, res) {
+    try {
+        const { id } = req.params;
+        // Basic user
+        const user = await prisma.user.findUnique({ where: { id } });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        // Quiz / challenge history
+        const quizzes = await prisma.submission.findMany({ where: { studentId: id }, orderBy: { submittedAt: 'desc' }, take: 20 });
+        // Homework / assignment submissions
+        const assignments = await prisma.quizSubmission.findMany({ where: { studentId: id }, orderBy: { submittedAt: 'desc' }, include: { quiz: true } });
+        // Support tickets and replies
+        const tickets = await prisma.supportTicket.findMany({ where: { studentId: id }, include: { replies: true } });
+        // Certificates
+        const certificates = await prisma.certificate.findMany({ where: { userId: id } });
+        // Approximate watched videos and active time
+        const watchRecords = await prisma.sessionWatchRecord.findMany({
+            where: { userId: id },
+            include: { session: { include: { category: true } } }
+        });
+        const activeTimeMinutes = Math.max(0, quizzes.length * 12 + assignments.length * 8 + watchRecords.length * 20);
+        const caravanName = user.caravanId ? (await prisma.caravan.findUnique({ where: { id: user.caravanId } }))?.name || null : null;
+        // Mentor specific data for dual-role
+        let mentoredCaravans = [];
+        if (user.isDualRole || user.role === 'mentor') {
+            mentoredCaravans = await prisma.caravan.findMany({ where: { mentorId: id } });
+        }
+        res.json({
+            user: {
+                id: user.id,
+                name: user.name,
+                phoneNumber: user.phoneNumber,
+                nationalId: user.nationalId,
+                dateOfBirth: user.dateOfBirth,
+                city: user.city,
+                role: user.role,
+                isDualRole: user.isDualRole,
+                caravanId: user.caravanId,
+                caravanName,
+                createdAt: user.createdAt,
+                levelFrame: user.levelFrame,
+                mentorLevel: user.mentorLevel,
+                academicDegree: user.academicDegree,
+            },
+            metrics: {
+                approximateActiveMinutes: activeTimeMinutes,
+            },
+            watchRecords,
+            quizzes,
+            assignments,
+            tickets,
+            certificates,
+            mentoredCaravans,
+            balances: {
+                zarik: user.zarikBalance,
+                nakh: user.nakh || 0,
+                beyragh: user.beyragh || 0,
+                farsh: user.farsh || 0,
+            }
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 async function createUser(req, res) {
     try {
         const { name, phoneNumber, password, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
         if (!name || !phoneNumber || !password || !role) {
             return res.status(400).json({ error: 'وارد کردن تمامی فیلدهای اجباری الزامی است' });
         }
-        const existingUser = await prisma.user.findFirst({ where: { phoneNumber } });
+        // Sanitize phone number
+        let sanitizedPhone = phoneNumber.toString().trim().replace(/\s+/g, '');
+        if (sanitizedPhone.startsWith('+98'))
+            sanitizedPhone = sanitizedPhone.replace('+98', '0');
+        if (sanitizedPhone.startsWith('0098'))
+            sanitizedPhone = sanitizedPhone.replace('0098', '0');
+        if (sanitizedPhone.startsWith('9') && sanitizedPhone.length === 10)
+            sanitizedPhone = '0' + sanitizedPhone;
+        const existingUser = await prisma.user.findFirst({ where: { phoneNumber: sanitizedPhone } });
         if (existingUser) {
             return res.status(400).json({ error: 'کاربری با این شماره همراه قبلا ثبت نام کرده است' });
         }
         const passwordHash = bcryptjs_1.default.hashSync(password, 10);
+        const maxUser = await prisma.user.findFirst({
+            orderBy: { userCode: 'desc' },
+            where: { userCode: { not: null } }
+        });
+        const nextUserCode = maxUser && maxUser.userCode ? maxUser.userCode + 1 : 110100;
         const user = await prisma.user.create({
             data: {
                 name,
-                phoneNumber,
+                phoneNumber: sanitizedPhone,
                 passwordHash,
                 role,
                 caravanId: caravanId || null,
@@ -165,6 +258,9 @@ async function createUser(req, res) {
                 mentorLevel: mentorLevel || 1,
                 nationalId: nationalId || null,
                 dateOfBirth: dateOfBirth || null,
+                identityVerified: true,
+                isDualRole: role === 'dual' ? true : false,
+                userCode: nextUserCode
             },
         });
         await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'CREATE_USER', 'User', user.id, `ایجاد کاربر جدید: ${name} با نقش ${role}`, req.ip || '127.0.0.1');
@@ -340,6 +436,45 @@ async function getZarikLedger(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+async function getAssetLeaderboard(req, res) {
+    try {
+        const students = await prisma.user.findMany({ where: { role: 'student' }, select: { id: true, name: true, phoneNumber: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true } });
+        const enriched = students.map(s => ({
+            ...s,
+            totalAssets: (s.zarikBalance || 0) + (s.nakh || 0) + (s.beyragh || 0) + (s.farsh || 0)
+        }));
+        enriched.sort((a, b) => b.totalAssets - a.totalAssets);
+        res.json(enriched.slice(0, 200));
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getRewardRules(req, res) {
+    try {
+        const rules = await prisma.rewardRule.findMany({ orderBy: { key: 'asc' } });
+        res.json(rules);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function upsertRewardRule(req, res) {
+    try {
+        const { key, min, max, metadata } = req.body;
+        if (!key || typeof min !== 'number' || typeof max !== 'number')
+            return res.status(400).json({ error: 'Invalid payload' });
+        const rule = await prisma.rewardRule.upsert({
+            where: { key },
+            update: { min, max, metadata },
+            create: { key, min, max, metadata }
+        });
+        res.json(rule);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 async function adjustZarik(req, res) {
     try {
         const { userId, amount, category, reason } = req.body;
@@ -474,13 +609,19 @@ async function getRolePermissions(req, res) {
 }
 async function updateRolePermissions(req, res) {
     try {
-        const { roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent } = req.body;
+        const { roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent, manageMentors, manageStudents, manageCaravans, manageSystem, canSendMessage, canJoinClasses, canScoreAndEvaluate, canConvertAssets, canCreateChallenges, canViewGlobalAnalytics, canManageUsers } = req.body;
+        const data = {
+            maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent,
+            manageMentors, manageStudents, manageCaravans, manageSystem,
+            canSendMessage, canJoinClasses, canScoreAndEvaluate, canConvertAssets,
+            canCreateChallenges, canViewGlobalAnalytics, canManageUsers
+        };
         const updated = await prisma.rolePermission.upsert({
             where: { roleName },
-            update: { maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent },
-            create: { roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent },
+            update: data,
+            create: { roleName, ...data },
         });
-        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'UPDATE_RBAC', 'RolePermission', roleName, `بروزرسانی دسترسی‌های نقش ${roleName}`, req.ip || '127.0.0.1');
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'UPDATE_RBAC', 'RolePermission', roleName, `بروزرسانی دسترسی‌های نقش ${roleName}`, req.ip || '127.0.0.1', req.user?.role || 'admin');
         res.json({ message: 'دسترسی نقش با موفقیت بروزرسانی شد', role: updated });
     }
     catch (error) {
@@ -490,12 +631,68 @@ async function updateRolePermissions(req, res) {
 // 4. CARAVANS & MENTORS OPERATIONS CENTER
 async function getCaravansAdmin(req, res) {
     try {
+        const userRole = req.user?.role;
+        const isMentor = userRole === 'mentor';
+        let whereClause = { isDeleted: false };
+        if (isMentor) {
+            whereClause.mentorId = req.user?.id;
+        }
         const caravans = await prisma.caravan.findMany({
+            where: whereClause,
             include: {
-                mentor: { select: { name: true } },
+                mentor: { select: { id: true, name: true, phoneNumber: true, userCode: true } },
+                _count: { select: { members: { where: { isDeleted: false } } } },
+                members: {
+                    where: { isDeleted: false },
+                    select: {
+                        id: true,
+                        name: true,
+                        phoneNumber: true,
+                        userCode: true,
+                        role: true,
+                        levelFrame: true,
+                        zarikBalance: true,
+                        nakh: true,
+                        beyragh: true,
+                        farsh: true,
+                        sessionWatchRecords: { select: { watchedPercentage: true } },
+                        quizSubmissions: { select: { score: true } }
+                    }
+                }
             },
         });
-        res.json(caravans);
+        const enrichedCaravans = caravans.map(c => {
+            const activeMembers = c.members || [];
+            const realMemberCount = c._count?.members || activeMembers.length;
+            let totalZarik = 0, totalNakh = 0, totalBeyragh = 0, totalFarsh = 0;
+            let totalProgressSum = 0;
+            activeMembers.forEach(m => {
+                totalZarik += m.zarikBalance || 0;
+                totalNakh += m.nakh || 0;
+                totalBeyragh += m.beyragh || 0;
+                totalFarsh += m.farsh || 0;
+                const watchScores = m.sessionWatchRecords?.reduce((s, w) => s + (w.watchedPercentage || 0), 0) || 0;
+                const quizScores = m.quizSubmissions?.reduce((s, q) => s + (q.score || 0), 0) || 0;
+                totalProgressSum += (watchScores + quizScores);
+            });
+            const overallProgress = activeMembers.length > 0 ? Math.min(100, Math.round(totalProgressSum / (activeMembers.length * 100))) : 0;
+            return {
+                ...c,
+                mentorName: c.mentor?.name || 'بدون راهبر',
+                memberCount: activeMembers.length || 0,
+                _count: c._count,
+                membersList: activeMembers || [],
+                totalWealth: totalZarik,
+                wealth: {
+                    zarik: totalZarik,
+                    nakh: totalNakh,
+                    beyragh: totalBeyragh,
+                    farsh: totalFarsh
+                },
+                overallProgress
+            };
+        });
+        res.json(enrichedCaravans);
     }
     catch (error) {
         res.status(500).json({ error: error.message });
@@ -536,6 +733,151 @@ async function getMentorScorecards(req, res) {
             };
         }));
         res.json(scorecards);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+// ======================= MENTOR DOSSIER & MODERATION ======================= //
+async function getMentorDossier(req, res) {
+    try {
+        const { id } = req.params;
+        const mentor = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                mentoredCaravans: true,
+                ratingsReceived: true,
+            }
+        });
+        if (!mentor) {
+            return res.status(404).json({ error: 'راهبر مورد نظر یافت نشد' });
+        }
+        // Get challenges created by mentor
+        const challenges = await prisma.challenge.findMany({
+            where: { createdByMentorId: id },
+            include: {
+                submissions: { select: { status: true } }
+            }
+        });
+        // Compute stats
+        let totalScore = 0;
+        mentor.ratingsReceived.forEach((r) => totalScore += r.ratingValue);
+        const avgRating = mentor.ratingsReceived.length > 0 ? (totalScore / mentor.ratingsReceived.length).toFixed(1) : '0.0';
+        const challengeOperations = challenges.map((ch) => {
+            const reviewed = ch.submissions.filter((s) => s.status !== 'pending').length;
+            const pending = ch.submissions.filter((s) => s.status === 'pending').length;
+            return {
+                id: ch.id,
+                title: ch.title,
+                type: ch.type,
+                createdAt: ch.createdAt,
+                reward: ch.rewardZarik,
+                stats: { reviewed, pending, total: ch.submissions.length }
+            };
+        });
+        // Group ratings by caravan if any logic required, here we just return all ratings
+        res.json({
+            identity: {
+                name: mentor.name,
+                phoneNumber: mentor.phoneNumber,
+                nationalId: mentor.nationalId,
+                dateOfBirth: mentor.dateOfBirth,
+                academicDegree: mentor.academicDegree,
+                academicCertificates: mentor.academicCertificates,
+                accountStatus: mentor.accountStatus,
+                isDeleted: mentor.isDeleted,
+                suspendedUntil: mentor.suspendedUntil
+            },
+            caravans: mentor.mentoredCaravans.map((c) => ({
+                id: c.id,
+                name: c.name,
+                memberCount: c.memberCount,
+                progress: c.overallProgress
+            })),
+            satisfaction: {
+                avgRating,
+                totalRatings: mentor.ratingsReceived.length,
+                breakdown: mentor.ratingsReceived // Simplified, the UI can render
+            },
+            challenges: challengeOperations
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function moderateMentor(req, res) {
+    try {
+        const { id } = req.params;
+        const { action, suspendedUntil } = req.body; // action: 'soft_delete', 'permanent_suspend', 'temp_suspend'
+        if (!['soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
+            return res.status(400).json({ error: 'عملیات نامعتبر است' });
+        }
+        if (action === 'soft_delete') {
+            await prisma.user.update({
+                where: { id },
+                data: { isDeleted: true, deletedAt: new Date() }
+            });
+            // Optionally revoke sessions
+            await prisma.userSession.deleteMany({ where: { userId: id } });
+        }
+        else if (action === 'permanent_suspend') {
+            await prisma.user.update({
+                where: { id },
+                data: { accountStatus: 'SUSPENDED' }
+            });
+            // Invalidate active sessions
+            await prisma.userSession.deleteMany({ where: { userId: id } });
+        }
+        else if (action === 'temp_suspend') {
+            if (!suspendedUntil) {
+                return res.status(400).json({ error: 'تاریخ پایان مسدودسازی الزامی است' });
+            }
+            await prisma.user.update({
+                where: { id },
+                data: { suspendedUntil: new Date(suspendedUntil) }
+            });
+            // Invalidate active sessions
+            await prisma.userSession.deleteMany({ where: { userId: id } });
+        }
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'MODERATE_MENTOR', 'User', id, `عملیات مدیریت وضعیت راهبر: ${action}`, req.ip || '127.0.0.1');
+        res.json({ success: true, message: 'عملیات با موفقیت انجام شد' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function updateMentor(req, res) {
+    try {
+        const { id } = req.params;
+        const { name, nationalId, phoneNumber, dateOfBirth, city, socialMessengerHandle, socialPlatform, accountStatus, mentorLevel, caravanIds } = req.body;
+        const mentor = await prisma.user.findUnique({ where: { id } });
+        if (!mentor || !['mentor', 'SUPER_MENTOR'].includes(mentor.role)) {
+            return res.status(404).json({ error: 'راهبر یافت نشد' });
+        }
+        const data = {
+            name,
+            nationalId,
+            phoneNumber,
+            dateOfBirth,
+            city,
+            socialMessengerHandle,
+            socialPlatform,
+            accountStatus,
+            mentorLevel: parseInt(mentorLevel) || 1
+        };
+        if (Array.isArray(caravanIds)) {
+            data.mentoredCaravans = {
+                set: caravanIds.map((cId) => ({ id: cId }))
+            };
+        }
+        const updatedMentor = await prisma.user.update({
+            where: { id },
+            data,
+            include: { mentoredCaravans: true }
+        });
+        await (0, notificationController_1.sendSystemNotification)(id, 'به‌روزرسانی پروفایل', 'پروفایل شما توسط مدیریت به‌روزرسانی شد.', 'info');
+        res.json({ success: true, mentor: updatedMentor });
     }
     catch (error) {
         res.status(500).json({ error: error.message });
@@ -584,10 +926,21 @@ async function getAuditLogs(req, res) {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const action = req.query.action || '';
+        const actorRole = req.query.actorRole || '';
+        const search = req.query.search || '';
         const skip = (page - 1) * limit;
         const whereClause = {};
         if (action) {
             whereClause.action = action;
+        }
+        if (actorRole) {
+            whereClause.actorRole = actorRole;
+        }
+        if (search) {
+            whereClause.OR = [
+                { actorName: { contains: search } },
+                { details: { contains: search } }
+            ];
         }
         const [logs, totalCount] = await prisma.$transaction([
             prisma.auditLog.findMany({
@@ -669,3 +1022,44 @@ async function grantUserLevel(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+async function setAccountStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status, reason } = req.body;
+        const user = await prisma.user.update({
+            where: { id },
+            data: { accountStatus: status }
+        });
+        await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'SET_ACCOUNT_STATUS', 'User', user.id, `تغییر وضعیت به ${status}: ${reason || 'بدون دلیل'}`, req.ip || '127.0.0.1');
+        res.json({ success: true, message: 'وضعیت حساب بروزرسانی شد', user });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+const getLevelsAndCertificates = async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            where: { role: 'student' },
+            select: {
+                id: true,
+                name: true,
+                phoneNumber: true,
+                levelFrame: true,
+                registrationCompleted: true,
+                certificates: {
+                    orderBy: { issuedAt: 'desc' },
+                    take: 1
+                },
+                physicalOrders: {
+                    include: { certificate: true }
+                }
+            }
+        });
+        res.json({ success: true, data: users });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+exports.getLevelsAndCertificates = getLevelsAndCertificates;

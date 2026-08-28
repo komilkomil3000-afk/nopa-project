@@ -22,7 +22,7 @@ async function submitTask(req, res) {
                 studentId: req.user.id,
                 answerText,
                 fileUrl,
-                status: 'pending'
+                status: 'PENDING_REVIEW'
             }
         });
         // Notify caravan mentor
@@ -56,11 +56,11 @@ async function submitTask(req, res) {
 }
 async function getPendingSubmissions(req, res) {
     try {
-        if (!req.user || req.user.role !== 'mentor') {
-            return res.status(403).json({ error: 'تنها راهبران به این بخش دسترسی دارند' });
+        if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+            return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
         }
         const submissions = await db_1.default.submission.findMany({
-            where: { status: 'pending' },
+            where: { status: { in: ['pending', 'PENDING_REVIEW'] } },
             include: {
                 challenge: true,
                 student: true
@@ -76,8 +76,8 @@ async function getPendingSubmissions(req, res) {
 }
 async function reviewSubmission(req, res) {
     try {
-        if (!req.user || req.user.role !== 'mentor') {
-            return res.status(403).json({ error: 'تنها راهبران می‌توانند تکالیف را تصحیح کنند' });
+        if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+            return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
         }
         const { id } = req.params;
         const { status, score, mentorFeedback } = req.body; // status: "approved" | "rejected"
@@ -91,24 +91,37 @@ async function reviewSubmission(req, res) {
         if (!submission) {
             return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
         }
-        const updatedSubmission = await db_1.default.submission.update({
-            where: { id },
-            data: {
-                status,
-                score: score || 0,
-                mentorFeedback
-            }
-        });
-        const reward = submission.challenge.rewardZarik || 200;
-        if (status === 'approved') {
-            // Credit student wallet and increment assets
-            await db_1.default.user.update({
-                where: { id: submission.studentId },
+        const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
+        let updatedSubmission;
+        await db_1.default.$transaction(async (tx) => {
+            updatedSubmission = await tx.submission.update({
+                where: { id },
                 data: {
-                    zarikBalance: { increment: reward }
+                    status,
+                    score: status === 'approved' ? reward : 0,
+                    mentorFeedback
                 }
             });
-        }
+            if (status === 'approved') {
+                // Credit student wallet and increment assets
+                await tx.user.update({
+                    where: { id: submission.studentId },
+                    data: {
+                        zarikBalance: { increment: reward }
+                    }
+                });
+                // Log transaction in ZarikTransaction
+                await tx.zarikTransaction.create({
+                    data: {
+                        userId: submission.studentId,
+                        amount: reward,
+                        category: 'Skill Tasks',
+                        reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
+                        createdBy: req.user.id
+                    }
+                });
+            }
+        });
         // Trigger notification
         await db_1.default.notification.create({
             data: {

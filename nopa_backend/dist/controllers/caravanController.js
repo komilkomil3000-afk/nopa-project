@@ -5,6 +5,17 @@ exports.bulkTransferMembers = bulkTransferMembers;
 exports.convertAssets = convertAssets;
 exports.approveAssetConversion = approveAssetConversion;
 exports.getAssetConversionsAdmin = getAssetConversionsAdmin;
+exports.createCaravan = createCaravan;
+exports.getCaravanDetails = getCaravanDetails;
+exports.addMemberToCaravan = addMemberToCaravan;
+exports.removeMemberFromCaravan = removeMemberFromCaravan;
+exports.transferMember = transferMember;
+exports.broadcastToCaravan = broadcastToCaravan;
+exports.getCaravanRequests = getCaravanRequests;
+exports.updateCaravan = updateCaravan;
+exports.bulkAddMembersToCaravan = bulkAddMembersToCaravan;
+exports.deleteCaravan = deleteCaravan;
+exports.blockCaravanMembers = blockCaravanMembers;
 const client_1 = require("@prisma/client");
 const adminController_1 = require("./adminController");
 const prisma = new client_1.PrismaClient();
@@ -29,18 +40,20 @@ async function toggleCaravanStatus(req, res) {
 async function bulkTransferMembers(req, res) {
     try {
         const { userIds, targetCaravanId } = req.body;
-        if (!Array.isArray(userIds) || !targetCaravanId) {
+        if (!Array.isArray(userIds) || targetCaravanId === undefined) {
             return res.status(400).json({ error: 'لیست کاربران و شناسه کاروان مقصد الزامی است' });
         }
-        const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId } });
-        if (!targetCaravan)
-            return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
+        if (targetCaravanId !== null) {
+            const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId } });
+            if (!targetCaravan)
+                return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
+        }
         await prisma.user.updateMany({
             where: { id: { in: userIds } },
             data: { caravanId: targetCaravanId }
         });
         // Update member counts (approximate, or recalculate)
-        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId, `Transferred ${userIds.length} users`, req.ip || '');
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId || 'UNASSIGNED', `Transferred ${userIds.length} users`, req.ip || '');
         res.json({ message: 'اعضا با موفقیت منتقل شدند.' });
     }
     catch (error) {
@@ -119,6 +132,255 @@ async function getAssetConversionsAdmin(req, res) {
             orderBy: { createdAt: 'desc' }
         });
         res.json(requests);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function createCaravan(req, res) {
+    try {
+        const { name, capacityLimit, mentorId, description, coverImageUrl, targetStationId, studentIds, socialGroupLink } = req.body;
+        // Check if mentor exists
+        if (mentorId) {
+            const mentor = await prisma.user.findUnique({ where: { id: mentorId } });
+            if (!mentor || (mentor.role !== 'mentor' && !mentor.isDualRole)) {
+                return res.status(400).json({ error: 'راهبر نامعتبر است' });
+            }
+        }
+        const defaultLimitStr = (await prisma.systemSetting.findUnique({ where: { key: 'DEFAULT_CARAVAN_CAPACITY' } }))?.value;
+        const finalLimit = capacityLimit ? parseInt(capacityLimit) : (defaultLimitStr ? parseInt(defaultLimitStr) : 25);
+        if (studentIds && Array.isArray(studentIds)) {
+            if (studentIds.length > finalLimit) {
+                return res.status(400).json({ error: `ظرفیت این کاروان تکمیل شده است (حداکثر ${finalLimit} نفر)` });
+            }
+        }
+        const caravan = await prisma.caravan.create({
+            data: {
+                name,
+                capacityLimit: finalLimit,
+                mentorId,
+                description,
+                coverImageUrl,
+                targetStationId,
+                socialGroupLink: socialGroupLink?.trim() || undefined,
+            }
+        });
+        if (studentIds && Array.isArray(studentIds) && studentIds.length > 0) {
+            await prisma.user.updateMany({
+                where: { id: { in: studentIds } },
+                data: { caravanId: caravan.id }
+            });
+        }
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'CREATE_CARAVAN', 'Caravan', caravan.id, `Created caravan ${name}`, req.ip || '');
+        res.json({ success: true, caravan });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getCaravanDetails(req, res) {
+    const { id } = req.params;
+    try {
+        const caravan = await prisma.caravan.findUnique({
+            where: { id },
+            include: {
+                mentor: true,
+                members: {
+                    where: { isDeleted: false },
+                    select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true }
+                }
+            }
+        });
+        if (!caravan)
+            return res.status(404).json({ error: 'کاروان یافت نشد' });
+        const membersList = caravan.members || [];
+        const totalWealth = membersList.reduce((acc, u) => acc + (u.zarikBalance || 0), 0);
+        return res.json({
+            ...caravan,
+            mentorName: caravan.mentor?.name || 'فاقد راهبر',
+            membersList,
+            memberCount: membersList.length,
+            totalWealth
+        });
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'خطای سرور' });
+    }
+}
+async function addMemberToCaravan(req, res) {
+    try {
+        const { id, studentId } = req.params;
+        const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
+        if (!caravan)
+            return res.status(404).json({ error: 'کاروان یافت نشد' });
+        if (caravan.members.length >= caravan.capacityLimit) {
+            return res.status(400).json({ error: `ظرفیت این کاروان تکمیل شده است (حداکثر ${caravan.capacityLimit} نفر)` });
+        }
+        await prisma.user.update({
+            where: { id: studentId },
+            data: { caravanId: id }
+        });
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function removeMemberFromCaravan(req, res) {
+    try {
+        const { id, studentId } = req.params;
+        await prisma.user.update({
+            where: { id: studentId },
+            data: { caravanId: null }
+        });
+        const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function transferMember(req, res) {
+    try {
+        const { studentId, targetCaravanId } = req.body;
+        const targetCaravan = await prisma.caravan.findUnique({ where: { id: targetCaravanId }, include: { members: true } });
+        if (!targetCaravan)
+            return res.status(404).json({ error: 'کاروان مقصد یافت نشد' });
+        if (targetCaravan.members.length >= targetCaravan.capacityLimit) {
+            return res.status(400).json({ error: `ظرفیت این کاروان تکمیل شده است (حداکثر ${targetCaravan.capacityLimit} نفر)` });
+        }
+        await prisma.user.update({
+            where: { id: studentId },
+            data: { caravanId: targetCaravanId }
+        });
+        res.json({ success: true });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function broadcastToCaravan(req, res) {
+    try {
+        const { id } = req.params;
+        const { message, title } = req.body;
+        const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
+        if (!caravan)
+            return res.status(404).json({ error: 'کاروان یافت نشد' });
+        const notifications = caravan.members.map(m => ({
+            userId: m.id,
+            title: title || 'پیام راهبر کاروان',
+            message,
+            type: 'alert'
+        }));
+        await prisma.notification.createMany({ data: notifications });
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'BROADCAST_CARAVAN', 'Caravan', id, `Broadcasted: ${title}`, req.ip || '');
+        res.json({ success: true, count: notifications.length });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getCaravanRequests(req, res) {
+    try {
+        const isMentor = req.user?.role === 'mentor';
+        let whereAsset = { status: 'pending' };
+        let whereTicket = { category: 'Caravan Transfer' };
+        if (isMentor) {
+            whereAsset.requestedBy = req.user?.id;
+            whereTicket.studentId = req.user?.id;
+        }
+        const assetRequests = await prisma.assetConversionRequest.findMany({
+            where: whereAsset,
+            include: {
+                caravan: { select: { name: true } },
+                user: { select: { name: true, phoneNumber: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        const transferRequests = await prisma.supportTicket.findMany({
+            where: whereTicket,
+            include: {
+                student: { select: { name: true, phoneNumber: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json({
+            assetConversions: assetRequests,
+            transferRequests: transferRequests
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function updateCaravan(req, res) {
+    const { id } = req.params;
+    const { mentorId } = req.body;
+    try {
+        const updated = await prisma.caravan.update({
+            where: { id },
+            data: { mentorId }
+        });
+        res.json({ message: 'Caravan updated successfully', caravan: updated });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function bulkAddMembersToCaravan(req, res) {
+    const { caravanId } = req.params;
+    const { userIds } = req.body;
+    if (!Array.isArray(userIds)) {
+        return res.status(400).json({ error: 'userIds must be an array' });
+    }
+    try {
+        await prisma.user.updateMany({
+            where: { id: { in: userIds } },
+            data: { caravanId }
+        });
+        res.json({ message: 'Users added successfully' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function deleteCaravan(req, res) {
+    try {
+        const { id } = req.params;
+        const caravan = await prisma.caravan.findUnique({ where: { id } });
+        if (!caravan)
+            return res.status(404).json({ error: 'کاروان یافت نشد.' });
+        // Release all members
+        await prisma.user.updateMany({
+            where: { caravanId: id },
+            data: { caravanId: null }
+        });
+        // Soft delete caravan
+        await prisma.caravan.update({
+            where: { id },
+            data: { isDeleted: true, deletedAt: new Date() }
+        });
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'DELETE_CARAVAN', 'Caravan', id, 'Soft deleted caravan and released members', req.ip || '');
+        res.json({ message: 'کاروان با موفقیت حذف شد و اعضای آن آزاد شدند.' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function blockCaravanMembers(req, res) {
+    try {
+        const { id } = req.params;
+        const caravan = await prisma.caravan.findUnique({ where: { id } });
+        if (!caravan)
+            return res.status(404).json({ error: 'کاروان یافت نشد.' });
+        // Block all members of this caravan
+        await prisma.user.updateMany({
+            where: { caravanId: id },
+            data: { blocked: true }
+        });
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'BLOCK_CARAVAN_MEMBERS', 'Caravan', id, 'Blocked all members of caravan', req.ip || '');
+        res.json({ message: 'تمامی اعضای این کاروان مسدود شدند.' });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

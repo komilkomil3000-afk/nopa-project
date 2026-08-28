@@ -50,6 +50,26 @@ const uploadMedia = async (req, res) => {
                 duration: duration ? parseInt(duration) : null,
             },
         });
+        // If an authenticated mentor uploaded this file as a document, create a MentorDocument entry
+        try {
+            if (req.user && (req.user.role === 'mentor' || req.user.role === 'admin')) {
+                const uploaderId = req.user.id;
+                // Only create MentorDocument records for mentor role uploads and when assetType indicates mentor_document
+                if (assetType === 'mentor_document' || req.user.role === 'mentor') {
+                    await prisma.mentorDocument.create({
+                        data: {
+                            userId: uploaderId,
+                            filename: file.filename,
+                            url,
+                            mimeType: file.mimetype,
+                        },
+                    });
+                }
+            }
+        }
+        catch (mdErr) {
+            console.error('MentorDocument creation error:', mdErr);
+        }
         res.status(201).json({
             message: 'File uploaded successfully',
             media: mediaAsset,

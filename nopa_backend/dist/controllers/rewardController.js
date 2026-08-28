@@ -2,6 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.grantPromotionalZarik = grantPromotionalZarik;
 exports.getZarikSalesStats = getZarikSalesStats;
+exports.getMentorRewardRules = getMentorRewardRules;
+exports.createMentorRewardRule = createMentorRewardRule;
+exports.deleteMentorRewardRule = deleteMentorRewardRule;
+exports.validateRewardGrant = validateRewardGrant;
 const client_1 = require("@prisma/client");
 const adminController_1 = require("./adminController");
 const prisma = new client_1.PrismaClient();
@@ -58,5 +62,76 @@ async function getZarikSalesStats(req, res) {
     }
     catch (error) {
         res.status(500).json({ error: error.message });
+    }
+}
+// Mentor Reward Constraints APIs
+async function getMentorRewardRules(req, res) {
+    try {
+        const rules = await prisma.mentorRewardRule.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(rules);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function createMentorRewardRule(req, res) {
+    try {
+        const { mentorId, caravanId, stationId, rewardType, maxGrantLimit, timeframe } = req.body;
+        if (!rewardType || typeof maxGrantLimit !== 'number' || !timeframe) {
+            return res.status(400).json({ error: 'اطلاعات نامعتبر است' });
+        }
+        const rule = await prisma.mentorRewardRule.create({
+            data: {
+                mentorId: mentorId || null,
+                caravanId: caravanId || null,
+                stationId: stationId || null,
+                rewardType,
+                maxGrantLimit,
+                timeframe
+            }
+        });
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'CREATE_MENTOR_RULE', 'MentorRewardRule', rule.id, `Created rule for ${rewardType}`, req.ip || '');
+        res.status(201).json(rule);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function deleteMentorRewardRule(req, res) {
+    try {
+        const { id } = req.params;
+        await prisma.mentorRewardRule.delete({ where: { id } });
+        await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'DELETE_MENTOR_RULE', 'MentorRewardRule', id, `Deleted rule`, req.ip || '');
+        res.json({ message: 'حذف شد' });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function validateRewardGrant(mentorId, caravanId, stationId, rewardType, amount) {
+    // Find applicable rules
+    const rules = await prisma.mentorRewardRule.findMany({
+        where: {
+            rewardType,
+            OR: [
+                { mentorId },
+                { mentorId: null }
+            ],
+        }
+    });
+    for (const rule of rules) {
+        // If rule specifies caravan, it must match
+        if (rule.caravanId && rule.caravanId !== caravanId)
+            continue;
+        // If rule specifies station, it must match
+        if (rule.stationId && rule.stationId !== stationId)
+            continue;
+        if (amount > rule.maxGrantLimit) {
+            throw new Error('سقف مجاز اعطای پاداش در این بخش رعایت نشده است');
+        }
+        // In a full implementation, we'd also check the historical sum based on timeframe (DAILY, PER_STATION)
+        // For now, we enforce the per-transaction limit 'maxGrantLimit' strictly.
     }
 }

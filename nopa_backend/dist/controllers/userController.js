@@ -13,22 +13,69 @@ async function getMe(req, res) {
             return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
         }
         const user = await db_1.default.user.findUnique({
-            where: { id: req.user.id }
+            where: { id: req.user.id },
+            include: {
+                caravan: {
+                    include: { mentor: { select: { id: true, name: true, phoneNumber: true } } }
+                },
+                mentoredCaravans: {
+                    include: { members: true }
+                },
+                ratingsReceived: true,
+                evaluationsReceived: true,
+                sessionWatchRecords: true,
+                quizSubmissions: true,
+                mentorDocuments: true,
+                certificates: true
+            }
         });
         if (!user) {
             return res.status(404).json({ error: 'کاربر یافت نشد' });
+        }
+        // Calculate real station progress dynamically
+        const completedStationsCount = await db_1.default.sessionWatchRecord.count({
+            where: { userId: user.id, watchedPercentage: { gte: 70 } }
+        });
+        let managedMembersCount = 0;
+        let satisfactionScore = 0;
+        let assignedCaravan = null;
+        if (user.role === 'mentor' || user.role === 'SUPER_MENTOR') {
+            assignedCaravan = user.mentoredCaravans && user.mentoredCaravans.length > 0 ? user.mentoredCaravans[0] : null;
+            managedMembersCount = assignedCaravan?.members?.length || 0;
+            const totalRatings = user.ratingsReceived?.length || 0;
+            const totalEvaluations = user.evaluationsReceived?.length || 0;
+            const sumRatings = user.ratingsReceived?.reduce((acc, r) => acc + r.ratingValue, 0) || 0;
+            const sumEvals = user.evaluationsReceived?.reduce((acc, e) => acc + e.rating, 0) || 0;
+            const combinedCount = totalRatings + totalEvaluations;
+            satisfactionScore = combinedCount > 0 ? (sumRatings + sumEvals) / combinedCount : 0;
         }
         res.json({
             id: user.id,
             name: user.name,
             phoneNumber: user.phoneNumber,
+            userCode: user.userCode,
             role: user.role,
+            caravanId: assignedCaravan ? assignedCaravan.id : user.caravanId,
+            caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
+            caravanMentor: assignedCaravan ? user.name : (user.caravan?.mentor?.name || 'تعیین نشده'),
+            mentorPhone: assignedCaravan ? user.phoneNumber : (user.caravan?.mentor?.phoneNumber || ''),
+            socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
+            managedMembersCount,
+            satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),
+            completedStationsCount: Math.floor(completedStationsCount / 4), // 4 sessions per station baseline
             zarikBalance: user.zarikBalance,
+            nakh: user.nakh,
+            beyragh: user.beyragh,
+            farsh: user.farsh,
             levelFrame: user.levelFrame,
-            caravanId: user.caravanId,
+            identityVerified: user.identityVerified,
             avatarUrl: user.avatarUrl,
             hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
-            identityVerified: user.identityVerified
+            nationalId: user.nationalId,
+            dateOfBirth: user.dateOfBirth,
+            city: user.city,
+            mentorDocuments: user.mentorDocuments,
+            certificates: user.certificates
         });
     }
     catch (error) {
@@ -44,37 +91,45 @@ async function completeProfile(req, res) {
         const user = await db_1.default.user.findUnique({ where: { id: req.user.id } });
         if (!user)
             return res.status(404).json({ error: 'کاربر یافت نشد' });
-        if (user.identityVerified) {
-            return res.status(400).json({ error: 'پروفایل شما قبلا تکمیل شده است' });
-        }
+        const isFirstTime = !user.identityVerified;
         if (user.role === 'student') {
             const { nationalId, name, city, dateOfBirth } = req.body;
             if (!nationalId || !name)
                 return res.status(400).json({ error: 'نام و کد ملی الزامی است' });
+            const updateData = {
+                name,
+                nationalId,
+                dateOfBirth,
+                identityVerified: true,
+            };
+            if (isFirstTime) {
+                updateData.zarikBalance = { increment: 200 };
+            }
             await db_1.default.user.update({
                 where: { id: user.id },
-                data: {
-                    name,
-                    nationalId,
-                    dateOfBirth,
-                    identityVerified: true,
-                    zarikBalance: { increment: 200 }
-                }
+                data: updateData
             });
-            return res.json({ success: true, message: 'پروفایل تایید شد و 200 زریک پاداش گرفتید' });
+            return res.json({ success: true, message: isFirstTime ? 'پروفایل تایید شد و 200 زریک پاداش گرفتید' : 'پروفایل با موفقیت بروزرسانی شد' });
         }
         else if (user.role === 'mentor') {
-            const { academicDegree, academicCertificates } = req.body;
+            const { nationalId, dateOfBirth, city, academicDegree, bio } = req.body;
+            const updateData = {
+                nationalId,
+                dateOfBirth,
+                city,
+                academicDegree,
+                bio,
+                identityVerified: true,
+            };
+            if (isFirstTime) {
+                updateData.mentorLevel = { increment: 1 };
+                updateData.zarikBalance = { increment: 500 };
+            }
             await db_1.default.user.update({
                 where: { id: user.id },
-                data: {
-                    academicDegree,
-                    academicCertificates,
-                    identityVerified: true,
-                    mentorLevel: { increment: 1 } // Simulated +5 Stars / level up
-                }
+                data: updateData
             });
-            return res.json({ success: true, message: 'پروفایل راهبر تایید شد و 5 ستاره دریافت کردید' });
+            return res.json({ success: true, message: isFirstTime ? 'پروفایل راهبر تایید شد و 500 زریک دریافت کردید' : 'پروفایل با موفقیت بروزرسانی شد' });
         }
         res.status(400).json({ error: 'نقش کاربری نامعتبر' });
     }

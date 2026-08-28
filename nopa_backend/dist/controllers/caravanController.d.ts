@@ -5,3 +5,14 @@ export declare function bulkTransferMembers(req: AuthRequest, res: Response): Pr
 export declare function convertAssets(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function approveAssetConversion(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getAssetConversionsAdmin(req: AuthRequest, res: Response): Promise<void>;
+export declare function createCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function getCaravanDetails(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>>>;
+export declare function addMemberToCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function removeMemberFromCaravan(req: AuthRequest, res: Response): Promise<void>;
+export declare function transferMember(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function broadcastToCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function getCaravanRequests(req: AuthRequest, res: Response): Promise<void>;
+export declare function updateCaravan(req: AuthRequest, res: Response): Promise<void>;
+export declare function bulkAddMembersToCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function deleteCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function blockCaravanMembers(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;

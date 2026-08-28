@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNotifications = getNotifications;
+exports.sendSystemNotification = sendSystemNotification;
 exports.markNotificationAsRead = markNotificationAsRead;
 exports.broadcastNotification = broadcastNotification;
 exports.getTemplates = getTemplates;
@@ -30,6 +31,21 @@ async function getNotifications(req, res) {
     catch (error) {
         console.error('getNotifications error:', error);
         res.status(500).json({ error: 'خطایی در دریافت لیست اعلان‌ها رخ داد' });
+    }
+}
+async function sendSystemNotification(userId, title, message, type = 'info') {
+    try {
+        await db_1.default.notification.create({
+            data: {
+                userId,
+                title,
+                message,
+                type
+            }
+        });
+    }
+    catch (error) {
+        console.error('Failed to dispatch system notification:', error);
     }
 }
 async function markNotificationAsRead(req, res) {

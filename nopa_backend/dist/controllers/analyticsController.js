@@ -91,17 +91,17 @@ const getMentorAnalytics = async (req, res) => {
             return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
         }
         const userId = req.user.id;
-        const assignmentsPending = await prisma.assignmentSubmission.count({
+        const assignmentsPending = await prisma.quizSubmission.count({
             where: { mentorId: userId, status: 'PENDING' }
         });
-        const assignmentsReviewed = await prisma.assignmentSubmission.count({
+        const assignmentsReviewed = await prisma.quizSubmission.count({
             where: { mentorId: userId, status: { in: ['APPROVED', 'REJECTED', 'REVISION_NEEDED'] } }
         });
-        const avgScore = await prisma.assignmentSubmission.aggregate({
+        const avgScore = await prisma.quizSubmission.aggregate({
             _avg: { score: true },
             where: { mentorId: userId, status: 'APPROVED' }
         });
-        const reviewStats = await prisma.assignmentSubmission.groupBy({
+        const reviewStats = await prisma.quizSubmission.groupBy({
             by: ['status'],
             where: { mentorId: userId },
             _count: { status: true }

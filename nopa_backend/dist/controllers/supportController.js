@@ -10,14 +10,16 @@ exports.resolveTicket = resolveTicket;
 const db_1 = __importDefault(require("../config/db"));
 async function createTicket(req, res) {
     try {
-        const { category, subject } = req.body;
+        const { category, subject, voiceUrl, attachmentUrl } = req.body;
         if (!category || !subject)
             return res.status(400).json({ error: 'دسته‌بندی و موضوع الزامی است' });
         const ticket = await db_1.default.supportTicket.create({
             data: {
                 studentId: req.user.id,
                 category,
-                subject
+                subject,
+                voiceUrl,
+                attachmentUrl
             }
         });
         res.json(ticket);
@@ -30,18 +32,30 @@ async function getTickets(req, res) {
     try {
         const isMentor = req.user.role === 'mentor';
         let tickets;
+        const { caravanId, userId, status } = req.query;
+        let adminWhere = {};
+        if (userId)
+            adminWhere.studentId = userId;
+        if (status)
+            adminWhere.status = status;
+        if (caravanId) {
+            const usersInCaravan = await db_1.default.user.findMany({ where: { caravanId: String(caravanId) }, select: { id: true } });
+            adminWhere.studentId = { in: usersInCaravan.map(u => u.id) };
+        }
         if (req.user.role === 'admin') {
             tickets = await db_1.default.supportTicket.findMany({
+                where: adminWhere,
                 include: { replies: true, student: { select: { name: true, avatarUrl: true } } },
                 orderBy: { createdAt: 'desc' }
             });
         }
         else if (isMentor) {
-            // Mentors see tickets from their caravan students
-            const caravan = await db_1.default.caravan.findFirst({ where: { mentorId: req.user.id } });
-            if (!caravan)
+            // Mentors see tickets from all students in all their assigned caravans
+            const caravans = await db_1.default.caravan.findMany({ where: { mentorId: req.user.id } });
+            if (caravans.length === 0)
                 return res.json([]);
-            const members = await db_1.default.user.findMany({ where: { caravanId: caravan.id } });
+            const caravanIds = caravans.map(c => c.id);
+            const members = await db_1.default.user.findMany({ where: { caravanId: { in: caravanIds } } });
             const memberIds = members.map(m => m.id);
             tickets = await db_1.default.supportTicket.findMany({
                 where: { studentId: { in: memberIds } },
@@ -65,7 +79,7 @@ async function getTickets(req, res) {
 async function replyTicket(req, res) {
     try {
         const { id } = req.params;
-        const { message } = req.body;
+        const { message, voiceUrl, attachmentUrl } = req.body;
         const ticket = await db_1.default.supportTicket.findUnique({ where: { id } });
         if (!ticket)
             return res.status(404).json({ error: 'تیکت یافت نشد' });
@@ -73,6 +87,8 @@ async function replyTicket(req, res) {
             data: {
                 ticketId: id,
                 message,
+                voiceUrl,
+                attachmentUrl,
                 mentorId: req.user.role === 'mentor' ? req.user.id : null
             }
         });

@@ -1,8 +1,9 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-export declare function logAdminAction(actorId: string, actorName: string, action: string, targetEntity: string, targetEntityId: string, details: string, ipAddress: string): Promise<void>;
+export declare function logAdminAction(actorId: string, actorName: string, action: string, targetEntity: string, targetEntityId: string, details: string, ipAddress: string, actorRole?: string): Promise<void>;
 export declare function getUsers(req: AuthRequest, res: Response): Promise<void>;
 export declare function getUserMetrics(req: AuthRequest, res: Response): Promise<void>;
+export declare function getUserAnalytics(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function createUser(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function updateUser(req: AuthRequest, res: Response): Promise<void>;
 export declare function toggleBlockUser(req: AuthRequest, res: Response): Promise<void>;
@@ -10,6 +11,9 @@ export declare function deleteUser(req: AuthRequest, res: Response): Promise<Res
 export declare function overridePasswordOrOtp(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function exportUsersCsv(req: AuthRequest, res: Response): Promise<void>;
 export declare function getZarikLedger(req: AuthRequest, res: Response): Promise<void>;
+export declare function getAssetLeaderboard(req: AuthRequest, res: Response): Promise<void>;
+export declare function getRewardRules(req: AuthRequest, res: Response): Promise<void>;
+export declare function upsertRewardRule(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function adjustZarik(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getZarikAnalytics(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getEconomyHub(req: AuthRequest, res: Response): Promise<void>;
@@ -17,7 +21,12 @@ export declare function getRolePermissions(req: AuthRequest, res: Response): Pro
 export declare function updateRolePermissions(req: AuthRequest, res: Response): Promise<void>;
 export declare function getCaravansAdmin(req: AuthRequest, res: Response): Promise<void>;
 export declare function getMentorScorecards(req: AuthRequest, res: Response): Promise<void>;
+export declare function getMentorDossier(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function moderateMentor(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function updateMentor(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function createGlobalAnnouncement(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getAuditLogs(req: AuthRequest, res: Response): Promise<void>;
 export declare function getMentorEvaluations(req: AuthRequest, res: Response): Promise<void>;
 export declare function grantUserLevel(req: AuthRequest, res: Response): Promise<void>;
+export declare function setAccountStatus(req: AuthRequest, res: Response): Promise<void>;
+export declare const getLevelsAndCertificates: (req: Request, res: Response) => Promise<void>;

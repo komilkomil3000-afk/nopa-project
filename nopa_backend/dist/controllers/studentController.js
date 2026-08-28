@@ -29,6 +29,11 @@ async function createOrUpdateStudent(req, res) {
             });
         }
         else {
+            const maxUser = await prisma.user.findFirst({
+                orderBy: { userCode: 'desc' },
+                where: { userCode: { not: null } }
+            });
+            const nextUserCode = maxUser && maxUser.userCode ? maxUser.userCode + 1 : 110100;
             user = await prisma.user.create({
                 data: {
                     name,
@@ -37,7 +42,8 @@ async function createOrUpdateStudent(req, res) {
                     dateOfBirth,
                     role: 'student',
                     passwordHash: bcryptjs_1.default.hashSync('123456', 10), // Default password for new student
-                    caravanId: caravanId || null
+                    caravanId: caravanId || null,
+                    userCode: nextUserCode
                 }
             });
         }

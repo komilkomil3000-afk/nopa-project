@@ -9,15 +9,78 @@ exports.getMentorLeague = getMentorLeague;
 const db_1 = __importDefault(require("../config/db"));
 async function getCaravanLeague(req, res) {
     try {
+        const sortBy = req.query.sortBy || 'progress';
+        const exportAs = req.query.exportAs;
         const caravans = await db_1.default.caravan.findMany({
-            orderBy: { overallProgress: 'desc' },
             include: {
                 mentor: {
                     select: { name: true }
+                },
+                members: {
+                    select: { id: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true }
                 }
             }
         });
-        res.json(caravans);
+        const totalSessions = await db_1.default.classSession.count({ where: { isDeleted: false } });
+        const totalQuizzes = await db_1.default.quiz.count();
+        const totalAvailableCurriculumItems = totalSessions + totalQuizzes;
+        const rankedCaravans = await Promise.all(caravans.map(async (c) => {
+            const totalWealth = c.members.reduce((sum, m) => sum + m.zarikBalance + m.nakh * 100 + m.farsh * 1000 + m.beyragh * 500, 0);
+            const totalZarik = c.members.reduce((sum, m) => sum + m.zarikBalance, 0);
+            const totalNakh = c.members.reduce((sum, m) => sum + m.nakh, 0);
+            const totalFarsh = c.members.reduce((sum, m) => sum + m.farsh, 0);
+            const totalBeyragh = c.members.reduce((sum, m) => sum + m.beyragh, 0);
+            let caravanProgress = 0;
+            const totalMembers = c.members.length;
+            if (totalMembers > 0 && totalAvailableCurriculumItems > 0) {
+                let passedQuizzesCount = 0;
+                let watchedSessionsCount = 0;
+                for (const member of c.members) {
+                    const passedQuizzes = await db_1.default.quizSubmission.count({
+                        where: {
+                            studentId: member.id,
+                            OR: [{ score: { gt: 0 } }, { status: 'approved' }]
+                        }
+                    });
+                    const watchedSessions = await db_1.default.sessionWatchRecord.count({
+                        where: {
+                            userId: member.id,
+                            watchedPercentage: { gte: 70.0 }
+                        }
+                    });
+                    passedQuizzesCount += passedQuizzes;
+                    watchedSessionsCount += watchedSessions;
+                }
+                const calcProgress = ((passedQuizzesCount + watchedSessionsCount) / (totalAvailableCurriculumItems * totalMembers)) * 100;
+                caravanProgress = Math.min(100, parseFloat(calcProgress.toFixed(2)));
+            }
+            return {
+                id: c.id,
+                name: c.name,
+                mentorName: c.mentor?.name || '-',
+                memberCount: c.members.length,
+                capacityLimit: c.capacityLimit,
+                overallProgress: caravanProgress,
+                totalWealth,
+                assets: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh }
+            };
+        }));
+        if (sortBy === 'wealth') {
+            rankedCaravans.sort((a, b) => b.totalWealth - a.totalWealth);
+        }
+        else {
+            rankedCaravans.sort((a, b) => b.overallProgress - a.overallProgress);
+        }
+        if (exportAs === 'csv') {
+            let csv = 'Name,Mentor,Members,Progress,Total Zarik,Total Nakh,Total Farsh,Total Beyragh\n';
+            rankedCaravans.forEach(c => {
+                csv += `${c.name},${c.mentorName},${c.memberCount},${c.overallProgress},${c.assets.zarik},${c.assets.nakh},${c.assets.farsh},${c.assets.beyragh}\n`;
+            });
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="caravan_league.csv"');
+            return res.send(Buffer.from('\uFEFF' + csv, 'utf-8'));
+        }
+        res.json(rankedCaravans);
     }
     catch (error) {
         console.error('getCaravanLeague error:', error);
@@ -46,29 +109,76 @@ async function getWealthiestLeague(req, res) {
 }
 async function getMentorLeague(req, res) {
     try {
+        const search = req.query.search || '';
+        const sortBy = req.query.sortBy || 'rating';
+        const exportAs = req.query.exportAs;
+        const whereClause = { role: 'mentor' };
+        if (search) {
+            whereClause.OR = [
+                { name: { contains: search } },
+                { phoneNumber: { contains: search } }
+            ];
+        }
         const mentors = await db_1.default.user.findMany({
-            where: { role: 'mentor' },
+            where: whereClause,
             select: {
                 id: true,
                 name: true,
-                avatarUrl: true
+                phoneNumber: true,
+                avatarUrl: true,
+                mentorLevel: true,
+                mentoredCaravans: { select: { id: true, name: true, overallProgress: true } },
+                submissions: { select: { id: true, status: true } },
+                supportReplies: { select: { id: true, createdAt: true } },
+                evaluationsReceived: true,
             }
         });
-        // Compute average ratings manually
-        const rankedMentors = await Promise.all(mentors.map(async (m) => {
-            const ratings = await db_1.default.mentorRating.findMany({
-                where: { mentorId: m.id }
-            });
-            const avg = ratings.length > 0
-                ? ratings.reduce((sum, r) => sum + r.ratingValue, 0) / ratings.length
-                : 4.5;
+        const rankedMentors = mentors.map(m => {
+            const evals = m.evaluationsReceived || [];
+            const avg = evals.length > 0
+                ? evals.reduce((sum, e) => sum + e.rating, 0) / evals.length
+                : 0; // Return 0 instead of mock 4.5
+            const caravanNames = m.mentoredCaravans.length > 0
+                ? m.mentoredCaravans.map(c => c.name).join(', ')
+                : '-';
+            const caravanProgress = m.mentoredCaravans.length > 0
+                ? m.mentoredCaravans.reduce((sum, c) => sum + c.overallProgress, 0) / m.mentoredCaravans.length
+                : 0;
+            const activityScore = m.submissions.length * 2 + m.supportReplies.length * 5;
             return {
-                ...m,
-                rating: parseFloat(avg.toFixed(1)),
-                reviewsCount: ratings.length
+                id: m.id,
+                name: m.name,
+                phoneNumber: m.phoneNumber,
+                avatarUrl: m.avatarUrl,
+                caravanName: caravanNames,
+                mentorLevel: m.mentorLevel,
+                rating: avg > 0 ? parseFloat(avg.toFixed(1)) : '-',
+                reviewsCount: evals.length,
+                caravanProgress: parseFloat(caravanProgress.toFixed(1)),
+                activityScore
             };
-        }));
-        rankedMentors.sort((a, b) => b.rating - a.rating);
+        });
+        if (sortBy === 'rating') {
+            rankedMentors.sort((a, b) => (typeof b.rating === 'number' ? b.rating : 0) - (typeof a.rating === 'number' ? a.rating : 0));
+        }
+        else if (sortBy === 'progress') {
+            rankedMentors.sort((a, b) => b.caravanProgress - a.caravanProgress);
+        }
+        else if (sortBy === 'activity') {
+            rankedMentors.sort((a, b) => b.activityScore - a.activityScore);
+        }
+        else if (sortBy === 'level') {
+            rankedMentors.sort((a, b) => b.mentorLevel - a.mentorLevel);
+        }
+        if (exportAs === 'csv') {
+            let csv = 'Name,Phone,Caravan,Level,Rating,Progress,Activity\n';
+            rankedMentors.forEach(m => {
+                csv += `${m.name},${m.phoneNumber},${m.caravanName},${m.mentorLevel},${m.rating},${m.caravanProgress},${m.activityScore}\n`;
+            });
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="mentors_league.csv"');
+            return res.send(Buffer.from('\uFEFF' + csv, 'utf-8'));
+        }
         res.json(rankedMentors);
     }
     catch (error) {

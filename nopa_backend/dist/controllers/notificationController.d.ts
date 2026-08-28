@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 export declare function getNotifications(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function sendSystemNotification(userId: string, title: string, message: string, type?: string): Promise<void>;
 export declare function markNotificationAsRead(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function broadcastNotification(req: AuthRequest, res: Response): Promise<void>;
 export declare function getTemplates(req: AuthRequest, res: Response): Promise<void>;
