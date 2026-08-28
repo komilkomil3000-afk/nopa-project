@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../widgets/create_challenge_dialog.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/safe_avatar.dart';
 import '../main.dart';
 
 
@@ -25,14 +26,12 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     
-    _caravans = repository.caravans.map((c) => c.name).toList();
-    _caravanNameToId = { for (var c in repository.caravans) c.name : c.id };
+    _caravans = [repository.currentUser.caravanName ?? 'فاقد کاروان'];
+    _caravanNameToId = {repository.currentUser.caravanName ?? 'فاقد کاروان': repository.currentUser.caravanId ?? ''};
     
-    _selectedCaravan = repository.selectedCaravanName;
-    if (!_caravans.contains(_selectedCaravan) && _caravans.isNotEmpty) {
-       _selectedCaravan = _caravans.first;
-    }
+    _selectedCaravan = _caravans.first;
     
+    final currentUser = repository.currentUser;
     final activeData = repository.activeCaravanStats;
 
     return Scaffold(
@@ -78,10 +77,10 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                         },
                       ),
                       _buildStatCard(
-                        activeData['tasks'],
-                        'تکالیف تحویل',
-                        const Color(0xFF8B5CF6),
-                        activeData['tasksVal'],
+                        '${currentUser.managedMembersCount}',
+                        'اعضای تحت پوشش',
+                        const Color(0xFF3B82F6),
+                        currentUser.managedMembersCount / 25.0, // assuming 25 capacity
                         onTap: () {
                           context.findAncestorStateOfType<MainScreenState>()?.setIndex(1); // MentorMembersScreen
                         },
@@ -100,12 +99,17 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                         },
                       ),
                       _buildStatCard(
-                        activeData['score'],
-                        'امتیاز گروه',
+                        '${currentUser.satisfactionScore}',
+                        'امتیاز رضایت',
                         const Color(0xFF10B981),
-                        activeData['scoreVal'],
+                        currentUser.satisfactionScore / 5.0,
                         onTap: () {
-                          Navigator.pushNamed(context, '/mentor_league');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('میانگین امتیاز رضایت دانش‌آموزان از شما', style: TextStyle(fontFamily: 'Vazirmatn')),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
                         },
                       ),
                     ],
@@ -233,11 +237,11 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
                     ),
-                    child: CircleAvatar(
+                    child: SafeAvatar(
                       radius: 20,
                       backgroundColor: Colors.white24,
-                      backgroundImage: NetworkImage('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200'),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar failed to load: $e'),
+                      imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
+                      name: 'راهبر',
                     ),
                   ),
                 ],
@@ -378,6 +382,8 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
           _buildProgressRow('منزلگاه ۳ (فعلی)', activeData['progressM3'], '${(activeData['progressM3'] * 100).toInt()}%', const Color(0xFFEC4899)),
           const SizedBox(height: 12),
           _buildProgressRow('منزلگاه ۴', activeData['progressM4'], '${(activeData['progressM4'] * 100).toInt()}%', const Color(0xFFF97316)),
+          const SizedBox(height: 12),
+          _buildProgressRow('منزلگاه ۵', activeData['progressM5'] ?? 0.0, '${((activeData['progressM5'] ?? 0.0) * 100).toInt()}%', const Color(0xFF10B981)),
         ],
       ),
     );

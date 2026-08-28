@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../utils/global_state.dart';
 import '../services/app_state_repository.dart';
+import '../services/api_service.dart';
+import '../utils/global_state.dart';
 import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/safe_avatar.dart';
 
 
 class MentorMembersScreen extends StatefulWidget {
@@ -42,120 +44,60 @@ class _MarketMember {
 
 class _MentorMembersScreenState extends State<MentorMembersScreen> {
   String _selectedCaravan = 'یاوران علاءالملک';
-  final List<String> _caravans = ['یاوران علاءالملک', 'کاروان عمار', 'کاروان مالک'];
+  List<String> _caravans = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Mock members data with caravan assignments, levels, and genders
-  final List<_MarketMember> _allMembers = [
-    // Caravan 1: یاوران علاءالملک
-    _MarketMember(
-      id: 'student_1',
-      name: 'امیرحسین رضایی',
-      caravan: 'یاوران علاءالملک',
-      lastActive: '۲ ساعت پیش',
-      gender: 'male',
-      profileLevel: ProfileLevel.golden,
-      xp: '۸۵۰ از ۱۰۰۰',
-      progress: 0.85,
-      completedClasses: ['مقدمات نپا', 'هدف‌گذاری SMART', 'مدیریت زمان'],
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-      reports: [
-        {'title': 'گزارش چالش هدف‌گذاری SMART', 'date': '۳ روز پیش', 'type': 'چالش'},
-        {'title': 'تمرین عملی طراحی اهداف شخصی', 'date': '۵ روز پیش', 'type': 'کلاس مهارتی'},
-      ],
-    ),
-    _MarketMember(
-      id: 'student_2',
-      name: 'مریم حسینی',
-      caravan: 'یاوران علاءالملک',
-      lastActive: '۴ ساعت پیش',
-      gender: 'female',
-      profileLevel: ProfileLevel.silver,
-      xp: '۷۰۰ از ۱۰۰۰',
-      progress: 0.70,
-      completedClasses: ['مقدمات نپا', 'هدف‌گذاری SMART'],
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200',
-      reports: [
-        {'title': 'گزارش ویدیو تولید محتوا', 'date': '۲ روز پیش', 'type': 'کلاس رسانه‌ای'},
-      ],
-    ),
-    _MarketMember(
-      id: 'student_3',
-      name: 'پرهام علیزاده',
-      caravan: 'یاوران علاءالملک',
-      lastActive: 'دیروز',
-      gender: 'male',
-      profileLevel: ProfileLevel.bronze,
-      xp: '۴۵۰ از ۱۰۰۰',
-      progress: 0.45,
-      completedClasses: ['مقدمات نپا'],
-      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200',
-      reports: [],
-    ),
+  List<_MarketMember> _allMembers = [];
+  bool _isLoading = true;
 
-    // Caravan 2: کاروان عمار
-    _MarketMember(
-      id: 'student_4',
-      name: 'علی علوی',
-      caravan: 'کاروان عمار',
-      lastActive: '۱ روز پیش',
-      gender: 'male',
-      profileLevel: ProfileLevel.general,
-      xp: '۹۰۰ از ۱۰۰۰',
-      progress: 0.90,
-      completedClasses: ['مقدمات نپا', 'تفکر انتقادی'],
-      avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200',
-      reports: [
-        {'title': 'گزارش صوتی تحلیل خبر', 'date': '۴ روز پیش', 'type': 'رسانه'},
-      ],
-    ),
-    _MarketMember(
-      id: 'student_5',
-      name: 'فاطمه احمدی',
-      caravan: 'کاروان عمار',
-      lastActive: '۳۰ دقیقه پیش',
-      gender: 'female',
-      profileLevel: ProfileLevel.golden,
-      xp: '۹۵۰ از ۱۰۰۰',
-      progress: 0.95,
-      completedClasses: ['مقدمات نپا', 'مدیریت زمان', 'کار گروهی'],
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
-      reports: [
-        {'title': 'سناریونویسی چالش بیرق', 'date': '۱ روز پیش', 'type': 'چالش'},
-      ],
-    ),
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
 
-    // Caravan 3: کاروان مالک
-    _MarketMember(
-      id: 'student_6',
-      name: 'زهرا حسینی',
-      caravan: 'کاروان مالک',
-      lastActive: '۳ ساعت پیش',
-      gender: 'female',
-      profileLevel: ProfileLevel.newcomer,
-      xp: '۲۰۰ از ۱۰۰۰',
-      progress: 0.20,
-      completedClasses: ['مقدمات نپا'],
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200',
-      reports: [
-        {'title': 'ثبت اولیه مشخصات فردی', 'date': '۱ روز پیش', 'type': 'چالش'},
-      ],
-    ),
-    _MarketMember(
-      id: 'student_7',
-      name: 'محمدمهدی کریمی',
-      caravan: 'کاروان مالک',
-      lastActive: '۲ روز پیش',
-      gender: 'male',
-      profileLevel: ProfileLevel.silver,
-      xp: '۶۸۰ از ۱۰۰۰',
-      progress: 0.68,
-      completedClasses: ['مقدمات نپا', 'مبانی رسانه'],
-      avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200',
-      reports: [],
-    ),
-  ];
+  Future<void> _loadMembers() async {
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    final caravanId = repository.currentUser.caravanId;
+    if (caravanId == null || caravanId.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    final details = await HttpApiService().getCaravanDetails(caravanId);
+    if (details != null && details['membersList'] != null) {
+      final List<dynamic> list = details['membersList'];
+      final mapped = list.map((m) {
+        return _MarketMember(
+          id: m['id'] ?? '',
+          name: m['name'] ?? 'بدون نام',
+          caravan: repository.currentUser.caravanName ?? 'فاقد کاروان',
+          lastActive: 'نامشخص',
+          gender: 'unknown',
+          profileLevel: m['levelFrame'] == 2 ? ProfileLevel.silver : ProfileLevel.newcomer,
+          xp: '${m['zarikBalance'] ?? 0} زریک',
+          progress: 0.0,
+          completedClasses: [],
+          reports: [],
+          avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
+        );
+      }).toList();
+
+      setState(() {
+        _allMembers = mapped;
+        _caravans = [repository.currentUser.caravanName ?? 'فاقد کاروان'];
+        _selectedCaravan = _caravans.first;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,6 +107,13 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
       final matchesSearch = m.name.contains(_searchQuery);
       return matchesCaravan && matchesSearch;
     }).toList();
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0F081D),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6))),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F081D),
@@ -381,10 +330,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      CircleAvatar(
+                                      SafeAvatar(
                                         radius: 20,
-                                        backgroundImage: NetworkImage(member.avatarUrl),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                                        imageUrl: member.avatarUrl,
+                                        name: member.name,
                                         backgroundColor: Colors.white10,
                                       ),
                                       const SizedBox(width: 14),
@@ -505,10 +454,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
                     ),
-                    child: CircleAvatar(
+                    child: SafeAvatar(
                       radius: 18,
-                      backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200'),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                      imageUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+                      name: 'ناشناس',
                     ),
                   ),
                 ],
@@ -623,10 +572,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                 border: Border.all(color: frameColor, width: 2),
                 boxShadow: frameGlow,
               ),
-              child: CircleAvatar(
+              child: SafeAvatar(
                 radius: 18,
-                backgroundImage: NetworkImage(member.avatarUrl),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                imageUrl: member.avatarUrl,
+                name: member.name,
               ),
             ),
           ],
@@ -750,10 +699,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                           border: Border.all(color: frameColor, width: 2),
                           boxShadow: frameGlow,
                         ),
-                        child: CircleAvatar(
+                        child: SafeAvatar(
                           radius: 22,
-                          backgroundImage: NetworkImage(member.avatarUrl),
-                          onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                          imageUrl: member.avatarUrl,
+                          name: member.name,
                         ),
                       ),
                     ],
@@ -918,10 +867,10 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                           border: Border.all(color: frameColor, width: 2),
                           boxShadow: frameGlow,
                         ),
-                        child: CircleAvatar(
+                        child: SafeAvatar(
                           radius: 22,
-                          backgroundImage: NetworkImage(member.avatarUrl),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                          imageUrl: member.avatarUrl,
+                          name: member.name,
                         ),
                       ),
                     ],

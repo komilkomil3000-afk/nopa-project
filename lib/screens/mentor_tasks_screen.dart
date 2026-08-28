@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async' as java_timer;
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
+import '../widgets/safe_avatar.dart';
 import '../widgets/nopa_notification_dialog.dart';
 import '../utils/tasks_repository.dart';
 import '../utils/global_state.dart';
@@ -515,10 +516,10 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
                             shape: BoxShape.circle,
                             border: Border.all(color: const Color(0xFFFFD700), width: 1.5),
                           ),
-                          child: CircleAvatar(
+                          child: SafeAvatar(
                             radius: 16,
-                            backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200'),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
+                            imageUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200',
+                            name: 'راهبر',
                           ),
                         ),
                       ],

@@ -9,6 +9,7 @@ import '../widgets/education_calendar.dart';
 import '../widgets/jarchi_item.dart';
 import '../widgets/station_card.dart';
 import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/safe_avatar.dart';
 import '../main.dart'; // For MainScreenState
 
 class HomeScreen extends StatefulWidget {
@@ -21,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _stations = [];
+  List<Map<String, dynamic>> _news = [];
+  List<Map<String, dynamic>> _banners = [];
   String? _errorMessage;
 
   @override
@@ -32,10 +35,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
-      final stations = await HttpApiService().getStations();
+      final results = await Future.wait([
+        HttpApiService().getStations(),
+        HttpApiService().getNews(),
+        HttpApiService().getBanners(position: 'home_top'),
+      ]);
       if (mounted) {
         setState(() {
-          _stations = stations;
+          _stations = List<Map<String, dynamic>>.from(results[0] as List);
+          _news = List<Map<String, dynamic>>.from(results[1] as List);
+          _banners = List<Map<String, dynamic>>.from(results[2] as List);
           _isLoading = false;
         });
       }
@@ -50,12 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBackdropHeader(UserModel? user) {
+    final bannerImageUrl = _banners.isNotEmpty 
+        ? HttpApiService().resolveMediaUrl(_banners[0]['imageUrl']) 
+        : 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800';
+
     return Container(
       height: 240,
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800'),
+          image: NetworkImage(bannerImageUrl),
+          onError: (e, s) => debugPrint('Banner image failed to load'),
           fit: BoxFit.cover,
         ),
       ),
@@ -130,11 +144,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(width: 12),
-                      CircleAvatar(
+                      SafeAvatar(
                         radius: 24,
-                        backgroundImage: user?.avatarUrl != null ? NetworkImage(user!.avatarUrl!) : null,
+                        imageUrl: user?.avatarUrl,
+                        name: user?.name ?? 'کاربر',
                         backgroundColor: const Color(0xFF2C224D),
-                        child: user?.avatarUrl == null ? const Icon(Icons.person, color: Colors.white) : null,
                       ),
                     ],
                   ),
@@ -250,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               station: station,
                               onTap: () {
                                 if (!isLocked) {
-                                  Navigator.pushNamed(context, '/station_detail', arguments: stationMap);
+                                  Navigator.pushNamed(context, '/station_detail', arguments: station);
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('این منزلگاه هنوز بازگشایی نشده است', style: TextStyle(fontFamily: 'Vazirmatn'))),
@@ -273,26 +287,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // 5. Jarchi Announcements List
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('تابلوی اعلانات (جارچی)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 12),
-                    JarchiItem(
-                      title: 'جلسه توجیهی ویژه کاروان‌های جدید',
-                      date: 'دوشنبه ۱۸ مرداد ۱۴۰۲',
-                      imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400',
-                      content: 'به اطلاع تمامی دانش‌پژوهان می‌رساند جلسه توجیهی به صورت برخط برگزار خواهد شد.',
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Text('تابلوی اعلانات (جارچی)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
-                    SizedBox(height: 12),
-                    JarchiItem(
-                      title: 'آغاز چالش بزرگ کتابخوانی تابستانه',
-                      date: 'شنبه ۱۵ مرداد ۱۴۰۲',
-                      imageUrl: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=400',
-                      content: 'چالش جدیدی در بخش مهارت‌ها با جوایز ارزنده (زریک و فرش) اضافه شد. برای شرکت اقدام کنید.',
-                    ),
-                    SizedBox(height: 40),
+                    const SizedBox(height: 12),
+                    if (_news.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20.0),
+                        child: Text('بدون خبر', style: TextStyle(color: Colors.white54, fontFamily: 'Vazirmatn')),
+                      )
+                    else
+                      ..._news.map((newsItem) {
+                        final date = DateTime.tryParse(newsItem['createdAt'] ?? '');
+                        final dateStr = date != null ? '${date.year}/${date.month}/${date.day}' : 'نامشخص';
+                        final imageUrl = newsItem['imageUrl'] != null ? '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${newsItem['imageUrl']}' : 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
+                        return JarchiItem(
+                          title: newsItem['title'] ?? 'بدون عنوان',
+                          date: dateStr,
+                          imageUrl: imageUrl,
+                          content: newsItem['body'] ?? '',
+                          link: newsItem['reporter'],
+                        );
+                      }),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),

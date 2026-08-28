@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
+import '../widgets/safe_avatar.dart';
 
 class MentorLeagueScreen extends StatefulWidget {
   const MentorLeagueScreen({super.key});
@@ -212,12 +213,12 @@ class _MentorLeagueScreenState extends State<MentorLeagueScreen> {
                               Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 20,
-                                    backgroundImage: NetworkImage(player['avatar']),
-                      onBackgroundImageError: (e, s) => debugPrint('Avatar load error'),
-                                    backgroundColor: Colors.white24,
-                                  ),
+                                    SafeAvatar(
+                                      radius: 20,
+                                      imageUrl: player['avatar'],
+                                      name: player['name'] ?? 'بازیکن',
+                                      backgroundColor: Colors.white24,
+                                    ),
                                   if (player['mentorLevel'] != null)
                                     Positioned(
                                       bottom: -4,

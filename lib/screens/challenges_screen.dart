@@ -17,9 +17,10 @@ class ChallengesScreen extends StatefulWidget {
 class _ChallengesScreenState extends State<ChallengesScreen> {
   bool _showArchived = false;
 
-  // Mock student stats
-  int _userZarikPoints = 12500;
-  final double _mentorSatisfaction = 4.8;
+  int get _userZarikPoints {
+    return Provider.of<AppRepository>(context, listen: false).currentUser.zarik;
+  }
+  
 
   // Read reactively from AppRepository
   List<Map<String, dynamic>> get _challenges {
@@ -392,9 +393,6 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final repository = Provider.of<AppRepository>(context);
-    _userZarikPoints = repository.currentUser.zarik;
-
     // Filter challenges based on the active tab toggle
     final filtered = _challenges.where((c) {
       if (_showArchived) {
@@ -696,6 +694,9 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
   }
 
   Widget _buildMemberPerformanceHeader() {
+    final user = Provider.of<AppRepository>(context).currentUser;
+    final hasMentor = user.caravanMentor != null && user.caravanMentor!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       padding: const EdgeInsets.all(16),
@@ -726,17 +727,23 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
               children: [
                 const Text('رضایت راهبر از شما', style: TextStyle(color: Colors.white54, fontSize: 11)),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.star, color: Color(0xFFFFD54F), size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$_mentorSatisfaction از ۵',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
+                if (!hasMentor)
+                  const Text(
+                    'تعیین نشده',
+                    style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Vazirmatn'),
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star, color: Color(0xFFFFD54F), size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${user.satisfactionScore > 0 ? user.satisfactionScore : 4.8} از ۵',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

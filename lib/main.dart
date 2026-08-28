@@ -28,8 +28,13 @@ import 'services/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = false;
+  GoogleFonts.config.allowRuntimeFetching = true;
   await HttpApiService().checkBackendHealth();
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Caught Flutter UI Error: ${details.exception}');
+  };
   
   runApp(
     MultiProvider(
@@ -40,6 +45,26 @@ void main() async {
       child: const NepaApp(),
     ),
   );
+}
+
+TextTheme _buildTextTheme(TextTheme base, double scale) {
+  return GoogleFonts.vazirmatnTextTheme(base.copyWith(
+    displayLarge: (base.displayLarge ?? const TextStyle()).copyWith(fontSize: 57 * scale),
+    displayMedium: (base.displayMedium ?? const TextStyle()).copyWith(fontSize: 45 * scale),
+    displaySmall: (base.displaySmall ?? const TextStyle()).copyWith(fontSize: 36 * scale),
+    headlineLarge: (base.headlineLarge ?? const TextStyle()).copyWith(fontSize: 32 * scale),
+    headlineMedium: (base.headlineMedium ?? const TextStyle()).copyWith(fontSize: 28 * scale),
+    headlineSmall: (base.headlineSmall ?? const TextStyle()).copyWith(fontSize: 24 * scale),
+    titleLarge: (base.titleLarge ?? const TextStyle()).copyWith(fontSize: 22 * scale),
+    titleMedium: (base.titleMedium ?? const TextStyle()).copyWith(fontSize: 16 * scale),
+    titleSmall: (base.titleSmall ?? const TextStyle()).copyWith(fontSize: 14 * scale),
+    bodyLarge: (base.bodyLarge ?? const TextStyle()).copyWith(fontSize: 16 * scale),
+    bodyMedium: (base.bodyMedium ?? const TextStyle()).copyWith(fontSize: 14 * scale),
+    bodySmall: (base.bodySmall ?? const TextStyle()).copyWith(fontSize: 12 * scale),
+    labelLarge: (base.labelLarge ?? const TextStyle()).copyWith(fontSize: 14 * scale),
+    labelMedium: (base.labelMedium ?? const TextStyle()).copyWith(fontSize: 12 * scale),
+    labelSmall: (base.labelSmall ?? const TextStyle()).copyWith(fontSize: 11 * scale),
+  ));
 }
 
 class NepaApp extends StatelessWidget {
@@ -57,9 +82,7 @@ class NepaApp extends StatelessWidget {
         brightness: Brightness.light,
         scaffoldBackgroundColor: const Color(0xFFF8F9FA),
         primaryColor: AppColors.purple,
-        textTheme: GoogleFonts.vazirmatnTextTheme(ThemeData.light().textTheme).apply(
-          fontSizeFactor: themeProvider.fontScale,
-        ),
+        textTheme: _buildTextTheme(ThemeData.light().textTheme, themeProvider.fontScale),
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.purple,
           brightness: Brightness.light,
@@ -71,9 +94,7 @@ class NepaApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.background,
         primaryColor: AppColors.purple,
-        textTheme: GoogleFonts.vazirmatnTextTheme(ThemeData.dark().textTheme).apply(
-          fontSizeFactor: themeProvider.fontScale,
-        ),
+        textTheme: _buildTextTheme(ThemeData.dark().textTheme, themeProvider.fontScale),
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.purple,
           brightness: Brightness.dark,
@@ -163,25 +184,6 @@ class MainScreenState extends State<MainScreen> {
             _currentIndex = index;
           });
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          repository.toggleUserRole();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'تغییر نقش به: ${userRole == UserRole.member ? "منتور / راهبر" : "دانش‌آموز / کاربر"}',
-                style: const TextStyle(fontFamily: 'Vazirmatn'),
-              ),
-              duration: const Duration(milliseconds: 800),
-            ),
-          );
-        },
-        backgroundColor: const Color(0xFFD946EF),
-        child: Icon(
-          userRole == UserRole.member ? Icons.admin_panel_settings : Icons.person,
-          color: Colors.white,
-        ),
       ),
     );
   }

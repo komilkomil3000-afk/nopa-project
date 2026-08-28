@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/station.dart';
-import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../services/app_state_repository.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -15,6 +15,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<int> _expandedIndices = {};
   bool _isLoading = true;
   List<Map<String, dynamic>> _stations = [];
+  List<Map<String, dynamic>> _userProgress = [];
 
   @override
   void initState() {
@@ -25,9 +26,17 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _fetchStationsData() async {
     try {
       final stations = await HttpApiService().getStations();
+      final userProgress = await HttpApiService().getUserProgress();
       if (mounted) {
         setState(() {
-          _stations = stations;
+          final uniqueStations = <Map<String, dynamic>>[];
+          for (var s in stations) {
+            if (!uniqueStations.any((us) => us['title'] == s['title'])) {
+              uniqueStations.add(s);
+            }
+          }
+          _stations = uniqueStations;
+          _userProgress = userProgress.cast<Map<String, dynamic>>();
           _isLoading = false;
         });
       }
@@ -42,13 +51,43 @@ class _MapScreenState extends State<MapScreen> {
 
 
   @override
-  @override
   Widget build(BuildContext context) {
-    final repository = Provider.of<AppRepository>(context);
-    final totalChallenges = repository.challenges.length;
-    final approvedSubmissions = repository.submissions.where((s) => s.status == 'approved').map((s) => s.challengeId).toSet();
-    final completedChallenges = repository.challenges.where((c) => approvedSubmissions.contains(c.id)).length;
-    final progress = totalChallenges > 0 ? completedChallenges / totalChallenges : 0.0;
+    final user = Provider.of<AppRepository>(context).currentUser;
+    int totalClipsOverall = 0;
+    int completedClipsOverall = 0;
+
+    for (var station in _stations) {
+      if (station['categories'] != null) {
+        for (var cat in station['categories']) {
+          if (cat['sessions'] != null) {
+            for (var sess in cat['sessions']) {
+              if (sess['videoClips'] != null) {
+                totalClipsOverall += (sess['videoClips'] as List).length;
+                for (var clip in sess['videoClips']) {
+                  final progressRecord = _userProgress.firstWhere(
+                      (p) => p['clipId'] == clip['id'],
+                      orElse: () => <String, dynamic>{});
+                  if (progressRecord['isWatched'] == true ||
+                      progressRecord['quizPassed'] == true) {
+                    completedClipsOverall++;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    double progress = 0.0;
+    if (totalClipsOverall > 0) {
+      progress = completedClipsOverall / totalClipsOverall;
+    } else if (_stations.isNotEmpty) {
+      progress = (user.levelFrame - 1) / _stations.length;
+    }
+    if (progress > 1.0) progress = 1.0;
+    if (progress < 0.0) progress = 0.0;
+
     final progressPercentText = '${(progress * 100).toInt()}%';
 
     return Scaffold(
@@ -160,32 +199,61 @@ class _MapScreenState extends State<MapScreen> {
 
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {
-    final repository = Provider.of<AppRepository>(context, listen: false);
-    final userLevelFrame = repository.currentUser.levelFrame;
-
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    int userLevelFrame = user.levelFrame;
     bool isLocked = (index + 1) > userLevelFrame;
+    bool isCurrent = (index + 1) == userLevelFrame;
+    bool isCompleted = (index + 1) < userLevelFrame;
+
     if (!isLocked && item['releaseDate'] != null) {
       try {
         final releaseDateTime = DateTime.parse(item['releaseDate']);
         if (releaseDateTime.isAfter(DateTime.now())) {
           isLocked = true;
+          isCurrent = false;
         }
       } catch (e) {
         // ignore
       }
     }
 
-    final bool isCompleted = !isLocked && (index + 1) < userLevelFrame;
-    final bool isCurrent = !isLocked && (index + 1) == userLevelFrame;
+    final int totalCls = item['categories'] != null
+        ? (item['categories'] as List).fold<int>(0, (prev, el) => prev + (el['sessions'] != null ? (el['sessions'] as List).length : 0))
+        : 0;
+
+    int stationTotalClips = 0;
+    int stationCompletedClips = 0;
+    if (item['categories'] != null) {
+      for (var cat in item['categories']) {
+        if (cat['sessions'] != null) {
+          for (var sess in cat['sessions']) {
+            if (sess['videoClips'] != null) {
+              stationTotalClips += (sess['videoClips'] as List).length;
+              for (var clip in sess['videoClips']) {
+                final progressRecord = _userProgress.firstWhere(
+                    (p) => p['clipId'] == clip['id'],
+                    orElse: () => <String, dynamic>{});
+                if (progressRecord['isWatched'] == true ||
+                    progressRecord['quizPassed'] == true) {
+                  stationCompletedClips++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    double stationProgress = 0.0;
+    if (stationTotalClips > 0) {
+      stationProgress = stationCompletedClips / stationTotalClips;
+    } else {
+      stationProgress = isCompleted ? 1.0 : (isCurrent ? 0.3 : 0.0);
+    }
 
     final Color accentColor = isLocked
         ? Colors.grey
         : (isCompleted ? const Color(0xFF10B981) : const Color(0xFFFFD54F));
     final bool isExpanded = _expandedIndices.contains(index);
-
-    final int totalCls = item['categories'] != null
-        ? (item['categories'] as List).fold<int>(0, (prev, el) => prev + (el['sessions'] != null ? (el['sessions'] as List).length : 0))
-        : 0;
 
     return Container(
       width: double.infinity,
@@ -236,7 +304,7 @@ class _MapScreenState extends State<MapScreen> {
                           id: item['id'] ?? '',
                           title: item['title'] ?? '',
                           teacher: item['teacher'] ?? 'استاد نپا',
-                          progress: isCompleted ? 1.0 : (isCurrent ? 0.75 : 0.0),
+                          progress: stationProgress,
                           isLocked: isLocked,
                           isCurrent: isCurrent,
                           imageUrl: item['iconUrl'] ?? 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',

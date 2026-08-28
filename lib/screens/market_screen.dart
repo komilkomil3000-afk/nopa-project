@@ -173,57 +173,67 @@ class _MarketScreenState extends State<MarketScreen> {
 
 
   Widget _buildMarketBannerCarousel() {
-    final List<Map<String, String>> banners = [
-      {
-        'title': 'پویش بزرگ زریک طلایی 🏆',
-        'desc': 'تکمیل مأموریت‌های هفتگی با ۳ برابر امتیاز زریک بیشتر!',
-        'bg': '0xFF4C1D95',
-      },
-      {
-        'title': 'جشنواره مبادلات کاروان 🛒',
-        'desc': 'تا ۵۰٪ زریک کمتر برای مبادله بیرق‌های برنزی و نقره‌ای',
-        'bg': '0xFF064E3B',
-      },
-      {
-        'title': 'آخرین مظنه و اخبار بازار کاروان 📊',
-        'desc': 'نرخ روز زریک را هر لحظه از بازارچه نپا دنبال کنید',
-        'bg': '0xFF881337',
-      },
-    ];
-
-    return SizedBox(
-      height: 120,
-      child: PageView.builder(
-        itemCount: banners.length,
-        controller: PageController(viewportFraction: 0.95),
-        itemBuilder: (context, index) {
-          final banner = banners[index];
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 5),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(int.parse(banner['bg']!)),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  banner['title']!,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  banner['desc']!,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn'),
-                ),
-              ],
-            ),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: HttpApiService().getBanners(position: 'bazaar_top'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 120,
+            child: Center(child: CircularProgressIndicator()),
           );
-        },
-      ),
+        }
+
+        final banners = snapshot.data ?? [];
+        if (banners.isEmpty) {
+          return const SizedBox(height: 0); // Hide if no banners
+        }
+
+        return SizedBox(
+          height: 120,
+          child: PageView.builder(
+            itemCount: banners.length,
+            controller: PageController(viewportFraction: 0.95),
+            itemBuilder: (context, index) {
+              final banner = banners[index];
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  image: DecorationImage(
+                    image: NetworkImage(HttpApiService().resolveMediaUrl(banner['imageUrl'])),
+                    onError: (e, s) => debugPrint('Image failed to load'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.8),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        banner['title'] ?? '',
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

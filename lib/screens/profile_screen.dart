@@ -13,6 +13,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../services/app_state_repository.dart';
 import '../services/theme_provider.dart';
 import '../services/audio_exclusivity_service.dart';
+import '../widgets/safe_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,10 +24,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _mentorName; // Initialize in build
-  String _mentorPhone = '۰۹۱۲۳۴۵۶۷۸۹';
-  String _mentorCountry = 'ایران';
-  String _mentorNationalId = '۰۰۱۲۳۴۵۶۷۸';
-  String _mentorEmail = 'alavi@nopa.ir';
 
   @override
   Widget build(BuildContext context) {
@@ -116,23 +113,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 3,
               ),
             ),
-            child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
-                width: 108,
-                height: 108,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 108,
-                  height: 108,
-                  color: Colors.white10,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white30,
-                    size: 54,
-                  ),
-                ),
-              ),
+            child: SafeAvatar(
+              radius: 54,
+              imageUrl: currentUser.avatarUrl,
+              name: currentUser.name,
+              backgroundColor: Colors.transparent,
             ),
           ),
           const SizedBox(height: 16),
@@ -340,19 +325,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _showEditProfileDialog(UserModel currentUser) {
     final TextEditingController nameCtrl = TextEditingController(
-      text: _mentorName ?? currentUser.name,
+      text: currentUser.name,
     );
     final TextEditingController phoneCtrl = TextEditingController(
-      text: _mentorPhone,
+      text: currentUser.phoneNumber,
     );
     final TextEditingController countryCtrl = TextEditingController(
-      text: _mentorCountry,
+      text: currentUser.city ?? 'ایران',
     );
     final TextEditingController nationalIdCtrl = TextEditingController(
-      text: _mentorNationalId,
+      text: currentUser.nationalId ?? '',
     );
     final TextEditingController emailCtrl = TextEditingController(
-      text: _mentorEmail,
+      text: '',
     );
 
     showDialog(
@@ -486,10 +471,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         if (nameCtrl.text.isNotEmpty) {
                           _mentorName = nameCtrl.text;
                         }
-                        _mentorPhone = phoneCtrl.text;
-                        _mentorCountry = countryCtrl.text;
-                        _mentorNationalId = nationalIdCtrl.text;
-                        _mentorEmail = emailCtrl.text;
                       });
                       Navigator.pop(context);
                     },
@@ -521,71 +502,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMemberProfile(BuildContext context, UserModel currentUser) {
     final List<Map<String, dynamic>> tokens = [
       {
-        'name': 'آینه',
-        'desc': 'منزلگاه ۱',
-        'image':
-            'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200',
+        'name': 'زریک (Zarik)',
+        'desc': 'ارز اصلی',
+        'image': 'https://images.unsplash.com/photo-1620321023374-d1a68fbc720d?w=200',
         'status': 'unlocked',
-        'statusLabel': 'فعال',
-        'color': const Color(0xFF10B981),
-      },
-      {
-        'name': 'مهر سنگی',
-        'desc': 'منزلگاه ۲',
-        'image':
-            'https://images.unsplash.com/photo-1599707367072-cd6ada2bc375?w=200',
-        'status': 'unlocked',
-        'statusLabel': 'فعال',
-        'color': const Color(0xFF10B981),
-      },
-      {
-        'name': 'دوربین تک‌چشمی',
-        'desc': 'منزلگاه ۳',
-        'image':
-            'https://images.unsplash.com/photo-1616422285623-13ff0162193c?w=200',
-        'status': 'active',
-        'statusLabel': 'جدید',
+        'statusLabel': '${currentUser.zarik}',
         'color': const Color(0xFFFFD54F),
       },
       {
-        'name': 'بطری نقشه',
-        'desc': 'منزلگاه ۴',
-        'image':
-            'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?w=200',
-        'status': 'locked',
-        'statusLabel': 'قفل',
-        'color': Colors.grey,
+        'name': 'نخ (Nakh)',
+        'desc': 'بافت فرش',
+        'image': 'https://images.unsplash.com/photo-1590725121839-892f45b2049d?w=200',
+        'status': 'unlocked',
+        'statusLabel': '${currentUser.nakh}',
+        'color': const Color(0xFF10B981),
       },
       {
-        'name': 'اسطرلاب',
-        'desc': 'منزلگاه ۵',
-        'image':
-            'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=200',
-        'status': 'locked',
-        'statusLabel': 'قفل',
-        'color': Colors.grey,
+        'name': 'فرش (Farsh)',
+        'desc': 'مبادله بزرگ',
+        'image': 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=200',
+        'status': 'unlocked',
+        'statusLabel': '${currentUser.farsh}',
+        'color': const Color(0xFFEC4899),
+      },
+      {
+        'name': 'بیرق (Beyragh)',
+        'desc': 'نماد قدرت',
+        'image': 'https://images.unsplash.com/photo-1533558701576-23c65e0272fb?w=200',
+        'status': 'unlocked',
+        'statusLabel': '${currentUser.beyragh}',
+        'color': const Color(0xFF8B5CF6),
       },
     ];
 
-    final List<Map<String, dynamic>> certificates = [
+    final List<Map<String, dynamic>> certificates = currentUser.certificates?.map((c) => {
+      'title': c['title'] ?? 'گواهی ثبت نام نپا',
+      'date': c['date'] ?? 'سیستم',
+      'status': c['status'] ?? 'issued',
+      'icon': c['icon'] ?? '🎓',
+    }).toList().cast<Map<String, dynamic>>() ?? [
       {
-        'title': 'گواهی مقدماتی نپا',
-        'date': 'خرداد ۱۴۰۵',
+        'title': 'گواهی ثبت نام نپا',
+        'date': 'سیستم',
         'status': 'issued',
         'icon': '🎓',
-      },
-      {
-        'title': 'گواهی خلاقیت و کار گروهی',
-        'date': 'تیر ۱۴۰۵',
-        'status': 'issued',
-        'icon': '📜',
-      },
-      {
-        'title': 'گواهی رسانه نو و تولید محتوا',
-        'date': 'در حال بررسی',
-        'status': 'pending',
-        'icon': '⏳',
-      },
+      }
     ];
 
     return Scaffold(
@@ -598,13 +559,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildMemberPremiumHeader(currentUser),
               const SizedBox(height: 24),
-              _buildMemberStatsGrid(),
+              _buildMemberStatsGrid(currentUser),
               const SizedBox(height: 30),
               _buildIdentityAndFinancialCards(currentUser),
               const SizedBox(height: 30),
               _buildMemberTokensSection(tokens),
               const SizedBox(height: 30),
-              _buildMemberCertificatesSection(certificates),
+              _buildMemberCertificatesSection(certificates, currentUser),
               const SizedBox(height: 30),
               _buildSettingsList(context),
               const SizedBox(height: 100),
@@ -636,10 +597,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: GlobalState.getLevelColor(GlobalState.memberLevel),
-              boxShadow: GlobalState.getLevelGlow(GlobalState.memberLevel),
+              color: GlobalState.getLevelColor(GlobalState.getLevelForFrame(currentUser.levelFrame)),
+              boxShadow: GlobalState.getLevelGlow(GlobalState.getLevelForFrame(currentUser.levelFrame)),
               border: Border.all(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
+                color: GlobalState.getLevelColor(GlobalState.getLevelForFrame(currentUser.levelFrame)),
                 width: 3,
               ),
             ),
@@ -676,19 +637,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: GlobalState.getLevelColor(
-                GlobalState.memberLevel,
+                GlobalState.getLevelForFrame(currentUser.levelFrame),
               ).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: GlobalState.getLevelColor(
-                  GlobalState.memberLevel,
+                  GlobalState.getLevelForFrame(currentUser.levelFrame),
                 ).withValues(alpha: 0.3),
               ),
             ),
             child: Text(
-              'سطح پروفایل: ${GlobalState.getLevelLabel(GlobalState.memberLevel)}',
+              'سطح پروفایل: ${GlobalState.getLevelLabel(GlobalState.getLevelForFrame(currentUser.levelFrame))}',
               style: TextStyle(
-                color: GlobalState.getLevelColor(GlobalState.memberLevel),
+                color: GlobalState.getLevelColor(GlobalState.getLevelForFrame(currentUser.levelFrame)),
                 fontWeight: FontWeight.bold,
                 fontSize: 12,
                 fontFamily: 'Vazirmatn',
@@ -707,10 +668,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Text(
-                      'یاوران علاءالملک',
-                      style: TextStyle(
+                      currentUser.caravanName ?? 'فاقد کاروان',
+                      style: const TextStyle(
                         color: Color(0xFFFFD54F),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -726,10 +687,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
+                  children: [
                     Text(
-                      'استاد علوی',
-                      style: TextStyle(
+                      currentUser.caravanMentor ?? 'تعیین نشده',
+                      style: const TextStyle(
                         color: Color(0xFFEC4899),
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -768,22 +729,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
-                'سطح ۱۳',
-                style: TextStyle(color: Colors.white60, fontSize: 12),
+                'سطح ${currentUser.levelFrame + 1}',
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
               ),
               Text(
-                '۸۵۰ / ۱۰۰۰ امتیاز تجربه',
-                style: TextStyle(
+                '${currentUser.zarikBalance % 1000} / ۱۰۰۰ امتیاز تجربه',
+                style: const TextStyle(
                   color: Color(0xFF8B5CF6),
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'سطح ۱۲',
-                style: TextStyle(
+                'سطح ${currentUser.levelFrame}',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
@@ -794,11 +755,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: const LinearProgressIndicator(
-              value: 0.85,
+            child: LinearProgressIndicator(
+              value: (currentUser.zarikBalance % 1000) / 1000.0,
               minHeight: 6,
-              backgroundColor: Color(0xFF0F081D),
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+              backgroundColor: const Color(0xFF0F081D),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
             ),
           ),
         ],
@@ -806,7 +767,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMemberStatsGrid() {
+  Widget _buildMemberStatsGrid(UserModel currentUser) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GridView.count(
@@ -819,7 +780,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           _buildStatItem(
             'منزلگاه گذرانده',
-            '۳',
+            '${currentUser.completedStationsCount}',
             Icons.emoji_flags,
             const Color(0xFF10B981),
           ),
@@ -831,13 +792,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           _buildStatItem(
             'گواهی صادر شده',
-            '۲',
+            '${currentUser.certificates?.length ?? 0}',
             Icons.verified,
             const Color(0xFFFFD54F),
           ),
           _buildStatItem(
             'امتیاز کل (زریک)',
-            '۱۲,۵۰۰',
+            '${currentUser.zarikBalance}',
             Icons.stars,
             const Color(0xFFEC4899),
           ),
@@ -983,6 +944,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildMemberCertificatesSection(
     List<Map<String, dynamic>> certificates,
+    UserModel currentUser,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1031,7 +993,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       MaterialPageRoute(
                         builder: (context) => CertificateViewScreen(
                           certificate: cert,
-                          userName: 'امیرحسین رضایی',
+                          userName: currentUser.name,
                         ),
                       ),
                     );
@@ -1975,8 +1937,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
+                _buildInfoRow('شماره تماس', user.phoneNumber),
                 _buildInfoRow('کد ملی', user.nationalId ?? 'ثبت نشده'),
                 _buildInfoRow('تاریخ تولد', user.dateOfBirth ?? 'ثبت نشده'),
+                _buildInfoRow('شهر', user.city ?? 'ثبت نشده'),
                 _buildInfoRow(
                   'وضعیت احراز',
                   user.identityVerified ? 'تایید شده' : 'در انتظار بررسی',

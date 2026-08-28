@@ -17,6 +17,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   bool _isChallengesExpanded = true;
   Map<String, List<Map<String, dynamic>>> _classCategories = {};
   bool _loadingCategories = true;
+  int _selectedCategoryIndex = 0;
 
   Station? _station;
 
@@ -24,34 +25,84 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_station == null) {
-      _station = ModalRoute.of(context)!.settings.arguments as Station;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Station) {
+        _station = args;
+      } else {
+        // Fallback safely if opened without proper arguments
+        _station = Station(
+          id: 'unknown',
+          title: 'منزلگاه آموزشی',
+          teacher: 'نامشخص',
+          progress: 0.0,
+          isLocked: false,
+          isCurrent: false,
+          imageUrl: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
+        );
+      }
       _loadClassCategories();
     }
   }
 
   Future<void> _loadClassCategories() async {
-    if (_station == null) return;
+    if (_station == null || _station!.id == 'unknown') {
+      if (mounted) setState(() => _loadingCategories = false);
+      return;
+    }
     try {
       final stations = await HttpApiService().getStations();
       final stationData = stations.firstWhere((s) => s['id'] == _station!.id, orElse: () => {});
       final Map<String, List<Map<String, dynamic>>> map = {};
       
+      final progressList = await HttpApiService().getUserProgress();
+      int totalClips = 0;
+      int completedClips = 0;
+      
       if (stationData.containsKey('categories') && stationData['categories'] != null) {
-        final categoriesList = stationData['categories'] as List;
-        for (final cat in categoriesList) {
-          final catTitle = cat['title'] ?? 'کلاس‌ها';
-          final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
-          map[catTitle] = sessions;
+        final categoriesList = stationData['categories'] as List? ?? [];
+        for (final item in categoriesList) {
+          if (item is Map) {
+            final cat = item as Map<String, dynamic>;
+            final catTitle = cat['title'] ?? 'کلاس‌ها';
+            final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
+            map[catTitle] = sessions;
+            
+            for (final session in sessions) {
+               final clips = session['videoClips'] as List? ?? [];
+               totalClips += clips.length;
+               for (final clip in clips) {
+                  final prog = progressList.firstWhere(
+                    (p) => p['clipId'] == clip['id'], 
+                    orElse: () => null
+                  );
+                  if (prog != null && prog['isWatched'] == true && prog['quizPassed'] == true) {
+                     completedClips++;
+                  }
+               }
+            }
+          }
         }
       }
+      
+      double calculatedProgress = totalClips > 0 ? (completedClips / totalClips) : 0.0;
       
       if (mounted) {
         setState(() {
           _classCategories = map;
+          _station = Station(
+             id: _station!.id,
+             title: _station!.title,
+             teacher: _station!.teacher,
+             progress: calculatedProgress,
+             isLocked: _station!.isLocked,
+             isCurrent: _station!.isCurrent,
+             imageUrl: _station!.imageUrl,
+          );
           _loadingCategories = false;
         });
       }
     } catch (e) {
+      debugPrint('Error loading station details: $e');
       if (mounted) {
         setState(() {
           _loadingCategories = false;
@@ -62,7 +113,8 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final station = ModalRoute.of(context)!.settings.arguments as Station;
+    if (_station == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final station = _station!;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F081D),
@@ -297,85 +349,117 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     }
 
     final entries = _classCategories.entries.toList();
+    
     return Column(
-      children: entries.map((e) {
-        final categoryTitle = e.key;
-        final categorySessions = e.value;
-        
-        final List<Widget> lessons = [];
-        for (int i = 0; i < categorySessions.length; i++) {
-          final c = categorySessions[i];
-          final hasQuiz = c['quiz'] != null;
-          final zarikReward = (c['maxZarikReward'] as num?)?.toInt() ?? 
-                              (hasQuiz ? (c['quiz']['rewardZarik'] as num?)?.toInt() ?? 0 : 0);
-          
-          lessons.add(_buildLessonRow(
-            title: c['title'] ?? c['name'] ?? '-',
-            status: 'آماده شروع',
-            statusColor: const Color(0xFF8B5CF6),
-            participated: false,
-            reward: zarikReward,
-            onTap: () {
-              Navigator.pushNamed(
-                context,
-                '/class_player',
-                arguments: {
-                  'classes': categorySessions,
-                  'initialIndex': i,
-                },
+      children: [
+        // Tabs row
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1435),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+          ),
+          child: Row(
+            children: List.generate(entries.length, (index) {
+              final isSelected = _selectedCategoryIndex == index;
+              final catTitle = entries[index].key;
+              final isSkill = catTitle.contains('مهارتی');
+              final badgeText = isSkill ? 'شنبه و دوشنبه' : 'پنجشنبه و جمعه';
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategoryIndex = index;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF8B5CF6).withValues(alpha: 0.2) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isSelected ? Border.all(color: const Color(0xFF8B5CF6)) : Border.all(color: Colors.transparent),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          catTitle.split('(')[0].trim(),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white54,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Vazirmatn',
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF8B5CF6) : Colors.white10,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontFamily: 'Vazirmatn'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               );
-            },
-          ));
-        }
-
-        return Column(
-          children: [
-            _buildCustomClassCategory(title: categoryTitle, count: categorySessions.length, lessons: lessons),
-            const SizedBox(height: 12),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-
-
-  Widget _buildCustomClassCategory({
-    required String title,
-    required int count,
-    required List<Widget> lessons,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      child: ExpansionTile(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Vazirmatn')),
-          ],
+            }),
+          ),
         ),
-        iconColor: const Color(0xFF8B5CF6),
-        collapsedIconColor: Colors.white54,
-        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: const Border(),
-        children: lessons,
-      ),
+        const SizedBox(height: 16),
+        // Content
+        Builder(builder: (context) {
+          if (_selectedCategoryIndex >= entries.length) return const SizedBox();
+          final categorySessions = entries[_selectedCategoryIndex].value;
+          final List<Widget> lessons = [];
+          for (int i = 0; i < categorySessions.length; i++) {
+            final c = categorySessions[i];
+            final hasQuiz = c['quiz'] != null || (c['quizzes'] != null && (c['quizzes'] as List).isNotEmpty);
+            final zarikReward = (c['maxZarikReward'] as num?)?.toInt() ?? 
+                                (hasQuiz && c['quizzes'] != null && (c['quizzes'] as List).isNotEmpty 
+                                   ? (c['quizzes'][0]['rewardZarik'] as num?)?.toInt() ?? 0 
+                                   : 0);
+            
+            lessons.add(_buildLessonRow(
+              title: c['title'] ?? c['name'] ?? '-',
+              status: 'آماده شروع',
+              statusColor: const Color(0xFF8B5CF6),
+              participated: false,
+              reward: zarikReward,
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  '/class_player',
+                  arguments: {
+                    'classes': categorySessions,
+                    'initialIndex': i,
+                  },
+                );
+              },
+            ));
+            lessons.add(const SizedBox(height: 8));
+          }
+          
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1435),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            ),
+            child: Column(
+              children: lessons,
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -483,10 +567,10 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
                   final hasApproved = submissions.any((s) => s.challengeId == item.id && s.status == 'approved');
                   final hasPending = submissions.any((s) => s.challengeId == item.id && s.status == 'pending');
 
-                  final String status = hasApproved
-                      ? 'تایید شده ✅'
+                  final String status = (hasApproved || item.progress >= 1.0)
+                      ? 'انجام شده ✅'
                       : (hasPending ? 'در انتظار تایید ⏳' : 'انجام نشده ❌');
-                  final Color color = hasApproved
+                  final Color color = (hasApproved || item.progress >= 1.0)
                       ? const Color(0xFF10B981)
                       : (hasPending ? const Color(0xFFFFD54F) : Colors.redAccent);
 
