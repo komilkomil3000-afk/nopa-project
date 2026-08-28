@@ -43,6 +43,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final user = await _apiService.getMe();
     if (user != null) {
       currentUser = user;
+      final apiChallenges = await _apiService.getChallenges();
+      if (apiChallenges.isNotEmpty) {
+        challenges.clear();
+        challenges.addAll(apiChallenges);
+      }
       notifyListeners();
       await _syncOfflineData();
     }
@@ -126,35 +131,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   final List<MentorRatingModel> mentorRatings = [];
 
   // Mentor Satisfaction Data Cache
-  final Map<String, Map<String, dynamic>> mentorData = {
-    'alavi': {
-      'id': 'alavi',
-      'name': 'استاد علوی',
-      'avatar': 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200',
-      'rating': 4.8,
-      'caravans': 12,
-      'members': 480,
-      'bio': 'مدرس باسابقه مفاهیم کار گروهی و تفکر خلاق در سرزمین نپا با بیش از ۵ سال سابقه منتورینگ.',
-    },
-    'rezaei': {
-      'id': 'rezaei',
-      'name': 'استاد رضایی',
-      'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-      'rating': 4.5,
-      'caravans': 8,
-      'members': 320,
-      'bio': 'متخصص تولید محتوا و رسانه‌های نوین دیجیتال. همراه شما در چالش‌های رسانه‌ای کاروان.',
-    },
-    'hosseini': {
-      'id': 'hosseini',
-      'name': 'استاد حسینی',
-      'avatar': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-      'rating': 4.2,
-      'caravans': 6,
-      'members': 240,
-      'bio': 'مدرس مبانی تفکر انقلابی و طراحی پروژه‌های همیاری اجتماعی کاروان‌های نپا.',
-    }
-  };
+  final Map<String, Map<String, dynamic>> mentorData = {};
 
   // Caravan dynamic stats helper
   Map<String, dynamic> get activeCaravanStats {
@@ -185,6 +162,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         'progressM2': 0.75,
         'progressM3': 0.80,
         'progressM4': 0.60,
+        'progressM5': 0.40,
       };
     } else if (caravan.id == 'c2') {
       return {
@@ -203,6 +181,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         'progressM2': 0.60,
         'progressM3': 0.55,
         'progressM4': 0.45,
+        'progressM5': 0.35,
       };
     } else {
       return {
@@ -221,6 +200,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         'progressM2': 0.40,
         'progressM3': 0.45,
         'progressM4': 0.30,
+        'progressM5': 0.10,
       };
     }
   }
@@ -254,112 +234,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _initializeMockData() {
-
-    // Initial Caravans
-    caravans.addAll([
-      CaravanModel(id: 'c1', name: 'یاوران علاءالملک', memberCount: 12, overallProgress: 0.78, activeStation: 'ایستگاه مهارتی ۱'),
-      CaravanModel(id: 'c2', name: 'کاروان عمار', memberCount: 10, overallProgress: 0.58, activeStation: 'ایستگاه رسانه‌ای ۱'),
-      CaravanModel(id: 'c3', name: 'کاروان مالک', memberCount: 8, overallProgress: 0.42, activeStation: 'ایستگاه رسانه‌ای ۲'),
-    ]);
-
-    // Initial Challenges
-    challenges.addAll([
-      ChallengeModel(
-        id: 'c1',
-        title: 'چالش هدف‌گذاری SMART',
-        description: 'اهداف شخصی خود را در سه حوزه طبق الگوی پنجگانه SMART بنویسید.',
-        rewardZarik: 200,
-        type: 'text',
-        createdByMentorId: 'alavi',
-        progress: 0.8,
-      ),
-      ChallengeModel(
-        id: 'c2',
-        title: 'آزمون مرحله‌ای رسانه و تفکر',
-        description: 'آزمون ۳ مرحله‌ای برای سنجش معلومات رسانه‌ای شما.',
-        rewardZarik: 250,
-        type: 'multiple_choice',
-        questions: [
-          {
-            'q': 'منظور از تفکر SMART چیست؟',
-            'options': ['مشخص، قابل اندازه‌گیری، دستیابی، مرتبط، زمان‌دار', 'ساده، مهم، دقیق، اصولی، سریع', 'هیچکدام'],
-            'correct': 0,
-          },
-          {
-            'q': 'مهم‌ترین اصل در نگارش سناریوی جذاب رسانه‌ای چیست؟',
-            'options': ['پایان غافلگیرکننده', 'قلاب ۳ ثانیه اول ویدیو', 'طولانی بودن متن سناریو'],
-            'correct': 1,
-          },
-          {
-            'q': 'کدام گزینه نشان‌دهنده یک هدف زمان‌دار است؟',
-            'options': ['ثبت‌نام در یک کلاس مهارتی', 'یادگیری انگلیسی تا پایان آذرماه', 'تلاش مستمر برای ارتقای معدل'],
-            'correct': 1,
-          }
-        ],
-        createdByMentorId: 'rezaei',
-        progress: 0.4,
-      ),
-      ChallengeModel(
-        id: 'c3',
-        title: 'چالش اولین بیرق کاروان',
-        description: 'یک گزارش متنی از اولین جلسه همفکری با هم‌گروهی‌های خود ارسال کنید.',
-        rewardZarik: 300,
-        type: 'text',
-        createdByMentorId: 'alavi',
-        progress: 1.0,
-      )
-    ]);
-
-    // Initial Submissions
-    submissions.addAll([
-      SubmissionModel(
-        id: 's1',
-        challengeId: 'c1',
-        studentId: 'student_2',
-        studentName: 'امیرحسین رضایی',
-        answerText: 'مبادله ۵۰۰ زریک به ۱ نخ برای ساخت بیرق دوم گروه علاءالملک.',
-        submittedAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        status: 'pending',
-      ),
-      SubmissionModel(
-        id: 's2',
-        challengeId: 'c1',
-        studentId: 'student_3',
-        studentName: 'سارا احمدی',
-        answerText: 'مبادله ۵ نخ به ۱ فرش ساده طبق استراتژی امتیازدهی ایستگاه اول.',
-        submittedAt: DateTime.now().subtract(const Duration(minutes: 15)),
-        status: 'pending',
-      ),
-      SubmissionModel(
-        id: 's3',
-        challengeId: 'c2',
-        studentId: 'student_4',
-        studentName: 'علی حسینی',
-        answerText: 'پاسخ من به تفکر SMART: گزینه اول شامل هدف معین، سنجش‌پذیر، قابل دستیابی است.',
-        submittedAt: DateTime.now().subtract(const Duration(hours: 1)),
-        status: 'pending',
-      )
-    ]);
-
-    // Seed mock notifications
-    notifications.addAll([
-      {
-        'id': 'n_mock_1',
-        'title': 'خوش‌آمدگویی به نپا 🚩',
-        'body': 'به سامانه یکپارچه مربیگری و دانش‌آموزی نپا خوش آمدید.',
-        'isForMentor': false,
-        'isRead': false,
-        'time': '۱ ساعت پیش',
-      },
-      {
-        'id': 'n_mock_2',
-        'title': 'جلسه هماهنگی راهبران 🎓',
-        'body': 'جلسه هماهنگی ساعت ۱۸ برگزار می‌گردد.',
-        'isForMentor': true,
-        'isRead': false,
-        'time': '۲ ساعت پیش',
-      }
-    ]);
+    // Empty intentionally to ensure live API data is used instead of fallback mocks
   }
 
   // --- ACTIONS & MUTATIONS ---

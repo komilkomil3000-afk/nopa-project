@@ -22,7 +22,7 @@ class HttpApiService {
       candidates.add(_envHost);
     }
     candidates.add(_defaultHost);
-    candidates.add('10.0.3.2');
+    candidates.add('10.0.2.2'); // Android Emulator
     candidates.add('localhost');
     candidates.add('127.0.0.1');
     candidates.add('192.168.100.51'); // Hardcoded developer PC Wi-Fi IP
@@ -57,20 +57,24 @@ class HttpApiService {
     final hosts = await _buildHostCandidates();
     debugPrint('🔗 Probing host candidates: $hosts');
     for (final host in hosts) {
+      final uri = 'http://$host:5000/health';
       try {
-        final res = await http.get(Uri.parse('http://$host:5000/health')).timeout(const Duration(milliseconds: 1500));
+        final res = await http.get(Uri.parse(uri)).timeout(const Duration(milliseconds: 1500));
         if (res.statusCode == 200) {
           _activeBaseUrl = 'http://$host:5000/api/v1';
           debugPrint('🔗 Connected to Node.js backend on http://$host:5000');
           return;
+        } else {
+          debugPrint('❌ Failed to connect to $uri - Status: ${res.statusCode}');
         }
-      } catch (_) {
+      } catch (e) {
+        debugPrint('❌ Connection error to $uri : $e');
         continue;
       }
     }
 
     _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
-    debugPrint('🔗 Failed to find a health endpoint; falling back to http://$_defaultHost:5000');
+    debugPrint('🔗 Failed to find a health endpoint across all candidates; falling back to $_activeBaseUrl');
   }
 
   static const _secureStorage = FlutterSecureStorage();
@@ -267,6 +271,9 @@ class HttpApiService {
           socialGroupLink: data['socialGroupLink'],
           userCode: data['userCode'],
           mentorDocuments: data['mentorDocuments'],
+          nationalId: data['nationalId'],
+          dateOfBirth: data['dateOfBirth'],
+          city: data['city'],
         );
       }
       return null;
@@ -338,7 +345,7 @@ class HttpApiService {
   Future<List<Map<String, dynamic>>> getStations() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/classes'),
+        Uri.parse('$baseUrl/lms/stations'),
         headers: _getHeaders(),
       );
 
@@ -355,18 +362,43 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getMentorLeaderboard() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/leagues/mentors'),
-        headers: _getHeaders(),
-      );
-
+      final response = await http.get(Uri.parse('$baseUrl/leagues/mentors'), headers: _getHeaders());
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        return List<Map<String, dynamic>>.from(data);
       }
       return [];
     } catch (e) {
-      debugPrint('HTTP getMentorLeaderboard error: $e');
+      debugPrint('getMentorLeaderboard error: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getNews() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/news'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('getNews error: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getBanners({String? position}) async {
+    try {
+      final url = position != null ? '$baseUrl/banners?position=$position' : '$baseUrl/banners';
+      final response = await http.get(Uri.parse(url), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('getBanners error: $e');
       return [];
     }
   }
@@ -530,6 +562,20 @@ class HttpApiService {
     }
   }
 
+  // --- CARAVAN API ---
+  Future<Map<String, dynamic>?> getCaravanDetails(String caravanId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/caravans/$caravanId'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('HTTP getCaravanDetails error: $e');
+      return null;
+    }
+  }
+
   // --- CHAT API ---
   Future<List<dynamic>> getDirectMessages(String mentorId) async {
     try {
@@ -653,17 +699,54 @@ class HttpApiService {
     return null;
   }
 
-  Future<Map<String, dynamic>?> submitClassSessionQuiz(String sessionId, List<int> answers) async {
+  Future<List<dynamic>> getUserProgress() async {
     try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/lms/user-progress'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+        },
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as List<dynamic>;
+      }
+    } catch (e) {
+      debugPrint('getUserProgress error: $e');
+    }
+    return [];
+  }
+
+  Future<void> markClipWatched(String clipId, {String? trackType, String? stationId, String? sessionId}) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/lms/clips/$clipId/watched'),
+        headers: {
+          'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'trackType': trackType,
+          'stationId': stationId,
+          'sessionId': sessionId,
+        }),
+      );
+    } catch (e) {
+      debugPrint('markClipWatched error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> submitClassSessionQuiz(String sessionId, List<dynamic> answers, {String? quizId}) async {
+    try {
+      final Map<String, dynamic> bodyData = {'answers': answers};
+      if (quizId != null) bodyData['quizId'] = quizId;
+
       final res = await http.post(
         Uri.parse('$baseUrl/lms/sessions/$sessionId/submit-quiz'),
         headers: {
           'Authorization': 'Bearer $_token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'answers': answers,
-        }),
+        body: jsonEncode(bodyData),
       );
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
@@ -738,6 +821,112 @@ class HttpApiService {
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       debugPrint('HTTP createChallenge error: $e');
+      return false;
+    }
+  }
+
+  // --- Calendar Events ---
+  Future<Map<String, dynamic>?> getCalendarEvents() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/calendar/events'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('HTTP getCalendarEvents error: $e');
+    }
+    return null;
+  }
+
+  // --- Mentor Workspace Lifecycle ---
+  Future<List<Map<String, dynamic>>> getMentorChallenges() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/mentor/challenges'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('getMentorChallenges error: $e');
+    }
+    return [];
+  }
+
+  Future<bool> createMentorChallenge(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mentor/challenges'),
+        headers: _getHeaders(),
+        body: jsonEncode(data),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('createMentorChallenge error: $e');
+      return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getChallengeSubmissions(String challengeId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/mentor/challenges/$challengeId/submissions'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('getChallengeSubmissions error: $e');
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> reviewMentorSubmission(String submissionId, bool approve, int reward, String feedback) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mentor/submissions/$submissionId/review'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'status': approve ? 'APPROVED' : 'REJECTED',
+          'rewardZarik': reward,
+          'mentorFeedback': feedback,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return {'success': true};
+      } else {
+        final d = jsonDecode(response.body);
+        return {'success': false, 'error': d['error'] ?? 'خطای ناشناخته'};
+      }
+    } catch (e) {
+      debugPrint('reviewMentorSubmission error: $e');
+      return {'success': false, 'error': 'خطای ارتباط با سرور'};
+    }
+  }
+
+  Future<Map<String, dynamic>?> getMentorTicketDetails(String ticketId) async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/mentor/tickets/$ticketId'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('getMentorTicketDetails error: $e');
+    }
+    return null;
+  }
+
+  Future<bool> replyMentorTicket(String ticketId, String message) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/mentor/tickets/$ticketId/messages'),
+        headers: _getHeaders(),
+        body: jsonEncode({'message': message}),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('replyMentorTicket error: $e');
       return false;
     }
   }
