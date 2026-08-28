@@ -12,6 +12,7 @@ export const getStations = async (req: Request, res: Response) => {
               include: { 
                 quizzes: true,
                 videoClips: {
+                  include: { quizzes: true },
                   orderBy: { clipOrder: 'asc' }
                 }
               },

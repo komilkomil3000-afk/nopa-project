@@ -401,6 +401,7 @@ model VideoClip {
   updatedAt    DateTime     @updatedAt
 
   session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  quizzes      Quiz[]
   
   @@index([sessionId])
   @@index([clipOrder])
@@ -424,6 +425,7 @@ model VideoBookmark {
 model Quiz {
   id           String   @id @default(uuid())
   sessionId    String
+  clipId       String?
   title        String
   orderIndex   Int      @default(0)
   type         String   @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE, TEXT, FILE
@@ -435,6 +437,7 @@ model Quiz {
   updatedAt    DateTime @updatedAt
 
   session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  clip         VideoClip?   @relation(fields: [clipId], references: [id], onDelete: Cascade)
   submissions  QuizSubmission[]
 }
 

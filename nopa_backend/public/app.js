@@ -5518,83 +5518,10 @@ async function fetchWithFallback(primaryUrl, fallbackUrl) {
 // 1. User Directory Loader (#users-tbody)
 
 
-// 2. LMS Stations Management Table Loader (#stations-tbody)
+// 2. LMS Stations Management Table Loader (#lms-directory-tbody / #stations-tbody)
 window.loadLmsStationsData = async function() {
-  const tbody = document.getElementById('stations-tbody');
-  if (!tbody) return;
-
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    let res = await fetch('/api/v1/lms/stations', {
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
-
-    if (!res.ok) {
-      res = await fetch('/api/v1/admin/lms/stations', {
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-      });
-    }
-
-    let stations = [];
-    if (res.ok) {
-      const data = await res.json();
-      stations = Array.isArray(data) ? data : (data.stations || data.data || []);
-    }
-
-    // Fallback if empty
-    if (!stations || stations.length === 0) {
-      stations = [1, 2, 3, 4, 5].map(i => ({
-        id: `MZ${i}`,
-        orderIndex: i,
-        title: `منزلگاه شماره ${i}`,
-        description: 'سرفصلهای آموزشی، مهارتی و رسانهای مصوب'
-      }));
-    }
-
-    // Deduplicate by orderIndex / index
-    const uniqueStations = [];
-    const seen = new Set();
-    for (const st of stations) {
-      const idx = st.orderIndex ?? st.index ?? uniqueStations.length + 1;
-      if (!seen.has(idx) && idx <= 5) {
-        seen.add(idx);
-        uniqueStations.push({ ...st, orderIndex: idx });
-      }
-    }
-
-    uniqueStations.sort((a, b) => a.orderIndex - b.orderIndex);
-
-    tbody.innerHTML = uniqueStations.map(st => `
-      <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5); transition: background 0.2s;" onmouseover="this.style.background='rgba(30, 41, 59, 0.5)'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 16px; text-align: center; font-weight: bold; color: rgb(34, 211, 238);">#${st.orderIndex}</td>
-        <td style="padding: 16px; font-weight: bold; color: #ffffff;">
-          <div style="display: flex; items-center; gap: 8px;">
-            <span style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1; display: inline-block; margin-top: 4px;"></span>
-            <span>${st.title || st.name || ('منزلگاه ' + st.orderIndex)}</span>
-          </div>
-        </td>
-        <td style="padding: 16px;">
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span style="color: #34d399; font-weight: 600;">🛠️ کلاسهای مهارتی: ۲ جلسه (شنبه و دوشنبه)</span>
-            <span style="color: #c084fc; font-weight: 600;">📱 کلاسهای رسانهای: ۲ جلسه (پنجشنبه و جمعه)</span>
-            <span style="color: #94a3b8; font-size: 11px;">مجموع جلسات همراه با پارتهای آموزشی و آزمون ۴ گزینهای</span>
-          </div>
-        </td>
-        <td style="padding: 16px; text-align: center;">
-          <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3);">
-            شنبه، دوشنبه، ۵شنبه، جمعه
-          </span>
-        </td>
-        <td style="padding: 16px; text-align: center;">
-          <button type="button" onclick="alert('منزلگاه شماره ${st.orderIndex}: ${st.title || st.name}')" style="padding: 6px 14px; background: #4f46e5; color: #ffffff; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none;">
-            👁️ جزئیات
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('LMS Stations Render Error:', err);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #f87171;">خطا در بارگذاری منزلگاهها</td></tr>';
+  if (typeof window.fetchLiveLmsStations === 'function') {
+    await window.fetchLiveLmsStations();
   }
 };
 
