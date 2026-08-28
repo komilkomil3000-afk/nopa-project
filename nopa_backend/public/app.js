@@ -1621,20 +1621,28 @@ async function handleRbacToggle(e) {
 }
 
 // 4. CARAVANS & MENTORS
+// 4. CARAVANS & MENTORS
 window.caravansData = [];
 
 async function loadCaravansTab() {
   try {
     const res = await request('/api/v1/admin/caravans');
-    window.caravansData = await res.json();
+    if (!res.ok) {
+      console.warn('Failed to load /api/v1/admin/caravans');
+      return;
+    }
+    const data = await res.json();
+    window.caravansData = Array.isArray(data) ? data : (data.caravans || data.data || []);
     
     // Populate Mentor Filter
     const mentorSelect = document.getElementById('caravan-mentor-filter');
-    const mentors = new Set(window.caravansData.map(c => c.mentor?.name || '-').filter(n => n !== '-'));
-    mentorSelect.innerHTML = '<option value="all">همه مربیان</option>';
-    mentors.forEach(m => {
-      mentorSelect.innerHTML += `<option value="${m}">${m}</option>`;
-    });
+    if (mentorSelect) {
+      const mentors = new Set(window.caravansData.map(c => c.mentor?.name || c.mentorName || '-').filter(n => n !== '-'));
+      mentorSelect.innerHTML = '<option value="all">همه مربیان</option>';
+      mentors.forEach(m => {
+        mentorSelect.innerHTML += `<option value="${m}">${m}</option>`;
+      });
+    }
 
     // Populate Caravan Picker
     const caravanPicker = document.getElementById('target-caravan-picker');
@@ -1644,137 +1652,163 @@ async function loadCaravansTab() {
         caravanPicker.innerHTML += `<option value="${c.id}">${c.name}</option>`;
       });
       caravanPicker.onchange = window.loadSelectedCaravanDetails;
+      
+      // Auto select first caravan if none selected
+      if (!caravanPicker.value && window.caravansData.length > 0) {
+        caravanPicker.value = window.caravansData[0].id;
+        window.loadSelectedCaravanDetails();
+      }
     }
 
-    // Legacy wsCaravanPicker removed
-
-    if (typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
+    renderCaravansTable();
   } catch (err) {
-    console.error(err);
+    console.error('loadCaravansTab error:', err);
   }
 }
 
-window.openCaravanActionModal = function(actionType, caravanId, caravanTitle) {
-  console.log('Action triggered:', actionType, 'for caravan ID:', caravanId);
-  if (actionType === 'view') {
-    window.openCaravanViewModal(caravanId);
-  } else if (actionType === 'edit') {
-    window.openCaravanEditModal(caravanId);
-  } else if (actionType === 'status') {
-    window.openCaravanStatusDialog(caravanId, caravanTitle);
-  }
-};
-
-window.allCaravansList = [];
-window.allUsersList = [];
-
-window.loadCaravansTable = async function() {
-  const tbody = document.getElementById('caravans-tbody');
+window.renderCaravansTable = function() {
+  const tbody = document.querySelector('#caravan-performance-table tbody') || document.getElementById('caravans-tbody');
   if (!tbody) return;
 
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
-
-    const [cRes, uRes] = await Promise.all([
-      fetch('/api/v1/caravans', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/v1/admin/users', { headers }).then(r => r.json()).catch(() => [])
-    ]);
-    window.allCaravansList = Array.isArray(cRes) ? cRes : (cRes.data || []);
-    window.allUsersList = Array.isArray(uRes) ? uRes : (uRes.data || []);
-  } catch (e) {
-    console.warn('Using local seeded data fallback:', e);
-  }
-
-  // Fallback to real roster if empty
-  if (!window.allCaravansList || window.allCaravansList.length === 0) {
-    window.allCaravansList = [
-      { id: '1', title: 'کاروان کویتی', mentor: 'محمد کویتی', capacity: 25, progress: 0 },
-      { id: '2', title: 'کاروان جلالی', mentor: 'رضا جلالی', capacity: 25, progress: 0 },
-      { id: '3', title: 'کاروان مدیر ارشد', mentor: 'مدیر ارشد', capacity: 25, progress: 0 }
-    ];
-  }
-
-  window.renderCaravanRows(window.allCaravansList, window.allUsersList);
-};
-
-window.renderCaravanRows = function(caravansList, usersList) {
-  const tbody = document.getElementById('caravans-tbody');
-  if (!tbody) return;
-
-  if (caravansList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">کاروانی یافت نشد.</td></tr>';
+  if (!window.caravansData || window.caravansData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">هیچ کاروانی یافت نشد.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = caravansList.map(c => {
-    const members = usersList.filter(u => u.role !== 'admin' && u.role !== 'mentor' && (String(u.caravanId) === String(c.id) || u.caravan === c.title));
-    const totalZarik = members.reduce((sum, m) => sum + (Number(m.zarikBalance) || 0), 0);
-    const mentor = c.mentor || c.mentorName || c.mentor?.name || 'تعیین نشده';
-    const count = members.length > 0 ? members.length : (c.title && c.title.includes('ارشد') ? 1 : 2);
+  const searchQuery = (document.getElementById('caravan-search-input')?.value || '').toLowerCase().trim();
+  const sortBy = document.getElementById('caravan-sort-select')?.value || 'newest';
+  const mentorFilter = document.getElementById('caravan-mentor-filter')?.value || 'all';
 
-    return `
-      <tr>
-        <td><strong>${c.title || c.name}</strong></td>
-        <td>${mentor}</td>
-        <td>${c.capacityLimit || c.capacity || 25} / ${count}</td>
-        <td><span style="color:var(--color-warning); font-weight:bold;">${totalZarik} 🟡</span></td>
-        <td>
-          <div style="width: 100px; background: #334155; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle;">
-            <div style="height: 6px; background: var(--color-primary); width: ${c.progress || c.overallProgress || 0}%"></div>
-          </div>
-          <span style="font-size: 11px; color: #94a3b8; margin-right: 4px;">${c.progress || c.overallProgress || 0}%</span>
-        </td>
-        <td>-</td>
-        <td class="p-4 flex gap-1.5 justify-center">
-          <button type="button" onclick="window.openCaravanViewDetails('${c.id}')" class="px-2.5 py-1 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-eye"></i> View
-          </button>
-          <button type="button" onclick="window.openCaravanEditModal('${c.id}')" class="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button type="button" onclick="window.openCaravanStatusDialog('${c.id}')" class="px-2.5 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-ban"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
-
-window.filterCaravansList = function(searchTerm) {
-  if (!window.allCaravansList) return;
-  const term = (searchTerm || '').toLowerCase();
-  
-  if (!term) {
-    window.renderCaravanRows(window.allCaravansList, window.allUsersList);
-    return;
-  }
-  
-  const filtered = window.allCaravansList.filter(c => {
-    const title = (c.title || c.name || '').toLowerCase();
-    const mentor = (c.mentor || c.mentorName || c.mentor?.name || '').toLowerCase();
-    return title.includes(term) || mentor.includes(term);
+  let filtered = window.caravansData.filter(c => {
+    const mName = c.mentor?.name || c.mentorName || '-';
+    const cName = c.name || c.title || '';
+    const matchesSearch = !searchQuery || 
+                          cName.toLowerCase().includes(searchQuery) || 
+                          mName.toLowerCase().includes(searchQuery) ||
+                          (c.id && c.id.toLowerCase().includes(searchQuery));
+    const matchesMentor = mentorFilter === 'all' || mName === mentorFilter;
+    return matchesSearch && matchesMentor;
   });
-  
-  window.renderCaravanRows(filtered, window.allUsersList);
+
+  if (sortBy === 'most_members') {
+    filtered.sort((a, b) => (b._count?.members || b.membersList?.length || b.memberCount || 0) - (a._count?.members || a.membersList?.length || a.memberCount || 0));
+  } else if (sortBy === 'highest_zarik') {
+    filtered.sort((a, b) => (b.assets?.zarik || b.totalWealth || b.wealth?.zarik || 0) - (a.assets?.zarik || a.totalWealth || a.wealth?.zarik || 0));
+  } else if (sortBy === 'highest_progress') {
+    filtered.sort((a, b) => (b.overallProgress || b.progress || 0) - (a.overallProgress || a.progress || 0));
+  }
+
+  tbody.innerHTML = '';
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">کاروانی با این مشخصات یافت نشد.</td></tr>';
+    return;
+  }
+
+  filtered.forEach(c => {
+    const memberCount = c._count?.members ?? c.membersList?.length ?? c.memberCount ?? 0;
+    const capacity = c.capacityLimit ?? c.capacity ?? 50;
+    const totalZarik = (c.assets?.zarik ?? c.totalWealth ?? c.wealth?.zarik ?? 0).toLocaleString();
+    const progress = c.overallProgress ?? c.progress ?? 0;
+    const mentorDisplay = c.mentor?.name || c.mentorName || 'بدون راهبر';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.name || c.title}</strong></td>
+      <td><span class="badge badge-student">${mentorDisplay}</span></td>
+      <td>${memberCount} / ${capacity}</td>
+      <td>
+        <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
+      </td>
+      <td>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+          <span>${progress}%</span>
+        </div>
+        <div class="progress-bar-container" style="margin: 0; height: 6px;">
+          <div class="progress-bar-fill" style="width: ${progress}%"></div>
+        </div>
+      </td>
+      <td style="color:#94a3b8; font-size:12px;">لحظاتی پیش</td>
+      <td>
+        <button class="page-btn btn-view" style="padding: 4px 10px; font-size:11px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="selectCaravanForManagement('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.loadCaravansTable();
+window.selectCaravanForManagement = function(id) {
+  const picker = document.getElementById('target-caravan-picker');
+  if (picker) {
+    picker.value = id;
+    if (window.loadSelectedCaravanDetails) {
+      window.loadSelectedCaravanDetails();
+    }
+    const detailsSection = picker.closest('.panel-card');
+    if (detailsSection) {
+      detailsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+};
+
+window.loadSelectedCaravanDetails = async function() {
+  const picker = document.getElementById('target-caravan-picker');
+  if (!picker) return;
+  const cId = picker.value;
   
-  const searchInput = document.getElementById('caravan-search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      window.filterCaravansList(e.target.value);
+  const mentorEl = document.getElementById('cw-mentor-name');
+  const zarikEl = document.getElementById('caravan-detail-zarik');
+  const milestonesEl = document.getElementById('caravan-detail-milestones');
+  const rosterBody = document.getElementById('caravan-roster-body');
+
+  if (!zarikEl || !milestonesEl || !rosterBody) return;
+
+  if (!cId) {
+    if (mentorEl) mentorEl.innerText = '-';
+    zarikEl.innerHTML = '0 <i class="fa-solid fa-coins"></i>';
+    milestonesEl.innerText = '0';
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
+    return;
+  }
+
+  const caravan = window.caravansData?.find(c => c.id === cId);
+  if (!caravan) return;
+
+  if (mentorEl) {
+    mentorEl.innerText = caravan.mentorName || caravan.mentor?.name || 'فاقد راهبر';
+  }
+
+  const zarikVal = (caravan.assets?.zarik ?? caravan.totalWealth ?? caravan.wealth?.zarik ?? 0).toLocaleString();
+  zarikEl.innerHTML = `${zarikVal} <i class="fa-solid fa-coins"></i>`;
+  milestonesEl.innerText = caravan.overallProgress ? `${caravan.overallProgress}%` : '0%';
+
+  rosterBody.innerHTML = '';
+  const members = caravan.membersList || caravan.members || [];
+  if (members.length === 0) {
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
+  } else {
+    members.forEach(m => {
+      const name = m.name || m.user?.name || '-';
+      const phone = m.phoneNumber || m.user?.phoneNumber || '-';
+      const zarik = (m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0).toLocaleString();
+      const displayId = m.userCode ? `NP-${m.userCode}` : (m.user?.userCode ? `NP-${m.user?.userCode}` : (m.id || '-'));
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-family: monospace; color: #38bdf8;">${displayId}</td>
+        <td><strong>${name}</strong></td>
+        <td style="font-family: monospace;">${phone}</td>
+        <td style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+        <td style="white-space:nowrap; display:flex; gap:5px;">
+          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="viewStudentDetails('${m.id}')">نمایش جزئیات</button>
+          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="openUserModal('${m.id}', '${name}', '${m.role || 'student'}', '${cId}', ${m.levelFrame || 1}, 1, '${m.nationalId || ''}', '${m.dateOfBirth || ''}')">ویرایش</button>
+          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق موقت</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="removeMemberFromCaravan('${cId}', '${m.id}')">حذف از کاروان</button>
+        </td>
+      `;
+      rosterBody.appendChild(tr);
     });
   }
-});
-
-// Deprecated Caravan functions removed
+};
 
 
 // 5. ANNOUNCEMENTS BROADCAST
@@ -5606,45 +5640,9 @@ window.loadMentorsData = async function() {
 
 // 4. Caravans Table Loader (#caravans-tbody)
 window.loadCaravansData = async function() {
-  const tbody = document.getElementById('caravans-tbody') || document.querySelector('#caravans-data-table tbody');
-  if (!tbody) return;
-
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-indigo-400">در حال بارگذاری کاروان‌ها...</td></tr>';
-  let raw = await fetchWithFallback('/api/v1/admin/caravans', '/api/v1/caravans');
-  let caravans = Array.isArray(raw) ? raw : (raw?.data || []);
-
-  if (!caravans || caravans.length === 0) {
-    caravans = [
-      { id: 'c1', name: 'گروه مربی جلالی', mentor: { name: 'رضا جلالی' }, memberCount: 2, capacityLimit: 50, totalZarik: 620, overallProgress: 45 },
-      { id: 'c2', name: 'گروه مربی کویتی', mentor: { name: 'محمد کویتی' }, memberCount: 2, capacityLimit: 50, totalZarik: 700, overallProgress: 60 },
-      { id: 'c3', name: 'گروه مربی خوش‌منظر', mentor: { name: 'علیرضا خوش‌منظر' }, memberCount: 2, capacityLimit: 50, totalZarik: 480, overallProgress: 30 }
-    ];
+  if (typeof loadCaravansTab === 'function') {
+    await loadCaravansTab();
   }
-
-  tbody.innerHTML = '';
-  caravans.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/60 text-gray-200';
-    tr.innerHTML = `
-      <td class="p-3 font-bold text-indigo-200">${c.name}</td>
-      <td class="p-3 text-sm">${c.mentor?.name || c.mentorName || 'بدون راهبر'}</td>
-      <td class="p-3 text-center font-mono text-sm">${c.memberCount || c.membersList?.length || 0} / ${c.capacityLimit || 50}</td>
-      <td class="p-3 text-center font-bold text-amber-400 font-mono">${(c.assets?.zarik || c.totalZarik || c.totalWealth || 0).toLocaleString()}</td>
-      <td class="p-3 text-center">
-        <div class="flex items-center justify-center gap-2">
-          <div class="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-            <div class="h-full bg-emerald-500 rounded-full" style="width: ${c.overallProgress || 0}%"></div>
-          </div>
-          <span class="text-xs text-gray-400 font-mono">${c.overallProgress || 0}%</span>
-        </div>
-      </td>
-      <td class="p-3 text-center text-xs text-gray-400 font-mono">لحظاتی پیش</td>
-      <td class="p-3 text-center">
-        <button class="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs rounded-lg transition" onclick="if(typeof viewCaravanDetails==='function') viewCaravanDetails('${c.id}')">مدیریت</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
 };
 
 // 5. Automatic Event Binding On Load
@@ -5656,6 +5654,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.loadCaravansData) window.loadCaravansData();
   }, 300);
 });
+
 
 
 
