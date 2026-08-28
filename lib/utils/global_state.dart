@@ -92,6 +92,16 @@ class GlobalState {
     }
   ];
 
+  static Map<String, int> unlockedClipsPerClass = {};
+  static Map<String, bool> completedClasses = {};
+
+  static ProfileLevel getLevelForFrame(int frame) {
+    if (frame <= 1) return ProfileLevel.newcomer;
+    if (frame <= 4) return ProfileLevel.general;
+    if (frame <= 7) return ProfileLevel.bronze;
+    if (frame <= 10) return ProfileLevel.silver;
+    return ProfileLevel.golden;
+  }
 
   // Level display helper
   static String getLevelLabel(ProfileLevel level) {

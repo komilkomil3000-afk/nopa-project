@@ -18,4 +18,17 @@ class Station {
     required this.imageUrl,
     this.classesCount = '۴ کلاس',
   });
+
+  factory Station.fromJson(Map<String, dynamic> json) {
+    return Station(
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'ایستگاه بدون نام',
+      teacher: json['teacher'] ?? 'استاد نامشخص',
+      progress: (json['progress'] ?? 0).toDouble(),
+      isLocked: json['isLocked'] ?? true,
+      isCurrent: json['isCurrent'] ?? false,
+      imageUrl: json['imageUrl'] ?? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800',
+      classesCount: json['classesCount'] ?? '۰ کلاس',
+    );
+  }
 }

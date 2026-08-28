@@ -14,4 +14,15 @@ class ChallengeModel {
     required this.progress,
     required this.type,
   });
+
+  factory ChallengeModel.fromJson(Map<String, dynamic> json) {
+    return ChallengeModel(
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'چالش بدون عنوان',
+      description: json['description'] ?? 'بدون توضیحات',
+      reward: json['reward'] ?? json['rewardZarik'] ?? 0,
+      progress: (json['progress'] ?? 0).toDouble(),
+      type: json['type'] ?? 'unknown',
+    );
+  }
 }
