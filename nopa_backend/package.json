@@ -24,7 +24,8 @@
     "html-pdf-node": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
-    "pdfmake": "^0.3.11"
+    "pdfmake": "^0.3.11",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

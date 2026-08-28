@@ -83,6 +83,7 @@ model User {
   evaluationsReceived          MentorEvaluation[] @relation("EvaluationsMentor")
   studentNotes                 PrivateStudentNote[] @relation("StudentNotes")
   mentorNotesWritten           PrivateStudentNote[] @relation("MentorNotes")
+  userProgress                 UserProgress[]
   
   @@index([phoneNumber])
   @@index([role])
@@ -425,6 +426,7 @@ model Quiz {
   sessionId    String
   title        String
   orderIndex   Int      @default(0)
+  type         String   @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE, TEXT, FILE
   questionsJson String? // JSON array of questions
   rewardZarik  Int      @default(0)
   rewardNakh   Int      @default(0)
@@ -471,6 +473,25 @@ model SessionWatchRecord {
   @@unique([userId, sessionId])
   @@index([userId])
 }
+
+model UserProgress {
+  id           String   @id @default(uuid())
+  userId       String
+  trackType    String   // "skill" or "media"
+  stationId    String
+  sessionId    String
+  clipId       String
+  isWatched    Boolean  @default(false)
+  quizPassed   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, clipId])
+  @@index([userId, trackType])
+}
+
 
 
 model MentorFeedback {
@@ -666,4 +687,31 @@ model PrivateStudentNote {
 
   @@index([mentorId])
   @@index([studentId])
+}
+
+model NewsArticle {
+  id             String   @id @default(uuid())
+  title          String
+  subtitle       String?
+  body           String
+  imageUrl       String?
+  reporter       String?  // منبع یا گزارشگر
+  targetAudience String   @default("ALL") // "ALL", "STUDENTS", "MENTORS", specific caravan
+  category       String?  // e.g. اطلاعیه, رویداد, آموزشی
+  publishDate    DateTime @default(now())
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Banner {
+  id          String   @id @default(uuid())
+  title       String
+  imageUrl    String
+  targetRoute String?  // e.g. "bazaar", "home", or external URL
+  position    String   @default("bazaar_top") // e.g. bazaar_top, home_slider
+  isActive    Boolean  @default(true)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
