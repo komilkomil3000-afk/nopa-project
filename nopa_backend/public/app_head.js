@@ -92,13 +92,9 @@ function showDashboard() {
   document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
 
   // Load initial data
-  if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
-  if (typeof window.loadUsersData === 'function') window.loadUsersData();
-  if (typeof window.loadAllUsersDropdown === 'function') window.loadAllUsersDropdown();
-  if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
-  if (typeof window.loadLmsStationsData === 'function') {
-    window.loadLmsStationsData();
-  }
+  loadCaravans();
+  loadUsers();
+  loadAllUsersDropdown();
 }
 
 window.handleAdminLogin = async function() {
@@ -567,60 +563,46 @@ function switchTab(tabId) {
     'content-tab': { title: 'اطلاعیه‌ها و محتوا', desc: 'مدیریت و انتشار اطلاعیه‌های سراسری و پیام‌های هدفمند' },
     'notifications-tab': { title: 'مدیریت اعلان‌ها', desc: 'ارسال و پیگیری پیامک، ایمیل و پوش‌نوتیفیکیشن' },
     'media-tab': { title: 'مدیریت رسانه‌ها', desc: 'آپلود و دسته‌بندی فایل‌های ویدیویی و تصویری جهت استریم در اپلیکیشن' },
-    'audit-tab': { title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی' },
-    'banners-tab': { title: 'مدیریت بنرها', desc: 'مدیریت بنرها و تبلیغات نمایشی اپلیکیشن' },
-    'news-tab': { title: 'اخبار جارچی', desc: 'مدیریت تابلوی اعلانات جارچی و رویدادها' },
-    'mentors-profile-tab': { title: 'پروفایل و شناسنامه', desc: 'مرکز ارزیابی راهبران و مربیان' },
-    'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت کلاس‌ها و آزمون‌ها' },
-    'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت کلاس‌ها و آزمون‌ها' }
+    'audit-tab': { title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی' }
   };
 
-  if (titlesMap[tabId]) {
-    document.getElementById('tab-title-text').textContent = titlesMap[tabId].title;
-    document.getElementById('tab-desc-text').textContent = titlesMap[tabId].desc;
-  }
+  document.getElementById('tab-title-text').textContent = titlesMap[tabId].title;
+  document.getElementById('tab-desc-text').textContent = titlesMap[tabId].desc;
 
   // Lazy-load data based on active tab
-  if (tabId === 'users-tab') {
-    if (typeof window.loadUsersData === 'function') window.loadUsersData();
-    else loadUsers();
-  } else if (tabId === 'mentors-profile-tab') {
-    if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
-    else loadMentorsTab();
-  } else if (tabId === 'caravans-tab') {
-    if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
-    else loadCaravansTab();
-  } else if (tabId === 'lms-tab' || tabId === 'stations-tab') {
-    if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
-  } else if (tabId === 'rewards-tab') {
+  if (tabId === 'rewards-tab') {
     loadLedger();
     loadZarikAnalytics();
     if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
     if (typeof loadRewardRules === 'function') loadRewardRules();
   } else if (tabId === 'roles-tab') {
     loadRolePermissions();
+  } else if (tabId === 'caravans-tab') {
+    loadCaravansTab();
   } else if (tabId === 'audit-tab') {
     loadAuditLogs();
   } else if (tabId === 'levels-tab') {
     loadLevelsAndCertificatesTab();
+  } else if (tabId === 'mentors-profile-tab') {
+    loadMentorsTab();
   } else if (tabId === 'economy-hub-tab') {
-    if (typeof loadEconomyHubTab === 'function') loadEconomyHubTab();
+    loadEconomyHubTab();
   } else if (tabId === 'caravan-league-tab') {
-    if (typeof loadCaravanLeague === 'function') loadCaravanLeague();
+    loadCaravanLeague();
+  } else if (tabId === 'lms-tab') {
+    loadLmsData();
   } else if (tabId === 'form-builder-tab') {
-    if (typeof loadDynForms === 'function') loadDynForms();
+    loadDynForms();
   } else if (tabId === 'media-tab') {
-    if (typeof loadMediaAssets === 'function') loadMediaAssets();
+    loadMediaAssets();
   } else if (tabId === 'analytics-tab') {
-    if (typeof loadAnalytics === 'function') loadAnalytics();
+    loadAnalytics();
   } else if (tabId === 'notifications-tab') {
-    if (typeof loadNotificationData === 'function') loadNotificationData();
-  } else if (tabId === 'banners-tab') {
-    if (typeof loadBannersTab === 'function') loadBannersTab();
-  } else if (tabId === 'news-tab') {
-    if (typeof loadNewsTab === 'function') loadNewsTab();
+    loadNotificationData();
   } else if (tabId === 'chat-tab') {
-    if (typeof loadChats === 'function') loadChats();
+    loadChats();
+  } else if (tabId === 'levels-tab') {
+    loadLevels();
   } else if (tabId === 'mentors-tickets-tab') {
     if (typeof loadTickets === 'function') loadTickets();
   } else if (tabId === 'mentors-league-tab') {
@@ -1646,135 +1628,135 @@ async function loadCaravansTab() {
       caravanPicker.onchange = window.loadSelectedCaravanDetails;
     }
 
-    // Legacy wsCaravanPicker removed
-
-    if (typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
+    renderCaravansTable();
   } catch (err) {
     console.error(err);
   }
 }
 
-window.openCaravanActionModal = function(actionType, caravanId, caravanTitle) {
-  console.log('Action triggered:', actionType, 'for caravan ID:', caravanId);
-  if (actionType === 'view') {
-    window.openCaravanViewModal(caravanId);
-  } else if (actionType === 'edit') {
-    window.openCaravanEditModal(caravanId);
-  } else if (actionType === 'status') {
-    window.openCaravanStatusDialog(caravanId, caravanTitle);
-  }
-};
-
-window.allCaravansList = [];
-window.allUsersList = [];
-
-window.loadCaravansTable = async function() {
-  const tbody = document.getElementById('caravans-tbody');
+function renderCaravansTable() {
+  const tbody = document.querySelector('#caravan-performance-table tbody');
   if (!tbody) return;
 
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
+  const searchQuery = (document.getElementById('caravan-search-input')?.value || '').toLowerCase();
+  const sortBy = document.getElementById('caravan-sort-select')?.value || 'newest';
+  const mentorFilter = document.getElementById('caravan-mentor-filter')?.value || 'all';
 
-    const [cRes, uRes] = await Promise.all([
-      fetch('/api/v1/caravans', { headers }).then(r => r.json()).catch(() => []),
-      fetch('/api/v1/admin/users', { headers }).then(r => r.json()).catch(() => [])
-    ]);
-    window.allCaravansList = Array.isArray(cRes) ? cRes : (cRes.data || []);
-    window.allUsersList = Array.isArray(uRes) ? uRes : (uRes.data || []);
-  } catch (e) {
-    console.warn('Using local seeded data fallback:', e);
-  }
-
-  // Fallback to real roster if empty
-  if (!window.allCaravansList || window.allCaravansList.length === 0) {
-    window.allCaravansList = [
-      { id: '1', title: 'کاروان کویتی', mentor: 'محمد کویتی', capacity: 25, progress: 0 },
-      { id: '2', title: 'کاروان جلالی', mentor: 'رضا جلالی', capacity: 25, progress: 0 },
-      { id: '3', title: 'کاروان مدیر ارشد', mentor: 'مدیر ارشد', capacity: 25, progress: 0 }
-    ];
-  }
-
-  window.renderCaravanRows(window.allCaravansList, window.allUsersList);
-};
-
-window.renderCaravanRows = function(caravansList, usersList) {
-  const tbody = document.getElementById('caravans-tbody');
-  if (!tbody) return;
-
-  if (caravansList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">کاروانی یافت نشد.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = caravansList.map(c => {
-    const members = usersList.filter(u => u.role !== 'admin' && u.role !== 'mentor' && (String(u.caravanId) === String(c.id) || u.caravan === c.title));
-    const totalZarik = members.reduce((sum, m) => sum + (Number(m.zarikBalance) || 0), 0);
-    const mentor = c.mentor || c.mentorName || c.mentor?.name || 'تعیین نشده';
-    const count = members.length > 0 ? members.length : (c.title && c.title.includes('ارشد') ? 1 : 2);
-
-    return `
-      <tr>
-        <td><strong>${c.title || c.name}</strong></td>
-        <td>${mentor}</td>
-        <td>${c.capacityLimit || c.capacity || 25} / ${count}</td>
-        <td><span style="color:var(--color-warning); font-weight:bold;">${totalZarik} 🟡</span></td>
-        <td>
-          <div style="width: 100px; background: #334155; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle;">
-            <div style="height: 6px; background: var(--color-primary); width: ${c.progress || c.overallProgress || 0}%"></div>
-          </div>
-          <span style="font-size: 11px; color: #94a3b8; margin-right: 4px;">${c.progress || c.overallProgress || 0}%</span>
-        </td>
-        <td>-</td>
-        <td class="p-4 flex gap-1.5 justify-center">
-          <button type="button" onclick="window.openCaravanViewDetails('${c.id}')" class="px-2.5 py-1 bg-blue-600/80 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-eye"></i> View
-          </button>
-          <button type="button" onclick="window.openCaravanEditModal('${c.id}')" class="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button type="button" onclick="window.openCaravanStatusDialog('${c.id}')" class="px-2.5 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow">
-            <i class="fa-solid fa-ban"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-};
-
-window.filterCaravansList = function(searchTerm) {
-  if (!window.allCaravansList) return;
-  const term = (searchTerm || '').toLowerCase();
-  
-  if (!term) {
-    window.renderCaravanRows(window.allCaravansList, window.allUsersList);
-    return;
-  }
-  
-  const filtered = window.allCaravansList.filter(c => {
-    const title = (c.title || c.name || '').toLowerCase();
-    const mentor = (c.mentor || c.mentorName || c.mentor?.name || '').toLowerCase();
-    return title.includes(term) || mentor.includes(term);
+  let filtered = window.caravansData.filter(c => {
+    const mName = c.mentor?.name || '-';
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery) || 
+                          mName.toLowerCase().includes(searchQuery) ||
+                          (c.id && c.id.toLowerCase().includes(searchQuery));
+    const matchesMentor = mentorFilter === 'all' || mName === mentorFilter;
+    return matchesSearch && matchesMentor;
   });
-  
-  window.renderCaravanRows(filtered, window.allUsersList);
+
+  if (sortBy === 'most_members') {
+    filtered.sort((a, b) => b.memberCount - a.memberCount);
+  } else if (sortBy === 'highest_zarik') {
+    filtered.sort((a, b) => (b.assets?.zarik || 0) - (a.assets?.zarik || 0));
+  } else if (sortBy === 'highest_progress') {
+    filtered.sort((a, b) => b.overallProgress - a.overallProgress);
+  } else {
+    // newest (assuming id based or original order)
+    // No specific sort, keeping original order which could be newest
+  }
+
+  tbody.innerHTML = '';
+  filtered.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${c.name}</strong></td>
+      <td>${c.mentorName}</td>
+      <td>${c._count?.members || c.membersList?.length || c.memberCount || 0} / ${c.capacityLimit || c.capacity || 50}</td>
+      <td>
+        <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${c.assets?.zarik || c.totalWealth || 0}</span>
+      </td>
+      <td>
+        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+          <span>${c.overallProgress}%</span>
+        </div>
+        <div class="progress-bar-container" style="margin: 0; height: 6px;">
+          <div class="progress-bar-fill" style="width: ${c.overallProgress}%"></div>
+        </div>
+      </td>
+      <td>-</td>
+      <td>
+        <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:#3b82f6; color:white; border-radius:6px;" onclick="selectCaravanForManagement('${c.id}')"><i class="fa-solid fa-eye"></i> مشاهده</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.selectCaravanForManagement = function(id) {
+  const picker = document.getElementById('target-caravan-picker');
+  if (picker) {
+    picker.value = id;
+    if (window.loadSelectedCaravanDetails) {
+      window.loadSelectedCaravanDetails();
+    }
+  }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  window.loadCaravansTable();
+window.loadSelectedCaravanDetails = async function() {
+  const picker = document.getElementById('target-caravan-picker');
+  if (!picker) return;
+  const cId = picker.value;
   
-  const searchInput = document.getElementById('caravan-search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      window.filterCaravansList(e.target.value);
+  const mentorEl = document.getElementById('cw-mentor-name');
+  const zarikEl = document.getElementById('caravan-detail-zarik');
+  const milestonesEl = document.getElementById('caravan-detail-milestones');
+  const rosterBody = document.getElementById('caravan-roster-body');
+
+  if (!zarikEl || !milestonesEl || !rosterBody) return;
+
+  if (!cId) {
+    if (mentorEl) mentorEl.innerText = '-';
+    zarikEl.innerHTML = '0 <i class="fa-solid fa-coins"></i>';
+    milestonesEl.innerText = '0';
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
+    return;
+  }
+
+  const caravan = window.caravansData?.find(c => c.id === cId);
+  if (!caravan) return;
+
+  if (mentorEl) {
+    mentorEl.innerText = caravan.mentorName || caravan.mentor?.name || 'فاقد راهبر';
+  }
+
+  zarikEl.innerHTML = `${caravan.assets?.zarik || caravan.totalWealth || 0} <i class="fa-solid fa-coins"></i>`;
+  milestonesEl.innerText = caravan.completedStations || 0;
+
+  rosterBody.innerHTML = '';
+  const members = caravan.membersList || caravan.members || [];
+  if (members.length === 0) {
+    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
+  } else {
+    members.forEach(m => {
+      const name = m.name || m.user?.name || '-';
+      const phone = m.phoneNumber || m.user?.phoneNumber || '-';
+      const zarik = m.zarik || m.assets?.zarik || 0;
+      const displayId = m.userCode || m.user?.userCode || m.id || '-';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${displayId}</td>
+        <td>${name}</td>
+        <td style="font-family: monospace;">${phone}</td>
+        <td>${zarik}</td>
+        <td style="white-space:nowrap; display:flex; gap:5px;">
+          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('نمایش جزئیات عضو')">نمایش جزئیات</button>
+          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('ویرایش عضو')">ویرایش</button>
+          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('تعلیق موقت')">تعلیق موقت</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="alert('حذف از کاروان')">حذف از کاروان</button>
+        </td>
+      `;
+      rosterBody.appendChild(tr);
     });
   }
-});
-
-// Deprecated Caravan functions removed
+};
 
 
 // 5. ANNOUNCEMENTS BROADCAST
@@ -3438,94 +3420,15 @@ function filterCaravanMembers() {
    window.rosterTimeout = setTimeout(loadCaravanMembersRoster, 500);
 }
 
-window.removeFromCaravan = async function(caravanId, studentId) {
+async function removeFromCaravan(caravanId, studentId) {
   if(!caravanId) return;
   if(confirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟')) {
      try {
        const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' });
-       if(res.ok) { 
-         alert('با موفقیت حذف شد'); 
-         if (typeof window.loadCaravanDetails === 'function') {
-           window.loadCaravanDetails(caravanId);
-         } else {
-           loadCaravanMembersRoster();
-         }
-       }
+       if(res.ok) { alert('با موفقیت حذف شد'); loadCaravanMembersRoster(); }
      } catch(e) { console.error(e); }
   }
 }
-
-window.loadCaravanDetails = async function(caravanId) {
-  if (!caravanId) return;
-  try {
-    const res = await request(`/api/v1/admin/caravans/${caravanId}`);
-    if (!res.ok) return;
-    const caravan = await res.json();
-    
-    // Update header fields
-    const mentorEl = document.getElementById('cw-mentor-name');
-    const zarikEl = document.getElementById('caravan-detail-zarik');
-    const milestonesEl = document.getElementById('caravan-detail-milestones');
-    
-    if (mentorEl) mentorEl.innerText = caravan.mentor?.name || caravan.mentorName || 'فاقد راهبر';
-    if (zarikEl) zarikEl.innerHTML = `${caravan.assets?.zarik || caravan.totalWealth || 0} <i class="fa-solid fa-coins"></i>`;
-    if (milestonesEl) milestonesEl.innerText = `${caravan.overallProgress || caravan.completedStations || 0}%`;
-
-    // Populate roster
-    const tbody = document.querySelector('#cd-roster-table tbody');
-    if (tbody) {
-      tbody.innerHTML = '';
-      const members = caravan.membersList || caravan.members || [];
-      if (members.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">هیچ عضوی در این کاروان یافت نشد</td></tr>';
-      } else {
-        members.forEach(m => {
-          const name = m.name || m.user?.name || '-';
-          const phone = m.phoneNumber || m.user?.phoneNumber || '-';
-          const zarik = m.zarik || m.assets?.zarik || m.zarikBalance || 0;
-          const userId = m.userId || m.user?.id || m.id;
-          
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>
-              <input type="text" id="edit-name-${userId}" value="${name}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:white; border-radius: 4px;">
-            </td>
-            <td style="font-family: monospace;">${phone}</td>
-            <td>${zarik}</td>
-            <td>-</td>
-            <td style="white-space:nowrap; display:flex; gap:5px;">
-              <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="editMember('${userId}')">ذخیره</button>
-              <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="removeFromCaravan('${caravanId}', '${userId}')">حذف</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-window.editMember = async function(userId) {
-  const nameInput = document.getElementById(`edit-name-${userId}`);
-  if (!nameInput) return;
-  const newName = nameInput.value;
-  try {
-    const res = await request(`/api/v1/admin/users/${userId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName })
-    });
-    if (res.ok) {
-      alert('نام کاربر با موفقیت ویرایش شد');
-    } else {
-      alert('خطا در ذخیره نام');
-    }
-  } catch (e) {
-    console.error(e);
-  }
-};
 
 async function saveGlobalCapacity(e) {
   e.preventDefault();
@@ -3565,30 +3468,28 @@ window.lmsStations = [];
 
 async function loadLmsData() {
   try {
-    let response;
-    try {
-      response = await request('/api/v1/admin/lms/stations');
-    } catch(e) {
-      response = await request('/api/v1/stations');
-    }
-    const data = await response.json();
-    const stations = data.stations || data.data || (Array.isArray(data) ? data : []);
+    const res = await request('/api/v1/admin/lms/stations');
+    const stations = await res.json();
     window.lmsStations = stations;
     
     const tbody = document.querySelector('#stations-table tbody');
     if(tbody) {
-      tbody.innerHTML = stations.map(s => `
-  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); text-align: right; color: #e2e8f0;">
-    <td style="padding: 12px;">${s.orderIndex ?? s.order ?? 1}</td>
-    <td style="padding: 12px; font-weight: bold;">${s.title || s.name || 'منزلگاه'}</td>
-    <td style="padding: 12px; color: #94a3b8;">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
-    <td style="padding: 12px; color: #94a3b8;">${s.description || '-'}</td>
-    <td style="padding: 12px; text-align: center;">
-      <button onclick="editLmsStation('${s.id}')" style="background:#2563eb; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
-      <button onclick="deleteLmsStation('${s.id}')" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
-    </td>
-  </tr>
-`).join('');
+      tbody.innerHTML = '';
+      stations.forEach(s => {
+        const releaseStr = s.releaseDate ? `${new Date(s.releaseDate).toLocaleDateString('fa-IR')} ${s.releaseTime || ''}` : 'فوری/آزاد';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${s.orderIndex}</strong></td>
+          <td>${s.title}</td>
+          <td>${releaseStr}</td>
+          <td>${s.categories ? s.categories.length : 0} دسته</td>
+          <td>
+            <button class="page-btn btn-edit" style="background:#8b5cf6; color:white;" onclick="editLmsStation('${s.id}')"><i class="fa-solid fa-edit"></i> ویرایش</button>
+            <button class="page-btn btn-danger" onclick="deleteLmsStation('${s.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
   } catch(e) { console.error(e); }
 }
@@ -3650,7 +3551,6 @@ function addClassUI(catEl, classData = null) {
   const classId = classData && classData.id ? classData.id : 'new_' + Math.random().toString(36).substring(2, 9);
   const classTitle = classData ? classData.title : '';
   const classDesc = classData ? (classData.description || '') : '';
-  const classInstructor = classData ? (classData.instructor || '') : '';
   const minWatch = classData ? (classData.minWatchThreshold || 70) : 70;
   const minPass = classData ? (classData.minPassScore || 0) : 0;
   const maxZarik = classData ? (classData.maxZarikReward || 0) : 0;
@@ -3667,12 +3567,8 @@ function addClassUI(catEl, classData = null) {
         <input type="text" class="input-ctrl class-title-input" value="${classTitle}" required style="height: 30px; font-size: 11px;">
       </div>
       <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: #8b5cf6;">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
-        <input type="text" class="input-ctrl class-desc-input" value="${classDesc}" style="height: 30px; font-size: 11px;" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
-      </div>
-      <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: #8b5cf6;">نام استاد</label>
-        <input type="text" class="input-ctrl class-instructor-input" value="${classInstructor}" style="height: 30px; font-size: 11px;" placeholder="نام و نام خانوادگی">
+        <label style="font-size: 10px; color: #8b5cf6;">خلاصه/توضیح کلاس</label>
+        <input type="text" class="input-ctrl class-desc-input" value="${classDesc}" style="height: 30px; font-size: 11px;">
       </div>
       <div class="form-group">
         <label style="font-size: 10px; color: #8b5cf6;">حداقل درصد تماشا</label>
@@ -3789,7 +3685,6 @@ function addQuizUI(classEl, quizData = null) {
       qJson = typeof quizData.questionsJson === 'string' ? JSON.parse(quizData.questionsJson) : quizData.questionsJson;
     } catch(e) { console.error('questionsJson parse error', e); }
   }
-  const quizType = quizData ? (quizData.type || 'MULTIPLE_CHOICE') : 'MULTIPLE_CHOICE';
 
   const quizDiv = document.createElement('div');
   quizDiv.className = 'builder-quiz-item';
@@ -3799,13 +3694,8 @@ function addQuizUI(classEl, quizData = null) {
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
       <span style="font-size: 11px; color: #e040fb; font-weight: bold;">آزمون ارزیابی:</span>
       <input type="text" class="input-ctrl quiz-title-input" value="${quizTitle}" required placeholder="عنوان آزمون" style="flex:2; height:28px; font-size:11px;">
-      <select class="select-ctrl quiz-type-input" style="width:100px; height:28px; font-size:11px;">
-        <option value="MULTIPLE_CHOICE" ${quizType === 'MULTIPLE_CHOICE' ? 'selected' : ''}>تستی (۴ گزینه‌ای)</option>
-        <option value="TEXT" ${quizType === 'TEXT' ? 'selected' : ''}>تشریحی (متنی)</option>
-        <option value="FILE" ${quizType === 'FILE' ? 'selected' : ''}>ارسال فایل</option>
-      </select>
       <input type="number" class="input-ctrl quiz-zarik-input" value="${rewardZarik}" required placeholder="پاداش زریک" style="width:85px; height:28px; font-size:11px;">
-      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" onclick="addQuizQuestionUI(this.closest('.builder-quiz-item'))"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
+      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" onclick="addQuizQuestionUI(this.closest('.builder-quiz-item'))"><i class="fa-solid fa-plus"></i> افزودن سوال</button>
       <button type="button" class="page-btn btn-danger" style="padding:2px 8px; font-size:9px; margin-right: auto;" onclick="this.closest('.builder-quiz-item').remove()"><i class="fa-solid fa-times"></i> حذف آزمون</button>
     </div>
     
@@ -3942,7 +3832,6 @@ async function submitLmsStationUnified(e) {
       const classId = classEl.dataset.id.startsWith('new_') ? null : classEl.dataset.id;
       const classTitle = classEl.querySelector('.class-title-input').value;
       const classDesc = classEl.querySelector('.class-desc-input').value;
-      const classInstructor = classEl.querySelector('.class-instructor-input').value;
       const classWatch = classEl.querySelector('.class-watch-input').value;
       const classOrder = classEl.querySelector('.class-order-input').value;
       
@@ -3971,7 +3860,6 @@ async function submitLmsStationUnified(e) {
       if (quizEl) {
         const quizId = quizEl.dataset.id.startsWith('new_') ? null : quizEl.dataset.id;
         const quizTitle = quizEl.querySelector('.quiz-title-input').value;
-        const quizType = quizEl.querySelector('.quiz-type-input').value;
         const quizZarik = quizEl.querySelector('.quiz-zarik-input').value;
         
         // Serialize Questions
@@ -4000,7 +3888,6 @@ async function submitLmsStationUnified(e) {
         quiz = {
           id: quizId,
           title: quizTitle,
-          type: quizType,
           questionsJson: JSON.stringify(questions),
           rewardZarik: Number(quizZarik)
         };
@@ -4010,7 +3897,6 @@ async function submitLmsStationUnified(e) {
         id: classId,
         title: classTitle,
         description: classDesc,
-        instructor: classInstructor,
         minWatchThreshold: Number(classWatch),
         orderIndex: Number(classOrder),
         videoClips,
@@ -4830,832 +4716,3 @@ window.openChangeCaravanMentorModal = async function() {
 window.closeChangeCaravanMentorModal = function() {
   document.getElementById('change-caravan-mentor-modal').style.display = 'none';
 };
-
-// --- BANNERS & NEWS MANAGEMENT ---
-
-window.loadBannersTab = async function() {
-  try {
-    const res = await fetch('/api/v1/banners', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const banners = await res.json();
-    const tbody = document.querySelector('#banners-table tbody');
-    tbody.innerHTML = '';
-    banners.forEach(b => {
-      tbody.innerHTML += `
-        <tr>
-          <td><img src="${b.imageUrl}" style="width: 60px; border-radius: 4px;" /></td>
-          <td>${b.title}</td>
-          <td>${b.position}</td>
-          <td>${b.orderIndex}</td>
-          <td>${b.isActive ? '<span class="status-badge status-active">فعال</span>' : '<span class="status-badge status-inactive">غیرفعال</span>'}</td>
-          <td>
-            <button class="btn-action" style="background:var(--color-primary); color:white;" onclick="editBanner('${b.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-action" style="background:var(--color-danger); color:white;" onclick="deleteBanner('${b.id}')"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
-    });
-  } catch(e) {
-    console.error('Error loading banners', e);
-  }
-};
-
-window.openCreateBannerModal = function() {
-  document.getElementById('banner-form').reset();
-  document.getElementById('banner-id').value = '';
-  document.getElementById('banner-modal-title').innerHTML = '<i class="fa-solid fa-image" style="color: #f59e0b;"></i> افزودن بنر';
-  
-  const m = document.getElementById('banner-modal');
-  if (m) {
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
-  } else {
-    console.error("Modal #banner-modal not found in DOM");
-  }
-};
-
-window.closeBannerModal = function() {
-  const m = document.getElementById('banner-modal');
-  if (m) m.style.display = 'none';
-};
-
-window.editBanner = async function(id) {
-  try {
-    const res = await fetch('/api/v1/admin/banners', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const banners = await res.json();
-    const b = banners.find(x => x.id === id);
-    if (!b) return;
-    document.getElementById('banner-id').value = b.id;
-    document.getElementById('banner-title').value = b.title;
-    document.getElementById('banner-target').value = b.targetRoute || '';
-    document.getElementById('banner-position').value = b.position;
-    document.getElementById('banner-order').value = b.orderIndex;
-    document.getElementById('banner-active').checked = b.isActive;
-    document.getElementById('banner-modal-title').innerHTML = '<i class="fa-solid fa-pen" style="color: #f59e0b;"></i> ویرایش بنر';
-    document.getElementById('banner-modal').style.display = 'flex';
-  } catch (e) { console.error(e); }
-};
-
-window.saveBannerItem = async function(e) {
-  e.preventDefault();
-  const id = document.getElementById('banner-id').value;
-  const formData = new FormData();
-  formData.append('title', document.getElementById('banner-title').value);
-  formData.append('targetRoute', document.getElementById('banner-target').value);
-  formData.append('position', document.getElementById('banner-position').value);
-  formData.append('orderIndex', document.getElementById('banner-order').value);
-  formData.append('isActive', document.getElementById('banner-active').checked);
-  const fileInput = document.getElementById('banner-file');
-  if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
-  
-  const url = id ? `/api/v1/admin/banners/${id}` : '/api/v1/admin/banners';
-  const method = id ? 'PUT' : 'POST';
-  
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: formData
-    });
-    if (res.ok) {
-      closeBannerModal();
-      loadBannersTab();
-    } else {
-      const err = await res.json();
-      alert(err.error || 'خطا در ثبت بنر');
-    }
-  } catch(e) { alert('Network Error'); }
-};
-
-window.deleteBanner = async function(id) {
-  if (!confirm('آیا از حذف این بنر مطمئن هستید؟')) return;
-  try {
-    const res = await fetch(`/api/v1/admin/banners/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) loadBannersTab();
-  } catch(e) { console.error(e); }
-};
-
-window.loadNewsTab = async function() {
-  try {
-    const res = await fetch('/api/v1/admin/news', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const news = await res.json();
-    const tbody = document.querySelector('#news-table tbody');
-    tbody.innerHTML = '';
-    news.forEach(n => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${n.imageUrl ? '<img src="' + n.imageUrl + '" style="width: 60px; border-radius: 4px;" />' : '-'}</td>
-          <td>${n.title}</td>
-          <td>${n.category || '-'}</td>
-          <td>${n.reporter || '-'}</td>
-          <td dir="ltr">${new Date(n.publishDate).toLocaleString('fa-IR')}</td>
-          <td>${n.targetAudience}</td>
-          <td>${n.isPublished ? '<span class="status-badge status-active">منتشر شده</span>' : '<span class="status-badge status-inactive">پیش‌نویس</span>'}</td>
-          <td>
-            <button class="btn-action" style="background:var(--color-primary); color:white;" onclick="editNews('${n.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-action" style="background:var(--color-danger); color:white;" onclick="deleteNews('${n.id}')"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
-    });
-  } catch(e) {
-    console.error('Error loading news', e);
-  }
-};
-
-window.openCreateNewsModal = function() {
-  document.getElementById('news-form').reset();
-  document.getElementById('news-id').value = '';
-  document.getElementById('news-subtitle').value = '';
-  document.getElementById('news-image-preview').style.display = 'none';
-  document.getElementById('news-image-preview').src = '';
-  
-  // Set default datetime to current time
-  const now = new Date();
-  const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('news-publish-date').value = iso;
-  
-  document.getElementById('news-modal-title').innerHTML = '<i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> افزودن خبر جدید';
-  
-  const m = document.getElementById('news-modal');
-  if (m) {
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
-  } else {
-    console.error("Modal #news-modal not found in DOM");
-  }
-};
-
-window.closeNewsModal = function() {
-  const m = document.getElementById('news-modal');
-  if (m) m.style.display = 'none';
-};
-
-window.editNews = async function(id) {
-  try {
-    const res = await fetch('/api/v1/admin/news', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const news = await res.json();
-    const n = news.find(x => x.id === id);
-    if (!n) return;
-    document.getElementById('news-id').value = n.id;
-    document.getElementById('news-title').value = n.title;
-    document.getElementById('news-subtitle').value = n.subtitle || '';
-    document.getElementById('news-body').value = n.body;
-    document.getElementById('news-category').value = n.category || 'اطلاعیه مهم';
-    document.getElementById('news-reporter').value = n.reporter || '';
-    document.getElementById('news-target').value = n.targetAudience || 'ALL';
-    if (n.publishDate) {
-      const d = new Date(n.publishDate);
-      const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-      document.getElementById('news-publish-date').value = iso;
-    }
-    if (n.imageUrl) {
-      document.getElementById('news-image-preview').src = n.imageUrl;
-      document.getElementById('news-image-preview').style.display = 'block';
-    } else {
-      document.getElementById('news-image-preview').style.display = 'none';
-    }
-    document.getElementById('news-active').checked = n.isPublished;
-    document.getElementById('news-push').checked = false; // Reset push notification toggle
-    document.getElementById('news-modal-title').innerHTML = '<i class="fa-solid fa-pen" style="color: #38bdf8;"></i> ویرایش خبر';
-    document.getElementById('news-modal').style.display = 'flex';
-  } catch (e) { console.error(e); }
-};
-
-window.saveNewsArticle = async function(e) {
-  e.preventDefault();
-  const id = document.getElementById('news-id').value;
-  const title = document.getElementById('news-title').value;
-  const audience = document.getElementById('news-target').value;
-  
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('subtitle', document.getElementById('news-subtitle').value);
-  formData.append('body', document.getElementById('news-body').value);
-  formData.append('category', document.getElementById('news-category').value);
-  formData.append('reporter', document.getElementById('news-reporter').value);
-  formData.append('targetAudience', audience);
-  
-  const pDate = document.getElementById('news-publish-date').value;
-  if (pDate) formData.append('publishDate', new Date(pDate).toISOString());
-  formData.append('isPublished', document.getElementById('news-active').checked);
-  
-  const fileInput = document.getElementById('news-file');
-  if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
-  
-  const url = id ? `/api/v1/admin/news/${id}` : '/api/v1/admin/news';
-  const method = id ? 'PUT' : 'POST';
-  
-  try {
-    const res = await fetch(url, {
-      method,
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: formData
-    });
-    if (res.ok) {
-      closeNewsModal();
-      loadNewsTab();
-      showToastSuccess('خبر با موفقیت ثبت شد!');
-      
-      // Dispatch push notification if checked
-      if (document.getElementById('news-push').checked) {
-        // Dispatch to notification endpoint if it exists, or just mock it here
-        console.log(`[Push Notification] Dispatched for audience: ${audience}, Title: ${title}`);
-        showToastSuccess('اعلان پوش با موفقیت ارسال شد!');
-      }
-    } else {
-      const err = await res.json();
-      alert(err.error || 'خطا در ثبت خبر');
-    }
-  } catch(e) { alert('Network Error'); }
-};
-
-window.previewNewsImage = function(event) {
-  const file = event.target.files[0];
-  const preview = document.getElementById('news-image-preview');
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    }
-    reader.readAsDataURL(file);
-  } else {
-    preview.style.display = 'none';
-  }
-};
-
-function showToastSuccess(message) {
-  let toast = document.getElementById('nopa-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'nopa-toast';
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '20px';
-    toast.style.backgroundColor = '#10b981';
-    toast.style.color = 'white';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = '10000';
-    toast.style.transition = 'opacity 0.3s ease';
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${message}`;
-  toast.style.opacity = '1';
-  toast.style.display = 'block';
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => toast.style.display = 'none', 300);
-  }, 3000);
-}
-
-window.deleteNews = async function(id) {
-  if (!confirm('آیا از حذف این خبر مطمئن هستید؟')) return;
-  try {
-    const res = await fetch(`/api/v1/admin/news/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (res.ok) loadNewsTab();
-  } catch(e) { console.error(e); }
-};
-// --- CARAVAN MANAGEMENT MODAL LOGIC ---
-window.activeCaravanId = null;
-window.allCaravansDataCache = []; // To hold all caravans for the transfer dropdown
-
-window.openCaravanDetailDrawer = async function(caravanId) {
-  try {
-    const res = await fetch(`/api/v1/admin/caravans/${caravanId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
-    if (!res.ok) throw new Error('Failed to load caravan');
-    const caravan = await res.json();
-
-    document.getElementById('cd-title').textContent = `Caravan: ${caravan.name}`;
-    document.getElementById('cd-mentor-name').textContent = caravan.mentor?.name || 'No mentor';
-    document.getElementById('cd-wealth-zarik').textContent = caravan.assets?.zarik || 0;
-    document.getElementById('cd-completed-stations').textContent = caravan.completedStations || 0;
-    document.getElementById('cd-progress-text').textContent = `${caravan.overallProgress || 0}%`;
-
-    const tbody = document.querySelector('#cd-roster-table tbody');
-    tbody.innerHTML = '';
-
-    if (caravan.membersList && caravan.membersList.length > 0) {
-      caravan.membersList.forEach(member => {
-        const isBlocked = member.blocked ? 'Blocked' : 'Active';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${member.name}</strong></td>
-          <td>${member.phoneNumber}</td>
-          <td style="color: #fbbf24;">${member.zarikBalance || 0}</td>
-          <td>${member.completedStations || 0}</td>
-          <td><span class="badge" style="background:${isBlocked === 'Active' ? '#10b981' : '#ef4444'};">${isBlocked}</span></td>
-          <td>
-            <button onclick="window.editMember('${member.id}')" style="margin-right: 5px;"><i class="fa-solid fa-edit"></i></button>
-            <button onclick="window.toggleBlockMember('${member.id}', ${!member.blocked})" style="margin-right: 5px;"><i class="fa-solid ${member.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-            <button onclick="window.removeFromCaravan('${caravanId}', '${member.id}')" style="color:red;"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } else {
-      tbody.innerHTML = '<tr><td colspan="6">No members found</td></tr>';
-    }
-
-    document.getElementById('caravan-detail-drawer').style.display = 'flex';
-    window.currentCaravanId = caravanId;
-  } catch (err) {
-    console.error(err);
-    alert('Error loading caravan');
-  }
-};
-
-window.closeCaravanDetailDrawer = function() {
-  document.getElementById('caravan-detail-drawer').style.display = 'none';
-};
-
-window.editMember = async function(userId) {
-  try {
-    const res = await fetch(`/api/v1/admin/users/${userId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
-    const user = await res.json();
-    const newName = prompt('Enter new name:', user.name);
-    if (newName && newName.trim() !== '' && newName !== user.name) {
-      await fetch(`/api/v1/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ ...user, name: newName.trim() })
-      });
-      alert('Member updated');
-      if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
-    }
-  } catch (err) {
-    console.error(err);
-    alert('Error updating member');
-  }
-};
-
-window.toggleBlockMember = async function(userId, blockStatus) {
-  if (!confirm(`Are you sure you want to ${blockStatus ? 'block' : 'unblock'} this user?`)) return;
-  try {
-    await fetch(`/api/v1/admin/users/${userId}/block`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ blocked: blockStatus })
-    });
-    alert(`User ${blockStatus ? 'blocked' : 'unblocked'}`);
-    if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
-  } catch (err) {
-    console.error(err);
-    alert('Error changing user status');
-  }
-};
-
-window.renderAllUsersNow = async function() {
-  const tbody = document.getElementById('users-tbody');
-  if (!tbody) return;
-
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    let res = await fetch('/api/v1/admin/users', {
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    }).catch(() => ({ ok: false }));
-    
-    if (!res.ok) {
-      res = await fetch('/api/v1/users', {
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-      }).catch(() => ({ ok: false }));
-    }
-
-    let users = [];
-    if (res.ok) {
-      const data = await res.json();
-      users = Array.isArray(data) ? data : (data.users || data.data || []);
-    }
-
-    if (!users || users.length === 0) {
-      // Fallback seed dataset to ensure we always see the 13 users requested
-      users = [
-        { id: 'u1', userCode: 1001, name: 'حسینعلی فقیه', phoneNumber: '09036658547', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 120, levelFrame: 1 },
-        { id: 'u2', userCode: 1002, name: 'علیرضا اسماعیلی', phoneNumber: '09121234567', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 250, levelFrame: 2 },
-        { id: 'u3', userCode: 1003, name: 'محمدحسین رضایی', phoneNumber: '09191112233', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 80, levelFrame: 1 },
-        { id: 'u4', userCode: 1004, name: 'رضا جلالی', phoneNumber: '09199840686', role: 'mentor', caravanName: 'گروه مربی جلالی', zarikBalance: 500, levelFrame: 3 },
-        { id: 'u5', userCode: 1005, name: 'محمد کویتی', phoneNumber: '09191604524', role: 'mentor', caravanName: 'گروه مربی کویتی', zarikBalance: 450, levelFrame: 3 },
-        { id: 'u6', userCode: 1006, name: 'علیرضا خوش‌منظر', phoneNumber: '09196657042', role: 'mentor', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 400, levelFrame: 3 },
-        { id: 'u7', userCode: 1000, name: 'کمیل عباس', phoneNumber: '09380346668', role: 'admin', caravanName: 'ستاد مرکزی', zarikBalance: 9999, levelFrame: 5 },
-        { id: 'u8', userCode: 1008, name: 'مسلم عارف', phoneNumber: '09120000001', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 150, levelFrame: 2 },
-        { id: 'u9', userCode: 1009, name: 'علی پیروی', phoneNumber: '09120000002', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 110, levelFrame: 1 },
-        { id: 'u10', userCode: 1010, name: 'رضا شفیعی', phoneNumber: '09120000003', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 320, levelFrame: 2 },
-        { id: 'u11', userCode: 1011, name: 'طیب جوشقانی', phoneNumber: '09120000004', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 90, levelFrame: 1 },
-        { id: 'u12', userCode: 1012, name: 'عرفان پیروی', phoneNumber: '09120000005', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 180, levelFrame: 2 },
-        { id: 'u13', userCode: 1013, name: 'مهدی احمدی', phoneNumber: '09120000006', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 210, levelFrame: 2 }
-      ];
-    }
-
-    if (!users || users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">کاربری یافت نشد.</td></tr>';
-      return;
-    }
-
-    // Update stat cards dynamically
-    const totalEl = document.getElementById('stat-total-users');
-    if (totalEl) totalEl.innerText = users.length;
-    const badgeEl = document.getElementById('users-badge-count');
-    if (badgeEl) badgeEl.innerText = users.length;
-    const mentorsCount = users.filter(u => u.role === 'mentor').length;
-    const mentorEl = document.getElementById('stat-mentors-count');
-    if (mentorEl) mentorEl.innerText = mentorsCount;
-
-    tbody.innerHTML = users.map((u, i) => {
-      const roleBadge = u.role === 'admin' || u.role === 'SUPER_MENTOR'
-        ? '<span class="px-2 py-0.5 rounded text-xs bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">مدیر ارشد</span>'
-        : (u.role === 'mentor'
-          ? '<span class="px-2 py-0.5 rounded text-xs bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">مربی راهبر</span>'
-          : '<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">دانشآموز</span>');
-
-      return `
-        <tr class="hover:bg-slate-800/40 transition">
-          <td class="p-3 text-center text-slate-400 font-mono">${i + 1}</td>
-          <td class="p-3 font-bold text-white">${u.name || 'بدون نام'}</td>
-          <td class="p-3 text-center font-mono text-slate-300" dir="ltr">${u.phoneNumber || '-'}</td>
-          <td class="p-3 text-center">${roleBadge}</td>
-          <td class="p-3 text-slate-300">${u.caravan?.name || u.caravanName || (u.caravanId ? 'دارای کاروان' : 'فاقد کاروان')}</td>
-          <td class="p-3 text-center font-bold text-amber-400 font-mono">${(u.zarikBalance ?? 0).toLocaleString('fa-IR')}</td>
-          <td class="p-3 text-center text-sky-400 font-bold">سطح ${u.levelFrame || 1}</td>
-          <td class="p-3 text-center">
-            <button type="button" onclick="alert('کاربر: ${u.name}\\nشماره: ${u.phoneNumber}')" class="px-2.5 py-1 bg-blue-600/80 hover:bg-blue-600 text-white text-xs rounded-lg shadow">
-              👁️ جزئیات
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error('Render error:', err);
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-rose-400">خطا در بارگذاری جدول کاربران</td></tr>';
-  }
-};
-
-window.loadUsersData = window.renderAllUsersNow;
-
-window.removeFromCaravan = async function(caravanId, memberId) {
-  if (!confirm('Remove this member from caravan?')) return;
-  try {
-    await fetch(`/api/v1/admin/caravans/${caravanId}/members/${memberId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    alert('Member removed');
-    if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
-  } catch (err) {
-    console.error(err);
-    alert('Error removing member');
-  }
-};
-
-window.openAddMemberModal = function() {
-  const userId = prompt('Enter user ID to add:');
-  if (!userId || !window.currentCaravanId) return;
-  
-  fetch(`/api/v1/admin/caravans/${window.currentCaravanId}/members`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-    body: JSON.stringify({ userId })
-  }).then(async res => {
-    if (res.ok) {
-      alert('Member added');
-      window.openCaravanDetailDrawer(window.currentCaravanId);
-    } else {
-      const data = await res.json();
-      alert(data.error || 'Error adding member');
-    }
-  }).catch(err => {
-    console.error(err);
-    alert('Server error');
-  });
-};
-
-// --- CARAVAN EDIT MODAL LOGIC ---
-window.openCaravanEditModal = async function(caravanId) {
-  window.activeCaravanId = caravanId;
-  const modal = document.getElementById('caravan-edit-modal');
-  if (modal) {
-    modal.style.setProperty('display', 'flex', 'important');
-    modal.style.setProperty('z-index', '999999', 'important');
-  }
-  await window.refreshCaravanEditData();
-};
-
-window.closeCaravanEditModal = function() {
-  const modal = document.getElementById('caravan-edit-modal');
-  if (modal) modal.style.display = 'none';
-};
-
-window.refreshCaravanEditData = async function() {
-  if (!window.activeCaravanId) return;
-  const token = localStorage.getItem('token');
-  const res = await fetch('/api/v1/caravans', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
-  const caravans = res.data || res || [];
-  
-  const caravan = caravans.find(c => String(c.id) === String(window.activeCaravanId));
-  if (!caravan) return;
-
-  document.getElementById('edit-caravan-name').value = caravan.title || caravan.name || '';
-  document.getElementById('edit-caravan-capacity').value = caravan.capacityLimit || caravan.capacity || 25;
-  const notesEl = document.getElementById('edit-caravan-notes');
-  if(notesEl) notesEl.value = caravan.notes || caravan.adminNotes || '';
-};
-
-window.saveCaravanEdits = async function() {
-  const name = document.getElementById('edit-caravan-name').value.trim();
-  const capacity = document.getElementById('edit-caravan-capacity').value.trim();
-  const notesEl = document.getElementById('edit-caravan-notes');
-  const notes = notesEl ? notesEl.value.trim() : '';
-  
-  try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ name, title: name, capacityLimit: Number(capacity), notes, adminNotes: notes })
-    });
-    if (res.ok) {
-      alert('تغییرات با موفقیت ذخیره شد.');
-      window.closeCaravanEditModal();
-      if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
-    } else {
-      alert('خطا در ذخیره تغییرات');
-    }
-  } catch(e) { console.error(e); }
-};
-
-// --- STATUS / DELETE MODAL LOGIC ---
-window.openCaravanStatusDialog = function(caravanId, caravanName) {
-  window.activeCaravanId = caravanId;
-  document.getElementById('status-caravan-name').innerText = caravanName || '';
-  const modal = document.getElementById('caravan-status-modal');
-  if (modal) {
-    modal.style.setProperty('display', 'flex', 'important');
-    modal.style.setProperty('z-index', '999999', 'important');
-  }
-};
-
-window.closeCaravanStatusDialog = function() {
-  const modal = document.getElementById('caravan-status-modal');
-  if (modal) modal.style.display = 'none';
-};
-
-window.confirmSuspendCaravan = async function() {
-  if(!confirm('آیا از تعلیق موقت این کاروان مطمئن هستید؟')) return;
-  try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/status', {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if(res.ok) {
-      alert('وضعیت کاروان تغییر کرد.');
-      window.closeCaravanStatusDialog();
-      if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
-    }
-  } catch(e) { console.error(e); }
-};
-
-window.confirmBlockCaravan = async function() {
-  if(!confirm('آیا از مسدودسازی تمامی اعضای این کاروان مطمئن هستید؟')) return;
-  try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/block-members', {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if(res.ok) {
-      alert('تمامی اعضا مسدود شدند.');
-      window.closeCaravanStatusDialog();
-    }
-  } catch(e) { console.error(e); }
-};
-
-window.confirmDeleteCaravan = async function() {
-  if(!confirm('آیا از حذف کامل این کاروان و خروج تمامی اعضا اطمینان دارید؟ این عمل غیرقابل بازگشت است!')) return;
-  try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if(res.ok) {
-      alert('کاروان با موفقیت حذف شد.');
-      window.closeCaravanStatusDialog();
-      if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
-    }
-  } catch(e) { console.error(e); }
-};
-
-// =========================================================================
-// UNIVERSAL ROBUST API FETCHING & DOM TABLE INJECTION (v2.0.1)
-// =========================================================================
-
-async function fetchWithFallback(primaryUrl, fallbackUrl) {
-  const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || localStorage.getItem('adminToken') || '';
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  try {
-    let res = await fetch(primaryUrl, { headers });
-    if (!res.ok && (res.status === 401 || res.status === 404 || res.status === 403)) {
-      console.warn(`[Fallback] ${primaryUrl} (${res.status}) -> trying ${fallbackUrl}`);
-      res = await fetch(fallbackUrl, { headers });
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    console.warn(`[Fetch Error] ${primaryUrl}:`, err.message);
-    try {
-      if (fallbackUrl && fallbackUrl !== primaryUrl) {
-        const res2 = await fetch(fallbackUrl, { headers });
-        if (res2.ok) return await res2.json();
-      }
-    } catch (e) {
-      console.error(`[Fallback Error] ${fallbackUrl}:`, e);
-    }
-    return null;
-  }
-}
-
-// 1. User Directory Loader (#users-tbody)
-
-
-// 2. LMS Stations Management Table Loader (#stations-tbody)
-window.loadLmsStationsData = async function() {
-  const tbody = document.getElementById('stations-tbody');
-  if (!tbody) return;
-
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    let res = await fetch('/api/v1/lms/stations', {
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
-
-    if (!res.ok) {
-      res = await fetch('/api/v1/admin/lms/stations', {
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-      });
-    }
-
-    let stations = [];
-    if (res.ok) {
-      const data = await res.json();
-      stations = Array.isArray(data) ? data : (data.stations || data.data || []);
-    }
-
-    // Fallback if empty
-    if (!stations || stations.length === 0) {
-      stations = [1, 2, 3, 4, 5].map(i => ({
-        id: `MZ${i}`,
-        orderIndex: i,
-        title: `منزلگاه شماره ${i}`,
-        description: 'سرفصلهای آموزشی، مهارتی و رسانهای مصوب'
-      }));
-    }
-
-    // Deduplicate by orderIndex / index
-    const uniqueStations = [];
-    const seen = new Set();
-    for (const st of stations) {
-      const idx = st.orderIndex ?? st.index ?? uniqueStations.length + 1;
-      if (!seen.has(idx) && idx <= 5) {
-        seen.add(idx);
-        uniqueStations.push({ ...st, orderIndex: idx });
-      }
-    }
-
-    uniqueStations.sort((a, b) => a.orderIndex - b.orderIndex);
-
-    tbody.innerHTML = uniqueStations.map(st => `
-      <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5); transition: background 0.2s;" onmouseover="this.style.background='rgba(30, 41, 59, 0.5)'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 16px; text-align: center; font-weight: bold; color: rgb(34, 211, 238);">#${st.orderIndex}</td>
-        <td style="padding: 16px; font-weight: bold; color: #ffffff;">
-          <div style="display: flex; items-center; gap: 8px;">
-            <span style="width: 10px; height: 10px; border-radius: 50%; background: #6366f1; display: inline-block; margin-top: 4px;"></span>
-            <span>${st.title || st.name || ('منزلگاه ' + st.orderIndex)}</span>
-          </div>
-        </td>
-        <td style="padding: 16px;">
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span style="color: #34d399; font-weight: 600;">🛠️ کلاسهای مهارتی: ۲ جلسه (شنبه و دوشنبه)</span>
-            <span style="color: #c084fc; font-weight: 600;">📱 کلاسهای رسانهای: ۲ جلسه (پنجشنبه و جمعه)</span>
-            <span style="color: #94a3b8; font-size: 11px;">مجموع جلسات همراه با پارتهای آموزشی و آزمون ۴ گزینهای</span>
-          </div>
-        </td>
-        <td style="padding: 16px; text-align: center;">
-          <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3);">
-            شنبه، دوشنبه، ۵شنبه، جمعه
-          </span>
-        </td>
-        <td style="padding: 16px; text-align: center;">
-          <button type="button" onclick="alert('منزلگاه شماره ${st.orderIndex}: ${st.title || st.name}')" style="padding: 6px 14px; background: #4f46e5; color: #ffffff; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none;">
-            👁️ جزئیات
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('LMS Stations Render Error:', err);
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #f87171;">خطا در بارگذاری منزلگاهها</td></tr>';
-  }
-};
-
-// 3. Mentors Table Loader (#mentors-tbody)
-window.loadMentorsData = async function() {
-  const tbody = document.getElementById('mentors-tbody') || document.querySelector('#mentors-table tbody') || document.querySelector('#mentors-table-body');
-  if (!tbody) return;
-
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-indigo-400">در حال بارگذاری راهبران...</td></tr>';
-  let raw = await fetchWithFallback('/api/v1/admin/mentors', '/api/v1/users?role=mentor');
-  let mentors = Array.isArray(raw) ? raw : (raw?.data || []);
-
-  if (!mentors || mentors.length === 0) {
-    mentors = [
-      { id: 'm1', name: 'رضا جلالی', phoneNumber: '09199840686', nationalId: '0012345678', academicDegree: 'کارشناسی ارشد مدیریت', caravan: { name: 'گروه مربی جلالی' }, mentorLevel: 2, avgRating: '4.8' },
-      { id: 'm2', name: 'محمد کویتی', phoneNumber: '09191604524', nationalId: '0087654321', academicDegree: 'دکتری کارآفرینی', caravan: { name: 'گروه مربی کویتی' }, mentorLevel: 2, avgRating: '4.9' },
-      { id: 'm3', name: 'علیرضا خوش‌منظر', phoneNumber: '09196657042', nationalId: '0055443322', academicDegree: 'کارشناسی ارشد بازاریابی', caravan: { name: 'گروه مربی خوش‌منظر' }, mentorLevel: 2, avgRating: '4.7' }
-    ];
-  }
-
-  tbody.innerHTML = '';
-  mentors.forEach(m => {
-    const avatar = m.name ? m.name.substring(0, 2) : 'نا';
-    const caravanStr = m.caravan?.name || (m.mentoredCaravans?.[0]?.name) || 'فاقد کاروان';
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/60 text-gray-200';
-    tr.innerHTML = `
-      <td class="p-2.5 text-center"><div class="w-8 h-8 rounded-full bg-indigo-600/80 text-white flex items-center justify-center text-xs font-bold mx-auto">${avatar}</div></td>
-      <td class="p-2.5 font-bold text-white">${m.name || 'راهبر بدون نام'}</td>
-      <td class="p-2.5 font-mono text-xs text-gray-300">${m.phoneNumber || '-'}</td>
-      <td class="p-2.5 font-mono text-xs text-gray-400">${m.nationalId || '-'}</td>
-      <td class="p-2.5 text-xs text-gray-300">${m.academicDegree || m.education || 'عمومی'}</td>
-      <td class="p-2.5 text-xs"><span class="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700">${caravanStr}</span></td>
-      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-700 text-xs">سطح ${m.mentorLevel || 1}</span></td>
-      <td class="p-2.5 text-center font-bold text-amber-400">★ ${m.avgRating || '5.0'}</td>
-      <td class="p-2.5 text-center">
-        <button class="px-2 py-1 bg-indigo-600/80 text-white text-xs rounded" onclick="if(typeof viewMentorDossier==='function') viewMentorDossier('${m.id}')">شناسنامه</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-};
-
-// 4. Caravans Table Loader (#caravans-tbody)
-window.loadCaravansData = async function() {
-  const tbody = document.getElementById('caravans-tbody') || document.querySelector('#caravans-data-table tbody');
-  if (!tbody) return;
-
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-indigo-400">در حال بارگذاری کاروان‌ها...</td></tr>';
-  let raw = await fetchWithFallback('/api/v1/admin/caravans', '/api/v1/caravans');
-  let caravans = Array.isArray(raw) ? raw : (raw?.data || []);
-
-  if (!caravans || caravans.length === 0) {
-    caravans = [
-      { id: 'c1', name: 'گروه مربی جلالی', mentor: { name: 'رضا جلالی' }, memberCount: 2, capacityLimit: 50, totalZarik: 620, overallProgress: 45 },
-      { id: 'c2', name: 'گروه مربی کویتی', mentor: { name: 'محمد کویتی' }, memberCount: 2, capacityLimit: 50, totalZarik: 700, overallProgress: 60 },
-      { id: 'c3', name: 'گروه مربی خوش‌منظر', mentor: { name: 'علیرضا خوش‌منظر' }, memberCount: 2, capacityLimit: 50, totalZarik: 480, overallProgress: 30 }
-    ];
-  }
-
-  tbody.innerHTML = '';
-  caravans.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/60 text-gray-200';
-    tr.innerHTML = `
-      <td class="p-3 font-bold text-indigo-200">${c.name}</td>
-      <td class="p-3 text-sm">${c.mentor?.name || c.mentorName || 'بدون راهبر'}</td>
-      <td class="p-3 text-center font-mono text-sm">${c.memberCount || c.membersList?.length || 0} / ${c.capacityLimit || 50}</td>
-      <td class="p-3 text-center font-bold text-amber-400 font-mono">${(c.assets?.zarik || c.totalZarik || c.totalWealth || 0).toLocaleString()}</td>
-      <td class="p-3 text-center">
-        <div class="flex items-center justify-center gap-2">
-          <div class="w-16 h-2 bg-slate-800 rounded-full overflow-hidden">
-            <div class="h-full bg-emerald-500 rounded-full" style="width: ${c.overallProgress || 0}%"></div>
-          </div>
-          <span class="text-xs text-gray-400 font-mono">${c.overallProgress || 0}%</span>
-        </div>
-      </td>
-      <td class="p-3 text-center text-xs text-gray-400 font-mono">لحظاتی پیش</td>
-      <td class="p-3 text-center">
-        <button class="px-2.5 py-1 bg-emerald-600/80 hover:bg-emerald-600 text-white text-xs rounded-lg transition" onclick="if(typeof viewCaravanDetails==='function') viewCaravanDetails('${c.id}')">مدیریت</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-};
-
-// 5. Automatic Event Binding On Load
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (window.loadUsersData) window.loadUsersData();
-    if (window.loadLmsStationsData) window.loadLmsStationsData();
-    if (window.loadMentorsData) window.loadMentorsData();
-    if (window.loadCaravansData) window.loadCaravansData();
-  }, 300);
-});
-
-
-

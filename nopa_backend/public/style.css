@@ -426,6 +426,9 @@ body {
   align-items: center;
   margin-bottom: 20px;
   padding: 20px;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
 }
 
 .filters-group {
@@ -500,7 +503,7 @@ body {
 
 /* Data Table Styles */
 .table-container {
-  overflow-x: auto;
+  overflow: visible;
   margin-bottom: 20px;
 }
 
@@ -632,6 +635,7 @@ body {
 .panel-card {
   padding: 24px;
   margin-bottom: 30px;
+  overflow: visible;
 }
 
 .panel-title {
@@ -898,4 +902,49 @@ input:checked + .slider:before {
   .drawer-content { width: 100%; }
   .actions-header { flex-direction: column; align-items: flex-start; }
   .stats-grid { grid-template-columns: 1fr; }
+}
+
+/* Caravan Drawer Styles */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  display: none;
+  justify-content: flex-end;
+}
+.drawer-content {
+  background: var(--bg-primary);
+  width: 80%;
+  max-width: 900px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+}
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 15px;
+}
+.stat-card {
+  background: rgba(255,255,255,0.05);
+  padding: 12px 18px;
+  border-radius: 10px;
+  min-width: 120px;
+}
+.stat-card label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.stat-card span {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--color-neon-blue);
 }

@@ -1,4 +1,97 @@
-<!DOCTYPE html>
+
+  <!-- Multi-Tab Full Inspector Modal / Drawer -->
+  <div id="lms-inspector-modal" style="display: none;" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 transition-all">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <!-- Modal Top Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+        <div class="flex items-center gap-3">
+          <div id="inspector-badge" class="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-mono font-black text-base">MZ1</div>
+          <div>
+            <h3 id="inspector-title" class="text-base font-bold text-white" style="color: white !important;">عنوان منزلگاه</h3>
+            <p id="inspector-subtitle" class="text-xs text-slate-400 mt-0.5" style="color: #94a3b8 !important;">شناسه منزلگاه در دیتابیس لوکال</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center bg-slate-800/80 p-1 rounded-xl border border-slate-700/60">
+            <button type="button" onclick="window.switchInspectorTab('info')" id="tab-btn-info" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition bg-indigo-600 text-white" style="color: white !important;">مشخصات و ویرایش</button>
+            <button type="button" onclick="window.switchInspectorTab('sessions')" id="tab-btn-sessions" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white" style="color: #94a3b8 !important;">کلاس‌ها و آزمون‌ها</button>
+            <button type="button" onclick="window.switchInspectorTab('analytics')" id="tab-btn-analytics" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white" style="color: #94a3b8 !important;">تحلیل پیشرفت</button>
+          </div>
+          <button type="button" onclick="document.getElementById('lms-inspector-modal').style.display='none'" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm" style="color: #94a3b8 !important;">✕</button>
+        </div>
+      </div>
+
+      <!-- Modal Body Tabs -->
+      <div class="p-6 overflow-y-auto space-y-5 text-right flex-1" style="direction: rtl;">
+        <!-- TAB 1: Information & Edit Form -->
+        <div id="inspector-tab-info" class="space-y-4">
+          <form id="lms-live-edit-form" onsubmit="window.saveStationToDb(event)" class="space-y-4">
+            <input type="hidden" id="edit-station-id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-slate-400 text-xs mb-1 font-semibold" style="color: #94a3b8 !important;">ایندکس منزلگاه:</label>
+                <input type="number" id="edit-station-index" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500" style="color: white !important;">
+              </div>
+              <div>
+                <label class="block text-slate-400 text-xs mb-1 font-semibold" style="color: #94a3b8 !important;">عنوان کامل منزلگاه:</label>
+                <input type="text" id="edit-station-title" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500" style="color: white !important;">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-slate-400 text-xs mb-1 font-semibold" style="color: #94a3b8 !important;">اساتید (مهارتی | رسانه‌ای):</label>
+                <input type="text" id="edit-station-mentor" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500" style="color: white !important;">
+              </div>
+              <div>
+                <label class="block text-slate-400 text-xs mb-1 font-semibold" style="color: #94a3b8 !important;">زمان‌بندی برگزاری:</label>
+                <input type="text" id="edit-station-schedule" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500" style="color: white !important;">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 text-xs mb-1 font-semibold" style="color: #94a3b8 !important;">توضیحات و سرفصل‌ها:</label>
+              <textarea id="edit-station-desc" rows="3" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-white outline-none focus:border-indigo-500" style="color: white !important;"></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+              <span id="edit-save-status" class="text-xs font-bold"></span>
+              <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/30 transition" style="color: white !important;">💾 ذخیره تغییرات در دیتابیس</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: Nested Classes, Sessions & Quizzes -->
+        <div id="inspector-tab-sessions" style="display: none;" class="space-y-4">
+          <div class="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl border border-slate-700/60">
+            <span class="text-xs text-slate-300 font-bold" style="color: #cbd5e1 !important;">📚 سرفصل‌ها، پارت‌های آموزشی و بانک سوالات</span>
+            <span id="inspector-sessions-stat" class="text-xs text-indigo-400 font-mono" style="color: #818cf8 !important;"></span>
+          </div>
+          <div id="inspector-sessions-container" class="space-y-3">
+            <!-- Nested sessions populated via JS -->
+          </div>
+        </div>
+
+        <!-- TAB 3: Analytics & Progress Metrics -->
+        <div id="inspector-tab-analytics" style="display: none;" class="space-y-4">
+          <div class="grid grid-cols-3 gap-4">
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+              <p class="text-xs text-slate-400" style="color: #94a3b8 !important;">نرخ تکمیل جلسات</p>
+              <h4 class="text-xl font-bold text-emerald-400 mt-1" style="color: #34d399 !important;">۸۸٪</h4>
+            </div>
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+              <p class="text-xs text-slate-400" style="color: #94a3b8 !important;">میانگین نمره آزمون</p>
+              <h4 class="text-xl font-bold text-amber-400 mt-1" style="color: #fbbf24 !important;">۱۸.۵</h4>
+            </div>
+            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+              <p class="text-xs text-slate-400" style="color: #94a3b8 !important;">مخاطبان در حال آموزش</p>
+              <h4 class="text-xl font-bold text-indigo-400 mt-1" style="color: #818cf8 !important;">۵۰۰+</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>\n<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -1064,121 +1157,276 @@
       </section>
 
       <!-- LMS -->
+      
+      <!-- LMS Unified View -->
       <section id="stations-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">مدیریت منزلگاه‌ها</div>
-          <form id="station-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>پکیج والد</label>
-              <select id="station-pkg-id" class="select-ctrl"></select>
-            </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>عنوان منزلگاه</label>
-              <input type="text" id="station-title" class="input-ctrl" required>
-            </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>تاریخ آزادسازی (مثبت: روزهای بعد از ثبت‌نام، یا تاریخ دقیق)</label>
-              <input type="date" id="station-release-date" class="input-ctrl">
-            </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>زمان آزادسازی</label>
-              <input type="time" id="station-release-time" class="input-ctrl">
-            </div>
-            <button type="submit" class="btn-primary">ثبت منزلگاه</button>
-          </form>
+        <!-- Breadcrumbs -->
+        <div class="panel-card glass" style="margin-bottom: 20px; padding: 10px 20px;">
+          <div id="lms-breadcrumbs" style="display: flex; gap: 8px; align-items: center; color: var(--text-muted); font-size: 14px;">
+            <span style="cursor: pointer; color: var(--primary);" onclick="navigateToLevel(0)">منزلگاه‌ها</span>
+          </div>
         </div>
-        
-        <div class="panel-card glass">
-          <div class="panel-title">لیست منزلگاه‌ها</div>
-          <table class="data-table" id="stations-table">
-            <thead>
-              <tr>
-                <th>ترتیب</th>
-                <th>عنوان</th>
-                <th>زیرعنوان</th>
-                <th>تاریخ انتشار</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Stations will be rendered here -->
-            </tbody>
-          </table>
+
+        <!-- View 0: Stations -->
+        <div id="lms-view-0" class="lms-view">
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div class="panel-title">مدیریت منزلگاه‌ها</div>
+            <div class="table-container glass">
+              <table class="data-table" id="stations-table">
+                <thead>
+                  <tr>
+                    <th>ترتیب</th>
+                    <th>عنوان</th>
+                    <th>زیرعنوان</th>
+                    <th>تاریخ انتشار</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        <!-- View 1: Classes -->
+        <div id="lms-view-1" class="lms-view" style="display: none;">
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="panel-title">کلاس‌ها</div>
+              <button class="btn-primary" onclick="openClassModal()">+ ایجاد کلاس</button>
+            </div>
+            <div class="table-container glass">
+              <table class="data-table" id="classes-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>عنوان کلاس</th>
+                    <th>نوع</th>
+                    <th>مدرس</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 2: Sessions -->
+        <div id="lms-view-2" class="lms-view" style="display: none;">
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="panel-title">جلسات</div>
+              <button class="btn-primary" onclick="openSessionModal()">+ ایجاد جلسه</button>
+            </div>
+            <div class="table-container glass">
+              <table class="data-table" id="sessions-table">
+                <thead>
+                  <tr>
+                    <th>شماره جلسه</th>
+                    <th>عنوان</th>
+                    <th>توضیحات</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 3: Parts -->
+        <div id="lms-view-3" class="lms-view" style="display: none;">
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="panel-title">پارت‌های آموزشی (ویدیوها)</div>
+              <button class="btn-primary" onclick="openPartModal()">+ ایجاد پارت</button>
+            </div>
+            <div class="table-container glass">
+              <table class="data-table" id="parts-table">
+                <thead>
+                  <tr>
+                    <th>پارت</th>
+                    <th>عنوان</th>
+                    <th>مدت زمان (دقیقه)</th>
+                    <th>لینک‌ها (۴ گروه سنی)</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 4: Questions -->
+        <div id="lms-view-4" class="lms-view" style="display: none;">
+          <div class="panel-card glass" style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="panel-title">سوالات (ارزیابی پارت)</div>
+              <button class="btn-primary" onclick="openQuestionModal()">+ ایجاد سوال</button>
+            </div>
+            <div class="table-container glass">
+              <table class="data-table" id="questions-table">
+                <thead>
+                  <tr>
+                    <th>متن سوال</th>
+                    <th>گزینه‌ها</th>
+                    <th>پاسخ صحیح</th>
+                    <th>عملیات</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </section>
 
-      <section id="classes-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">مدیریت کلاس‌ها و رسانه‌ها</div>
-          <form id="class-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>منزلگاه والد</label>
-              <select id="class-subcourse-id" class="select-ctrl"></select>
-            </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
+      <!-- LMS Modals -->
+      <!-- Class Modal -->
+      <div id="class-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass" style="max-width: 500px;">
+          <h3 id="class-modal-title">ایجاد کلاس</h3>
+          <form id="class-modal-form" onsubmit="submitClass(event)">
+            <input type="hidden" id="class-id">
+            <div class="form-group">
               <label>عنوان کلاس</label>
               <input type="text" id="class-title" class="input-ctrl" required>
             </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>نام مدرس</label>
-              <input type="text" id="class-teacher" class="input-ctrl" required>
+            <div class="form-group">
+              <label>نوع کلاس</label>
+              <select id="class-type" class="select-ctrl" required>
+                <option value="Skill">مهارتی (Skill)</option>
+                <option value="Media">رسانه‌ای (Media)</option>
+              </select>
             </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>فایل رسانه (آپلود)</label>
-              <input type="file" id="class-media" class="input-ctrl">
+            <div class="form-group">
+              <label>مدرس</label>
+              <select id="class-teacher" class="select-ctrl" required>
+                <!-- Filled by JS -->
+              </select>
             </div>
-            <button type="submit" class="btn-primary">ثبت کلاس</button>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+              <button type="button" class="btn-action" onclick="document.getElementById('class-modal').style.display='none'">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره</button>
+            </div>
           </form>
         </div>
-        <div class="table-container glass">
-           <table class="data-table" id="classes-table">
-             <thead>
-               <tr>
-                 <th>عنوان کلاس</th>
-                 <th>مدرس</th>
-                 <th>منزلگاه</th>
-                 <th>لینک ویدیو</th>
-               </tr>
-             </thead>
-             <tbody>
-             </tbody>
-           </table>
-        </div>
-      </section>
+      </div>
 
-      <section id="quizzes-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">آزمون‌ها و چالش‌ها</div>
-          <form id="quiz-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>عنوان آزمون/چالش</label>
-              <input type="text" id="quiz-title" class="input-ctrl" required>
+      <!-- Session Modal -->
+      <div id="session-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass" style="max-width: 500px;">
+          <h3 id="session-modal-title">ایجاد جلسه</h3>
+          <form id="session-modal-form" onsubmit="submitSession(event)">
+            <input type="hidden" id="session-id">
+            <div class="form-group">
+              <label>شماره جلسه (ترتیب)</label>
+              <input type="number" id="session-order" class="input-ctrl" required>
             </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>پاداش زریک</label>
-              <input type="number" id="quiz-reward" class="input-ctrl" required>
+            <div class="form-group">
+              <label>عنوان جلسه</label>
+              <input type="text" id="session-title" class="input-ctrl" required>
             </div>
-            <div class="form-group" style="flex:1; min-width:200px;">
-              <label>حداقل نمره قبولی</label>
-              <input type="number" id="quiz-pass-score" class="input-ctrl" required>
+            <div class="form-group">
+              <label>توضیحات</label>
+              <textarea id="session-desc" class="input-ctrl" rows="3"></textarea>
             </div>
-            <button type="submit" class="btn-primary">ثبت آزمون</button>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+              <button type="button" class="btn-action" onclick="document.getElementById('session-modal').style.display='none'">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره</button>
+            </div>
           </form>
         </div>
-        <div class="table-container glass">
-           <table class="data-table" id="quizzes-table">
-             <thead>
-               <tr>
-                 <th>عنوان آزمون</th>
-                 <th>پاداش زریک</th>
-                 <th>نمره قبولی</th>
-               </tr>
-             </thead>
-             <tbody>
-             </tbody>
-           </table>
+      </div>
+
+      <!-- Part Modal -->
+      <div id="part-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass" style="max-width: 500px;">
+          <h3 id="part-modal-title">ایجاد پارت آموزشی</h3>
+          <form id="part-modal-form" onsubmit="submitPart(event)">
+            <input type="hidden" id="part-id">
+            <div class="form-group">
+              <label>شماره پارت (ترتیب)</label>
+              <input type="number" id="part-order" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>عنوان پارت</label>
+              <input type="text" id="part-title" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>مدت زمان (دقیقه)</label>
+              <input type="number" id="part-duration" class="input-ctrl">
+            </div>
+            <div class="form-group">
+              <label>لینک ویدیو (کودک)</label>
+              <input type="text" id="part-link-child" class="input-ctrl">
+            </div>
+            <div class="form-group">
+              <label>لینک ویدیو (نوجوان)</label>
+              <input type="text" id="part-link-teen" class="input-ctrl">
+            </div>
+            <div class="form-group">
+              <label>لینک ویدیو (جوان)</label>
+              <input type="text" id="part-link-youth" class="input-ctrl">
+            </div>
+            <div class="form-group">
+              <label>لینک ویدیو (بزرگسال)</label>
+              <input type="text" id="part-link-adult" class="input-ctrl">
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+              <button type="button" class="btn-action" onclick="document.getElementById('part-modal').style.display='none'">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره</button>
+            </div>
+          </form>
         </div>
-      </section>
+      </div>
+
+      <!-- Question Modal -->
+      <div id="question-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass" style="max-width: 500px;">
+          <h3 id="question-modal-title">ایجاد سوال</h3>
+          <form id="question-modal-form" onsubmit="submitQuestion(event)">
+            <input type="hidden" id="question-index">
+            <div class="form-group">
+              <label>متن سوال</label>
+              <input type="text" id="question-text" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>گزینه A</label>
+              <input type="text" id="question-opt-a" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>گزینه B</label>
+              <input type="text" id="question-opt-b" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>گزینه C</label>
+              <input type="text" id="question-opt-c" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>گزینه D</label>
+              <input type="text" id="question-opt-d" class="input-ctrl" required>
+            </div>
+            <div class="form-group">
+              <label>پاسخ صحیح</label>
+              <select id="question-correct" class="select-ctrl" required>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+              <button type="button" class="btn-action" onclick="document.getElementById('question-modal').style.display='none'">انصراف</button>
+              <button type="submit" class="btn-primary">ذخیره</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
 
       <!-- Students -->
       <section id="levels-tab" class="tab-panel" style="display: none;">
@@ -1289,85 +1537,161 @@
       </section>
       <!-- LMS -->
       <section id="lms-tab" class="tab-panel" style="display: none;">
-        <!-- Stations List Table -->
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
-            <div class="panel-title">ساختار منزلگاه‌ها (Stations Management)</div>
-            <button type="button" class="btn-primary" onclick="initNewStation()"><i class="fa-solid fa-plus"></i> ایجاد منزلگاه جدید</button>
+        <div class="w-full space-y-6">
+  <!-- Top Stat Cards (Exact mirror of Users Directory Cards) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-md flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">کل منزلگاهها</p>
+        <h3 class="text-2xl font-black text-white mt-1">۵</h3>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">🧭</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-md flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">تعداد جلسات مصوب</p>
+        <h3 class="text-2xl font-black text-emerald-400 mt-1">۴۰</h3>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">🎓</div>
+    </div>
+
+    <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 shadow-xl backdrop-blur-md flex items-center justify-between">
+      <div>
+        <p class="text-xs text-slate-400 font-medium">بانک آزمونهای آنلاین</p>
+        <h3 class="text-2xl font-black text-amber-400 mt-1">۴۰۰</h3>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl">📝</div>
+    </div>
+  </div>
+
+  <!-- Filter & Action Toolbar with Distinct Excel & PDF Exports -->
+  <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <button type="button" onclick="window.openCreateStationModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+        <span>➕</span> ایجاد منزلگاه
+      </button>
+      <button type="button" onclick="window.exportLmsToExcel()" class="px-4 py-2.5 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white text-xs font-semibold rounded-xl border border-emerald-500/30 transition flex items-center gap-1.5">
+        <span>📊</span> خروجی اکسل
+      </button>
+      <button type="button" onclick="window.exportLmsToPdf()" class="px-4 py-2.5 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-semibold rounded-xl border border-rose-500/30 transition flex items-center gap-1.5">
+        <span>📄</span> خروجی PDF
+      </button>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 flex-1 justify-end min-w-[300px]">
+      <select id="lms-filter-category" onchange="window.filterLmsTable()" class="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none focus:border-indigo-500">
+        <option value="all">دسته (همه)</option>
+        <option value="مهارتی">مهارتی</option>
+        <option value="رسانهای">رسانهای</option>
+        <option value="ترکیبی">ترکیبی</option>
+      </select>
+
+      <select id="lms-filter-instructor" onchange="window.filterLmsTable()" class="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-300 outline-none focus:border-indigo-500">
+        <option value="all">استاد (همه)</option>
+        <option value="خوشمنظر">علیرضا خوشمنظر</option>
+        <option value="پیراینهگر">پیراینهگر</option>
+        <option value="پیرچهرهتراش">پیرچهرهتراش</option>
+        <option value="پیردیدهبان">پیردیدهبان</option>
+        <option value="پیرناخدا">پیرناخدا</option>
+        <option value="پیرمنجم">پیرمنجم</option>
+        <option value="حیدری">حیدری</option>
+        <option value="زاهدی">کمیل زاهدی</option>
+      </select>
+
+      <div class="relative min-w-[220px]">
+        <input type="text" id="lms-search-input" oninput="window.filterLmsTable()" placeholder="جستجو بر اساس نام منزلگاه یا استاد..." class="w-full bg-slate-800/80 border border-slate-700/80 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-400 outline-none focus:border-indigo-500 transition">
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Data Table (Users Directory Mirror) -->
+  <div class="w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl">
+    <table class="w-full text-right text-xs">
+      <thead>
+        <tr class="bg-slate-800/90 border-b border-slate-700/80 text-slate-300 font-semibold">
+          <th class="p-4 text-center w-16">شناسه</th>
+          <th class="p-4 w-56">نام منزلگاه</th>
+          <th class="p-4 w-56 text-center">اساتید دوره</th>
+          <th class="p-4 w-32 text-center">دسته کلاس</th>
+          <th class="p-4 w-44 text-center">زمانبندی</th>
+          <th class="p-4 w-40 text-center">جلسات</th>
+          <th class="p-4 w-24 text-center">وضعیت</th>
+          <th class="p-4 w-32 text-center">عملیات</th>
+        </tr>
+      </thead>
+      <tbody id="lms-directory-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+        <!-- Live rows injected via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Complete Floating Station Creator & Editor Modal -->
+  <div id="lms-station-creator-modal" style="display: none;" class="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 transition-all">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 shadow-2xl space-y-5 text-right max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <h3 id="station-modal-title" class="text-base font-bold text-white flex items-center gap-2">
+          <span>➕</span> تعریف / ویرایش منزلگاه و سرفصلهای آموزشی
+        </h3>
+        <button type="button" onclick="document.getElementById('lms-station-creator-modal').style.display='none'" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-sm">✕</button>
+      </div>
+
+      <form id="lms-creator-form" class="space-y-4" onsubmit="window.saveCompleteStation(event)">
+        <input type="hidden" id="modal-st-id">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">شماره منزلگاه (۱ تا ۵):</label>
+            <input type="number" id="modal-st-index" min="1" max="10" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
           </div>
-          <div class="table-container">
-            <table class="data-table" id="stations-table">
-              <thead>
-                <tr>
-                  <th style="width: 80px;">ایندکس</th>
-                  <th>نام منزلگاه</th>
-                  <th>زمان آزادسازی</th>
-                  <th>توضیحات</th>
-                  <th style="width: 150px;">عملیات</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Populated dynamically -->
-              </tbody>
-            </table>
+          <div class="md:col-span-2">
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">عنوان منزلگاه:</label>
+            <input type="text" id="modal-st-title" placeholder="مثال: مبانی شناخت و رسانه (شوک و اینشات)" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
           </div>
         </div>
 
-        <!-- Unified Visual Form Builder -->
-        <div class="panel-card glass" id="lms-builder-card" style="display: none; margin-bottom: 20px;">
-          <div class="panel-title" id="lms-builder-title">ایجاد منزلگاه جدید</div>
-          
-          <form id="lms-unified-form" onsubmit="submitLmsStationUnified(event)" style="margin-top: 15px;">
-            <input type="hidden" id="lms-station-id">
-            
-            <!-- Station Root Fields -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-              <div class="form-group">
-                <label>عنوان منزلگاه (نام منزلگاه)</label>
-                <input type="text" id="lms-station-title" class="input-ctrl" required placeholder="مثال: کاروانسرای اول">
-              </div>
-              <div class="form-group">
-                <label>ترتیب/ایندکس (ترتیب)</label>
-                <input type="number" id="lms-station-order" class="input-ctrl" required placeholder="مثال: 1" value="0">
-              </div>
-              <div class="form-group">
-                <label>تاریخ آزادسازی</label>
-                <input type="date" id="lms-station-release-date" class="input-ctrl">
-              </div>
-              <div class="form-group">
-                <label>ساعت آزادسازی</label>
-                <input type="time" id="lms-station-release-time" class="input-ctrl">
-              </div>
-              <div class="form-group" style="grid-column: span 2;">
-                <label>توضیحات منزلگاه</label>
-                <input type="text" id="lms-station-desc" class="input-ctrl" placeholder="توضیحات راهنما برای دانش‌آموزان...">
-              </div>
-              <div class="form-group" style="grid-column: span 2;">
-                <label>آدرس تصویر بنر کاور (Banner Cover Image)</label>
-                <input type="text" id="lms-station-icon" class="input-ctrl" placeholder="آدرس تصویر بنر...">
-              </div>
-            </div>
-
-            <!-- Categories Builder Container -->
-            <div style="margin-bottom: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; background: #2D1B4E; padding: 10px 15px; border-radius: 8px;">
-                <span style="font-weight: bold; color: white;">دسته‌بندی‌های کلاس‌ها</span>
-                <button type="button" class="btn-primary" style="padding: 4px 10px; font-size: 11px;" onclick="addCategoryUI()"><i class="fa-solid fa-plus"></i> افزودن دسته کلاس</button>
-              </div>
-              
-              <!-- Categories list elements -->
-              <div id="builder-categories-container" style="margin-top: 15px; display: flex; flex-direction: column; gap: 15px;">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
-
-            <!-- Form Action Buttons -->
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px;">
-              <button type="button" class="page-btn" onclick="cancelLmsBuilder()">انصراف</button>
-              <button type="submit" class="btn-primary">ذخیره کامل ساختار منزلگاه</button>
-            </div>
-          </form>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">دسته کلاس و نوع سرفصل:</label>
+            <select id="modal-st-cat" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
+              <option value="ترکیبی">ترکیبی (مهارتی + رسانهای)</option>
+              <option value="مهارتی">صرفاً مهارتی (شنبه و دوشنبه)</option>
+              <option value="رسانهای">صرفاً رسانهای (۵شنبه و جمعه)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">اساتید دوره (مهارتی / رسانهای):</label>
+            <input type="text" id="modal-st-instructors" placeholder="مثال: پیراینهگر (مهارتی) / علیرضا خوشمنظر (رسانهای)" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
+          </div>
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">زمانبندی برگزاری:</label>
+            <input type="text" id="modal-st-schedule" value="شنبه و دوشنبه (مهارتی) / ۵شنبه و جمعه (رسانهای)" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
+          </div>
+          <div>
+            <label class="block text-slate-300 text-xs mb-1.5 font-semibold">تعداد جلسات مصوب:</label>
+            <input type="number" id="modal-st-sessions" value="4" min="1" max="40" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white outline-none focus:border-indigo-500 text-xs">
+          </div>
+        </div>
+
+        <div class="bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between text-xs font-bold text-indigo-300">
+            <span>🎬 تعریف سرفصل جلسات، پارتهای آموزشی و بانک آزمونها</span>
+            <span class="text-slate-400 font-mono">۴ پارت ۱۵ دقیقهای برای هر جلسه</span>
+          </div>
+          <textarea id="modal-st-details" rows="3" placeholder="نام جلسات، پارتهای ویدیویی (آپارات)، آزمونهای ۴ گزینهای و تکالیف مربوطه..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white outline-none focus:border-indigo-500 text-xs"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <button type="button" onclick="document.getElementById('lms-station-creator-modal').style.display='none'" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">انصراف</button>
+          <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/30">💾 ثبت و ذخیره در دیتابیس</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
       </section>
 
       <!-- DYNAMIC FORM BUILDER -->
@@ -2052,7 +2376,7 @@
     .dropdown-wrapper:hover .dropdown-content { display: block; }
     .dropdown-content {
       display: none; position: absolute; right: 0; background: var(--bg-card); min-width: 120px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 100; border-radius: 8px; overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; border-radius: 8px; overflow: hidden;
       border: 1px solid var(--border-color);
     }
     .dropdown-content a {
@@ -2296,5 +2620,6 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="lms.js"></script>
 </body>
 </html>
