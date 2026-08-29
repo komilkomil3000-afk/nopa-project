@@ -407,12 +407,30 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
     html += `
       <div style="background:${bg}; border:1px solid ${color}44; border-radius:12px; padding:16px; margin-bottom:20px;">
-        <div style="margin:0 0 15px 0; display:flex; align-items:center; justify-content:space-between;">
+        <div style="margin:0 0 12px 0; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
           <h4 style="margin:0; color:${color}; font-size:15px; display:flex; align-items:center; gap:8px;">
             <span class="badge" style="background:${isSkill ? '#0284c7' : '#7c3aed'}; color:white; padding:3px 8px; border-radius:6px; font-size:12px;">${isSkill ? 'دسته ۱' : 'دسته ۲'}</span>
             <i class="fa-solid ${isSkill ? 'fa-person-running' : 'fa-photo-film'}"></i> ${cat.title}
           </h4>
           <span style="font-size:12px; color:#cbd5e1; background:rgba(0,0,0,0.3); padding:4px 10px; border-radius:8px;">${sessions.length} جلسه ثبت‌شده</span>
+        </div>
+
+        <!-- Quick Batch Zarik Allocation Tool for this entire Category -->
+        <div style="background:rgba(245, 158, 11, 0.09); border:1px dashed rgba(245, 158, 11, 0.4); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-coins" style="color:#fbbf24; font-size:18px;"></i>
+            <div>
+              <div style="font-weight:bold; color:#fbbf24; font-size:12px;">تخصیص یکجای پاداش زریک برای تمام پارت‌ها و آزمونک‌های این دسته:</div>
+              <div style="font-size:11px; color:#94a3b8;">با یک کلیک، پاداش تمامی آزمونک‌های این دسته تعیین شده و پس از پاسخ صحیح به دانش‌آموز اعطا می‌گردد.</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:11px; color:#cbd5e1;">پاداش هر پارت:</label>
+            <input type="number" id="batch-zarik-cat-${cat.id}" class="input-ctrl" value="15" min="1" max="1000" style="width:65px; padding:5px 6px; text-align:center; background:#0f172a; border-color:#f59e0b; color:#fbbf24; font-weight:bold; font-size:12px;">
+            <button type="button" onclick="window.applyBatchZarikToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:black; font-weight:bold; border:none; padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-bolt"></i> اعمال روی کل این دسته
+            </button>
+          </div>
         </div>
     `;
 
@@ -459,7 +477,6 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
           clips.forEach((clip, cIdx) => {
             const isFirstClip = cIdx === 0;
             const isLastClip = cIdx === clips.length - 1;
-            const clipQuizzes = quizzes.filter(q => q.clipId === clip.id || q.orderIndex === (clip.clipOrder || cIdx + 1));
 
             html += `
               <div style="background:rgba(30, 41, 59, 0.9); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;">
@@ -951,7 +968,47 @@ window.deleteQuizRecord = async function(quizId) {
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
     }
   } catch (err) {
-    console.error(err);
+    console.error('Delete quiz error:', err);
+  }
+};
+
+window.applyBatchZarikToCategory = async function(categoryId, stationId) {
+  const inputEl = document.getElementById(`batch-zarik-cat-${categoryId}`);
+  const amount = parseInt(inputEl ? inputEl.value : 15);
+  if (isNaN(amount) || amount < 0) {
+    alert('لطفاً یک عدد معتبر برای پاداش زریک وارد نمایید.');
+    return;
+  }
+
+  if (!confirm(`آیا مطمئنید که می‌خواهید پاداش ${amount} زریک را برای تمام پارت‌ها و آزمونک‌های این دسته اعمال کنید؟`)) {
+    return;
+  }
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-zarik`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ rewardZarik: amount })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      alert(data.message || 'پاداش زریک با موفقیت روی تمام پارت‌ها اعمال شد');
+      await window.fetchLiveLmsStations();
+      if (stationId) {
+        window.openStationContentManagerModal(stationId);
+      }
+    } else {
+      const data = await res.json();
+      alert('خطا در اعمال پاداش گروهی زریک: ' + (data.error || 'خطای ناشناخته'));
+    }
+  } catch (err) {
+    console.error('Batch zarik error:', err);
+    alert('ارتباط با سرور برقرار نشد');
   }
 };
 

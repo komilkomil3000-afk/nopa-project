@@ -511,6 +511,57 @@ export const createOrUpdateQuiz = async (req: Request, res: Response) => {
   }
 };
 
+export const setBatchCategoryZarik = async (req: Request, res: Response) => {
+  try {
+    const { id: categoryId } = req.params;
+    const { rewardZarik } = req.body;
+    const amount = parseInt(rewardZarik);
+    if (isNaN(amount) || amount < 0) {
+      return res.status(400).json({ error: 'مقدار زریک نامعتبر است' });
+    }
+
+    const sessions = await prisma.classSession.findMany({
+      where: { categoryId },
+      include: { quizzes: true, videoClips: { include: { quizzes: true } } }
+    });
+
+    const sessionIds = sessions.map(s => s.id);
+    let quizIds: string[] = [];
+
+    sessions.forEach(s => {
+      (s.quizzes || []).forEach(q => quizIds.push(q.id));
+      (s.videoClips || []).forEach(clip => {
+        (clip.quizzes || []).forEach(q => quizIds.push(q.id));
+      });
+    });
+
+    quizIds = Array.from(new Set(quizIds));
+
+    await prisma.$transaction(async (tx) => {
+      if (quizIds.length > 0) {
+        await tx.quiz.updateMany({
+          where: { id: { in: quizIds } },
+          data: { rewardZarik: amount }
+        });
+      }
+      if (sessionIds.length > 0) {
+        await tx.classSession.updateMany({
+          where: { id: { in: sessionIds } },
+          data: { maxZarikReward: amount }
+        });
+      }
+    });
+
+    res.json({ 
+      message: `پاداش ${amount} زریک با موفقیت روی تمامی ${quizIds.length} آزمونک این دسته اعمال شد`, 
+      updatedCount: quizIds.length 
+    });
+  } catch (error: any) {
+    console.error('setBatchCategoryZarik error:', error);
+    res.status(500).json({ error: error.message || 'خطا در اعمال پاداش زریک' });
+  }
+};
+
 export const seedStations = async (req: Request, res: Response) => {
   try {
     const existing = await prisma.station.count();
@@ -693,29 +744,53 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       return res.status(404).json({ error: 'آزمون این جلسه یافت نشد' });
     }
 
-    const targetQuiz = quizId ? session.quizzes.find(q => q.id === quizId) : session.quizzes[0];
+    let targetQuiz: any = quizId ? session.quizzes.find(q => q.id === quizId) : undefined;
+    if (!targetQuiz) {
+      // Also search in videoClips
+      const sessionWithClips = await prisma.classSession.findUnique({
+        where: { id: sessionId },
+        include: { videoClips: { include: { quizzes: true } } }
+      });
+      sessionWithClips?.videoClips.forEach(c => {
+        (c.quizzes || []).forEach(q => {
+          if (!targetQuiz && (q.id === quizId || !quizId)) targetQuiz = q;
+        });
+      });
+    }
+
+    if (!targetQuiz && session.quizzes.length > 0) {
+      targetQuiz = session.quizzes[0];
+    }
+
     if (!targetQuiz) {
       return res.status(404).json({ error: 'آزمون مشخص شده یافت نشد' });
     }
 
-    const questionsList = targetQuiz.questionsJson ? JSON.parse(targetQuiz.questionsJson) : [];
+    const validQuiz = targetQuiz;
+
+    const questionsList = validQuiz.questionsJson 
+      ? (typeof validQuiz.questionsJson === 'string' ? JSON.parse(validQuiz.questionsJson) : validQuiz.questionsJson) 
+      : [];
     let correctCount = 0;
 
     for (let i = 0; i < questionsList.length; i++) {
-      if (answers[i] === questionsList[i].correct) {
+      const q = questionsList[i];
+      const expectedCorrect = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : q.correctAnswer);
+      if (Number(answers[i]) === Number(expectedCorrect) || String(answers[i]) === String(expectedCorrect)) {
         correctCount++;
       }
     }
 
-    const minPass = session.minPassScore || 3;
+    const totalQuestions = questionsList.length || 1;
+    const requiredCorrect = Math.min(session.minPassScore || 1, totalQuestions);
     let passed = false;
     let submissionStatus = 'PENDING';
-    let rewardZarik = targetQuiz.rewardZarik || 200;
-    const rewardNakh = targetQuiz.rewardNakh || 0;
-    const rewardFarsh = targetQuiz.rewardFarsh || 0;
+    let rewardZarik = (validQuiz.rewardZarik !== undefined && validQuiz.rewardZarik !== null) ? validQuiz.rewardZarik : 10;
+    const rewardNakh = validQuiz.rewardNakh || 0;
+    const rewardFarsh = validQuiz.rewardFarsh || 0;
 
-    if (targetQuiz.type === 'MULTIPLE_CHOICE' || !targetQuiz.type) {
-      passed = correctCount >= minPass;
+    if (validQuiz.type === 'MULTIPLE_CHOICE' || !validQuiz.type) {
+      passed = correctCount >= (totalQuestions === 1 ? 1 : requiredCorrect);
       submissionStatus = passed ? 'APPROVED' : 'FAILED';
     } else {
       // For TEXT and FILE, it awaits mentor review
@@ -725,7 +800,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
 
     // Check if student has already passed this quiz to prevent double rewards
     const existingApproved = await prisma.quizSubmission.findFirst({
-      where: { quizId: targetQuiz.id, studentId: userId, status: 'APPROVED' }
+      where: { quizId: validQuiz.id, studentId: userId, status: 'APPROVED' }
     });
 
     const isFirstPass = passed && !existingApproved;
@@ -734,7 +809,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
     await prisma.$transaction(async (tx) => {
       submission = await tx.quizSubmission.create({
         data: {
-          quizId: targetQuiz.id,
+          quizId: validQuiz.id,
           studentId: userId,
           status: submissionStatus,
           score: correctCount,
@@ -767,7 +842,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
         }
 
         const clip = await tx.videoClip.findFirst({
-          where: { sessionId: session.id, clipOrder: targetQuiz.orderIndex }
+          where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
           const trackType = session.category?.title?.includes('مهارتی') ? 'skill' : 'media';
