@@ -273,19 +273,30 @@ async function createUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params;
-        const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
+        const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber } = req.body;
+        const prevUser = await prisma.user.findUnique({ where: { id } });
         const user = await prisma.user.update({
             where: { id },
             data: {
                 name,
                 role,
-                caravanId: caravanId || null,
+                phoneNumber: phoneNumber || undefined,
+                caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
                 levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
                 mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
                 nationalId: nationalId || undefined,
                 dateOfBirth: dateOfBirth || undefined,
             },
         });
+        // Update caravan member counts if caravan changed
+        if (prevUser && prevUser.caravanId && prevUser.caravanId !== user.caravanId) {
+            const prevCount = await prisma.user.count({ where: { caravanId: prevUser.caravanId } });
+            await prisma.caravan.update({ where: { id: prevUser.caravanId }, data: { memberCount: prevCount } }).catch(() => { });
+        }
+        if (user.caravanId) {
+            const newCount = await prisma.user.count({ where: { caravanId: user.caravanId } });
+            await prisma.caravan.update({ where: { id: user.caravanId }, data: { memberCount: newCount } }).catch(() => { });
+        }
         await logAdminAction(req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'UPDATE_USER', 'User', id, `ویرایش مشخصات کاربر: ${name}`, req.ip || '127.0.0.1');
         await prisma.notification.create({
             data: {

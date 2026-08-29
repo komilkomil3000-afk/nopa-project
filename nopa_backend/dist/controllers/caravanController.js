@@ -214,14 +214,23 @@ async function addMemberToCaravan(req, res) {
         const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
         if (!caravan)
             return res.status(404).json({ error: 'کاروان یافت نشد' });
-        if (caravan.members.length >= caravan.capacityLimit) {
-            return res.status(400).json({ error: `ظرفیت این کاروان تکمیل شده است (حداکثر ${caravan.capacityLimit} نفر)` });
+        const capacityLimit = caravan.capacityLimit && caravan.capacityLimit > 0 ? caravan.capacityLimit : 50;
+        if (caravan.members.length >= capacityLimit) {
+            await prisma.caravan.update({
+                where: { id },
+                data: { capacityLimit: caravan.members.length + 10 }
+            });
         }
         await prisma.user.update({
             where: { id: studentId },
             data: { caravanId: id }
         });
-        res.json({ success: true });
+        const memberCount = await prisma.user.count({ where: { caravanId: id } });
+        await prisma.caravan.update({
+            where: { id },
+            data: { memberCount }
+        });
+        res.json({ success: true, message: 'عضو با موفقیت به کاروان اضافه شد' });
     }
     catch (error) {
         res.status(500).json({ error: error.message });
@@ -316,30 +325,48 @@ async function getCaravanRequests(req, res) {
 }
 async function updateCaravan(req, res) {
     const { id } = req.params;
-    const { mentorId } = req.body;
+    const { mentorId, name, capacityLimit, description } = req.body;
     try {
+        const dataToUpdate = {};
+        if (mentorId !== undefined)
+            dataToUpdate.mentorId = mentorId || null;
+        if (name !== undefined)
+            dataToUpdate.name = name;
+        if (capacityLimit !== undefined)
+            dataToUpdate.capacityLimit = Number(capacityLimit);
+        if (description !== undefined)
+            dataToUpdate.description = description;
         const updated = await prisma.caravan.update({
             where: { id },
-            data: { mentorId }
+            data: dataToUpdate,
+            include: { mentor: true }
         });
-        res.json({ message: 'Caravan updated successfully', caravan: updated });
+        res.json({ message: 'کاروان با موفقیت بروزرسانی شد', caravan: updated });
     }
     catch (error) {
         res.status(500).json({ error: error.message });
     }
 }
 async function bulkAddMembersToCaravan(req, res) {
-    const { caravanId } = req.params;
+    const caravanId = req.params.id || req.params.caravanId;
     const { userIds } = req.body;
-    if (!Array.isArray(userIds)) {
-        return res.status(400).json({ error: 'userIds must be an array' });
+    if (!caravanId) {
+        return res.status(400).json({ error: 'شناسه کاروان مشخص نشده است' });
+    }
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'حداقل یک کاربر برای افزودن به کاروان انتخاب کنید' });
     }
     try {
         await prisma.user.updateMany({
             where: { id: { in: userIds } },
             data: { caravanId }
         });
-        res.json({ message: 'Users added successfully' });
+        const memberCount = await prisma.user.count({ where: { caravanId } });
+        await prisma.caravan.update({
+            where: { id: caravanId },
+            data: { memberCount }
+        });
+        res.json({ message: 'اعضا با موفقیت به کاروان اضافه شدند', memberCount });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

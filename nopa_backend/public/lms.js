@@ -149,7 +149,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all') {
         </td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
-            <button type="button" class="page-btn" style="background:#0284c7; color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.openStationContentManagerModal('${stationIdentifier}')" title="مدیریت پارت‌ها و آزمونک‌ها">
+            <button type="button" class="page-btn" style="background:#0284c7; color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.openStationContentManagerModal('${stationIdentifier}', '${selectedCategoryFilter}')" title="مدیریت پارت‌ها و آزمونک‌ها">
               <i class="fa-solid fa-film"></i> پارت‌ها و آزمونک‌ها
             </button>
             <button type="button" class="page-btn" style="background:#3b82f6; color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.editStationModal('${stationIdentifier}')" title="ویرایش عنوان و تقویم">
@@ -194,8 +194,10 @@ window.filterLmsTable = function() {
 
 // ==================== CONTENT MANAGER MODAL (VIDEO LINKS & QUIZZES PER PART) ====================
 
-window.openStationContentManagerModal = function(stationId) {
+window.openStationContentManagerModal = function(stationId, filterCat) {
   if (!window.lmsStationsMasterList || window.lmsStationsMasterList.length === 0) return;
+
+  const currentCatFilter = filterCat || document.getElementById('lms-filter-category')?.value || 'all';
 
   // Flexible Station Finder
   let station = window.lmsStationsMasterList.find(s => 
@@ -219,17 +221,32 @@ window.openStationContentManagerModal = function(stationId) {
   const modal = document.getElementById('lms-content-manager-modal');
   if (!modal) return;
 
+  let filterTitleSuffix = '';
+  if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
+    filterTitleSuffix = ' <span style="font-size:12px; color:#38bdf8; font-weight:normal; background:rgba(2,132,199,0.2); padding:2px 8px; border-radius:10px; margin-right:6px;">(فقط کلاس‌های مهارتی)</span>';
+  } else if (currentCatFilter === 'رسانه‌ای' || currentCatFilter === 'media') {
+    filterTitleSuffix = ' <span style="font-size:12px; color:#a78bfa; font-weight:normal; background:rgba(124,58,237,0.2); padding:2px 8px; border-radius:10px; margin-right:6px;">(فقط کلاس‌های رسانه‌ای)</span>';
+  }
+
   const titleEl = document.getElementById('lms-content-modal-title');
   if (titleEl) {
-    titleEl.innerHTML = `<i class="fa-solid fa-photo-film"></i> مدیریت ویدیوها و آزمونک‌های ${station.title}`;
+    titleEl.innerHTML = `<i class="fa-solid fa-photo-film"></i> مدیریت ویدیوها و آزمونک‌های ${station.title}${filterTitleSuffix}`;
   }
 
   const container = document.getElementById('lms-content-modal-body');
   if (!container) return;
 
-  const categories = station.categories || [];
+  let categories = station.categories || [];
+
+  // Filter categories according to selected category filter
+  if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
+    categories = categories.filter(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت')));
+  } else if (currentCatFilter === 'رسانه‌ای' || currentCatFilter === 'media') {
+    categories = categories.filter(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه')));
+  }
+
   if (categories.length === 0) {
-    container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">هیچ دسته‌بندی برای این منزلگاه پیدا نشد.</div>';
+    container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">هیچ دسته‌بندی با این فیلتر برای این منزلگاه پیدا نشد.</div>';
     modal.style.display = 'flex';
     modal.style.zIndex = '999999';
     return;
