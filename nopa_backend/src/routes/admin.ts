@@ -33,7 +33,7 @@ import {
   getLevelsAndCertificates,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip as deletePart, createQuestion, updateQuestion, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz } from '../controllers/lmsController';
+import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
@@ -183,6 +183,8 @@ router.get('/lms/sessions', getSessions as any);
 router.get('/lms/clips', getClips as any);
 router.get('/lms/quizzes', getQuizzes as any);
 
+router.post('/lms/stations/reorder', reorderStations as any);
+router.put('/lms/stations/reorder', reorderStations as any);
 router.post('/lms/stations', createStation as any);
 router.put('/lms/stations/:id', updateStation as any);
 router.delete('/lms/stations/:id', deleteStation as any);
@@ -198,6 +200,15 @@ router.delete('/lms/sessions/:id', deleteSession as any);
 router.post('/lms/sessions/:id/parts', createPart as any);
 router.put('/lms/sessions/:id/parts/:clipId', updatePart as any);
 router.delete('/lms/parts/:id', deletePart as any);
+
+router.post('/lms/clips', createOrUpdateClip as any);
+router.put('/lms/clips/:id', createOrUpdateClip as any);
+router.delete('/lms/clips/:id', deleteClip as any);
+router.post('/lms/sessions/:id/clips/reorder', reorderClips as any);
+
+router.post('/lms/quizzes', createOrUpdateQuiz as any);
+router.put('/lms/quizzes/:id', createOrUpdateQuiz as any);
+router.delete('/lms/quizzes/:id', deleteQuiz as any);
 
 router.post('/lms/questions', createQuestion as any);
 router.put('/lms/questions/:id', updateQuestion as any);

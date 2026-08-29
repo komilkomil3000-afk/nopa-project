@@ -116,14 +116,43 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
     const result = await prisma.$transaction(async (tx) => {
       let station;
       const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
-      const orderIndexVal = parseInt(orderIndex) || 0;
+      let orderIndexVal = parseInt(orderIndex) || 0;
 
       if (id && !id.startsWith('new_')) {
+        // When updating, ensure orderIndex is not duplicated with another station
+        if (orderIndexVal > 0) {
+          const duplicate = await tx.station.findFirst({
+            where: { orderIndex: orderIndexVal, id: { not: id } }
+          });
+          if (duplicate) {
+            const current = await tx.station.findUnique({ where: { id } });
+            orderIndexVal = current ? current.orderIndex : orderIndexVal;
+          }
+        } else {
+          const current = await tx.station.findUnique({ where: { id } });
+          orderIndexVal = current ? current.orderIndex : 1;
+        }
+
         station = await tx.station.update({
           where: { id },
           data: { title: title || 'منزلگاه', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
         });
       } else {
+        // When creating a new station: strictly prevent duplicate number
+        const maxOrderAgg = await tx.station.aggregate({ _max: { orderIndex: true } });
+        const nextAutoOrder = (maxOrderAgg._max.orderIndex || 0) + 1;
+
+        if (orderIndexVal <= 0) {
+          orderIndexVal = nextAutoOrder;
+        } else {
+          const existingWithSameOrder = await tx.station.findFirst({
+            where: { orderIndex: orderIndexVal }
+          });
+          if (existingWithSameOrder) {
+            orderIndexVal = nextAutoOrder;
+          }
+        }
+
         station = await tx.station.create({
           data: { title: title || 'منزلگاه جدید', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
         });
@@ -146,7 +175,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
         for (let i = 0; i < categories.length; i++) {
           const cat = categories[i];
           let dbCategory;
-          const catOrder = parseInt(cat.orderIndex) || i;
+          const catOrder = parseInt(cat.orderIndex) || (i + 1);
           if (cat.id && !cat.id.startsWith('new_') && existingCategoryIds.includes(cat.id)) {
             dbCategory = await tx.classCategory.update({
               where: { id: cat.id },
@@ -158,15 +187,52 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             });
           }
 
-          const incomingSessions = cat.sessions || [];
+          let incomingSessions = cat.sessions || [];
           const existingSessions = await tx.classSession.findMany({
             where: { categoryId: dbCategory.id }
           });
           const existingSessionIds = existingSessions.map(s => s.id);
           const incomingSessionIds = incomingSessions.filter((s: any) => s.id && !s.id.startsWith('new_')).map((s: any) => s.id);
 
+          // If no sessions exist or generating new structure with specified sessionsCount
+          if (incomingSessions.length === 0 && existingSessions.length === 0) {
+            const count = parseInt(cat.sessionsCount) || 2;
+            const partsCount = parseInt(cat.partsPerSession) || 2;
+            incomingSessions = [];
+            for (let s = 1; s <= count; s++) {
+              const isSkill = catOrder === 1 || (cat.title && cat.title.includes('مهارت'));
+              const sessionDay = isSkill ? (s === 1 ? 'شنبه' : 'دوشنبه') : (s === 1 ? 'پنجشنبه' : 'جمعه');
+              const clips = [];
+              const quizzes = [];
+              for (let p = 1; p <= partsCount; p++) {
+                clips.push({
+                  title: `پارت ${p} - ${cat.title}`,
+                  videoUrl: '',
+                  clipOrder: p
+                });
+                quizzes.push({
+                  title: `آزمونک پارت ${p}`,
+                  questionsJson: JSON.stringify([{
+                    question: `مفهوم اصلی مطرح‌شده در پارت ${p} کدام است؟`,
+                    options: ['گزینه صحیح', 'گزینه نادرست اول', 'گزینه نادرست دوم', 'گزینه نادرست سوم'],
+                    correctIndex: 0
+                  }]),
+                  rewardZarik: 10,
+                  orderIndex: p
+                });
+              }
+              incomingSessions.push({
+                title: `جلسه ${s} (${sessionDay}): ${cat.title}`,
+                instructor: cat.instructor || (isSkill ? 'استاد مهارتی' : 'استاد رسانه‌ای'),
+                orderIndex: s,
+                videoClips: clips,
+                quizzes: quizzes
+              });
+            }
+          }
+
           const sessionsToDelete = existingSessionIds.filter(sid => !incomingSessionIds.includes(sid));
-          if (sessionsToDelete.length > 0) {
+          if (sessionsToDelete.length > 0 && incomingSessionIds.length > 0) {
             await tx.classSession.deleteMany({
               where: { id: { in: sessionsToDelete } }
             });
@@ -176,15 +242,15 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             const sess = incomingSessions[j];
             let dbSession;
             const sessData = {
-              title: sess.title || 'جلسه',
+              title: sess.title || `جلسه ${j + 1}`,
               description: sess.description || '',
               videoUrl: sess.videoUrl || '',
-              instructor: sess.instructor || 'استاد نپا',
+              instructor: sess.instructor || cat.instructor || 'استاد نپا',
               minWatchThreshold: parseInt(sess.minWatchThreshold) || 70,
               minPassScore: parseInt(sess.minPassScore) || 0,
               maxZarikReward: parseInt(sess.maxZarikReward) || 0,
               maxPointsReward: parseInt(sess.maxPointsReward) || 0,
-              orderIndex: parseInt(sess.orderIndex) || j
+              orderIndex: parseInt(sess.orderIndex) || (j + 1)
             };
 
             if (sess.id && !sess.id.startsWith('new_') && existingSessionIds.includes(sess.id)) {
@@ -209,55 +275,62 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             const incomingClipIds = incomingClips.filter((clip: any) => clip.id && !clip.id.startsWith('new_')).map((clip: any) => clip.id);
 
             const clipsToDelete = existingClipIds.filter(cid => !incomingClipIds.includes(cid));
-            if (clipsToDelete.length > 0) {
+            if (clipsToDelete.length > 0 && incomingClipIds.length > 0) {
               await tx.videoClip.deleteMany({
                 where: { id: { in: clipsToDelete } }
               });
             }
 
+            const savedClips: any[] = [];
             for (let k = 0; k < incomingClips.length; k++) {
               const clip = incomingClips[k];
               const clipData = {
-                title: clip.title || 'پارت',
+                title: clip.title || `پارت ${k + 1}`,
                 videoUrl: clip.videoUrl || '',
-                clipOrder: parseInt(clip.clipOrder) || k,
+                clipOrder: parseInt(clip.clipOrder) || (k + 1),
                 duration: parseInt(clip.duration) || 0
               };
 
+              let savedClip;
               if (clip.id && !clip.id.startsWith('new_') && existingClipIds.includes(clip.id)) {
-                await tx.videoClip.update({
+                savedClip = await tx.videoClip.update({
                   where: { id: clip.id },
                   data: clipData
                 });
               } else {
-                await tx.videoClip.create({
+                savedClip = await tx.videoClip.create({
                   data: {
                     sessionId: dbSession.id,
                     ...clipData
                   }
                 });
               }
+              savedClips.push(savedClip);
             }
 
             const incomingQuizzes = sess.quizzes || (sess.quiz ? [sess.quiz] : []);
-            await tx.quiz.deleteMany({
-              where: { sessionId: dbSession.id }
-            });
-            for (let q = 0; q < incomingQuizzes.length; q++) {
-              const quizPayload = incomingQuizzes[q];
-              await tx.quiz.create({
-                data: {
-                  sessionId: dbSession.id,
-                  title: quizPayload.title || 'آزمون کلاس',
-                  questionsJson: typeof quizPayload.questionsJson === 'string' 
-                      ? quizPayload.questionsJson 
-                      : JSON.stringify(quizPayload.questionsJson || []),
-                  rewardZarik: parseInt(quizPayload.rewardZarik) || 10,
-                  rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
-                  rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
-                  orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
-                }
+            if (incomingQuizzes.length > 0) {
+              await tx.quiz.deleteMany({
+                where: { sessionId: dbSession.id }
               });
+              for (let q = 0; q < incomingQuizzes.length; q++) {
+                const quizPayload = incomingQuizzes[q];
+                const matchedClip = savedClips.find(c => c.clipOrder === (quizPayload.orderIndex || q + 1)) || savedClips[q];
+                await tx.quiz.create({
+                  data: {
+                    sessionId: dbSession.id,
+                    clipId: matchedClip ? matchedClip.id : (quizPayload.clipId || undefined),
+                    title: quizPayload.title || `آزمونک پارت ${q + 1}`,
+                    questionsJson: typeof quizPayload.questionsJson === 'string' 
+                        ? quizPayload.questionsJson 
+                        : JSON.stringify(quizPayload.questionsJson || []),
+                    rewardZarik: parseInt(quizPayload.rewardZarik) || 10,
+                    rewardNakh: parseInt(quizPayload.rewardNakh) || 0,
+                    rewardFarsh: parseInt(quizPayload.rewardFarsh) || 0,
+                    orderIndex: parseInt(quizPayload.orderIndex) || (q + 1)
+                  }
+                });
+              }
             }
           }
         }
@@ -330,53 +403,108 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
 
 export const createOrUpdateClip = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // session id
-    const { clipId, title, clipOrder, videoUrl } = req.body;
+    const { id: paramId } = req.params;
+    const { id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, duration } = req.body;
+    const finalSessionId = sessionId || paramId;
+    const targetClipId = clipId || (bodyId && !String(bodyId).startsWith('new_') ? bodyId : (paramId && !sessionId ? paramId : undefined));
     
     let clip;
-    if (clipId) {
+    if (targetClipId) {
       clip = await prisma.videoClip.update({
-        where: { id: clipId },
+        where: { id: targetClipId },
         data: {
-          title,
-          videoUrl,
-          clipOrder: Number(clipOrder || 0),
+          ...(title ? { title } : {}),
+          ...(videoUrl !== undefined ? { videoUrl } : {}),
+          ...(clipOrder !== undefined ? { clipOrder: Number(clipOrder) } : {}),
+          ...(duration !== undefined ? { duration: Number(duration) } : {})
         }
       });
     } else {
       clip = await prisma.videoClip.create({
         data: {
-          sessionId: id,
-          title,
-          videoUrl,
-          clipOrder: Number(clipOrder || 0),
-          duration: 0
+          sessionId: finalSessionId,
+          title: title || 'پارت جدید',
+          videoUrl: videoUrl || '',
+          clipOrder: Number(clipOrder || 1),
+          duration: Number(duration || 0)
         }
       });
     }
     
-    res.json({ message: 'Clip added successfully', data: clip });
+    res.json({ message: 'پارت با موفقیت ذخیره شد', data: clip });
   } catch (error) {
-    console.error('addClipToSession error:', error);
+    console.error('createOrUpdateClip error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const reorderClips = async (req: Request, res: Response) => {
+  try {
+    const { id: sessionId } = req.params;
+    const { clipIds } = req.body;
+    if (!Array.isArray(clipIds) || clipIds.length === 0) {
+      return res.status(400).json({ error: 'لیست شناسه‌های پارت‌ها الزامی است' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (let i = 0; i < clipIds.length; i++) {
+        await tx.videoClip.update({
+          where: { id: clipIds[i] },
+          data: { clipOrder: -(i + 1) }
+        });
+      }
+      for (let i = 0; i < clipIds.length; i++) {
+        await tx.videoClip.update({
+          where: { id: clipIds[i] },
+          data: { clipOrder: i + 1 }
+        });
+      }
+    });
+
+    res.json({ message: 'ترتیب پارت‌ها با موفقیت ذخیره شد' });
+  } catch (error: any) {
+    console.error('reorderClips error:', error);
+    res.status(500).json({ error: error.message || 'خطا در تغییر ترتیب پارت‌ها' });
   }
 };
 
 export const createOrUpdateQuiz = async (req: Request, res: Response) => {
   try {
-    const { id, sessionId, title, type, questionsJson, rewardZarik, rewardNakh, rewardFarsh } = req.body;
+    const { id: paramId } = req.params;
+    const { id: bodyId, quizId, sessionId, clipId, title, type, questionsJson, rewardZarik, rewardNakh, rewardFarsh, orderIndex } = req.body;
+    const targetQuizId = quizId || (bodyId && !String(bodyId).startsWith('new_') ? bodyId : (paramId ? paramId : undefined));
+    
     let quiz;
-    if (id) {
+    if (targetQuizId) {
       quiz = await prisma.quiz.update({
-        where: { id },
-        data: { title, type, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
+        where: { id: targetQuizId },
+        data: { 
+          title: title || 'آزمونک پارت', 
+          type: type || 'MULTIPLE_CHOICE', 
+          questionsJson: typeof questionsJson === 'string' ? questionsJson : JSON.stringify(questionsJson || []), 
+          rewardZarik: Number(rewardZarik ?? 10), 
+          rewardNakh: Number(rewardNakh || 0), 
+          rewardFarsh: Number(rewardFarsh || 0),
+          ...(clipId ? { clipId } : {}),
+          ...(orderIndex !== undefined ? { orderIndex: Number(orderIndex) } : {})
+        }
       });
     } else {
       quiz = await prisma.quiz.create({
-        data: { sessionId, title, type, questionsJson, rewardZarik: Number(rewardZarik||0), rewardNakh: Number(rewardNakh||0), rewardFarsh: Number(rewardFarsh||0) }
+        data: { 
+          sessionId, 
+          clipId: clipId || undefined,
+          title: title || 'آزمونک پارت', 
+          type: type || 'MULTIPLE_CHOICE', 
+          questionsJson: typeof questionsJson === 'string' ? questionsJson : JSON.stringify(questionsJson || []), 
+          rewardZarik: Number(rewardZarik ?? 10), 
+          rewardNakh: Number(rewardNakh || 0), 
+          rewardFarsh: Number(rewardFarsh || 0),
+          orderIndex: Number(orderIndex || 1)
+        }
       });
     }
-    res.json({ message: 'Saved successfully', data: quiz });
+    res.json({ message: 'آزمونک با موفقیت ذخیره شد', data: quiz });
   } catch (error) {
     console.error('createOrUpdateQuiz error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -810,6 +938,46 @@ export const deleteQuiz = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete quiz' });
+  }
+};
+
+export const reorderStations = async (req: Request, res: Response) => {
+  try {
+    const { stationIds, orders } = req.body;
+    let orderedIds: string[] = [];
+
+    if (Array.isArray(stationIds)) {
+      orderedIds = stationIds;
+    } else if (Array.isArray(orders)) {
+      const sorted = [...orders].sort((a, b) => (Number(a.orderIndex) || 0) - (Number(b.orderIndex) || 0));
+      orderedIds = sorted.map(s => s.id);
+    }
+
+    if (!orderedIds || orderedIds.length === 0) {
+      return res.status(400).json({ error: 'لیست شناسه‌های منزلگاه‌ها الزامی است' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Step 1: Temporarily assign negative indices to prevent collisions
+      for (let i = 0; i < orderedIds.length; i++) {
+        await tx.station.update({
+          where: { id: orderedIds[i] },
+          data: { orderIndex: -(i + 1) }
+        });
+      }
+      // Step 2: Assign strictly unique sequential orderIndex from 1 to N
+      for (let i = 0; i < orderedIds.length; i++) {
+        await tx.station.update({
+          where: { id: orderedIds[i] },
+          data: { orderIndex: i + 1 }
+        });
+      }
+    });
+
+    res.json({ message: 'ترتیب منزلگاه‌ها با موفقیت ذخیره و یکتا شد' });
+  } catch (error: any) {
+    console.error('reorderStations error:', error);
+    res.status(500).json({ error: error.message || 'خطا در تغییر ترتیب منزلگاه‌ها' });
   }
 };
 
