@@ -714,15 +714,165 @@ window.deleteStationRecord = async function(id) {
 };
 
 window.exportLmsToExcel = function() {
-  let csv = '\uFEFFشناسه,نام منزلگاه,توضیحات,تاریخ شروع/انتشار,دسته‌های کلاس\n';
-  window.lmsStationsMasterList.forEach(st => {
-    csv += `"${st.id || 'MZ' + (st.orderIndex || 1)}","${st.title || ''}","${st.description || ''}","${st.releaseDate || ''}","کلاس مهارتی و کلاس رسانه‌ای"\n`;
+  const list = window.lmsStationsMasterList || [];
+  if (list.length === 0) {
+    alert('اطلاعات منزلگاه‌ها هنوز بارگذاری نشده است. لطفاً چند لحظه صبر کنید.');
+    return;
+  }
+
+  let totalAllSessions = 0;
+  let totalAllSkill = 0;
+  let totalAllMedia = 0;
+  let totalAllClips = 0;
+  let totalAllQuizzes = 0;
+
+  let tableRows = '';
+  list.forEach((st, idx) => {
+    const rowNum = idx + 1;
+    const mzCode = 'MZ' + (st.orderIndex ?? st.index ?? rowNum);
+    const title = st.title || ('منزلگاه ' + rowNum);
+    const desc = st.description || '-';
+    
+    let releaseDateStr = '-';
+    if (st.releaseDate) {
+      try {
+        releaseDateStr = new Date(st.releaseDate).toISOString().split('T')[0];
+      } catch (e) {
+        releaseDateStr = String(st.releaseDate).split('T')[0];
+      }
+    }
+
+    const categories = st.categories || [];
+    const skillCat = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || { sessions: [] };
+    const mediaCat = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || { sessions: [] };
+
+    const skillSessions = (skillCat.sessions || []).length;
+    const mediaSessions = (mediaCat.sessions || []).length;
+    const totalSessions = skillSessions + mediaSessions;
+
+    totalAllSessions += totalSessions;
+    totalAllSkill += skillSessions;
+    totalAllMedia += mediaSessions;
+
+    const instructors = new Set();
+    let totalClips = 0;
+    let totalQuizzes = 0;
+
+    categories.forEach(c => {
+      (c.sessions || []).forEach(sess => {
+        if (sess.instructor && sess.instructor.trim()) instructors.add(sess.instructor.trim());
+        totalClips += (sess.videoClips || []).length;
+        totalQuizzes += (sess.quizzes || []).length;
+      });
+    });
+
+    totalAllClips += totalClips;
+    totalAllQuizzes += totalQuizzes;
+
+    const instructorsStr = Array.from(instructors).join('، ') || 'اساتید دوره نپا';
+
+    tableRows += `
+      <tr>
+        <td style="text-align:center; mso-number-format:'\\@';">${rowNum}</td>
+        <td style="text-align:center; font-weight:bold; color:#0284c7; mso-number-format:'\\@';">${mzCode}</td>
+        <td style="font-weight:bold; color:#0f172a;">${title}</td>
+        <td>${instructorsStr}</td>
+        <td style="text-align:center;">${categories.length} دسته</td>
+        <td style="text-align:center;">${skillSessions} جلسه</td>
+        <td style="text-align:center;">${mediaSessions} جلسه</td>
+        <td style="text-align:center; font-weight:bold; color:#0284c7;">${totalSessions} جلسه</td>
+        <td style="text-align:center;">${totalClips} پارت</td>
+        <td style="text-align:center; font-weight:bold; color:#d97706;">${totalQuizzes} آزمونک</td>
+        <td style="text-align:center; mso-number-format:'\\@';">${releaseDateStr}</td>
+        <td style="font-size:11px; color:#475569;">${desc}</td>
+        <td style="text-align:center; background-color:#dcfce7; color:#166534; font-weight:bold;">فعال</td>
+      </tr>
+    `;
   });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+  // Summary footer row
+  tableRows += `
+    <tr style="background-color:#f1f5f9; font-weight:bold;">
+      <td colspan="4" style="text-align:center; padding:10px; font-size:13px; color:#0f172a;">مجموع کل سامانه نپا</td>
+      <td style="text-align:center; color:#0284c7;">۱۰ دسته</td>
+      <td style="text-align:center; color:#0284c7;">${totalAllSkill} جلسه</td>
+      <td style="text-align:center; color:#7c3aed;">${totalAllMedia} جلسه</td>
+      <td style="text-align:center; color:#0284c7; font-size:13px;">${totalAllSessions} جلسه</td>
+      <td style="text-align:center; color:#6366f1;">${totalAllClips} پارت</td>
+      <td style="text-align:center; color:#d97706; font-size:13px;">${totalAllQuizzes} آزمونک</td>
+      <td colspan="3" style="text-align:center; color:#64748b;">۵ منزلگاه فعال</td>
+    </tr>
+  `;
+
+  const excelHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>ساختار منزلگاه‌های نپا</x:Name>
+              <x:WorksheetOptions>
+                <x:DisplayRightToLeft/>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        body { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; }
+        table { border-collapse: collapse; width: 100%; direction: rtl; }
+        th { background-color: #0f172a; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 10px 8px; font-size: 12px; text-align: center; }
+        td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12px; vertical-align: middle; }
+      </style>
+    </head>
+    <body>
+      <table>
+        <thead>
+          <tr>
+            <th colspan="13" style="font-size:15px; padding:14px; background-color:#1e293b; color:#38bdf8; text-align:center;">
+              گزارش جامع ساختار منزلگاه‌ها، جلسات و آزمونک‌های سامانه آموزشی نپا
+            </th>
+          </tr>
+          <tr>
+            <th style="width:40px;">ردیف</th>
+            <th style="width:70px;">کد</th>
+            <th style="width:220px;">نام و عنوان منزلگاه</th>
+            <th style="width:180px;">اساتید و مربیان</th>
+            <th style="width:90px;">دسته‌ها</th>
+            <th style="width:90px;">جلسات مهارتی</th>
+            <th style="width:90px;">جلسات رسانه‌ای</th>
+            <th style="width:90px;">مجموع جلسات</th>
+            <th style="width:80px;">پارت‌ها</th>
+            <th style="width:80px;">آزمونک‌ها</th>
+            <th style="width:100px;">تاریخ شروع / انتشار</th>
+            <th style="width:250px;">توضیحات و سرفصل‌ها</th>
+            <th style="width:60px;">وضعیت</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const downloadUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `LMS_Stations_${Date.now()}.csv`;
+  a.href = downloadUrl;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  a.download = `LMS_Stations_Report_${todayStr}.xls`;
+  document.body.appendChild(a);
   a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(downloadUrl);
+    a.remove();
+  }, 300);
 };
 
 // Automatic load bindings
