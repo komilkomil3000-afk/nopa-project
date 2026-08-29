@@ -55,12 +55,12 @@ window.fetchLiveLmsStations = async function() {
   window.filterLmsTable();
 };
 
-window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all') {
+window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', selectedInstructorFilter = 'all') {
   const tbody = document.getElementById('lms-directory-tbody');
   if (!tbody) return;
 
   if (!list || list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">هیچ منزلگاهی یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">هیچ منزلگاهی با این فیلترها یافت نشد.</td></tr>';
     return;
   }
 
@@ -84,22 +84,52 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all') {
     const mediaSessCount = (mediaCategory.sessions || []).length;
     const totalRealSess = skillSessCount + mediaSessCount;
 
+    // Extract unique instructors teaching in this station
+    const stationInstructors = new Set();
+    categories.forEach(c => {
+      (c.sessions || []).forEach(sess => {
+        if (sess.instructor && sess.instructor.trim()) {
+          stationInstructors.add(sess.instructor.trim());
+        }
+      });
+    });
+
+    let instructorsDisplayHtml = '';
+    if (stationInstructors.size > 0) {
+      instructorsDisplayHtml = `
+        <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:200px;">
+          ${Array.from(stationInstructors).map(inst => {
+            const isMatch = selectedInstructorFilter !== 'all' && (inst.toLowerCase().includes(selectedInstructorFilter) || inst.replace(/‌/g, '').includes(selectedInstructorFilter.replace(/‌/g, '')));
+            const badgeStyle = isMatch
+              ? 'background:rgba(56,189,248,0.3); color:#38bdf8; border:1px solid #38bdf8;'
+              : 'background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.08);';
+            return `<span class="badge" style="${badgeStyle} font-size:11px; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+              <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:#38bdf8;"></i> ${inst}
+            </span>`;
+          }).join('')}
+        </div>
+      `;
+    } else {
+      instructorsDisplayHtml = `
+        <div style="font-size:11px; color:#94a3b8;">
+          <i class="fa-solid fa-chalkboard-user"></i> اساتید دوره نپا
+        </div>
+      `;
+    }
+
     // Filter display depending on selected category filter ('all', 'مهارتی', 'رسانه‌ای')
     const isSkillOnly = selectedCategoryFilter === 'مهارتی' || selectedCategoryFilter === 'skill';
     const isMediaOnly = selectedCategoryFilter === 'رسانه‌ای' || selectedCategoryFilter === 'media';
 
     let categoryBadgeHtml = '';
     let sessionsDisplayHtml = '';
-    let instructorsDisplayHtml = '';
 
     if (isSkillOnly) {
       categoryBadgeHtml = `<span class="badge" style="background:#0284c7; color:white; font-size:11px; padding:4px 10px;">فقط کلاس مهارتی</span>`;
       sessionsDisplayHtml = `<div style="font-weight:bold; color:#38bdf8;">${skillSessCount} جلسه مهارتی</div>`;
-      instructorsDisplayHtml = `<div><i class="fa-solid fa-user-gear" style="color:#0284c7;"></i> ${skillCategory.title}</div>`;
     } else if (isMediaOnly) {
       categoryBadgeHtml = `<span class="badge" style="background:#7c3aed; color:white; font-size:11px; padding:4px 10px;">فقط کلاس رسانه‌ای</span>`;
       sessionsDisplayHtml = `<div style="font-weight:bold; color:#a78bfa;">${mediaSessCount} جلسه رسانه‌ای</div>`;
-      instructorsDisplayHtml = `<div><i class="fa-solid fa-photo-film" style="color:#a78bfa;"></i> ${mediaCategory.title}</div>`;
     } else {
       categoryBadgeHtml = `
         <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
@@ -110,12 +140,6 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all') {
       sessionsDisplayHtml = `
         <div style="font-weight:bold; color:#38bdf8;">${totalRealSess} جلسه واقعی</div>
         <div style="font-size:11px; color:#a78bfa;">(${skillSessCount} مهارتی / ${mediaSessCount} رسانه‌ای)</div>
-      `;
-      instructorsDisplayHtml = `
-        <div style="font-size:12px; color:#e2e8f0; display:flex; flex-direction:column; gap:4px;">
-          <div><i class="fa-solid fa-user-gear" style="color:#0284c7;"></i> مهارتی: ${skillCategory.title}</div>
-          <div><i class="fa-solid fa-photo-film" style="color:#a78bfa;"></i> رسانه‌ای: ${mediaCategory.title}</div>
-        </div>
       `;
     }
 
@@ -168,15 +192,36 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all') {
 window.filterLmsTable = function() {
   const query = (document.getElementById('lms-search-input')?.value || '').trim().toLowerCase();
   const catFilter = document.getElementById('lms-filter-category')?.value || 'all';
+  const instructorFilter = (document.getElementById('lms-filter-instructor')?.value || 'all').trim().toLowerCase();
+  const cleanInstFilter = instructorFilter.replace(/‌/g, '').replace(/\s+/g, '');
 
   const filtered = window.lmsStationsMasterList.filter(st => {
     const titleMatch = st.title && st.title.toLowerCase().includes(query);
     const descMatch = st.description && st.description.toLowerCase().includes(query);
-    const matchesQuery = !query || titleMatch || descMatch;
+
+    const categories = st.categories || [];
+    let hasInstructorMatch = false;
+    let hasQueryInSessions = false;
+
+    categories.forEach(c => {
+      if (c.title && c.title.toLowerCase().includes(query)) hasQueryInSessions = true;
+      (c.sessions || []).forEach(sess => {
+        if (sess.title && sess.title.toLowerCase().includes(query)) hasQueryInSessions = true;
+        if (sess.instructor && sess.instructor.toLowerCase().includes(query)) hasQueryInSessions = true;
+        if (instructorFilter !== 'all' && sess.instructor) {
+          const cleanInstName = sess.instructor.toLowerCase().replace(/‌/g, '').replace(/\s+/g, '');
+          if (cleanInstName.includes(cleanInstFilter) || sess.instructor.toLowerCase().includes(instructorFilter)) {
+            hasInstructorMatch = true;
+          }
+        }
+      });
+    });
+
+    const matchesQuery = !query || titleMatch || descMatch || hasQueryInSessions;
+    const matchesInstructor = instructorFilter === 'all' || hasInstructorMatch;
 
     let matchesCat = true;
     if (catFilter !== 'all') {
-      const categories = st.categories || [];
       const hasSkill = categories.some(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت')));
       const hasMedia = categories.some(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه')));
 
@@ -186,10 +231,11 @@ window.filterLmsTable = function() {
         matchesCat = hasMedia;
       }
     }
-    return matchesQuery && matchesCat;
+
+    return matchesQuery && matchesCat && matchesInstructor;
   });
 
-  window.renderLmsDirectoryRows(filtered, catFilter);
+  window.renderLmsDirectoryRows(filtered, catFilter, instructorFilter);
 };
 
 // ==================== CONTENT MANAGER MODAL (VIDEO LINKS & QUIZZES PER PART) ====================

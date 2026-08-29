@@ -1476,6 +1476,12 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   document.getElementById('modal-user-national-id').value = userNationalId;
   document.getElementById('modal-user-dob').value = userDob;
+  if (document.getElementById('modal-user-degree')) {
+    document.getElementById('modal-user-degree').value = user?.academicDegree || '';
+  }
+  if (document.getElementById('modal-user-certificates')) {
+    document.getElementById('modal-user-certificates').value = user?.academicCertificates || '';
+  }
 
   // Populate Caravan Options in User Modal
   const caravanSelect = document.getElementById('modal-user-caravan');
@@ -1547,6 +1553,8 @@ async function handleUserFormSubmit(e) {
   const mentorLevel = parseInt(document.getElementById('modal-user-mentor-level').value) || 1;
   const nationalId = document.getElementById('modal-user-national-id').value;
   const dateOfBirth = document.getElementById('modal-user-dob').value;
+  const academicDegree = document.getElementById('modal-user-degree')?.value;
+  const academicCertificates = document.getElementById('modal-user-certificates')?.value;
   const phoneNumber = document.getElementById('modal-user-phone')?.value;
 
   let res;
@@ -1555,7 +1563,7 @@ async function handleUserFormSubmit(e) {
     res = await request(`/api/v1/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth })
+      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, academicDegree, academicCertificates })
     });
   } else {
     // Create User
@@ -2001,8 +2009,9 @@ function deleteCaravanRecord(caravanId, caravanName) {
   return window.deleteCaravanRecord(caravanId, caravanName);
 }
 
-window.removeMemberFromCaravan = async function(caravanId, studentId) {
-  if (!confirm('آیا از حذف این عضو از کاروان اطمینان دارید؟')) {
+window.removeMemberFromCaravan = async function(caravanId, studentId, memberName) {
+  const nameText = memberName ? `«${memberName}»` : 'این فرد';
+  if (!confirm(`آیا می‌خواهید ${nameText} را از این کاروان حذف کنید؟`)) {
     return;
   }
   try {
@@ -2012,7 +2021,7 @@ window.removeMemberFromCaravan = async function(caravanId, studentId) {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (res.ok) {
-      alert('عضو با موفقیت از کاروان حذف گردید.');
+      alert(`فرد با موفقیت از این کاروان حذف گردید.`);
       if (typeof window.loadCaravansTab === 'function') {
         await window.loadCaravansTab();
       }
@@ -2025,7 +2034,7 @@ window.removeMemberFromCaravan = async function(caravanId, studentId) {
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در حذف عضو از کاروان');
+      alert(err.error || 'خطا در حذف فرد از کاروان');
     }
   } catch (e) {
     console.error(e);
@@ -2033,8 +2042,8 @@ window.removeMemberFromCaravan = async function(caravanId, studentId) {
   }
 };
 
-function removeMemberFromCaravan(caravanId, studentId) {
-  return window.removeMemberFromCaravan(caravanId, studentId);
+function removeMemberFromCaravan(caravanId, studentId, memberName) {
+  return window.removeMemberFromCaravan(caravanId, studentId, memberName);
 }
 
 window.viewStudentDetails = async function(studentId) {
@@ -2056,6 +2065,7 @@ window.viewStudentDetails = async function(studentId) {
 
   try {
     const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    let data = {};
     let u = null;
     let balances = {};
     let watchRecords = [];
@@ -2068,7 +2078,7 @@ window.viewStudentDetails = async function(studentId) {
     });
 
     if (res.ok) {
-      const data = await res.json();
+      data = await res.json();
       u = data.user || {};
       balances = data.balances || {};
       watchRecords = data.watchRecords || [];
@@ -2130,19 +2140,119 @@ window.viewStudentDetails = async function(studentId) {
     }
 
     if (progressEl) {
-      if (watchRecords.length === 0 && quizzes.length === 0) {
-        progressEl.innerHTML = '<p style="color:#94a3b8; font-size:12px;">هنوز فعالیتی در منزلگاه‌ها ثبت نشده است.</p>';
-      } else {
-        let list = '';
-        watchRecords.slice(0, 4).forEach(wr => {
-          const sessTitle = wr.session?.title || 'جلسه آموزشی';
-          list += `<div style="margin-bottom:4px;"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i> ${sessTitle} (${wr.completed ? 'تکمیل شده' : 'در حال مشاهده'})</div>`;
-        });
-        quizzes.slice(0, 4).forEach(q => {
-          list += `<div style="margin-bottom:4px;"><i class="fa-solid fa-pen-nib" style="color:#38bdf8;"></i> آزمونک: نمره ${q.score || 0}</div>`;
-        });
-        progressEl.innerHTML = list;
-      }
+      const sp = data.stationsProgress || {};
+      const summary = sp.summary || {
+        passedStations: 0,
+        totalStations: 5,
+        totalCategories: 10,
+        passedClasses: 0,
+        totalClasses: 50,
+        passedParts: 0,
+        totalParts: 201,
+        passedQuizzes: 0,
+        totalQuizzes: 331
+      };
+
+      const stations = sp.stations || [
+        { stationNumber: 1, title: 'منزلگاه ۱: مبانی شناخت و رسانه (شوک و اینشات)', order: 1, isUnlocked: true, isCompleted: false, categoriesCount: 2, totalClasses: 4, completedClasses: 0, partsPerSession: '4', totalParts: 16, completedParts: 0, totalQuizzes: 32, completedQuizzes: 0 },
+        { stationNumber: 2, title: 'منزلگاه ۲: خودشناسی جامع و پادکست', order: 2, isUnlocked: false, isCompleted: false, categoriesCount: 2, totalClasses: 16, completedClasses: 0, partsPerSession: '4', totalParts: 64, completedParts: 0, totalQuizzes: 126, completedQuizzes: 0 },
+        { stationNumber: 3, title: 'منزلگاه ۳: شناخت همراهان و دشمنان (کنوا)', order: 3, isUnlocked: false, isCompleted: false, categoriesCount: 2, totalClasses: 12, completedClasses: 0, partsPerSession: '4.1', totalParts: 49, completedParts: 0, totalQuizzes: 85, completedQuizzes: 0 },
+        { stationNumber: 4, title: 'منزلگاه ۴: شناخت هستی (کنوا پیشرفته)', order: 4, isUnlocked: false, isCompleted: false, categoriesCount: 2, totalClasses: 8, completedClasses: 0, partsPerSession: '4', totalParts: 32, completedParts: 0, totalQuizzes: 46, completedQuizzes: 0 },
+        { stationNumber: 5, title: 'منزلگاه ۵: هدف‌گذاری (فتوشاپ)', order: 5, isUnlocked: false, isCompleted: false, categoriesCount: 2, totalClasses: 10, completedClasses: 0, partsPerSession: '4', totalParts: 40, completedParts: 0, totalQuizzes: 42, completedQuizzes: 0 }
+      ];
+
+      let stationsHtml = `
+        <!-- Summary Stats Counter -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-bottom:12px; background:rgba(0,0,0,0.4); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); text-align:center;">
+          <div style="padding:2px;">
+            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">منزلگاه‌ها</div>
+            <div style="font-weight:bold; color:#10b981; font-size:13px;">${summary.passedStations || 0} / ${summary.totalStations || 5}</div>
+          </div>
+          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">دسته‌ها / کلاس‌ها</div>
+            <div style="font-weight:bold; color:#38bdf8; font-size:13px;">${summary.passedClasses || 0} / ${summary.totalClasses || 50}</div>
+          </div>
+          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">کل پارت‌ها</div>
+            <div style="font-weight:bold; color:#a78bfa; font-size:13px;">${summary.passedParts || 0} / ${summary.totalParts || 201}</div>
+          </div>
+          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
+            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">آزمونک‌ها</div>
+            <div style="font-weight:bold; color:#fbbf24; font-size:13px;">${summary.passedQuizzes || 0} / ${summary.totalQuizzes || 331}</div>
+          </div>
+        </div>
+
+        <!-- 5 Stations Progression List -->
+        <div style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-left:4px;">
+      `;
+
+      stations.forEach((st, idx) => {
+        const isUnlocked = st.isUnlocked;
+        const isCompleted = st.isCompleted || (st.completedClasses > 0 && st.completedClasses >= st.totalClasses);
+        const stNum = st.stationNumber || (idx + 1);
+
+        let statusBadge = '';
+        let cardBorder = 'rgba(255,255,255,0.06)';
+        let cardBg = 'rgba(15,23,42,0.6)';
+        let titleColor = '#cbd5e1';
+
+        if (isCompleted) {
+          statusBadge = '<span style="background:rgba(16,185,129,0.2); color:#10b981; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-circle-check"></i> گذرانده شده</span>';
+          cardBorder = 'rgba(16,185,129,0.3)';
+          cardBg = 'rgba(16,185,129,0.05)';
+          titleColor = '#34d399';
+        } else if (isUnlocked) {
+          statusBadge = '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-play"></i> در حال آموزش</span>';
+          cardBorder = 'rgba(56,189,248,0.3)';
+          cardBg = 'rgba(56,189,248,0.05)';
+          titleColor = '#38bdf8';
+        } else {
+          statusBadge = '<span style="background:rgba(239,68,68,0.15); color:#f87171; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-lock"></i> قفل (مسیر آتی)</span>';
+          cardBorder = 'rgba(255,255,255,0.04)';
+          cardBg = 'rgba(0,0,0,0.25)';
+          titleColor = '#64748b';
+        }
+
+        const pct = st.totalClasses > 0 ? Math.min(100, Math.round(((st.completedClasses || 0) / st.totalClasses) * 100)) : 0;
+
+        stationsHtml += `
+          <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:10px; padding:10px 12px; font-size:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+              <div>
+                <span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:6px; margin-left:6px;">منزلگاه ${stNum}</span>
+                <strong style="color:${titleColor}; font-size:13px;">${st.title}</strong>
+              </div>
+              ${statusBadge}
+            </div>
+
+            <!-- Categorized Metrics Grid -->
+            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 12px; font-size:11.5px;">
+              <div style="color:#94a3b8;">
+                <i class="fa-solid fa-layer-group" style="color:#38bdf8; width:16px;"></i> 
+                <strong>دسته‌های کلاس:</strong> <span style="color:white; font-weight:bold;">${st.categoriesCount || 2} دسته</span> <span style="font-size:10px; color:#64748b;">(مهارتی و رسانه‌ای)</span>
+              </div>
+
+              <div style="color:#94a3b8;">
+                <i class="fa-solid fa-chalkboard-user" style="color:#10b981; width:16px;"></i> 
+                <strong>تعداد کلاس‌ها:</strong> <span style="color:white; font-weight:bold;">${st.completedClasses || 0}</span> از ${st.totalClasses || 0} جلسه <span style="color:#34d399; font-size:10px;">(${pct}%)</span>
+              </div>
+
+              <div style="color:#94a3b8;">
+                <i class="fa-solid fa-film" style="color:#a78bfa; width:16px;"></i> 
+                <strong>پارت‌های هر جلسه:</strong> <span style="color:white; font-weight:bold;">${st.partsPerSession || 4} پارت</span> <span style="font-size:10px; color:#a78bfa;">(مجموعاً ${st.totalParts || 0} پارت)</span>
+              </div>
+
+              <div style="color:#94a3b8;">
+                <i class="fa-solid fa-list-check" style="color:#fbbf24; width:16px;"></i> 
+                <strong>تعداد آزمون‌ها:</strong> <span style="color:#fbbf24; font-weight:bold;">${st.completedQuizzes || 0}</span> از ${st.totalQuizzes || 0} آزمونک
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      stationsHtml += `</div>`;
+      progressEl.innerHTML = stationsHtml;
     }
 
     if (ticketsEl) {
@@ -2252,7 +2362,7 @@ window.loadSelectedCaravanDetails = async function() {
           <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">نمایش جزئیات</button>
           <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${name}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
           <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق موقت</button>
-          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}')">حذف از کاروان</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${name.replace(/'/g, "\\'")}')">حذف فرد</button>
         </td>
       `;
       rosterBody.appendChild(tr);

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 export declare function logAdminAction(actorId: string, actorName: string, action: string, targetEntity: string, targetEntityId: string, details: string, ipAddress: string, actorRole?: string): Promise<void>;
 export declare function getUsers(req: AuthRequest, res: Response): Promise<void>;
 export declare function getUserMetrics(req: AuthRequest, res: Response): Promise<void>;
+export declare function getUserById(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getUserAnalytics(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function createUser(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function updateUser(req: AuthRequest, res: Response): Promise<void>;

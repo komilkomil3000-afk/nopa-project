@@ -250,9 +250,13 @@ export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
       where: { id: studentId },
       data: { caravanId: null }
     });
-    const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
+    const newCount = await prisma.user.count({ where: { caravanId: id } });
+    await prisma.caravan.update({
+      where: { id },
+      data: { memberCount: newCount }
+    }).catch(() => {});
 
-    res.json({ success: true });
+    res.json({ success: true, message: 'فرد با موفقیت از کاروان حذف گردید', memberCount: newCount });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

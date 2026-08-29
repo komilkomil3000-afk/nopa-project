@@ -7,6 +7,7 @@ exports.getLevelsAndCertificates = void 0;
 exports.logAdminAction = logAdminAction;
 exports.getUsers = getUsers;
 exports.getUserMetrics = getUserMetrics;
+exports.getUserById = getUserById;
 exports.getUserAnalytics = getUserAnalytics;
 exports.createUser = createUser;
 exports.updateUser = updateUser;
@@ -158,6 +159,45 @@ async function getUserMetrics(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
+async function getUserById(req, res) {
+    try {
+        const { id } = req.params;
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: {
+                caravan: true,
+            }
+        });
+        if (!user)
+            return res.status(404).json({ error: 'کاربر یافت نشد' });
+        res.json({
+            id: user.id,
+            name: user.name,
+            phoneNumber: user.phoneNumber,
+            role: user.role,
+            caravanId: user.caravanId,
+            caravanName: user.caravan?.name || null,
+            levelFrame: user.levelFrame || 1,
+            mentorLevel: user.mentorLevel || 1,
+            nationalId: user.nationalId || '',
+            dateOfBirth: user.dateOfBirth || '',
+            city: user.city || '',
+            bio: user.bio || '',
+            academicDegree: user.academicDegree || '',
+            academicCertificates: user.academicCertificates || '',
+            userCode: user.userCode,
+            zarikBalance: user.zarikBalance || 0,
+            nakh: user.nakh || 0,
+            beyragh: user.beyragh || 0,
+            farsh: user.farsh || 0,
+            accountStatus: user.accountStatus || 'ACTIVE',
+            createdAt: user.createdAt,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
 async function getUserAnalytics(req, res) {
     try {
         const { id } = req.params;
@@ -185,6 +225,105 @@ async function getUserAnalytics(req, res) {
         if (user.isDualRole || user.role === 'mentor') {
             mentoredCaravans = await prisma.caravan.findMany({ where: { mentorId: id } });
         }
+        // 5 Stations & Classes Detailed Progress Breakdown with real database counts
+        const allStations = await prisma.station.findMany({
+            orderBy: { orderIndex: 'asc' },
+            include: {
+                categories: {
+                    include: {
+                        sessions: {
+                            include: {
+                                videoClips: true,
+                                quizzes: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        const userProgressRecords = await prisma.userProgress.findMany({
+            where: { userId: id },
+        });
+        const userWatchedSessionIds = new Set(userProgressRecords.filter((up) => up.isWatched).map((up) => up.sessionId));
+        const userPassedQuizSessionIds = new Set(userProgressRecords.filter((up) => up.quizPassed).map((up) => up.sessionId));
+        let passedClassesCount = 0;
+        let totalClassesCount = 0;
+        let totalPartsCount = 0;
+        let passedPartsCount = 0;
+        let passedQuizzesCount = assignments.length;
+        let totalQuizzesCount = 0;
+        let passedStationsCount = 0;
+        let totalCategoriesCount = 0;
+        const stationBreakdown = allStations.map((st, index) => {
+            let stTotalSessions = 0;
+            let stCompletedSessions = 0;
+            let stTotalClips = 0;
+            let stCompletedClips = 0;
+            let stTotalQuizzes = 0;
+            let stCompletedQuizzes = 0;
+            const categoriesData = (st.categories || []).map((cat) => {
+                const catSessions = cat.sessions || [];
+                const catCompleted = catSessions.filter((s) => userWatchedSessionIds.has(s.id)).length;
+                stTotalSessions += catSessions.length;
+                stCompletedSessions += catCompleted;
+                let catClips = 0;
+                let catQuizzes = 0;
+                let catCompletedClips = 0;
+                catSessions.forEach((sess) => {
+                    const clips = sess.videoClips || [];
+                    catClips += clips.length;
+                    if (userWatchedSessionIds.has(sess.id)) {
+                        catCompletedClips += clips.length;
+                    }
+                    if (sess.quizzes && sess.quizzes.length > 0) {
+                        catQuizzes += sess.quizzes.length;
+                        if (userPassedQuizSessionIds.has(sess.id)) {
+                            stCompletedQuizzes += sess.quizzes.length;
+                        }
+                    }
+                });
+                stTotalClips += catClips;
+                stCompletedClips += catCompletedClips;
+                stTotalQuizzes += catQuizzes;
+                return {
+                    id: cat.id,
+                    title: cat.title,
+                    totalSessions: catSessions.length,
+                    completedSessions: catCompleted,
+                    totalClips: catClips,
+                    completedClips: catCompletedClips,
+                    totalQuizzes: catQuizzes,
+                };
+            });
+            totalCategoriesCount += (st.categories || []).length;
+            totalClassesCount += stTotalSessions;
+            passedClassesCount += stCompletedSessions;
+            totalPartsCount += stTotalClips;
+            passedPartsCount += stCompletedClips;
+            totalQuizzesCount += stTotalQuizzes;
+            const isUnlocked = index === 0 || (user.levelFrame && user.levelFrame > index) || (index > 0 && stCompletedSessions > 0);
+            const isCompleted = stTotalSessions > 0 && stCompletedSessions >= stTotalSessions;
+            if (isCompleted)
+                passedStationsCount++;
+            const partsPerSessionAvg = stTotalSessions > 0 ? (stTotalClips / stTotalSessions).toFixed(1).replace('.0', '') : '0';
+            return {
+                id: st.id,
+                title: st.title,
+                stationNumber: index + 1,
+                order: st.orderIndex ?? (index + 1),
+                isUnlocked,
+                isCompleted,
+                categoriesCount: (st.categories || []).length,
+                totalClasses: stTotalSessions,
+                completedClasses: stCompletedSessions,
+                totalParts: stTotalClips,
+                completedParts: stCompletedClips,
+                partsPerSession: partsPerSessionAvg,
+                totalQuizzes: stTotalQuizzes,
+                completedQuizzes: stCompletedQuizzes,
+                categories: categoriesData,
+            };
+        });
         res.json({
             user: {
                 id: user.id,
@@ -204,6 +343,20 @@ async function getUserAnalytics(req, res) {
             },
             metrics: {
                 approximateActiveMinutes: activeTimeMinutes,
+            },
+            stationsProgress: {
+                summary: {
+                    passedStations: passedStationsCount,
+                    totalStations: allStations.length,
+                    totalCategories: totalCategoriesCount,
+                    passedClasses: passedClassesCount,
+                    totalClasses: totalClassesCount,
+                    passedParts: passedPartsCount,
+                    totalParts: totalPartsCount,
+                    passedQuizzes: passedQuizzesCount,
+                    totalQuizzes: totalQuizzesCount,
+                },
+                stations: stationBreakdown,
             },
             watchRecords,
             quizzes,
@@ -273,7 +426,7 @@ async function createUser(req, res) {
 async function updateUser(req, res) {
     try {
         const { id } = req.params;
-        const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber } = req.body;
+        const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber, academicDegree, academicCertificates } = req.body;
         const prevUser = await prisma.user.findUnique({ where: { id } });
         const user = await prisma.user.update({
             where: { id },
@@ -284,8 +437,10 @@ async function updateUser(req, res) {
                 caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
                 levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
                 mentorLevel: mentorLevel ? parseInt(mentorLevel) : undefined,
-                nationalId: nationalId || undefined,
-                dateOfBirth: dateOfBirth || undefined,
+                nationalId: nationalId !== undefined ? (nationalId || null) : undefined,
+                dateOfBirth: dateOfBirth !== undefined ? (dateOfBirth || null) : undefined,
+                academicDegree: academicDegree !== undefined ? (academicDegree || null) : undefined,
+                academicCertificates: academicCertificates !== undefined ? (academicCertificates || null) : undefined,
             },
         });
         // Update caravan member counts if caravan changed

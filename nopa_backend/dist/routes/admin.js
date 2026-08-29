@@ -36,6 +36,7 @@ router.delete('/users/:id', adminController_1.deleteUser);
 router.post('/users/:id/override-password', adminController_1.overridePasswordOrOtp);
 router.get('/users/export', adminController_1.exportUsersCsv);
 router.get('/users/metrics', adminController_1.getUserMetrics);
+router.get('/users/:id', adminController_1.getUserById);
 router.post('/students', studentController_1.createOrUpdateStudent);
 router.post('/students/:id/adjust-balance', studentController_1.adjustBalance);
 router.post('/students/:id/level-frame', studentController_1.adjustLevelFrame);

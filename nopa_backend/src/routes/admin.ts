@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 import {
   getUsers,
+  getUserById,
   createUser,
   updateUser,
   toggleBlockUser,
@@ -74,6 +75,7 @@ router.delete('/users/:id', deleteUser as any);
 router.post('/users/:id/override-password', overridePasswordOrOtp as any);
 router.get('/users/export', exportUsersCsv as any);
 router.get('/users/metrics', getUserMetrics as any);
+router.get('/users/:id', getUserById as any);
 router.post('/students', createOrUpdateStudent as any);
 router.post('/students/:id/adjust-balance', adjustBalance as any);
 router.post('/students/:id/level-frame', adjustLevelFrame as any);
