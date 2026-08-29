@@ -67,9 +67,9 @@ router.use('/admin', admin_1.default);
 router.post('/media/upload', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('admin', 'mentor'), mediaController_1.upload.single('file'), mediaController_1.uploadMedia);
 router.get('/media', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('admin'), mediaController_1.getMediaAssets);
 // I. LMS and Forms
-router.get('/lms/stations', auth_1.authenticateJWT, lmsController_1.getStations);
-router.get('/courses', auth_1.authenticateJWT, lmsController_1.getStations);
-router.get('/courses/hierarchy', auth_1.authenticateJWT, lmsController_1.getStations);
+router.get('/lms/stations', lmsController_1.getStations);
+router.get('/courses', lmsController_1.getStations);
+router.get('/courses/hierarchy', lmsController_1.getStations);
 router.get('/lms/bookmarks/:sessionId', auth_1.authenticateJWT, lmsController_1.getBookmarks);
 router.post('/lms/bookmarks', auth_1.authenticateJWT, lmsController_1.addBookmark);
 router.post('/lms/sessions/:id/heartbeat', auth_1.authenticateJWT, lmsController_1.heartbeatSessionWatch);

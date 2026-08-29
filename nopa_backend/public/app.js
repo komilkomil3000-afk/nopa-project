@@ -91,6 +91,13 @@ function showDashboard() {
   document.getElementById('current-user-name').textContent = currentUser.name || 'مدیر سیستم';
   document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
 
+  // Route according to current URL hash
+  if (typeof handleHashRouting === 'function') {
+    handleHashRouting();
+  } else if (typeof switchTab === 'function') {
+    switchTab('users-tab');
+  }
+
   // Load initial data
   if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
   if (typeof window.loadUsersData === 'function') window.loadUsersData();
@@ -153,11 +160,8 @@ function setupEventListeners() {
   const menuItems = document.querySelectorAll('.menu-item');
   menuItems.forEach(item => {
     item.addEventListener('click', () => {
-      menuItems.forEach(mi => mi.classList.remove('active'));
-      item.classList.add('active');
-      
       const tabId = item.getAttribute('data-tab');
-      switchTab(tabId);
+      switchTab(tabId, true);
     });
   });
 
@@ -543,8 +547,70 @@ async function request(url, options = {}) {
   return res;
 }
 
-// Switch tabs
-function switchTab(tabId) {
+const HASH_TAB_MAP = {
+  '#users': 'users-tab',
+  '#users-tab': 'users-tab',
+  '#rewards': 'rewards-tab',
+  '#rewards-tab': 'rewards-tab',
+  '#levels': 'levels-tab',
+  '#levels-tab': 'levels-tab',
+  
+  '#mentors': 'mentors-profile-tab',
+  '#mentors-profile': 'mentors-profile-tab',
+  '#mentors-profile-tab': 'mentors-profile-tab',
+  '#mentors-tickets': 'mentors-tickets-tab',
+  '#mentors-tickets-tab': 'mentors-tickets-tab',
+  '#mentors-docs': 'mentors-docs-tab',
+  '#mentors-docs-tab': 'mentors-docs-tab',
+  '#mentors-league': 'mentors-league-tab',
+  '#mentors-league-tab': 'mentors-league-tab',
+
+  '#caravans': 'caravans-tab',
+  '#caravans-tab': 'caravans-tab',
+  '#caravan-league': 'caravan-league-tab',
+  '#caravan-league-tab': 'caravan-league-tab',
+
+  '#lms': 'lms-tab',
+  '#lms-tab': 'lms-tab',
+  '#stations': 'lms-tab',
+  '#form-builder': 'form-builder-tab',
+  '#form-builder-tab': 'form-builder-tab',
+  '#submissions': 'submissions-tab',
+  '#submissions-tab': 'submissions-tab',
+
+  '#roles': 'roles-tab',
+  '#roles-tab': 'roles-tab',
+  '#notifications': 'notifications-tab',
+  '#notifications-tab': 'notifications-tab',
+  '#audit': 'audit-tab',
+  '#audit-tab': 'audit-tab',
+  '#analytics': 'analytics-tab',
+  '#analytics-tab': 'analytics-tab'
+};
+
+const TAB_REVERSE_HASH_MAP = {
+  'users-tab': 'users',
+  'rewards-tab': 'rewards',
+  'levels-tab': 'levels',
+  'mentors-profile-tab': 'mentors',
+  'mentors-tickets-tab': 'mentors-tickets',
+  'mentors-docs-tab': 'mentors-docs',
+  'mentors-league-tab': 'mentors-league',
+  'caravans-tab': 'caravans',
+  'caravan-league-tab': 'caravan-league',
+  'lms-tab': 'lms',
+  'form-builder-tab': 'form-builder',
+  'submissions-tab': 'submissions',
+  'roles-tab': 'roles',
+  'notifications-tab': 'notifications',
+  'audit-tab': 'audit',
+  'analytics-tab': 'analytics'
+};
+
+// Switch tabs with URL Hash updates
+function switchTab(tabId, updateUrl = true) {
+  if (!tabId) tabId = 'users-tab';
+
   const panels = document.querySelectorAll('.tab-panel');
   panels.forEach(panel => {
     panel.style.display = 'none';
@@ -552,32 +618,65 @@ function switchTab(tabId) {
   });
 
   const target = document.getElementById(tabId);
-  target.style.display = 'block';
-  target.classList.add('active-panel');
+  if (target) {
+    target.style.display = 'block';
+    target.classList.add('active-panel');
+  }
+
   activeTab = tabId;
+
+  // Highlight menu item and expand parent accordion
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(mi => {
+    if (mi.getAttribute('data-tab') === tabId) {
+      mi.classList.add('active');
+      const accordion = mi.closest('.accordion-item');
+      if (accordion) {
+        accordion.classList.add('open');
+      }
+    } else {
+      mi.classList.remove('active');
+    }
+  });
 
   // Set top title
   const titlesMap = {
-    'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات ۵۰۰+ کاربر نپا' },
+    'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا' },
     'levels-tab': { title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه' },
     'analytics-tab': { title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران' },
     'rewards-tab': { title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک' },
     'roles-tab': { title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا' },
     'caravans-tab': { title: 'کاروان‌ها و مربیان', desc: 'گزارش پیشرفت گروهی کاروان‌ها و ارزیابی مربیان' },
+    'caravan-league-tab': { title: 'لیگ و تبدیل سرمایه‌ها', desc: 'جدول رده‌بندی و تبدیل سرمایه‌های کاروان‌ها' },
     'content-tab': { title: 'اطلاعیه‌ها و محتوا', desc: 'مدیریت و انتشار اطلاعیه‌های سراسری و پیام‌های هدفمند' },
     'notifications-tab': { title: 'مدیریت اعلان‌ها', desc: 'ارسال و پیگیری پیامک، ایمیل و پوش‌نوتیفیکیشن' },
     'media-tab': { title: 'مدیریت رسانه‌ها', desc: 'آپلود و دسته‌بندی فایل‌های ویدیویی و تصویری جهت استریم در اپلیکیشن' },
     'audit-tab': { title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی' },
     'banners-tab': { title: 'مدیریت بنرها', desc: 'مدیریت بنرها و تبلیغات نمایشی اپلیکیشن' },
     'news-tab': { title: 'اخبار جارچی', desc: 'مدیریت تابلوی اعلانات جارچی و رویدادها' },
-    'mentors-profile-tab': { title: 'پروفایل و شناسنامه', desc: 'مرکز ارزیابی راهبران و مربیان' },
-    'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت کلاس‌ها و آزمون‌ها' },
-    'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت کلاس‌ها و آزمون‌ها' }
+    'mentors-profile-tab': { title: 'پروفایل و شناسنامه راهبران', desc: 'مرکز ارزیابی راهبران و مربیان' },
+    'mentors-tickets-tab': { title: 'میزکار و تیکت‌ها', desc: 'مدیریت تیکت‌ها و درخواست‌های مربیان' },
+    'mentors-docs-tab': { title: 'تایید مدارک و گواهینامه‌ها', desc: 'صف انتظار بررسی و تایید مدارک مربیان' },
+    'mentors-league-tab': { title: 'لیگ و ارزیابی مربیان', desc: 'ارزیابی عملکرد و رتبه‌بندی راهبران' },
+    'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
+    'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
+    'form-builder-tab': { title: 'فرم‌ساز داینامیک', desc: 'طراحی و مدیریت فرم‌ها و پرسشنامه‌های اختصاصی' },
+    'submissions-tab': { title: 'بررسی تکالیف معلق', desc: 'مدیریت و ارزیابی پاسخ‌ها و تکالیف دانش‌آموزان' }
   };
 
   if (titlesMap[tabId]) {
-    document.getElementById('tab-title-text').textContent = titlesMap[tabId].title;
-    document.getElementById('tab-desc-text').textContent = titlesMap[tabId].desc;
+    const titleEl = document.getElementById('tab-title-text');
+    if (titleEl) titleEl.textContent = titlesMap[tabId].title;
+    const descEl = document.getElementById('tab-desc-text');
+    if (descEl) descEl.textContent = titlesMap[tabId].desc;
+  }
+
+  // Update URL hash cleanly without page reload
+  if (updateUrl) {
+    const cleanHash = TAB_REVERSE_HASH_MAP[tabId] || tabId.replace('-tab', '');
+    if (window.location.hash !== '#' + cleanHash) {
+      history.pushState(null, '', '#' + cleanHash);
+    }
   }
 
   // Lazy-load data based on active tab
@@ -629,6 +728,16 @@ function switchTab(tabId) {
     if (typeof loadSubmissions === 'function') loadSubmissions();
   }
 }
+
+function handleHashRouting() {
+  const currentHash = (window.location.hash || '#users').toLowerCase();
+  const targetTab = HASH_TAB_MAP[currentHash] || 'users-tab';
+  switchTab(targetTab, false);
+}
+
+// Window popstate / hashchange listeners
+window.addEventListener('hashchange', handleHashRouting);
+window.addEventListener('popstate', handleHashRouting);
 
 // Caravan Drawer
 async function openCaravanDrawer(caravanId) {
@@ -772,21 +881,31 @@ async function loadUsers() {
     const res = await request(url);
     const data = await res.json();
 
-    usersTotal = data.total;
-    document.getElementById('stats-total-users').textContent = `${data.total}`;
+    usersTotal = data.total || 0;
+    const totalUsersEl = document.getElementById('stats-total-users');
+    if (totalUsersEl) totalUsersEl.textContent = `${data.total || 0}`;
     
     // Update stats counts
-    const mentorsCount = data.users.filter(u => u.role === 'mentor').length;
-    document.getElementById('stats-total-mentors').textContent = `${mentorsCount || 2}`;
+    const mentorsCount = (data.users || []).filter(u => u.role === 'mentor').length;
+    const mentorsEl = document.getElementById('stats-total-mentors');
+    if (mentorsEl) mentorsEl.textContent = `${mentorsCount}`;
+
+    const totalZarik = (data.users || []).reduce((acc, u) => acc + (u.zarikBalance || 0), 0);
+    const zarikEl = document.getElementById('stats-total-zarik');
+    if (zarikEl) zarikEl.textContent = totalZarik.toLocaleString('fa-IR');
 
     // Update pagination footer
-    const totalPages = Math.ceil(data.total / 20) || 1;
-    document.getElementById('users-page-info').textContent = `صفحه ${usersPage} از ${totalPages} (کل ${data.total} کاربر)`;
+    const totalPages = Math.ceil((data.total || 0) / 20) || 1;
+    const pageInfoEl = document.getElementById('users-page-info');
+    if (pageInfoEl) pageInfoEl.textContent = `صفحه ${usersPage} از ${totalPages} (کل ${data.total || 0} کاربر)`;
     
-    document.getElementById('btn-prev-users').disabled = usersPage <= 1;
-    document.getElementById('btn-next-users').disabled = usersPage >= totalPages;
+    const prevBtn = document.getElementById('btn-prev-users');
+    if (prevBtn) prevBtn.disabled = usersPage <= 1;
+    const nextBtn = document.getElementById('btn-next-users');
+    if (nextBtn) nextBtn.disabled = usersPage >= totalPages;
 
     const tbody = document.querySelector('#users-data-table tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
 
     if (data.users.length === 0) {
@@ -5247,91 +5366,12 @@ window.toggleBlockMember = async function(userId, blockStatus) {
 };
 
 window.renderAllUsersNow = async function() {
-  const tbody = document.getElementById('users-tbody');
-  if (!tbody) return;
-
-  try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-    let res = await fetch('/api/v1/admin/users', {
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    }).catch(() => ({ ok: false }));
-    
-    if (!res.ok) {
-      res = await fetch('/api/v1/users', {
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-      }).catch(() => ({ ok: false }));
-    }
-
-    let users = [];
-    if (res.ok) {
-      const data = await res.json();
-      users = Array.isArray(data) ? data : (data.users || data.data || []);
-    }
-
-    if (!users || users.length === 0) {
-      // Fallback seed dataset to ensure we always see the 13 users requested
-      users = [
-        { id: 'u1', userCode: 1001, name: 'حسینعلی فقیه', phoneNumber: '09036658547', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 120, levelFrame: 1 },
-        { id: 'u2', userCode: 1002, name: 'علیرضا اسماعیلی', phoneNumber: '09121234567', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 250, levelFrame: 2 },
-        { id: 'u3', userCode: 1003, name: 'محمدحسین رضایی', phoneNumber: '09191112233', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 80, levelFrame: 1 },
-        { id: 'u4', userCode: 1004, name: 'رضا جلالی', phoneNumber: '09199840686', role: 'mentor', caravanName: 'گروه مربی جلالی', zarikBalance: 500, levelFrame: 3 },
-        { id: 'u5', userCode: 1005, name: 'محمد کویتی', phoneNumber: '09191604524', role: 'mentor', caravanName: 'گروه مربی کویتی', zarikBalance: 450, levelFrame: 3 },
-        { id: 'u6', userCode: 1006, name: 'علیرضا خوش‌منظر', phoneNumber: '09196657042', role: 'mentor', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 400, levelFrame: 3 },
-        { id: 'u7', userCode: 1000, name: 'کمیل عباس', phoneNumber: '09380346668', role: 'admin', caravanName: 'ستاد مرکزی', zarikBalance: 9999, levelFrame: 5 },
-        { id: 'u8', userCode: 1008, name: 'مسلم عارف', phoneNumber: '09120000001', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 150, levelFrame: 2 },
-        { id: 'u9', userCode: 1009, name: 'علی پیروی', phoneNumber: '09120000002', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 110, levelFrame: 1 },
-        { id: 'u10', userCode: 1010, name: 'رضا شفیعی', phoneNumber: '09120000003', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 320, levelFrame: 2 },
-        { id: 'u11', userCode: 1011, name: 'طیب جوشقانی', phoneNumber: '09120000004', role: 'student', caravanName: 'گروه مربی جلالی', zarikBalance: 90, levelFrame: 1 },
-        { id: 'u12', userCode: 1012, name: 'عرفان پیروی', phoneNumber: '09120000005', role: 'student', caravanName: 'گروه مربی کویتی', zarikBalance: 180, levelFrame: 2 },
-        { id: 'u13', userCode: 1013, name: 'مهدی احمدی', phoneNumber: '09120000006', role: 'student', caravanName: 'گروه مربی خوش‌منظر', zarikBalance: 210, levelFrame: 2 }
-      ];
-    }
-
-    if (!users || users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">کاربری یافت نشد.</td></tr>';
-      return;
-    }
-
-    // Update stat cards dynamically
-    const totalEl = document.getElementById('stat-total-users');
-    if (totalEl) totalEl.innerText = users.length;
-    const badgeEl = document.getElementById('users-badge-count');
-    if (badgeEl) badgeEl.innerText = users.length;
-    const mentorsCount = users.filter(u => u.role === 'mentor').length;
-    const mentorEl = document.getElementById('stat-mentors-count');
-    if (mentorEl) mentorEl.innerText = mentorsCount;
-
-    tbody.innerHTML = users.map((u, i) => {
-      const roleBadge = u.role === 'admin' || u.role === 'SUPER_MENTOR'
-        ? '<span class="px-2 py-0.5 rounded text-xs bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">مدیر ارشد</span>'
-        : (u.role === 'mentor'
-          ? '<span class="px-2 py-0.5 rounded text-xs bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">مربی راهبر</span>'
-          : '<span class="px-2 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">دانشآموز</span>');
-
-      return `
-        <tr class="hover:bg-slate-800/40 transition">
-          <td class="p-3 text-center text-slate-400 font-mono">${i + 1}</td>
-          <td class="p-3 font-bold text-white">${u.name || 'بدون نام'}</td>
-          <td class="p-3 text-center font-mono text-slate-300" dir="ltr">${u.phoneNumber || '-'}</td>
-          <td class="p-3 text-center">${roleBadge}</td>
-          <td class="p-3 text-slate-300">${u.caravan?.name || u.caravanName || (u.caravanId ? 'دارای کاروان' : 'فاقد کاروان')}</td>
-          <td class="p-3 text-center font-bold text-amber-400 font-mono">${(u.zarikBalance ?? 0).toLocaleString('fa-IR')}</td>
-          <td class="p-3 text-center text-sky-400 font-bold">سطح ${u.levelFrame || 1}</td>
-          <td class="p-3 text-center">
-            <button type="button" onclick="alert('کاربر: ${u.name}\\nشماره: ${u.phoneNumber}')" class="px-2.5 py-1 bg-blue-600/80 hover:bg-blue-600 text-white text-xs rounded-lg shadow">
-              👁️ جزئیات
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error('Render error:', err);
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-6 text-rose-400">خطا در بارگذاری جدول کاربران</td></tr>';
+  if (typeof loadUsers === 'function') {
+    await loadUsers();
   }
 };
 
-window.loadUsersData = window.renderAllUsersNow;
+window.loadUsersData = loadUsers;
 
 window.removeFromCaravan = async function(caravanId, memberId) {
   if (!confirm('Remove this member from caravan?')) return;

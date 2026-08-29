@@ -16,6 +16,7 @@ const getStations = async (req, res) => {
                             include: {
                                 quizzes: true,
                                 videoClips: {
+                                    include: { quizzes: true },
                                     orderBy: { clipOrder: 'asc' }
                                 }
                             },

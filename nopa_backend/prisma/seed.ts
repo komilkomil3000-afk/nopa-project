@@ -203,26 +203,26 @@ async function main() {
 
   console.log('Seeding Baseline LMS Data...');
   
-  let station1 = await prisma.station.findFirst({ where: { title: 'منزلگاه ۱' } });
+  let station1 = await prisma.station.findFirst({ where: { orderIndex: 1 } });
   if (!station1) {
     station1 = await prisma.station.create({
       data: {
-        title: 'منزلگاه ۱',
-        subtitle: 'شروع مسیر خانواده انقلابی',
-        description: 'در این منزلگاه با مفاهیم پایه آشنا می‌شوید.',
+        title: 'منزلگاه اول: مبانی و رسانه',
+        subtitle: 'شناخت اولویت‌ها و ابزارهای تولید رسانه',
+        description: 'منزلگاه ورود به مسیر رشد مهارتی و سواد رسانه‌ای',
         orderIndex: 1,
       }
     });
     console.log('Created Station 1');
   }
 
-  let station2 = await prisma.station.findFirst({ where: { title: 'منزلگاه ۲' } });
+  let station2 = await prisma.station.findFirst({ where: { orderIndex: 2 } });
   if (!station2) {
     station2 = await prisma.station.create({
       data: {
-        title: 'منزلگاه ۲',
-        subtitle: 'مسیر رشد و تعالی',
-        description: 'مباحث پیشرفته‌تر در این منزلگاه قرار دارد.',
+        title: 'منزلگاه دوم: خودشناسی و پادکست',
+        subtitle: 'تحلیل خویشتن و ساخت محتوای صوتی',
+        description: 'منزلگاه دوم تمرکز بر توانمندی‌های فردی و تولید پادکست',
         orderIndex: 2,
       }
     });
