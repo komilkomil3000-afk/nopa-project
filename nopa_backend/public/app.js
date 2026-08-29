@@ -589,8 +589,8 @@ const HASH_TAB_MAP = {
 
   '#caravans': 'caravans-tab',
   '#caravans-tab': 'caravans-tab',
-  '#caravan-league': 'caravan-league-tab',
-  '#caravan-league-tab': 'caravan-league-tab',
+  '#caravan-league': 'caravans-tab',
+  '#caravan-league-tab': 'caravans-tab',
 
   '#lms': 'lms-tab',
   '#lms-tab': 'lms-tab',

@@ -61,8 +61,7 @@
             <i class="fa-solid fa-chevron-down accordion-arrow"></i>
           </div>
           <ul class="accordion-content">
-            <li class="menu-item" data-tab="caravans-tab"><i class="fa-solid fa-plus-square"></i><span class="menu-text">فهرست و ساخت کاروان</span></li>
-            <li class="menu-item" data-tab="caravan-league-tab"><i class="fa-solid fa-trophy"></i><span class="menu-text">لیگ و تبدیل سرمایه‌ها</span></li>
+            <li class="menu-item" data-tab="caravans-tab"><i class="fa-solid fa-compass"></i><span class="menu-text">مدیریت و فهرست کاروان‌ها</span></li>
           </ul>
         </li>
 
@@ -656,17 +655,17 @@
           </div>
         </div>
 
-        <div class="table-container glass">
+        <div class="table-container glass caravans-table-scroll-container" style="max-height: 420px; overflow-y: auto; overflow-x: auto; overscroll-behavior: contain; position: relative; border-radius: 12px;">
           <table class="data-table" id="caravan-performance-table">
-            <thead>
+            <thead style="position: sticky; top: 0; z-index: 10; background: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
               <tr>
-                <th>نام کاروان</th>
-                <th>راهبر(ان)</th>
-                <th>اعضا / ظرفیت</th>
-                <th>مجموع ثروت (زریک)</th>
-                <th>درصد پیشرفت مسیر</th>
-                <th>آخرین فعالیت</th>
-                <th>عملیات</th>
+                <th style="background: #0f172a;">نام کاروان</th>
+                <th style="background: #0f172a;">راهبر(ان)</th>
+                <th style="background: #0f172a;">اعضا / ظرفیت</th>
+                <th style="background: #0f172a;">مجموع ثروت (زریک)</th>
+                <th style="background: #0f172a;">درصد پیشرفت مسیر</th>
+                <th style="background: #0f172a;">آخرین فعالیت</th>
+                <th style="background: #0f172a;">عملیات</th>
               </tr>
             </thead>
             <tbody>
@@ -2022,6 +2021,27 @@
       color: white; padding: 10px 15px; text-decoration: none; display: block; font-size: 12px;
     }
     .dropdown-content a:hover { background: rgba(139, 92, 246, 0.2); }
+
+    /* Caravan Table Scrollable Container & Custom Scrollbar */
+    .caravans-table-scroll-container {
+      scrollbar-width: thin;
+      scrollbar-color: #38bdf8 rgba(15, 23, 42, 0.6);
+    }
+    .caravans-table-scroll-container::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .caravans-table-scroll-container::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 6px;
+    }
+    .caravans-table-scroll-container::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      border-radius: 6px;
+    }
+    .caravans-table-scroll-container::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
+    }
   </style>
 
     <!-- MENTOR DOSSIER MODAL (360 Degree View) -->
