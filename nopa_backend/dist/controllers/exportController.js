@@ -348,13 +348,20 @@ const exportData = async (req, res) => {
         </body>
         </html>
       `;
-            const options = { format: 'A4', landscape: true, margin: { top: '15px', bottom: '15px', left: '15px', right: '15px' } };
+            const options = {
+                format: 'A4',
+                landscape: true,
+                printBackground: true,
+                margin: { top: '15px', bottom: '15px', left: '15px', right: '15px' },
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            };
             const file = { content: htmlContent };
             try {
                 const pdfBuffer = await html_pdf_node_1.default.generatePdf(file, options);
-                res.header('Content-Type', 'application/pdf');
-                res.attachment(`export_${type}.pdf`);
-                return res.send(pdfBuffer);
+                res.setHeader('Content-Type', 'application/pdf');
+                res.setHeader('Content-Disposition', `attachment; filename="export_${type}.pdf"`);
+                res.setHeader('Content-Length', pdfBuffer.length);
+                return res.end(pdfBuffer);
             }
             catch (err) {
                 console.error('PDF Generation Error:', err);

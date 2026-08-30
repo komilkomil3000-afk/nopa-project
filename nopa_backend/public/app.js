@@ -2790,20 +2790,27 @@ window.exportData = async function(type, format) {
       throw new Error(err.error || 'خطا در تولید فایل خروجی');
     }
     
-    // Trigger download
-    const blob = await res.blob();
+    const buffer = await res.arrayBuffer();
+    const mimeType = format === 'pdf' ? 'application/pdf' 
+                   : (format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv;charset=utf-8;');
+    
+    const blob = new Blob([buffer], { type: mimeType });
     const downloadUrl = window.URL.createObjectURL(blob);
+    
+    const extension = format === 'excel' ? 'xlsx' : format;
+    const fileName = `export_${type}_${Date.now()}.${extension}`;
+    
     const a = document.createElement('a');
     a.href = downloadUrl;
-    
-    let extension = format === 'excel' ? 'xlsx' : format;
-    let fileNamePersian = `گزارش_${type}_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.${extension}`;
-    
-    a.download = fileNamePersian;
+    a.download = fileName;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(downloadUrl);
-    a.remove();
+    
+    setTimeout(() => {
+      window.URL.revokeObjectURL(downloadUrl);
+      a.remove();
+    }, 15000);
   } catch (error) {
     console.error('Export Error:', error);
     alert('خطا در دریافت فایل خروجی: ' + error.message);
@@ -3223,6 +3230,32 @@ window.renderMentorsRows = function(mentorsList, tbody) {
       </tr>
     `;
   }).join('');
+};
+
+window.quickUpdateMentorLevel = async function(mentorId, newLevel) {
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/users/${mentorId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ mentorLevel: parseInt(newLevel) })
+    });
+    if (res.ok) {
+      const m = window.mentorsMasterList.find(x => x.id === mentorId);
+      if (m) m.mentorLevel = parseInt(newLevel);
+      alert(`✅ سطح راهبری با موفقیت به سطح ${newLevel} بروزرسانی شد.`);
+      window.filterMentorsList();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert('خطا در بروزرسانی سطح: ' + (err.error || 'خطای سرور'));
+    }
+  } catch (e) {
+    console.error('Update mentor level error:', e);
+    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+  }
 };
 
 window.viewMentorDossier = async function(mentorId) {

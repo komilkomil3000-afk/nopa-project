@@ -1456,30 +1456,73 @@ window.renderReorderList = function() {
   const container = document.getElementById('lms-reorder-list-container');
   if (!container) return;
 
-  if (window.lmsReorderList.length === 0) {
+  if (!window.lmsReorderList || window.lmsReorderList.length === 0) {
     container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">هیچ منزلگاهی وجود ندارد.</div>';
     return;
+  }
+
+  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', 'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم'];
+  const DEFAULT_STATION_TOPICS = {
+    1: { skill: 'شناخت هوش و حافظه', media: 'پادکست و مبانی رسانه' },
+    2: { skill: 'خودشناسی جامع', media: 'تولید پادکست حرفه‌ای' },
+    3: { skill: 'تفکر نقادانه و حل مسئله', media: 'عکاسی و تصویربرداری' },
+    4: { skill: 'کار تیمی و مدیریت چالش‌ها', media: 'تدوین ویدیو و سناریونویسی' },
+    5: { skill: 'هدف‌گذاری و مدیریت زمان', media: 'هوش مصنوعی و رسانه' }
+  };
+
+  function getCleanTopic(cat, fallback) {
+    if (!cat) return fallback;
+    if (cat.title && !cat.title.startsWith('کلاس') && !cat.title.startsWith('دسته') && cat.title.length > 2) {
+      return cat.title;
+    }
+    const firstSess = (cat.sessions || [])[0];
+    if (firstSess && firstSess.title) {
+      let clean = firstSess.title.replace(/^جلسه\s*\d+\s*[:\-–]?\s*/i, '').replace(/^کلاس\s*\d+\s*[:\-–]?\s*/i, '').replace(/\([^)]*\)/g, '').trim();
+      if (clean && clean.length > 2 && !clean.includes('مهارتی') && !clean.includes('رسانه‌ای')) {
+        return clean;
+      }
+    }
+    return fallback;
   }
 
   let html = '';
   window.lmsReorderList.forEach((st, idx) => {
     const isFirst = idx === 0;
     const isLast = idx === window.lmsReorderList.length - 1;
-    const currentNumber = idx + 1; // Strictly unique 1..N
-    const catCount = (st.categories || []).length;
+    const currentNumber = idx + 1; // Current order position (1..N)
+    const originalIdx = st.orderIndex ?? st.index ?? currentNumber;
+    
+    // Persian station title matching main table exactly: منزلگاه اول، منزلگاه دوم، ...
+    const persianStationTitle = PERSIAN_NUMS[idx] ? `منزلگاه ${PERSIAN_NUMS[idx]}` : `منزلگاه ${idx + 1}`;
+
+    const categories = st.categories || [];
+    const skillCategory = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || categories[0];
+    const mediaCategory = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || categories[1];
+    
+    const defaultTopics = DEFAULT_STATION_TOPICS[originalIdx] || DEFAULT_STATION_TOPICS[currentNumber] || { skill: 'کلاس‌های مهارتی', media: 'کلاس‌های رسانه‌ای' };
+    const skillTopic = getCleanTopic(skillCategory, defaultTopics.skill);
+    const mediaTopic = getCleanTopic(mediaCategory, defaultTopics.media);
+
     let totalSessions = 0;
-    (st.categories || []).forEach(c => totalSessions += (c.sessions || []).length);
+    categories.forEach(c => totalSessions += (c.sessions || []).length);
 
     html += `
-      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(30, 41, 59, 0.8); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 16px; transition:all 0.2s;">
+      <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(30, 41, 59, 0.85); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 16px; transition:all 0.2s;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <div style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:bold; font-size:13px; width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+          <div style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:bold; font-size:13.5px; width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
             ${currentNumber}
           </div>
           <div>
-            <div style="font-weight:bold; color:white; font-size:14px;">${st.title || ('منزلگاه ' + currentNumber)}</div>
-            <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
-              ${catCount} دسته کلاسی | ${totalSessions} جلسه مصوب | کد قبلی: MZ${st.orderIndex ?? currentNumber}
+            <div style="font-weight:bold; color:white; font-size:14px; display:flex; align-items:center; gap:8px;">
+              <span>${persianStationTitle}</span>
+              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span style="font-size:12px; color:#38bdf8; font-weight:normal;">(${st.title})</span>` : ''}
+            </div>
+            <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <span style="color:#38bdf8;"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
+              <span style="color:#64748b;">|</span>
+              <span style="color:#a78bfa;"><i class="fa-solid fa-photo-film"></i> رسانه‌ای: ${mediaTopic}</span>
+              <span style="color:#64748b;">|</span>
+              <span style="color:#cbd5e1;">${totalSessions} جلسه مصوب</span>
             </div>
           </div>
         </div>
