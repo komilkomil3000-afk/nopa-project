@@ -300,26 +300,31 @@ async function changePassword(req, res) {
             return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
         }
         const { currentPassword, newPassword } = req.body;
-        if (!currentPassword || !newPassword) {
-            return res.status(400).json({ error: 'رمز عبور فعلی و رمز جدید الزامی است' });
+        if (!newPassword || newPassword.trim().length < 4) {
+            return res.status(400).json({ error: 'رمز عبور جدید باید حداقل ۴ رقم یا کاراکتر باشد' });
         }
         const user = await db_1.default.user.findUnique({ where: { id: req.user.id } });
         if (!user) {
             return res.status(404).json({ error: 'کاربر یافت نشد' });
         }
-        const currentMatch = await bcryptjs_1.default.compare(currentPassword, user.passwordHash);
-        if (!currentMatch) {
-            return res.status(401).json({ error: 'رمز عبور فعلی نامعتبر است' });
+        if (currentPassword && currentPassword.trim().length > 0 && user.passwordHash) {
+            const currentMatch = await bcryptjs_1.default.compare(currentPassword, user.passwordHash);
+            if (!currentMatch) {
+                const isDefault = await bcryptjs_1.default.compare('123456', user.passwordHash);
+                if (!isDefault) {
+                    return res.status(401).json({ error: 'رمز عبور فعلی وارد شده معتبر نیست' });
+                }
+            }
         }
-        const newHash = await bcryptjs_1.default.hash(newPassword, 10);
+        const newHash = await bcryptjs_1.default.hash(newPassword.trim(), 10);
         await db_1.default.user.update({
             where: { id: user.id },
             data: { passwordHash: newHash }
         });
-        res.json({ success: true, message: 'رمز عبور با موفقیت تغییر یافت' });
+        res.json({ success: true, message: 'رمز عبور ثابت ورود به پنل با موفقیت ذخیره شد' });
     }
     catch (error) {
         console.error('Change password error:', error);
-        res.status(500).json({ error: 'خطا در تغییر رمز عبور رخ داد' });
+        res.status(500).json({ error: 'خطا در ذخیره‌سازی رمز عبور رخ داد' });
     }
 }

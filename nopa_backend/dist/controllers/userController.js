@@ -16,10 +16,13 @@ async function getMe(req, res) {
             where: { id: req.user.id },
             include: {
                 caravan: {
-                    include: { mentor: { select: { id: true, name: true, phoneNumber: true } } }
+                    include: {
+                        mentor: { select: { id: true, name: true, phoneNumber: true } },
+                        members: { select: { id: true, name: true } }
+                    }
                 },
                 mentoredCaravans: {
-                    include: { members: true }
+                    include: { members: { select: { id: true, name: true } } }
                 },
                 ratingsReceived: true,
                 evaluationsReceived: true,
@@ -49,6 +52,9 @@ async function getMe(req, res) {
             const combinedCount = totalRatings + totalEvaluations;
             satisfactionScore = combinedCount > 0 ? (sumRatings + sumEvals) / combinedCount : 0;
         }
+        const caravanMembersList = assignedCaravan
+            ? (assignedCaravan.members?.map((m) => ({ id: m.id, name: m.name })) || [])
+            : (user.caravan?.members?.map((m) => ({ id: m.id, name: m.name })) || []);
         res.json({
             id: user.id,
             name: user.name,
@@ -62,6 +68,7 @@ async function getMe(req, res) {
             socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
             managedMembersCount,
             satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),
+            completedSessionsCount: completedStationsCount,
             completedStationsCount: Math.floor(completedStationsCount / 4), // 4 sessions per station baseline
             zarikBalance: user.zarikBalance,
             nakh: user.nakh,
@@ -75,7 +82,8 @@ async function getMe(req, res) {
             dateOfBirth: user.dateOfBirth,
             city: user.city,
             mentorDocuments: user.mentorDocuments,
-            certificates: user.certificates
+            certificates: user.certificates,
+            caravanMembers: caravanMembersList
         });
     }
     catch (error) {

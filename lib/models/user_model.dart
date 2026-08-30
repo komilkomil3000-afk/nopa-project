@@ -34,7 +34,9 @@ class UserModel {
   final String? caravanMentor;
   final String? mentorPhone;
   final int completedStationsCount;
+  final int completedSessionsCount;
   final List<dynamic>? certificates;
+  final List<dynamic>? caravanMembers;
   final int managedMembersCount;
   final double satisfactionScore;
 
@@ -66,7 +68,9 @@ class UserModel {
     this.caravanMentor,
     this.mentorPhone,
     this.completedStationsCount = 0,
+    this.completedSessionsCount = 0,
     this.certificates,
+    this.caravanMembers,
     this.managedMembersCount = 0,
     this.satisfactionScore = 0.0,
   });
@@ -78,8 +82,8 @@ class UserModel {
       id: json['id'] ?? '',
       name: json['name'] ?? 'کاربر',
       phoneNumber: json['phoneNumber'] ?? '',
-      role: (json['role'] == 'mentor' || json['role'] == 'superMentor') ? UserRole.mentor : UserRole.member,
-      zarik: json['zarikBalance'] ?? 0,
+      role: (json['role'] == 'mentor' || json['role'] == 'superMentor' || json['role'] == 'SUPER_MENTOR') ? UserRole.mentor : UserRole.member,
+      zarik: json['zarikBalance'] ?? json['zarik'] ?? 0,
       nakh: json['nakh'] ?? 0,
       beyragh: json['beyragh'] ?? 0,
       farsh: json['farsh'] ?? 0,
@@ -102,9 +106,11 @@ class UserModel {
       caravanMentor: json['caravanMentor'] ?? json['caravan']?['mentor']?['name'] ?? 'تعیین نشده',
       mentorPhone: json['mentorPhone'] ?? json['caravan']?['mentor']?['phoneNumber'],
       completedStationsCount: json['completedStationsCount'] ?? 0,
+      completedSessionsCount: json['completedSessionsCount'] ?? 0,
       certificates: json['certificates'] ?? [],
+      caravanMembers: json['caravanMembers'],
       managedMembersCount: json['managedMembersCount'] ?? 0,
-      satisfactionScore: (json['satisfactionScore'] ?? 0).toDouble(),
+      satisfactionScore: (json['satisfactionScore'] ?? 0.0).toDouble(),
     );
   }
 }

@@ -328,8 +328,8 @@ export async function changePassword(req: AuthRequest, res: Response) {
     }
 
     const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'رمز عبور فعلی و رمز جدید الزامی است' });
+    if (!newPassword || newPassword.trim().length < 4) {
+      return res.status(400).json({ error: 'رمز عبور جدید باید حداقل ۴ رقم یا کاراکتر باشد' });
     }
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -337,20 +337,25 @@ export async function changePassword(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'کاربر یافت نشد' });
     }
 
-    const currentMatch = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!currentMatch) {
-      return res.status(401).json({ error: 'رمز عبور فعلی نامعتبر است' });
+    if (currentPassword && currentPassword.trim().length > 0 && user.passwordHash) {
+      const currentMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!currentMatch) {
+        const isDefault = await bcrypt.compare('123456', user.passwordHash);
+        if (!isDefault) {
+          return res.status(401).json({ error: 'رمز عبور فعلی وارد شده معتبر نیست' });
+        }
+      }
     }
 
-    const newHash = await bcrypt.hash(newPassword, 10);
+    const newHash = await bcrypt.hash(newPassword.trim(), 10);
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: newHash }
     });
 
-    res.json({ success: true, message: 'رمز عبور با موفقیت تغییر یافت' });
+    res.json({ success: true, message: 'رمز عبور ثابت ورود به پنل با موفقیت ذخیره شد' });
   } catch (error) {
     console.error('Change password error:', error);
-    res.status(500).json({ error: 'خطا در تغییر رمز عبور رخ داد' });
+    res.status(500).json({ error: 'خطا در ذخیره‌سازی رمز عبور رخ داد' });
   }
 }

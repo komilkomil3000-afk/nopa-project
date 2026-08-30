@@ -202,13 +202,14 @@ class HttpApiService {
     }
   }
 
-  Future<bool> changePassword(String currentPassword, String newPassword) async {
+  Future<bool> changePassword(String? currentPassword, String newPassword) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/change-password'),
         headers: _getHeaders(),
         body: jsonEncode({
-          'currentPassword': currentPassword,
+          if (currentPassword != null && currentPassword.isNotEmpty)
+            'currentPassword': currentPassword,
           'newPassword': newPassword,
         }),
       );
@@ -255,26 +256,7 @@ class HttpApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return UserModel(
-          id: data['id'],
-          name: data['name'],
-          phoneNumber: data['phoneNumber'],
-          role: data['role'] == 'SUPER_MENTOR' ? UserRole.superMentor : (data['role'] == 'mentor' ? UserRole.mentor : UserRole.member),
-          zarik: data['zarikBalance'],
-          nakh: data['nakh'] ?? 0,
-          beyragh: data['beyragh'] ?? 0,
-          farsh: data['farsh'] ?? 0,
-          hasEvaluatedMentorThisSeason: data['hasEvaluatedMentorThisSeason'] ?? false,
-          levelFrame: data['levelFrame'] ?? 1,
-          avatarUrl: data['avatarUrl'],
-          identityVerified: data['identityVerified'] ?? false,
-          socialGroupLink: data['socialGroupLink'],
-          userCode: data['userCode'],
-          mentorDocuments: data['mentorDocuments'],
-          nationalId: data['nationalId'],
-          dateOfBirth: data['dateOfBirth'],
-          city: data['city'],
-        );
+        return UserModel.fromJson(data);
       }
       return null;
     } catch (e) {
