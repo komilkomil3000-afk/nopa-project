@@ -296,41 +296,141 @@
           <!-- Adjustments and Analytics -->
           <div>
             <div class="panel-card glass" style="margin-bottom: 20px;">
-              <div class="panel-title">مرکز اقتصاد پلتفرم (Economy Hub)</div>
-              <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="stat-card glass" style="padding:15px;">
-                  <div><div class="stat-label">زریک</div><div class="stat-value" id="eco-zarik" style="font-size:20px; color:#fbbf24;">0</div></div>
-                </div>
-                <div class="stat-card glass" style="padding:15px;">
-                  <div><div class="stat-label">نخ</div><div class="stat-value" id="eco-nakh" style="font-size:20px; color:#a78bfa;">0</div></div>
-                </div>
-                <div class="stat-card glass" style="padding:15px;">
-                  <div><div class="stat-label">فرش</div><div class="stat-value" id="eco-farsh" style="font-size:20px; color:#ef4444;">0</div></div>
-                </div>
-                <div class="stat-card glass" style="padding:15px;">
-                  <div><div class="stat-label">بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:20px; color:#3b82f6;">0</div></div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div class="panel-title" style="margin: 0;"><i class="fa-solid fa-trophy" style="color: #fbbf24; margin-left: 8px;"></i>مرکز لیگ و رتبه‌بندی جامع پلتفرم</div>
+                <div class="pill-nav" style="display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                  <button type="button" id="btn-league-caravans" class="page-btn" style="background: var(--color-accent); color: #fff; font-weight: 700; border-radius: 8px;" onclick="switchLeagueTab('caravans')"><i class="fa-solid fa-users-rectangle" style="margin-left: 6px;"></i>لیگ کاروان‌ها</button>
+                  <button type="button" id="btn-league-individuals" class="page-btn" style="background: transparent; color: var(--text-secondary); border-radius: 8px;" onclick="switchLeagueTab('individuals')"><i class="fa-solid fa-user-graduate" style="margin-left: 6px;"></i>لیگ افراد و اعضا</button>
                 </div>
               </div>
-              <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px;">۵ ثروتمند برتر پلتفرم</h4>
-              <div class="table-container" style="margin-bottom:0;">
-                <table class="data-table" id="wealthy-leaderboard">
-                  <thead><tr><th>نام</th><th>زریک</th><th>نخ</th><th>فرش</th><th>بیرق</th></tr></thead>
-                  <tbody></tbody>
-                </table>
+
+              <!-- Economy Overview Stats Bar -->
+              <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 15px;">
+                <div class="stat-card glass" style="padding:12px 15px;">
+                  <div><div class="stat-label">💰 کل زریک پلتفرم</div><div class="stat-value" id="eco-zarik" style="font-size:18px; color:#fbbf24;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:12px 15px;">
+                  <div><div class="stat-label">🧵 کل نخ</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:12px 15px;">
+                  <div><div class="stat-label">🧶 کل فرش</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
+                </div>
+                <div class="stat-card glass" style="padding:12px 15px;">
+                  <div><div class="stat-label">🚩 کل بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
+                </div>
+              </div>
+
+              <!-- Filter Toolbar -->
+              <div class="actions-header glass" style="margin-bottom: 15px; padding: 12px 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-arrow-down-wide-short"></i> مرتب‌سازی:</span>
+                  <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" onchange="applyLeagueFilters()">
+                    <option value="totalScore">🌟 کل امتیازات (جام زرین)</option>
+                    <option value="zarik">💰 زریک</option>
+                    <option value="beyragh">🚩 بیرق</option>
+                    <option value="nakh">🧵 نخ</option>
+                    <option value="farsh">🧶 فرش</option>
+                    <option value="stars">⭐ ستاره‌ها و آزمون‌ها</option>
+                    <option value="quizScore">📝 نمره آزمون‌ها</option>
+                    <option value="challengeScore">🎯 امتیاز چالش‌ها</option>
+                    <option value="progress">📊 درصد پیشرفت دوره‌ها</option>
+                    <option value="wealth">💎 ارزش دارایی‌های نقد</option>
+                  </select>
+                </div>
+
+                <!-- Role Filter (for Individuals) -->
+                <div id="league-role-filter-box" style="display: none; align-items: center; gap: 6px;">
+                  <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-user-tag"></i> نقش:</span>
+                  <select id="league-role-filter" class="select-ctrl" style="min-width: 120px;" onchange="applyLeagueFilters()">
+                    <option value="all">همه نقش‌ها</option>
+                    <option value="student">فقط دانش‌آموزان</option>
+                    <option value="mentor">فقط راهبران / مربیان</option>
+                  </select>
+                </div>
+
+                <!-- Caravan Filter -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-tents"></i> کاروان:</span>
+                  <select id="league-caravan-filter" class="select-ctrl" style="min-width: 130px;" onchange="applyLeagueFilters()">
+                    <option value="all">تمام کاروان‌ها</option>
+                  </select>
+                </div>
+
+                <!-- Search box -->
+                <div style="position: relative; flex: 1; min-width: 180px;">
+                  <input type="text" id="league-search-input" class="input-ctrl" placeholder="🔍 جستجوی نام، تلفن یا کاروان..." style="width: 100%; padding-right: 32px;" oninput="debounceLeagueSearch()">
+                  <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 12px;"></i>
+                </div>
+
+                <!-- Export options -->
+                <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
+                  <button class="btn-action btn-export" style="padding: 6px 12px;"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
+                  <div class="dropdown-content">
+                    <a href="javascript:void(0)" onclick="exportCurrentLeague('excel')"><i class="fa-solid fa-file-excel"></i> اکسل (Excel)</a>
+                    <a href="javascript:void(0)" onclick="exportCurrentLeague('pdf')"><i class="fa-solid fa-file-pdf"></i> فایل (PDF)</a>
+                    <a href="javascript:void(0)" onclick="exportCurrentLeague('csv')"><i class="fa-solid fa-file-csv"></i> فایل (CSV)</a>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW 1: Caravans Leaderboard -->
+              <div id="league-caravans-container">
+                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow-y: auto;">
+                  <table class="data-table" id="caravans-leaderboard-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px; text-align: center;">رتبه</th>
+                        <th>نام کاروان</th>
+                        <th>راهبر</th>
+                        <th style="text-align: center;">اعضا</th>
+                        <th style="color: #fbbf24;">زریک 💰</th>
+                        <th style="color: #a78bfa;">نخ 🧵</th>
+                        <th style="color: #ef4444;">فرش 🧶</th>
+                        <th style="color: #3b82f6;">بیرق 🚩</th>
+                        <th style="color: #f59e0b;">ستاره/آزمون ⭐</th>
+                        <th>امتیاز چالش 🎯</th>
+                        <th>پیشرفت کلاس 📈</th>
+                        <th style="color: #10b981; font-weight: bold;">امتیاز کل 🏆</th>
+                        <th style="text-align: center;">عملیات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Populated dynamically via loadCaravansLeaderboard() -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- VIEW 2: Individuals Leaderboard -->
+              <div id="league-individuals-container" style="display: none;">
+                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow-y: auto;">
+                  <table class="data-table" id="individuals-leaderboard-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px; text-align: center;">رتبه</th>
+                        <th>کاربر</th>
+                        <th>نقش</th>
+                        <th>کاروان</th>
+                        <th style="color: #fbbf24;">زریک 💰</th>
+                        <th style="color: #a78bfa;">نخ 🧵</th>
+                        <th style="color: #ef4444;">فرش 🧶</th>
+                        <th style="color: #3b82f6;">بیرق 🚩</th>
+                        <th style="color: #f59e0b;">ستاره‌ها ⭐</th>
+                        <th>نمره آزمون 📝</th>
+                        <th>نمره چالش 🎯</th>
+                        <th>پیشرفت کلاس 📊</th>
+                        <th style="color: #10b981; font-weight: bold;">امتیاز کل 🌟</th>
+                        <th style="text-align: center;">عملیات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Populated dynamically via loadIndividualsLeaderboard() -->
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            <div class="panel-card glass">
-              <div class="panel-title">نمودارهای اقتصاد زریک</div>
-              <div style="display: flex; gap: 20px;">
-                <div style="flex: 1; height: 260px;">
-                  <canvas id="wealthChart"></canvas>
-                </div>
-                <div style="flex: 1; height: 260px;">
-                  <canvas id="velocityChart"></canvas>
-                </div>
-              </div>
-            </div>
 
             <div class="panel-card glass">
               <div class="panel-title">ریزنمرات تراکنش‌ها</div>

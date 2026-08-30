@@ -1357,28 +1357,281 @@ window.setAccountStatus = async function(id, status) {
   }
 }
 
-async function loadAssetLeaderboard() {
+let currentLeagueTab = 'caravans';
+let leagueSearchTimeout = null;
+
+function switchLeagueTab(tab) {
+  currentLeagueTab = tab;
+  const btnCaravans = document.getElementById('btn-league-caravans');
+  const btnIndividuals = document.getElementById('btn-league-individuals');
+  const containerCaravans = document.getElementById('league-caravans-container');
+  const containerIndividuals = document.getElementById('league-individuals-container');
+  const roleFilterBox = document.getElementById('league-role-filter-box');
+
+  if (tab === 'caravans') {
+    if (btnCaravans) {
+      btnCaravans.style.background = 'var(--color-accent)';
+      btnCaravans.style.color = '#fff';
+      btnCaravans.style.fontWeight = '700';
+    }
+    if (btnIndividuals) {
+      btnIndividuals.style.background = 'transparent';
+      btnIndividuals.style.color = 'var(--text-secondary)';
+      btnIndividuals.style.fontWeight = 'normal';
+    }
+    if (containerCaravans) containerCaravans.style.display = 'block';
+    if (containerIndividuals) containerIndividuals.style.display = 'none';
+    if (roleFilterBox) roleFilterBox.style.display = 'none';
+    loadCaravansLeaderboard();
+  } else {
+    if (btnIndividuals) {
+      btnIndividuals.style.background = 'var(--color-accent)';
+      btnIndividuals.style.color = '#fff';
+      btnIndividuals.style.fontWeight = '700';
+    }
+    if (btnCaravans) {
+      btnCaravans.style.background = 'transparent';
+      btnCaravans.style.color = 'var(--text-secondary)';
+      btnCaravans.style.fontWeight = 'normal';
+    }
+    if (containerCaravans) containerCaravans.style.display = 'none';
+    if (containerIndividuals) containerIndividuals.style.display = 'block';
+    if (roleFilterBox) roleFilterBox.style.display = 'flex';
+    loadIndividualsLeaderboard();
+  }
+}
+
+function debounceLeagueSearch() {
+  clearTimeout(leagueSearchTimeout);
+  leagueSearchTimeout = setTimeout(() => {
+    applyLeagueFilters();
+  }, 300);
+}
+
+function applyLeagueFilters() {
+  if (currentLeagueTab === 'caravans') {
+    loadCaravansLeaderboard();
+  } else {
+    loadIndividualsLeaderboard();
+  }
+}
+
+async function loadLeagueCaravansOptions() {
   try {
-    const res = await request('/api/v1/admin/leaderboard/assets');
+    const res = await request('/api/v1/admin/caravans');
+    if (!res.ok) return;
     const data = await res.json();
-    const tbody = document.querySelector('#wealthy-leaderboard tbody');
+    const select = document.getElementById('league-caravan-filter');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = '<option value="all">تمام کاروان‌ها</option>';
+    const caravans = Array.isArray(data) ? data : (data.caravans || []);
+    caravans.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      select.appendChild(opt);
+    });
+    if (currentVal) select.value = currentVal;
+  } catch (err) {
+    console.error('Failed to load caravan options for league filter', err);
+  }
+}
+
+async function loadCaravansLeaderboard() {
+  const tbody = document.querySelector('#caravans-leaderboard-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> در حال دریافت رتبه‌بندی کاروان‌ها...</td></tr>';
+
+  const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
+  const search = document.getElementById('league-search-input')?.value || '';
+  const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
+
+  try {
+    const res = await request(`/api/v1/admin/leaderboard/caravans?sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}`);
+    if (!res.ok) throw new Error('خطا در ارتباط با سرور');
+    let caravans = await res.json();
+
+    if (caravanId && caravanId !== 'all') {
+      caravans = caravans.filter(c => c.id === caravanId);
+    }
+
     tbody.innerHTML = '';
-    data.slice(0,20).forEach(u => {
+    if (!caravans || caravans.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--text-secondary);">موردی برای نمایش یافت نشد.</td></tr>';
+      return;
+    }
+
+    caravans.forEach((c, idx) => {
+      const rank = idx + 1;
+      let rankBadge = `<span style="font-weight:bold; color:var(--text-secondary);">${rank}</span>`;
+      let trStyle = '';
+      if (rank === 1) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #fbbf24);" title="رتبه ۱ - طلایی">🥇</span>';
+        trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
+      } else if (rank === 2) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #94a3b8);" title="رتبه ۲ - نقره‌ای">🥈</span>';
+        trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
+      } else if (rank === 3) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #b45309);" title="رتبه ۳ - برنزی">🥉</span>';
+        trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+      }
+
       const tr = document.createElement('tr');
+      if (trStyle) tr.style = trStyle;
       tr.innerHTML = `
-        <td><strong>${u.name}</strong></td>
-        <td>${u.zarikBalance}</td>
-        <td>${u.nakh || 0}</td>
-        <td>${u.farsh || 0}</td>
-        <td>${u.beyragh || 0}</td>
-        <td style="white-space:nowrap;">
-          <button class="page-btn" onclick="viewUserDetails('${u.id}')">مشاهده</button>
-          <button class="page-btn" onclick="document.getElementById('zarik-target-user').value='${u.id}';window.scrollTo(0,document.body.scrollHeight);">تعدیل</button>
+        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td>
+          <div style="font-weight: 700; font-size: 14px; color: #fff;">${c.name}</div>
+        </td>
+        <td>
+          <div style="font-size: 13px; font-weight: 500;">${c.mentorName || '-'}</div>
+          ${c.mentorPhone && c.mentorPhone !== '-' ? `<span style="font-size: 11px; color: var(--text-secondary);">${c.mentorPhone}</span>` : ''}
+        </td>
+        <td style="text-align: center;">
+          <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${c.memberCount} / ${c.capacityLimit}</span>
+        </td>
+        <td style="color: #fbbf24; font-weight: 600;">${(c.zarik || 0).toLocaleString()}</td>
+        <td style="color: #a78bfa; font-weight: 600;">${(c.nakh || 0).toLocaleString()}</td>
+        <td style="color: #ef4444; font-weight: 600;">${(c.farsh || 0).toLocaleString()}</td>
+        <td style="color: #3b82f6; font-weight: 600;">${(c.beyragh || 0).toLocaleString()}</td>
+        <td style="color: #f59e0b; font-weight: 600;">⭐ ${c.stars || 0}</td>
+        <td><span style="color: #00f2fe; font-weight: 600;">🎯 ${c.challengeScore || 0}</span></td>
+        <td style="min-width: 110px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, #10b981, #00f2fe); border-radius: 3px;"></div>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${c.overallProgress || 0}%</span>
+          </div>
+        </td>
+        <td style="color: #10b981; font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
+        <td style="text-align: center; white-space: nowrap;">
+          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{alert('کاروان: ${c.name}');}">
+            <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
+          </button>
         </td>
       `;
       tbody.appendChild(tr);
     });
-  } catch (err) { console.error('Failed to load asset leaderboard', err); }
+  } catch (err) {
+    console.error('Failed to load caravans leaderboard', err);
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+  }
+}
+
+async function loadIndividualsLeaderboard() {
+  const tbody = document.querySelector('#individuals-leaderboard-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> در حال دریافت رتبه‌بندی افراد...</td></tr>';
+
+  const role = document.getElementById('league-role-filter')?.value || 'all';
+  const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
+  const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
+  const search = document.getElementById('league-search-input')?.value || '';
+
+  try {
+    const res = await request(`/api/v1/admin/leaderboard/individuals?role=${encodeURIComponent(role)}&caravanId=${encodeURIComponent(caravanId)}&sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}`);
+    if (!res.ok) throw new Error('خطا در ارتباط با سرور');
+    const users = await res.json();
+
+    tbody.innerHTML = '';
+    if (!users || users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--text-secondary);">موردی برای نمایش یافت نشد.</td></tr>';
+      return;
+    }
+
+    users.forEach((u, idx) => {
+      const rank = idx + 1;
+      let rankBadge = `<span style="font-weight:bold; color:var(--text-secondary);">${rank}</span>`;
+      let trStyle = '';
+      if (rank === 1) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #fbbf24);" title="رتبه ۱ - طلایی">🥇</span>';
+        trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
+      } else if (rank === 2) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #94a3b8);" title="رتبه ۲ - نقره‌ای">🥈</span>';
+        trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
+      } else if (rank === 3) {
+        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #b45309);" title="رتبه ۳ - برنزی">🥉</span>';
+        trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+      }
+
+      const roleBadge = u.role === 'mentor'
+        ? '<span style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">راهبر</span>'
+        : '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">دانش‌آموز</span>';
+
+      const tr = document.createElement('tr');
+      if (trStyle) tr.style = trStyle;
+      tr.innerHTML = `
+        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+              ${u.avatarUrl ? `<img src="${u.avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fa-solid fa-user" style="color:var(--text-secondary);"></i>'}
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 13px; color: #fff;">${u.name}</div>
+              <div style="font-size: 11px; color: var(--text-secondary);">${u.phoneNumber || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td>${roleBadge}</td>
+        <td><span style="background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${u.caravanName}</span></td>
+        <td style="color: #fbbf24; font-weight: 600;">${(u.zarik || 0).toLocaleString()}</td>
+        <td style="color: #a78bfa; font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
+        <td style="color: #ef4444; font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
+        <td style="color: #3b82f6; font-weight: 600;">${(u.beyragh || 0).toLocaleString()}</td>
+        <td style="color: #f59e0b; font-weight: 600;">⭐ ${u.stars || 0}</td>
+        <td><span style="color: #38bdf8; font-weight: 600;">📝 ${u.quizScore || 0}</span></td>
+        <td><span style="color: #00f2fe; font-weight: 600;">🎯 ${u.challengeScore || 0}</span></td>
+        <td style="min-width: 100px;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, #6366f1, #38bdf8); border-radius: 3px;"></div>
+            </div>
+            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${u.progressPercentage || 0}%</span>
+          </div>
+        </td>
+        <td style="color: #10b981; font-weight: 800; font-size: 14px;">${(u.totalScore || 0).toLocaleString()}</td>
+        <td style="text-align: center; white-space: nowrap;">
+          <button class="page-btn" style="padding: 3px 8px; font-size: 11px;" onclick="viewUserDetails('${u.id}')" title="مشاهده پروفایل">
+            <i class="fa-solid fa-user"></i>
+          </button>
+          <button class="page-btn" style="padding: 3px 8px; font-size: 11px; margin-right: 4px;" onclick="document.getElementById('zarik-target-user').value='${u.id}';window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});" title="تعدیل زریک">
+            <i class="fa-solid fa-coins"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Failed to load individuals leaderboard', err);
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+  }
+}
+
+function exportCurrentLeague(type) {
+  const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
+  const search = document.getElementById('league-search-input')?.value || '';
+  const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
+  const role = document.getElementById('league-role-filter')?.value || 'all';
+
+  if (currentLeagueTab === 'caravans') {
+    const url = `/api/v1/admin/leaderboard/caravans?sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}&exportAs=csv`;
+    window.open(url, '_blank');
+  } else {
+    const url = `/api/v1/admin/leaderboard/individuals?role=${encodeURIComponent(role)}&caravanId=${encodeURIComponent(caravanId)}&sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}&exportAs=csv`;
+    window.open(url, '_blank');
+  }
+}
+
+async function loadAssetLeaderboard() {
+  loadLeagueCaravansOptions();
+  if (currentLeagueTab === 'caravans') {
+    loadCaravansLeaderboard();
+  } else {
+    loadIndividualsLeaderboard();
+  }
 }
 
 async function loadLevels() {
@@ -1703,70 +1956,80 @@ async function loadRewardRules() {
 async function loadZarikAnalytics() {
   try {
     const res = await request('/api/v1/admin/rewards/analytics');
+    if (!res.ok) return;
     const data = await res.json();
 
     // Stats display update
-    document.getElementById('stats-total-zarik').textContent = data.circulation.toLocaleString();
+    const totalZarikElem = document.getElementById('stats-total-zarik');
+    if (totalZarikElem && data.circulation !== undefined) {
+      totalZarikElem.textContent = data.circulation.toLocaleString();
+    }
 
     // Wealth chart
-    const wealthCtx = document.getElementById('wealthChart').getContext('2d');
-    if (wealthChart) wealthChart.destroy();
-    
-    wealthChart = new Chart(wealthCtx, {
-      type: 'bar',
-      data: {
-        labels: data.topWealthy.map(w => w.name),
-        datasets: [{
-          label: 'موجودی زریک (۵ نفر برتر)',
-          data: data.topWealthy.map(w => w.zarikBalance),
-          backgroundColor: 'rgba(0, 242, 254, 0.6)',
-          borderColor: 'var(--color-neon-blue)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
+    const wealthCanvas = document.getElementById('wealthChart');
+    if (wealthCanvas && typeof Chart !== 'undefined') {
+      const wealthCtx = wealthCanvas.getContext('2d');
+      if (wealthChart) wealthChart.destroy();
+      
+      wealthChart = new Chart(wealthCtx, {
+        type: 'bar',
+        data: {
+          labels: data.topWealthy ? data.topWealthy.map(w => w.name) : [],
+          datasets: [{
+            label: 'موجودی زریک (۵ نفر برتر)',
+            data: data.topWealthy ? data.topWealthy.map(w => w.zarikBalance) : [],
+            backgroundColor: 'rgba(0, 242, 254, 0.6)',
+            borderColor: 'var(--color-neon-blue)',
+            borderWidth: 1
+          }]
         },
-        scales: {
-          x: { ticks: { color: '#94a3b8' } },
-          y: { ticks: { color: '#94a3b8' } }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8' } },
+            y: { ticks: { color: '#94a3b8' } }
+          }
         }
-      }
-    });
+      });
+    }
 
     // Velocity chart (distribution by category)
-    const velCtx = document.getElementById('velocityChart').getContext('2d');
-    if (velocityChart) velocityChart.destroy();
+    const velCanvas = document.getElementById('velocityChart');
+    if (velCanvas && typeof Chart !== 'undefined') {
+      const velCtx = velCanvas.getContext('2d');
+      if (velocityChart) velocityChart.destroy();
 
-    velocityChart = new Chart(velCtx, {
-      type: 'doughnut',
-      data: {
-        labels: data.distributions.map(d => d.category),
-        datasets: [{
-          data: data.distributions.map(d => Math.abs(d.totalAmount)),
-          backgroundColor: [
-            'rgba(99, 102, 241, 0.7)',
-            'rgba(16, 185, 129, 0.7)',
-            'rgba(245, 158, 11, 0.7)',
-            'rgba(239, 68, 68, 0.7)'
-          ],
-          borderColor: 'rgba(255,255,255,0.1)'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
+      velocityChart = new Chart(velCtx, {
+        type: 'doughnut',
+        data: {
+          labels: data.distributions ? data.distributions.map(d => d.category) : [],
+          datasets: [{
+            data: data.distributions ? data.distributions.map(d => Math.abs(d.totalAmount)) : [],
+            backgroundColor: [
+              'rgba(99, 102, 241, 0.7)',
+              'rgba(16, 185, 129, 0.7)',
+              'rgba(245, 158, 11, 0.7)',
+              'rgba(239, 68, 68, 0.7)'
+            ],
+            borderColor: 'rgba(255,255,255,0.1)'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
+          }
         }
-      }
-    });
+      });
+    }
 
   } catch (err) {
-    console.error(err);
+    console.error('loadZarikAnalytics error:', err);
   }
 }
 

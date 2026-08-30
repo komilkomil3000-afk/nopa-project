@@ -57,7 +57,7 @@ import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory,
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
 import { getSystemSetting, setSystemSetting } from '../controllers/settingController';
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
-import { getCaravanLeague } from '../controllers/leagueController';
+import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
 const router = Router();
 
@@ -239,6 +239,8 @@ router.get('/mentors/evaluations', getMentorEvaluations as any);
 router.post('/levels/grant', grantUserLevel as any);
 
 router.get('/leaderboard/assets', getAssetLeaderboard as any);
+router.get('/leaderboard/individuals', getIndividualsLeaderboard as any);
+router.get('/leaderboard/caravans', getCaravansLeaderboardDetailed as any);
 router.get('/rewards/rules', getRewardRules as any);
 router.post('/rewards/rules', upsertRewardRule as any);
 router.get('/rewards/mentor-rules', getMentorRewardRules as any);

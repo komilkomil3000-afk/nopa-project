@@ -1,0 +1,11 @@
+{
+  "platform": "node",
+  "app": "nopa-backend",
+  "port": 5000,
+  "node": {
+    "version": "20"
+  },
+  "build": {
+    "command": "npm run build && npx prisma db push"
+  }
+}
