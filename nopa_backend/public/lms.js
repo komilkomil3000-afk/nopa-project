@@ -255,13 +255,17 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       `;
     }
 
-    let releaseDateStr = 'نامشخص';
+    let releaseDatePersian = 'تعیین‌نشده';
+    let releaseDateShort = '-';
     if (st.releaseDate) {
       try {
         const d = new Date(st.releaseDate);
-        releaseDateStr = d.toISOString().split('T')[0];
+        if (!isNaN(d.getTime())) {
+          releaseDatePersian = d.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
+          releaseDateShort = d.toLocaleDateString('fa-IR');
+        }
       } catch (e) {
-        releaseDateStr = String(st.releaseDate).split('T')[0];
+        releaseDatePersian = String(st.releaseDate);
       }
     }
 
@@ -278,8 +282,15 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
         <td>${instructorsDisplayHtml}</td>
         <td style="text-align:center;">${categoryBadgeHtml}</td>
         <td style="color:#cbd5e1; font-size:12px;">
-          <div style="display:flex; align-items:center; gap:5px; color:#38bdf8; font-weight:bold;">
-            <i class="fa-solid fa-calendar-days"></i> ${releaseDateStr}
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; align-items:center; gap:6px; color:#38bdf8; font-weight:bold; font-size:12.5px;">
+              <i class="fa-solid fa-calendar-days" style="color:#38bdf8; font-size:11px;"></i>
+              <span>${releaseDatePersian}</span>
+            </div>
+            <div style="font-size:10.5px; color:#94a3b8; display:flex; align-items:center; gap:4px;">
+              <i class="fa-regular fa-clock" style="font-size:10px;"></i>
+              <span>تقویم هفتگی (${releaseDateShort})</span>
+            </div>
           </div>
         </td>
         <td style="text-align:center;">${sessionsDisplayHtml}</td>
