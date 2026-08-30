@@ -1138,23 +1138,34 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
 export async function moderateMentor(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { action, suspendedUntil } = req.body; // action: 'soft_delete', 'permanent_suspend', 'temp_suspend'
+    const { action, suspendedUntil } = req.body; // action: 'activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'
 
-    if (!['soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
+    if (!['activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
       return res.status(400).json({ error: 'عملیات نامعتبر است' });
     }
 
-    if (action === 'soft_delete') {
+    if (action === 'activate') {
       await prisma.user.update({
         where: { id },
-        data: { isDeleted: true, deletedAt: new Date() }
+        data: {
+          accountStatus: 'ACTIVE',
+          suspendedUntil: null,
+          blocked: false,
+          isDeleted: false,
+          deletedAt: null
+        }
+      });
+    } else if (action === 'soft_delete') {
+      await prisma.user.update({
+        where: { id },
+        data: { isDeleted: true, deletedAt: new Date(), accountStatus: 'RESTRICTED' }
       });
       // Optionally revoke sessions
       await prisma.userSession.deleteMany({ where: { userId: id } });
     } else if (action === 'permanent_suspend') {
       await prisma.user.update({
         where: { id },
-        data: { accountStatus: 'SUSPENDED' }
+        data: { accountStatus: 'SUSPENDED', blocked: true }
       });
       // Invalidate active sessions
       await prisma.userSession.deleteMany({ where: { userId: id } });
@@ -1164,7 +1175,7 @@ export async function moderateMentor(req: AuthRequest, res: Response) {
       }
       await prisma.user.update({
         where: { id },
-        data: { suspendedUntil: new Date(suspendedUntil) }
+        data: { suspendedUntil: new Date(suspendedUntil), accountStatus: 'SUSPENDED' }
       });
       // Invalidate active sessions
       await prisma.userSession.deleteMany({ where: { userId: id } });

@@ -1064,35 +1064,300 @@
       <!-- PLACEHOLDER TABS FOR NEW SECTIONS -->
       <!-- Mentors -->
       <section id="mentors-profile-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-          <div class="panel-title">پروفایل و شناسنامه راهبران</div>
-          <div class="actions" style="display: flex; gap: 10px;">
-            <button class="btn-action" onclick="exportData('mentors', 'excel')"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
-            <button class="btn-action" onclick="exportData('mentors', 'pdf')"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
-            <button class="btn-primary" onclick="showMentorModal()">
-              <i class="fa-solid fa-plus"></i> ثبت راهبر جدید
+        <div class="panel-card glass" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="panel-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-user-tie" style="color: #38bdf8;"></i> پروفایل و شناسنامه راهبران
+              </div>
+              <span id="mentors-total-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: bold;">
+                ۰ راهبر
+              </span>
+            </div>
+            <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-action" onclick="exportData('mentors', 'excel')"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+              <button class="btn-action" onclick="exportData('mentors', 'pdf')"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
+              <button class="btn-primary" onclick="showMentorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+                <i class="fa-solid fa-plus"></i> ثبت راهبر جدید
+              </button>
+            </div>
+          </div>
+
+          <!-- فیلتر و جستجوی چندگانه راهبران -->
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-magnifying-glass" style="color: #38bdf8;"></i> جستجوی هوشمند راهبر:
+              </label>
+              <input type="text" id="mentor-filter-search" class="input-ctrl" placeholder="نام، موبایل، کد ملی، شهر یا تخصص..." oninput="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 12px; font-size: 12.5px;">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-award" style="color: #a78bfa;"></i> سطح راهبری:
+              </label>
+              <select id="mentor-filter-level" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
+                <option value="all">همه سطوح</option>
+                <option value="1">سطح ۱ (مقدماتی)</option>
+                <option value="2">سطح ۲ (پیشرفته)</option>
+                <option value="3">سطح ۳ (ارشد)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-people-group" style="color: #34d399;"></i> وضعیت کاروان:
+              </label>
+              <select id="mentor-filter-caravan" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
+                <option value="all">همه</option>
+                <option value="has_caravan">دارای کاروان فعال</option>
+                <option value="no_caravan">فاقد کاروان</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-circle-check" style="color: #fbbf24;"></i> وضعیت حساب:
+              </label>
+              <select id="mentor-filter-status" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
+                <option value="all">همه وضعیت‌ها</option>
+                <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
+                <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی</option>
+                <option value="SUSPENDED">🔴 مسدود / تعلیق</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
+                <i class="fa-solid fa-arrow-down-wide-short" style="color: #38bdf8;"></i> مرتب‌سازی:
+              </label>
+              <select id="mentor-filter-sort" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
+                <option value="rating_desc">⭐ بالاترین امتیاز ستاره</option>
+                <option value="level_desc">🏆 بالاترین سطح راهبری</option>
+                <option value="caravans_desc">👥 بیشترین تعداد کاروان</option>
+                <option value="name_asc">🔤 الفبایی نام راهبر</option>
+              </select>
+            </div>
+
+            <button type="button" onclick="window.resetMentorFilters()" class="btn-action" style="padding: 7px 14px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 12px; cursor: pointer; height: 35px; white-space: nowrap;" title="پاکسازی و بازنشانی فیلترها">
+              <i class="fa-solid fa-rotate-left"></i> ریست
             </button>
           </div>
         </div>
-        <div class="table-container glass">
+          <div class="table-container glass">
           <table class="data-table" id="mentors-table">
             <thead>
               <tr>
-                <th>آواتار</th>
+                <th style="width: 50px; text-align: center;">آواتار</th>
                 <th>نام و نام خانوادگی</th>
                 <th>موبایل</th>
                 <th>کد ملی</th>
                 <th>مدرک تحصیلی</th>
-                <th>کاروان</th>
-                <th>سطح</th>
-                <th>امتیاز (ستاره)</th>
-                <th>عملیات</th>
+                <th>کاروان‌های تحت هدایت</th>
+                <th style="text-align: center;">سطح</th>
+                <th style="text-align: center;">امتیاز و ستاره</th>
+                <th style="width: 140px; text-align: center;">عملیات</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="mentors-table-body">
               <!-- Populated by JS -->
             </tbody>
           </table>
+        </div>
+
+        <!-- 1. MENTOR DOSSIER MODAL (شناسنامه جامع راهبر) -->
+        <div id="mentor-dossier-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999999; backdrop-filter: blur(10px);">
+          <div class="modal-content glass" style="max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto; box-sizing: border-box; border-radius: 18px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.35); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); padding: 24px; color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div id="dossier-avatar" style="width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg, #3b82f6, #8b5cf6); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px; color:white; border:2px solid rgba(255,255,255,0.2);">
+                  را
+                </div>
+                <div>
+                  <h3 id="dossier-mentor-name" style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                    شناسنامه تفصیلی راهبر
+                  </h3>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dossier-mentor-subtitle">اطلاعات هویتی، کاروان‌ها، عملکرد، ستاره‌ها و دارایی‌ها</div>
+                </div>
+              </div>
+              <button type="button" class="modal-close" onclick="document.getElementById('mentor-dossier-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+
+            <div id="dossier-content-body">
+              <!-- Dynamically populated -->
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 20px;">
+              <div id="dossier-footer-actions">
+                <!-- Action buttons -->
+              </div>
+              <button type="button" class="btn-action" onclick="document.getElementById('mentor-dossier-modal').style.display='none'" style="padding: 8px 20px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">بستن پرونده</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. MENTOR CREATOR / EDITOR MODAL (ویرایش و تعریف راهبر) -->
+        <div id="mentor-modal-overlay" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999999; backdrop-filter: blur(10px);">
+          <div class="modal-content glass" style="max-width: 820px; width: 95%; max-height: 90vh; overflow-y: auto; box-sizing: border-box; border-radius: 18px; background: #0f172a; border: 1px solid rgba(99, 102, 241, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); padding: 24px; color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+              <div>
+                <h3 id="mentor-modal-form-title" style="margin: 0; color: #818cf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-user-tie"></i> ثبت / ویرایش اطلاعات راهبر
+                </h3>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">مشخصات هویتی، مدرک تحصیلی، تعیین سطح راهبری و کاروان‌های تحت نظارت</div>
+              </div>
+              <button type="button" id="btn-close-mentor-modal" onclick="document.getElementById('mentor-modal-overlay').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+
+            <form id="mentor-form" onsubmit="window.handleMentorFormSubmit(event)">
+              <input type="hidden" id="modal-mentor-id">
+              
+              <!-- Personal info -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">نام و نام خانوادگی:</label>
+                  <input type="text" id="modal-mentor-name" class="input-ctrl" required placeholder="مثال: رضا جلالی" style="background:#1e293b; color:white;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">شماره موبایل (نام کاربری ورود):</label>
+                  <input type="text" id="modal-mentor-phone" class="input-ctrl" required placeholder="0912..." style="background:#1e293b; color:white;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">کد ملی:</label>
+                  <input type="text" id="modal-mentor-national-id" class="input-ctrl" placeholder="کد ملی ۱۰ رقمی" style="background:#1e293b; color:white;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">تاریخ تولد:</label>
+                  <input type="text" id="modal-mentor-dob" class="input-ctrl" placeholder="مثال: 1370/05/12" style="background:#1e293b; color:white;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">شهر محل سکونت:</label>
+                  <input type="text" id="modal-mentor-city" class="input-ctrl" placeholder="مثال: تهران" style="background:#1e293b; color:white;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">مدرک و رشته تحصیلی:</label>
+                  <input type="text" id="modal-mentor-academic-degree" class="input-ctrl" placeholder="مثال: کارشناسی ارشد مدیریت" style="background:#1e293b; color:white;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">سطح راهبری:</label>
+                  <select id="modal-mentor-level" class="input-ctrl" style="background:#1e293b; color:white;">
+                    <option value="1">سطح ۱ (مقدماتی / Junior)</option>
+                    <option value="2">سطح ۲ (پیشرفته / Senior)</option>
+                    <option value="3">سطح ۳ (ارشد / Master)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">وضعیت حساب کاربری:</label>
+                  <select id="modal-mentor-status" class="input-ctrl" style="background:#1e293b; color:white;">
+                    <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
+                    <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی</option>
+                    <option value="SUSPENDED">🔴 تعلیق شده (SUSPENDED)</option>
+                    <option value="RESTRICTED">⛔ محدود شده</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">پلتفرم پیام‌رسان (ایتا، شاد، تلگرام):</label>
+                  <input type="text" id="modal-mentor-social-platform" class="input-ctrl" placeholder="مثال: Eitaa" style="background:#1e293b; color:white;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size: 12px; color: #cbd5e1;">آیدی / هندل پیام‌رسان:</label>
+                  <input type="text" id="modal-mentor-social-handle" class="input-ctrl" placeholder="@username" style="background:#1e293b; color:white;">
+                </div>
+              </div>
+
+              <!-- Caravans assignment -->
+              <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                <div style="font-size: 13px; font-weight: bold; color: #38bdf8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-people-group"></i> کاروان‌های تحت هدایت و راهبری این کاربر:
+                </div>
+                <div id="modal-mentor-caravans-list" style="display: flex; flex-wrap: wrap; gap: 10px; max-height: 140px; overflow-y: auto; padding: 6px;">
+                  <!-- Checkboxes -->
+                </div>
+              </div>
+
+              <!-- Certificates preview -->
+              <div id="modal-mentor-certs-section" style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px; display:none;">
+                <div style="font-size: 13px; font-weight: bold; color: #fbbf24; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-file-contract"></i> مدارک و مستندات بارگذاری شده راهبر:
+                </div>
+                <table class="data-table" style="width:100%; font-size:12px;">
+                  <thead>
+                    <tr><th>عنوان مدرک</th><th>لینک مشاهده</th><th>وضعیت</th><th>عملیات</th></tr>
+                  </thead>
+                  <tbody id="modal-mentor-certs-tbody"></tbody>
+                </table>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+                <button type="button" class="btn-action" onclick="document.getElementById('mentor-modal-overlay').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">انصراف</button>
+                <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-check"></i> ذخیره و ثبت اطلاعات راهبر
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 3. MENTOR MODERATION MODAL (مدیریت وضعیت و تعلیق راهبر) -->
+        <div id="mentor-moderation-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 999999; backdrop-filter: blur(10px);">
+          <div class="modal-content glass" style="max-width: 580px; width: 95%; box-sizing: border-box; border-radius: 16px; background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); padding: 24px; color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+              <div>
+                <h3 style="margin: 0; color: #f87171; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-user-shield"></i> مدیریت وضعیت و تعلیق راهبر
+                </h3>
+                <div id="mod-mentor-subtitle" style="font-size: 12px; color: #94a3b8; margin-top: 4px;">تعیین وضعیت فعالیت، مسدودسازی موقت یا حذف</div>
+              </div>
+              <button type="button" onclick="document.getElementById('mentor-moderation-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+
+            <form onsubmit="window.executeMentorModeration(event)">
+              <input type="hidden" id="mod-mentor-id">
+
+              <div style="background: rgba(30, 41, 59, 0.6); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: #cbd5e1;">انتخاب نوع اقدام مدیریتی:</div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #34d399;">
+                    <input type="radio" name="mod_action" value="activate" checked onchange="window.toggleTempSuspendDate(false)">
+                    <span>🟢 فعال‌سازی مجدد و رفع تعلیق حساب (ACTIVE)</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #fbbf24;">
+                    <input type="radio" name="mod_action" value="temp_suspend" onchange="window.toggleTempSuspendDate(true)">
+                    <span>🟡 تعلیق موقت حساب تا تاریخ مشخص</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #f87171;">
+                    <input type="radio" name="mod_action" value="permanent_suspend" onchange="window.toggleTempSuspendDate(false)">
+                    <span>🔴 مسدودسازی دائمی حساب کاربری راهبر (SUSPENDED)</span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #ef4444;">
+                    <input type="radio" name="mod_action" value="soft_delete" onchange="window.toggleTempSuspendDate(false)">
+                    <span>🗑️ حذف کامل راهبر از سیستم (Soft Delete)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="mod-temp-date-container" style="display: none; margin-bottom: 14px;">
+                <label style="font-size: 12px; color: #fbbf24; margin-bottom: 4px; display: block;">تاریخ پایان تعلیق موقت:</label>
+                <input type="date" id="mod-suspended-until" class="input-ctrl" style="background:#1e293b; color:white;">
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+                <button type="button" class="btn-action" onclick="document.getElementById('mentor-moderation-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">انصراف</button>
+                <button type="submit" class="btn-primary" style="padding: 8px 20px; border-radius: 8px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; font-weight: bold; cursor: pointer;">
+                  <i class="fa-solid fa-shield-halved"></i> اعمال اقدام مدیریتی
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 
@@ -1772,105 +2037,119 @@
   </div>
 
   <!-- COMPREHENSIVE MENTOR EDIT MODAL -->
-  <div class="modal-overlay" id="mentor-modal-overlay">
-    <div class="modal-content glass" style="max-width: 800px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <h3 id="mentor-modal-title"><i class="fa-solid fa-user-pen"></i> ویرایش و تکمیل اطلاعات راهبر</h3>
-        <button class="modal-close" id="btn-close-mentor-modal">&times;</button>
+  <!-- MENTOR MODAL (REGISTER / EDIT) -->
+  <div class="modal-overlay" id="mentor-modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999999; backdrop-filter: blur(8px);">
+    <div class="modal-content glass" style="max-width: 850px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85); color: #f8fafc; padding: 0; overflow: hidden;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.5);">
+        <h3 id="mentor-modal-form-title" style="margin: 0; color: #38bdf8; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-user-pen"></i> ثبت و ویرایش مشخصات راهبر
+        </h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('mentor-modal-overlay').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
       </div>
-      <div style="padding: 20px; overflow-y: auto;">
-        <form id="mentor-form" style="display: flex; flex-direction: column; gap: 20px;">
+
+      <div style="padding: 24px; overflow-y: auto; max-height: calc(90vh - 80px);">
+        <form id="mentor-form" onsubmit="window.handleMentorFormSubmit(event)" style="display: flex; flex-direction: column; gap: 20px;">
           <input type="hidden" id="modal-mentor-id">
           
           <!-- Identity & Contact -->
-          <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="color: #3b82f6; margin-bottom: 15px;"><i class="fa-solid fa-address-card"></i> هویت و تماس</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-              <div class="form-group">
-                <label>نام و نام خانوادگی</label>
-                <input type="text" id="modal-mentor-name" class="input-ctrl" required>
+          <div class="panel-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+            <h4 style="color: #38bdf8; margin: 0 0 14px 0; font-size: 14px;"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی و ارتباطی</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">نام و نام خانوادگی <span style="color: #ef4444;">*</span></label>
+                <input type="text" id="modal-mentor-name" class="input-ctrl" required placeholder="مثال: رضا جلالی" style="background: #0b132b; color: white;">
               </div>
-              <div class="form-group">
-                <label>کد ملی</label>
-                <input type="text" id="modal-mentor-national-id" class="input-ctrl">
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">شماره موبایل <span style="color: #ef4444;">*</span></label>
+                <input type="text" id="modal-mentor-phone" class="input-ctrl" required placeholder="۰۹۱۲۰۰۰۰۰۰۱" style="background: #0b132b; color: white; direction: ltr; text-align: right;">
               </div>
-              <div class="form-group">
-                <label>شماره موبایل</label>
-                <input type="text" id="modal-mentor-phone" class="input-ctrl" required>
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">کد ملی (اختیاری)</label>
+                <input type="text" id="modal-mentor-national-id" class="input-ctrl" placeholder="۰۰۱۲۳۴۵۶۷۸" style="background: #0b132b; color: white; direction: ltr; text-align: right;">
               </div>
-              <div class="form-group">
-                <label>تاریخ تولد (شمسی)</label>
-                <input type="text" id="modal-mentor-dob" class="input-ctrl" placeholder="۱۳۸۰/۰۱/۰۱">
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">تاریخ تولد (شمسی)</label>
+                <input type="text" id="modal-mentor-dob" class="input-ctrl" placeholder="۱۳۷۰/۰۵/۱۵" style="background: #0b132b; color: white;">
               </div>
-              <div class="form-group">
-                <label>شهر سکونت</label>
-                <input type="text" id="modal-mentor-city" class="input-ctrl" placeholder="تهران">
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">شهر محل سکونت</label>
+                <input type="text" id="modal-mentor-city" class="input-ctrl" placeholder="تهران، اصفهان، ..." style="background: #0b132b; color: white;">
               </div>
-              <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 10px;">
-                <div style="flex: 1;">
-                  <label>پلتفرم پیام‌رسان</label>
-                  <select id="modal-mentor-social-platform" class="select-ctrl">
-                    <option value="">انتخاب کنید...</option>
-                    <option value="بله">بله</option>
-                    <option value="ایتا">ایتا</option>
-                    <option value="تلگرام">تلگرام</option>
-                    <option value="واتساپ">واتساپ</option>
-                  </select>
-                </div>
-                <div style="flex: 2;">
-                  <label>ایدی پیام‌رسان (Social Handle)</label>
-                  <input type="text" id="modal-mentor-social-handle" class="input-ctrl" placeholder="@username">
-                </div>
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">مدرک و رشته تحصیلی</label>
+                <input type="text" id="modal-mentor-academic-degree" class="input-ctrl" placeholder="کارشناسی ارشد مدیریت، علوم تربیتی، ..." style="background: #0b132b; color: white;">
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">پیام‌رسان فعال</label>
+                <select id="modal-mentor-social-platform" class="select-ctrl" style="background: #0b132b; color: white;">
+                  <option value="">انتخاب پلتفرم...</option>
+                  <option value="بله">بله (Bale)</option>
+                  <option value="ایتا">ایتا (Eitaa)</option>
+                  <option value="تلگرام">تلگرام (Telegram)</option>
+                  <option value="واتساپ">واتساپ (WhatsApp)</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">آیدی یا شماره در پیام‌رسان</label>
+                <input type="text" id="modal-mentor-social-handle" class="input-ctrl" placeholder="@username" style="background: #0b132b; color: white; direction: ltr; text-align: right;">
               </div>
             </div>
           </div>
 
-          <!-- Account & Governance -->
-          <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="color: #f59e0b; margin-bottom: 15px;"><i class="fa-solid fa-shield-halved"></i> وضعیت اکانت و دسترسی</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-              <div class="form-group">
-                <label>وضعیت اکانت</label>
-                <select id="modal-mentor-status" class="select-ctrl">
+          <!-- Account Status & Level -->
+          <div class="panel-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;">
+            <h4 style="color: #fbbf24; margin: 0 0 14px 0; font-size: 14px;"><i class="fa-solid fa-shield-halved"></i> رتبه و وضعیت حساب</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">سطح راهبری (Mentor Level)</label>
+                <select id="modal-mentor-level" class="select-ctrl" style="background: #0b132b; color: white;">
+                  <option value="1">سطح ۱: راهبر مقدماتی (Junior)</option>
+                  <option value="2">سطح ۲: راهبر پیشرفته (Senior)</option>
+                  <option value="3">سطح ۳: راهبر ارشد و کل (Master)</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">وضعیت اکانت</label>
+                <select id="modal-mentor-status" class="select-ctrl" style="background: #0b132b; color: white;">
                   <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
-                  <option value="PENDING_VERIFICATION">🟡 در انتظار تایید (PENDING_VERIFICATION)</option>
-                  <option value="SUSPENDED">🔴 معلق / مسدود (SUSPENDED)</option>
-                  <option value="RESTRICTED">🟠 محدود شده (RESTRICTED)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>سطح راهبری (Mentor Level)</label>
-                <select id="modal-mentor-level" class="select-ctrl">
-                  <option value="1">سطح ۱: مربی تازه کار (Junior)</option>
-                  <option value="2">سطح ۲: مربی ارشد (Senior)</option>
-                  <option value="3">سطح ۳: راهنمای کل (Master)</option>
+                  <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی مدارک (PENDING)</option>
+                  <option value="SUSPENDED">🔴 مسدود / معلق (SUSPENDED)</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <!-- Multi-Caravan Assignment -->
-          <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="color: #10b981; margin-bottom: 15px;"><i class="fa-solid fa-campground"></i> کاروان‌های تحت نظارت</h4>
-            <div class="form-group">
-              <label style="margin-bottom: 10px; display: block; color: #aaa;">انتخاب کاروان‌ها (قابلیت چند انتخابی)</label>
-              <div id="modal-mentor-caravans-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; max-height: 150px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+          <!-- Multi-Caravan Assignment (OPTIONAL: CAN BE CREATED WITHOUT CARAVANS) -->
+          <div class="panel-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <h4 style="color: #34d399; margin: 0; font-size: 14px;"><i class="fa-solid fa-campground"></i> کاروان‌های تحت هدایت و راهبری (اختیاری)</h4>
+              <span style="font-size: 11.5px; color: #94a3b8;"><i class="fa-solid fa-circle-check" style="color: #34d399;"></i> امکان ثبت راهبر بدون کاروان یا با انتخاب چندین کاروان</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+                <input type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="🔍 جستجوی نام کاروان..." oninput="window.filterMentorCaravansChecklist(this.value)" style="padding: 7px 12px; font-size: 12px; flex: 1; background: #0b132b; color: white;">
+                <button type="button" class="btn-action" onclick="window.uncheckAllMentorCaravans()" style="padding: 7px 14px; font-size: 11.5px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; white-space: nowrap;" title="پاک کردن همه تیک‌ها">
+                  <i class="fa-solid fa-ban"></i> بدون کاروان (لغو همه)
+                </button>
+              </div>
+              <div id="modal-mentor-caravans-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; max-height: 160px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
                 <!-- Populated via JS checkboxes -->
               </div>
             </div>
           </div>
 
-          <!-- Certificates Verification Pipeline -->
-          <div class="panel-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-            <h4 style="color: #8b5cf6; margin-bottom: 15px;"><i class="fa-solid fa-file-certificate"></i> گواهینامه‌ها و مدارک (Verification Pipeline)</h4>
-            <div class="table-container">
-              <table class="data-table" style="font-size: 13px;">
+          <!-- Certificates Verification Pipeline (Optional preview if present) -->
+          <div id="modal-mentor-certs-section" class="panel-card" style="display: none; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 16px;">
+            <h4 style="color: #a78bfa; margin: 0 0 12px 0; font-size: 14px;"><i class="fa-solid fa-file-certificate"></i> گواهینامه‌ها و مدارک ارسالی</h4>
+            <div class="table-container" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
+              <table class="data-table" style="font-size: 12.5px;">
                 <thead>
                   <tr>
                     <th>عنوان فایل</th>
-                    <th>لینک</th>
-                    <th>وضعیت تایید</th>
-                    <th>عملیات سریع</th>
+                    <th>مشاهده</th>
+                    <th>وضعیت</th>
+                    <th>عملیات</th>
                   </tr>
                 </thead>
                 <tbody id="modal-mentor-certs-tbody">
@@ -1880,9 +2159,11 @@
             </div>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
-            <button type="button" class="btn-action" onclick="document.getElementById('mentor-modal-overlay').style.display='none'">انصراف</button>
-            <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> ذخیره کامل اطلاعات</button>
+          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+            <button type="button" class="btn-action" onclick="document.getElementById('mentor-modal-overlay').style.display='none'" style="padding: 9px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">انصراف</button>
+            <button type="submit" class="btn-primary" style="padding: 9px 26px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);">
+              <i class="fa-solid fa-check"></i> ثبت نهایی و ذخیره راهبر
+            </button>
           </div>
         </form>
       </div>

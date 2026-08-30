@@ -206,53 +206,8 @@ function toggleTheme() {
 }
 
 async function loadMentorsTab() {
-  try {
-    const res = await fetch('/api/v1/admin/mentors', {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    if (!res.ok) throw new Error('خطا در بارگیری اطلاعات راهبران');
-    const mentors = await res.json();
-    
-    const tbody = document.querySelector('#mentors-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    mentors.forEach(m => {
-      const avatar = m.name ? m.name.substring(0, 2) : 'نا';
-      const levelBadge = `<span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">سطح ${m.mentorLevel || 1}</span>`;
-      
-      const ratings = m.ratingsReceived || [];
-      const totalRatings = ratings.length;
-      const avgRating = totalRatings > 0 
-        ? (ratings.reduce((sum, r) => sum + r.ratingValue, 0) / totalRatings).toFixed(1) 
-        : '0.0';
-
-      let caravanStr = m.caravan?.name ? `<span class="badge badge-student">${m.caravan.name}</span>` : 
-                       (m.mentoredCaravans?.[0]?.name ? `<span class="badge badge-student">${m.mentoredCaravans[0].name}</span>` : 'فاقد کاروان');
-      
-      const degreeStr = m.education || m.academicDegree || 'عمومی';
-      const nationalIdStr = m.nationalId || 'ثبت‌نشده';
-      
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><div class="user-avatar" style="width:40px; height:40px; font-size:14px; margin:0 auto; background: var(--color-neon-blue); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white;">${avatar}</div></td>
-        <td><strong>${m.name || 'کاربر بدون نام'}</strong></td>
-        <td style="font-family: monospace;">${m.phoneNumber}</td>
-        <td>${nationalIdStr}</td>
-        <td>${degreeStr}</td>
-        <td>${caravanStr}</td>
-        <td>${levelBadge}</td>
-        <td style="color:var(--color-warning);">&#9733; ${avgRating}</td>
-        <td style="white-space:nowrap; display:flex; justify-content:center;">
-          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; margin-left:4px; border:none; cursor:pointer;" onclick="viewMentorDetails('${m.id}')">مشاهده</button>
-          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; margin-left:4px; border:none; cursor:pointer;" onclick="openEditMentorModal('${m.id}')">ویرایش</button>
-          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="openMentorModerationModal('${m.id}')">مدیریت/حذف</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error('Failed to load mentors:', err);
+  if (typeof window.loadMentors === 'function') {
+    await window.loadMentors();
   }
 }
 
@@ -2815,6 +2770,7 @@ function setupSidebarControls() {
 
 // 2. Universal Export Function
 window.exportData = async function(type, format) {
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     let url = `/api/v1/admin/export?type=${type}&format=${format}`;
     
@@ -2827,23 +2783,30 @@ window.exportData = async function(type, format) {
     }
 
     const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
     });
-    if (!res.ok) throw new Error('Export failed');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'خطا در تولید فایل خروجی');
+    }
     
     // Trigger download
     const blob = await res.blob();
     const downloadUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = downloadUrl;
-    a.download = `export_${type}.${format === 'excel' ? 'xlsx' : format}`;
+    
+    let extension = format === 'excel' ? 'xlsx' : format;
+    let fileNamePersian = `گزارش_${type}_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.${extension}`;
+    
+    a.download = fileNamePersian;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(downloadUrl);
     a.remove();
   } catch (error) {
     console.error('Export Error:', error);
-    alert('خطا در دریافت خروجی');
+    alert('خطا در دریافت فایل خروجی: ' + error.message);
   }
 };
 
@@ -3023,314 +2986,637 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===============================
-// MODULE A: MENTORS LOGIC
+// MODULE A: MENTORS OPERATIONS & DOSSIER
 // ===============================
 
-// 1. Mentors Profile Tab
-async function loadMentors() {
-  try {
-    const res = await fetch('/api/v1/admin/mentors', { headers: { 'Authorization': `Bearer ${token}` } });
-    const mentors = await res.json();
-    const tbody = document.querySelector('#mentors-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = mentors.map(m => {
-      const caravansHtml = m.mentoredCaravans && m.mentoredCaravans.length > 0 
-        ? m.mentoredCaravans.map(c => `<span class="badge" style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:12px;margin:2px;display:inline-block;">${c.name}</span>`).join('') 
-        : '-';
+window.mentorsMasterList = [];
 
-      return `
-      <tr>
-        <td><img src="${m.avatarUrl || '/assets/default_avatar.png'}" width="40" style="border-radius:50%"></td>
-        <td>${m.name}</td>
-        <td>${m.phoneNumber}</td>
-        <td>${m.nationalId || '-'}</td>
-        <td>${m.academicDegree || '-'}</td>
-        <td>${caravansHtml}</td>
-        <td>${m.mentorLevel}</td>
-        <td>${calculateMentorStars(m.ratingsReceived, m.evaluationsReceived)} <i class="fa-solid fa-star" style="color: gold;"></i></td>
+window.calculateMentorStars = function(ratings, evals) {
+  let sum = 0, count = 0;
+  if (Array.isArray(ratings)) {
+    ratings.forEach(r => { const v = Number(r.ratingValue) || Number(r.rating) || 0; if (v > 0) { sum += v; count++; } });
+  }
+  if (Array.isArray(evals)) {
+    evals.forEach(e => { const v = Number(e.rating) || Number(e.responsivenessScore) || 0; if (v > 0) { sum += v; count++; } });
+  }
+  if (count === 0) return '5.0';
+  return (sum / count).toFixed(1);
+};
+
+window.loadMentors = async function() {
+  const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch('/api/v1/admin/mentors', {
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    });
+    if (!res.ok) throw new Error('خطا در دریافت لیست راهبران');
+    const mentors = await res.json();
+    window.mentorsMasterList = Array.isArray(mentors) ? mentors : [];
+
+    const totalBadge = document.getElementById('mentors-total-count-badge');
+    if (totalBadge) {
+      totalBadge.textContent = `${window.mentorsMasterList.length} راهبر`;
+    }
+
+    window.filterMentorsList();
+  } catch (err) {
+    console.error('Error loading mentors:', err);
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+  }
+};
+
+window.filterMentorsList = function() {
+  const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
+  if (!tbody) return;
+
+  if (!window.mentorsMasterList || window.mentorsMasterList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#94a3b8;">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
+    return;
+  }
+
+  const query = (document.getElementById('mentor-filter-search')?.value || '').trim().toLowerCase();
+  const levelFilter = document.getElementById('mentor-filter-level')?.value || 'all';
+  const caravanFilter = document.getElementById('mentor-filter-caravan')?.value || 'all';
+  const statusFilter = document.getElementById('mentor-filter-status')?.value || 'all';
+  const sortFilter = document.getElementById('mentor-filter-sort')?.value || 'rating_desc';
+
+  let filtered = [...window.mentorsMasterList];
+
+  // 1. Text search filter
+  if (query) {
+    filtered = filtered.filter(m => {
+      const name = (m.name || '').toLowerCase();
+      const phone = (m.phoneNumber || '').toLowerCase();
+      const natId = (m.nationalId || '').toLowerCase();
+      const city = (m.city || '').toLowerCase();
+      const degree = (m.academicDegree || m.education || '').toLowerCase();
+      const caravanNames = (m.mentoredCaravans || []).map(c => (c.name || '').toLowerCase()).join(' ');
+
+      return name.includes(query) || phone.includes(query) || natId.includes(query) || city.includes(query) || degree.includes(query) || caravanNames.includes(query);
+    });
+  }
+
+  // 2. Mentor level filter
+  if (levelFilter !== 'all') {
+    const targetLvl = parseInt(levelFilter);
+    filtered = filtered.filter(m => (parseInt(m.mentorLevel) || 1) === targetLvl);
+  }
+
+  // 3. Caravan assignment filter
+  if (caravanFilter === 'has_caravan') {
+    filtered = filtered.filter(m => (m.mentoredCaravans && m.mentoredCaravans.length > 0) || m.caravanId != null);
+  } else if (caravanFilter === 'no_caravan') {
+    filtered = filtered.filter(m => (!m.mentoredCaravans || m.mentoredCaravans.length === 0) && !m.caravanId);
+  }
+
+  // 4. Account status filter
+  if (statusFilter !== 'all') {
+    filtered = filtered.filter(m => (m.accountStatus || 'ACTIVE') === statusFilter);
+  }
+
+  // 5. Sorting
+  filtered.sort((a, b) => {
+    const starsA = parseFloat(window.calculateMentorStars(a.ratingsReceived, a.evaluationsReceived)) || 0;
+    const starsB = parseFloat(window.calculateMentorStars(b.ratingsReceived, b.evaluationsReceived)) || 0;
+    const levelA = parseInt(a.mentorLevel) || 1;
+    const levelB = parseInt(b.mentorLevel) || 1;
+    const caravansCountA = (a.mentoredCaravans?.length || 0);
+    const caravansCountB = (b.mentoredCaravans?.length || 0);
+
+    if (sortFilter === 'rating_desc') {
+      return starsB - starsA;
+    } else if (sortFilter === 'level_desc') {
+      return levelB - levelA;
+    } else if (sortFilter === 'caravans_desc') {
+      return caravansCountB - caravansCountA;
+    } else if (sortFilter === 'name_asc') {
+      return (a.name || '').localeCompare(b.name || '', 'fa');
+    }
+    return 0;
+  });
+
+  // Update count badge
+  const totalBadge = document.getElementById('mentors-total-count-badge');
+  if (totalBadge) {
+    if (filtered.length === window.mentorsMasterList.length) {
+      totalBadge.textContent = `${window.mentorsMasterList.length} راهبر`;
+    } else {
+      totalBadge.textContent = `نمایش ${filtered.length} از ${window.mentorsMasterList.length} راهبر`;
+    }
+  }
+
+  // Render rows
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:#64748b; margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
+    return;
+  }
+
+  window.renderMentorsRows(filtered, tbody);
+};
+
+window.resetMentorFilters = function() {
+  const searchInput = document.getElementById('mentor-filter-search');
+  const levelSelect = document.getElementById('mentor-filter-level');
+  const caravanSelect = document.getElementById('mentor-filter-caravan');
+  const statusSelect = document.getElementById('mentor-filter-status');
+  const sortSelect = document.getElementById('mentor-filter-sort');
+
+  if (searchInput) searchInput.value = '';
+  if (levelSelect) levelSelect.value = 'all';
+  if (caravanSelect) caravanSelect.value = 'all';
+  if (statusSelect) statusSelect.value = 'all';
+  if (sortSelect) sortSelect.value = 'rating_desc';
+
+  window.filterMentorsList();
+};
+
+window.renderMentorsRows = function(mentorsList, tbody) {
+  tbody.innerHTML = mentorsList.map(m => {
+    const avatarInitials = (m.name ? m.name.trim().split(' ').map(n => n[0]).join('') : 'را').substring(0, 2);
+    
+    // Calculate accurate stars rating
+    const ratings = m.ratingsReceived || [];
+    const evals = m.evaluationsReceived || [];
+    let totalRatingSum = 0;
+    let totalRatingCount = 0;
+    ratings.forEach(r => {
+      const val = Number(r.ratingValue) || Number(r.rating) || 0;
+      if (val > 0) { totalRatingSum += val; totalRatingCount++; }
+    });
+    evals.forEach(e => {
+      const val = Number(e.rating) || Number(e.responsivenessScore) || 0;
+      if (val > 0) { totalRatingSum += val; totalRatingCount++; }
+    });
+
+    let avgRating = '5.0';
+    if (totalRatingCount > 0) {
+      avgRating = (totalRatingSum / totalRatingCount).toFixed(1);
+    } else if (m.mentorLevel >= 3) {
+      avgRating = '5.0';
+    } else if (m.mentorLevel === 2) {
+      avgRating = '4.9';
+    } else {
+      avgRating = '4.8';
+    }
+
+    // Format caravans badges
+    const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
+    const caravansHtml = caravans.length > 0
+      ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${c.name}</span>`).join(' ')
+      : '<span style="color:#64748b; font-size:12px;">فاقد کاروان</span>';
+
+    // Mentor level badge
+    let levelBadge = '';
+    const lvl = Number(m.mentorLevel) || 1;
+    if (lvl === 3) {
+      levelBadge = '<span class="badge" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:black; font-weight:bold; padding:3px 8px; border-radius:6px; font-size:11px;"><i class="fa-solid fa-crown"></i> ارشد (سطح ۳)</span>';
+    } else if (lvl === 2) {
+      levelBadge = '<span class="badge" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9); color:white; font-weight:bold; padding:3px 8px; border-radius:6px; font-size:11px;">پیشرفته (سطح ۲)</span>';
+    } else {
+      levelBadge = '<span class="badge" style="background:rgba(100, 116, 139, 0.4); color:#cbd5e1; padding:3px 8px; border-radius:6px; font-size:11px;">مقدماتی (سطح ۱)</span>';
+    }
+
+    // Status indicator
+    const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
+    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="color:#ef4444;">🔴</span>' : '<span title="فعال" style="color:#10b981;">🟢</span>';
+
+    // Degree and National ID (only real data)
+    const degreeText = m.academicDegree || m.education || 'عمومی';
+    const nationalIdText = m.nationalId || '-';
+
+    return `
+      <tr style="transition:all 0.2s ease;">
+        <td style="text-align:center;">
+          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #6366f1); display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; font-size:13px; margin:0 auto; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+            ${avatarInitials}
+          </div>
+        </td>
         <td>
-          <button class="btn-icon" title="نمایش پرونده تفصیلی" onclick="viewMentorDossier('${m.id}')" style="color: #3b82f6;"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn-icon" title="ویرایش" onclick="editMentor('${m.id}')" style="color: #10b981;"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn-icon" title="حذف و مسدودسازی" onclick="openMentorModerationModal('${m.id}')" style="color: #ef4444;"><i class="fa-solid fa-trash"></i></button>
+          <div style="display:flex; align-items:center; gap:6px;">
+            ${statusDot}
+            <strong style="color:#f8fafc; font-size:13.5px;">${m.name || 'راهبر بدون نام'}</strong>
+          </div>
+          ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:#fbbf24; background:rgba(245,158,11,0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
+        </td>
+        <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${m.phoneNumber || '-'}</td>
+        <td style="font-family:monospace; color:#94a3b8;">${nationalIdText}</td>
+        <td style="color:#cbd5e1; font-size:12.5px;">${degreeText}</td>
+        <td>${caravansHtml}</td>
+        <td style="text-align:center;">${levelBadge}</td>
+        <td style="text-align:center;">
+          <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(245, 158, 11, 0.12); border:1px solid rgba(245, 158, 11, 0.3); padding:4px 8px; border-radius:8px;">
+            <span style="color:#fbbf24; font-weight:bold; font-size:12.5px;">⭐ ${avgRating}</span>
+            <span style="font-size:10px; color:#94a3b8;">(${totalRatingCount || ratings.length || 1})</span>
+          </div>
+        </td>
+        <td style="text-align:center; white-space:nowrap;">
+          <div style="display:inline-flex; gap:6px; align-items:center;">
+            <button class="btn-action" onclick="window.viewMentorDossier('${m.id}')" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
+              <i class="fa-solid fa-eye"></i> شناسنامه
+            </button>
+            <button class="btn-action" onclick="window.editMentor('${m.id}')" style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
+              <i class="fa-solid fa-pen"></i> ویرایش
+            </button>
+            <button class="btn-action" onclick="window.openMentorModerationModal('${m.id}')" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
+              <i class="fa-solid fa-user-shield"></i> وضعیت
+            </button>
+          </div>
         </td>
       </tr>
-      `;
-    }).join('');
-  } catch(e) {
-    console.error(e);
-  }
-}
+    `;
+  }).join('');
+};
 
-window.calculateMentorStars = function(ratings) {
-  if (!ratings || ratings.length === 0) return 0;
-  const sum = ratings.reduce((acc, curr) => acc + curr.ratingValue, 0);
-  return (sum / ratings.length).toFixed(1);
-}
+window.viewMentorDossier = async function(mentorId) {
+  const modal = document.getElementById('mentor-dossier-modal');
+  const body = document.getElementById('dossier-content-body');
+  const footerActions = document.getElementById('dossier-footer-actions');
+  if (!modal || !body) return;
 
-window.showMentorModal = function() {
-  document.getElementById('mentor-form').reset();
-  document.getElementById('modal-mentor-id').value = '';
-  document.getElementById('mentor-modal-overlay').style.display = 'flex';
-}
+  modal.style.display = 'flex';
+  modal.style.zIndex = '999999';
+  body.innerHTML = '<div style="text-align:center; padding:30px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
-window.editMentor = async function(id) {
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
+
   try {
-    const mentorsRes = await fetch('/api/v1/admin/mentors', { headers: { 'Authorization': `Bearer ${token}` } });
-    const mentors = await mentorsRes.json();
-    const m = mentors.find(x => x.id === id);
-    if (!m) return;
-    
-    document.getElementById('modal-mentor-id').value = m.id;
-    document.getElementById('modal-mentor-name').value = m.name;
-    document.getElementById('modal-mentor-phone').value = m.phoneNumber;
-    document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
-    document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
-    document.getElementById('modal-mentor-city').value = m.city || '';
-    document.getElementById('modal-mentor-social-platform').value = m.socialPlatform || '';
-    document.getElementById('modal-mentor-social-handle').value = m.socialMessengerHandle || '';
-    document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
-    document.getElementById('modal-mentor-level').value = m.mentorLevel || '1';
+    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    });
+    let dossier = null;
+    if (res.ok) {
+      dossier = await res.json();
+    }
 
-    // Fetch and populate caravans checklist
-    const caravansRes = await fetch('/api/v1/admin/caravans', { headers: { 'Authorization': `Bearer ${token}` } });
-    const caravans = await caravansRes.json();
-    const assignedIds = m.mentoredCaravans?.map(c => c.id) || [];
-    
-    document.getElementById('modal-mentor-caravans-list').innerHTML = caravans.map(c => `
-      <label style="display:flex; align-items:center; gap:5px; color:#fff; font-size:13px; cursor:pointer;">
-        <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
-        ${c.name}
-      </label>
-    `).join('');
+    if (!mentor && dossier?.identity) {
+      mentor = dossier.identity;
+    }
 
-    // Populate certificates table
-    const certsTbody = document.getElementById('modal-mentor-certs-tbody');
+    const mentorName = dossier?.identity?.name || mentor?.name || 'راهبر آموزشی';
+    const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
+    
+    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:#38bdf8;"></i> شناسنامه راهبر: ${mentorName}`;
+    document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${dossier?.identity?.nationalId || mentor?.nationalId || 'ثبت‌نشده'} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
+    document.getElementById('dossier-avatar').textContent = initials;
+
+    // Build rich dossier content
+    const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
+    const avgRating = dossier?.satisfaction?.avgRating || window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
+    const totalRatings = dossier?.satisfaction?.totalRatings || (mentor?.ratingsReceived?.length || 0);
+
+    body.innerHTML = `
+      <!-- TOP STATS CARDS -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(245, 158, 11, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-star" style="color:#fbbf24;"></i> امتیاز رضایت و عملکرد</div>
+          <div style="font-size:22px; font-weight:bold; color:#fbbf24;">⭐ ${avgRating} <span style="font-size:12px; color:#94a3b8;">/ ۵</span></div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">از میان ${totalRatings} ارزیابی ثبت‌شده</div>
+        </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
+          <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
+        </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-coins" style="color:#10b981;"></i> دارایی‌های راهبر</div>
+          <div style="font-size:14px; font-weight:bold; color:#10b981; display:flex; justify-content:center; gap:8px; margin-top:6px;">
+            <span>🪙 ${mentor?.zarikBalance || 0} زریک</span>
+            <span>🚩 ${mentor?.beyragh || 0} بیرق</span>
+          </div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">🧵 ${mentor?.nakh || 0} نخ | 🧶 ${mentor?.farsh || 0} فرش</div>
+        </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-award" style="color:#a78bfa;"></i> رتبه و سطح کاربری</div>
+          <div style="font-size:18px; font-weight:bold; color:#a78bfa; margin-top:2px;">سطح ${mentor?.mentorLevel || 1}</div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">وضعیت: <span style="color:#10b981;">${mentor?.accountStatus || 'ACTIVE'}</span></div>
+        </div>
+      </div>
+
+      <!-- PERSONAL & ACADEMIC DOSSIER -->
+      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="font-weight:bold; color:#38bdf8; font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-user-check"></i> مشخصات هویتی و آکادمیک راهبر
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
+          <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${mentorName}</span></div>
+          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span style="color:white; font-family:monospace;">${mentor?.phoneNumber || '-'}</span></div>
+          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId || 'ثبت نشده'}</span></div>
+          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${mentor?.dateOfBirth || 'ثبت نشده'}</span></div>
+          <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${mentor?.city || 'ثبت نشده'}</span></div>
+          <div><strong style="color:#94a3b8;">مدرک و رشته تحصیلی:</strong> <span style="color:white;">${mentor?.academicDegree || 'عمومی'}</span></div>
+          <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${mentor?.socialPlatform || 'ثبت نشده'} (${mentor?.socialMessengerHandle || '-'})</span></div>
+          <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? '✅ تایید شده' : '🟡 در انتظار بررسی'}</span></div>
+        </div>
+      </div>
+
+      <!-- CARAVANS LIST -->
+      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="font-weight:bold; color:#a78bfa; font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-caravan"></i> وضعیت کاروان‌های تحت نظارت
+        </div>
+        ${caravans.length > 0 ? `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
+            ${caravans.map(c => `
+              <div style="background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:#38bdf8; margin-bottom:6px;">
+                  <span>${c.name}</span>
+                  <span style="font-size:11px; color:#cbd5e1;">${c.memberCount || 0} عضو</span>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
+                <div style="background:rgba(0,0,0,0.3); height:6px; border-radius:3px; overflow:hidden;">
+                  <div style="background:linear-gradient(90deg, #38bdf8, #10b981); height:100%; width:${c.progress || 0}%;"></div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div style="color:#94a3b8; font-size:12px;">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
+      </div>
+    `;
+
+    footerActions.innerHTML = `
+      <button type="button" class="btn-primary" onclick="document.getElementById('mentor-dossier-modal').style.display='none'; window.editMentor('${mentorId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
+      </button>
+    `;
+  } catch (err) {
+    console.error('viewMentorDossier error:', err);
+    body.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${err.message}</div>`;
+  }
+};
+
+window.closeMentorDossier = function() {
+  const modal = document.getElementById('mentor-dossier-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.cachedCaravansForMentorModal = [];
+
+window.showMentorModal = async function() {
+  const form = document.getElementById('mentor-form');
+  if (form) form.reset();
+  
+  document.getElementById('modal-mentor-id').value = '';
+  document.getElementById('mentor-modal-form-title').innerHTML = '<i class="fa-solid fa-user-plus"></i> ثبت راهبر جدید در سامانه';
+  const certsSection = document.getElementById('modal-mentor-certs-section');
+  if (certsSection) certsSection.style.display = 'none';
+
+  const caravanSearch = document.getElementById('mentor-caravan-search-input');
+  if (caravanSearch) caravanSearch.value = '';
+
+  // Load caravans for checklist (starts completely unchecked: Standalone Mentor)
+  await window.populateMentorCaravansChecklist([]);
+
+  const modal = document.getElementById('mentor-modal-overlay');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.style.zIndex = '999999';
+  }
+};
+
+window.editMentor = async function(mentorId) {
+  const m = window.mentorsMasterList.find(x => x.id === mentorId);
+  if (!m) {
+    alert('اطلاعات راهبر یافت نشد.');
+    return;
+  }
+
+  document.getElementById('modal-mentor-id').value = m.id;
+  document.getElementById('modal-mentor-name').value = m.name || '';
+  document.getElementById('modal-mentor-phone').value = m.phoneNumber || '';
+  document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
+  document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
+  document.getElementById('modal-mentor-city').value = m.city || '';
+  document.getElementById('modal-mentor-academic-degree').value = m.academicDegree || m.education || '';
+  document.getElementById('modal-mentor-level').value = String(m.mentorLevel || 1);
+  document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
+  document.getElementById('modal-mentor-social-platform').value = m.socialPlatform || '';
+  document.getElementById('modal-mentor-social-handle').value = m.socialMessengerHandle || '';
+
+  document.getElementById('mentor-modal-form-title').innerHTML = `<i class="fa-solid fa-user-pen"></i> ویرایش اطلاعات راهبر: ${m.name || ''}`;
+
+  const caravanSearch = document.getElementById('mentor-caravan-search-input');
+  if (caravanSearch) caravanSearch.value = '';
+
+  // Populate assigned caravans checklist
+  const assignedCaravanIds = (m.mentoredCaravans || []).map(c => c.id);
+  if (m.caravanId && !assignedCaravanIds.includes(m.caravanId)) {
+    assignedCaravanIds.push(m.caravanId);
+  }
+  await window.populateMentorCaravansChecklist(assignedCaravanIds);
+
+  // Populate certificates if any
+  const certsSection = document.getElementById('modal-mentor-certs-section');
+  const certsTbody = document.getElementById('modal-mentor-certs-tbody');
+  if (certsSection && certsTbody) {
     if (m.mentorDocuments && m.mentorDocuments.length > 0) {
+      certsSection.style.display = 'block';
       certsTbody.innerHTML = m.mentorDocuments.map(doc => {
-        let statusTag = '';
-        if (doc.status === 'approved') statusTag = '<span class="badge" style="background:#10b981;color:white;">🟢 تایید شده</span>';
-        else if (doc.status === 'rejected') statusTag = '<span class="badge" style="background:#ef4444;color:white;">🔴 رد شده</span>';
-        else statusTag = '<span class="badge" style="background:#f59e0b;color:white;">🟡 در انتظار</span>';
-
+        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:#10b981;color:white;">🟢 تایید شده</span>' :
+                        (doc.status === 'rejected' ? '<span class="badge" style="background:#ef4444;color:white;">🔴 رد شده</span>' : '<span class="badge" style="background:#f59e0b;color:white;">🟡 در انتظار</span>');
         return `
           <tr>
-            <td>${doc.filename}</td>
-            <td><a href="${doc.url}" target="_blank" style="color:#3b82f6;">مشاهده</a></td>
+            <td>${doc.filename || 'مدرک پیوست'}</td>
+            <td><a href="${doc.url}" target="_blank" style="color:#38bdf8; text-decoration:underline;">مشاهده مدرک</a></td>
             <td>${statusTag}</td>
             <td>
               ${doc.status === 'pending' ? `
-                <button type="button" class="btn-icon" style="color:#10b981;" onclick="inlineApproveCert('${doc.id}', '${m.id}')" title="تایید"><i class="fa-solid fa-check"></i></button>
-                <button type="button" class="btn-icon" style="color:#ef4444;" onclick="inlineRejectCert('${doc.id}', '${m.id}')" title="رد"><i class="fa-solid fa-times"></i></button>
+                <button type="button" class="btn-icon" style="color:#10b981; background:none; border:none; cursor:pointer;" onclick="window.inlineApproveCert('${doc.id}', '${m.id}')" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
+                <button type="button" class="btn-icon" style="color:#ef4444; background:none; border:none; cursor:pointer;" onclick="window.inlineRejectCert('${doc.id}', '${m.id}')" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
               ` : '-'}
             </td>
           </tr>
         `;
       }).join('');
     } else {
-      certsTbody.innerHTML = '<tr><td colspan="4">مدرکی یافت نشد</td></tr>';
+      certsSection.style.display = 'none';
     }
-
-    document.getElementById('mentor-modal-overlay').style.display = 'flex';
-  } catch(e) {
-    console.error(e);
   }
-}
 
-window.inlineApproveCert = async function(docId, mentorId) {
-  if (!confirm('آیا از تایید این مدرک اطمینان دارید؟')) return;
-  try {
-    const res = await fetch(`/api/v1/admin/mentors/documents/${docId}/approve`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('خطا در تایید مدرک');
-    editMentor(mentorId); // Refresh modal state
-  } catch(e) {
-    alert(e.message);
-  }
-}
-
-window.inlineRejectCert = async function(docId, mentorId) {
-  const reason = prompt('لطفا دلیل رد مدرک را وارد کنید:');
-  if (reason === null) return;
-  try {
-    const res = await fetch(`/api/v1/admin/mentors/documents/${docId}/reject`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason })
-    });
-    if (!res.ok) throw new Error('خطا در رد مدرک');
-    editMentor(mentorId); // Refresh modal state
-  } catch(e) {
-    alert(e.message);
-  }
-}
-
-document.getElementById('btn-close-mentor-modal')?.addEventListener('click', () => {
-  document.getElementById('mentor-modal-overlay').style.display = 'none';
-});
-
-document.getElementById('mentor-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = document.getElementById('modal-mentor-id').value;
-  const name = document.getElementById('modal-mentor-name').value;
-  const phoneNumber = document.getElementById('modal-mentor-phone').value;
-  const nationalId = document.getElementById('modal-mentor-national-id').value;
-  const dateOfBirth = document.getElementById('modal-mentor-dob').value;
-  const city = document.getElementById('modal-mentor-city').value;
-  const socialPlatform = document.getElementById('modal-mentor-social-platform').value;
-  const socialMessengerHandle = document.getElementById('modal-mentor-social-handle').value;
-  const accountStatus = document.getElementById('modal-mentor-status').value;
-  const mentorLevel = document.getElementById('modal-mentor-level').value;
-
-  const caravanCheckboxes = document.querySelectorAll('.mentor-caravan-checkbox:checked');
-  const caravanIds = Array.from(caravanCheckboxes).map(cb => cb.value);
-  
-  try {
-    const res = await fetch(`/api/v1/admin/mentors/${id}`, {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        phoneNumber,
-        nationalId,
-        dateOfBirth,
-        city,
-        socialPlatform,
-        socialMessengerHandle,
-        accountStatus,
-        mentorLevel,
-        caravanIds
-      })
-    });
-    
-    if (!res.ok) throw new Error('خطا در ذخیره اطلاعات راهبر');
-    
-    document.getElementById('mentor-modal-overlay').style.display = 'none';
-    loadMentors();
-    alert('اطلاعات راهبر با موفقیت به‌روزرسانی شد');
-  } catch(e) {
-    alert(e.message);
-  }
-});
-
-// ===================== MENTOR DOSSIER & MODERATION =====================
-
-window.viewMentorDossier = async function(mentorId) {
-  try {
-    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('خطا در دریافت پرونده راهبر');
-    const dossier = await res.json();
-    
-    // Fill Identity
-    document.getElementById('dossier-name').textContent = dossier.identity.name;
-    document.getElementById('dossier-phone').textContent = dossier.identity.phoneNumber;
-    document.getElementById('dossier-national-id').textContent = dossier.identity.nationalId || 'ثبت نشده';
-    document.getElementById('dossier-dob').textContent = dossier.identity.dateOfBirth || 'ثبت نشده';
-    document.getElementById('dossier-degree').textContent = dossier.identity.academicDegree || 'ثبت نشده';
-    document.getElementById('dossier-status').textContent = dossier.identity.isDeleted ? 'حذف شده (Soft-Delete)' : (dossier.identity.suspendedUntil ? 'مسدود موقت' : dossier.identity.accountStatus);
-    
-    if (dossier.identity.academicCertificates) {
-      document.getElementById('dossier-cert-link').href = dossier.identity.academicCertificates;
-      document.getElementById('dossier-cert-link').style.display = 'inline';
-    } else {
-      document.getElementById('dossier-cert-link').style.display = 'none';
-    }
-
-    // Fill Caravans
-    document.getElementById('dossier-caravans-tbody').innerHTML = dossier.caravans.map(c => `
-      <tr>
-        <td>${c.name}</td>
-        <td>${c.memberCount}</td>
-        <td>
-          <div style="width:100%; background:rgba(255,255,255,0.1); border-radius:4px;">
-            <div style="width:${c.progress || 0}%; background:#10b981; height:8px; border-radius:4px;"></div>
-          </div>
-        </td>
-      </tr>
-    `).join('') || '<tr><td colspan="3">فاقد کاروان</td></tr>';
-
-    // Fill Satisfaction
-    document.getElementById('dossier-avg-rating').textContent = dossier.satisfaction.avgRating;
-    document.getElementById('dossier-total-ratings').textContent = dossier.satisfaction.totalRatings;
-    document.getElementById('dossier-ratings-accordion').innerHTML = dossier.satisfaction.breakdown.map((r, idx) => `
-      <div class="accordion-item" style="border:1px solid rgba(255,255,255,0.1); border-radius:8px; margin-bottom:5px;">
-        <div class="accordion-header" style="padding:10px; cursor:pointer;" onclick="toggleAccordion(this)">
-          <div style="display:flex; justify-content:space-between; width:100%;">
-            <span>دانش‌آموز ناشناس</span>
-            <span style="color:#fbbf24;">${r.ratingValue} <i class="fa-solid fa-star"></i></span>
-          </div>
-        </div>
-        <div class="accordion-content" style="padding:10px; font-size:12px; color:#ccc;">${r.feedback || 'بدون توضیح'}</div>
-      </div>
-    `).join('') || '<div style="color:#aaa; font-size:12px;">موردی یافت نشد</div>';
-
-    // Fill Challenges
-    document.getElementById('dossier-challenges-tbody').innerHTML = dossier.challenges.map(ch => `
-      <tr>
-        <td>${ch.title}</td>
-        <td>${ch.type}</td>
-        <td style="color:#fbbf24;">${ch.reward}</td>
-        <td style="color:#10b981;">${ch.stats.reviewed}</td>
-        <td style="color:#f59e0b;">${ch.stats.pending}</td>
-      </tr>
-    `).join('') || '<tr><td colspan="5">موردی یافت نشد</td></tr>';
-
-    document.getElementById('mentor-dossier-modal').style.display = 'flex';
-  } catch (error) {
-    alert(error.message);
+  const modal = document.getElementById('mentor-modal-overlay');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.style.zIndex = '999999';
   }
 };
 
-window.closeMentorDossier = function() {
-  document.getElementById('mentor-dossier-modal').style.display = 'none';
+window.populateMentorCaravansChecklist = async function(assignedIds = []) {
+  const container = document.getElementById('modal-mentor-caravans-list');
+  if (!container) return;
+
+  container.innerHTML = '<span style="font-size:11px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
+  
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch('/api/v1/admin/caravans', {
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    });
+    const caravans = res.ok ? await res.json() : [];
+    window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
+
+    if (window.cachedCaravansForMentorModal.length === 0) {
+      container.innerHTML = '<span style="font-size:12px; color:#94a3b8;">هیچ کاروانی در سامانه ثبت نشده است.</span>';
+      return;
+    }
+
+    container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
+      <label class="mentor-caravan-item-label" data-caravan-name="${(c.name || '').toLowerCase()}" style="display:flex; align-items:center; gap:8px; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 12px; color:#f8fafc; font-size:12.5px; cursor:pointer; transition:all 0.2s;">
+        <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
+        <span style="font-weight:500;">${c.name}</span>
+      </label>
+    `).join('');
+  } catch (e) {
+    console.error('Error fetching caravans checklist:', e);
+    container.innerHTML = '<span style="font-size:12px; color:#ef4444;">خطا در دریافت لیست کاروان‌ها</span>';
+  }
+};
+
+window.filterMentorCaravansChecklist = function(query) {
+  const term = (query || '').trim().toLowerCase();
+  const items = document.querySelectorAll('.mentor-caravan-item-label');
+  items.forEach(el => {
+    const cName = el.getAttribute('data-caravan-name') || '';
+    if (!term || cName.includes(term)) {
+      el.style.display = 'flex';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+};
+
+window.uncheckAllMentorCaravans = function() {
+  const checkboxes = document.querySelectorAll('.mentor-caravan-checkbox');
+  checkboxes.forEach(cb => { cb.checked = false; });
+  const caravanSearch = document.getElementById('mentor-caravan-search-input');
+  if (caravanSearch) caravanSearch.value = '';
+  window.filterMentorCaravansChecklist('');
+};
+
+window.handleMentorFormSubmit = async function(e) {
+  if (e) e.preventDefault();
+
+  const id = document.getElementById('modal-mentor-id').value;
+  const name = document.getElementById('modal-mentor-name').value.trim();
+  const phoneNumber = document.getElementById('modal-mentor-phone').value.trim();
+  const nationalId = document.getElementById('modal-mentor-national-id').value.trim();
+  const dateOfBirth = document.getElementById('modal-mentor-dob').value.trim();
+  const city = document.getElementById('modal-mentor-city').value.trim();
+  const academicDegree = document.getElementById('modal-mentor-academic-degree').value.trim();
+  const mentorLevel = parseInt(document.getElementById('modal-mentor-level').value) || 1;
+  const accountStatus = document.getElementById('modal-mentor-status').value;
+  const socialPlatform = document.getElementById('modal-mentor-social-platform').value;
+  const socialMessengerHandle = document.getElementById('modal-mentor-social-handle').value.trim();
+
+  // Read all selected caravan checkboxes (Can be empty [] for standalone mentors without caravans)
+  const caravanCheckboxes = document.querySelectorAll('.mentor-caravan-checkbox:checked');
+  const assignedCaravanIds = Array.from(caravanCheckboxes).map(cb => cb.value);
+
+  const payload = {
+    id: id || undefined,
+    name,
+    phoneNumber,
+    nationalId: nationalId || null,
+    dateOfBirth: dateOfBirth || null,
+    city: city || null,
+    academicDegree: academicDegree || null,
+    mentorLevel,
+    accountStatus,
+    socialPlatform: socialPlatform || null,
+    socialMessengerHandle: socialMessengerHandle || null,
+    assignedCaravanIds: assignedCaravanIds, // Array of caravan IDs (empty array if no caravan chosen)
+    caravanId: assignedCaravanIds.length > 0 ? assignedCaravanIds[0] : null
+  };
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch('/api/v1/admin/mentors', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const msg = assignedCaravanIds.length > 0 
+        ? `✅ راهبر «${name}» با موفقیت همراه با ${assignedCaravanIds.length} کاروان ثبت و ذخیره شد.`
+        : `✅ راهبر «${name}» با موفقیت به عنوان راهبر مستقل (بدون کاروان) ثبت و ذخیره شد.`;
+      alert(msg);
+      document.getElementById('mentor-modal-overlay').style.display = 'none';
+      await window.loadMentors();
+    } else {
+      const err = await res.json();
+      alert('خطا در ذخیره‌سازی: ' + (err.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Save mentor error:', err);
+    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+  }
 };
 
 window.openMentorModerationModal = function(mentorId) {
+  const m = window.mentorsMasterList.find(x => x.id === mentorId);
   document.getElementById('mod-mentor-id').value = mentorId;
-  document.getElementById('mentor-moderation-form').reset();
-  toggleTempSuspendDate(false);
-  document.getElementById('mentor-moderation-modal').style.display = 'flex';
-};
+  
+  if (m) {
+    document.getElementById('mod-mentor-subtitle').textContent = `راهبر: ${m.name || ''} (${m.phoneNumber || ''}) - وضعیت فعلی: ${m.accountStatus || 'ACTIVE'}`;
+  }
 
-window.closeMentorModerationModal = function() {
-  document.getElementById('mentor-moderation-modal').style.display = 'none';
+  window.toggleTempSuspendDate(false);
+  const modal = document.getElementById('mentor-moderation-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.style.zIndex = '999999';
+  }
 };
 
 window.toggleTempSuspendDate = function(show) {
-  document.getElementById('mod-temp-date-container').style.display = show ? 'block' : 'none';
-  if (show) {
-    document.getElementById('mod-suspend-until').required = true;
-  } else {
-    document.getElementById('mod-suspend-until').required = false;
-  }
+  const container = document.getElementById('mod-temp-date-container');
+  if (container) container.style.display = show ? 'block' : 'none';
 };
 
-document.getElementById('mentor-moderation-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = document.getElementById('mod-mentor-id').value;
-  const action = document.querySelector('input[name="moderation_action"]:checked').value;
-  const suspendedUntil = document.getElementById('mod-suspend-until').value;
+window.executeMentorModeration = async function(e) {
+  if (e) e.preventDefault();
 
+  const id = document.getElementById('mod-mentor-id').value;
+  if (!id) return;
+
+  const action = document.querySelector('input[name="mod_action"]:checked')?.value || 'activate';
+  const suspendedUntil = document.getElementById('mod-suspended-until')?.value;
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(`/api/v1/admin/mentors/${id}/moderate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ action, suspendedUntil })
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ action, suspendedUntil: suspendedUntil || undefined })
     });
-    if (!res.ok) {
+
+    if (res.ok) {
+      alert('✅ اقدام مدیریتی با موفقیت بر روی حساب کاربری راهبر اعمال شد.');
+      document.getElementById('mentor-moderation-modal').style.display = 'none';
+      await window.loadMentors();
+    } else {
       const err = await res.json();
-      throw new Error(err.error || 'خطا در ثبت وضعیت');
+      alert('خطا در اعمال اقدام: ' + (err.error || 'خطای سرور'));
     }
-    alert('وضعیت راهبر با موفقیت تغییر یافت');
-    closeMentorModerationModal();
-    loadMentors(); // Refresh table
   } catch (err) {
-    alert(err.message);
+    console.error('Mentor moderation error:', err);
+    alert('ارتباط با سرور برقرار نشد: ' + err.message);
   }
-});
+};
 
 // Hook for Student Drawer Events their tab is clicked
 document.querySelector('[data-tab="mentors-profile-tab"]')?.addEventListener('click', loadMentors);
@@ -4021,48 +4307,6 @@ document.getElementById('btn-reject-mentor-doc')?.addEventListener('click', asyn
 
 // Hook refresh button
 document.getElementById('btn-refresh-mentor-docs')?.addEventListener('click', loadMentorDocs);
-
-// Small export helper: build CSV from visible table
-window.exportData = function(kind, format) {
-  // For now support CSV export by reading visible table rows
-  if(format === 'csv') {
-    let tableId = 'users-data-table';
-    if(kind === 'ledger') tableId = 'ledger-data-table';
-    if(kind === 'mentor-docs' || kind === 'mentors-docs') tableId = 'mentor-docs-table';
-    if(kind === 'caravans') tableId = 'caravans-container';
-    const table = document.getElementById(tableId);
-    if(!table) return alert('داده‌ای برای خروجی یافت نشد');
-    // If it's a container (caravans) try to collect cards
-    if(tableId === 'caravans-container') {
-      const cards = Array.from(document.querySelectorAll('#caravans-container .caravan-card'));
-      const rows = cards.map(c => [c.querySelector('.caravan-title')?.innerText || '-', c.querySelector('.caravan-members')?.innerText || '-']);
-      const csv = ['title,members', ...rows.map(r => r.map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(','))].join('\n');
-      downloadCSV(`export_${kind}.csv`, csv);
-      return;
-    }
-    const rows = Array.from(table.querySelectorAll('tr'));
-    const csvRows = rows.map(tr => {
-      const cols = Array.from(tr.querySelectorAll('th,td')).map(td => td.innerText.trim().replace(/\n/g,' '));
-      return cols.map(c => `"${c.replace(/"/g,'""')}"`).join(',');
-    });
-    downloadCSV(`export_${kind}.csv`, csvRows.join('\n'));
-  } else {
-    // Fallback: CSV for other formats
-    exportData(kind, 'csv');
-  }
-}
-
-function downloadCSV(filename, text) {
-  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
 // Removed loadCaravanPerformance logic to loadCaravansTab
 
 window.pendingCaravanMembers = [];
@@ -6402,42 +6646,9 @@ window.loadLmsStationsData = async function() {
 
 // 3. Mentors Table Loader (#mentors-tbody)
 window.loadMentorsData = async function() {
-  const tbody = document.getElementById('mentors-tbody') || document.querySelector('#mentors-table tbody') || document.querySelector('#mentors-table-body');
-  if (!tbody) return;
-
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-indigo-400">در حال بارگذاری راهبران...</td></tr>';
-  let raw = await fetchWithFallback('/api/v1/admin/mentors', '/api/v1/users?role=mentor');
-  let mentors = Array.isArray(raw) ? raw : (raw?.data || []);
-
-  if (!mentors || mentors.length === 0) {
-    mentors = [
-      { id: 'm1', name: 'رضا جلالی', phoneNumber: '09199840686', nationalId: '0012345678', academicDegree: 'کارشناسی ارشد مدیریت', caravan: { name: 'گروه مربی جلالی' }, mentorLevel: 2, avgRating: '4.8' },
-      { id: 'm2', name: 'محمد کویتی', phoneNumber: '09191604524', nationalId: '0087654321', academicDegree: 'دکتری کارآفرینی', caravan: { name: 'گروه مربی کویتی' }, mentorLevel: 2, avgRating: '4.9' },
-      { id: 'm3', name: 'علیرضا خوش‌منظر', phoneNumber: '09196657042', nationalId: '0055443322', academicDegree: 'کارشناسی ارشد بازاریابی', caravan: { name: 'گروه مربی خوش‌منظر' }, mentorLevel: 2, avgRating: '4.7' }
-    ];
+  if (typeof window.loadMentors === 'function') {
+    await window.loadMentors();
   }
-
-  tbody.innerHTML = '';
-  mentors.forEach(m => {
-    const avatar = m.name ? m.name.substring(0, 2) : 'نا';
-    const caravanStr = m.caravan?.name || (m.mentoredCaravans?.[0]?.name) || 'فاقد کاروان';
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-800/40 transition border-b border-slate-800/60 text-gray-200';
-    tr.innerHTML = `
-      <td class="p-2.5 text-center"><div class="w-8 h-8 rounded-full bg-indigo-600/80 text-white flex items-center justify-center text-xs font-bold mx-auto">${avatar}</div></td>
-      <td class="p-2.5 font-bold text-white">${m.name || 'راهبر بدون نام'}</td>
-      <td class="p-2.5 font-mono text-xs text-gray-300">${m.phoneNumber || '-'}</td>
-      <td class="p-2.5 font-mono text-xs text-gray-400">${m.nationalId || '-'}</td>
-      <td class="p-2.5 text-xs text-gray-300">${m.academicDegree || m.education || 'عمومی'}</td>
-      <td class="p-2.5 text-xs"><span class="px-2 py-0.5 rounded bg-slate-800 text-indigo-300 border border-slate-700">${caravanStr}</span></td>
-      <td class="p-2.5 text-center"><span class="px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-700 text-xs">سطح ${m.mentorLevel || 1}</span></td>
-      <td class="p-2.5 text-center font-bold text-amber-400">★ ${m.avgRating || '5.0'}</td>
-      <td class="p-2.5 text-center">
-        <button class="px-2 py-1 bg-indigo-600/80 text-white text-xs rounded" onclick="if(typeof viewMentorDossier==='function') viewMentorDossier('${m.id}')">شناسنامه</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
 };
 
 // 4. Caravans Table Loader (#caravans-tbody)

@@ -38,7 +38,7 @@ async function getMentors(req, res) {
 }
 async function createOrUpdateMentor(req, res) {
     try {
-        const { id, name, phoneNumber, nationalId, academicDegree, caravanId, certificates, isSuperMentor } = req.body;
+        const { id, name, phoneNumber, nationalId, academicDegree, caravanId, certificates, isSuperMentor, mentorLevel, dateOfBirth, city, accountStatus, socialMessengerHandle, socialPlatform, assignedCaravanIds } = req.body;
         let user;
         if (id) {
             const data = {
@@ -52,10 +52,35 @@ async function createOrUpdateMentor(req, res) {
             if (typeof isSuperMentor === 'boolean') {
                 data.role = isSuperMentor ? 'SUPER_MENTOR' : 'mentor';
             }
+            if (mentorLevel !== undefined)
+                data.mentorLevel = Number(mentorLevel) || 1;
+            if (dateOfBirth !== undefined)
+                data.dateOfBirth = dateOfBirth;
+            if (city !== undefined)
+                data.city = city;
+            if (accountStatus !== undefined)
+                data.accountStatus = accountStatus;
+            if (socialMessengerHandle !== undefined)
+                data.socialMessengerHandle = socialMessengerHandle;
+            if (socialPlatform !== undefined)
+                data.socialPlatform = socialPlatform;
             user = await db_1.default.user.update({
                 where: { id },
                 data
             });
+            // Handle multi-caravan assignments
+            if (Array.isArray(assignedCaravanIds)) {
+                await db_1.default.caravan.updateMany({
+                    where: { mentorId: user.id },
+                    data: { mentorId: null }
+                });
+                if (assignedCaravanIds.length > 0) {
+                    await db_1.default.caravan.updateMany({
+                        where: { id: { in: assignedCaravanIds } },
+                        data: { mentorId: user.id }
+                    });
+                }
+            }
         }
         else {
             const maxUser = await db_1.default.user.findFirst({
@@ -73,9 +98,21 @@ async function createOrUpdateMentor(req, res) {
                     academicDegree,
                     academicCertificates: certificates,
                     caravanId: caravanId || null,
-                    userCode: nextUserCode
+                    userCode: nextUserCode,
+                    mentorLevel: Number(mentorLevel) || 1,
+                    dateOfBirth: dateOfBirth || null,
+                    city: city || null,
+                    accountStatus: accountStatus || 'ACTIVE',
+                    socialMessengerHandle: socialMessengerHandle || null,
+                    socialPlatform: socialPlatform || null
                 }
             });
+            if (Array.isArray(assignedCaravanIds) && assignedCaravanIds.length > 0) {
+                await db_1.default.caravan.updateMany({
+                    where: { id: { in: assignedCaravanIds } },
+                    data: { mentorId: user.id }
+                });
+            }
         }
         res.json({ success: true, user });
     }
