@@ -21,14 +21,21 @@ const notificationController_1 = require("./notificationController");
 async function getMentors(req, res) {
     try {
         const mentors = await db_1.default.user.findMany({
-            where: { role: { in: ['mentor', 'SUPER_MENTOR', 'admin'] } },
+            where: {
+                OR: [
+                    { role: { in: ['mentor', 'SUPER_MENTOR'] } },
+                    { mentoredCaravans: { some: {} } }
+                ]
+            },
             include: {
                 caravan: true,
                 ratingsReceived: true,
+                evaluationsReceived: true,
                 supportReplies: true,
                 mentorDocuments: true,
                 mentoredCaravans: true
-            }
+            },
+            orderBy: { createdAt: 'desc' }
         });
         res.json(mentors);
     }

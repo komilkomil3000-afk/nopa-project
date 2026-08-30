@@ -1084,7 +1084,7 @@
           </div>
 
           <!-- فیلتر و جستجوی چندگانه راهبران -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; align-items: flex-end;">
             <div class="form-group" style="margin: 0;">
               <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-magnifying-glass" style="color: #38bdf8;"></i> جستجوی هوشمند راهبر:
@@ -1097,10 +1097,10 @@
                 <i class="fa-solid fa-award" style="color: #a78bfa;"></i> سطح راهبری:
               </label>
               <select id="mentor-filter-level" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
-                <option value="all">همه سطوح</option>
-                <option value="1">سطح ۱ (مقدماتی)</option>
-                <option value="2">سطح ۲ (پیشرفته)</option>
-                <option value="3">سطح ۳ (ارشد)</option>
+                <option value="all">همه سطوح راهبری</option>
+                <option value="1">سطح ۱: یاور (مقدماتی)</option>
+                <option value="2">سطح ۲: استاد (پیشرفته)</option>
+                <option value="3">سطح ۳: راهنمای کل (ارشد)</option>
               </select>
             </div>
 
@@ -1138,10 +1138,6 @@
                 <option value="name_asc">🔤 الفبایی نام راهبر</option>
               </select>
             </div>
-
-            <button type="button" onclick="window.resetMentorFilters()" class="btn-action" style="padding: 7px 14px; background: rgba(255,255,255,0.06); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 12px; cursor: pointer; height: 35px; white-space: nowrap;" title="پاکسازی و بازنشانی فیلترها">
-              <i class="fa-solid fa-rotate-left"></i> ریست
-            </button>
           </div>
         </div>
           <div class="table-container glass">

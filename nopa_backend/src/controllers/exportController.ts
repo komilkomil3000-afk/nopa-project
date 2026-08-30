@@ -113,15 +113,9 @@ export const exportData = async (req: Request, res: Response) => {
           if (val > 0) { totalRatingSum += val; totalRatingCount++; }
         });
 
-        let avgRating = '5.0';
+        let avgRatingText = 'فاقد ارزیابی (۰ نظر)';
         if (totalRatingCount > 0) {
-          avgRating = (totalRatingSum / totalRatingCount).toFixed(1);
-        } else if (m.mentorLevel >= 3) {
-          avgRating = '5.0';
-        } else if (m.mentorLevel === 2) {
-          avgRating = '4.9';
-        } else {
-          avgRating = '4.8';
+          avgRatingText = `${(totalRatingSum / totalRatingCount).toFixed(1)} ⭐ (${totalRatingCount} نظر)`;
         }
 
         let levelStr = 'سطح ۱ (مقدماتی)';
@@ -141,7 +135,7 @@ export const exportData = async (req: Request, res: Response) => {
           m.city || '-',
           caravansStr,
           levelStr,
-          `${avgRating} ⭐`,
+          avgRatingText,
           statusStr
         ];
       });

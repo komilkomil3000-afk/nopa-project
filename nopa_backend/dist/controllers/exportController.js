@@ -118,18 +118,9 @@ const exportData = async (req, res) => {
                         totalRatingCount++;
                     }
                 });
-                let avgRating = '5.0';
+                let avgRatingText = 'فاقد ارزیابی (۰ نظر)';
                 if (totalRatingCount > 0) {
-                    avgRating = (totalRatingSum / totalRatingCount).toFixed(1);
-                }
-                else if (m.mentorLevel >= 3) {
-                    avgRating = '5.0';
-                }
-                else if (m.mentorLevel === 2) {
-                    avgRating = '4.9';
-                }
-                else {
-                    avgRating = '4.8';
+                    avgRatingText = `${(totalRatingSum / totalRatingCount).toFixed(1)} ⭐ (${totalRatingCount} نظر)`;
                 }
                 let levelStr = 'سطح ۱ (مقدماتی)';
                 if (m.mentorLevel === 3)
@@ -150,7 +141,7 @@ const exportData = async (req, res) => {
                     m.city || '-',
                     caravansStr,
                     levelStr,
-                    `${avgRating} ⭐`,
+                    avgRatingText,
                     statusStr
                 ];
             });

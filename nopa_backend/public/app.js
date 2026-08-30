@@ -2994,13 +2994,22 @@ window.mentorsMasterList = [];
 window.calculateMentorStars = function(ratings, evals) {
   let sum = 0, count = 0;
   if (Array.isArray(ratings)) {
-    ratings.forEach(r => { const v = Number(r.ratingValue) || Number(r.rating) || 0; if (v > 0) { sum += v; count++; } });
+    ratings.forEach(r => {
+      const v = Number(r.ratingValue) || Number(r.rating) || 0;
+      if (v > 0) { sum += v; count++; }
+    });
   }
   if (Array.isArray(evals)) {
-    evals.forEach(e => { const v = Number(e.rating) || Number(e.responsivenessScore) || 0; if (v > 0) { sum += v; count++; } });
+    evals.forEach(e => {
+      const v = Number(e.rating) || Number(e.responsivenessScore) || 0;
+      if (v > 0) { sum += v; count++; }
+    });
   }
-  if (count === 0) return '5.0';
-  return (sum / count).toFixed(1);
+  if (count === 0) {
+    return { score: null, count: 0, text: 'فاقد ارزیابی (۰ نظر)', avgNumeric: 0 };
+  }
+  const avg = (sum / count).toFixed(1);
+  return { score: avg, count: count, text: `⭐ ${avg} (${count} نظر)`, avgNumeric: parseFloat(avg) };
 };
 
 window.loadMentors = async function() {
@@ -3081,8 +3090,8 @@ window.filterMentorsList = function() {
 
   // 5. Sorting
   filtered.sort((a, b) => {
-    const starsA = parseFloat(window.calculateMentorStars(a.ratingsReceived, a.evaluationsReceived)) || 0;
-    const starsB = parseFloat(window.calculateMentorStars(b.ratingsReceived, b.evaluationsReceived)) || 0;
+    const starsA = window.calculateMentorStars(a.ratingsReceived, a.evaluationsReceived).avgNumeric;
+    const starsB = window.calculateMentorStars(b.ratingsReceived, b.evaluationsReceived).avgNumeric;
     const levelA = parseInt(a.mentorLevel) || 1;
     const levelB = parseInt(b.mentorLevel) || 1;
     const caravansCountA = (a.mentoredCaravans?.length || 0);
@@ -3139,30 +3148,17 @@ window.renderMentorsRows = function(mentorsList, tbody) {
   tbody.innerHTML = mentorsList.map(m => {
     const avatarInitials = (m.name ? m.name.trim().split(' ').map(n => n[0]).join('') : 'را').substring(0, 2);
     
-    // Calculate accurate stars rating
-    const ratings = m.ratingsReceived || [];
-    const evals = m.evaluationsReceived || [];
-    let totalRatingSum = 0;
-    let totalRatingCount = 0;
-    ratings.forEach(r => {
-      const val = Number(r.ratingValue) || Number(r.rating) || 0;
-      if (val > 0) { totalRatingSum += val; totalRatingCount++; }
-    });
-    evals.forEach(e => {
-      const val = Number(e.rating) || Number(e.responsivenessScore) || 0;
-      if (val > 0) { totalRatingSum += val; totalRatingCount++; }
-    });
+    // Calculate accurate stars rating based ONLY on real DB records
+    const starsInfo = window.calculateMentorStars(m.ratingsReceived, m.evaluationsReceived);
 
-    let avgRating = '5.0';
-    if (totalRatingCount > 0) {
-      avgRating = (totalRatingSum / totalRatingCount).toFixed(1);
-    } else if (m.mentorLevel >= 3) {
-      avgRating = '5.0';
-    } else if (m.mentorLevel === 2) {
-      avgRating = '4.9';
-    } else {
-      avgRating = '4.8';
-    }
+    const ratingCellHtml = starsInfo.score !== null
+      ? `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.35); padding:4px 8px; border-radius:8px;">
+           <span style="color:#fbbf24; font-weight:bold; font-size:12.5px;">⭐ ${starsInfo.score}</span>
+           <span style="font-size:10.5px; color:#cbd5e1;">(${starsInfo.count} ارزیابی)</span>
+         </div>`
+      : `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(100, 116, 139, 0.15); border:1px solid rgba(100, 116, 139, 0.25); padding:3px 8px; border-radius:6px; font-size:11px; color:#94a3b8;">
+           <i class="fa-regular fa-star"></i> فاقد ارزیابی (۰ نظر)
+         </div>`;
 
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
@@ -3170,15 +3166,15 @@ window.renderMentorsRows = function(mentorsList, tbody) {
       ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${c.name}</span>`).join(' ')
       : '<span style="color:#64748b; font-size:12px;">فاقد کاروان</span>';
 
-    // Mentor level badge
+    // Mentor level badge (Exact database field: 1: یاور, 2: استاد, 3: راهنمای کل)
     let levelBadge = '';
     const lvl = Number(m.mentorLevel) || 1;
-    if (lvl === 3) {
-      levelBadge = '<span class="badge" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:black; font-weight:bold; padding:3px 8px; border-radius:6px; font-size:11px;"><i class="fa-solid fa-crown"></i> ارشد (سطح ۳)</span>';
+    if (lvl >= 3) {
+      levelBadge = `<span class="badge" style="background:linear-gradient(135deg, rgba(245,158,11,0.25), rgba(217,119,6,0.35)); color:#fbbf24; border:1px solid rgba(245,158,11,0.5); font-weight:bold; padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۳: راهنمای کل"><i class="fa-solid fa-crown"></i> سطح ۳ (راهنمای کل)</span>`;
     } else if (lvl === 2) {
-      levelBadge = '<span class="badge" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9); color:white; font-weight:bold; padding:3px 8px; border-radius:6px; font-size:11px;">پیشرفته (سطح ۲)</span>';
+      levelBadge = `<span class="badge" style="background:linear-gradient(135deg, rgba(139,92,246,0.25), rgba(109,40,217,0.35)); color:#c084fc; border:1px solid rgba(139,92,246,0.5); font-weight:bold; padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۲: استاد"><i class="fa-solid fa-graduation-cap"></i> سطح ۲ (استاد)</span>`;
     } else {
-      levelBadge = '<span class="badge" style="background:rgba(100, 116, 139, 0.4); color:#cbd5e1; padding:3px 8px; border-radius:6px; font-size:11px;">مقدماتی (سطح ۱)</span>';
+      levelBadge = `<span class="badge" style="background:rgba(100, 116, 139, 0.25); color:#94a3b8; border:1px solid rgba(100,116,139,0.4); padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۱: یاور"><i class="fa-solid fa-hand-holding-hand"></i> سطح ۱ (یاور)</span>`;
     }
 
     // Status indicator
@@ -3209,10 +3205,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
         <td>${caravansHtml}</td>
         <td style="text-align:center;">${levelBadge}</td>
         <td style="text-align:center;">
-          <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(245, 158, 11, 0.12); border:1px solid rgba(245, 158, 11, 0.3); padding:4px 8px; border-radius:8px;">
-            <span style="color:#fbbf24; font-weight:bold; font-size:12.5px;">⭐ ${avgRating}</span>
-            <span style="font-size:10px; color:#94a3b8;">(${totalRatingCount || ratings.length || 1})</span>
-          </div>
+          ${ratingCellHtml}
         </td>
         <td style="text-align:center; white-space:nowrap;">
           <div style="display:inline-flex; gap:6px; align-items:center;">
@@ -3265,19 +3258,42 @@ window.viewMentorDossier = async function(mentorId) {
     document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${dossier?.identity?.nationalId || mentor?.nationalId || 'ثبت‌نشده'} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
     document.getElementById('dossier-avatar').textContent = initials;
 
-    // Build rich dossier content
+    // Build rich dossier content with pure real ratings
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
-    const avgRating = dossier?.satisfaction?.avgRating || window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const totalRatings = dossier?.satisfaction?.totalRatings || (mentor?.ratingsReceived?.length || 0);
+    const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
+    const scoreTitle = starsInfo.score !== null ? `⭐ ${starsInfo.score} <span style="font-size:12px; color:#94a3b8;">/ ۵</span>` : `<span style="font-size:15px; color:#94a3b8;">فاقد ارزیابی</span>`;
+    const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
       <!-- TOP STATS CARDS -->
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
         <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(245, 158, 11, 0.3); border-radius:12px; padding:14px; text-align:center;">
           <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-star" style="color:#fbbf24;"></i> امتیاز رضایت و عملکرد</div>
-          <div style="font-size:22px; font-weight:bold; color:#fbbf24;">⭐ ${avgRating} <span style="font-size:12px; color:#94a3b8;">/ ۵</span></div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">از میان ${totalRatings} ارزیابی ثبت‌شده</div>
+          <div style="font-size:20px; font-weight:bold; color:#fbbf24;">${scoreTitle}</div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${scoreSub}</div>
         </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
+          <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
+        </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-coins" style="color:#10b981;"></i> دارایی‌های راهبر</div>
+          <div style="font-size:14px; font-weight:bold; color:#10b981; display:flex; justify-content:center; gap:8px; margin-top:6px;">
+            <span>🪙 ${mentor?.zarikBalance || 0} زریک</span>
+            <span>🚩 ${mentor?.beyragh || 0} بیرق</span>
+          </div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">🧵 ${mentor?.nakh || 0} نخ | 🧶 ${mentor?.farsh || 0} فرش</div>
+        </div>
+
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-award" style="color:#a78bfa;"></i> رتبه و سطح کاربری</div>
+          <div style="font-size:18px; font-weight:bold; color:#a78bfa; margin-top:2px;">سطح ${mentor?.mentorLevel || 1}</div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">وضعیت: <span style="color:#10b981;">${mentor?.accountStatus || 'ACTIVE'}</span></div>
+        </div>
+      </div>
 
         <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
           <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>

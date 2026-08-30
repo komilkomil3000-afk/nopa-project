@@ -1071,6 +1071,7 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
       include: {
         mentoredCaravans: true,
         ratingsReceived: true,
+        evaluationsReceived: true,
       }
     });
 
@@ -1088,8 +1089,16 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
 
     // Compute stats
     let totalScore = 0;
-    mentor.ratingsReceived.forEach((r) => totalScore += r.ratingValue);
-    const avgRating = mentor.ratingsReceived.length > 0 ? (totalScore / mentor.ratingsReceived.length).toFixed(1) : '0.0';
+    let ratingCount = 0;
+    mentor.ratingsReceived.forEach((r) => {
+      const v = Number(r.ratingValue) || 0;
+      if (v > 0) { totalScore += v; ratingCount++; }
+    });
+    mentor.evaluationsReceived.forEach((e: any) => {
+      const v = Number(e.rating) || Number(e.responsivenessScore) || 0;
+      if (v > 0) { totalScore += v; ratingCount++; }
+    });
+    const avgRating = ratingCount > 0 ? (totalScore / ratingCount).toFixed(1) : null;
 
     const challengeOperations = challenges.map((ch) => {
       const reviewed = ch.submissions.filter((s) => s.status !== 'pending').length;
@@ -1124,9 +1133,9 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
         progress: c.overallProgress
       })),
       satisfaction: {
-        avgRating,
-        totalRatings: mentor.ratingsReceived.length,
-        breakdown: mentor.ratingsReceived // Simplified, the UI can render
+        avgRating: avgRating !== null ? avgRating : 'فاقد ارزیابی',
+        totalRatings: ratingCount,
+        breakdown: [...mentor.ratingsReceived, ...mentor.evaluationsReceived]
       },
       challenges: challengeOperations
     });
