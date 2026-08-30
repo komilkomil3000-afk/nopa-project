@@ -1299,85 +1299,22 @@
                 </div>
               </div>
 
-              <!-- دسته اول: کلاس‌های مهارتی (شنبه و دوشنبه) -->
-              <div style="background: rgba(2, 132, 199, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                  <h4 style="margin: 0; color: #38bdf8; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                    <span class="badge" style="background: #0284c7; color: white; padding: 3px 8px; border-radius: 6px; font-weight: bold;">دسته ۱</span>
-                    <i class="fa-solid fa-person-running"></i> کلاس‌های مهارتی (شنبه و دوشنبه)
-                  </h4>
-                  <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-calendar-check"></i> روزهای برگزاری: شنبه و دوشنبه</span>
+              <!-- بخش دسته‌بندی‌های کلاس (پویا: با قابلیت افزودن و حذف نامحدود دسته‌ها) -->
+              <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
+                  <div>
+                    <h4 style="margin: 0; color: #38bdf8; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                      <i class="fa-solid fa-layer-group"></i> دسته‌بندی‌های کلاس این منزلگاه
+                    </h4>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">می‌توانید دسته‌های جدید (مانند مهارتی، رسانه‌ای، کارگاهی، سناریو و...) اضافه نموده یا دسته‌ها را حذف و اصلاح فرمایید.</div>
+                  </div>
+                  <button type="button" onclick="window.addCategoryBlockToCreatorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2,132,199,0.3);">
+                    <i class="fa-solid fa-plus"></i> + افزودن دسته جدید
+                  </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">عنوان دسته مهارتی:</label>
-                    <input type="text" id="modal-st-skill-title" class="input-ctrl" value="کلاس‌های مهارتی (مهارت فردی و گروهی)" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">استاد مهارتی:</label>
-                    <input type="text" id="modal-st-skill-instructor" class="input-ctrl" placeholder="پیراینه‌گر / استاد مهارتی" value="پیراینه‌گر" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">تعداد جلسات:</label>
-                    <input type="number" id="modal-st-skill-sessions" class="input-ctrl" value="2" min="1" max="20" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#38bdf8; font-weight:bold;"><i class="fa-solid fa-film"></i> پارت هر جلسه:</label>
-                    <input type="number" id="modal-st-skill-parts" class="input-ctrl" value="2" min="1" max="10" style="background: #1e293b; border-color: #38bdf8;" title="تعداد پارت‌های ویدیویی در هر جلسه مهارتی">
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">زمان‌بندی هفته:</label>
-                    <input type="text" id="modal-st-skill-schedule" class="input-ctrl" value="شنبه و دوشنبه" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;"><i class="fa-solid fa-calendar-check"></i> اصلاح تاریخ شروع مهارتی از تقویم:</label>
-                    <input type="date" id="modal-st-skill-date" class="input-ctrl" style="color:white; background: #1e293b;">
-                  </div>
-                </div>
-              </div>
-
-              <!-- دسته دوم: کلاس‌های رسانه‌ای (پنجشنبه و جمعه) -->
-              <div style="background: rgba(124, 58, 237, 0.12); border: 1px solid rgba(167, 139, 250, 0.35); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                  <h4 style="margin: 0; color: #a78bfa; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                    <span class="badge" style="background: #7c3aed; color: white; padding: 3px 8px; border-radius: 6px; font-weight: bold;">دسته ۲</span>
-                    <i class="fa-solid fa-photo-film"></i> کلاس‌های رسانه‌ای (پنجشنبه و جمعه)
-                  </h4>
-                  <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-calendar-check"></i> روزهای برگزاری: پنجشنبه و جمعه</span>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">عنوان دسته رسانه‌ای:</label>
-                    <input type="text" id="modal-st-media-title" class="input-ctrl" value="کلاس‌های رسانه‌ای (سواد رسانه و تولید محتوا)" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">استاد رسانه‌ای:</label>
-                    <input type="text" id="modal-st-media-instructor" class="input-ctrl" placeholder="علیرضا خوش‌منظر / استاد رسانه‌ای" value="علیرضا خوش‌منظر" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">تعداد جلسات:</label>
-                    <input type="number" id="modal-st-media-sessions" class="input-ctrl" value="2" min="1" max="20" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#a78bfa; font-weight:bold;"><i class="fa-solid fa-film"></i> پارت هر جلسه:</label>
-                    <input type="number" id="modal-st-media-parts" class="input-ctrl" value="2" min="1" max="10" style="background: #1e293b; border-color: #a78bfa;" title="تعداد پارت‌های ویدیویی در هر جلسه رسانه‌ای">
-                  </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;">زمان‌بندی هفته:</label>
-                    <input type="text" id="modal-st-media-schedule" class="input-ctrl" value="پنجشنبه و جمعه" style="background: #1e293b;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size:12px; color:#cbd5e1;"><i class="fa-solid fa-calendar-check"></i> اصلاح تاریخ شروع رسانه‌ای از تقویم:</label>
-                    <input type="date" id="modal-st-media-date" class="input-ctrl" style="color:white; background: #1e293b;">
-                  </div>
+                <div id="lms-modal-categories-container" style="display: flex; flex-direction: column; gap: 14px;">
+                  <!-- Dynamically populated with category cards -->
                 </div>
               </div>
 

@@ -488,6 +488,22 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
           }
         }
       }
+
+      // 4. Update categories if any
+      const { categories } = req.body;
+      if (Array.isArray(categories)) {
+        for (const cat of categories) {
+          if (cat.id) {
+            await tx.classCategory.update({
+              where: { id: cat.id },
+              data: {
+                ...(cat.title ? { title: cat.title } : {}),
+                ...(cat.orderIndex !== undefined ? { orderIndex: Number(cat.orderIndex) } : {})
+              }
+            });
+          }
+        }
+      }
     });
 
     res.json({ message: 'کلیه تغییرات با موفقیت ثبت نهایی شد' });
