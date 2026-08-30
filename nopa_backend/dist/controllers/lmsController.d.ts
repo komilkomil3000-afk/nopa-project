@@ -8,6 +8,7 @@ export declare const createOrUpdateStation: (req: Request, res: Response) => Pro
 export declare const createOrUpdateCategory: (req: Request, res: Response) => Promise<void>;
 export declare const createOrUpdateSession: (req: Request, res: Response) => Promise<void>;
 export declare const createOrUpdateClip: (req: Request, res: Response) => Promise<void>;
+export declare const batchSaveStationContent: (req: Request, res: Response) => Promise<void>;
 export declare const reorderClips: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const createOrUpdateQuiz: (req: Request, res: Response) => Promise<void>;
 export declare const setBatchCategoryZarik: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

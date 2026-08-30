@@ -712,7 +712,8 @@ function switchTab(tabId, updateUrl = true) {
     if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
     else loadCaravansTab();
   } else if (tabId === 'lms-tab' || tabId === 'stations-tab') {
-    if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
+    if (typeof window.fetchLiveLmsStations === 'function') window.fetchLiveLmsStations();
+    else if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
   } else if (tabId === 'rewards-tab') {
     loadLedger();
     loadZarikAnalytics();

@@ -1240,14 +1240,15 @@
           <table class="data-table" id="lms-stations-table">
             <thead>
               <tr>
-                <th style="width: 80px; text-align: center;">کد</th>
-                <th>نام منزلگاه</th>
+                <th style="width: 70px; text-align: center;">کد</th>
+                <th style="min-width: 130px;">نام منزلگاه</th>
+                <th style="min-width: 200px;">موضوعات دسته کلاس‌ها</th>
                 <th>اساتید دوره</th>
                 <th style="text-align: center;">دسته کلاس</th>
-                <th>زمان‌بندی برگزاری</th>
+                <th>زمان‌بندی</th>
                 <th style="text-align: center;">جلسات و پارت‌ها</th>
                 <th style="text-align: center;">وضعیت</th>
-                <th style="width: 140px; text-align: center;">عملیات</th>
+                <th style="width: 130px; text-align: center;">عملیات</th>
               </tr>
             </thead>
             <tbody id="lms-directory-tbody">
@@ -1446,8 +1447,51 @@
               <!-- Dynamically populated with Categories -> Sessions -> Clips (Video Links) -> Quizzes -->
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 15px;">
-              <button type="button" class="btn-action" onclick="document.getElementById('lms-content-manager-modal').style.display='none'">بستن</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 20px; flex-wrap: wrap; gap: 12px;">
+              <div style="font-size: 12px; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> پس از اعمال تغییرات در جلسات و پارت‌ها، دکمه «ثبت نهایی تغییرات» را بزنید.
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-action" onclick="window.cancelLmsContentManagerModal()" style="padding: 9px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+                  <i class="fa-solid fa-xmark" style="margin-left: 4px;"></i> انصراف و بستن
+                </button>
+                <button type="button" class="btn-primary" onclick="window.openFinalLmsSaveConfirmationModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 9px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> ثبت نهایی تغییرات
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LMS Two-Step Confirmation Modal for Final Save -->
+        <div id="lms-final-confirm-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 99999999; backdrop-filter: blur(8px);">
+          <div class="modal-content glass" style="max-width: 520px; width: 92%; padding: 26px; border-radius: 16px; background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.5); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); text-align: right;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+              <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 22px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <i class="fa-solid fa-shield-check"></i>
+              </div>
+              <div>
+                <h3 style="margin: 0; color: #fff; font-size: 16px; font-weight: bold;">تایید دومرحله‌ای ثبت نهایی تغییرات</h3>
+                <span style="font-size: 12px; color: #94a3b8;">مرحله ۲ از ۲: بررسی و تایید پایگاه‌داده</span>
+              </div>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+              <div style="color: #e2e8f0; font-size: 13px; line-height: 1.7; margin-bottom: 8px;">
+                آیا از ثبت نهایی و ذخیره‌سازی قطعی کلیه تغییرات ایجادشده در مشخصات، کلاس‌ها، پارت‌های ویدیویی و محتوای این منزلگاه اطمینان دارید؟
+              </div>
+              <div id="lms-confirm-summary-list" style="font-size: 12px; color: #cbd5e1; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 8px;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+              <button type="button" onclick="document.getElementById('lms-final-confirm-modal').style.display='none'" class="btn-action" style="padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                انصراف و بازگشت
+              </button>
+              <button type="button" id="btn-confirm-save-lms-final" onclick="window.executeFinalLmsSave()" class="btn-primary" style="background: #10b981; color: white; padding: 8px 22px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
+                <i class="fa-solid fa-check-double"></i> تایید نهایی و ذخیره در دیتابیس
+              </button>
             </div>
           </div>
         </div>

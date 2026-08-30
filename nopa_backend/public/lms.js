@@ -65,14 +65,23 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
   if (!tbody) return;
 
   if (!list || list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;">هیچ منزلگاهی با این فیلترها یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#94a3b8;">هیچ منزلگاهی با این فیلترها یافت نشد.</td></tr>';
     return;
   }
+
+  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const DEFAULT_STATION_TOPICS = {
+    1: { skill: 'شناخت هوش و حافظه', media: 'پادکست و مبانی رسانه' },
+    2: { skill: 'خودشناسی جامع', media: 'تولید پادکست حرفه‌ای' },
+    3: { skill: 'تفکر نقادانه و حل مسئله', media: 'عکاسی و تصویربرداری' },
+    4: { skill: 'کار تیمی و مدیریت چالش‌ها', media: 'تدوین ویدیو و سناریونویسی' },
+    5: { skill: 'هدف‌گذاری و مدیریت زمان', media: 'هوش مصنوعی و رسانه' }
+  };
 
   tbody.innerHTML = list.map((st, i) => {
     const idx = st.orderIndex ?? st.index ?? (i + 1);
     const stationIdentifier = st.id || ('MZ' + idx);
-    const title = st.title || st.name || ('منزلگاه ' + idx);
+    const simpleStationName = PERSIAN_NUMS[idx - 1] ? `منزلگاه ${PERSIAN_NUMS[idx - 1]}` : `منزلگاه ${idx}`;
     
     // Process categories & real session, part, and quiz counts
     const categories = st.categories || [];
@@ -84,6 +93,27 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       title: 'کلاس‌های رسانه‌ای',
       sessions: []
     };
+
+    // Helper to get clean category topic
+    const defaultTopics = DEFAULT_STATION_TOPICS[idx] || { skill: 'کلاس‌های مهارتی', media: 'کلاس‌های رسانه‌ای' };
+    
+    function getCleanTopic(cat, fallback) {
+      if (!cat) return fallback;
+      if (cat.title && !cat.title.startsWith('کلاس') && !cat.title.startsWith('دسته') && cat.title.length > 2) {
+        return cat.title;
+      }
+      const firstSess = (cat.sessions || [])[0];
+      if (firstSess && firstSess.title) {
+        let clean = firstSess.title.replace(/^جلسه\s*\d+\s*[:\-–]?\s*/i, '').replace(/^کلاس\s*\d+\s*[:\-–]?\s*/i, '').replace(/\([^)]*\)/g, '').trim();
+        if (clean && clean.length > 2 && !clean.includes('مهارتی') && !clean.includes('رسانه‌ای')) {
+          return clean;
+        }
+      }
+      return fallback;
+    }
+
+    const skillTopic = getCleanTopic(skillCategory, defaultTopics.skill);
+    const mediaTopic = getCleanTopic(mediaCategory, defaultTopics.media);
 
     const skillSessions = skillCategory.sessions || [];
     let skillPartsCount = 0;
@@ -115,6 +145,40 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     const totalRealParts = skillPartsCount + mediaPartsCount;
     const totalRealQuizzes = skillQuizzesCount + mediaQuizzesCount;
 
+    // Topics column HTML
+    let topicsDisplayHtml = '';
+    const isSkillOnly = selectedCategoryFilter === 'مهارتی' || selectedCategoryFilter === 'skill';
+    const isMediaOnly = selectedCategoryFilter === 'رسانه‌ای' || selectedCategoryFilter === 'media';
+
+    if (isSkillOnly) {
+      topicsDisplayHtml = `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
+            <i class="fa-solid fa-person-running" style="margin-left:4px;"></i> ${skillTopic}
+          </span>
+        </div>
+      `;
+    } else if (isMediaOnly) {
+      topicsDisplayHtml = `
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span class="badge" style="background:rgba(167,139,250,0.15); color:#c4b5fd; border:1px solid rgba(167,139,250,0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
+            <i class="fa-solid fa-microphone-lines" style="margin-left:4px;"></i> ${mediaTopic}
+          </span>
+        </div>
+      `;
+    } else {
+      topicsDisplayHtml = `
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="badge" style="background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-size:11.5px; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-person-running" style="font-size:10px;"></i> <strong>مهارتی:</strong> ${skillTopic}
+          </span>
+          <span class="badge" style="background:rgba(167,139,250,0.12); color:#c4b5fd; border:1px solid rgba(167,139,250,0.3); font-size:11.5px; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-microphone-lines" style="font-size:10px;"></i> <strong>رسانه‌ای:</strong> ${mediaTopic}
+          </span>
+        </div>
+      `;
+    }
+
     // Extract unique instructors teaching in this station
     const stationInstructors = new Set();
     categories.forEach(c => {
@@ -128,7 +192,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     let instructorsDisplayHtml = '';
     if (stationInstructors.size > 0) {
       instructorsDisplayHtml = `
-        <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:220px;">
+        <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:200px;">
           ${Array.from(stationInstructors).map(inst => {
             const isMatch = selectedInstructorFilter !== 'all' && (inst.toLowerCase().includes(selectedInstructorFilter) || inst.replace(/‌/g, '').includes(selectedInstructorFilter.replace(/‌/g, '')));
             const badgeStyle = isMatch
@@ -147,10 +211,6 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
         </div>
       `;
     }
-
-    // Filter display depending on selected category filter ('all', 'مهارتی', 'رسانه‌ای')
-    const isSkillOnly = selectedCategoryFilter === 'مهارتی' || selectedCategoryFilter === 'skill';
-    const isMediaOnly = selectedCategoryFilter === 'رسانه‌ای' || selectedCategoryFilter === 'media';
 
     let categoryBadgeHtml = '';
     let sessionsDisplayHtml = '';
@@ -172,11 +232,11 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     } else {
       categoryBadgeHtml = `
         <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-          <span class="badge" style="background:rgba(2,132,199,0.25); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:90%;">
-            🏃‍♂️ دسته ۱: ${skillSessCount} جلسه (${skillPartsCount} پارت)
+          <span class="badge" style="background:rgba(2,132,199,0.25); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
+            🏃‍♂️ دسته ۱ (${skillSessCount} جلسه)
           </span>
-          <span class="badge" style="background:rgba(124,58,237,0.25); color:#c4b5fd; border:1px solid rgba(167,139,250,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:90%;">
-            🎬 دسته ۲: ${mediaSessCount} جلسه (${mediaPartsCount} پارت)
+          <span class="badge" style="background:rgba(124,58,237,0.25); color:#c4b5fd; border:1px solid rgba(167,139,250,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
+            🎬 دسته ۲ (${mediaSessCount} جلسه)
           </span>
         </div>
       `;
@@ -209,9 +269,12 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       <tr>
         <td style="text-align:center; font-family:monospace; font-weight:bold; color:var(--color-neon-blue);">MZ${idx}</td>
         <td>
-          <strong style="color:white; font-size:14px;">${title}</strong>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${st.description || ''}</div>
+          <strong style="color:white; font-size:14px; display:flex; align-items:center; gap:6px;">
+            <span style="color:#fbbf24;">📍</span> ${simpleStationName}
+          </strong>
+          <div style="font-size:11px; color:#94a3b8; margin-top:3px;">کد ترتیب: منزلگاه ${idx}</div>
         </td>
+        <td>${topicsDisplayHtml}</td>
         <td>${instructorsDisplayHtml}</td>
         <td style="text-align:center;">${categoryBadgeHtml}</td>
         <td style="color:#cbd5e1; font-size:12px;">
@@ -221,12 +284,12 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
         </td>
         <td style="text-align:center;">${sessionsDisplayHtml}</td>
         <td style="text-align:center;">
-          <span class="badge badge-active">فعال</span>
+          <span class="badge badge-active" style="font-size:11px; padding:3px 8px;">فعال</span>
         </td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
             <button type="button" class="page-btn" style="background:#0284c7; color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.openStationContentManagerModal('${stationIdentifier}', '${selectedCategoryFilter}')" title="مدیریت پارت‌ها و آزمونک‌ها">
-              <i class="fa-solid fa-film"></i> پارت‌ها و آزمونک‌ها
+              <i class="fa-solid fa-film"></i> پارت‌ها
             </button>
             <button type="button" class="page-btn" style="background:#3b82f6; color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.editStationModal('${stationIdentifier}')" title="ویرایش عنوان و تقویم">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
@@ -316,6 +379,8 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
   if (!station) return;
 
+  window.currentActiveContentStationId = station.id;
+
   const modal = document.getElementById('lms-content-manager-modal');
   if (!modal) return;
 
@@ -340,6 +405,12 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
       releaseDateStr = new Date(station.releaseDate).toISOString().split('T')[0];
     } catch (e) {}
   }
+
+  window.lmsInitialModalState = {
+    title: station.title || '',
+    date: releaseDateStr,
+    desc: station.description || ''
+  };
 
   let categories = station.categories || [];
 
@@ -760,6 +831,132 @@ window.saveClipVideoUrl = async function(sessionId, clipId) {
   } catch (err) {
     console.error('Save clip error:', err);
     alert('ارتباط با سرور برقرار نشد');
+  }
+};
+
+window.cancelLmsContentManagerModal = function() {
+  const modal = document.getElementById('lms-content-manager-modal');
+  if (!modal) return;
+
+  const curTitle = document.getElementById('content-modal-st-title')?.value || '';
+  const curDate = document.getElementById('content-modal-st-date')?.value || '';
+  const curDesc = document.getElementById('content-modal-st-desc')?.value || '';
+
+  const isDirty = window.lmsInitialModalState && (
+    curTitle !== window.lmsInitialModalState.title ||
+    curDate !== window.lmsInitialModalState.date ||
+    curDesc !== window.lmsInitialModalState.desc
+  );
+
+  if (isDirty) {
+    if (!confirm('تغییراتی در مشخصات منزلگاه یا پارت‌ها داده‌اید که هنوز ثبت نهایی نشده‌اند. آیا از انصراف و بستن پنجره اطمینان دارید؟')) {
+      return;
+    }
+  }
+
+  modal.style.display = 'none';
+};
+
+window.openFinalLmsSaveConfirmationModal = function() {
+  const stationId = window.currentActiveContentStationId;
+  if (!stationId) {
+    alert('شناسه منزلگاه یافت نشد.');
+    return;
+  }
+
+  const station = window.lmsStationsMasterList.find(s => s.id === stationId);
+  const stTitle = document.getElementById('content-modal-st-title')?.value || station?.title || 'منزلگاه';
+  const stDate = document.getElementById('content-modal-st-date')?.value || '';
+  
+  // Count clips currently in modal
+  const clipOrderInputs = document.querySelectorAll('input[id^="clip-order-"]');
+  const clipCount = clipOrderInputs.length;
+
+  const summaryEl = document.getElementById('lms-confirm-summary-list');
+  if (summaryEl) {
+    summaryEl.innerHTML = `
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
+        <div><strong>📌 نام منزلگاه:</strong> <span style="color:#38bdf8; font-weight:bold;">${stTitle}</span></div>
+        <div><strong>📅 تاریخ انتشار:</strong> <span style="color:#fbbf24; font-weight:bold;">${stDate || 'تعیین‌نشده'}</span></div>
+        <div><strong>🎬 پارت‌های ویدیویی:</strong> <span style="color:#10b981; font-weight:bold;">${clipCount} پارت</span></div>
+        <div><strong>⚡ وضعیت اعمال:</strong> <span style="color:#a78bfa; font-weight:bold;">ذخیره‌سازی یکجا و آنی</span></div>
+      </div>
+    `;
+  }
+
+  const confirmModal = document.getElementById('lms-final-confirm-modal');
+  if (confirmModal) {
+    confirmModal.style.display = 'flex';
+    confirmModal.style.zIndex = '99999999';
+  }
+};
+
+window.executeFinalLmsSave = async function() {
+  const stationId = window.currentActiveContentStationId;
+  if (!stationId) return;
+
+  const confirmBtn = document.getElementById('btn-confirm-save-lms-final');
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> در حال ذخیره‌سازی نهایی...';
+  }
+
+  try {
+    const stationTitle = document.getElementById('content-modal-st-title')?.value;
+    const releaseDate = document.getElementById('content-modal-st-date')?.value;
+    const stationDescription = document.getElementById('content-modal-st-desc')?.value;
+
+    // Collect all clip modifications
+    const clipsPayload = [];
+    const clipOrderInputs = document.querySelectorAll('input[id^="clip-order-"]');
+    clipOrderInputs.forEach(input => {
+      const clipId = input.id.replace('clip-order-', '');
+      const clipOrder = parseInt(input.value) || 1;
+      const title = document.getElementById(`clip-title-${clipId}`)?.value || '';
+      const videoUrl = document.getElementById(`clip-url-${clipId}`)?.value || '';
+      clipsPayload.push({
+        id: clipId,
+        title,
+        videoUrl,
+        clipOrder
+      });
+    });
+
+    const payload = {
+      stationTitle,
+      releaseDate: releaseDate || undefined,
+      stationDescription,
+      clips: clipsPayload
+    };
+
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const res = await fetch(`/api/v1/admin/lms/stations/${stationId}/batch-content`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      document.getElementById('lms-final-confirm-modal').style.display = 'none';
+      document.getElementById('lms-content-manager-modal').style.display = 'none';
+
+      alert('✅ کلیه تغییرات منزلگاه، کلاس‌ها و پارت‌های ویدیو با موفقیت ثبت نهایی و در پایگاه‌داده ذخیره شد.');
+      await window.fetchLiveLmsStations();
+    } else {
+      const d = await res.json();
+      alert('خطا در ثبت نهایی: ' + (d.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Final LMS save error:', err);
+    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+  } finally {
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<i class="fa-solid fa-check-double"></i> تایید نهایی و ذخیره در دیتابیس';
+    }
   }
 };
 

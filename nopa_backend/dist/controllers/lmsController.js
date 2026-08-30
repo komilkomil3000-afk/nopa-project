@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
+exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.batchSaveStationContent = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const certificateController_1 = require("./certificateController");
 const getStations = async (req, res) => {
@@ -436,6 +436,65 @@ const createOrUpdateClip = async (req, res) => {
     }
 };
 exports.createOrUpdateClip = createOrUpdateClip;
+const batchSaveStationContent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { stationTitle, stationDescription, releaseDate, clips, sessions } = req.body;
+        await db_1.default.$transaction(async (tx) => {
+            // 1. Update station basic info
+            if (id) {
+                const updateData = {};
+                if (stationTitle)
+                    updateData.title = stationTitle;
+                if (stationDescription !== undefined)
+                    updateData.description = stationDescription;
+                if (releaseDate)
+                    updateData.releaseDate = new Date(releaseDate);
+                if (Object.keys(updateData).length > 0) {
+                    await tx.station.update({
+                        where: { id },
+                        data: updateData
+                    });
+                }
+            }
+            // 2. Update clips
+            if (Array.isArray(clips)) {
+                for (const clip of clips) {
+                    if (clip.id) {
+                        await tx.videoClip.update({
+                            where: { id: clip.id },
+                            data: {
+                                ...(clip.title ? { title: clip.title } : {}),
+                                ...(clip.videoUrl !== undefined ? { videoUrl: clip.videoUrl } : {}),
+                                ...(clip.clipOrder !== undefined ? { clipOrder: Number(clip.clipOrder) } : {})
+                            }
+                        });
+                    }
+                }
+            }
+            // 3. Update sessions if any
+            if (Array.isArray(sessions)) {
+                for (const sess of sessions) {
+                    if (sess.id) {
+                        await tx.classSession.update({
+                            where: { id: sess.id },
+                            data: {
+                                ...(sess.title ? { title: sess.title } : {}),
+                                ...(sess.instructor ? { instructor: sess.instructor } : {})
+                            }
+                        });
+                    }
+                }
+            }
+        });
+        res.json({ message: 'کلیه تغییرات با موفقیت ثبت نهایی شد' });
+    }
+    catch (error) {
+        console.error('batchSaveStationContent error:', error);
+        res.status(500).json({ error: error.message || 'خطا در ثبت نهایی تغییرات' });
+    }
+};
+exports.batchSaveStationContent = batchSaveStationContent;
 const reorderClips = async (req, res) => {
     try {
         const { id: sessionId } = req.params;

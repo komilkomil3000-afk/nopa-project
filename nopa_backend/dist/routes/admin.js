@@ -132,6 +132,8 @@ router.get('/lms/quizzes', lmsController_1.getQuizzes);
 router.post('/lms/stations/reorder', lmsController_1.reorderStations);
 router.put('/lms/stations/reorder', lmsController_1.reorderStations);
 router.post('/lms/stations', lmsController_1.createStation);
+router.post('/lms/stations/:id/batch-content', lmsController_1.batchSaveStationContent);
+router.put('/lms/stations/:id/batch-content', lmsController_1.batchSaveStationContent);
 router.put('/lms/stations/:id', lmsController_1.updateStation);
 router.delete('/lms/stations/:id', lmsController_1.deleteStation);
 router.post('/lms/classes', lmsController_1.createClass);

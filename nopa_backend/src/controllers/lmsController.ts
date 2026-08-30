@@ -438,6 +438,65 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
   }
 };
 
+export const batchSaveStationContent = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { stationTitle, stationDescription, releaseDate, clips, sessions } = req.body;
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Update station basic info
+      if (id) {
+        const updateData: any = {};
+        if (stationTitle) updateData.title = stationTitle;
+        if (stationDescription !== undefined) updateData.description = stationDescription;
+        if (releaseDate) updateData.releaseDate = new Date(releaseDate);
+        if (Object.keys(updateData).length > 0) {
+          await tx.station.update({
+            where: { id },
+            data: updateData
+          });
+        }
+      }
+
+      // 2. Update clips
+      if (Array.isArray(clips)) {
+        for (const clip of clips) {
+          if (clip.id) {
+            await tx.videoClip.update({
+              where: { id: clip.id },
+              data: {
+                ...(clip.title ? { title: clip.title } : {}),
+                ...(clip.videoUrl !== undefined ? { videoUrl: clip.videoUrl } : {}),
+                ...(clip.clipOrder !== undefined ? { clipOrder: Number(clip.clipOrder) } : {})
+              }
+            });
+          }
+        }
+      }
+
+      // 3. Update sessions if any
+      if (Array.isArray(sessions)) {
+        for (const sess of sessions) {
+          if (sess.id) {
+            await tx.classSession.update({
+              where: { id: sess.id },
+              data: {
+                ...(sess.title ? { title: sess.title } : {}),
+                ...(sess.instructor ? { instructor: sess.instructor } : {})
+              }
+            });
+          }
+        }
+      }
+    });
+
+    res.json({ message: 'کلیه تغییرات با موفقیت ثبت نهایی شد' });
+  } catch (error: any) {
+    console.error('batchSaveStationContent error:', error);
+    res.status(500).json({ error: error.message || 'خطا در ثبت نهایی تغییرات' });
+  }
+};
+
 export const reorderClips = async (req: Request, res: Response) => {
   try {
     const { id: sessionId } = req.params;
