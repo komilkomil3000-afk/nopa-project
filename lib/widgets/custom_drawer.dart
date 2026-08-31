@@ -161,6 +161,15 @@ class CustomDrawer extends StatelessWidget {
                   ),
                   
                   _buildMenuItem(
+                    title: 'تیکت‌ها و سوالات من',
+                    emoji: '📩',
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/tickets');
+                    },
+                  ),
+                  _buildMenuItem(
                     title: 'پشتیبانی و تماس با ما',
                     emoji: '📞',
                     isSelected: false,

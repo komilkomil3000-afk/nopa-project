@@ -44,10 +44,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     if (user != null) {
       currentUser = user;
       final apiChallenges = await _apiService.getChallenges();
-      if (apiChallenges.isNotEmpty) {
-        challenges.clear();
-        challenges.addAll(apiChallenges);
-      }
+      challenges.clear();
+      challenges.addAll(apiChallenges);
       notifyListeners();
       await _syncOfflineData();
     }
@@ -249,6 +247,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> refreshChallenges() async {
+    final apiChallenges = await _apiService.getChallenges();
+    challenges.clear();
+    challenges.addAll(apiChallenges);
+    notifyListeners();
+  }
+
   void submitAssignment(SubmissionModel submission) {
     submissions.insert(0, submission);
     addNotification(
@@ -257,6 +262,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       isForMentor: true,
     );
     notifyListeners();
+
+    // Persist to backend
+    _apiService.submitTask(submission.challengeId, submission.answerText);
   }
 
   void rateMentor(String mentorId, double rating, String comment) {

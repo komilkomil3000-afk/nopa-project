@@ -293,7 +293,25 @@ class HttpApiService {
     }
   }
 
-  // Resolve media URLs to local server
+  // Submit Quiz Challenge
+  Future<Map<String, dynamic>?> submitQuizChallenge(String challengeId, List<int> answers) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/challenges/$challengeId/submit-quiz'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'answers': answers,
+        }),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('HTTP submitQuizChallenge error: $e');
+      return null;
+    }
+  }
   String resolveMediaUrl(String url) {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
@@ -912,5 +930,86 @@ class HttpApiService {
       return false;
     }
   }
+
+  // ==================== SUPPORT TICKETS (STUDENTS) ====================
+  Future<List<Map<String, dynamic>>> getTickets() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/support/tickets'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('getTickets error: $e');
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>?> createTicket({
+    required String category,
+    required String subject,
+    String? voiceUrl,
+    String? attachmentUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/support/tickets'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'category': category,
+          'subject': subject,
+          'voiceUrl': voiceUrl,
+          'attachmentUrl': attachmentUrl,
+        }),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      debugPrint('createTicket error: $e');
+    }
+    return null;
+  }
+
+  Future<bool> replyTicket({
+    required String ticketId,
+    required String message,
+    String? voiceUrl,
+    String? attachmentUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/support/tickets/$ticketId/reply'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'message': message,
+          'voiceUrl': voiceUrl,
+          'attachmentUrl': attachmentUrl,
+        }),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('replyTicket error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resolveTicket({required String ticketId, int? rating}) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/support/tickets/$ticketId/resolve'),
+        headers: _getHeaders(),
+        body: jsonEncode({'rating': rating}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('resolveTicket error: $e');
+      return false;
+    }
+  }
 }
+
 

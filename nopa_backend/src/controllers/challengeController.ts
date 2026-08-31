@@ -4,8 +4,8 @@ import prisma from '../config/db';
 
 export async function createChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || req.user.role !== 'mentor') {
-      return res.status(403).json({ error: 'تنها راهبران می‌توانند چالش ایجاد کنند' });
+    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+      return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
     }
 
     const { title, description, type, questions, rewardZarik } = req.body;
