@@ -29,13 +29,7 @@ class _MapScreenState extends State<MapScreen> {
       final userProgress = await HttpApiService().getUserProgress();
       if (mounted) {
         setState(() {
-          final uniqueStations = <Map<String, dynamic>>[];
-          for (var s in stations) {
-            if (!uniqueStations.any((us) => us['title'] == s['title'])) {
-              uniqueStations.add(s);
-            }
-          }
-          _stations = uniqueStations;
+          _stations = List<Map<String, dynamic>>.from(stations);
           _userProgress = userProgress.cast<Map<String, dynamic>>();
           _isLoading = false;
         });
@@ -83,7 +77,8 @@ class _MapScreenState extends State<MapScreen> {
     if (totalClipsOverall > 0) {
       progress = completedClipsOverall / totalClipsOverall;
     } else if (_stations.isNotEmpty) {
-      progress = (user.levelFrame - 1) / _stations.length;
+      final userLvl = user.levelFrame < 1 ? 1 : user.levelFrame;
+      progress = (userLvl - 1) / _stations.length;
     }
     if (progress > 1.0) progress = 1.0;
     if (progress < 0.0) progress = 0.0;
@@ -108,50 +103,54 @@ class _MapScreenState extends State<MapScreen> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            // Overall Progress Card
-            _buildOverallProgressCard(progress, progressPercentText),
-            const SizedBox(height: 25),
-            
-            // Map list of stations
-            _isLoading
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD54F))),
-                  )
-                : (_stations.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: Text(
-                            'هنوز منزلگاهی ثبت نشده است',
-                            style: TextStyle(color: Colors.white60, fontFamily: 'Vazirmatn'),
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _stations.length,
-                        separatorBuilder: (context, index) => const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
+      body: RefreshIndicator(
+        onRefresh: _fetchStationsData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              // Overall Progress Card
+              _buildOverallProgressCard(progress, progressPercentText),
+              const SizedBox(height: 25),
+              
+              // Map list of stations
+              _isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD54F))),
+                    )
+                  : (_stations.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
                           child: Center(
                             child: Text(
-                              '↓',
-                              style: TextStyle(color: Colors.white30, fontSize: 22, fontWeight: FontWeight.bold),
+                              'هنوز منزلگاهی ثبت نشده است',
+                              style: TextStyle(color: Colors.white60, fontFamily: 'Vazirmatn'),
                             ),
                           ),
-                        ),
-                        itemBuilder: (context, index) {
-                          final item = _stations[index];
-                          return _buildMapStationCard(context, index, item);
-                        },
-                      )),
-            const SizedBox(height: 40),
-          ],
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _stations.length,
+                          separatorBuilder: (context, index) => const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: Text(
+                                '↓',
+                                style: TextStyle(color: Colors.white30, fontSize: 22, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = _stations[index];
+                            return _buildMapStationCard(context, index, item);
+                          },
+                        )),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -200,42 +199,35 @@ class _MapScreenState extends State<MapScreen> {
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    int userLevelFrame = user.levelFrame;
-    bool isLocked = (index + 1) > userLevelFrame;
-    bool isCurrent = (index + 1) == userLevelFrame;
-    bool isCompleted = (index + 1) < userLevelFrame;
+    final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
+    
+    // Station 1 (index == 0) is the initial station and is always unlocked!
+    bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
+    bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
+    bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
 
-    if (!isLocked && item['releaseDate'] != null) {
-      try {
-        final releaseDateTime = DateTime.parse(item['releaseDate']);
-        if (releaseDateTime.isAfter(DateTime.now())) {
-          isLocked = true;
-          isCurrent = false;
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
+    // Count categories and sessions
+    final categoriesList = (item['categories'] as List?) ?? [];
+    int totalSessions = 0;
+    int totalClips = 0;
+    int completedClips = 0;
 
-    final int totalCls = item['categories'] != null
-        ? (item['categories'] as List).fold<int>(0, (prev, el) => prev + (el['sessions'] != null ? (el['sessions'] as List).length : 0))
-        : 0;
-
-    int stationTotalClips = 0;
-    int stationCompletedClips = 0;
-    if (item['categories'] != null) {
-      for (var cat in item['categories']) {
-        if (cat['sessions'] != null) {
-          for (var sess in cat['sessions']) {
-            if (sess['videoClips'] != null) {
-              stationTotalClips += (sess['videoClips'] as List).length;
-              for (var clip in sess['videoClips']) {
+    for (var cat in categoriesList) {
+      if (cat is Map && cat['sessions'] != null) {
+        final sessList = (cat['sessions'] as List);
+        totalSessions += sessList.length;
+        for (var sess in sessList) {
+          if (sess is Map && sess['videoClips'] != null) {
+            final clipList = (sess['videoClips'] as List);
+            totalClips += clipList.length;
+            for (var clip in clipList) {
+              if (clip is Map) {
                 final progressRecord = _userProgress.firstWhere(
-                    (p) => p['clipId'] == clip['id'],
-                    orElse: () => <String, dynamic>{});
-                if (progressRecord['isWatched'] == true ||
-                    progressRecord['quizPassed'] == true) {
-                  stationCompletedClips++;
+                  (p) => p['clipId'] == clip['id'],
+                  orElse: () => <String, dynamic>{},
+                );
+                if (progressRecord['isWatched'] == true || progressRecord['quizPassed'] == true) {
+                  completedClips++;
                 }
               }
             }
@@ -243,12 +235,29 @@ class _MapScreenState extends State<MapScreen> {
         }
       }
     }
+
     double stationProgress = 0.0;
-    if (stationTotalClips > 0) {
-      stationProgress = stationCompletedClips / stationTotalClips;
+    if (totalClips > 0) {
+      stationProgress = completedClips / totalClips;
     } else {
       stationProgress = isCompleted ? 1.0 : (isCurrent ? 0.3 : 0.0);
     }
+
+    final String teacherName = item['instructors']?.toString() ??
+        item['subtitle']?.toString() ??
+        item['teacher']?.toString() ??
+        'استاد کاروان نپا';
+
+    final String stationTitle = item['title']?.toString() ?? 'منزلگاه ${index + 1}';
+    final String stationDesc = (item['description'] != null && item['description'].toString().trim().isNotEmpty)
+        ? item['description'].toString()
+        : (item['subtitle'] != null ? item['subtitle'].toString() : 'سرفصل‌ها و جلسات آموزشی کاروان');
+
+    final String iconUrl = (item['iconUrl'] != null && item['iconUrl'].toString().startsWith('http'))
+        ? item['iconUrl'].toString()
+        : ((item['imageUrl'] != null && item['imageUrl'].toString().startsWith('http'))
+            ? item['imageUrl'].toString()
+            : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200');
 
     final Color accentColor = isLocked
         ? Colors.grey
@@ -302,13 +311,13 @@ class _MapScreenState extends State<MapScreen> {
                         '/station_detail',
                         arguments: Station(
                           id: item['id'] ?? '',
-                          title: item['title'] ?? '',
-                          teacher: item['teacher'] ?? 'استاد نپا',
+                          title: stationTitle,
+                          teacher: teacherName,
                           progress: stationProgress,
                           isLocked: isLocked,
                           isCurrent: isCurrent,
-                          imageUrl: item['iconUrl'] ?? 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
-                          classesCount: '$totalCls کلاس',
+                          imageUrl: iconUrl,
+                          classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
                         ),
                       );
                     }
@@ -342,7 +351,7 @@ class _MapScreenState extends State<MapScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              item['title'] ?? '',
+                              stationTitle,
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 color: isLocked ? Colors.white30 : Colors.white,
@@ -353,7 +362,7 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              item['description'] ?? 'بدون توضیحات',
+                              stationDesc,
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -379,14 +388,14 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            item['iconUrl'] ?? 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200',
+                            iconUrl,
                             fit: BoxFit.cover,
                             color: isLocked ? Colors.black54 : null,
                             colorBlendMode: isLocked ? BlendMode.saturation : null,
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.white10,
-                                child: const Icon(Icons.broken_image, color: Colors.white30, size: 20),
+                                child: const Icon(Icons.school, color: Colors.white30, size: 20),
                               );
                             },
                           ),
@@ -412,17 +421,17 @@ class _MapScreenState extends State<MapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '👤 استاد راهنما: ${item['teacher'] ?? 'استاد نپا'}',
+                          '👤 استاد راهنما: $teacherName',
                           style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Vazirmatn'),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '📚 کلاس‌ها: $totalCls کلاس در دسته‌بندی‌های آموزشی',
+                          '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "$totalSessions جلسه آموزشی" : "${categoriesList.length} سرفصل"}',
                           style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: 'Vazirmatn'),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '📊 پیشرفت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? '۷۵٪ در حال برگزاری' : '۰٪ قفل شده')}',
+                          '📊 وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده ✅' : (isCurrent ? 'در حال یادگیری ⚡' : 'قفل شده 🔒')}',
                           style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
                         ),
                       ],

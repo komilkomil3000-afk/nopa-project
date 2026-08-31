@@ -84,6 +84,19 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
         }
       }
       
+      final String liveTitle = (stationData['title'] != null && stationData['title'].toString().isNotEmpty)
+          ? stationData['title'].toString()
+          : _station!.title;
+      final String liveTeacher = stationData['instructors']?.toString() ??
+          stationData['subtitle']?.toString() ??
+          stationData['teacher']?.toString() ??
+          _station!.teacher;
+      final String liveImage = (stationData['iconUrl'] != null && stationData['iconUrl'].toString().startsWith('http'))
+          ? stationData['iconUrl'].toString()
+          : ((stationData['imageUrl'] != null && stationData['imageUrl'].toString().startsWith('http'))
+              ? stationData['imageUrl'].toString()
+              : _station!.imageUrl);
+      
       double calculatedProgress = totalClips > 0 ? (completedClips / totalClips) : 0.0;
       
       if (mounted) {
@@ -91,12 +104,12 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
           _classCategories = map;
           _station = Station(
              id: _station!.id,
-             title: _station!.title,
-             teacher: _station!.teacher,
+             title: liveTitle,
+             teacher: liveTeacher,
              progress: calculatedProgress,
              isLocked: _station!.isLocked,
              isCurrent: _station!.isCurrent,
-             imageUrl: _station!.imageUrl,
+             imageUrl: liveImage,
           );
           _loadingCategories = false;
         });

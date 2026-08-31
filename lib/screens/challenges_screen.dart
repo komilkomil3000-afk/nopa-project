@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
-import '../utils/global_state.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';

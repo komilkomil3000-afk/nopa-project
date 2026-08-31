@@ -243,19 +243,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         itemCount: _stations.length,
                         itemBuilder: (context, index) {
                           final stationMap = _stations[index];
-                          int userLevelFrame = user.levelFrame;
-                          bool isLocked = (index + 1) > userLevelFrame;
-                          bool isCurrent = (index + 1) == userLevelFrame;
-                          bool isCompleted = (index + 1) < userLevelFrame;
+                          final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
+                          bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
+                          bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
+                          bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
+
+                          final String teacherName = stationMap['instructors']?.toString() ??
+                              stationMap['subtitle']?.toString() ??
+                              stationMap['teacher']?.toString() ??
+                              'استاد کاروان نپا';
+                          final String iconUrl = (stationMap['iconUrl'] != null && stationMap['iconUrl'].toString().startsWith('http'))
+                              ? stationMap['iconUrl'].toString()
+                              : ((stationMap['imageUrl'] != null && stationMap['imageUrl'].toString().startsWith('http'))
+                                  ? stationMap['imageUrl'].toString()
+                                  : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400');
 
                           final station = Station(
                             id: stationMap['id'] ?? index.toString(),
-                            title: stationMap['title'] ?? 'بدون عنوان',
-                            teacher: stationMap['subtitle'] ?? 'استاد نامشخص',
+                            title: stationMap['title'] ?? 'منزلگاه ${index + 1}',
+                            teacher: teacherName,
                             progress: isCompleted ? 1.0 : (isCurrent ? 0.3 : 0.0),
                             isLocked: isLocked,
                             isCurrent: isCurrent,
-                            imageUrl: stationMap['imageUrl'] ?? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400',
+                            imageUrl: iconUrl,
                           );
 
                           return Padding(

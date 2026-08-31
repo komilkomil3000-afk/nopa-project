@@ -932,22 +932,6 @@ class HttpApiService {
   }
 
   // ==================== SUPPORT TICKETS (STUDENTS) ====================
-  Future<List<Map<String, dynamic>>> getTickets() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/support/tickets'),
-        headers: _getHeaders(),
-      );
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
-      }
-    } catch (e) {
-      debugPrint('getTickets error: $e');
-    }
-    return [];
-  }
-
   Future<Map<String, dynamic>?> createTicket({
     required String category,
     required String subject,
@@ -972,29 +956,6 @@ class HttpApiService {
       debugPrint('createTicket error: $e');
     }
     return null;
-  }
-
-  Future<bool> replyTicket({
-    required String ticketId,
-    required String message,
-    String? voiceUrl,
-    String? attachmentUrl,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/support/tickets/$ticketId/reply'),
-        headers: _getHeaders(),
-        body: jsonEncode({
-          'message': message,
-          'voiceUrl': voiceUrl,
-          'attachmentUrl': attachmentUrl,
-        }),
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      debugPrint('replyTicket error: $e');
-      return false;
-    }
   }
 
   Future<bool> resolveTicket({required String ticketId, int? rating}) async {

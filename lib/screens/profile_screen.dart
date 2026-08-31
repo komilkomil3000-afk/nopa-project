@@ -2080,6 +2080,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
         _buildSettingTile(
+          'تیکت‌ها و سوالات من',
+          Icons.chat_bubble_outline_rounded,
+          () {
+            Navigator.pushNamed(context, '/tickets');
+          },
+        ),
+        _buildSettingTile(
           'پشتیبانی و تماس با ما',
           Icons.headset_mic_outlined,
           () {
