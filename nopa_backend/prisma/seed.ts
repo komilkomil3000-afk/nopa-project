@@ -63,7 +63,8 @@ async function main() {
     const specialty = row[2] ? String(row[2]).trim() : '';
     const phone = normalizePhone(row[3]);
     const email = row[4] ? String(row[4]).trim() : undefined;
-    const nationalId = row[5] ? String(row[5]).trim() : undefined;
+    const rawNatId = row[5] ? String(row[5]).trim() : '';
+    const nationalId = (rawNatId && !rawNatId.startsWith('۱۲۳۴۵۶') && !rawNatId.startsWith('123456') && rawNatId.length === 10) ? rawNatId : null;
     const birthDate = row[6] ? String(row[6]).trim() : undefined;
     const city = row[7] ? String(row[7]).trim() : undefined;
     const bio = row[8] ? String(row[8]).trim() : specialty;
@@ -80,7 +81,7 @@ async function main() {
           academicDegree: specialty,
           city,
           bio,
-          nationalId,
+          nationalId: nationalId || null,
           dateOfBirth: birthDate,
           identityVerified: true,
           zarikBalance: 0,
@@ -96,6 +97,7 @@ async function main() {
           academicDegree: specialty,
           city,
           bio,
+          nationalId: nationalId || null,
           identityVerified: true,
           zarikBalance: 0,
         },

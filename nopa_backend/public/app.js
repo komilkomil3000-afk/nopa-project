@@ -3194,7 +3194,9 @@ window.renderMentorsRows = function(mentorsList, tbody) {
 
     // Degree and National ID (only real data)
     const degreeText = m.academicDegree || m.education || 'عمومی';
-    const nationalIdText = m.nationalId || '-';
+    const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
+      ? `<span style="font-family:monospace; color:#cbd5e1;">${m.nationalId}</span>`
+      : '<span style="color:#64748b; font-size:11px;">وارد نشده است</span>';
 
     return `
       <tr style="transition:all 0.2s ease;">
@@ -3211,7 +3213,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
           ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:#fbbf24; background:rgba(245,158,11,0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
         </td>
         <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${m.phoneNumber || '-'}</td>
-        <td style="font-family:monospace; color:#94a3b8;">${nationalIdText}</td>
+        <td style="text-align:center;">${nationalIdText}</td>
         <td style="color:#cbd5e1; font-size:12.5px;">${degreeText}</td>
         <td>${caravansHtml}</td>
         <td style="text-align:center;">${levelBadge}</td>
@@ -3292,7 +3294,9 @@ window.viewMentorDossier = async function(mentorId) {
     const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
     
     document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:#38bdf8;"></i> شناسنامه راهبر: ${mentorName}`;
-    document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${dossier?.identity?.nationalId || mentor?.nationalId || 'ثبت‌نشده'} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
+    const cleanNatId = (dossier?.identity?.nationalId || mentor?.nationalId || '').trim();
+    const natIdDisplay = (cleanNatId && cleanNatId !== 'null' && !cleanNatId.startsWith('۱۲۳۴۵۶') && !cleanNatId.startsWith('123456')) ? cleanNatId : 'وارد نشده است';
+    document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${natIdDisplay} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
     document.getElementById('dossier-avatar').textContent = initials;
 
     // Build rich dossier content with pure real ratings
@@ -3362,7 +3366,7 @@ window.viewMentorDossier = async function(mentorId) {
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
           <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${mentorName}</span></div>
           <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span style="color:white; font-family:monospace;">${mentor?.phoneNumber || '-'}</span></div>
-          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId || 'ثبت نشده'}</span></div>
+          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? mentor.nationalId : 'وارد نشده است'}</span></div>
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${mentor?.dateOfBirth || 'ثبت نشده'}</span></div>
           <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${mentor?.city || 'ثبت نشده'}</span></div>
           <div><strong style="color:#94a3b8;">مدرک و رشته تحصیلی:</strong> <span style="color:white;">${mentor?.academicDegree || 'عمومی'}</span></div>
