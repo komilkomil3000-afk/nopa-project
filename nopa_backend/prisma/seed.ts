@@ -76,14 +76,14 @@ async function main() {
           phoneNumber: phone,
           role: 'mentor',
           passwordHash: defaultPasswordHash,
-          mentorLevel: 3,
+          mentorLevel: 1,
           academicDegree: specialty,
           city,
           bio,
           nationalId,
           dateOfBirth: birthDate,
           identityVerified: true,
-          zarikBalance: 100,
+          zarikBalance: 0,
         },
       });
     } else {
@@ -92,11 +92,12 @@ async function main() {
         data: {
           name,
           role: 'mentor',
-          mentorLevel: 3,
+          mentorLevel: 1,
           academicDegree: specialty,
           city,
           bio,
           identityVerified: true,
+          zarikBalance: 0,
         },
       });
     }
@@ -183,7 +184,7 @@ async function main() {
           passwordHash: defaultPasswordHash,
           caravanId: caravanDbId,
           identityVerified: true,
-          zarikBalance: role === 'admin' ? 1000 : 50,
+          zarikBalance: 0,
           levelFrame: 1,
         },
       });
@@ -195,32 +196,11 @@ async function main() {
           role,
           caravanId: caravanDbId,
           identityVerified: true,
+          zarikBalance: 0,
         },
       });
     }
     console.log(`  [User] ${userCodeStr}: ${name} (${phone}, ${role}, Caravan: ${groupCode || 'None'})`);
-  }
-
-  // Also ensure default system admin and test users exist
-  const systemUsers = [
-    { name: 'مدیر ارشد', phoneNumber: '09120000001', role: 'admin', zarikBalance: 500 },
-    { name: 'حسینعلی', phoneNumber: '09036658547', role: 'student', zarikBalance: 50 },
-    { name: 'طیب', phoneNumber: '09121111112', role: 'student', zarikBalance: 50 },
-  ];
-  for (const su of systemUsers) {
-    const existing = await prisma.user.findFirst({ where: { phoneNumber: su.phoneNumber } });
-    if (!existing) {
-      await prisma.user.create({
-        data: {
-          name: su.name,
-          phoneNumber: su.phoneNumber,
-          role: su.role,
-          passwordHash: defaultPasswordHash,
-          identityVerified: true,
-          zarikBalance: su.zarikBalance,
-        },
-      });
-    }
   }
 
   // =========================================================================
@@ -248,7 +228,7 @@ async function main() {
       await prisma.user.update({
         where: { id: u.id },
         data: {
-          zarikBalance: zarik > 0 ? zarik : u.zarikBalance,
+          zarikBalance: zarik,
           nakh,
           beyragh,
           farsh,
