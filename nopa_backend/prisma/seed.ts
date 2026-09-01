@@ -362,16 +362,20 @@ async function main() {
     const [stId, stNumStr, stTitle] = stKey.split(':::');
     const stNum = parseInt(stNumStr);
 
+    const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+    const standardTitle = `منزلگاه ${PERSIAN_NUMS[stNum - 1] || stNum}`;
+
     const station = await prisma.station.create({
       data: {
-        title: stTitle,
-        orderIndex: stNum,
+        title: standardTitle,
+        subtitle: stTitle,
         description: `محتوای آموزشی جامع ${stTitle}`,
+        orderIndex: stNum,
         releaseDate: new Date(),
       },
     });
     stationMap.set(stId, station);
-    console.log(`  Created Station [${stId}]: "${station.title}" (ID: ${station.id})`);
+    console.log(`  Created Station [${stId}]: "${station.title}" - "${station.subtitle}" (ID: ${station.id})`);
   }
 
   // Categories & Sessions & Clips & Quizzes
@@ -467,56 +471,8 @@ async function main() {
   }
 
   // =========================================================================
-  // 7. SEED CHALLENGES (Sheet 05)
   // =========================================================================
-  console.log('\n--- 6. Importing Challenges from Sheet 05 ---');
-  const sheet05Name = wb.SheetNames.find((s) => s.trim() === '05');
-  if (sheet05Name) {
-    const s05 = XLSX.utils.sheet_to_json<any>(wb.Sheets[sheet05Name], { header: 1 });
-    const firstMentor = await prisma.user.findFirst({ where: { role: 'mentor' } });
-
-    for (let i = 1; i < s05.length; i++) {
-      const row = s05[i];
-      if (!row || !row[0] || !row[4]) continue;
-      const mentorSheetCode = row[1] ? String(row[1]).trim() : '';
-      const mentorDbId = mentorIdMap[mentorSheetCode] || firstMentor?.id;
-      if (!mentorDbId) continue;
-
-      const title = String(row[4]).trim();
-      const typeStr = row[5] ? String(row[5]).trim() : '';
-      const desc = row[6] ? String(row[6]).trim() : '';
-      const optA = row[7] ? String(row[7]).trim() : '';
-      const optB = row[8] ? String(row[8]).trim() : '';
-      const optC = row[9] ? String(row[9]).trim() : '';
-      const optD = row[10] ? String(row[10]).trim() : '';
-      const correct = mapOptionLetterToIndex(row[11]);
-
-      const qJson = JSON.stringify([
-        {
-          text: desc,
-          question: desc,
-          opts: [optA, optB, optC, optD],
-          options: [optA, optB, optC, optD],
-          correct,
-          correctIndex: correct,
-        },
-      ]);
-
-      const existingChallenge = await prisma.challenge.findFirst({ where: { title } });
-      if (!existingChallenge) {
-        await prisma.challenge.create({
-          data: {
-            title,
-            description: desc,
-            type: typeStr === 'چهارگزینه‌ای' ? 'quiz' : 'skill',
-            createdByMentorId: mentorDbId,
-            questions: qJson,
-          },
-        });
-      }
-    }
-  }
-
+  // 7. PRINT EXACT VERIFIED COUNTS
   // =========================================================================
   // 8. PRINT EXACT VERIFIED COUNTS
   // =========================================================================

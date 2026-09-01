@@ -261,6 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final station = Station(
                             id: stationMap['id'] ?? index.toString(),
                             title: stationMap['title'] ?? 'منزلگاه ${index + 1}',
+                            subtitle: stationMap['subtitle']?.toString(),
                             teacher: teacherName,
                             progress: isCompleted ? 1.0 : (isCurrent ? 0.3 : 0.0),
                             isLocked: isLocked,

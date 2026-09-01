@@ -27,6 +27,20 @@ async function createMentorChallenge(req, res) {
                 createdByMentorId: req.user.id
             }
         });
+        // Notify target caravan students
+        const targetStudents = caravanId
+            ? await db_1.default.user.findMany({ where: { caravanId, role: 'student' } })
+            : await db_1.default.user.findMany({ where: { role: 'student' } });
+        if (targetStudents.length > 0) {
+            await db_1.default.notification.createMany({
+                data: targetStudents.map(s => ({
+                    userId: s.id,
+                    title: 'چالش جدید ابلاغ شد 🏆',
+                    message: `چالش جدید "${title}" توسط راهبر برای شما ابلاغ گردید.`,
+                    type: 'challenge'
+                }))
+            });
+        }
         res.status(201).json(challenge);
     }
     catch (error) {

@@ -20,6 +20,23 @@ export async function createMentorChallenge(req: AuthRequest, res: Response) {
         createdByMentorId: req.user!.id
       }
     });
+
+    // Notify target caravan students
+    const targetStudents = caravanId 
+      ? await prisma.user.findMany({ where: { caravanId, role: 'student' } })
+      : await prisma.user.findMany({ where: { role: 'student' } });
+
+    if (targetStudents.length > 0) {
+      await prisma.notification.createMany({
+        data: targetStudents.map(s => ({
+          userId: s.id,
+          title: 'چالش جدید ابلاغ شد 🏆',
+          message: `چالش جدید "${title}" توسط راهبر برای شما ابلاغ گردید.`,
+          type: 'challenge'
+        }))
+      });
+    }
+
     res.status(201).json(challenge);
   } catch (error: any) {
     res.status(500).json({ error: error.message });

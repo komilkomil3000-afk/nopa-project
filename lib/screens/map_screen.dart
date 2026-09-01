@@ -249,9 +249,11 @@ class _MapScreenState extends State<MapScreen> {
         'استاد کاروان نپا';
 
     final String stationTitle = item['title']?.toString() ?? 'منزلگاه ${index + 1}';
-    final String stationDesc = (item['description'] != null && item['description'].toString().trim().isNotEmpty)
-        ? item['description'].toString()
-        : (item['subtitle'] != null ? item['subtitle'].toString() : 'سرفصل‌ها و جلسات آموزشی کاروان');
+    final String stationDesc = (item['subtitle'] != null && item['subtitle'].toString().trim().isNotEmpty)
+        ? item['subtitle'].toString()
+        : ((item['description'] != null && item['description'].toString().trim().isNotEmpty)
+            ? item['description'].toString()
+            : 'سرفصل‌ها و جلسات آموزشی کاروان');
 
     final String iconUrl = (item['iconUrl'] != null && item['iconUrl'].toString().startsWith('http'))
         ? item['iconUrl'].toString()

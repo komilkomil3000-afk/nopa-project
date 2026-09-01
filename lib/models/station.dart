@@ -3,6 +3,7 @@ import 'class_model.dart';
 class Station {
   final String id;
   final String title;
+  final String? subtitle;
   final String teacher;
   final double progress;
   final bool isLocked;
@@ -14,6 +15,7 @@ class Station {
   Station({
     required this.id,
     required this.title,
+    this.subtitle,
     required this.teacher,
     required this.progress,
     required this.isLocked,
@@ -28,6 +30,7 @@ class Station {
     return Station(
       id: json['id'] ?? '',
       title: json['title'] ?? 'منزلگاه بدون نام',
+      subtitle: json['subtitle']?.toString(),
       teacher: json['teacher'] ?? json['instructors'] ?? 'اساتید منزلگاه',
       progress: (json['progress'] ?? 0).toDouble(),
       isLocked: json['isLocked'] ?? false,
