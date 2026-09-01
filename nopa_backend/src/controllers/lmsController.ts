@@ -637,6 +637,31 @@ export const setBatchCategoryZarik = async (req: Request, res: Response) => {
   }
 };
 
+export const setBatchCategoryInstructor = async (req: Request, res: Response) => {
+  try {
+    const { id: categoryId } = req.params;
+    const { instructor } = req.body;
+    if (!instructor || typeof instructor !== 'string' || !instructor.trim()) {
+      return res.status(400).json({ error: 'نام استاد / مدرس الزامی است' });
+    }
+
+    const cleanInstructor = instructor.trim();
+    const updated = await prisma.classSession.updateMany({
+      where: { categoryId },
+      data: { instructor: cleanInstructor }
+    });
+
+    res.json({
+      message: `نام استاد با موفقیت به «${cleanInstructor}» برای تمام ${updated.count} جلسه این دسته تغییر یافت`,
+      updatedCount: updated.count,
+      instructor: cleanInstructor
+    });
+  } catch (error: any) {
+    console.error('setBatchCategoryInstructor error:', error);
+    res.status(500).json({ error: error.message || 'خطا در اعمال نام استاد' });
+  }
+};
+
 export const seedStations = async (req: Request, res: Response) => {
   try {
     const existing = await prisma.station.count();

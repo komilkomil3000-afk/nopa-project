@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.batchSaveStationContent = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
+exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryInstructor = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.batchSaveStationContent = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const certificateController_1 = require("./certificateController");
 const getStations = async (req, res) => {
@@ -629,6 +629,30 @@ const setBatchCategoryZarik = async (req, res) => {
     }
 };
 exports.setBatchCategoryZarik = setBatchCategoryZarik;
+const setBatchCategoryInstructor = async (req, res) => {
+    try {
+        const { id: categoryId } = req.params;
+        const { instructor } = req.body;
+        if (!instructor || typeof instructor !== 'string' || !instructor.trim()) {
+            return res.status(400).json({ error: 'نام استاد / مدرس الزامی است' });
+        }
+        const cleanInstructor = instructor.trim();
+        const updated = await db_1.default.classSession.updateMany({
+            where: { categoryId },
+            data: { instructor: cleanInstructor }
+        });
+        res.json({
+            message: `نام استاد با موفقیت به «${cleanInstructor}» برای تمام ${updated.count} جلسه این دسته تغییر یافت`,
+            updatedCount: updated.count,
+            instructor: cleanInstructor
+        });
+    }
+    catch (error) {
+        console.error('setBatchCategoryInstructor error:', error);
+        res.status(500).json({ error: error.message || 'خطا در اعمال نام استاد' });
+    }
+};
+exports.setBatchCategoryInstructor = setBatchCategoryInstructor;
 const seedStations = async (req, res) => {
     try {
         const existing = await db_1.default.station.count();

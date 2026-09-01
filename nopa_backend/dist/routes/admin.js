@@ -150,6 +150,7 @@ router.put('/lms/clips/:id', lmsController_1.createOrUpdateClip);
 router.delete('/lms/clips/:id', lmsController_1.deleteClip);
 router.post('/lms/sessions/:id/clips/reorder', lmsController_1.reorderClips);
 router.post('/lms/categories/:id/batch-zarik', lmsController_1.setBatchCategoryZarik);
+router.post('/lms/categories/:id/batch-instructor', lmsController_1.setBatchCategoryInstructor);
 router.post('/lms/quizzes', lmsController_1.createOrUpdateQuiz);
 router.put('/lms/quizzes/:id', lmsController_1.createOrUpdateQuiz);
 router.delete('/lms/quizzes/:id', lmsController_1.deleteQuiz);

@@ -33,7 +33,7 @@ import {
   getLevelsAndCertificates,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz, setBatchCategoryZarik, batchSaveStationContent } from '../controllers/lmsController';
+import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
@@ -209,6 +209,7 @@ router.delete('/lms/clips/:id', deleteClip as any);
 router.post('/lms/sessions/:id/clips/reorder', reorderClips as any);
 
 router.post('/lms/categories/:id/batch-zarik', setBatchCategoryZarik as any);
+router.post('/lms/categories/:id/batch-instructor', setBatchCategoryInstructor as any);
 router.post('/lms/quizzes', createOrUpdateQuiz as any);
 router.put('/lms/quizzes/:id', createOrUpdateQuiz as any);
 router.delete('/lms/quizzes/:id', deleteQuiz as any);

@@ -192,22 +192,32 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     let instructorsDisplayHtml = '';
     if (stationInstructors.size > 0) {
       instructorsDisplayHtml = `
-        <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:200px;">
-          ${Array.from(stationInstructors).map(inst => {
-            const isMatch = selectedInstructorFilter !== 'all' && (inst.toLowerCase().includes(selectedInstructorFilter) || inst.replace(/‌/g, '').includes(selectedInstructorFilter.replace(/‌/g, '')));
-            const badgeStyle = isMatch
-              ? 'background:rgba(56,189,248,0.3); color:#38bdf8; border:1px solid #38bdf8;'
-              : 'background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.08);';
-            return `<span class="badge" style="${badgeStyle} font-size:11px; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
-              <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:#38bdf8;"></i> ${inst}
-            </span>`;
-          }).join('')}
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:220px;">
+            ${Array.from(stationInstructors).map(inst => {
+              const isMatch = selectedInstructorFilter !== 'all' && (inst.toLowerCase().includes(selectedInstructorFilter) || inst.replace(/‌/g, '').includes(selectedInstructorFilter.replace(/‌/g, '')));
+              const badgeStyle = isMatch
+                ? 'background:rgba(56,189,248,0.3); color:#38bdf8; border:1px solid #38bdf8;'
+                : 'background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.08);';
+              return `<span class="badge" style="${badgeStyle} font-size:11px; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
+                <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:#38bdf8;"></i> ${inst}
+              </span>`;
+            }).join('')}
+          </div>
+          <button type="button" onclick="window.openStationContentManagerModal('${st.id}')" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.25)'" onmouseout="this.style.background='rgba(56,189,248,0.12)'" title="ویرایش و اصلاح اساتید این منزلگاه">
+            <i class="fa-solid fa-user-pen"></i> ویرایش و اصلاح اساتید
+          </button>
         </div>
       `;
     } else {
       instructorsDisplayHtml = `
-        <div style="font-size:11px; color:#94a3b8;">
-          <i class="fa-solid fa-chalkboard-user"></i> اساتید دوره نپا
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="font-size:11px; color:#94a3b8;">
+            <i class="fa-solid fa-chalkboard-user"></i> اساتید دوره نپا
+          </div>
+          <button type="button" onclick="window.openStationContentManagerModal('${st.id}')" style="background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px;">
+            <i class="fa-solid fa-user-pen"></i> تعیین اساتید
+          </button>
         </div>
       `;
     }
@@ -505,6 +515,24 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
           </div>
         </div>
 
+        <!-- Quick Batch Instructor Allocation Tool for this entire Category -->
+        <div style="background:rgba(56, 189, 248, 0.08); border:1px dashed rgba(56, 189, 248, 0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chalkboard-user" style="color:#38bdf8; font-size:18px;"></i>
+            <div>
+              <div style="font-weight:bold; color:#38bdf8; font-size:12px;">تغییر و تخصیص یکجای استاد/مدرس برای تمام جلسات این دسته:</div>
+              <div style="font-size:11px; color:#94a3b8;">با یک کلیک، نام مدرس برای تمامی ${sessions.length} جلسه این دسته‌بندی به‌صورت یکپارچه به‌روزرسانی می‌شود.</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:11px; color:#cbd5e1;">نام استاد جدید:</label>
+            <input type="text" id="batch-instructor-cat-${cat.id}" class="input-ctrl" placeholder="نام استاد..." value="${(sessions[0] && sessions[0].instructor) || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" style="width:160px; padding:5px 10px; background:#0f172a; border-color:#38bdf8; color:white; font-size:12px; font-weight:bold;">
+            <button type="button" onclick="window.applyBatchInstructorToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+              <i class="fa-solid fa-user-pen"></i> اعمال روی کل جلسات
+            </button>
+          </div>
+        </div>
+
         <!-- Quick Batch Zarik Allocation Tool for this entire Category -->
         <div style="background:rgba(245, 158, 11, 0.09); border:1px dashed rgba(245, 158, 11, 0.4); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
           <div style="display:flex; align-items:center; gap:8px;">
@@ -533,8 +561,44 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
         html += `
           <div style="background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin-bottom:14px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:8px;">
+            
+            <!-- Session Title & Instructor Inline Editor -->
+            <div style="display:grid; grid-template-columns: 1.4fr 1.1fr auto auto; gap:10px; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; background:rgba(0,0,0,0.25); padding:10px; border-radius:8px;">
               <div>
+                <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:3px; font-weight:bold;">
+                  <i class="fa-solid fa-book-open" style="color:${color};"></i> عنوان جلسه:
+                </label>
+                <input type="text" id="sess-title-${sess.id}" class="input-ctrl" value="${sess.title || `جلسه ${sIdx + 1}`}" placeholder="عنوان جلسه..." style="font-size:12px; font-weight:bold; color:white; background:#0f172a; padding:6px 10px; border-color:${color}55;">
+              </div>
+
+              <div>
+                <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:3px; font-weight:bold;">
+                  <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس این جلسه:
+                </label>
+                <input type="text" id="sess-instructor-${sess.id}" class="input-ctrl" value="${sess.instructor || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" placeholder="نام استاد یا مدرس..." style="font-size:12px; color:#38bdf8; background:#0f172a; padding:6px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
+              </div>
+
+              <div style="display:flex; align-items:flex-end; gap:6px; padding-top:16px;">
+                <button type="button" style="background:#10b981; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgba(0,0,0,0.3);" onclick="window.saveSessionDetails('${sess.id}', '${station.id}')" title="ذخیره مستقیم عنوان و نام استاد این جلسه">
+                  <i class="fa-solid fa-save"></i> ذخیره جلسه و استاد
+                </button>
+              </div>
+
+              <div style="display:flex; align-items:flex-end; gap:6px; padding-top:16px;">
+                <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px; white-space:nowrap;">
+                  ${clips.length} پارت | ${quizzes.length} آزمونک
+                </span>
+                <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px;" onclick="window.addNewClipToSession('${sess.id}')">
+                  <i class="fa-solid fa-plus"></i> پارت جدید
+                </button>
+              </div>
+            </div>
+
+            <!-- Video Clips List & Link Editor with Order Adjustment -->
+            <div style="margin-bottom:10px;">
+              <div style="font-size:12px; color:#38bdf8; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-film"></i> پارت‌های ویدیویی (امکان جابجایی ترتیب با دکمه‌های بالا/پایین، ویرایش لینک و آزمونک):
+              </div>         <div>
                 <strong style="color:white; font-size:13px; display:flex; align-items:center; gap:6px;">
                   <i class="fa-solid fa-book-open" style="color:${color};"></i> ${sess.title}
                 </strong>
@@ -984,11 +1048,26 @@ window.executeFinalLmsSave = async function() {
       });
     });
 
+    // Collect all session modifications (title & instructor)
+    const sessionsPayload = [];
+    const sessTitleInputs = document.querySelectorAll('input[id^="sess-title-"]');
+    sessTitleInputs.forEach(input => {
+      const sessId = input.id.replace('sess-title-', '');
+      const title = input.value || '';
+      const instructor = document.getElementById(`sess-instructor-${sessId}`)?.value || '';
+      sessionsPayload.push({
+        id: sessId,
+        title,
+        instructor
+      });
+    });
+
     const payload = {
       stationTitle,
       releaseDate: releaseDate || undefined,
       stationDescription,
       categories: categoriesPayload,
+      sessions: sessionsPayload,
       clips: clipsPayload
     };
 
@@ -1268,6 +1347,83 @@ window.applyBatchZarikToCategory = async function(categoryId, stationId) {
     }
   } catch (err) {
     console.error('Batch zarik error:', err);
+    alert('ارتباط با سرور برقرار نشد');
+  }
+};
+
+window.saveSessionDetails = async function(sessionId, stationId) {
+  const title = document.getElementById(`sess-title-${sessionId}`)?.value || '';
+  const instructor = document.getElementById(`sess-instructor-${sessionId}`)?.value || '';
+
+  if (!title) {
+    alert('لطفاً عنوان جلسه را وارد نمایید');
+    return;
+  }
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ id: sessionId, title, instructor })
+    });
+
+    if (res.ok) {
+      alert(`✅ مشخصات جلسه و نام مدرس (${instructor || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد.`);
+      await window.fetchLiveLmsStations();
+      if (stationId) {
+        window.openStationContentManagerModal(stationId);
+      }
+    } else {
+      const data = await res.json();
+      alert('خطا در ذخیره مشخصات جلسه: ' + (data.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Save session error:', err);
+    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+  }
+};
+
+window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
+  const inputEl = document.getElementById(`batch-instructor-cat-${categoryId}`);
+  const instructor = inputEl ? inputEl.value.trim() : '';
+
+  if (!instructor) {
+    alert('لطفاً نام استاد یا مدرس جدید را وارد نمایید.');
+    return;
+  }
+
+  if (!confirm(`آیا از تغییر نام استاد تمام جلسات این دسته‌بندی به «${instructor}» اطمینان دارید؟`)) {
+    return;
+  }
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-instructor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ instructor })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      alert(`✅ ${data.message || 'نام مدرس برای تمامی جلسات با موفقیت به‌روزرسانی شد.'}`);
+      await window.fetchLiveLmsStations();
+      if (stationId) {
+        window.openStationContentManagerModal(stationId);
+      }
+    } else {
+      const data = await res.json();
+      alert('خطا در تخصیص یکجای استاد: ' + (data.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Batch instructor error:', err);
     alert('ارتباط با سرور برقرار نشد');
   }
 };

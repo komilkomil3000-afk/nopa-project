@@ -12,6 +12,7 @@ export declare const batchSaveStationContent: (req: Request, res: Response) => P
 export declare const reorderClips: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const createOrUpdateQuiz: (req: Request, res: Response) => Promise<void>;
 export declare const setBatchCategoryZarik: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const setBatchCategoryInstructor: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const seedStations: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const getBookmarks: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const addBookmark: (req: any, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;

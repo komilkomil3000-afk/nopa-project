@@ -9,8 +9,8 @@ exports.submitQuiz = submitQuiz;
 const db_1 = __importDefault(require("../config/db"));
 async function createChallenge(req, res) {
     try {
-        if (!req.user || req.user.role !== 'mentor') {
-            return res.status(403).json({ error: 'تنها راهبران می‌توانند چالش ایجاد کنند' });
+        if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+            return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
         }
         const { title, description, type, questions, rewardZarik } = req.body;
         if (!title || !description || !type) {
