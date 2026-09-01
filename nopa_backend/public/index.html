@@ -79,7 +79,19 @@
           </ul>
         </li>
 
-        <!-- Module E -->
+        <!-- Module E: اطلاع‌رسانی و جارچی -->
+        <li class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <i class="fa-solid fa-bullhorn" style="color: #38bdf8;"></i>
+            <span class="menu-text">جارچی و اطلاع‌رسانی</span>
+            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
+          </div>
+          <ul class="accordion-content">
+            <li class="menu-item" data-tab="news-tab"><i class="fa-solid fa-newspaper"></i><span class="menu-text">تابلوی اعلانات جارچی</span></li>
+          </ul>
+        </li>
+
+        <!-- Module F -->
         <li class="accordion-item">
           <div class="accordion-header" onclick="toggleAccordion(this)">
             <i class="fa-solid fa-shield-halved"></i>
@@ -1437,7 +1449,7 @@
           </div>
         </div>
 
-        <!-- 3 Key Stat Cards -->
+        <!-- 4 Key Stat Cards -->
         <div class="stats-grid" style="margin-bottom: 20px;">
           <div class="stat-card glass">
             <div>
@@ -1449,14 +1461,21 @@
           <div class="stat-card glass">
             <div>
               <div class="stat-label">مجموع جلسات مصوب</div>
-              <div class="stat-value" id="lms-stat-sessions" style="color: #34d399;">۴۰ جلسه</div>
+              <div class="stat-value" id="lms-stat-sessions" style="color: #34d399;">۵۰ جلسه</div>
             </div>
             <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i class="fa-solid fa-graduation-cap"></i></div>
           </div>
           <div class="stat-card glass">
             <div>
-              <div class="stat-label">بانک آزمون‌ها و پارت‌ها</div>
-              <div class="stat-value" id="lms-stat-quizzes" style="color: #fbbf24;">۳۲۰ پارت ویدیو</div>
+              <div class="stat-label">پارت‌های ویدیویی</div>
+              <div class="stat-value" id="lms-stat-parts" style="color: #38bdf8;">۲۰۰ پارت ویدیو</div>
+            </div>
+            <div class="stat-icon" style="color: #38bdf8; background: rgba(56, 189, 248, 0.1);"><i class="fa-solid fa-video"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">بانک آزمونک‌ها و سوالات</div>
+              <div class="stat-value" id="lms-stat-quizzes" style="color: #fbbf24;">۴۰۰ آزمونک</div>
             </div>
             <div class="stat-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);"><i class="fa-solid fa-file-signature"></i></div>
           </div>
@@ -1909,6 +1928,96 @@
         </div>
       </section>
 
+      <!-- JARCHI NEWS & ANNOUNCEMENTS TAB -->
+      <section id="news-tab" class="tab-panel" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h3 style="margin: 0; color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-bullhorn" style="color: #38bdf8;"></i> تابلوی اعلانات جارچی و مدیریت اخبار
+            </h3>
+            <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 12px;">مدیریت، ویرایش و انتشار اخبار، اطلاعیه‌ها و رویدادهای زنده در صفحه اصلی اپلیکیشن</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="window.loadNewsTab()" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-sync"></i> بروزرسانی
+            </button>
+            <button type="button" onclick="window.openCreateNewsModal()" class="btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);">
+              <i class="fa-solid fa-plus"></i> + افزودن خبر / اعلان جدید
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Stat Cards for News -->
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">کل اخبار و اعلانات</div>
+              <div class="stat-value" id="news-stat-total" style="color: #38bdf8;">-</div>
+            </div>
+            <div class="stat-icon" style="color: #38bdf8; background: rgba(56, 189, 248, 0.1);"><i class="fa-solid fa-newspaper"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">اخبار منتشرشده در اپ</div>
+              <div class="stat-value" id="news-stat-published" style="color: #34d399;">-</div>
+            </div>
+            <div class="stat-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i class="fa-solid fa-check-circle"></i></div>
+          </div>
+          <div class="stat-card glass">
+            <div>
+              <div class="stat-label">پیش‌نویس‌ها و معلق</div>
+              <div class="stat-value" id="news-stat-drafts" style="color: #fbbf24;">-</div>
+            </div>
+            <div class="stat-icon" style="color: #f59e0b; background: rgba(245, 158, 11, 0.1);"><i class="fa-solid fa-file-pen"></i></div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="actions-header glass" style="margin-bottom: 20px;">
+          <div class="filters-group" style="flex: 1;">
+            <div class="search-box" style="flex: 1; min-width: 250px;">
+              <i class="fa-solid fa-search"></i>
+              <input type="text" id="news-search-input" class="input-ctrl" placeholder="جستجو بر اساس عنوان خبر، متن یا گزارشگر..." oninput="window.filterNewsTable()">
+            </div>
+            <select id="news-filter-category" class="select-ctrl" onchange="window.filterNewsTable()">
+              <option value="all">همه دسته‌بندی‌ها</option>
+              <option value="اطلاعیه مهم">اطلاعیه مهم</option>
+              <option value="رویداد و مسابقه">رویداد و مسابقه</option>
+              <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
+              <option value="آموزشی">آموزشی</option>
+            </select>
+            <select id="news-filter-audience" class="select-ctrl" onchange="window.filterNewsTable()">
+              <option value="all">همه مخاطبان</option>
+              <option value="ALL">عمومی (همه)</option>
+              <option value="STUDENTS">فقط دانش‌آموزان</option>
+              <option value="MENTORS">فقط راهبران</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- News Data Table -->
+        <div class="table-container glass">
+          <table class="data-table" id="news-table">
+            <thead>
+              <tr>
+                <th style="width: 75px; text-align: center;">تصویر</th>
+                <th style="min-width: 200px;">عنوان و خلاصه خبر</th>
+                <th style="width: 140px; text-align: center;">دسته‌بندی</th>
+                <th style="width: 130px;">منبع / گزارشگر</th>
+                <th style="width: 130px;">تاریخ انتشار</th>
+                <th style="width: 120px; text-align: center;">مخاطب</th>
+                <th style="width: 100px; text-align: center;">وضعیت</th>
+                <th style="width: 110px; text-align: center;">عملیات</th>
+              </tr>
+            </thead>
+            <tbody id="news-tbody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- AUDIT LOGS TAB -->
       <section id="audit-tab" class="tab-panel" style="display: none;">
         <div class="panel-card glass" style="margin-bottom: 20px;">
           <div class="panel-title">امنیت و گزارشات سیستم (Audit Logs)</div>
@@ -2754,6 +2863,97 @@
     </div>
   </div>
 
+  <script src="app.js"></script>
+  <script src="lms.js"></script>
+
+  <!-- Jarchi News Modal -->
+  <div id="news-modal" class="modal-overlay hidden" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-content glass" style="max-width: 650px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px; border-radius: 16px; background: #0f172a; border: 1px solid rgba(56,189,248,0.3); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); color: white;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+        <h3 id="news-modal-title" style="color: #38bdf8; font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-newspaper"></i> افزودن خبر جدید جارچی
+        </h3>
+        <button type="button" class="modal-close" onclick="window.closeNewsModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+      </div>
+      
+      <form id="news-form" onsubmit="window.saveNewsArticle(event)" style="display: flex; flex-direction: column; gap: 14px;">
+        <input type="hidden" id="news-id" />
+        
+        <div>
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-heading" style="color: #38bdf8;"></i> عنوان خبر یا اطلاعیه *</label>
+          <input type="text" id="news-title" class="input-ctrl" required placeholder="مثال: اعلام برندگان چالش اول نپا..." style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;">
+        </div>
+        
+        <div>
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-align-right" style="color: #38bdf8;"></i> سوتیتر یا خلاصه خبر</label>
+          <input type="text" id="news-subtitle" class="input-ctrl" placeholder="خلاصه کوتاه جهت نمایش در پیش‌نمایش کارت خبر..." style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;">
+        </div>
+
+        <div>
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-file-lines" style="color: #38bdf8;"></i> متن کامل خبر / اطلاعیه *</label>
+          <textarea id="news-body" class="input-ctrl" rows="5" required placeholder="متن کامل خبر، جزئیات رویداد یا نحوه شرکت در مسابقه..." style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;"></textarea>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-tag" style="color: #38bdf8;"></i> دسته‌بندی *</label>
+            <select id="news-category" class="input-ctrl" required style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;">
+              <option value="اطلاعیه مهم">اطلاعیه مهم</option>
+              <option value="رویداد و مسابقه">رویداد و مسابقه</option>
+              <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
+              <option value="آموزشی">آموزشی</option>
+            </select>
+          </div>
+          <div>
+            <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-user-pen" style="color: #38bdf8;"></i> منبع / گزارشگر *</label>
+            <input type="text" id="news-reporter" class="input-ctrl" required placeholder="مثال: ستاد آموزش نپا" value="ستاد آموزش نپا" style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-users" style="color: #38bdf8;"></i> مخاطبان هدف *</label>
+            <select id="news-target" class="input-ctrl" required style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;">
+              <option value="ALL">عمومی (همه مخاطبان)</option>
+              <option value="STUDENTS">فقط دانش‌آموزان</option>
+              <option value="MENTORS">فقط راهبران و مربیان</option>
+            </select>
+          </div>
+          <div>
+            <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-calendar-days" style="color: #38bdf8;"></i> تاریخ و زمان انتشار</label>
+            <input type="datetime-local" id="news-publish-date" class="input-ctrl" style="width: 100%; margin-top: 5px; padding: 10px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; text-align: left;" dir="ltr">
+          </div>
+        </div>
+
+        <div style="background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); display: flex; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="news-active" checked style="width:18px; height:18px; accent-color:#10b981; cursor:pointer;">
+            <label for="news-active" style="color: white; font-size: 13px; font-weight: bold; cursor: pointer;">منتشر شود و در اپلیکیشن نمایش یابد</label>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="news-push" style="width:18px; height:18px; accent-color:#38bdf8; cursor:pointer;">
+            <label for="news-push" style="color: #38bdf8; font-size: 13px; font-weight: bold; cursor: pointer;">ارسال نوتیفیکیشن فوری به مخاطبان هدف</label>
+          </div>
+        </div>
+
+        <div>
+          <label style="color: #cbd5e1; font-size: 12px; font-weight: bold;"><i class="fa-solid fa-image" style="color: #38bdf8;"></i> تصویر خبر (اختیاری)</label>
+          <div style="display: flex; gap: 12px; align-items: center; margin-top: 5px;">
+            <input type="file" id="news-file" accept="image/*" class="input-ctrl" style="flex: 1; padding: 8px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white;" onchange="window.previewNewsImage(event)">
+            <img id="news-image-preview" src="" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; display: none; border: 1px solid #38bdf8;" />
+          </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 6px;">
+          <button type="button" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;" onclick="window.closeNewsModal()">انصراف</button>
+          <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+            <i class="fa-solid fa-check"></i> ثبت و انتشار خبر
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
   <script src="app.js"></script>
   <script src="lms.js"></script>
 </body>

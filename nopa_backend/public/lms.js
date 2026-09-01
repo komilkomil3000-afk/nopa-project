@@ -31,7 +31,7 @@ window.fetchLiveLmsStations = async function() {
   const totalStations = window.lmsStationsMasterList.length;
   let totalSessions = 0;
   let totalParts = 0;
-  let totalQuizzes = 0;
+  const uniqueQuizIds = new Set();
 
   window.lmsStationsMasterList.forEach(st => {
     const cats = st.categories || [];
@@ -39,14 +39,17 @@ window.fetchLiveLmsStations = async function() {
       const sessList = c.sessions || [];
       totalSessions += sessList.length;
       sessList.forEach(s => {
-        totalParts += (s.videoClips || []).length;
-        totalQuizzes += (s.quizzes || []).length;
-        (s.videoClips || []).forEach(clip => {
-          totalQuizzes += (clip.quizzes || []).length;
+        const clips = s.videoClips || [];
+        totalParts += clips.length;
+        (s.quizzes || []).forEach(q => uniqueQuizIds.add(q.id));
+        clips.forEach(clip => {
+          (clip.quizzes || []).forEach(q => uniqueQuizIds.add(q.id));
         });
       });
     });
   });
+
+  const totalQuizzes = uniqueQuizIds.size;
 
   const statStationsEl = document.getElementById('lms-stat-stations');
   if (statStationsEl) statStationsEl.textContent = `${totalStations} منزلگاه`;
@@ -54,8 +57,11 @@ window.fetchLiveLmsStations = async function() {
   const statSessionsEl = document.getElementById('lms-stat-sessions');
   if (statSessionsEl) statSessionsEl.textContent = `${totalSessions} جلسه مصوب`;
 
+  const statPartsEl = document.getElementById('lms-stat-parts');
+  if (statPartsEl) statPartsEl.textContent = `${totalParts} پارت ویدیو`;
+
   const statQuizzesEl = document.getElementById('lms-stat-quizzes');
-  if (statQuizzesEl) statQuizzesEl.textContent = `${totalParts} پارت (${totalQuizzes} آزمونک)`;
+  if (statQuizzesEl) statQuizzesEl.textContent = `${totalQuizzes} آزمونک فعال`;
 
   window.filterLmsTable();
 };

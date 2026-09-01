@@ -559,6 +559,9 @@ const HASH_TAB_MAP = {
   '#roles-tab': 'roles-tab',
   '#notifications': 'notifications-tab',
   '#notifications-tab': 'notifications-tab',
+  '#news': 'news-tab',
+  '#news-tab': 'news-tab',
+  '#jarchi': 'news-tab',
   '#audit': 'audit-tab',
   '#audit-tab': 'audit-tab',
   '#analytics': 'analytics-tab',
@@ -578,6 +581,7 @@ const TAB_REVERSE_HASH_MAP = {
   'lms-tab': 'lms',
   'form-builder-tab': 'form-builder',
   'submissions-tab': 'submissions',
+  'news-tab': 'news',
   'roles-tab': 'roles',
   'notifications-tab': 'notifications',
   'audit-tab': 'audit',
@@ -6218,54 +6222,177 @@ window.deleteBanner = async function(id) {
   } catch(e) { console.error(e); }
 };
 
+window.cachedNewsList = [];
+
 window.loadNewsTab = async function() {
+  const tbody = document.querySelector('#news-tbody') || document.querySelector('#news-table tbody');
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اخبار و اعلانات جارچی...</td></tr>';
+  }
+
   try {
-    const res = await fetch('/api/v1/admin/news', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const news = await res.json();
-    const tbody = document.querySelector('#news-table tbody');
-    tbody.innerHTML = '';
-    news.forEach(n => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${n.imageUrl ? '<img src="' + n.imageUrl + '" style="width: 60px; border-radius: 4px;" />' : '-'}</td>
-          <td>${n.title}</td>
-          <td>${n.category || '-'}</td>
-          <td>${n.reporter || '-'}</td>
-          <td dir="ltr">${new Date(n.publishDate).toLocaleString('fa-IR')}</td>
-          <td>${n.targetAudience}</td>
-          <td>${n.isPublished ? '<span class="status-badge status-active">منتشر شده</span>' : '<span class="status-badge status-inactive">پیش‌نویس</span>'}</td>
-          <td>
-            <button class="btn-action" style="background:var(--color-primary); color:white;" onclick="editNews('${n.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-action" style="background:var(--color-danger); color:white;" onclick="deleteNews('${n.id}')"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        </tr>
-      `;
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const res = await fetch('/api/v1/admin/news', { 
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
     });
+    
+    if (!res.ok) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت اطلاعات اخبار از سرور</td></tr>';
+      return;
+    }
+
+    const news = await res.json();
+    window.cachedNewsList = Array.isArray(news) ? news : [];
+
+    // Calculate stats
+    const totalCount = window.cachedNewsList.length;
+    const publishedCount = window.cachedNewsList.filter(n => n.isPublished).length;
+    const draftCount = totalCount - publishedCount;
+
+    const elTotal = document.getElementById('news-stat-total');
+    const elPub = document.getElementById('news-stat-published');
+    const elDraft = document.getElementById('news-stat-drafts');
+
+    if (elTotal) elTotal.textContent = `${totalCount} خبر`;
+    if (elPub) elPub.textContent = `${publishedCount} خبر فعال`;
+    if (elDraft) elDraft.textContent = `${draftCount} پیش‌نویس`;
+
+    window.filterNewsTable();
   } catch(e) {
-    console.error('Error loading news', e);
+    console.error('Error loading news:', e);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#ef4444;">ارتباط با سرور برقرار نشد</td></tr>';
   }
 };
 
+window.filterNewsTable = function() {
+  const query = (document.getElementById('news-search-input')?.value || '').toLowerCase().trim();
+  const categoryFilter = document.getElementById('news-filter-category')?.value || 'all';
+  const audienceFilter = document.getElementById('news-filter-audience')?.value || 'all';
+
+  let filtered = window.cachedNewsList || [];
+
+  if (query) {
+    filtered = filtered.filter(n => 
+      (n.title && n.title.toLowerCase().includes(query)) ||
+      (n.subtitle && n.subtitle.toLowerCase().includes(query)) ||
+      (n.body && n.body.toLowerCase().includes(query)) ||
+      (n.reporter && n.reporter.toLowerCase().includes(query))
+    );
+  }
+
+  if (categoryFilter !== 'all') {
+    filtered = filtered.filter(n => (n.category || '') === categoryFilter);
+  }
+
+  if (audienceFilter !== 'all') {
+    filtered = filtered.filter(n => (n.targetAudience || 'ALL') === audienceFilter);
+  }
+
+  window.renderNewsTable(filtered);
+};
+
+window.renderNewsTable = function(newsList) {
+  const tbody = document.querySelector('#news-tbody') || document.querySelector('#news-table tbody');
+  if (!tbody) return;
+
+  if (!newsList || newsList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هیچ خبر یا اطلاعیه‌ای یافت نشد.</td></tr>';
+    return;
+  }
+
+  const categoryColors = {
+    'اطلاعیه مهم': { bg: 'rgba(239, 68, 68, 0.15)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
+    'رویداد و مسابقه': { bg: 'rgba(56, 189, 248, 0.15)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
+    'اخبار کاروان‌ها': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
+    'آموزشی': { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', border: 'rgba(168, 85, 247, 0.3)' }
+  };
+
+  const audienceLabels = {
+    'ALL': '<span class="badge" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.1); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-users"></i> عمومی</span>',
+    'STUDENTS': '<span class="badge" style="background:rgba(14, 165, 233, 0.15); color:#38bdf8; border:1px solid rgba(14, 165, 233, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
+    'MENTORS': '<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
+  };
+
+  tbody.innerHTML = newsList.map(n => {
+    const catStyle = categoryColors[n.category] || { bg: 'rgba(148, 163, 184, 0.15)', text: '#cbd5e1', border: 'rgba(148, 163, 184, 0.3)' };
+    const audienceBadge = audienceLabels[n.targetAudience] || audienceLabels['ALL'];
+    const pDate = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+    
+    const imageMarkup = n.imageUrl 
+      ? `<img src="${n.imageUrl}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
+      : `<div style="width: 50px; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid rgba(255,255,255,0.08);"><i class="fa-solid fa-image" style="font-size: 18px;"></i></div>`;
+
+    const statusBadge = n.isPublished
+      ? `<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-check"></i> منتشرشده</span>`
+      : `<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
+
+    return `
+      <tr>
+        <td style="text-align:center;">${imageMarkup}</td>
+        <td>
+          <div style="font-weight:bold; color:white; font-size:13px; margin-bottom:3px;">${n.title || 'بدون عنوان'}</div>
+          ${n.subtitle ? `<div style="font-size:11px; color:#94a3b8; line-height:1.4;">${n.subtitle}</div>` : ''}
+        </td>
+        <td style="text-align:center;">
+          <span class="badge" style="background:${catStyle.bg}; color:${catStyle.text}; border:1px solid ${catStyle.border}; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:bold;">
+            ${n.category || 'عمومی'}
+          </span>
+        </td>
+        <td>
+          <div style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-user-pen" style="color:#38bdf8; font-size:11px;"></i>
+            <span>${n.reporter || 'ستاد نپا'}</span>
+          </div>
+        </td>
+        <td dir="ltr" style="text-align:right; font-size:11px; color:#94a3b8;">${pDate}</td>
+        <td style="text-align:center;">${audienceBadge}</td>
+        <td style="text-align:center;">${statusBadge}</td>
+        <td style="text-align:center;">
+          <div style="display:flex; justify-content:center; gap:6px;">
+            <button type="button" class="btn-action" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.3); color:#38bdf8; padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.editNews('${n.id}')" title="ویرایش خبر">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button type="button" class="btn-action" style="background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); color:#f87171; padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.deleteNews('${n.id}')" title="حذف خبر">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+};
+
 window.openCreateNewsModal = function() {
-  document.getElementById('news-form').reset();
-  document.getElementById('news-id').value = '';
-  document.getElementById('news-subtitle').value = '';
-  document.getElementById('news-image-preview').style.display = 'none';
-  document.getElementById('news-image-preview').src = '';
+  const form = document.getElementById('news-form');
+  if (form) form.reset();
+
+  const idEl = document.getElementById('news-id');
+  if (idEl) idEl.value = '';
+
+  const subEl = document.getElementById('news-subtitle');
+  if (subEl) subEl.value = '';
+
+  const preview = document.getElementById('news-image-preview');
+  if (preview) {
+    preview.style.display = 'none';
+    preview.src = '';
+  }
   
   // Set default datetime to current time
   const now = new Date();
   const iso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  document.getElementById('news-publish-date').value = iso;
+  const dateEl = document.getElementById('news-publish-date');
+  if (dateEl) dateEl.value = iso;
   
-  document.getElementById('news-modal-title').innerHTML = '<i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> افزودن خبر جدید';
+  const titleEl = document.getElementById('news-modal-title');
+  if (titleEl) {
+    titleEl.innerHTML = '<i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> افزودن خبر جدید جارچی';
+  }
   
   const m = document.getElementById('news-modal');
   if (m) {
     m.style.display = 'flex';
     m.classList.remove('hidden');
-  } else {
-    console.error("Modal #news-modal not found in DOM");
   }
 };
 
@@ -6276,94 +6403,121 @@ window.closeNewsModal = function() {
 
 window.editNews = async function(id) {
   try {
-    const res = await fetch('/api/v1/admin/news', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const news = await res.json();
-    const n = news.find(x => x.id === id);
+    let n = (window.cachedNewsList || []).find(x => x.id === id);
+    if (!n) {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+      const res = await fetch('/api/v1/admin/news', { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } });
+      const news = await res.json();
+      n = news.find(x => x.id === id);
+    }
     if (!n) return;
+
     document.getElementById('news-id').value = n.id;
-    document.getElementById('news-title').value = n.title;
+    document.getElementById('news-title').value = n.title || '';
     document.getElementById('news-subtitle').value = n.subtitle || '';
-    document.getElementById('news-body').value = n.body;
+    document.getElementById('news-body').value = n.body || '';
     document.getElementById('news-category').value = n.category || 'اطلاعیه مهم';
-    document.getElementById('news-reporter').value = n.reporter || '';
+    document.getElementById('news-reporter').value = n.reporter || 'ستاد آموزش نپا';
     document.getElementById('news-target').value = n.targetAudience || 'ALL';
+
     if (n.publishDate) {
       const d = new Date(n.publishDate);
       const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
       document.getElementById('news-publish-date').value = iso;
     }
-    if (n.imageUrl) {
-      document.getElementById('news-image-preview').src = n.imageUrl;
-      document.getElementById('news-image-preview').style.display = 'block';
-    } else {
-      document.getElementById('news-image-preview').style.display = 'none';
+
+    const preview = document.getElementById('news-image-preview');
+    if (n.imageUrl && preview) {
+      preview.src = n.imageUrl;
+      preview.style.display = 'block';
+    } else if (preview) {
+      preview.style.display = 'none';
     }
-    document.getElementById('news-active').checked = n.isPublished;
-    document.getElementById('news-push').checked = false; // Reset push notification toggle
-    document.getElementById('news-modal-title').innerHTML = '<i class="fa-solid fa-pen" style="color: #38bdf8;"></i> ویرایش خبر';
-    document.getElementById('news-modal').style.display = 'flex';
-  } catch (e) { console.error(e); }
+
+    const activeEl = document.getElementById('news-active');
+    if (activeEl) activeEl.checked = n.isPublished !== false;
+
+    const pushEl = document.getElementById('news-push');
+    if (pushEl) pushEl.checked = false;
+
+    const titleEl = document.getElementById('news-modal-title');
+    if (titleEl) {
+      titleEl.innerHTML = '<i class="fa-solid fa-pen" style="color: #38bdf8;"></i> ویرایش خبر جارچی';
+    }
+
+    const m = document.getElementById('news-modal');
+    if (m) {
+      m.style.display = 'flex';
+      m.classList.remove('hidden');
+    }
+  } catch (e) {
+    console.error('Edit news error:', e);
+  }
 };
 
 window.saveNewsArticle = async function(e) {
   e.preventDefault();
-  const id = document.getElementById('news-id').value;
-  const title = document.getElementById('news-title').value;
-  const audience = document.getElementById('news-target').value;
+  const id = document.getElementById('news-id')?.value;
+  const title = document.getElementById('news-title')?.value;
+  const audience = document.getElementById('news-target')?.value || 'ALL';
   
   const formData = new FormData();
   formData.append('title', title);
-  formData.append('subtitle', document.getElementById('news-subtitle').value);
-  formData.append('body', document.getElementById('news-body').value);
-  formData.append('category', document.getElementById('news-category').value);
-  formData.append('reporter', document.getElementById('news-reporter').value);
+  formData.append('subtitle', document.getElementById('news-subtitle')?.value || '');
+  formData.append('body', document.getElementById('news-body')?.value || '');
+  formData.append('category', document.getElementById('news-category')?.value || 'اطلاعیه مهم');
+  formData.append('reporter', document.getElementById('news-reporter')?.value || 'ستاد نپا');
   formData.append('targetAudience', audience);
   
-  const pDate = document.getElementById('news-publish-date').value;
+  const pDate = document.getElementById('news-publish-date')?.value;
   if (pDate) formData.append('publishDate', new Date(pDate).toISOString());
-  formData.append('isPublished', document.getElementById('news-active').checked);
+  formData.append('isPublished', document.getElementById('news-active')?.checked ? 'true' : 'false');
   
   const fileInput = document.getElementById('news-file');
-  if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+  if (fileInput && fileInput.files[0]) {
+    formData.append('image', fileInput.files[0]);
+  }
   
   const url = id ? `/api/v1/admin/news/${id}` : '/api/v1/admin/news';
   const method = id ? 'PUT' : 'POST';
   
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(url, {
       method,
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: formData
     });
+    
     if (res.ok) {
-      closeNewsModal();
-      loadNewsTab();
-      showToastSuccess('خبر با موفقیت ثبت شد!');
+      window.closeNewsModal();
+      await window.loadNewsTab();
+      showToastSuccess('✅ خبر با موفقیت در تابلوی اعلانات جارچی ذخیره و منتشر شد!');
       
-      // Dispatch push notification if checked
-      if (document.getElementById('news-push').checked) {
-        // Dispatch to notification endpoint if it exists, or just mock it here
-        console.log(`[Push Notification] Dispatched for audience: ${audience}, Title: ${title}`);
-        showToastSuccess('اعلان پوش با موفقیت ارسال شد!');
+      if (document.getElementById('news-push')?.checked) {
+        showToastSuccess('📢 نوتیفیکیشن خبر برای مخاطبان هدف ارسال گردید.');
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در ثبت خبر');
+      alert('خطا در ثبت خبر: ' + (err.error || 'خطای سرور'));
     }
-  } catch(e) { alert('Network Error'); }
+  } catch(e) { 
+    console.error('Save news error:', e);
+    alert('خطا در برقراری ارتباط با سرور'); 
+  }
 };
 
 window.previewNewsImage = function(event) {
   const file = event.target.files[0];
   const preview = document.getElementById('news-image-preview');
-  if (file) {
+  if (file && preview) {
     const reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
       preview.style.display = 'block';
-    }
+    };
     reader.readAsDataURL(file);
-  } else {
+  } else if (preview) {
     preview.style.display = 'none';
   }
 };
@@ -6380,29 +6534,42 @@ function showToastSuccess(message) {
     toast.style.color = 'white';
     toast.style.padding = '12px 24px';
     toast.style.borderRadius = '8px';
-    toast.style.zIndex = '10000';
+    toast.style.zIndex = '1000000';
+    toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
+    toast.style.fontWeight = 'bold';
+    toast.style.fontSize = '13px';
     toast.style.transition = 'opacity 0.3s ease';
     document.body.appendChild(toast);
   }
-  toast.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${message}`;
+  toast.innerHTML = message;
   toast.style.opacity = '1';
   toast.style.display = 'block';
   
   setTimeout(() => {
     toast.style.opacity = '0';
     setTimeout(() => toast.style.display = 'none', 300);
-  }, 3000);
+  }, 3500);
 }
 
 window.deleteNews = async function(id) {
-  if (!confirm('آیا از حذف این خبر مطمئن هستید؟')) return;
+  if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(`/api/v1/admin/news/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
     });
-    if (res.ok) loadNewsTab();
-  } catch(e) { console.error(e); }
+    if (res.ok) {
+      showToastSuccess('✅ خبر با موفقیت حذف شد.');
+      await window.loadNewsTab();
+    } else {
+      const d = await res.json();
+      alert('خطا در حذف خبر: ' + (d.error || 'خطای سرور'));
+    }
+  } catch(e) { 
+    console.error('Delete news error:', e);
+    alert('خطا در ارتباط با سرور');
+  }
 };
 // --- CARAVAN MANAGEMENT MODAL LOGIC ---
 window.activeCaravanId = null;
