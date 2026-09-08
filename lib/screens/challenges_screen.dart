@@ -31,7 +31,12 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
     for (var c in repository.challenges) {
       final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = c.myStatus ?? localSub?.status ?? 'none';
+      String rawStatus = 'none';
+      if (c.myStatus != null && c.myStatus != 'none') {
+        rawStatus = c.myStatus!;
+      } else if (localSub != null) {
+        rawStatus = localSub.status;
+      }
       if (rawStatus == 'PENDING_REVIEW') rawStatus = 'pending';
 
       final String status;
@@ -397,7 +402,19 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                           child: ElevatedButton(
                             onPressed: () {
                               if (isStepByStep) {
-                                if (answers[currentStep] == -1) return;
+                                if (answers[currentStep] == -1) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'لطفاً یکی از گزینه‌ها را برای این مرحله انتخاب کنید.',
+                                        style: TextStyle(fontFamily: 'Vazirmatn'),
+                                      ),
+                                      backgroundColor: Color(0xFFEF4444),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
                                 if (currentStep < qList.length - 1) {
                                   setDialogState(() {
                                     currentStep++;
@@ -405,7 +422,24 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                   return;
                                 }
                               } else {
-                                if (textCtrl.text.isEmpty && attachedFileName == null && tempSelectedOption == -1) return;
+                                final String textValue = textCtrl.text.trim();
+                                final bool hasText = textValue.isNotEmpty;
+                                final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
+                                final bool hasOption = hasOptions && tempSelectedOption != -1;
+
+                                if (!hasText && !hasFile && !hasOption) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'فیلد پاسخ خالی است! لطفاً متن پاسخ یا فایل مورد نظر را وارد نمایید.',
+                                        style: TextStyle(fontFamily: 'Vazirmatn'),
+                                      ),
+                                      backgroundColor: Color(0xFFEF4444),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
                               }
 
                               Navigator.pop(context);
@@ -501,7 +535,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       if (_showArchived) {
         return c['status'] == 'archived_completed';
       } else {
-        return c['status'] == 'active' || c['status'] == 'archived_pending';
+        return c['status'] == 'active' || c['status'] == 'archived_pending' || c['status'] == 'rejected';
       }
     }).toList();
 
@@ -759,78 +793,6 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        // Creator Badge (تولید شده توسط)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: item['isByAdmin'] == true
-                                ? const Color(0xFFA855F7).withValues(alpha: 0.15)
-                                : const Color(0xFF3B82F6).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: item['isByAdmin'] == true
-                                  ? const Color(0xFFA855F7).withValues(alpha: 0.35)
-                                  : const Color(0xFF3B82F6).withValues(alpha: 0.35),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                item['isByAdmin'] == true ? Icons.shield_rounded : Icons.person_rounded,
-                                size: 11,
-                                color: item['isByAdmin'] == true ? const Color(0xFFF472B6) : const Color(0xFF93C5FD),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'سازنده: ${item['creatorName']}',
-                                style: TextStyle(
-                                  color: item['isByAdmin'] == true ? const Color(0xFFF472B6) : const Color(0xFF93C5FD),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Target Audience Badge (تولید شده برای)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.groups_rounded,
-                                size: 11,
-                                color: Color(0xFF38BDF8),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'مخاطبان: ${item['targetAudienceLabel']}',
-                                style: const TextStyle(
-                                  color: Color(0xFF38BDF8),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -860,10 +822,10 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                 ),
                 child: Text(
                   isCompleted 
-                      ? 'کامل شده' 
+                      ? 'تایید شد ✅' 
                       : (isPending 
                           ? 'در انتظار بررسی' 
-                          : (isRejected ? 'رد شده ❌ نیاز به اصلاح' : 'فعال')),
+                          : (isRejected ? 'نیاز به اصلاح ❌' : 'فعال')),
                   style: TextStyle(
                     color: isCompleted 
                         ? const Color(0xFF10B981) 
@@ -948,7 +910,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                   onPressed: () => _showSubmissionDialog(item),
                   icon: Icon(isRejected ? Icons.refresh_rounded : Icons.send_rounded, size: 14, color: Colors.white),
                   label: Text(
-                    isRejected ? 'پاسخ مجدد و تکمیل چالش' : 'پاسخ و ارسال تکلیف',
+                    isRejected ? 'پاسخ مجدد و اصلاح چالش' : 'پاسخ و ارسال تکلیف',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11.5,
@@ -969,7 +931,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                 )
               else
                 const Text(
-                  'این چالش با موفقیت ثبت نهایی شده است ✅',
+                  'این چالش با موفقیت تایید شد ✅',
                   style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
                 ),
             ],

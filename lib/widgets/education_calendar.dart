@@ -45,7 +45,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
   late int _selectedYear;
   late int _selectedMonth;
   late int _selectedDay;
-  bool _isExpanded = true;
+  bool _isExpanded = false;
   
   List<CalendarEvent> _events = [];
   List<int> _holidays = [];
@@ -77,11 +77,13 @@ class _EducationCalendarState extends State<EducationCalendar> {
         final List<CalendarEvent> loadedEvents = [];
         if (data['events'] != null) {
           for (var e in data['events']) {
+            // Exclude assignments and challenges from education calendar
+            if (e['type'] == 'assignment' || e['type'] == 'challenge') {
+              continue;
+            }
             EventType type = EventType.skillClass;
             if (e['type'] == 'mediaClass') {
               type = EventType.mediaClass;
-            } else if (e['type'] == 'assignment') {
-              type = EventType.assignment;
             }
             
             int evYear = _selectedYear;
@@ -183,15 +185,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
     }
   }
 
-  void _selectMonth(int month, {int year = 1405}) {
-    setState(() {
-      _currentJalaliMonth = Jalali(year, month, 1);
-      _selectedYear = year;
-      _selectedMonth = month;
-      final monthEvents = _events.where((e) => e.year == year && e.month == month).toList();
-      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
-    });
-  }
 
   void _goToPreviousMonth() {
     setState(() {
@@ -322,15 +315,31 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         GestureDetector(
                           onTap: () => setState(() => _isExpanded = !_isExpanded),
                           child: Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              shape: BoxShape.circle,
+                              color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.35)),
                             ),
-                            child: Icon(
-                              _isExpanded ? Icons.calendar_view_week : Icons.calendar_month,
-                              color: const Color(0xFFFFD54F),
-                              size: 18,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isExpanded ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                                  color: const Color(0xFFFFD54F),
+                                  size: 17,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _isExpanded ? "کوچک‌نمایی" : "بزرگنمایی",
+                                  style: const TextStyle(
+                                    color: Color(0xFFFFD54F),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Vazirmatn',
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -339,10 +348,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   ],
                 ),
                 const Divider(color: Colors.white10, height: 16),
-                
-                // Semester Quick Month Selector (مهر، آبان، آذر)
-                _buildSemesterMonthSelector(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 6),
 
                 // Day Headers
                 Row(
@@ -359,10 +365,10 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 ),
                 const SizedBox(height: 10),
 
-                // Calendar Grid or Strip
+                // Calendar Grid or Compact Week Row
                 _isExpanded 
                     ? _buildFullMonthGrid(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1) 
-                    : _build5DayStrip(isThisCurrentMonth ? jalaliNow.day : _selectedDay, daysInMonth, isThisCurrentMonth ? jalaliNow.day : -1),
+                    : _buildCompactWeekRow(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1),
                 
                 const SizedBox(height: 14),
                 _buildLegend(),
@@ -376,17 +382,35 @@ class _EducationCalendarState extends State<EducationCalendar> {
     );
   }
 
-  Widget _build5DayStrip(int centerDay, int daysInMonth, int realToday) {
-    int startDay = centerDay - 2;
-    if (startDay < 1) startDay = 1;
-    if (startDay + 4 > daysInMonth) startDay = (daysInMonth - 4).clamp(1, daysInMonth);
-    
-    int count = (daysInMonth - startDay + 1).clamp(1, 5);
-    List<int> visibleDays = List.generate(count, (index) => startDay + index);
-    
+  Widget _buildCompactWeekRow(int daysInMonth, int firstDayWeekdayIdx, int realToday) {
+    final int selectedCellIdx = firstDayWeekdayIdx + (_selectedDay - 1);
+    final int weekRow = selectedCellIdx ~/ 7;
+    final int startCellIdx = weekRow * 7;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: visibleDays.map((d) => _buildDayCell(d, d == realToday, false)).toList(),
+      children: List.generate(7, (col) {
+        final int cellIndex = startCellIdx + col;
+        if (cellIndex < firstDayWeekdayIdx || cellIndex >= firstDayWeekdayIdx + daysInMonth) {
+          return const Expanded(
+            child: SizedBox(height: 44),
+          );
+        }
+
+        final int dayNum = cellIndex - firstDayWeekdayIdx + 1;
+        final bool isFriday = (col == 6);
+        final bool isToday = (dayNum == realToday);
+
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.5),
+            child: SizedBox(
+              height: 48,
+              child: _buildDayCell(dayNum, isToday, isFriday),
+            ),
+          ),
+        );
+      }),
     );
   }
 
@@ -434,7 +458,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     final bool hasSkillClass = dayEvents.any((e) => e.type == EventType.skillClass);
     final bool hasMediaClass = dayEvents.any((e) => e.type == EventType.mediaClass);
-    final bool hasAssignment = dayEvents.any((e) => e.type == EventType.assignment);
 
     // Color theme for cell based on scheduled classes
     Color cellBorderColor = Colors.white.withValues(alpha: 0.06);
@@ -455,7 +478,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
         cellBorderColor = const Color(0xFFEF4444).withValues(alpha: 0.3);
       } else if (hasMediaClass) {
         cellBgColor = const Color(0xFF3B82F6).withValues(alpha: 0.1);
-        cellBorderColor = const Color(0xFF3B82F6).withValues(alpha: 0.3);
+        cellBorderColor = const Color(0xFF38BDF8).withValues(alpha: 0.3);
       }
     }
 
@@ -510,93 +533,12 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 children: [
                   if (hasSkillClass) _buildDot(EventType.skillClass),
                   if (hasMediaClass) _buildDot(EventType.mediaClass),
-                  if (hasAssignment) _buildDot(EventType.assignment),
                 ],
               ),
             ],
             if (isHoliday && dayEvents.isEmpty) ...[
               const SizedBox(height: 2),
               const Icon(Icons.star, color: Colors.redAccent, size: 7),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSemesterMonthSelector() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildSemesterMonthChip(7, "مهر ۱۴۰۵"),
-          const SizedBox(width: 8),
-          _buildSemesterMonthChip(8, "آبان ۱۴۰۵"),
-          const SizedBox(width: 8),
-          _buildSemesterMonthChip(9, "آذر ۱۴۰۵"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSemesterMonthChip(int month, String label) {
-    final bool isCurrent = (_currentJalaliMonth.month == month && _currentJalaliMonth.year == 1405);
-    final count = _events.where((e) => e.year == 1405 && e.month == month).length;
-
-    return GestureDetector(
-      onTap: () => _selectMonth(month),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isCurrent ? const Color(0xFF7C3AED) : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isCurrent ? const Color(0xFFA78BFA) : Colors.white.withValues(alpha: 0.1),
-            width: isCurrent ? 1.5 : 1.0,
-          ),
-          boxShadow: isCurrent
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isCurrent ? Colors.white : Colors.white70,
-                fontSize: 12,
-                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                fontFamily: 'Vazirmatn',
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isCurrent ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  "$count",
-                  style: TextStyle(
-                    color: isCurrent ? Colors.white : const Color(0xFFC4B5FD),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
             ],
           ],
         ),
@@ -614,7 +556,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
         children: [
           _buildLegendItem(const Color(0xFFEF4444), "کلاس مهارتی"),
           _buildLegendItem(const Color(0xFF38BDF8), "کلاس رسانه‌ای"),
-          _buildLegendItem(const Color(0xFF10B981), "تکلیف و چالش"),
         ],
       ),
     );
@@ -765,10 +706,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   typeColor = const Color(0xFF38BDF8);
                   typeName = "کلاس رسانه‌ای";
                   typeIcon = Icons.mic;
-                } else if (event.type == EventType.assignment) {
-                  typeColor = const Color(0xFF10B981);
-                  typeName = "تکلیف و چالش";
-                  typeIcon = Icons.task_alt;
                 }
 
                 return Container(
