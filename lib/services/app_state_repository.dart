@@ -46,6 +46,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       final apiChallenges = await _apiService.getChallenges();
       challenges.clear();
       challenges.addAll(apiChallenges);
+      await fetchNotifications();
       notifyListeners();
       await _syncOfflineData();
     }
@@ -233,6 +234,30 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> fetchNotifications() async {
+    try {
+      final data = await _apiService.getNotifications();
+      if (data != null && data['notifications'] is List) {
+        final List notifs = data['notifications'];
+        final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+        notifications.clear();
+        for (final item in notifs) {
+          notifications.add({
+            'id': item['id']?.toString() ?? '',
+            'title': item['title'] ?? '',
+            'body': item['message'] ?? '',
+            'isForMentor': isMentor,
+            'isRead': item['isRead'] == true,
+            'time': 'اعلان سیستم',
+          });
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('fetchNotifications error: $e');
+    }
+  }
+
   int get unreadNotificationsCount {
     return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)).length;
   }
@@ -240,6 +265,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   void markAllNotificationsAsRead() {
     for (var n in notifications) {
       if (n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)) {
+        if (n['isRead'] == false && n['id'] != null && n['id'].toString().isNotEmpty) {
+          _apiService.markNotificationAsRead(n['id'].toString());
+        }
         n['isRead'] = true;
       }
     }

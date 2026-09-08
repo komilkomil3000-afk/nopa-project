@@ -419,6 +419,65 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   const container = document.getElementById('lms-content-modal-body');
   if (!container) return;
 
+  if (!window.getCurriculumSessionDate) {
+    window.getCurriculumSessionDate = function(stNum, isMedia, sessNum) {
+      const key = `${stNum}_${isMedia ? 'media' : 'skill'}_${sessNum}`;
+      const map = {
+        '1_media_1': { date: '1405/07/02', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '1_media_2': { date: '1405/07/03', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '1_skill_1': { date: '1405/07/05', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '1_skill_2': { date: '1405/07/07', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_skill_1': { date: '1405/07/06', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_skill_2': { date: '1405/07/08', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_media_1': { date: '1405/07/09', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_media_2': { date: '1405/07/10', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_skill_3': { date: '1405/07/13', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_skill_4': { date: '1405/07/15', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_media_3': { date: '1405/07/16', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_media_4': { date: '1405/07/17', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_skill_5': { date: '1405/07/20', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_skill_6': { date: '1405/07/22', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_media_5': { date: '1405/07/23', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_media_6': { date: '1405/07/24', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_skill_7': { date: '1405/07/27', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_skill_8': { date: '1405/07/29', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '2_media_7': { date: '1405/07/30', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '2_media_8': { date: '1405/07/31', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_skill_1': { date: '1405/08/03', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_skill_2': { date: '1405/08/05', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_media_1': { date: '1405/08/06', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_media_2': { date: '1405/08/07', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_skill_3': { date: '1405/08/10', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_skill_4': { date: '1405/08/12', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_media_3': { date: '1405/08/13', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_media_4': { date: '1405/08/14', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_skill_5': { date: '1405/08/17', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_skill_6': { date: '1405/08/19', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '3_media_5': { date: '1405/08/20', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '3_media_6': { date: '1405/08/21', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '4_skill_1': { date: '1405/09/01', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '4_skill_2': { date: '1405/09/03', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '4_media_1': { date: '1405/09/04', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '4_media_2': { date: '1405/09/05', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '4_skill_3': { date: '1405/09/08', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '4_skill_4': { date: '1405/09/10', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '4_media_3': { date: '1405/09/11', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '4_media_4': { date: '1405/09/12', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '5_skill_1': { date: '1405/09/15', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '5_skill_2': { date: '1405/09/16', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '5_skill_3': { date: '1405/09/17', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '5_media_1': { date: '1405/09/18', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '5_media_2': { date: '1405/09/19', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '5_skill_4': { date: '1405/09/22', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '5_media_3': { date: '1405/09/22', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '5_media_4': { date: '1405/09/23', time: '۱۸:۰۰ الی ۱۹:۳۰' },
+        '5_skill_5': { date: '1405/09/24', time: '۱۶:۰۰ الی ۱۷:۳۰' },
+        '5_media_5': { date: '1405/09/24', time: '۱۸:۰۰ الی ۱۹:۳۰' }
+      };
+      return map[key] || { date: '1405/07/02', time: isMedia ? '۱۸:۰۰ الی ۱۹:۳۰' : '۱۶:۰۰ الی ۱۷:۳۰' };
+    };
+  }
+
   let releaseDateStr = '';
   if (station.releaseDate) {
     try {
@@ -565,36 +624,78 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         const clips = (sess.videoClips || []).sort((a, b) => (Number(a.clipOrder) || 0) - (Number(b.clipOrder) || 0));
         const quizzes = sess.quizzes || [];
 
+        const sessOrder = sess.orderIndex || (sIdx + 1);
+        const curFallback = window.getCurriculumSessionDate ? window.getCurriculumSessionDate(stationIdx, !isSkill, sessOrder) : { date: '1405/07/02', time: isSkill ? '۱۶:۰۰ الی ۱۷:۳۰' : '۱۸:۰۰ الی ۱۹:۳۰' };
+        const sessDate = sess.sessionDate || curFallback.date;
+        const sessTime = sess.sessionTime || curFallback.time;
+
         html += `
-          <div style="background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin-bottom:14px;">
+          <div style="background:rgba(15, 23, 42, 0.9); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 12px rgba(0,0,0,0.25);">
             
-            <!-- Session Title & Instructor Inline Editor -->
-            <div style="display:grid; grid-template-columns: 1.4fr 1.1fr auto auto; gap:10px; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; background:rgba(0,0,0,0.25); padding:10px; border-radius:8px;">
-              <div>
-                <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:3px; font-weight:bold;">
-                  <i class="fa-solid fa-book-open" style="color:${color};"></i> عنوان جلسه:
-                </label>
-                <input type="text" id="sess-title-${sess.id}" class="input-ctrl" value="${sess.title || `جلسه ${sIdx + 1}`}" placeholder="عنوان جلسه..." style="font-size:12px; font-weight:bold; color:white; background:#0f172a; padding:6px 10px; border-color:${color}55;">
-              </div>
-
-              <div>
-                <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:3px; font-weight:bold;">
-                  <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس این جلسه:
-                </label>
-                <input type="text" id="sess-instructor-${sess.id}" class="input-ctrl" value="${sess.instructor || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" placeholder="نام استاد یا مدرس..." style="font-size:12px; color:#38bdf8; background:#0f172a; padding:6px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
-              </div>
-
-              <div style="display:flex; align-items:flex-end; gap:6px; padding-top:16px;">
-                <button type="button" style="background:#10b981; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgba(0,0,0,0.3);" onclick="window.saveSessionDetails('${sess.id}', '${station.id}')" title="ذخیره مستقیم عنوان و نام استاد این جلسه">
-                  <i class="fa-solid fa-save"></i> ذخیره جلسه و استاد
-                </button>
-              </div>
-
-              <div style="display:flex; align-items:flex-end; gap:6px; padding-top:16px;">
-                <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px; white-space:nowrap;">
-                  ${clips.length} پارت | ${quizzes.length} آزمونک
+            <!-- Session Top Header with Glowing Date Badge -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge" style="background:${isSkill ? '#0284c7' : '#7c3aed'}; color:white; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold;">
+                  جلسه ${sessOrder}
                 </span>
-                <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px;" onclick="window.addNewClipToSession('${sess.id}')">
+                <span style="font-size:13px; font-weight:bold; color:white;">
+                  ${sess.title || `جلسه ${sessOrder}`}
+                </span>
+              </div>
+              
+              <!-- Prominent Date & Time Badge right next to the session -->
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <div style="background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.4); padding:4px 10px; border-radius:8px; font-size:12px; color:#fbbf24; font-weight:bold; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-calendar-day"></i>
+                  <span>تاریخ کلاس:</span>
+                  <span id="badge-sess-date-${sess.id}">${sessDate}</span>
+                </div>
+                <div style="background:rgba(167, 139, 250, 0.15); border:1px solid rgba(167, 139, 250, 0.4); padding:4px 10px; border-radius:8px; font-size:12px; color:#c4b5fd; font-weight:bold; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-clock"></i>
+                  <span>ساعت:</span>
+                  <span id="badge-sess-time-${sess.id}">${sessTime}</span>
+                </div>
+                <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:4px 8px; border-radius:6px;">
+                  ${clips.length} پارت ویدیو | ${quizzes.length} آزمونک
+                </span>
+              </div>
+            </div>
+
+            <!-- Session Controls & Editable Fields Grid -->
+            <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr auto; gap:10px; align-items:flex-end; margin-bottom:12px; background:rgba(0,0,0,0.3); padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+              <div>
+                <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px; font-weight:bold;">
+                  <i class="fa-solid fa-book-open" style="color:${color};"></i> عنوان کلاس/جلسه:
+                </label>
+                <input type="text" id="sess-title-${sess.id}" class="input-ctrl" value="${sess.title || `جلسه ${sessOrder}`}" placeholder="عنوان جلسه..." style="font-size:12px; font-weight:bold; color:white; background:#0f172a; padding:7px 10px; border-color:${color}55;">
+              </div>
+
+              <div>
+                <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:4px; font-weight:bold;">
+                  <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس:
+                </label>
+                <input type="text" id="sess-instructor-${sess.id}" class="input-ctrl" value="${sess.instructor || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" placeholder="نام مدرس..." style="font-size:12px; color:#38bdf8; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
+              </div>
+
+              <div>
+                <label style="font-size:11px; color:#fbbf24; display:block; margin-bottom:4px; font-weight:bold;">
+                  <i class="fa-solid fa-calendar-day"></i> تاریخ برگزاری (شمسی):
+                </label>
+                <input type="text" id="sess-date-${sess.id}" class="input-ctrl" value="${sessDate}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲" style="font-size:12px; color:#fbbf24; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(245,158,11,0.5); text-align:center;" oninput="const b = document.getElementById('badge-sess-date-${sess.id}'); if(b) b.innerText = this.value">
+              </div>
+
+              <div>
+                <label style="font-size:11px; color:#c4b5fd; display:block; margin-bottom:4px; font-weight:bold;">
+                  <i class="fa-solid fa-clock"></i> زمان و ساعت کلاس:
+                </label>
+                <input type="text" id="sess-time-${sess.id}" class="input-ctrl" value="${sessTime}" placeholder="مثال: ۱۸:۰۰ الی ۱۹:۳۰" style="font-size:12px; color:#c4b5fd; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(167,139,250,0.5); text-align:center;" oninput="const b = document.getElementById('badge-sess-time-${sess.id}'); if(b) b.innerText = this.value">
+              </div>
+
+              <div style="display:flex; gap:6px;">
+                <button type="button" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; border-radius:6px; padding:8px 14px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgba(0,0,0,0.3); white-space:nowrap;" onclick="window.saveSessionDetails('${sess.id}', '${station.id}')" title="ذخیره مستقیم تغییرات این کلاس و تاریخ آن">
+                  <i class="fa-solid fa-floppy-disk"></i> ذخیره تاریخ و مشخصات
+                </button>
+                <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:8px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px; white-space:nowrap;" onclick="window.addNewClipToSession('${sess.id}')" title="افزودن پارت ویدیویی جدید به این کلاس">
                   <i class="fa-solid fa-plus"></i> پارت جدید
                 </button>
               </div>
@@ -603,27 +704,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             <!-- Video Clips List & Link Editor with Order Adjustment -->
             <div style="margin-bottom:10px;">
               <div style="font-size:12px; color:#38bdf8; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-film"></i> پارت‌های ویدیویی (امکان جابجایی ترتیب با دکمه‌های بالا/پایین، ویرایش لینک و آزمونک):
-              </div>         <div>
-                <strong style="color:white; font-size:13px; display:flex; align-items:center; gap:6px;">
-                  <i class="fa-solid fa-book-open" style="color:${color};"></i> ${sess.title}
-                </strong>
-                <span style="font-size:11px; color:#94a3b8; margin-top:2px; display:block;">مدرس: ${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}</span>
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:11px; color:#94a3b8; background:rgba(255,255,255,0.05); padding:3px 8px; border-radius:6px;">
-                  ${clips.length} پارت ویدیو | ${quizzes.length} آزمونک
-                </span>
-                <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer;" onclick="window.addNewClipToSession('${sess.id}')">
-                  <i class="fa-solid fa-plus"></i> + افزودن پارت جدید
-                </button>
-              </div>
-            </div>
-
-            <!-- Video Clips List & Link Editor with Order Adjustment -->
-            <div style="margin-bottom:10px;">
-              <div style="font-size:12px; color:#38bdf8; font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-film"></i> پارت‌های ویدیویی (امکان جابجایی ترتیب با دکمه‌های بالا/پایین، ویرایش لینک و آزمونک):
+                <i class="fa-solid fa-film"></i> پارت‌های ویدیویی این جلسه (امکان جابجایی ترتیب با دکمه‌های بالا/پایین، ویرایش لینک و آزمونک):
               </div>
         `;
 
@@ -1054,17 +1135,21 @@ window.executeFinalLmsSave = async function() {
       });
     });
 
-    // Collect all session modifications (title & instructor)
+    // Collect all session modifications (title, instructor, sessionDate & sessionTime)
     const sessionsPayload = [];
     const sessTitleInputs = document.querySelectorAll('input[id^="sess-title-"]');
     sessTitleInputs.forEach(input => {
       const sessId = input.id.replace('sess-title-', '');
       const title = input.value || '';
       const instructor = document.getElementById(`sess-instructor-${sessId}`)?.value || '';
+      const sessionDate = document.getElementById(`sess-date-${sessId}`)?.value?.trim() || '';
+      const sessionTime = document.getElementById(`sess-time-${sessId}`)?.value?.trim() || '';
       sessionsPayload.push({
         id: sessId,
         title,
-        instructor
+        instructor,
+        sessionDate,
+        sessionTime
       });
     });
 
@@ -1360,6 +1445,8 @@ window.applyBatchZarikToCategory = async function(categoryId, stationId) {
 window.saveSessionDetails = async function(sessionId, stationId) {
   const title = document.getElementById(`sess-title-${sessionId}`)?.value || '';
   const instructor = document.getElementById(`sess-instructor-${sessionId}`)?.value || '';
+  const sessionDate = document.getElementById(`sess-date-${sessionId}`)?.value?.trim() || '';
+  const sessionTime = document.getElementById(`sess-time-${sessionId}`)?.value?.trim() || '';
 
   if (!title) {
     alert('لطفاً عنوان جلسه را وارد نمایید');
@@ -1374,11 +1461,11 @@ window.saveSessionDetails = async function(sessionId, stationId) {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      body: JSON.stringify({ id: sessionId, title, instructor })
+      body: JSON.stringify({ id: sessionId, title, instructor, sessionDate, sessionTime })
     });
 
     if (res.ok) {
-      alert(`✅ مشخصات جلسه و نام مدرس (${instructor || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد.`);
+      alert(`✅ مشخصات، نام مدرس و تاریخ جلسه (${sessionDate || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد و در تقویم اپلیکیشن به‌روزرسانی گردید.`);
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);

@@ -370,28 +370,45 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
 
 export const createOrUpdateSession = async (req: Request, res: Response) => {
   try {
-    const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+    const { id: paramId } = req.params;
+    const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, sessionDate, sessionTime, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+    const targetId = id || paramId;
     const finalCategoryId = categoryId || subCourseId;
     const finalInstructor = instructor || teacher;
     let session;
-    if (id) {
+    if (targetId) {
       session = await prisma.classSession.update({
-        where: { id },
-        data: { title, description, videoUrl, instructor: finalInstructor, 
-                minWatchThreshold: Number(minWatchThreshold || 70), 
-                minPassScore: Number(minPassScore || 0), 
-                maxZarikReward: Number(maxZarikReward || 0), 
-                maxPointsReward: Number(maxPointsReward || 0), 
-                orderIndex: Number(orderIndex || 0) }
+        where: { id: targetId },
+        data: { 
+          ...(title !== undefined ? { title } : {}), 
+          ...(description !== undefined ? { description } : {}), 
+          ...(videoUrl !== undefined ? { videoUrl } : {}), 
+          ...(finalInstructor !== undefined ? { instructor: finalInstructor } : {}),
+          ...(sessionDate !== undefined ? { sessionDate } : {}),
+          ...(sessionTime !== undefined ? { sessionTime } : {}),
+          minWatchThreshold: Number(minWatchThreshold || 70), 
+          minPassScore: Number(minPassScore || 0), 
+          maxZarikReward: Number(maxZarikReward || 0), 
+          maxPointsReward: Number(maxPointsReward || 0), 
+          orderIndex: Number(orderIndex || 0) 
+        }
       });
     } else {
       session = await prisma.classSession.create({
-        data: { categoryId: finalCategoryId, title, description, videoUrl, instructor: finalInstructor, 
-                minWatchThreshold: Number(minWatchThreshold || 70), 
-                minPassScore: Number(minPassScore || 0), 
-                maxZarikReward: Number(maxZarikReward || 0), 
-                maxPointsReward: Number(maxPointsReward || 0), 
-                orderIndex: Number(orderIndex || 0) }
+        data: { 
+          categoryId: finalCategoryId, 
+          title, 
+          description, 
+          videoUrl, 
+          instructor: finalInstructor,
+          sessionDate,
+          sessionTime,
+          minWatchThreshold: Number(minWatchThreshold || 70), 
+          minPassScore: Number(minPassScore || 0), 
+          maxZarikReward: Number(maxZarikReward || 0), 
+          maxPointsReward: Number(maxPointsReward || 0), 
+          orderIndex: Number(orderIndex || 0) 
+        }
       });
     }
     res.json({ message: 'Saved successfully', data: session });
@@ -482,7 +499,9 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
               where: { id: sess.id },
               data: {
                 ...(sess.title ? { title: sess.title } : {}),
-                ...(sess.instructor ? { instructor: sess.instructor } : {})
+                ...(sess.instructor ? { instructor: sess.instructor } : {}),
+                ...(sess.sessionDate !== undefined ? { sessionDate: sess.sessionDate } : {}),
+                ...(sess.sessionTime !== undefined ? { sessionTime: sess.sessionTime } : {}),
               }
             });
           }

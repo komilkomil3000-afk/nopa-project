@@ -1096,4 +1096,34 @@ class HttpApiService {
       return false;
     }
   }
+
+  // --- Notifications API ---
+  Future<Map<String, dynamic>?> getNotifications() async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/notifications'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('getNotifications error: $e');
+    }
+    return null;
+  }
+
+  Future<bool> markNotificationAsRead(String notifId) async {
+    try {
+      final response = await _patch(
+        Uri.parse('$baseUrl/notifications/$notifId/read'),
+        headers: _getHeaders(),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('markNotificationAsRead error: $e');
+      return false;
+    }
+  }
 }
+

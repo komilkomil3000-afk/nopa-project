@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../utils/global_state.dart';
-import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/notification_bell_button.dart';
 import '../widgets/safe_avatar.dart';
 
 
@@ -405,39 +405,7 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Consumer<AppRepository>(
-                      builder: (context, repository, _) {
-                        final count = repository.unreadNotificationsCount;
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => NopaNotificationDialog.show(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                child: const Icon(Icons.notifications_none, color: Colors.white, size: 20),
-                              ),
-                            ),
-                            if (count > 0)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    '$count',
-                                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
+                    const NotificationBellButton(),
                   ],
                 ),
               ),

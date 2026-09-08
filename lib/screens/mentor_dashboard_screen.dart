@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/create_challenge_dialog.dart';
 import '../services/app_state_repository.dart';
-import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/notification_bell_button.dart';
 import '../widgets/safe_avatar.dart';
 import '../main.dart';
 
@@ -177,39 +177,7 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Consumer<AppRepository>(
-                      builder: (context, repository, _) {
-                        final count = repository.unreadNotificationsCount;
-                        return Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => NopaNotificationDialog.show(context),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                child: const Icon(Icons.notifications_none, color: Colors.white, size: 20),
-                              ),
-                            ),
-                            if (count > 0)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    '$count',
-                                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
+                    const NotificationBellButton(),
                   ],
                 ),
               ),

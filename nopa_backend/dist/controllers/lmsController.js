@@ -366,29 +366,46 @@ const createOrUpdateCategory = async (req, res) => {
 exports.createOrUpdateCategory = createOrUpdateCategory;
 const createOrUpdateSession = async (req, res) => {
     try {
-        const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+        const { id: paramId } = req.params;
+        const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, sessionDate, sessionTime, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+        const targetId = id || paramId;
         const finalCategoryId = categoryId || subCourseId;
         const finalInstructor = instructor || teacher;
         let session;
-        if (id) {
+        if (targetId) {
             session = await db_1.default.classSession.update({
-                where: { id },
-                data: { title, description, videoUrl, instructor: finalInstructor,
+                where: { id: targetId },
+                data: {
+                    ...(title !== undefined ? { title } : {}),
+                    ...(description !== undefined ? { description } : {}),
+                    ...(videoUrl !== undefined ? { videoUrl } : {}),
+                    ...(finalInstructor !== undefined ? { instructor: finalInstructor } : {}),
+                    ...(sessionDate !== undefined ? { sessionDate } : {}),
+                    ...(sessionTime !== undefined ? { sessionTime } : {}),
                     minWatchThreshold: Number(minWatchThreshold || 70),
                     minPassScore: Number(minPassScore || 0),
                     maxZarikReward: Number(maxZarikReward || 0),
                     maxPointsReward: Number(maxPointsReward || 0),
-                    orderIndex: Number(orderIndex || 0) }
+                    orderIndex: Number(orderIndex || 0)
+                }
             });
         }
         else {
             session = await db_1.default.classSession.create({
-                data: { categoryId: finalCategoryId, title, description, videoUrl, instructor: finalInstructor,
+                data: {
+                    categoryId: finalCategoryId,
+                    title,
+                    description,
+                    videoUrl,
+                    instructor: finalInstructor,
+                    sessionDate,
+                    sessionTime,
                     minWatchThreshold: Number(minWatchThreshold || 70),
                     minPassScore: Number(minPassScore || 0),
                     maxZarikReward: Number(maxZarikReward || 0),
                     maxPointsReward: Number(maxPointsReward || 0),
-                    orderIndex: Number(orderIndex || 0) }
+                    orderIndex: Number(orderIndex || 0)
+                }
             });
         }
         res.json({ message: 'Saved successfully', data: session });
@@ -480,7 +497,9 @@ const batchSaveStationContent = async (req, res) => {
                             where: { id: sess.id },
                             data: {
                                 ...(sess.title ? { title: sess.title } : {}),
-                                ...(sess.instructor ? { instructor: sess.instructor } : {})
+                                ...(sess.instructor ? { instructor: sess.instructor } : {}),
+                                ...(sess.sessionDate !== undefined ? { sessionDate: sess.sessionDate } : {}),
+                                ...(sess.sessionTime !== undefined ? { sessionTime: sess.sessionTime } : {}),
                             }
                         });
                     }

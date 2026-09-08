@@ -370,6 +370,8 @@ model ClassSession {
   description       String?
   videoUrl          String?
   instructor        String?
+  sessionDate       String?  // Shamsi date: e.g. "1405/07/02"
+  sessionTime       String?  // Class time interval: e.g. "۱۸:۰۰ الی ۱۹:۳۰"
   minWatchThreshold Float    @default(70.0)
   minPassScore      Int      @default(0)
   maxZarikReward    Int      @default(0)

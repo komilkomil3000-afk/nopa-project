@@ -16,6 +16,7 @@ class CalendarEvent {
   final String? stationSubtitle;
   final String? instructor;
   final String? id;
+  final String? jalaliDate;
 
   CalendarEvent({
     required this.year,
@@ -28,6 +29,7 @@ class CalendarEvent {
     this.stationSubtitle,
     this.instructor,
     this.id,
+    this.jalaliDate,
   });
 }
 
@@ -87,7 +89,18 @@ class _EducationCalendarState extends State<EducationCalendar> {
             int evDay = 1;
 
             try {
-              if (e['eventDate'] != null) {
+              if (e['jalaliDate'] != null && e['jalaliDate'].toString().contains('/')) {
+                final parts = e['jalaliDate'].toString().split('/');
+                if (parts.length == 3) {
+                  evYear = int.parse(parts[0]);
+                  evMonth = int.parse(parts[1]);
+                  evDay = int.parse(parts[2]);
+                }
+              } else if (e['year'] != null && e['month'] != null && e['day'] != null) {
+                evYear = e['year'] is int ? e['year'] : int.parse(e['year'].toString());
+                evMonth = e['month'] is int ? e['month'] : int.parse(e['month'].toString());
+                evDay = e['day'] is int ? e['day'] : int.parse(e['day'].toString());
+              } else if (e['eventDate'] != null) {
                 final dt = DateTime.parse(e['eventDate']);
                 final jalaliDt = Jalali.fromDateTime(dt);
                 evYear = jalaliDt.year;
@@ -110,7 +123,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
               stationTitle: e['stationTitle'],
               stationSubtitle: e['stationSubtitle'],
               instructor: e['instructor'],
-              id: e['id'],
+              id: e['id']?.toString(),
+              jalaliDate: e['jalaliDate'],
             ));
           }
         }
@@ -121,10 +135,44 @@ class _EducationCalendarState extends State<EducationCalendar> {
             if (h is int) loadedHolidays.add(h);
           }
         }
+
+        // Smart month targeting:
+        // If current month has no scheduled events (e.g. app opened in Shahrivar),
+        // automatically switch to the nearest upcoming month that has classes (Mehr 1405)!
+        int targetYear = _selectedYear;
+        int targetMonth = _selectedMonth;
+        int targetDay = _selectedDay;
+
+        final currentMonthHasEvents = loadedEvents.any((ev) => ev.year == targetYear && ev.month == targetMonth);
+        if (!currentMonthHasEvents && loadedEvents.isNotEmpty) {
+          final upcomingEvents = loadedEvents.where((ev) {
+            if (ev.year > targetYear) return true;
+            if (ev.year == targetYear && ev.month >= targetMonth) return true;
+            return false;
+          }).toList();
+
+          final firstEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : loadedEvents.first;
+          targetYear = firstEvent.year;
+          targetMonth = firstEvent.month;
+          targetDay = firstEvent.day;
+        } else {
+          // If current month has events, ensure selectedDay has events if possible
+          final todayEvents = loadedEvents.where((ev) => ev.year == targetYear && ev.month == targetMonth && ev.day == targetDay).toList();
+          if (todayEvents.isEmpty) {
+            final monthEvents = loadedEvents.where((ev) => ev.year == targetYear && ev.month == targetMonth).toList();
+            if (monthEvents.isNotEmpty) {
+              targetDay = monthEvents.first.day;
+            }
+          }
+        }
         
         setState(() {
           _events = loadedEvents;
           _holidays = loadedHolidays;
+          _currentJalaliMonth = Jalali(targetYear, targetMonth, 1);
+          _selectedYear = targetYear;
+          _selectedMonth = targetMonth;
+          _selectedDay = targetDay;
           _isLoading = false;
         });
       } else if (mounted) {
@@ -133,6 +181,16 @@ class _EducationCalendarState extends State<EducationCalendar> {
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _selectMonth(int month, {int year = 1405}) {
+    setState(() {
+      _currentJalaliMonth = Jalali(year, month, 1);
+      _selectedYear = year;
+      _selectedMonth = month;
+      final monthEvents = _events.where((e) => e.year == year && e.month == month).toList();
+      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
+    });
   }
 
   void _goToPreviousMonth() {
@@ -144,7 +202,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
       }
       _selectedYear = _currentJalaliMonth.year;
       _selectedMonth = _currentJalaliMonth.month;
-      _selectedDay = 1;
+      final monthEvents = _events.where((e) => e.year == _selectedYear && e.month == _selectedMonth).toList();
+      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
     });
   }
 
@@ -157,7 +216,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
       }
       _selectedYear = _currentJalaliMonth.year;
       _selectedMonth = _currentJalaliMonth.month;
-      _selectedDay = 1;
+      final monthEvents = _events.where((e) => e.year == _selectedYear && e.month == _selectedMonth).toList();
+      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
     });
   }
 
@@ -221,8 +281,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 22),
-                          onPressed: _goToNextMonth,
-                          tooltip: 'ماه بعد',
+                          onPressed: _goToPreviousMonth,
+                          tooltip: 'ماه قبل',
                         ),
                         Text(
                           "${_jalaliMonthNames[jMonth]} $jYear",
@@ -235,8 +295,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 22),
-                          onPressed: _goToPreviousMonth,
-                          tooltip: 'ماه قبل',
+                          onPressed: _goToNextMonth,
+                          tooltip: 'ماه بعد',
                         ),
                       ],
                     ),
@@ -278,8 +338,12 @@ class _EducationCalendarState extends State<EducationCalendar> {
                     ),
                   ],
                 ),
-                const Divider(color: Colors.white10, height: 20),
+                const Divider(color: Colors.white10, height: 16),
                 
+                // Semester Quick Month Selector (مهر، آبان، آذر)
+                _buildSemesterMonthSelector(),
+                const SizedBox(height: 14),
+
                 // Day Headers
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -453,6 +517,86 @@ class _EducationCalendarState extends State<EducationCalendar> {
             if (isHoliday && dayEvents.isEmpty) ...[
               const SizedBox(height: 2),
               const Icon(Icons.star, color: Colors.redAccent, size: 7),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSemesterMonthSelector() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildSemesterMonthChip(7, "مهر ۱۴۰۵"),
+          const SizedBox(width: 8),
+          _buildSemesterMonthChip(8, "آبان ۱۴۰۵"),
+          const SizedBox(width: 8),
+          _buildSemesterMonthChip(9, "آذر ۱۴۰۵"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSemesterMonthChip(int month, String label) {
+    final bool isCurrent = (_currentJalaliMonth.month == month && _currentJalaliMonth.year == 1405);
+    final count = _events.where((e) => e.year == 1405 && e.month == month).length;
+
+    return GestureDetector(
+      onTap: () => _selectMonth(month),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isCurrent ? const Color(0xFF7C3AED) : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCurrent ? const Color(0xFFA78BFA) : Colors.white.withValues(alpha: 0.1),
+            width: isCurrent ? 1.5 : 1.0,
+          ),
+          boxShadow: isCurrent
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isCurrent ? Colors.white : Colors.white70,
+                fontSize: 12,
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                fontFamily: 'Vazirmatn',
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isCurrent ? Colors.white.withValues(alpha: 0.25) : const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  "$count",
+                  style: TextStyle(
+                    color: isCurrent ? Colors.white : const Color(0xFFC4B5FD),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Vazirmatn',
+                  ),
+                ),
+              ),
             ],
           ],
         ),

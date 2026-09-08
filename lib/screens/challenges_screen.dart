@@ -4,7 +4,7 @@ import '../utils/constants.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';
-import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/notification_bell_button.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -533,42 +533,9 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                         // Left: Actions (Notification & Drawer)
                         Row(
                           children: [
-                            Consumer<AppRepository>(
-                              builder: (context, repo, _) {
-                                final count = repo.unreadNotificationsCount;
-                                return Stack(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () => NopaNotificationDialog.show(context),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black38,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.white10),
-                                        ),
-                                        child: const Icon(Icons.notifications_none, color: Colors.white, size: 20),
-                                      ),
-                                    ),
-                                    if (count > 0)
-                                      Positioned(
-                                        top: 2,
-                                        right: 2,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Text(
-                                            '$count',
-                                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
+                            const NotificationBellButton(
+                              iconSize: 20,
+                              padding: EdgeInsets.all(10),
                             ),
                             const SizedBox(width: 8),
                             Builder(

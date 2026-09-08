@@ -8,7 +8,7 @@ import '../widgets/floating_assets_card.dart';
 import '../widgets/education_calendar.dart';
 import '../widgets/jarchi_item.dart';
 import '../widgets/station_card.dart';
-import '../widgets/nopa_notification_dialog.dart';
+import '../widgets/notification_bell_button.dart';
 import '../widgets/safe_avatar.dart';
 import '../main.dart'; // For MainScreenState
 
@@ -103,29 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            NopaNotificationDialog.show(context);
-                          },
-                          child: Stack(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                child: const Icon(Icons.notifications_none, color: Colors.white, size: 20),
-                              ),
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const NotificationBellButton(),
                       ],
                     ),
                   ),
