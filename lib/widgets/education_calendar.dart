@@ -266,89 +266,143 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
             child: Column(
               children: [
-                // Top Header with Month Navigation
+                // Top Actions: بزرگنمایی and امروز
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 22),
-                          onPressed: _goToPreviousMonth,
-                          tooltip: 'ماه قبل',
+                    GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.35)),
                         ),
-                        Text(
-                          "${_jalaliMonthNames[jMonth]} $jYear",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 22),
-                          onPressed: _goToNextMonth,
-                          tooltip: 'ماه بعد',
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        if (!isThisCurrentMonth)
-                          GestureDetector(
-                            onTap: _goToToday,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              margin: const EdgeInsets.only(left: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _isExpanded ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
+                              color: const Color(0xFFFFD54F),
+                              size: 17,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _isExpanded ? "کوچک‌نمایی" : "بزرگنمایی",
+                              style: const TextStyle(
+                                color: Color(0xFFFFD54F),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Vazirmatn',
                               ),
-                              child: const Text(
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (!isThisCurrentMonth)
+                      GestureDetector(
+                        onTap: _goToToday,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.today_rounded, color: Color(0xFFC4B5FD), size: 14),
+                              SizedBox(width: 4),
+                              Text(
                                 "امروز",
-                                style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 11, fontFamily: 'Vazirmatn'),
+                                style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
                               ),
-                            ),
-                          ),
-                        GestureDetector(
-                          onTap: () => setState(() => _isExpanded = !_isExpanded),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.35)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isExpanded ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
-                                  color: const Color(0xFFFFD54F),
-                                  size: 17,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _isExpanded ? "کوچک‌نمایی" : "بزرگنمایی",
-                                  style: const TextStyle(
-                                    color: Color(0xFFFFD54F),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Vazirmatn',
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
-                const Divider(color: Colors.white10, height: 16),
-                const SizedBox(height: 6),
+                const SizedBox(height: 12),
+
+                // Month Switcher with Two Arrows on Sides
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // فلش ماه قبل (سمت راست در راست‌به‌چپ)
+                      InkWell(
+                        onTap: _goToPreviousMonth,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 13),
+                              SizedBox(width: 4),
+                              Text(
+                                "ماه قبل",
+                                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // عنوان ماه و سال در وسط
+                      Text(
+                        "${_jalaliMonthNames[jMonth]} $jYear",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Vazirmatn',
+                        ),
+                      ),
+
+                      // فلش ماه بعد (سمت چپ در راست‌به‌چپ)
+                      InkWell(
+                        onTap: _goToNextMonth,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "ماه بعد",
+                                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 13),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Day Headers
                 Row(
@@ -365,10 +419,21 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 ),
                 const SizedBox(height: 10),
 
-                // Calendar Grid or Compact Week Row
-                _isExpanded 
-                    ? _buildFullMonthGrid(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1) 
-                    : _buildCompactWeekRow(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1),
+                // Calendar Grid or Compact Week Row (with swipe support)
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity != null) {
+                      if (details.primaryVelocity! > 250) {
+                        _goToPreviousMonth();
+                      } else if (details.primaryVelocity! < -250) {
+                        _goToNextMonth();
+                      }
+                    }
+                  },
+                  child: _isExpanded 
+                      ? _buildFullMonthGrid(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1) 
+                      : _buildCompactWeekRow(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1),
+                ),
                 
                 const SizedBox(height: 14),
                 _buildLegend(),
