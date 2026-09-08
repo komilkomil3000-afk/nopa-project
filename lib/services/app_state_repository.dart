@@ -19,7 +19,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   AppRepository._internal() {
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
-    if (kDebugMode) {
+    if (kDebugMode && useMockBackend) {
       EmbeddedServer().start().then((_) {
         _apiService.checkBackendHealth();
         refreshUser();
@@ -98,6 +98,21 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       beyragh: 0,
       farsh: 0,
     );
+    notifyListeners();
+  }
+
+  void handleUnauthorized() {
+    currentUser = UserModel(
+      id: 'guest',
+      name: 'مهمان',
+      phoneNumber: '',
+      role: UserRole.member,
+      zarik: 0,
+      nakh: 0,
+      beyragh: 0,
+      farsh: 0,
+    );
+    challenges.clear();
     notifyListeners();
   }
 

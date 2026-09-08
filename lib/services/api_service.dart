@@ -7,14 +7,97 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class HttpApiService {
+  static const String _cachedHostKey = 'cached_backend_host';
+  static const String _defaultHost = '192.168.100.51';
   static final String _envHost = const String.fromEnvironment('NOPA_BACKEND_HOST');
+
   static final HttpApiService _instance = HttpApiService._internal();
   factory HttpApiService() => _instance;
   HttpApiService._internal();
 
-  String get _defaultHost => '192.168.100.51';
+  static const _secureStorage = FlutterSecureStorage();
+  static VoidCallback? onUnauthorized;
+
+  String _activeHost = _defaultHost;
+  String get activeHost => _activeHost;
   late String _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
   String get baseUrl => _activeBaseUrl;
+
+  String? _token;
+  String? get token => _token;
+  bool get isAuthenticated => _token != null;
+
+  bool _isHandling401 = false;
+
+  /// Offload JSON decoding to a background isolate when payload exceeds 10KB
+  static Future<dynamic> parseJsonAsync(String source) async {
+    if (source.isEmpty) return null;
+    if (source.length > 10240) {
+      return compute(_isolateJsonDecode, source);
+    }
+    return jsonDecode(source);
+  }
+
+  static dynamic _isolateJsonDecode(String source) {
+    return jsonDecode(source);
+  }
+
+  /// Automatic token invalidation on 401 Unauthorized
+  void handleUnauthorized() {
+    if (_isHandling401) return;
+    _isHandling401 = true;
+    debugPrint('🚨 [HttpApiService] 401 Unauthorized received! Clearing token and routing to /auth...');
+
+    _token = null;
+    _secureStorage.delete(key: 'auth_token').catchError((e) {
+      debugPrint('Failed to delete auth_token: $e');
+    });
+
+    Future.microtask(() {
+      onUnauthorized?.call();
+    });
+
+    Future.delayed(const Duration(seconds: 2), () {
+      _isHandling401 = false;
+    });
+  }
+
+  /// Internal HTTP wrappers that monitor status codes for 401 Unauthorized
+  Future<http.Response> _get(Uri url, {Map<String, String>? headers, bool checkAuth = true}) async {
+    final response = await http.get(url, headers: headers ?? _getHeaders());
+    if (checkAuth && response.statusCode == 401) {
+      handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<http.Response> _post(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
+    final response = await http.post(url, headers: headers ?? _getHeaders(), body: body);
+    if (checkAuth && response.statusCode == 401) {
+      handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<http.Response> _patch(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
+    final response = await http.patch(url, headers: headers ?? _getHeaders(), body: body);
+    if (checkAuth && response.statusCode == 401) {
+      handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<http.Response> _delete(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
+    final response = await http.delete(url, headers: headers ?? _getHeaders(), body: body);
+    if (checkAuth && response.statusCode == 401) {
+      handleUnauthorized();
+    }
+    return response;
+  }
+
+  Future<http.Response> authenticatedDelete(String path) async {
+    return await _delete(Uri.parse('$baseUrl$path'));
+  }
 
   Future<List<String>> _buildHostCandidates() async {
     final candidates = <String>[];
@@ -25,7 +108,6 @@ class HttpApiService {
     candidates.add('10.0.2.2'); // Android Emulator
     candidates.add('localhost');
     candidates.add('127.0.0.1');
-    candidates.add('192.168.100.51'); // Hardcoded developer PC Wi-Fi IP
 
     try {
       final interfaces = await NetworkInterface.list(includeLoopback: false, type: InternetAddressType.IPv4);
@@ -46,42 +128,73 @@ class HttpApiService {
     return candidates;
   }
 
+  Future<bool> _pingHost(String host, {int timeoutMs = 500}) async {
+    try {
+      final res = await http.get(Uri.parse('http://$host:5000/health')).timeout(Duration(milliseconds: timeoutMs));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Fast-path backend health check that uses cached IP to eliminate startup UI freezes
   Future<void> checkBackendHealth() async {
     try {
       _token = await _secureStorage.read(key: 'auth_token');
-      debugPrint('🔑 Loaded cached token from secure storage: ${_token != null ? "exists" : "null"}');
+      debugPrint('🔑 Loaded cached token: ${_token != null ? "exists" : "null"}');
     } catch (e) {
       debugPrint('Failed to read token from secure storage: $e');
     }
 
-    final hosts = await _buildHostCandidates();
-    debugPrint('🔗 Probing host candidates: $hosts');
-    for (final host in hosts) {
-      final uri = 'http://$host:5000/health';
-      try {
-        final res = await http.get(Uri.parse(uri)).timeout(const Duration(milliseconds: 1500));
-        if (res.statusCode == 200) {
-          _activeBaseUrl = 'http://$host:5000/api/v1';
-          debugPrint('🔗 Connected to Node.js backend on http://$host:5000');
-          return;
-        } else {
-          debugPrint('❌ Failed to connect to $uri - Status: ${res.statusCode}');
-        }
-      } catch (e) {
-        debugPrint('❌ Connection error to $uri : $e');
-        continue;
-      }
+    String? cachedHost;
+    try {
+      cachedHost = await _secureStorage.read(key: _cachedHostKey);
+    } catch (e) {
+      debugPrint('Failed to read cached_backend_host: $e');
     }
 
-    _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
-    debugPrint('🔗 Failed to find a health endpoint across all candidates; falling back to $_activeBaseUrl');
+    final targetHost = cachedHost ?? (_envHost.isNotEmpty ? _envHost : _defaultHost);
+    _activeHost = targetHost;
+    _activeBaseUrl = 'http://$targetHost:5000/api/v1';
+
+    // 1. Fast ping target host (<= 500ms)
+    final isHealthy = await _pingHost(targetHost, timeoutMs: 500);
+    if (isHealthy) {
+      debugPrint('⚡ Fast-path verified: Connected to backend on http://$targetHost:5000 (0ms probe delay)');
+      if (cachedHost != targetHost) {
+        await _secureStorage.write(key: _cachedHostKey, value: targetHost);
+      }
+      return;
+    }
+
+    debugPrint('⚠️ Preferred host $targetHost:5000 unresponsive; running concurrent candidate discovery...');
+    // 2. Concurrently probe candidates if cached host is unreachable
+    await _probeCandidatesConcurrently();
   }
 
-  static const _secureStorage = FlutterSecureStorage();
-  String? _token;
+  Future<void> _probeCandidatesConcurrently() async {
+    final candidates = await _buildHostCandidates();
+    debugPrint('🔗 Concurrent candidate probing: $candidates');
 
-  String? get token => _token;
-  bool get isAuthenticated => _token != null;
+    final probeFutures = candidates.map((host) async {
+      final ok = await _pingHost(host, timeoutMs: 700);
+      if (ok) return host;
+      return null;
+    }).toList();
+
+    final results = await Future.wait(probeFutures);
+    final workingHost = results.firstWhere((h) => h != null, orElse: () => null);
+
+    if (workingHost != null) {
+      _activeHost = workingHost;
+      _activeBaseUrl = 'http://$workingHost:5000/api/v1';
+      await _secureStorage.write(key: _cachedHostKey, value: workingHost);
+      debugPrint('🔗 Resolved & cached working backend: http://$workingHost:5000');
+    } else {
+      _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
+      debugPrint('🔗 Fallback to default backend: $_activeBaseUrl');
+    }
+  }
 
   Future<void> setToken(String? token) async {
     _token = token;
@@ -102,13 +215,14 @@ class HttpApiService {
   // Auth & Login
   Future<Map<String, dynamic>?> verifyPhone(String phoneNumber) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/auth/verify-phone'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'phoneNumber': phoneNumber}),
+        checkAuth: false,
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
       return null;
     } catch (e) {
@@ -123,13 +237,14 @@ class HttpApiService {
       if (password != null) bodyMap['password'] = password;
       if (role != null) bodyMap['role'] = role;
       
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(bodyMap),
+        checkAuth: false,
       );
 
-      final data = jsonDecode(response.body);
+      final data = await parseJsonAsync(response.body);
 
       if (response.statusCode == 300) {
         return {'status': 'multiple_profiles', 'profiles': data['profiles']};
@@ -157,7 +272,7 @@ class HttpApiService {
     required String password,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -168,9 +283,10 @@ class HttpApiService {
           'dateOfBirth': dateOfBirth,
           'password': password,
         }),
+        checkAuth: false,
       );
 
-      final data = jsonDecode(response.body);
+      final data = await parseJsonAsync(response.body);
 
       if (response.statusCode == 200) {
         _token = data['token'];
@@ -187,7 +303,7 @@ class HttpApiService {
 
   Future<bool> logout() async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/auth/logout'),
         headers: _getHeaders(),
       );
@@ -204,7 +320,7 @@ class HttpApiService {
 
   Future<bool> changePassword(String? currentPassword, String newPassword) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/auth/change-password'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -217,8 +333,8 @@ class HttpApiService {
       if (response.statusCode == 200) {
         return true;
       }
-      final data = jsonDecode(response.body);
-      debugPrint('Change password failed: ${data['error'] ?? response.body}');
+      final data = await parseJsonAsync(response.body);
+      debugPrint('Change password failed: ${data?['error'] ?? response.body}');
       return false;
     } catch (e) {
       debugPrint('Change password error: $e');
@@ -228,7 +344,7 @@ class HttpApiService {
 
   Future<void> completeProfile(Map<String, dynamic> payload) async {
     try {
-      await http.post(
+      await _post(
         Uri.parse('$baseUrl/users/complete-profile'),
         headers: _getHeaders(),
         body: jsonEncode(payload),
@@ -239,7 +355,7 @@ class HttpApiService {
   }
 
   Future<http.Response> authenticatedPost(String path, Map<String, dynamic> body) async {
-    return await http.post(
+    return await _post(
       Uri.parse('$baseUrl$path'),
       headers: _getHeaders(),
       body: jsonEncode(body),
@@ -249,14 +365,16 @@ class HttpApiService {
   // Get Me
   Future<UserModel?> getMe() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/users/me'),
         headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return UserModel.fromJson(data);
+        final data = await parseJsonAsync(response.body);
+        if (data != null) {
+          return UserModel.fromJson(data);
+        }
       }
       return null;
     } catch (e) {
@@ -268,23 +386,25 @@ class HttpApiService {
   // Get Challenges
   Future<List<ChallengeModel>> getChallenges() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/challenges'),
         headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => ChallengeModel(
-          id: json['id'],
-          title: json['title'],
-          description: json['description'],
-          rewardZarik: json['rewardZarik'],
-          type: json['type'],
-          questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
-          createdByMentorId: json['createdByMentorId'],
-          progress: 0.0,
-        )).toList();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return data.map((json) => ChallengeModel(
+            id: json['id'],
+            title: json['title'],
+            description: json['description'],
+            rewardZarik: json['rewardZarik'],
+            type: json['type'],
+            questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
+            createdByMentorId: json['createdByMentorId'],
+            progress: 0.0,
+          )).toList();
+        }
       }
       return [];
     } catch (e) {
@@ -296,7 +416,7 @@ class HttpApiService {
   // Submit Quiz Challenge
   Future<Map<String, dynamic>?> submitQuizChallenge(String challengeId, List<int> answers) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/challenges/$challengeId/submit-quiz'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -304,7 +424,7 @@ class HttpApiService {
         }),
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
       return null;
     } catch (e) {
@@ -325,14 +445,16 @@ class HttpApiService {
   // Get Course Classes
   Future<List<Map<String, dynamic>>> getClasses() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/classes'),
         headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -344,14 +466,16 @@ class HttpApiService {
   // Get Stations
   Future<List<Map<String, dynamic>>> getStations() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/lms/stations'),
         headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -362,10 +486,12 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getMentorLeaderboard() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/leagues/mentors'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/leagues/mentors'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -376,10 +502,12 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getNews() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/news'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/news'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -391,10 +519,12 @@ class HttpApiService {
   Future<List<Map<String, dynamic>>> getBanners({String? position}) async {
     try {
       final url = position != null ? '$baseUrl/banners?position=$position' : '$baseUrl/banners';
-      final response = await http.get(Uri.parse(url), headers: _getHeaders());
+      final response = await _get(Uri.parse(url), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data);
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -405,10 +535,9 @@ class HttpApiService {
 
   // Buy Zarik (Mock Payment Simulator)
   Future<bool> buyZarikPackage(int packageZarikAmount) async {
-    // Simulate network and payment gateway delay
     await Future.delayed(const Duration(seconds: 2));
     debugPrint('MOCK: Successfully purchased $packageZarikAmount Zarik.');
-    return true; // We assume the backend updates or we refresh getMe()
+    return true;
   }
 
   // Upload media file (multipart) to backend media upload endpoint
@@ -424,7 +553,8 @@ class HttpApiService {
       final streamed = await request.send();
       final resp = await http.Response.fromStream(streamed);
       if (resp.statusCode == 201 || resp.statusCode == 200) {
-        return jsonDecode(resp.body) as Map<String, dynamic>;
+        final data = await parseJsonAsync(resp.body);
+        return data as Map<String, dynamic>?;
       }
       debugPrint('uploadMediaFile failed: ${resp.statusCode} ${resp.body}');
       return null;
@@ -437,10 +567,12 @@ class HttpApiService {
   // Get pending submissions for mentors
   Future<List<Map<String, dynamic>>> getPendingSubmissions() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/submissions/pending'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/submissions/pending'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -456,7 +588,7 @@ class HttpApiService {
       if (score != null) payload['score'] = score;
       if (mentorFeedback != null) payload['mentorFeedback'] = mentorFeedback;
 
-      final response = await http.patch(
+      final response = await _patch(
         Uri.parse('$baseUrl/submissions/$submissionId/review'),
         headers: _getHeaders(),
         body: jsonEncode(payload),
@@ -464,8 +596,8 @@ class HttpApiService {
       if (response.statusCode == 200) {
         return {'success': true};
       } else {
-        final d = jsonDecode(response.body);
-        return {'success': false, 'error': d['error'] ?? 'خطای ناشناخته'};
+        final d = await parseJsonAsync(response.body);
+        return {'success': false, 'error': d?['error'] ?? 'خطای ناشناخته'};
       }
     } catch (e) {
       debugPrint('reviewSubmission error: $e');
@@ -475,7 +607,6 @@ class HttpApiService {
 
   // Unlock Class
   Future<bool> unlockClass(String classId, int costZarik) async {
-    // Since we are mocking the unlock in UI or hitting a backend if available
     await Future.delayed(const Duration(seconds: 1));
     debugPrint('MOCK: Unlocked class $classId for $costZarik Zarik.');
     return true;
@@ -484,18 +615,20 @@ class HttpApiService {
   // Get Media Assets
   Future<List<Map<String, dynamic>>> getMediaAssets({String? type}) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/media'),
         headers: _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        List<Map<String, dynamic>> media = data.cast<Map<String, dynamic>>();
-        if (type != null) {
-          media = media.where((m) => m['assetType'] == type).toList();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          List<Map<String, dynamic>> media = List<Map<String, dynamic>>.from(data);
+          if (type != null) {
+            media = media.where((m) => m['assetType'] == type).toList();
+          }
+          return media;
         }
-        return media;
       }
       return [];
     } catch (e) {
@@ -507,14 +640,14 @@ class HttpApiService {
   // Submit Quiz
   Future<Map<String, dynamic>?> submitQuiz(String challengeId, List<int> answers) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/challenges/$challengeId/submit-quiz'),
         headers: _getHeaders(),
         body: jsonEncode({'answers': answers}),
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
       return null;
     } catch (e) {
@@ -526,7 +659,7 @@ class HttpApiService {
   // Submit Task Assignment
   Future<bool> submitTask(String challengeId, String answerText) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/submissions'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -545,7 +678,7 @@ class HttpApiService {
   // Submit Mentor Evaluation
   Future<bool> evaluateMentor(String mentorId, int rating, String comments) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/evaluations/mentor'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -565,9 +698,9 @@ class HttpApiService {
   // --- CARAVAN API ---
   Future<Map<String, dynamic>?> getCaravanDetails(String caravanId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/caravans/$caravanId'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/caravans/$caravanId'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
       return null;
     } catch (e) {
@@ -579,9 +712,10 @@ class HttpApiService {
   // --- CHAT API ---
   Future<List<dynamic>> getDirectMessages(String mentorId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/chat/direct/$mentorId'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/chat/direct/$mentorId'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data;
       }
       return [];
     } catch (e) {
@@ -592,9 +726,10 @@ class HttpApiService {
 
   Future<List<dynamic>> getCaravanMessages(String caravanId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/chat/caravan/$caravanId'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/chat/caravan/$caravanId'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data;
       }
       return [];
     } catch (e) {
@@ -605,7 +740,7 @@ class HttpApiService {
 
   Future<bool> sendChatMessage({String? receiverId, String? caravanId, String? text, String? fileUrl, String? fileType}) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/chat/send'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -625,12 +760,12 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getBookmarks(String sessionId) async {
     try {
-      
-      final res = await http.get(Uri.parse('$baseUrl/lms/bookmarks/$sessionId'), headers: {
-        'Authorization': 'Bearer $_token'
-      });
+      final res = await _get(Uri.parse('$baseUrl/lms/bookmarks/$sessionId'), headers: _getHeaders());
       if (res.statusCode == 200) {
-        return List<Map<String, dynamic>>.from(jsonDecode(res.body));
+        final dynamic data = await parseJsonAsync(res.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
     } catch (e) {
       debugPrint('Error getting bookmarks: $e');
@@ -640,13 +775,9 @@ class HttpApiService {
 
   Future<bool> addBookmark(String sessionId, int videoSeconds, String noteText) async {
     try {
-      
-      final res = await http.post(
+      final res = await _post(
         Uri.parse('$baseUrl/lms/bookmarks'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json',
-        },
+        headers: _getHeaders(),
         body: jsonEncode({
           'sessionId': sessionId,
           'videoSeconds': videoSeconds,
@@ -662,19 +793,16 @@ class HttpApiService {
 
   Future<Map<String, dynamic>?> sendWatchHeartbeat(String sessionId, int currentPositionSeconds, int durationSeconds) async {
     try {
-      final res = await http.post(
+      final res = await _post(
         Uri.parse('$baseUrl/lms/sessions/$sessionId/heartbeat'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json',
-        },
+        headers: _getHeaders(),
         body: jsonEncode({
           'currentPositionSeconds': currentPositionSeconds,
           'durationSeconds': durationSeconds,
         }),
       );
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('sendWatchHeartbeat error: $e');
@@ -684,14 +812,12 @@ class HttpApiService {
 
   Future<Map<String, dynamic>?> getWatchProgress(String sessionId) async {
     try {
-      final res = await http.get(
+      final res = await _get(
         Uri.parse('$baseUrl/lms/sessions/$sessionId/progress'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-        },
+        headers: _getHeaders(),
       );
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('getWatchProgress error: $e');
@@ -701,14 +827,13 @@ class HttpApiService {
 
   Future<List<dynamic>> getUserProgress() async {
     try {
-      final res = await http.get(
+      final res = await _get(
         Uri.parse('$baseUrl/lms/user-progress'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-        },
+        headers: _getHeaders(),
       );
       if (res.statusCode == 200) {
-        return jsonDecode(res.body) as List<dynamic>;
+        final dynamic data = await parseJsonAsync(res.body);
+        if (data is List) return data;
       }
     } catch (e) {
       debugPrint('getUserProgress error: $e');
@@ -718,12 +843,9 @@ class HttpApiService {
 
   Future<void> markClipWatched(String clipId, {String? trackType, String? stationId, String? sessionId}) async {
     try {
-      await http.post(
+      await _post(
         Uri.parse('$baseUrl/lms/clips/$clipId/watched'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json',
-        },
+        headers: _getHeaders(),
         body: jsonEncode({
           'trackType': trackType,
           'stationId': stationId,
@@ -740,16 +862,13 @@ class HttpApiService {
       final Map<String, dynamic> bodyData = {'answers': answers};
       if (quizId != null) bodyData['quizId'] = quizId;
 
-      final res = await http.post(
+      final res = await _post(
         Uri.parse('$baseUrl/lms/sessions/$sessionId/submit-quiz'),
-        headers: {
-          'Authorization': 'Bearer $_token',
-          'Content-Type': 'application/json',
-        },
+        headers: _getHeaders(),
         body: jsonEncode(bodyData),
       );
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('submitClassSessionQuiz error: $e');
@@ -759,12 +878,12 @@ class HttpApiService {
 
   Future<Map<String, dynamic>?> getStudentPerformance(String userId) async {
     try {
-      final res = await http.get(
+      final res = await _get(
         Uri.parse('$baseUrl/admin/users/$userId/analytics'),
         headers: _getHeaders(),
       );
       if (res.statusCode == 200) {
-        return jsonDecode(res.body);
+        return (await parseJsonAsync(res.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('getStudentPerformance error: $e');
@@ -775,13 +894,15 @@ class HttpApiService {
   // --- Mentor Tickets & Workbench ---
   Future<List<Map<String, dynamic>>> getTickets() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/support/tickets'),
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
       return [];
     } catch (e) {
@@ -792,7 +913,7 @@ class HttpApiService {
 
   Future<bool> replyTicket(String ticketId, String replyMessage) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/support/tickets/$ticketId/reply'),
         headers: _getHeaders(),
         body: jsonEncode({'message': replyMessage}),
@@ -807,7 +928,7 @@ class HttpApiService {
   // --- Create Challenge ---
   Future<bool> createChallenge(ChallengeModel challenge) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/challenges'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -828,12 +949,12 @@ class HttpApiService {
   // --- Calendar Events ---
   Future<Map<String, dynamic>?> getCalendarEvents() async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/calendar/events'),
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('HTTP getCalendarEvents error: $e');
@@ -844,10 +965,12 @@ class HttpApiService {
   // --- Mentor Workspace Lifecycle ---
   Future<List<Map<String, dynamic>>> getMentorChallenges() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/mentor/challenges'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/mentor/challenges'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
     } catch (e) {
       debugPrint('getMentorChallenges error: $e');
@@ -857,7 +980,7 @@ class HttpApiService {
 
   Future<bool> createMentorChallenge(Map<String, dynamic> data) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/mentor/challenges'),
         headers: _getHeaders(),
         body: jsonEncode(data),
@@ -871,10 +994,12 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getChallengeSubmissions(String challengeId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/mentor/challenges/$challengeId/submissions'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/mentor/challenges/$challengeId/submissions'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.cast<Map<String, dynamic>>();
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
       }
     } catch (e) {
       debugPrint('getChallengeSubmissions error: $e');
@@ -884,7 +1009,7 @@ class HttpApiService {
 
   Future<Map<String, dynamic>> reviewMentorSubmission(String submissionId, bool approve, int reward, String feedback) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/mentor/submissions/$submissionId/review'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -896,8 +1021,8 @@ class HttpApiService {
       if (response.statusCode == 200) {
         return {'success': true};
       } else {
-        final d = jsonDecode(response.body);
-        return {'success': false, 'error': d['error'] ?? 'خطای ناشناخته'};
+        final d = await parseJsonAsync(response.body);
+        return {'success': false, 'error': d?['error'] ?? 'خطای ناشناخته'};
       }
     } catch (e) {
       debugPrint('reviewMentorSubmission error: $e');
@@ -907,9 +1032,9 @@ class HttpApiService {
 
   Future<Map<String, dynamic>?> getMentorTicketDetails(String ticketId) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/mentor/tickets/$ticketId'), headers: _getHeaders());
+      final response = await _get(Uri.parse('$baseUrl/mentor/tickets/$ticketId'), headers: _getHeaders());
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('getMentorTicketDetails error: $e');
@@ -919,7 +1044,7 @@ class HttpApiService {
 
   Future<bool> replyMentorTicket(String ticketId, String message) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/mentor/tickets/$ticketId/messages'),
         headers: _getHeaders(),
         body: jsonEncode({'message': message}),
@@ -939,7 +1064,7 @@ class HttpApiService {
     String? attachmentUrl,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/support/tickets'),
         headers: _getHeaders(),
         body: jsonEncode({
@@ -950,7 +1075,7 @@ class HttpApiService {
         }),
       );
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('createTicket error: $e');
@@ -960,7 +1085,7 @@ class HttpApiService {
 
   Future<bool> resolveTicket({required String ticketId, int? rating}) async {
     try {
-      final response = await http.patch(
+      final response = await _patch(
         Uri.parse('$baseUrl/support/tickets/$ticketId/resolve'),
         headers: _getHeaders(),
         body: jsonEncode({'rating': rating}),
@@ -972,5 +1097,3 @@ class HttpApiService {
     }
   }
 }
-
-

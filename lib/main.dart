@@ -27,9 +27,19 @@ import 'services/app_state_repository.dart';
 
 import 'services/theme_provider.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = true;
+
+  // Setup automatic 401 unauthorized token invalidation & login redirect
+  HttpApiService.onUnauthorized = () {
+    debugPrint('🚨 [Auth] Routing to /auth due to 401 Unauthorized session expiry');
+    AppRepository().handleUnauthorized();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (route) => false);
+  };
+
   await HttpApiService().checkBackendHealth();
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -76,6 +86,7 @@ class NepaApp extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.themeMode,
