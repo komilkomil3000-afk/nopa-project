@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -12,6 +13,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   bool useMockBackend = false;
   final HttpApiService _apiService = HttpApiService();
   HttpApiService get apiService => _apiService;
+  Timer? _notificationPollTimer;
 
   // Singleton Pattern
   static final AppRepository _instance = AppRepository._internal();
@@ -19,6 +21,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   AppRepository._internal() {
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
+    _startPeriodicNotificationSync();
     if (kDebugMode && useMockBackend) {
       EmbeddedServer().start().then((_) {
         _apiService.checkBackendHealth();
@@ -27,6 +30,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       refreshUser();
     }
+  }
+
+  void _startPeriodicNotificationSync() {
+    _notificationPollTimer?.cancel();
+    _notificationPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      fetchNotifications();
+    });
   }
 
   @override
@@ -294,10 +304,12 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final apiChallenges = await _apiService.getChallenges();
     challenges.clear();
     challenges.addAll(apiChallenges);
+    await fetchNotifications();
     notifyListeners();
   }
 
   void submitAssignment(SubmissionModel submission) {
+    submissions.removeWhere((s) => s.challengeId == submission.challengeId);
     submissions.insert(0, submission);
     addNotification(
       'پاسخ جدید دریافت شد 📝',
@@ -306,8 +318,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     );
     notifyListeners();
 
-    // Persist to backend
-    _apiService.submitTask(submission.challengeId, submission.answerText);
+    // Persist to backend and reload live challenges with new status
+    _apiService.submitTask(submission.challengeId, submission.answerText).then((_) {
+      refreshChallenges();
+    });
   }
 
   void rateMentor(String mentorId, double rating, String comment) {

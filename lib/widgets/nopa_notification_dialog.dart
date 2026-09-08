@@ -6,7 +6,10 @@ import '../models/user_model.dart';
 class NopaNotificationDialog {
   static void show(BuildContext context) {
     final repository = Provider.of<AppRepository>(context, listen: false);
-    repository.markAllNotificationsAsRead();
+    // Fetch fresh notifications from server immediately
+    repository.fetchNotifications().then((_) {
+      repository.markAllNotificationsAsRead();
+    });
     
     showDialog(
       context: context,
@@ -30,9 +33,18 @@ class NopaNotificationDialog {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white70),
-                          onPressed: () => Navigator.pop(context),
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white70),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.refresh, color: Colors.white70, size: 20),
+                              tooltip: 'به‌روزرسانی',
+                              onPressed: () => repository.fetchNotifications(),
+                            ),
+                          ],
                         ),
                         const Text(
                           'اعلان‌ها و پیام‌های نپا 🚩',
@@ -56,13 +68,23 @@ class NopaNotificationDialog {
                           itemCount: list.length,
                           itemBuilder: (context, index) {
                             final notify = list[index];
+                            final String title = notify['title'] ?? 'اعلان جدید';
+                            final bool isReject = title.contains('رد شد') || title.contains('❌');
+                            final bool isApprove = title.contains('تایید شد') || title.contains('✅');
+
                             return Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF160E2A),
+                                color: isReject
+                                    ? const Color(0xFFEF4444).withValues(alpha: 0.1)
+                                    : (isApprove ? const Color(0xFF10B981).withValues(alpha: 0.1) : const Color(0xFF160E2A)),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.02)),
+                                border: Border.all(
+                                  color: isReject
+                                      ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                                      : (isApprove ? const Color(0xFF10B981).withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.05)),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,9 +96,24 @@ class NopaNotificationDialog {
                                         notify['time'] ?? 'الان',
                                         style: const TextStyle(color: Colors.white38, fontSize: 9, fontFamily: 'Vazirmatn'),
                                       ),
-                                      Text(
-                                        notify['title'] ?? 'اعلان جدید',
-                                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            title,
+                                            style: TextStyle(
+                                              color: isReject ? const Color(0xFFF87171) : (isApprove ? const Color(0xFF34D399) : Colors.white),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: 'Vazirmatn',
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Icon(
+                                            isReject ? Icons.cancel_rounded : (isApprove ? Icons.check_circle_rounded : Icons.notifications_rounded),
+                                            size: 15,
+                                            color: isReject ? const Color(0xFFF87171) : (isApprove ? const Color(0xFF34D399) : const Color(0xFFD946EF)),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -84,7 +121,12 @@ class NopaNotificationDialog {
                                   Text(
                                     notify['body'] ?? '',
                                     textAlign: TextAlign.right,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 11, height: 1.5, fontFamily: 'Vazirmatn'),
+                                    style: TextStyle(
+                                      color: isReject ? const Color(0xFFFCA5A5) : Colors.white70,
+                                      fontSize: 11,
+                                      height: 1.5,
+                                      fontFamily: 'Vazirmatn',
+                                    ),
                                   ),
                                 ],
                               ),

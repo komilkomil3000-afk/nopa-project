@@ -788,6 +788,7 @@ async function loadTickets() {
 // CHALLENGES & SUBMISSIONS MANAGEMENT (LMS)
 // ==========================================
 window.cachedAdminChallenges = [];
+window.cachedAdminCaravans = [];
 
 window.loadChallengesAndSubmissionsTab = async function() {
   await Promise.all([
@@ -802,13 +803,23 @@ async function loadSubmissions() {
 
 window.loadAdminChallengesData = async function() {
   try {
-    const res = await request('/api/v1/admin/challenges');
-    if (!res.ok) {
+    const [challengesRes, caravansRes] = await Promise.all([
+      request('/api/v1/admin/challenges'),
+      request('/api/v1/admin/caravans').catch(() => null)
+    ]);
+
+    if (!challengesRes.ok) {
       console.warn('Failed to load admin challenges');
       return;
     }
-    const challenges = await res.json();
+    const challenges = await challengesRes.json();
     window.cachedAdminChallenges = Array.isArray(challenges) ? challenges : [];
+
+    if (caravansRes && caravansRes.ok) {
+      const caravans = await caravansRes.json();
+      window.cachedAdminCaravans = Array.isArray(caravans) ? caravans : [];
+      populateCaravanDropdowns(window.cachedAdminCaravans);
+    }
     
     // Update stats
     const countEl = document.getElementById('stat-challenges-count');
@@ -816,22 +827,101 @@ window.loadAdminChallengesData = async function() {
     const badgeEl = document.getElementById('badge-challenges-total');
     if (badgeEl) badgeEl.textContent = `${window.cachedAdminChallenges.length} چالش فعال`;
 
-    renderAdminChallenges(window.cachedAdminChallenges);
+    window.filterChallengesList();
   } catch (err) {
     console.error('loadAdminChallengesData error:', err);
   }
 };
+
+function populateCaravanDropdowns(caravans) {
+  const filterSelect = document.getElementById('filter-challenges-caravan');
+  const newChalSelect = document.getElementById('new-chal-caravan-id');
+  const editChalSelect = document.getElementById('edit-chal-caravan-id');
+
+  const optionsHtml = caravans.map(c => {
+    const mentorName = c.mentor?.name || 'بدون راهبر';
+    return `<option value="${c.id}">${c.name} (راهبر: ${mentorName})</option>`;
+  }).join('');
+
+  if (filterSelect) {
+    const currentVal = filterSelect.value;
+    filterSelect.innerHTML = `<option value="all">🏢 همه کاروان‌ها و راهبران</option>` + optionsHtml;
+    filterSelect.value = currentVal || 'all';
+  }
+
+  if (newChalSelect) {
+    newChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+  }
+
+  if (editChalSelect) {
+    editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+  }
+}
 
 function renderAdminChallenges(challenges) {
   const tbody = document.getElementById('admin-challenges-tbody');
   if (!tbody) return;
 
   if (challenges.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی در دیتابیس یافت نشد</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی با فیلتر انتخابی یافت نشد</td></tr>`;
     return;
   }
 
   tbody.innerHTML = challenges.map(c => {
+    // Creator Info Badge (Admin vs Mentor)
+    const isByAdmin = c.creatorInfo?.isByAdmin ?? (!c.createdByMentorId);
+    const creatorName = c.creatorInfo?.name || (isByAdmin ? 'مدیر سیستم' : 'راهبر کاروان');
+    let creatorBadge = '';
+    if (isByAdmin) {
+      creatorBadge = `
+        <span class="badge" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="fa-solid fa-shield-halved"></i> توسط مدیر سیستم
+        </span>
+      `;
+    } else {
+      creatorBadge = `
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-user-tie"></i> توسط راهبر
+          </span>
+          <span style="font-size: 11.5px; color: #cbd5e1; font-weight: 600;">${creatorName}</span>
+        </div>
+      `;
+    }
+
+    // Caravan & Mentor Column (تولید شده برای - مخاطبان)
+    let caravanDisplay = '';
+    const audience = c.targetAudience;
+    if (audience && audience.type === 'caravan') {
+      caravanDisplay = `
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-users"></i> کاروان: ${audience.name}
+          </span>
+          <span style="font-size: 11px; color: #94a3b8;">
+            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${audience.mentorName || 'نامشخص'}
+          </span>
+        </div>
+      `;
+    } else if (c.caravanInfo) {
+      caravanDisplay = `
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-users"></i> کاروان: ${c.caravanInfo.name}
+          </span>
+          <span style="font-size: 11px; color: #94a3b8;">
+            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${c.caravanInfo.mentorName || 'نامشخص'}
+          </span>
+        </div>
+      `;
+    } else {
+      caravanDisplay = `
+        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+          <i class="fa-solid fa-globe"></i> عمومی (همه کاروان‌ها)
+        </span>
+      `;
+    }
+
     // Type badge
     let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">${c.type}</span>`;
     if (c.type === 'quiz' || c.type === 'step_by_step_quiz') {
@@ -848,39 +938,53 @@ function renderAdminChallenges(challenges) {
     if (qList.length > 0) {
       stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
         <span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-weight: bold;">${qList.length} مرحله / سوال</span>
-        <span style="font-size: 11.5px; color: #94a3b8; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${qList[0].question || qList[0].q || 'کوئیز چهارگزینه‌ای'}</span>
+        <span style="font-size: 11px; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${qList[0].question || qList[0].q || 'کوئیز چهارگزینه‌ای'}</span>
       </div>`;
     } else {
       stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
         <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d;">۱ مرحله</span>
-        <span style="font-size: 11.5px; color: #94a3b8; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || 'تکلیف کلاسی'}</span>
+        <span style="font-size: 11px; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || 'تکلیف کلاسی'}</span>
       </div>`;
     }
 
     // Submissions participation
     const approved = c.approvedSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'approved').length : 0);
     const pending = c.pendingSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length : 0);
-    const participation = `<div style="font-size: 12px; display: flex; justify-content: center; gap: 8px;">
-      <span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved} تایید</span>
+    const participation = `<div style="font-size: 11.5px; display: flex; justify-content: center; gap: 6px;">
+      <span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved}</span>
       <span style="color: #64748b;">|</span>
-      <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending} معلق</span>
+      <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending}</span>
     </div>`;
+
+    const escapedTitle = (c.title || '').replace(/'/g, "\\'");
 
     return `
       <tr>
         <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
         <td>
           <div style="font-weight: bold; color: white; font-size: 13px;">${c.title}</div>
-          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px;">${c.description || ''}</div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || ''}</div>
         </td>
-        <td>${typeBadge}</td>
-        <td><span style="color: #fbbf24; font-weight: bold; font-size: 13px;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50}</span></td>
+        <td>${caravanDisplay}</td>
+        <td>${creatorBadge}</td>
+        <td>
+          ${typeBadge}
+          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; margin-top: 4px;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50} زریک</div>
+        </td>
         <td>${stepsSummary}</td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
-          <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 6px 12px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fa-solid fa-list-check"></i> مراحل چالش
-          </button>
+          <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-list-check"></i> مراحل
+            </button>
+            <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-pen-to-square"></i> ویرایش
+            </button>
+            <button type="button" class="btn-action" onclick="window.deleteChallengeAdmin('${c.id}', '${escapedTitle}')" title="حذف چالش" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fa-solid fa-trash"></i> حذف
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -889,16 +993,375 @@ function renderAdminChallenges(challenges) {
 
 window.filterChallengesList = function() {
   const query = (document.getElementById('filter-challenges-search')?.value || '').trim().toLowerCase();
-  if (!query) {
-    renderAdminChallenges(window.cachedAdminChallenges);
+  const selectedCaravan = document.getElementById('filter-challenges-caravan')?.value || 'all';
+  const selectedCreator = document.getElementById('filter-challenges-creator')?.value || 'all';
+
+  let filtered = [...window.cachedAdminChallenges];
+
+  // Filter by Caravan
+  if (selectedCaravan !== 'all') {
+    filtered = filtered.filter(c => {
+      if (c.caravanInfo && c.caravanInfo.id === selectedCaravan) return true;
+      if (c.caravanId && c.caravanId === selectedCaravan) return true;
+      return false;
+    });
+  }
+
+  // Filter by Creator
+  if (selectedCreator === 'admin') {
+    filtered = filtered.filter(c => c.creatorInfo?.isByAdmin === true || !c.createdByMentorId);
+  } else if (selectedCreator === 'mentor') {
+    filtered = filtered.filter(c => c.creatorInfo?.isByAdmin === false && c.createdByMentorId);
+  }
+
+  // Filter by Search Query
+  if (query) {
+    filtered = filtered.filter(c => 
+      (c.title && c.title.toLowerCase().includes(query)) ||
+      (c.id && c.id.toLowerCase().includes(query)) ||
+      (c.description && c.description.toLowerCase().includes(query)) ||
+      (c.creatorInfo && c.creatorInfo.name && c.creatorInfo.name.toLowerCase().includes(query)) ||
+      (c.caravanInfo && c.caravanInfo.name && c.caravanInfo.name.toLowerCase().includes(query))
+    );
+  }
+
+  renderAdminChallenges(filtered);
+};
+
+// ==========================================
+// CHALLENGE CRUD MODALS & DYNAMIC STEPS
+// ==========================================
+
+window.handleChallengeTypeChange = function(mode) {
+  const typeSelect = document.getElementById(`${mode}-chal-type`);
+  const section = document.getElementById(`${mode}-chal-questions-section`);
+  if (!typeSelect || !section) return;
+
+  if (typeSelect.value === 'step_by_step_quiz') {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+  }
+};
+
+window.addQuestionRow = function(mode, initialData = null) {
+  const container = document.getElementById(`${mode}-chal-questions-list`);
+  if (!container) return;
+
+  const qIndex = container.children.length + 1;
+  const qText = initialData ? (initialData.question || initialData.q || '') : '';
+  const opts = initialData && Array.isArray(initialData.options) ? initialData.options : ['', '', '', ''];
+  const correctIdx = initialData && initialData.correctIndex !== undefined ? initialData.correctIndex : 0;
+
+  const card = document.createElement('div');
+  card.className = 'challenge-q-card';
+  card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; position: relative;';
+  card.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+      <span style="font-weight: bold; color: #c4b5fd; font-size: 12px;">سوال / گام شماره ${qIndex}</span>
+      <button type="button" onclick="this.closest('.challenge-q-card').remove()" style="background: rgba(239,68,68,0.2); color: #f87171; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
+        <i class="fa-solid fa-trash"></i> حذف
+      </button>
+    </div>
+    <div style="margin-bottom: 8px;">
+      <input type="text" class="chal-q-title" required placeholder="صورت سوال یا عنوان مرحله..." value="${qText.replace(/"/g, '&quot;')}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+    </div>
+    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+      ${[0, 1, 2, 3].map(i => `
+        <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px;">
+          <input type="radio" name="${mode}-correct-${qIndex}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''} style="cursor: pointer; accent-color: #10b981;">
+          <input type="text" class="chal-q-opt" placeholder="گزینه ${i + 1}" value="${(opts[i] || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; background: transparent; border: 1px solid #334155; border-radius: 4px; color: white; font-size: 11.5px;">
+        </div>
+      `).join('')}
+    </div>
+  `;
+  container.appendChild(card);
+};
+
+window.openCreateChallengeModal = function() {
+  console.log('[openCreateChallengeModal] Opening create challenge modal');
+  const modal = document.getElementById('create-challenge-modal');
+  if (!modal) {
+    console.error('Modal create-challenge-modal not found');
+    alert('مودال ایجاد چالش یافت نشد. لطفاً صفحه را مجدداً بارگذاری کنید.');
     return;
   }
-  const filtered = window.cachedAdminChallenges.filter(c => 
-    (c.title && c.title.toLowerCase().includes(query)) ||
-    (c.id && c.id.toLowerCase().includes(query)) ||
-    (c.description && c.description.toLowerCase().includes(query))
-  );
-  renderAdminChallenges(filtered);
+
+  const form = document.getElementById('create-challenge-form');
+  if (form) form.reset();
+
+  const rewardInput = document.getElementById('new-chal-reward');
+  if (rewardInput) rewardInput.value = '50';
+
+  const caravanSelect = document.getElementById('new-chal-caravan-id');
+  const mentorNotice = document.getElementById('new-chal-mentor-notice');
+
+  if (currentUser && currentUser.role === 'mentor') {
+    // Find mentor's caravan
+    const myCaravan = (window.cachedAdminCaravans || []).find(cv => 
+      cv.mentorId === currentUser.id || cv.mentor?.id === currentUser.id || cv.id === currentUser.caravanId
+    );
+    if (caravanSelect) {
+      if (myCaravan) {
+        caravanSelect.value = myCaravan.id;
+        caravanSelect.disabled = true;
+      }
+    }
+    if (mentorNotice) {
+      mentorNotice.style.display = 'block';
+      mentorNotice.innerHTML = `<i class="fa-solid fa-lock"></i> به عنوان راهبر، این چالش به صورت خودکار برای کاروان «${myCaravan?.name || 'اختصاصی شما'}» تنظیم شده است و فقط اعضای این کاروان آن را مشاهده خواهند کرد.`;
+    }
+  } else {
+    if (caravanSelect) {
+      caravanSelect.disabled = false;
+      caravanSelect.value = 'all';
+    }
+    if (mentorNotice) {
+      mentorNotice.style.display = 'none';
+    }
+  }
+
+  const qContainer = document.getElementById('new-chal-questions-list');
+  if (qContainer) {
+    qContainer.innerHTML = '';
+    window.addQuestionRow('new');
+  }
+
+  if (typeof window.handleChallengeTypeChange === 'function') {
+    window.handleChallengeTypeChange('new');
+  }
+
+  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
+};
+
+window.closeCreateChallengeModal = function() {
+  const modal = document.getElementById('create-challenge-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+  }
+};
+
+window.submitCreateChallenge = async function(event) {
+  event.preventDefault();
+
+  const title = document.getElementById('new-chal-title')?.value.trim();
+  const rewardZarik = Number(document.getElementById('new-chal-reward')?.value || 50);
+  let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'all';
+  if (currentUser && currentUser.role === 'mentor') {
+    const myCaravan = (window.cachedAdminCaravans || []).find(cv => 
+      cv.mentorId === currentUser.id || cv.mentor?.id === currentUser.id || cv.id === currentUser.caravanId
+    );
+    if (myCaravan) {
+      caravanId = myCaravan.id;
+    }
+  }
+  const type = document.getElementById('new-chal-type')?.value || 'step_by_step_quiz';
+  const description = document.getElementById('new-chal-desc')?.value.trim();
+
+  if (!title || !description) {
+    alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
+    return;
+  }
+
+  // Parse questions if step_by_step_quiz
+  let questions = [];
+  if (type === 'step_by_step_quiz') {
+    const cards = document.querySelectorAll('#new-chal-questions-list .challenge-q-card');
+    cards.forEach((card, idx) => {
+      const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
+      const optInputs = card.querySelectorAll('.chal-q-opt');
+      const options = Array.from(optInputs).map(inp => inp.value.trim()).filter(Boolean);
+      const radio = card.querySelector(`input[name="new-correct-${idx + 1}"]:checked`);
+      const correctIndex = radio ? Number(radio.value) : 0;
+
+      questions.push({
+        step: idx + 1,
+        question: qTitle,
+        options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
+        correctIndex: correctIndex
+      });
+    });
+  }
+
+  try {
+    const payload = {
+      title,
+      description,
+      type,
+      rewardZarik,
+      caravanId: caravanId === 'all' ? undefined : caravanId,
+      questions: questions.length > 0 ? questions : undefined
+    };
+
+    const res = await request('/api/v1/admin/challenges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert('چالش جدید با موفقیت توسط مدیر ثبت گردید و اعلان درون‌برنامه‌ای به کاربران و راهبر ارسال شد.');
+      window.closeCreateChallengeModal();
+      await window.loadChallengesAndSubmissionsTab();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'خطایی در ثبت چالش رخ داد');
+    }
+  } catch (err) {
+    console.error('submitCreateChallenge error:', err);
+    alert('خطا در ارتباط با سرور هنگام ایجاد چالش');
+  }
+};
+
+window.openEditChallengeModal = function(challengeId) {
+  const c = window.cachedAdminChallenges.find(item => item.id === challengeId);
+  if (!c) {
+    alert('اطلاعات چالش یافت نشد');
+    return;
+  }
+
+  const modal = document.getElementById('edit-challenge-modal');
+  if (!modal) return;
+
+  document.getElementById('edit-chal-id').value = c.id;
+  document.getElementById('edit-chal-title').value = c.title || '';
+  document.getElementById('edit-chal-reward').value = c.rewardZarik || 50;
+  document.getElementById('edit-chal-desc').value = c.description || '';
+  document.getElementById('edit-chal-type').value = c.type || 'step_by_step_quiz';
+
+  const caravanSelect = document.getElementById('edit-chal-caravan-id');
+  if (caravanSelect) {
+    caravanSelect.value = c.caravanInfo?.id || c.caravanId || 'all';
+    if (currentUser && currentUser.role === 'mentor') {
+      caravanSelect.disabled = true;
+    } else {
+      caravanSelect.disabled = false;
+    }
+  }
+
+  // Creator badge
+  const badgeEl = document.getElementById('edit-chal-creator-badge');
+  if (badgeEl) {
+    if (c.creatorInfo?.isByAdmin) {
+      badgeEl.className = 'badge';
+      badgeEl.style.cssText = 'background: rgba(168, 85, 247, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.4);';
+      badgeEl.innerHTML = '<i class="fa-solid fa-shield-halved"></i> ایجاد شده توسط: مدیر سیستم';
+    } else {
+      badgeEl.className = 'badge';
+      badgeEl.style.cssText = 'background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);';
+      badgeEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> ایجاد شده توسط راهبر: ${c.creatorInfo?.name || 'راهبر'}`;
+    }
+  }
+
+  // Questions
+  const qContainer = document.getElementById('edit-chal-questions-list');
+  if (qContainer) {
+    qContainer.innerHTML = '';
+    const qList = Array.isArray(c.questions) ? c.questions : [];
+    if (qList.length > 0) {
+      qList.forEach(q => window.addQuestionRow('edit', q));
+    } else {
+      window.addQuestionRow('edit');
+    }
+  }
+
+  window.handleChallengeTypeChange('edit');
+  modal.style.display = 'flex';
+};
+
+window.closeEditChallengeModal = function() {
+  const modal = document.getElementById('edit-challenge-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.submitEditChallenge = async function(event) {
+  event.preventDefault();
+
+  const id = document.getElementById('edit-chal-id')?.value;
+  const title = document.getElementById('edit-chal-title')?.value.trim();
+  const rewardZarik = Number(document.getElementById('edit-chal-reward')?.value || 50);
+  const type = document.getElementById('edit-chal-type')?.value || 'step_by_step_quiz';
+  const description = document.getElementById('edit-chal-desc')?.value.trim();
+  const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
+
+  if (!id || !title || !description) {
+    alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
+    return;
+  }
+
+  let questions = [];
+  if (type === 'step_by_step_quiz') {
+    const cards = document.querySelectorAll('#edit-chal-questions-list .challenge-q-card');
+    cards.forEach((card, idx) => {
+      const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
+      const optInputs = card.querySelectorAll('.chal-q-opt');
+      const options = Array.from(optInputs).map(inp => inp.value.trim()).filter(Boolean);
+      const radio = card.querySelector(`input[name="edit-correct-${idx + 1}"]:checked`);
+      const correctIndex = radio ? Number(radio.value) : 0;
+
+      questions.push({
+        step: idx + 1,
+        question: qTitle,
+        options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
+        correctIndex: correctIndex
+      });
+    });
+  }
+
+  try {
+    const payload = {
+      title,
+      description,
+      type,
+      rewardZarik,
+      caravanId: caravanId === 'all' ? null : caravanId,
+      questions: questions.length > 0 ? questions : undefined
+    };
+
+    const res = await request(`/api/v1/admin/challenges/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert('تغییرات چالش با موفقیت ذخیره شد.');
+      window.closeEditChallengeModal();
+      await window.loadChallengesAndSubmissionsTab();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'خطایی در ویرایش چالش رخ داد');
+    }
+  } catch (err) {
+    console.error('submitEditChallenge error:', err);
+    alert('خطا در ارتباط با سرور هنگام ویرایش چالش');
+  }
+};
+
+window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
+  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف و پاسخ‌های ثبت‌شده برای این چالش نیز حذف خواهند شد.`)) {
+    return;
+  }
+
+  try {
+    const res = await request(`/api/v1/admin/challenges/${challengeId}`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      alert('چالش با موفقیت حذف گردید.');
+      await window.loadChallengesAndSubmissionsTab();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'خطایی در حذف چالش رخ داد');
+    }
+  } catch (err) {
+    console.error('deleteChallengeAdmin error:', err);
+    alert('خطا در برقراری ارتباط با سرور');
+  }
 };
 
 window.openChallengeStepsModal = function(challengeId) {
@@ -991,6 +1454,9 @@ window.closeChallengeStepsModal = function() {
   if (modal) modal.style.display = 'none';
 };
 
+window.cachedAdminSubmissions = [];
+window.activeViewSubmissionId = null;
+
 window.loadAdminSubmissionsData = async function() {
   try {
     const statusFilter = document.getElementById('filter-submissions-status')?.value || 'pending';
@@ -998,6 +1464,7 @@ window.loadAdminSubmissionsData = async function() {
     if (!res.ok) return;
     const list = await res.json();
     const submissions = Array.isArray(list) ? list : [];
+    window.cachedAdminSubmissions = submissions;
 
     // Calculate stats
     const pendingCount = submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length;
@@ -1021,7 +1488,7 @@ window.loadAdminSubmissionsData = async function() {
       const studentPhone = s.student?.phoneNumber || '';
       const chalTitle = s.challenge?.title || s.challengeId || 'تکلیف کلاسی';
       const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
-      const answer = s.answerText || '-';
+      const answer = s.answerText || 'بدون متن (فایل ارسالی)';
       const fileLink = s.fileUrl
         ? `<a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
         : '<span style="color: #64748b;">-</span>';
@@ -1040,18 +1507,20 @@ window.loadAdminSubmissionsData = async function() {
         statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">رد شده</span>`;
       }
 
-      // Actions
-      let actionCell = '';
-      if (isPending) {
-        actionCell = `
-          <div style="display: flex; gap: 6px; justify-content: center;">
-            <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 10px; font-size: 11px;" title="تایید تکلیف"><i class="fa-solid fa-check"></i> تایید</button>
-            <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 10px; font-size: 11px;" title="رد تکلیف"><i class="fa-solid fa-times"></i> رد</button>
-          </div>
-        `;
-      } else {
-        actionCell = `<div style="font-size: 11px; color: #94a3b8; text-align: center;">${s.mentorFeedback || 'ارزیابی نهایی'}</div>`;
-      }
+      // Actions Column with dedicated "مشاهده پاسخ"
+      const actionCell = `
+        <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+          <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
+            <i class="fa-solid fa-eye"></i> مشاهده پاسخ
+          </button>
+          ${isPending ? `
+            <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
+            <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
+          ` : `
+            <span style="font-size: 10.5px; color: #94a3b8; align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
+          `}
+        </div>
+      `;
 
       return `
         <tr>
@@ -1064,7 +1533,14 @@ window.loadAdminSubmissionsData = async function() {
             <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
           </td>
           <td>
-            <div style="max-width: 260px; font-size: 12.5px; color: #e2e8f0; line-height: 1.5; word-break: break-word;">${answer}</div>
+            <div style="max-width: 250px;">
+              <div style="font-size: 12.5px; color: #f1f5f9; line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+                ${answer}
+              </div>
+              <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+                <i class="fa-solid fa-eye"></i> مشاهده جواب
+              </button>
+            </div>
           </td>
           <td>${fileLink}</td>
           <td style="font-size: 12px; color: #94a3b8;">${dateStr}</td>
@@ -1077,6 +1553,175 @@ window.loadAdminSubmissionsData = async function() {
   } catch (err) {
     console.error('loadAdminSubmissionsData error:', err);
   }
+};
+
+// ==========================================
+// VIEW SUBMISSION & ANSWER MODAL
+// ==========================================
+
+window.openViewSubmissionModal = function(submissionId) {
+  const s = window.cachedAdminSubmissions.find(item => item.id === submissionId);
+  if (!s) {
+    alert('اطلاعات پاسخ یافت نشد');
+    return;
+  }
+
+  window.activeViewSubmissionId = submissionId;
+  const modal = document.getElementById('view-submission-modal');
+  if (!modal) return;
+
+  // Student Info
+  const studentName = s.student?.name || 'دانش‌آموز نپا';
+  const studentPhone = s.student?.phoneNumber ? `تلفن: ${s.student.phoneNumber}` : '';
+  const caravanName = s.student?.caravan?.name ? `کاروان: ${s.student.caravan.name}` : 'کاروان: عمومی';
+
+  document.getElementById('view-sub-student-name').textContent = studentName;
+  document.getElementById('view-sub-student-phone').textContent = studentPhone;
+  document.getElementById('view-sub-student-caravan').textContent = caravanName;
+
+  // Challenge Info
+  const chalTitle = s.challenge?.title || s.challengeId || 'تکلیف کلاسی';
+  const defaultReward = s.challenge?.rewardZarik || 50;
+  const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+  document.getElementById('view-sub-chal-title').textContent = chalTitle;
+  document.getElementById('view-sub-chal-reward').innerHTML = `<i class="fa-solid fa-coins"></i> پاداش پایه چالش: ${defaultReward} زریک`;
+  document.getElementById('view-sub-date').textContent = `تاریخ ارسال: ${dateStr}`;
+
+  // Status Badge
+  const metaBadge = document.getElementById('view-sub-meta-badge');
+  const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
+  if (metaBadge) {
+    if (isPending) {
+      metaBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+      metaBadge.style.color = '#fbbf24';
+      metaBadge.innerHTML = '<i class="fa-solid fa-clock"></i> وضعیت: در انتظار بررسی و ارزیابی';
+    } else if (s.status === 'approved') {
+      metaBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+      metaBadge.style.color = '#34d399';
+      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} زریک)`;
+    } else {
+      metaBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+      metaBadge.style.color = '#f87171';
+      metaBadge.innerHTML = '<i class="fa-solid fa-times"></i> وضعیت: رد شده';
+    }
+  }
+
+  // Answer Text
+  const answerEl = document.getElementById('view-sub-answer-text');
+  if (answerEl) {
+    answerEl.textContent = s.answerText || 'دانش‌آموز متن پاسخی وارد نکرده است (فقط فایل پیوست ارسال شده است).';
+  }
+
+  // File Attachment
+  const fileContainer = document.getElementById('view-sub-file-container');
+  if (fileContainer) {
+    if (s.fileUrl) {
+      const isImg = s.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
+      if (isImg) {
+        fileContainer.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <a href="${s.fileUrl}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
+              <img src="${s.fileUrl}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);" />
+            </a>
+            <div style="font-size: 11px; color: #94a3b8;">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
+          </div>
+        `;
+      } else {
+        fileContainer.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 12.5px;">
+              <i class="fa-solid fa-file-lines" style="color: #38bdf8; font-size: 18px;"></i>
+              <span>فایل ضمیمه شده توسط دانش‌آموز</span>
+            </div>
+            <a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-download"></i> دانلود و مشاهده فایل
+            </a>
+          </div>
+        `;
+      }
+    } else {
+      fileContainer.innerHTML = `<span style="color: #64748b; font-size: 12px;"><i class="fa-solid fa-info-circle"></i> بدون فایل یا پیوست ضمیمه</span>`;
+    }
+  }
+
+  // Pre-fill Feedback and Reward
+  const feedbackInput = document.getElementById('view-sub-feedback-input');
+  if (feedbackInput) {
+    feedbackInput.value = s.mentorFeedback || (isPending ? 'پاسخ شما بررسی شد و مورد تایید قرار گرفت.' : '');
+  }
+
+  const rewardInput = document.getElementById('view-sub-reward-input');
+  if (rewardInput) {
+    rewardInput.value = s.score || defaultReward;
+  }
+
+  // Setup buttons inside modal
+  const approveBtn = document.getElementById('view-sub-btn-approve');
+  if (approveBtn) {
+    approveBtn.onclick = () => window.submitReviewFromModal(true);
+  }
+
+  const rejectBtn = document.getElementById('view-sub-btn-reject');
+  if (rejectBtn) {
+    rejectBtn.onclick = () => window.submitReviewFromModal(false);
+  }
+
+  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
+};
+
+window.closeViewSubmissionModal = function() {
+  const modal = document.getElementById('view-submission-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+  }
+};
+
+window.submitReviewFromModal = async function(isApproved) {
+  if (!window.activeViewSubmissionId) return;
+
+  const score = isApproved ? Number(document.getElementById('view-sub-reward-input')?.value || 50) : 0;
+  const feedback = document.getElementById('view-sub-feedback-input')?.value.trim() || (isApproved ? 'تکلیف تایید شد.' : 'تکلیف رد شد.');
+
+  try {
+    const res = await request(`/api/v1/admin/submissions/${window.activeViewSubmissionId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        isApproved,
+        status: isApproved ? 'approved' : 'rejected',
+        score: score,
+        mentorFeedback: feedback
+      })
+    });
+
+    if (res.ok) {
+      alert(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به دانش‌آموز اعطا گردید.' : 'تکلیف رد شد و اعلان ارسال گردید.');
+      window.closeViewSubmissionModal();
+      await window.loadAdminSubmissionsData();
+    } else {
+      const data = await res.json();
+      alert(data.error || 'خطایی در ثبت ارزیابی رخ داد');
+    }
+  } catch (err) {
+    console.error('submitReviewFromModal error:', err);
+    alert('خطا در برقراری ارتباط با سرور');
+  }
+};
+
+window.copySubmissionAnswerText = function() {
+  const text = document.getElementById('view-sub-answer-text')?.textContent || '';
+  if (!text || text === '-') {
+    alert('متنی برای کپی وجود ندارد');
+    return;
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    alert('متن پاسخ دانش‌آموز در کلیپ‌بورد کپی شد.');
+  }).catch(() => {
+    alert('امکان کپی در کلیپ‌بورد فراهم نشد.');
+  });
 };
 
 window.reviewAdminSubmission = async function(id, isApproved, defaultReward) {
@@ -7100,6 +7745,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.loadLmsStationsData) window.loadLmsStationsData();
     if (window.loadMentorsData) window.loadMentorsData();
     if (window.loadCaravansData) window.loadCaravansData();
+
+    // Bind Create Challenge button directly
+    const btnCreate = document.getElementById('btn-open-create-challenge');
+    if (btnCreate) {
+      btnCreate.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof window.openCreateChallengeModal === 'function') {
+          window.openCreateChallengeModal();
+        }
+      });
+    }
   }, 300);
 });
 

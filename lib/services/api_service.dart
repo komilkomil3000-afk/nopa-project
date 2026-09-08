@@ -394,16 +394,35 @@ class HttpApiService {
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return data.map((json) => ChallengeModel(
-            id: json['id'],
-            title: json['title'],
-            description: json['description'],
-            rewardZarik: json['rewardZarik'],
-            type: json['type'],
-            questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
-            createdByMentorId: json['createdByMentorId'],
-            progress: 0.0,
-          )).toList();
+          return data.map((json) {
+            final creatorInfo = json['creatorInfo'] as Map<String, dynamic>?;
+            final caravanInfo = json['caravanInfo'] as Map<String, dynamic>?;
+            final targetAudience = json['targetAudience'] as Map<String, dynamic>?;
+            final bool isByAdmin = creatorInfo?['isByAdmin'] == true ||
+                (json['createdByMentorId'] != null && json['createdByMentorId'].toString().toLowerCase().contains('admin'));
+            final String creatorName = creatorInfo?['name'] ?? (isByAdmin ? 'مدیر سیستم' : (caravanInfo?['mentorName'] ?? 'راهبر'));
+            final String targetLabel = targetAudience?['label'] ?? (caravanInfo?['name'] != null ? 'کاروان: ${caravanInfo!['name']}' : 'عمومی (همه کاروان‌ها)');
+
+            return ChallengeModel(
+              id: json['id'],
+              title: json['title'],
+              description: json['description'],
+              rewardZarik: json['rewardZarik'] ?? 50,
+              type: json['type'],
+              questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
+              createdByMentorId: json['createdByMentorId'] ?? '',
+              progress: 0.0,
+              caravanId: json['caravanId'],
+              mentorName: creatorName,
+              caravanName: caravanInfo?['name'],
+              myStatus: json['myStatus'] ?? json['mySubmission']?['status'],
+              mentorFeedback: json['mySubmission']?['mentorFeedback'],
+              myAnswerText: json['mySubmission']?['answerText'],
+              isByAdmin: isByAdmin,
+              creatorName: creatorName,
+              targetAudienceLabel: targetLabel,
+            );
+          }).toList();
         }
       }
       return [];

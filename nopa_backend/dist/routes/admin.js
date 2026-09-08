@@ -81,6 +81,9 @@ router.post('/asset-conversions/:id/approve', caravanController_1.approveAssetCo
 router.get('/tickets', supportController_1.getTickets);
 router.get('/challenges', challengeController_1.getChallenges);
 router.post('/challenges', challengeController_1.createChallenge);
+router.put('/challenges/:id', challengeController_1.updateChallenge);
+router.patch('/challenges/:id', challengeController_1.updateChallenge);
+router.delete('/challenges/:id', challengeController_1.deleteChallenge);
 router.get('/submissions', submissionController_1.getPendingSubmissions);
 router.post('/submissions/:id/review', submissionController_1.reviewSubmission);
 router.patch('/submissions/:id/review', submissionController_1.reviewSubmission);

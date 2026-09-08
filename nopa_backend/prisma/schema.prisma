@@ -124,6 +124,7 @@ model Caravan {
   members         User[]        @relation("CaravanMembers")
   chatMessages    ChatMessage[]
   assetConversions AssetConversionRequest[]
+  challenges      Challenge[]
 }
 
 model SystemSetting {
@@ -153,10 +154,15 @@ model Challenge {
   questions         String?      // JSON string representation of questions
   rewardZarik       Int          @default(0)
   createdByMentorId String
+  caravanId         String?
   createdAt         DateTime     @default(now())
 
   // Relations
+  caravan           Caravan?     @relation(fields: [caravanId], references: [id], onDelete: SetNull)
   submissions       Submission[]
+
+  @@index([caravanId])
+  @@index([createdByMentorId])
 }
 
 model Submission {

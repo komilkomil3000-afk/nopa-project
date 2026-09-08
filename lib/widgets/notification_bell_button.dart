@@ -21,7 +21,10 @@ class NotificationBellButton extends StatelessWidget {
         final bool hasUnread = count > 0;
 
         return GestureDetector(
-          onTap: () => NopaNotificationDialog.show(context),
+          onTap: () {
+            repository.fetchNotifications();
+            NopaNotificationDialog.show(context);
+          },
           child: Stack(
             clipBehavior: Clip.none,
             children: [

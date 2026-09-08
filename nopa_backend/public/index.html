@@ -1955,15 +1955,33 @@
 
         <!-- SECTION 1: CHALLENGES DIRECTORY & STAGES -->
         <div class="panel-card glass" style="margin-bottom: 24px; padding: 18px 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 12px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 15px; font-weight: bold; color: white;">
-                <i class="fa-solid fa-list-ol" style="color: #8b5cf6;"></i> چالش‌های فعال نپا و مراحل آن (مطابق اپلیکیشن)
+                <i class="fa-solid fa-list-ol" style="color: #8b5cf6;"></i> چالش‌های فعال نپا و مراحل آن (تفکیک کاروان، راهبر و مدیر)
               </span>
               <span id="badge-challenges-total" class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); font-size: 11px;">۰ چالش</span>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." oninput="window.filterChallengesList()" style="padding: 6px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; width: 220px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+              <!-- Caravan Filter -->
+              <select id="filter-challenges-caravan" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">
+                <option value="all">🏢 همه کاروان‌ها و راهبران</option>
+              </select>
+
+              <!-- Creator Filter (Admin vs Mentor) -->
+              <select id="filter-challenges-creator" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">
+                <option value="all">👤 همه سازندگان (مدیر و راهبر)</option>
+                <option value="admin">🛡️ فقط ایجاد شده توسط مدیر</option>
+                <option value="mentor">🎓 فقط ایجاد شده توسط راهبران</option>
+              </select>
+
+              <!-- Search -->
+              <input type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." oninput="window.filterChallengesList()" style="padding: 7px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; width: 190px;">
+
+              <!-- Create Challenge Button -->
+              <button type="button" id="btn-open-create-challenge" class="btn-primary" onclick="window.openCreateChallengeModal()" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                <i class="fa-solid fa-plus"></i> ایجاد چالش جدید
+              </button>
             </div>
           </div>
 
@@ -1972,13 +1990,14 @@
             <table class="data-table" id="admin-challenges-table">
               <thead>
                 <tr>
-                  <th style="width: 100px;">کد چالش</th>
+                  <th style="width: 90px;">کد چالش</th>
                   <th>عنوان چالش</th>
-                  <th style="width: 140px;">نوع چالش</th>
-                  <th style="width: 110px;">پاداش (زریک)</th>
-                  <th>خلاصه و تعداد مراحل</th>
-                  <th style="width: 140px; text-align: center;">مشارکت دانش‌آموزان</th>
-                  <th style="width: 140px; text-align: center;">مشاهده مراحل</th>
+                  <th style="width: 190px;">تولید شده برای (مخاطبان)</th>
+                  <th style="width: 170px;">تولید شده توسط (سازنده)</th>
+                  <th style="width: 130px;">نوع و پاداش</th>
+                  <th>مراحل و گام‌ها</th>
+                  <th style="width: 110px; text-align: center;">مشارکت</th>
+                  <th style="width: 180px; text-align: center;">عملیات و مدیریت</th>
                 </tr>
               </thead>
               <tbody id="admin-challenges-tbody">
@@ -1993,7 +2012,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
             <div style="display: flex; align-items: center; gap: 10px;">
               <span style="font-size: 15px; font-weight: bold; color: white;">
-                <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> بررسی پاسخ‌های ارسالی دانش‌آموزان
+                <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> بررسی و ارزیابی پاسخ‌های ارسالی دانش‌آموزان
               </span>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -2012,12 +2031,12 @@
                 <tr>
                   <th>دانش‌آموز</th>
                   <th>چالش / تکلیف</th>
-                  <th>پاسخ ارسالی</th>
+                  <th>پاسخ ارسالی دانش‌آموز</th>
                   <th>فایل پیوست</th>
                   <th>تاریخ ارسال</th>
                   <th>پاداش</th>
                   <th>وضعیت</th>
-                  <th style="text-align: center;">عملیات ارزیابی</th>
+                  <th style="text-align: center; width: 190px;">مشاهده و ارزیابی پاسخ</th>
                 </tr>
               </thead>
               <tbody id="admin-submissions-tbody">
@@ -2963,9 +2982,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
-  <script src="lms.js"></script>
-
   <!-- Jarchi News Modal -->
   <div id="news-modal" class="modal-overlay hidden" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
     <div class="modal-content glass" style="max-width: 650px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px; border-radius: 16px; background: #0f172a; border: 1px solid rgba(56,189,248,0.3); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); color: white;">
@@ -3055,8 +3071,8 @@
   </div>
   
     <!-- CHALLENGE STEPS MODAL -->
-    <div class="modal-overlay" id="challenge-steps-modal" style="display: none;">
-      <div class="modal-content glass" style="max-width: 650px; border: 1px solid rgba(139, 92, 246, 0.3);">
+    <div class="modal-overlay" id="challenge-steps-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="modal-content glass" style="max-width: 650px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.3); background: #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
           <div>
             <h3 id="modal-challenge-title" style="margin: 0; color: white; font-size: 16px; display: flex; align-items: center; gap: 8px;">
@@ -3071,6 +3087,246 @@
         </div>
         <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
           <button type="button" class="btn-action" onclick="window.closeChallengeStepsModal()" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: white; border: none; cursor: pointer;">بستن</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CREATE CHALLENGE MODAL (ADMIN) -->
+    <div class="modal-overlay" id="create-challenge-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="modal-content glass" style="max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(139, 92, 246, 0.4); background: #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); color: white; display: flex; flex-direction: column;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
+          <div>
+            <h3 style="margin: 0; color: white; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-trophy" style="color: #a855f7;"></i> ایجاد چالش و تکلیف جدید (توسط مدیر)
+            </h3>
+            <span class="badge" style="margin-top: 4px; background: rgba(168, 85, 247, 0.2); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.4); font-size: 11px;">ثبت با برچسب رسمی «توسط مدیر» + ارسال اعلان خودکار</span>
+          </div>
+          <button class="modal-close" onclick="window.closeCreateChallengeModal()">&times;</button>
+        </div>
+
+        <div style="padding: 16px 0; overflow-y: auto; flex: 1;">
+          <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #c4b5fd; line-height: 1.6;">
+            <i class="fa-solid fa-bell" style="color: #fbbf24;"></i> چالش‌هایی که توسط مدیر ثبت می‌شوند با نشان اختصاصی <strong>«توسط مدیر»</strong> مشخص شده و بلافاصله به دانش‌آموزان کاروان هدف و راهبر مربوطه اعلان (Notification) ارسال می‌گردد.
+          </div>
+
+          <form id="create-challenge-form" onsubmit="window.submitCreateChallenge(event)">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">عنوان چالش *</label>
+                <input type="text" id="new-chal-title" required placeholder="مثال: مسابقه استدلال و تحلیل منطقی" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">پاداش زریک (🪙) *</label>
+                <input type="number" id="new-chal-reward" required min="10" max="5000" value="50" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف *</label>
+                <select id="new-chal-caravan-id" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>
+                </select>
+                <div id="new-chal-mentor-notice" style="display: none; font-size: 11px; color: #38bdf8; margin-top: 5px; background: rgba(56, 189, 248, 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); line-height: 1.5;"></div>
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
+                <select id="new-chal-type" onchange="window.handleChallengeTypeChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="step_by_step_quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
+                  <option value="file">📁 ارسال فایل / پروژه</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">توضیحات / صورت تکلیف *</label>
+              <textarea id="new-chal-desc" rows="3" required placeholder="توضیحات و دستورالعمل اجرای چالش برای دانش‌آموزان..." style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px; line-height: 1.6; resize: vertical;"></textarea>
+            </div>
+
+            <!-- QUESTIONS / STEPS BUILDER -->
+            <div id="new-chal-questions-section" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 13px; font-weight: bold; color: #c4b5fd; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
+                </div>
+                <button type="button" onclick="window.addQuestionRow('new')" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-plus"></i> افزودن سوال
+                </button>
+              </div>
+              <div id="new-chal-questions-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Dynamically populated question cards -->
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+              <button type="button" class="btn-action" onclick="window.closeCreateChallengeModal()" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">انصراف</button>
+              <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);">
+                <i class="fa-solid fa-paper-plane"></i> ایجاد چالش و ارسال اعلان
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT CHALLENGE MODAL (ADMIN) -->
+    <div class="modal-overlay" id="edit-challenge-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="modal-content glass" style="max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(59, 130, 246, 0.4); background: #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); color: white; display: flex; flex-direction: column;">
+        <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
+          <div>
+            <h3 style="margin: 0; color: white; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-pen-to-square" style="color: #38bdf8;"></i> ویرایش و اصلاح چالش
+            </h3>
+            <span id="edit-chal-creator-badge" class="badge" style="margin-top: 4px; font-size: 11px;">-</span>
+          </div>
+          <button class="modal-close" onclick="window.closeEditChallengeModal()">&times;</button>
+        </div>
+
+        <div style="padding: 16px 0; overflow-y: auto; flex: 1;">
+          <form id="edit-challenge-form" onsubmit="window.submitEditChallenge(event)">
+            <input type="hidden" id="edit-chal-id">
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">عنوان چالش *</label>
+                <input type="text" id="edit-chal-title" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">پاداش زریک (🪙) *</label>
+                <input type="number" id="edit-chal-reward" required min="10" max="5000" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف</label>
+                <select id="edit-chal-caravan-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
+                <select id="edit-chal-type" onchange="window.handleChallengeTypeChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="step_by_step_quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
+                  <option value="file">📁 ارسال فایل / پروژه</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">توضیحات / صورت تکلیف *</label>
+              <textarea id="edit-chal-desc" rows="3" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px; line-height: 1.6; resize: vertical;"></textarea>
+            </div>
+
+            <!-- QUESTIONS / STEPS BUILDER -->
+            <div id="edit-chal-questions-section" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="font-size: 13px; font-weight: bold; color: #93c5fd; display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
+                </div>
+                <button type="button" onclick="window.addQuestionRow('edit')" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-plus"></i> افزودن سوال
+                </button>
+              </div>
+              <div id="edit-chal-questions-list" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Dynamically populated question cards -->
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+              <button type="button" class="btn-action" onclick="window.closeEditChallengeModal()" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">انصراف</button>
+              <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);">
+                <i class="fa-solid fa-floppy-disk"></i> ذخیره تغییرات چالش
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW & EVALUATE SUBMISSION MODAL -->
+    <div class="modal-overlay" id="view-submission-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="modal-content glass" style="max-width: 750px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 24px; border-radius: 16px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px;">
+          <div>
+            <h3 style="color: #38bdf8; font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-clipboard-check"></i> بررسی و مشاهده کامل پاسخ دانش‌آموز
+            </h3>
+            <span id="view-sub-meta-badge" class="badge" style="margin-top: 4px; background: rgba(56, 189, 248, 0.2); color: #7dd3fc; font-size: 11px;">-</span>
+          </div>
+          <button type="button" class="modal-close" onclick="window.closeViewSubmissionModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+
+        <!-- Student & Challenge Profile Card -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #94a3b8; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-user-graduate" style="color: #38bdf8;"></i> مشخصات دانش‌آموز:</div>
+            <div id="view-sub-student-name" style="font-size: 14px; font-weight: bold; color: white;">-</div>
+            <div id="view-sub-student-phone" style="font-size: 11.5px; color: #64748b; margin-top: 2px;">-</div>
+            <div id="view-sub-student-caravan" style="font-size: 11.5px; color: #38bdf8; margin-top: 4px;">-</div>
+          </div>
+
+          <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 14px;">
+            <div style="font-size: 11px; color: #94a3b8; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-trophy" style="color: #fbbf24;"></i> مشخصات چالش:</div>
+            <div id="view-sub-chal-title" style="font-size: 14px; font-weight: bold; color: #c4b5fd;">-</div>
+            <div id="view-sub-chal-reward" style="font-size: 12px; color: #fbbf24; font-weight: bold; margin-top: 2px;">-</div>
+            <div id="view-sub-date" style="font-size: 11.5px; color: #94a3b8; margin-top: 4px;">-</div>
+          </div>
+        </div>
+
+        <!-- Student Answer Text Container -->
+        <div style="margin-bottom: 16px;">
+          <label style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e1; font-size: 12.5px; font-weight: bold; margin-bottom: 6px;">
+            <span><i class="fa-solid fa-comment-dots" style="color: #10b981;"></i> متن پاسخ ارسالی دانش‌آموز:</span>
+            <button type="button" onclick="window.copySubmissionAnswerText()" style="background: rgba(255,255,255,0.08); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.15); border-radius: 5px; padding: 2px 8px; font-size: 11px; cursor: pointer;">
+              <i class="fa-solid fa-copy"></i> کپی پاسخ
+            </button>
+          </label>
+          <div id="view-sub-answer-text" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 14px; color: #f1f5f9; font-size: 13.5px; line-height: 1.8; max-height: 250px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;">
+            -
+          </div>
+        </div>
+
+        <!-- Attached File / Media -->
+        <div id="view-sub-file-section" style="margin-bottom: 18px;">
+          <div style="font-size: 12px; color: #cbd5e1; font-weight: bold; margin-bottom: 6px;">
+            <i class="fa-solid fa-paperclip" style="color: #38bdf8;"></i> فایل پیوست ارسالی:
+          </div>
+          <div id="view-sub-file-container" style="background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px;">
+            <!-- File link or Image Preview -->
+          </div>
+        </div>
+
+        <!-- Feedback & Evaluation Action Section -->
+        <div style="background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 12.5px; font-weight: bold; color: #c4b5fd; margin-bottom: 8px;">
+            <i class="fa-solid fa-pen-nib"></i> ارزیابی و ثبت نتیجه (به همراه ارسال اعلان به فرد و راهبر):
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <div>
+              <label style="display: block; color: #94a3b8; font-size: 11.5px; margin-bottom: 4px;">یادداشت ارزیابی برای دانش‌آموز:</label>
+              <input type="text" id="view-sub-feedback-input" placeholder="مثال: پاسخ شما کامل و با خلاقیت بالا انجام شده است." style="width: 100%; padding: 7px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+            </div>
+            <div>
+              <label style="display: block; color: #94a3b8; font-size: 11.5px; margin-bottom: 4px;">پاداش زریک اهدایی (🪙):</label>
+              <input type="number" id="view-sub-reward-input" min="0" max="5000" style="width: 100%; padding: 7px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: #fbbf24; font-weight: bold; font-size: 12.5px;">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+          <button type="button" class="btn-action" onclick="window.closeViewSubmissionModal()" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">بستن</button>
+          
+          <div style="display: flex; gap: 8px;" id="view-sub-actions-container">
+            <button type="button" id="view-sub-btn-reject" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-times"></i> رد تکلیف
+            </button>
+            <button type="button" id="view-sub-btn-approve" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">
+              <i class="fa-solid fa-check"></i> تایید تکلیف و اعطای پاداش
+            </button>
+          </div>
         </div>
       </div>
     </div>

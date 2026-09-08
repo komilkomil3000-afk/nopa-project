@@ -30,11 +30,20 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     final submissions = repository.submissions;
 
     for (var c in repository.challenges) {
-      final hasApproved = submissions.any((s) => s.challengeId == c.id && s.status == 'approved');
-      final hasPending = submissions.any((s) => s.challengeId == c.id && s.status == 'pending');
-      final String status = hasApproved
-          ? 'archived_completed'
-          : (hasPending ? 'archived_pending' : 'active');
+      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
+      String rawStatus = c.myStatus ?? localSub?.status ?? 'none';
+      if (rawStatus == 'PENDING_REVIEW') rawStatus = 'pending';
+
+      final String status;
+      if (rawStatus == 'approved') {
+        status = 'archived_completed';
+      } else if (rawStatus == 'pending') {
+        status = 'archived_pending';
+      } else if (rawStatus == 'rejected') {
+        status = 'rejected';
+      } else {
+        status = 'active';
+      }
 
       list.add({
         'id': c.id,
@@ -45,13 +54,20 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         'status': status,
         'questions': c.questions,
         'progress': c.progress,
+        'mentorName': c.mentorName,
+        'caravanName': c.caravanName,
+        'mentorFeedback': c.mentorFeedback ?? localSub?.scoreFeedback,
+        'myAnswerText': c.myAnswerText ?? localSub?.answerText,
+        'isByAdmin': c.isByAdmin,
+        'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر کاروان')),
+        'targetAudienceLabel': c.targetAudienceLabel ?? (c.caravanName != null ? 'کاروان: ${c.caravanName}' : 'عمومی (همه کاروان‌ها)'),
       });
     }
     return list;
   }
 
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
-    final TextEditingController textCtrl = TextEditingController();
+    final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
     int tempSelectedOption = -1;
     String? attachedFileName;
     int currentStep = 0;
@@ -705,6 +721,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
   Widget _buildChallengeItemCard(Map<String, dynamic> item) {
     bool isCompleted = item['status'] == 'archived_completed';
     bool isPending = item['status'] == 'archived_pending';
+    bool isRejected = item['status'] == 'rejected';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
@@ -715,7 +732,11 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         border: Border.all(
           color: isCompleted 
               ? const Color(0xFF10B981).withValues(alpha: 0.3)
-              : (isPending ? const Color(0xFFFFD54F).withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.04)),
+              : (isPending 
+                  ? const Color(0xFFFFD54F).withValues(alpha: 0.3) 
+                  : (isRejected 
+                      ? const Color(0xFFEF4444).withValues(alpha: 0.4) 
+                      : Colors.white.withValues(alpha: 0.04))),
         ),
       ),
       child: Column(
@@ -724,16 +745,93 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Challenge Title (Right in RTL)
+              // Challenge Title & Mentor Info (Right in RTL)
               Expanded(
-                child: Text(
-                  item['title'],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    fontFamily: 'Vazirmatn',
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title'],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        // Creator Badge (تولید شده توسط)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: item['isByAdmin'] == true
+                                ? const Color(0xFFA855F7).withValues(alpha: 0.15)
+                                : const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: item['isByAdmin'] == true
+                                  ? const Color(0xFFA855F7).withValues(alpha: 0.35)
+                                  : const Color(0xFF3B82F6).withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                item['isByAdmin'] == true ? Icons.shield_rounded : Icons.person_rounded,
+                                size: 11,
+                                color: item['isByAdmin'] == true ? const Color(0xFFF472B6) : const Color(0xFF93C5FD),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'سازنده: ${item['creatorName']}',
+                                style: TextStyle(
+                                  color: item['isByAdmin'] == true ? const Color(0xFFF472B6) : const Color(0xFF93C5FD),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Target Audience Badge (تولید شده برای)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0EA5E9).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.groups_rounded,
+                                size: 11,
+                                color: Color(0xFF38BDF8),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'مخاطبان: ${item['targetAudienceLabel']}',
+                                style: const TextStyle(
+                                  color: Color(0xFF38BDF8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
@@ -744,18 +842,34 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                 decoration: BoxDecoration(
                   color: isCompleted 
                       ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                      : (isPending ? const Color(0xFFFFD54F).withValues(alpha: 0.15) : const Color(0xFF8B5CF6).withValues(alpha: 0.15)),
+                      : (isPending 
+                          ? const Color(0xFFFFD54F).withValues(alpha: 0.15) 
+                          : (isRejected 
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.15) 
+                              : const Color(0xFF8B5CF6).withValues(alpha: 0.15))),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isCompleted 
                         ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                        : (isPending ? const Color(0xFFFFD54F).withValues(alpha: 0.4) : const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
+                        : (isPending 
+                            ? const Color(0xFFFFD54F).withValues(alpha: 0.4) 
+                            : (isRejected 
+                                ? const Color(0xFFEF4444).withValues(alpha: 0.45) 
+                                : const Color(0xFF8B5CF6).withValues(alpha: 0.4))),
                   ),
                 ),
                 child: Text(
-                  isCompleted ? 'کامل شده' : (isPending ? 'در انتظار بررسی' : 'فعال'),
+                  isCompleted 
+                      ? 'کامل شده' 
+                      : (isPending 
+                          ? 'در انتظار بررسی' 
+                          : (isRejected ? 'رد شده ❌ نیاز به اصلاح' : 'فعال')),
                   style: TextStyle(
-                    color: isCompleted ? const Color(0xFF10B981) : (isPending ? const Color(0xFFFFD54F) : const Color(0xFF8B5CF6)),
+                    color: isCompleted 
+                        ? const Color(0xFF10B981) 
+                        : (isPending 
+                            ? const Color(0xFFFFD54F) 
+                            : (isRejected ? const Color(0xFFF87171) : const Color(0xFF8B5CF6))),
                     fontSize: 10.5,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Vazirmatn',
@@ -775,6 +889,36 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
               fontFamily: 'Vazirmatn',
             ),
           ),
+
+          // Mentor Rejection Feedback Box
+          if (isRejected && item['mentorFeedback'] != null && (item['mentorFeedback'] as String).trim().isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'علت رد: ${item['mentorFeedback']}',
+                      style: const TextStyle(
+                        color: Color(0xFFFCA5A5),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           const SizedBox(height: 14),
 
           Row(
@@ -802,10 +946,10 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
               if (!isCompleted && !isPending)
                 ElevatedButton.icon(
                   onPressed: () => _showSubmissionDialog(item),
-                  icon: const Icon(Icons.send_rounded, size: 14, color: Colors.white),
-                  label: const Text(
-                    'پاسخ و ارسال تکلیف',
-                    style: TextStyle(
+                  icon: Icon(isRejected ? Icons.refresh_rounded : Icons.send_rounded, size: 14, color: Colors.white),
+                  label: Text(
+                    isRejected ? 'پاسخ مجدد و تکمیل چالش' : 'پاسخ و ارسال تکلیف',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11.5,
                       fontWeight: FontWeight.bold,
@@ -813,7 +957,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEC4899),
+                    backgroundColor: isRejected ? const Color(0xFFDC2626) : const Color(0xFFEC4899),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),

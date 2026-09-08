@@ -9,6 +9,15 @@ class ChallengeModel {
   final List<Map<String, dynamic>>? questions; // List of questions with 'q', 'options', 'correct'
   final String createdByMentorId;
   final double progress;
+  final String? caravanId;
+  final String? mentorName;
+  final String? caravanName;
+  final String? myStatus;
+  final String? mentorFeedback;
+  final String? myAnswerText;
+  final bool isByAdmin;
+  final String? creatorName;
+  final String? targetAudienceLabel;
 
   ChallengeModel({
     required this.id,
@@ -19,6 +28,15 @@ class ChallengeModel {
     this.questions,
     required this.createdByMentorId,
     this.progress = 0.0,
+    this.caravanId,
+    this.mentorName,
+    this.caravanName,
+    this.myStatus,
+    this.mentorFeedback,
+    this.myAnswerText,
+    this.isByAdmin = false,
+    this.creatorName,
+    this.targetAudienceLabel,
   });
 }
 

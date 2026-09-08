@@ -12,31 +12,38 @@ exports.replyMentorTicket = replyMentorTicket;
 const db_1 = __importDefault(require("../config/db"));
 async function createMentorChallenge(req, res) {
     try {
-        const { title, description, stationId, caravanId, deadline, rewardZarik, verificationType } = req.body;
+        const { title, description, stationId, deadline, rewardZarik, verificationType } = req.body;
         if (!title || !description)
             return res.status(400).json({ error: 'عنوان و توضیحات الزامی است' });
-        // Pack extra fields into questions JSON or just append to description if not available in schema
-        // Since schema doesn't have stationId/deadline, we'll store them in description or questions
-        const metadata = { stationId, caravanId, deadline, verificationType };
+        // Enforce mentor's own caravan
+        const mentorCaravan = await db_1.default.caravan.findFirst({
+            where: { mentorId: req.user.id }
+        });
+        if (!mentorCaravan) {
+            return res.status(400).json({ error: 'شما به عنوان راهبر به کاروانی متصل نیستید' });
+        }
+        const assignedCaravanId = mentorCaravan.id;
+        const metadata = { stationId, caravanId: assignedCaravanId, deadline, verificationType };
         const challenge = await db_1.default.challenge.create({
             data: {
                 title,
                 description: description + `\n\n[Metadata: ${JSON.stringify(metadata)}]`,
                 type: verificationType || 'skill',
                 rewardZarik: parseInt(rewardZarik) || 200,
-                createdByMentorId: req.user.id
+                createdByMentorId: req.user.id,
+                caravanId: assignedCaravanId
             }
         });
-        // Notify target caravan students
-        const targetStudents = caravanId
-            ? await db_1.default.user.findMany({ where: { caravanId, role: 'student' } })
-            : await db_1.default.user.findMany({ where: { role: 'student' } });
+        // Notify ONLY target caravan students
+        const targetStudents = await db_1.default.user.findMany({
+            where: { caravanId: assignedCaravanId, role: 'student' }
+        });
         if (targetStudents.length > 0) {
             await db_1.default.notification.createMany({
                 data: targetStudents.map(s => ({
                     userId: s.id,
-                    title: 'چالش جدید ابلاغ شد 🏆',
-                    message: `چالش جدید "${title}" توسط راهبر برای شما ابلاغ گردید.`,
+                    title: 'چالش جدید کاروان ابلاغ شد 🏆',
+                    message: `چالش جدید "${title}" توسط راهبر کاروان (${mentorCaravan.name}) برای شما ابلاغ گردید.`,
                     type: 'challenge'
                 }))
             });
@@ -49,8 +56,18 @@ async function createMentorChallenge(req, res) {
 }
 async function getMentorChallenges(req, res) {
     try {
+        const mentorCaravans = await db_1.default.caravan.findMany({
+            where: { mentorId: req.user.id },
+            select: { id: true }
+        });
+        const caravanIds = mentorCaravans.map(c => c.id);
         const challenges = await db_1.default.challenge.findMany({
-            where: { createdByMentorId: req.user.id },
+            where: {
+                OR: [
+                    { createdByMentorId: req.user.id },
+                    ...(caravanIds.length > 0 ? [{ caravanId: { in: caravanIds } }] : [])
+                ]
+            },
             orderBy: { createdAt: 'desc' }
         });
         res.json(challenges);

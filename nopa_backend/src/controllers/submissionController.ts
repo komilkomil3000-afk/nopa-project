@@ -14,17 +14,6 @@ export async function submitTask(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'شناسه چالش الزامی است' });
     }
 
-    const submission = await prisma.submission.create({
-      data: {
-        challengeId,
-        studentId: req.user.id,
-        answerText,
-        fileUrl,
-        status: 'PENDING_REVIEW'
-      }
-    });
-
-    // Notify caravan mentor
     const student = await prisma.user.findUnique({
       where: { id: req.user.id }
     });
@@ -33,6 +22,44 @@ export async function submitTask(req: AuthRequest, res: Response) {
       where: { id: challengeId }
     });
 
+    if (!challenge) {
+      return res.status(404).json({ error: 'چالش مورد نظر یافت نشد' });
+    }
+
+    const existingSubmission = await prisma.submission.findFirst({
+      where: { challengeId, studentId: req.user.id }
+    });
+
+    // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission
+    if (challenge.caravanId && student?.caravanId && challenge.caravanId !== student.caravanId && !existingSubmission) {
+      return res.status(403).json({ error: 'شما فقط مجاز به ارسال پاسخ برای چالش‌های کاروان خود هستید' });
+    }
+
+    let submission;
+    if (existingSubmission) {
+      submission = await prisma.submission.update({
+        where: { id: existingSubmission.id },
+        data: {
+          answerText,
+          fileUrl,
+          status: 'PENDING_REVIEW',
+          score: 0,
+          submittedAt: new Date()
+        }
+      });
+    } else {
+      submission = await prisma.submission.create({
+        data: {
+          challengeId,
+          studentId: req.user.id,
+          answerText,
+          fileUrl,
+          status: 'PENDING_REVIEW'
+        }
+      });
+    }
+
+    // Notify caravan mentor
     if (student?.caravanId) {
       const caravan = await prisma.caravan.findUnique({
         where: { id: student.caravanId }
@@ -79,6 +106,20 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
 
     if (challengeId) {
       whereClause.challengeId = challengeId;
+    }
+
+    // Caravan isolation for mentor: only view submissions from mentor's caravan / challenges
+    if (req.user.role === 'mentor') {
+      const mentorCaravans = await prisma.caravan.findMany({
+        where: { mentorId: req.user.id },
+        select: { id: true }
+      });
+      const caravanIds = mentorCaravans.map(c => c.id);
+
+      whereClause.OR = [
+        { challenge: { createdByMentorId: req.user.id } },
+        ...(caravanIds.length > 0 ? [{ student: { caravanId: { in: caravanIds } } }] : [])
+      ];
     }
 
     const submissions = await prisma.submission.findMany({
@@ -131,6 +172,20 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
     }
 
+    if (req.user.role === 'mentor') {
+      const mentorCaravans = await prisma.caravan.findMany({
+        where: { mentorId: req.user.id },
+        select: { id: true }
+      });
+      const caravanIds = mentorCaravans.map(c => c.id);
+      const isOwner = submission.challenge.createdByMentorId === req.user.id || 
+                      (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId)) ||
+                      (submission.challenge.caravanId && caravanIds.includes(submission.challenge.caravanId));
+      if (!isOwner) {
+        return res.status(403).json({ error: 'شما فقط مجاز به بررسی تکالیف اعضای کاروان خود هستید' });
+      }
+    }
+
     const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
 
     let updatedSubmission;
@@ -177,6 +232,23 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         type: 'alert'
       }
     });
+
+    // Also notify caravan mentor: "ایجاد و نتیجه هر چالش باید درون برنامه به فرد و راهبر اطلاع داده شود و اعلان داده شود."
+    if (submission.student?.caravanId) {
+      const caravan = await prisma.caravan.findUnique({
+        where: { id: submission.student.caravanId }
+      });
+      if (caravan?.mentorId && caravan.mentorId !== req.user?.id) {
+        await prisma.notification.create({
+          data: {
+            userId: caravan.mentorId,
+            title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
+            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
+            type: 'alert'
+          }
+        });
+      }
+    }
 
     res.json(updatedSubmission);
   } catch (error) {
