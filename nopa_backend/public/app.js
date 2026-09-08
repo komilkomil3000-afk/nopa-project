@@ -863,7 +863,7 @@ function renderAdminChallenges(challenges) {
   if (!tbody) return;
 
   if (challenges.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی با فیلتر انتخابی یافت نشد</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی با فیلتر انتخابی یافت نشد</td></tr>`;
     return;
   }
 
@@ -874,14 +874,14 @@ function renderAdminChallenges(challenges) {
     let creatorBadge = '';
     if (isByAdmin) {
       creatorBadge = `
-        <span class="badge" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
+        <span class="badge" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
           <i class="fa-solid fa-shield-halved"></i> توسط مدیر سیستم
         </span>
       `;
     } else {
       creatorBadge = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;">
+          <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
             <i class="fa-solid fa-user-tie"></i> توسط راهبر
           </span>
           <span style="font-size: 11.5px; color: #cbd5e1; font-weight: 600;">${creatorName}</span>
@@ -923,28 +923,13 @@ function renderAdminChallenges(challenges) {
     }
 
     // Type badge
-    let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">${c.type}</span>`;
+    let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
     if (c.type === 'quiz' || c.type === 'step_by_step_quiz') {
-      typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
+      typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
     } else if (c.type === 'skill') {
-      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
+      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
     } else if (c.type === 'file') {
-      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"><i class="fa-solid fa-file-arrow-up"></i> ارسال فایل</span>`;
-    }
-
-    // Steps summary
-    let stepsSummary = '';
-    const qList = Array.isArray(c.questions) ? c.questions : [];
-    if (qList.length > 0) {
-      stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
-        <span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-weight: bold;">${qList.length} مرحله / سوال</span>
-        <span style="font-size: 11px; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${qList[0].question || qList[0].q || 'کوئیز چهارگزینه‌ای'}</span>
-      </div>`;
-    } else {
-      stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
-        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d;">۱ مرحله</span>
-        <span style="font-size: 11px; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || 'تکلیف کلاسی'}</span>
-      </div>`;
+      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-file-arrow-up"></i> ارسال فایل</span>`;
     }
 
     // Submissions participation
@@ -967,11 +952,10 @@ function renderAdminChallenges(challenges) {
         </td>
         <td>${caravanDisplay}</td>
         <td>${creatorBadge}</td>
-        <td>
-          ${typeBadge}
-          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; margin-top: 4px;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50} زریک</div>
+        <td style="white-space: nowrap;">
+          <div style="margin-bottom: 6px;">${typeBadge}</div>
+          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50} زریک</div>
         </td>
-        <td>${stepsSummary}</td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">

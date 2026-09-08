@@ -16,6 +16,7 @@ import '../services/api_service.dart';
 import '../services/theme_provider.dart';
 import '../services/audio_exclusivity_service.dart';
 import '../widgets/safe_avatar.dart';
+import '../widgets/logout_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -354,11 +355,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
-        _buildSettingTile('خروج از حساب کاربری', Icons.logout, () async {
-          await Provider.of<AppRepository>(context, listen: false).logout();
-          if (context.mounted) {
-            Navigator.pushReplacementNamed(context, '/auth');
-          }
+        _buildSettingTile('خروج از حساب کاربری', Icons.logout, () {
+          LogoutDialog.show(context);
         }, isDestructive: true),
       ],
     );
@@ -2093,11 +2091,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ContactUsDialog.show(context);
           },
         ),
-        _buildSettingTile('خروج از حساب', Icons.logout, () async {
-          await Provider.of<AppRepository>(context, listen: false).logout();
-          if (context.mounted) {
-            Navigator.pushReplacementNamed(context, '/auth');
-          }
+        _buildSettingTile('خروج از حساب', Icons.logout, () {
+          LogoutDialog.show(context);
         }, isDestructive: true),
       ],
     );

@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/app_state_repository.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -38,7 +39,22 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _loadSavedPhone();
     _checkAutoLogin();
+  }
+
+  Future<void> _loadSavedPhone() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPhone = prefs.getString('saved_login_phone');
+      if (savedPhone != null && savedPhone.isNotEmpty && mounted) {
+        setState(() {
+          if (_loginPhoneCtrl.text.isEmpty) {
+            _loginPhoneCtrl.text = savedPhone;
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _checkAutoLogin() async {
@@ -148,6 +164,13 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       AuthService.selectedRole = resolvedRole;
       
       final userData = response['data']['user'];
+      final userPhone = userData['phoneNumber'] ?? _loginPhoneCtrl.text.trim();
+      if (userPhone != null && userPhone.toString().isNotEmpty) {
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setString('saved_login_phone', userPhone.toString());
+        }).catchError((_) {});
+      }
+
       Provider.of<AppRepository>(context, listen: false).updateUser(UserModel(
         id: userData['id'],
         name: userData['name'],

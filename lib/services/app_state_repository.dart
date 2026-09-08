@@ -98,10 +98,18 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> logout() async {
+    try {
+      if (currentUser.phoneNumber.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('saved_login_phone', currentUser.phoneNumber);
+      }
+    } catch (_) {}
+
     await _apiService.logout();
+    challenges.clear();
     currentUser = UserModel(
-      id: 'loading',
-      name: 'در حال بارگذاری...',
+      id: 'guest',
+      name: 'مهمان',
       phoneNumber: '',
       role: UserRole.member,
       zarik: 0,

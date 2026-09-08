@@ -6,6 +6,7 @@ import '../utils/tasks_repository.dart';
 import '../utils/global_state.dart';
 import '../widgets/safe_avatar.dart';
 import 'contact_us_dialog.dart';
+import 'logout_dialog.dart';
 
 class CustomDrawer extends StatelessWidget {
   final Function(int) onTabSelected;
@@ -200,7 +201,7 @@ class CustomDrawer extends StatelessWidget {
                     textColor: Colors.redAccent,
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/auth');
+                      LogoutDialog.show(context);
                     },
                   ),
                 ],
