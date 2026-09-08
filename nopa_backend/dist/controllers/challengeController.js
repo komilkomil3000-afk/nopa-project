@@ -48,12 +48,34 @@ async function createChallenge(req, res) {
 async function getChallenges(req, res) {
     try {
         const challenges = await db_1.default.challenge.findMany({
+            include: {
+                submissions: {
+                    select: { id: true, status: true, score: true }
+                }
+            },
             orderBy: { createdAt: 'desc' }
         });
-        const parsedChallenges = challenges.map(c => ({
-            ...c,
-            questions: c.questions ? JSON.parse(c.questions) : null
-        }));
+        const parsedChallenges = challenges.map(c => {
+            let parsedQuestions = null;
+            if (c.questions) {
+                try {
+                    parsedQuestions = JSON.parse(c.questions);
+                }
+                catch (e) {
+                    parsedQuestions = c.questions;
+                }
+            }
+            const totalSubmissions = c.submissions.length;
+            const pendingSubmissions = c.submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length;
+            const approvedSubmissions = c.submissions.filter(s => s.status === 'approved').length;
+            return {
+                ...c,
+                questions: parsedQuestions,
+                totalSubmissions,
+                pendingSubmissions,
+                approvedSubmissions
+            };
+        });
         res.json(parsedChallenges);
     }
     catch (error) {

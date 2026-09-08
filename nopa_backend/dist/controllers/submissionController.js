@@ -59,11 +59,36 @@ async function getPendingSubmissions(req, res) {
         if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
             return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
         }
+        const { status, challengeId } = req.query;
+        const whereClause = {};
+        if (status && status !== 'all') {
+            if (status === 'pending') {
+                whereClause.status = { in: ['pending', 'PENDING_REVIEW'] };
+            }
+            else {
+                whereClause.status = status;
+            }
+        }
+        else if (!status) {
+            // By default, return pending and pending_review
+            whereClause.status = { in: ['pending', 'PENDING_REVIEW'] };
+        }
+        if (challengeId) {
+            whereClause.challengeId = challengeId;
+        }
         const submissions = await db_1.default.submission.findMany({
-            where: { status: { in: ['pending', 'PENDING_REVIEW'] } },
+            where: whereClause,
             include: {
                 challenge: true,
-                student: true
+                student: {
+                    select: {
+                        id: true,
+                        name: true,
+                        phoneNumber: true,
+                        caravanId: true,
+                        avatarUrl: true
+                    }
+                }
             },
             orderBy: { submittedAt: 'desc' }
         });
@@ -80,7 +105,10 @@ async function reviewSubmission(req, res) {
             return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
         }
         const { id } = req.params;
-        const { status, score, mentorFeedback } = req.body; // status: "approved" | "rejected"
+        let { status, score, mentorFeedback, isApproved } = req.body;
+        if (isApproved !== undefined && !status) {
+            status = isApproved ? 'approved' : 'rejected';
+        }
         if (!['approved', 'rejected'].includes(status)) {
             return res.status(400).json({ error: 'وضعیت جدید نامعتبر است' });
         }

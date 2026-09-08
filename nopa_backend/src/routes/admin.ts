@@ -42,6 +42,7 @@ import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAs
 import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, createMentorRewardRule, deleteMentorRewardRule } from '../controllers/rewardController';
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
+import { getChallenges, createChallenge } from '../controllers/challengeController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -122,8 +123,11 @@ router.get('/caravans/requests', getCaravanRequests as any);
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
 router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
 router.get('/tickets', getTickets as any);
+router.get('/challenges', getChallenges as any);
+router.post('/challenges', createChallenge as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
+router.patch('/submissions/:id/review', reviewSubmission as any);
 router.get('/mentors/scorecards', getMentorScorecards as any);
 router.get('/mentors', getMentors as any);
 router.post('/mentors', createOrUpdateMentor as any);

@@ -642,7 +642,7 @@ function switchTab(tabId, updateUrl = true) {
     'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
     'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
     'form-builder-tab': { title: 'فرم‌ساز داینامیک', desc: 'طراحی و مدیریت فرم‌ها و پرسشنامه‌های اختصاصی' },
-    'submissions-tab': { title: 'بررسی تکالیف معلق', desc: 'مدیریت و ارزیابی پاسخ‌ها و تکالیف دانش‌آموزان' }
+    'submissions-tab': { title: 'بررسی و مدیریت چالش‌ها', desc: 'مشاهده چالش‌های فعال نپا، مراحل و گام‌های سوالات، و ارزیابی تکالیف دانش‌آموزان' }
   };
 
   if (titlesMap[tabId]) {
@@ -707,7 +707,11 @@ function switchTab(tabId, updateUrl = true) {
   } else if (tabId === 'mentors-league-tab') {
     if (typeof loadMentorLeague === 'function') loadMentorLeague();
   } else if (tabId === 'submissions-tab') {
-    if (typeof loadSubmissions === 'function') loadSubmissions();
+    if (typeof window.loadChallengesAndSubmissionsTab === 'function') {
+      window.loadChallengesAndSubmissionsTab();
+    } else if (typeof loadSubmissions === 'function') {
+      loadSubmissions();
+    }
   }
 }
 
@@ -780,52 +784,330 @@ async function loadTickets() {
   }
 }
 
-// Submissions
+// ==========================================
+// CHALLENGES & SUBMISSIONS MANAGEMENT (LMS)
+// ==========================================
+window.cachedAdminChallenges = [];
+
+window.loadChallengesAndSubmissionsTab = async function() {
+  await Promise.all([
+    window.loadAdminChallengesData(),
+    window.loadAdminSubmissionsData()
+  ]);
+};
+
 async function loadSubmissions() {
-  try {
-    const res = await request('/api/v1/admin/submissions');
-    if (!res.ok) return;
-    const submissions = await res.json();
-    const tbody = document.querySelector('#admin-submissions-table tbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = submissions.map(s => `
-      <tr>
-        <td>${s.user?.name || 'ناشناس'}</td>
-        <td>${s.challengeId || 'تکلیف کلاسی'}</td>
-        <td>${s.content || '-'}</td>
-        <td>${s.attachmentUrl ? `<a href="${s.attachmentUrl}" target="_blank">دانلود</a>` : '-'}</td>
-        <td>${new Date(s.createdAt).toLocaleDateString('fa-IR')}</td>
-        <td>${s.rewardZarik || 0}</td>
-        <td>
-          ${s.status === 'PENDING' ? `
-            <button class="page-btn btn-success" onclick="reviewSubmission('${s.id}', true)"><i class="fa-solid fa-check"></i> تایید</button>
-            <button class="page-btn btn-danger" onclick="reviewSubmission('${s.id}', false)"><i class="fa-solid fa-times"></i> رد</button>
-          ` : `<span class="badge ${s.status === 'APPROVED' ? 'badge-success' : 'badge-danger'}">${s.status}</span>`}
-        </td>
-      </tr>
-    `).join('');
-  } catch (e) {
-    console.error('Error loading submissions', e);
-  }
+  return window.loadChallengesAndSubmissionsTab();
 }
 
-window.reviewSubmission = async function(id, isApproved) {
+window.loadAdminChallengesData = async function() {
+  try {
+    const res = await request('/api/v1/admin/challenges');
+    if (!res.ok) {
+      console.warn('Failed to load admin challenges');
+      return;
+    }
+    const challenges = await res.json();
+    window.cachedAdminChallenges = Array.isArray(challenges) ? challenges : [];
+    
+    // Update stats
+    const countEl = document.getElementById('stat-challenges-count');
+    if (countEl) countEl.textContent = window.cachedAdminChallenges.length;
+    const badgeEl = document.getElementById('badge-challenges-total');
+    if (badgeEl) badgeEl.textContent = `${window.cachedAdminChallenges.length} چالش فعال`;
+
+    renderAdminChallenges(window.cachedAdminChallenges);
+  } catch (err) {
+    console.error('loadAdminChallengesData error:', err);
+  }
+};
+
+function renderAdminChallenges(challenges) {
+  const tbody = document.getElementById('admin-challenges-tbody');
+  if (!tbody) return;
+
+  if (challenges.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی در دیتابیس یافت نشد</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = challenges.map(c => {
+    // Type badge
+    let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">${c.type}</span>`;
+    if (c.type === 'quiz' || c.type === 'step_by_step_quiz') {
+      typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
+    } else if (c.type === 'skill') {
+      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
+    } else if (c.type === 'file') {
+      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);"><i class="fa-solid fa-file-arrow-up"></i> ارسال فایل</span>`;
+    }
+
+    // Steps summary
+    let stepsSummary = '';
+    const qList = Array.isArray(c.questions) ? c.questions : [];
+    if (qList.length > 0) {
+      stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
+        <span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-weight: bold;">${qList.length} مرحله / سوال</span>
+        <span style="font-size: 11.5px; color: #94a3b8; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${qList[0].question || qList[0].q || 'کوئیز چهارگزینه‌ای'}</span>
+      </div>`;
+    } else {
+      stepsSummary = `<div style="display: flex; align-items: center; gap: 6px;">
+        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fcd34d;">۱ مرحله</span>
+        <span style="font-size: 11.5px; color: #94a3b8; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || 'تکلیف کلاسی'}</span>
+      </div>`;
+    }
+
+    // Submissions participation
+    const approved = c.approvedSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'approved').length : 0);
+    const pending = c.pendingSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length : 0);
+    const participation = `<div style="font-size: 12px; display: flex; justify-content: center; gap: 8px;">
+      <span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved} تایید</span>
+      <span style="color: #64748b;">|</span>
+      <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending} معلق</span>
+    </div>`;
+
+    return `
+      <tr>
+        <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
+        <td>
+          <div style="font-weight: bold; color: white; font-size: 13px;">${c.title}</div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px;">${c.description || ''}</div>
+        </td>
+        <td>${typeBadge}</td>
+        <td><span style="color: #fbbf24; font-weight: bold; font-size: 13px;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50}</span></td>
+        <td>${stepsSummary}</td>
+        <td style="text-align: center;">${participation}</td>
+        <td style="text-align: center;">
+          <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 6px 12px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-list-check"></i> مراحل چالش
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.filterChallengesList = function() {
+  const query = (document.getElementById('filter-challenges-search')?.value || '').trim().toLowerCase();
+  if (!query) {
+    renderAdminChallenges(window.cachedAdminChallenges);
+    return;
+  }
+  const filtered = window.cachedAdminChallenges.filter(c => 
+    (c.title && c.title.toLowerCase().includes(query)) ||
+    (c.id && c.id.toLowerCase().includes(query)) ||
+    (c.description && c.description.toLowerCase().includes(query))
+  );
+  renderAdminChallenges(filtered);
+};
+
+window.openChallengeStepsModal = function(challengeId) {
+  const c = window.cachedAdminChallenges.find(item => item.id === challengeId);
+  if (!c) {
+    alert('اطلاعات چالش یافت نشد');
+    return;
+  }
+
+  const modal = document.getElementById('challenge-steps-modal');
+  const titleEl = document.getElementById('modal-challenge-title');
+  const badgeEl = document.getElementById('modal-challenge-badge');
+  const bodyEl = document.getElementById('modal-challenge-body');
+  if (!modal || !bodyEl) return;
+
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${c.title}`;
+  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${c.rewardZarik || 50} زریک 🪙 | نوع: ${c.type}`;
+
+  const qList = Array.isArray(c.questions) ? c.questions : [];
+
+  let html = '';
+  if (qList.length > 0) {
+    html += `
+      <div style="margin-bottom: 16px; padding: 12px 16px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 10px;">
+        <div style="font-weight: bold; color: #c4b5fd; font-size: 13px; margin-bottom: 4px;"><i class="fa-solid fa-info-circle"></i> ساختار مرحله‌ای چالش در اپلیکیشن نپا:</div>
+        <div style="color: #94a3b8; font-size: 12px;">این چالش شامل ${qList.length} مرحله یا سوال متوالی است که دانش‌آموز در اپلیکیشن قدم به قدم به آن پاسخ می‌دهد.</div>
+      </div>
+    `;
+
+    qList.forEach((q, idx) => {
+      const qText = q.question || q.q || q.title || `مرحله شماره ${idx + 1}`;
+      const opts = Array.isArray(q.options) ? q.options : (Array.isArray(q.opts) ? q.opts : []);
+      const correctIdx = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : -1);
+
+      html += `
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="badge" style="background: rgba(139, 92, 246, 0.25); color: #c4b5fd; font-weight: bold; font-size: 12px;">
+              گام ${idx + 1} از ${qList.length}
+            </span>
+            <span style="font-size: 11px; color: #94a3b8;">سوال چهارگزینه‌ای</span>
+          </div>
+          <h4 style="color: white; font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${qText}</h4>
+          ${opts.length > 0 ? `
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${opts.map((opt, oIdx) => {
+                const isCorrect = (oIdx === correctIdx);
+                return `
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: ${isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.2)'}; border: 1px solid ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.06)'}; color: ${isCorrect ? '#6ee7b7' : '#cbd5e1'}; font-size: 12.5px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.1)'}; color: white; font-weight: bold;">${oIdx + 1}</span>
+                    <span style="flex: 1;">${opt}</span>
+                    ${isCorrect ? '<span style="color: #10b981; font-weight: bold; font-size: 11px;"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : `
+            <div style="color: #94a3b8; font-size: 12px;">بدون گزینه‌های چهارگزینه‌ای (پاسخ تشریحی)</div>
+          `}
+        </div>
+      `;
+    });
+  } else {
+    html += `
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; font-weight: bold; font-size: 12px;">
+            مرحله ۱: اجرای تکلیف مهارتی
+          </span>
+          <span style="font-size: 11px; color: #94a3b8;">پاسخ متنی و پیوست فایل</span>
+        </div>
+        <h4 style="color: white; font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${c.title}</h4>
+        <div style="background: rgba(0, 0, 0, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; color: #cbd5e1; font-size: 13px; line-height: 1.7; border-right: 3px solid #f59e0b;">
+          ${c.description}
+        </div>
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
+          <div style="color: #10b981; font-size: 12px; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
+          <div style="color: #94a3b8; font-size: 12px; line-height: 1.6;">دانش‌آموز متن پاسخ خود را در فیلد مربوطه تایپ کرده و در صورت تمایل فایل صوتی، عکس یا پوستر طراحی‌شده را ضمیمه می‌نماید. راهبر یا مدیر در بخش ارزیابی زیر می‌تواند آن را بررسی و پاداش زریک را ثبت کند.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  bodyEl.innerHTML = html;
+  modal.style.display = 'flex';
+};
+
+window.closeChallengeStepsModal = function() {
+  const modal = document.getElementById('challenge-steps-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.loadAdminSubmissionsData = async function() {
+  try {
+    const statusFilter = document.getElementById('filter-submissions-status')?.value || 'pending';
+    const res = await request(`/api/v1/admin/submissions?status=${statusFilter}`);
+    if (!res.ok) return;
+    const list = await res.json();
+    const submissions = Array.isArray(list) ? list : [];
+
+    // Calculate stats
+    const pendingCount = submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length;
+    const approvedCount = submissions.filter(s => s.status === 'approved').length;
+    
+    const pendEl = document.getElementById('stat-pending-submissions');
+    if (pendEl) pendEl.textContent = pendingCount;
+    const appEl = document.getElementById('stat-approved-submissions');
+    if (appEl) appEl.textContent = approvedCount;
+
+    const tbody = document.getElementById('admin-submissions-tbody');
+    if (!tbody) return;
+
+    if (submissions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 25px; color: var(--text-muted);">هیچ پاسخی با فیلتر انتخابی یافت نشد</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = submissions.map(s => {
+      const studentName = s.student?.name || 'دانش‌آموز نپا';
+      const studentPhone = s.student?.phoneNumber || '';
+      const chalTitle = s.challenge?.title || s.challengeId || 'تکلیف کلاسی';
+      const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
+      const answer = s.answerText || '-';
+      const fileLink = s.fileUrl
+        ? `<a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
+        : '<span style="color: #64748b;">-</span>';
+
+      const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
+      const rewardVal = s.challenge?.rewardZarik || 50;
+
+      // Status badge
+      let statusBadge = '';
+      const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
+      if (isPending) {
+        statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">در انتظار ارزیابی</span>`;
+      } else if (s.status === 'approved') {
+        statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
+      } else {
+        statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">رد شده</span>`;
+      }
+
+      // Actions
+      let actionCell = '';
+      if (isPending) {
+        actionCell = `
+          <div style="display: flex; gap: 6px; justify-content: center;">
+            <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 10px; font-size: 11px;" title="تایید تکلیف"><i class="fa-solid fa-check"></i> تایید</button>
+            <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 10px; font-size: 11px;" title="رد تکلیف"><i class="fa-solid fa-times"></i> رد</button>
+          </div>
+        `;
+      } else {
+        actionCell = `<div style="font-size: 11px; color: #94a3b8; text-align: center;">${s.mentorFeedback || 'ارزیابی نهایی'}</div>`;
+      }
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight: bold; color: white;">${studentName}</div>
+            <div style="font-size: 11px; color: #64748b;">${studentPhone}</div>
+          </td>
+          <td>
+            <div style="font-weight: bold; color: #c4b5fd;">${chalTitle}</div>
+            <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
+          </td>
+          <td>
+            <div style="max-width: 260px; font-size: 12.5px; color: #e2e8f0; line-height: 1.5; word-break: break-word;">${answer}</div>
+          </td>
+          <td>${fileLink}</td>
+          <td style="font-size: 12px; color: #94a3b8;">${dateStr}</td>
+          <td><span style="color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
+          <td>${statusBadge}</td>
+          <td style="text-align: center;">${actionCell}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('loadAdminSubmissionsData error:', err);
+  }
+};
+
+window.reviewAdminSubmission = async function(id, isApproved, defaultReward) {
+  const promptScore = isApproved ? (prompt('میزان پاداش زریک اهدایی به دانش‌آموز:', defaultReward) || defaultReward) : 0;
+  if (isApproved && promptScore === null) return; // user cancelled
+
+  const promptFeedback = prompt('یادداشت / فیدبک ارزیابی برای دانش‌آموز:', isApproved ? 'پاسخ و تکلیف شما بررسی و با موفقیت تایید شد.' : 'پاسخ شما ناقص بوده یا نیاز به بازبینی دارد.');
+  if (promptFeedback === null) return; // user cancelled
+
   try {
     const res = await request(`/api/v1/admin/submissions/${id}/review`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isApproved })
+      body: JSON.stringify({
+        isApproved,
+        status: isApproved ? 'approved' : 'rejected',
+        score: Number(promptScore),
+        mentorFeedback: promptFeedback
+      })
     });
+
     if (res.ok) {
-      alert(isApproved ? 'تکلیف تایید شد' : 'تکلیف رد شد');
-      loadSubmissions();
+      alert(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به حساب دانش‌آموز اضافه گردید.' : 'تکلیف رد شد و اطلاع‌رسانی ارسال شد.');
+      window.loadChallengesAndSubmissionsTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطا در ارزیابی');
+      alert(data.error || 'خطایی در ارزیابی تکلیف رخ داد');
     }
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error('reviewAdminSubmission error:', err);
+    alert('خطا در ارتباط با سرور');
   }
 };
 
@@ -5553,78 +5835,11 @@ window.submitLmsClip = async function(e) {
   }
 }
 
-document.querySelector('[data-tab="submissions-tab"]')?.addEventListener('click', loadAdminSubmissions);
-
-async function loadAdminSubmissions() {
-  try {
-    const res = await fetch('/api/v1/submissions/pending', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const list = await res.json();
-    const tbody = document.querySelector('#admin-submissions-table tbody');
-    if (!tbody) return;
-    
-    if (!res.ok) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">خطا در بارگذاری داده‌ها</td></tr>`;
-      return;
-    }
-    
-    if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">هیچ تکلیف معلقی یافت نشد</td></tr>`;
-      return;
-    }
-    
-    tbody.innerHTML = list.map(s => `
-      <tr>
-        <td>${s.student?.name || 'نامشخص'}</td>
-        <td>${s.challenge?.title || 'نامشخص'}</td>
-        <td>${s.answerText || '-'}</td>
-        <td>${s.fileUrl ? `<a href="${s.fileUrl}" target="_blank" class="btn-action"><i class="fa-solid fa-download"></i> دانلود</a>` : '-'}</td>
-        <td>${new Date(s.submittedAt).toLocaleDateString('fa-IR')}</td>
-        <td>${s.challenge?.rewardZarik || 200}</td>
-        <td>
-          <button class="btn-primary btn-sm" onclick="reviewAdminSubmission('${s.id}', true, ${s.challenge?.rewardZarik || 200})">تایید <i class="fa-solid fa-check"></i></button>
-          <button class="btn-danger btn-sm" onclick="reviewAdminSubmission('${s.id}', false, 0)">رد <i class="fa-solid fa-xmark"></i></button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    console.error(error);
+document.querySelector('[data-tab="submissions-tab"]')?.addEventListener('click', () => {
+  if (typeof window.loadChallengesAndSubmissionsTab === 'function') {
+    window.loadChallengesAndSubmissionsTab();
   }
-}
-
-window.reviewAdminSubmission = async function(id, approve, defaultReward) {
-  const score = approve ? (prompt('میزان پاداش زریک:', defaultReward) || defaultReward) : 0;
-  const feedback = prompt('یادداشت / فیدبک ارزیابی:', approve ? 'تایید شد' : 'رد شد. لطفا مجدد تلاش کنید.');
-  
-  if (score === null || feedback === null) return; // cancel
-  
-  try {
-    const res = await fetch(`/api/v1/submissions/${id}/review`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        status: approve ? 'approved' : 'rejected',
-        score: Number(score),
-        mentorFeedback: feedback
-      })
-    });
-    
-    if (res.ok) {
-      alert('ارزیابی با موفقیت ثبت شد');
-      loadAdminSubmissions();
-    } else {
-      const data = await res.json();
-      alert('خطا در ارزیابی: ' + (data.error || 'خطای ناشناخته'));
-    }
-  } catch (error) {
-    console.error(error);
-    alert('خطای اتصال به سرور');
-  }
-};
+});
 
 // ===============================
 // BULK TRANSFER MODAL LOGIC
