@@ -223,8 +223,7 @@ async function completeProfile(req, res) {
             city,
             academicDegree,
             bio,
-            identityVerified: true,
-            zarikBalance: { increment: 500 }
+            identityVerified: true
         };
         if (academicCertificates) {
             dataToUpdate.academicCertificates = academicCertificates;
@@ -233,7 +232,7 @@ async function completeProfile(req, res) {
             where: { id: userId },
             data: dataToUpdate
         });
-        res.json({ success: true, message: 'اطلاعات پروفایل با موفقیت تکمیل شد و پاداش زریک دریافت کردید' });
+        res.json({ success: true, message: 'اطلاعات پروفایل با موفقیت تکمیل شد' });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

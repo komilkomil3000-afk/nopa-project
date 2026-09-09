@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
+import 'complete_profile_dialog.dart';
 
 class NopaNotificationDialog {
   static void show(BuildContext context) {
@@ -128,6 +129,40 @@ class NopaNotificationDialog {
                                       fontFamily: 'Vazirmatn',
                                     ),
                                   ),
+                                  if (title.contains('تکمیل پروفایل') || (notify['body'] ?? '').toString().contains('تکمیل')) ...[
+                                    const SizedBox(height: 10),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          CompleteProfileDialog.show(context, repository.currentUser);
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF8B5CF6),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          elevation: 2,
+                                        ),
+                                        child: const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.stars_rounded, color: Color(0xFFFFD54F), size: 16),
+                                            SizedBox(width: 6),
+                                            Text(
+                                              'تکمیل پروفایل (دریافت ۱۰۰ سکه)',
+                                              style: TextStyle(
+                                                fontFamily: 'Vazirmatn',
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 11.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );

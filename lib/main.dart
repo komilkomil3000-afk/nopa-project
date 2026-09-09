@@ -28,6 +28,11 @@ import 'services/app_state_repository.dart';
 import 'services/theme_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
+
+void navigateToMainTab(int index) {
+  mainScreenKey.currentState?.setIndex(index);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -126,7 +131,7 @@ class NepaApp extends StatelessWidget {
       routes: {
         '/auth': (context) => const AuthScreen(),
         '/main': (context) => const SuccessScreen(),
-        '/dashboard': (context) => const MainScreen(),
+        '/dashboard': (context) => MainScreen(key: mainScreenKey),
         '/station_detail': (context) => const StationDetailScreen(),
         '/class_player': (context) => const ClassPlayerScreen(),
         '/mentor_ratings': (context) => const MentorRatingsDetailScreen(),
@@ -148,10 +153,22 @@ class MainScreen extends StatefulWidget {
 class MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  void setIndex(int index) {
-    setState(() {
-      _currentIndex = index;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<AppRepository>(context, listen: false).refreshChallenges();
+      }
     });
+  }
+
+  void setIndex(int index) {
+    if (mounted) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   @override

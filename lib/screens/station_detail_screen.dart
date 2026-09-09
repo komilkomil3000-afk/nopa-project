@@ -4,6 +4,7 @@ import '../models/station.dart';
 import '../models/models.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
+import '../widgets/pending_challenges_dialog.dart';
 
 
 class StationDetailScreen extends StatefulWidget {
@@ -110,6 +111,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
              isLocked: _station!.isLocked,
              isCurrent: _station!.isCurrent,
              imageUrl: liveImage,
+             orderIndex: _station!.orderIndex,
           );
           _loadingCategories = false;
         });
@@ -124,10 +126,31 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
     }
   }
 
+  bool _checkCanAccessContent(BuildContext context) {
+    if (_station == null) return true;
+    final appState = Provider.of<AppRepository>(context, listen: false);
+    final isNewStation = (_station!.orderIndex > 0 || (_station!.id != '1' && !_station!.title.contains('۱') && !_station!.title.contains('اول'))) && !_station!.isCompleted;
+    if (isNewStation && appState.hasPendingChallenges) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
+      return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_station == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final station = _station!;
+    final appState = Provider.of<AppRepository>(context);
+    final isNewStation = (station.orderIndex > 0 || (station.id != '1' && !station.title.contains('۱') && !station.title.contains('اول'))) && !station.isCompleted;
+    final hasPendingChallenges = isNewStation && appState.hasPendingChallenges;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F081D),
@@ -155,6 +178,46 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           children: [
+            if (hasPendingChallenges) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => PendingChallengesDialog.show(context, appState.uncompletedChallengesCount),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        minimumSize: Size.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text('تکمیل چالش‌ها', style: TextStyle(fontSize: 11, fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(color: Color(0xFFF87171), fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Vazirmatn')),
+                          SizedBox(height: 2),
+                          Text('جهت شروع جلسات و کلاس‌های این منزلگاه، تمامی چالش‌های باقیمانده را تکمیل کنید.', style: TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Vazirmatn'), textAlign: TextAlign.right),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.warning_amber_rounded, color: Color(0xFFF87171), size: 24),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             // Circular Progress section
             _buildCircularProgressCard(station),
             const SizedBox(height: 20),
@@ -194,6 +257,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
               ),
               child: ElevatedButton(
                 onPressed: () {
+                  if (!_checkCanAccessContent(context)) return;
                   Navigator.pushNamed(context, '/class_player');
                 },
                 style: ElevatedButton.styleFrom(
@@ -447,6 +511,7 @@ class _StationDetailScreenState extends State<StationDetailScreen> {
               participated: false,
               reward: zarikReward,
               onTap: () {
+                if (!_checkCanAccessContent(context)) return;
                 Navigator.pushNamed(
                   context,
                   '/class_player',

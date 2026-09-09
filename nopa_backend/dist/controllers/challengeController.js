@@ -180,7 +180,23 @@ async function deleteChallenge(req, res) {
                 return res.status(403).json({ error: 'شما فقط مجاز به حذف چالش‌های کاروان خود هستید' });
             }
         }
-        // Cascade delete submissions
+        // Revert awarded coins for any approved submissions before deletion
+        const approvedSubmissions = await db_1.default.submission.findMany({
+            where: { challengeId: id, status: 'approved' }
+        });
+        for (const sub of approvedSubmissions) {
+            if (sub.score && sub.score > 0) {
+                await db_1.default.user.update({
+                    where: { id: sub.studentId },
+                    data: { zarikBalance: { decrement: sub.score } }
+                });
+            }
+        }
+        // Clean up related transactions
+        await db_1.default.zarikTransaction.deleteMany({
+            where: { reason: { contains: existing.title } }
+        });
+        // Cascade delete submissions and the challenge
         await db_1.default.submission.deleteMany({ where: { challengeId: id } });
         await db_1.default.challenge.delete({ where: { id } });
         res.json({ message: 'چالش و پاسخ‌های مرتبط با موفقیت حذف گردیدند' });
@@ -395,6 +411,13 @@ async function submitQuiz(req, res) {
                 return res.status(403).json({ error: 'این آزمون متعلق به کاروان شما نیست' });
             }
         }
+        // Prevent multiple submissions / repeat coin exploitation
+        const existingSubmission = await db_1.default.submission.findFirst({
+            where: { challengeId: id, studentId: req.user.id }
+        });
+        if (existingSubmission) {
+            return res.status(400).json({ error: 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست' });
+        }
         const questionsList = challenge.questions ? JSON.parse(challenge.questions) : [];
         let correctCount = 0;
         for (let i = 0; i < questionsList.length; i++) {
@@ -403,33 +426,56 @@ async function submitQuiz(req, res) {
             }
         }
         const calculatedReward = correctCount * 10; // 10 Zarik per correct answer
-        // Update student balance
-        const updatedUser = await db_1.default.user.update({
-            where: { id: req.user.id },
-            data: {
-                zarikBalance: { increment: calculatedReward }
+        let submission;
+        let updatedUser;
+        await db_1.default.$transaction(async (tx) => {
+            // Save submission record
+            submission = await tx.submission.create({
+                data: {
+                    challengeId: id,
+                    studentId: req.user.id,
+                    status: 'approved',
+                    score: correctCount,
+                    mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
+                    answerText: `پاسخ‌ها: ${JSON.stringify(answers)}`
+                }
+            });
+            if (calculatedReward > 0) {
+                // Update student balance
+                updatedUser = await tx.user.update({
+                    where: { id: req.user.id },
+                    data: {
+                        zarikBalance: { increment: calculatedReward }
+                    }
+                });
+                // Log transaction
+                await tx.zarikTransaction.create({
+                    data: {
+                        userId: req.user.id,
+                        amount: calculatedReward,
+                        category: 'Quiz Rewards',
+                        reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
+                        createdBy: req.user.id
+                    }
+                });
             }
-        });
-        // Save submission record
-        const submission = await db_1.default.submission.create({
-            data: {
-                challengeId: id,
-                studentId: req.user.id,
-                status: 'approved',
-                score: correctCount,
-                mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
-                answerText: `پاسخ‌ها: ${JSON.stringify(answers)}`
+            else {
+                updatedUser = await tx.user.findUnique({
+                    where: { id: req.user.id }
+                });
             }
         });
         // Send reward notification
-        await db_1.default.notification.create({
-            data: {
-                userId: req.user.id,
-                title: 'ثبت پاداش آزمون 💰',
-                message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ۵. مقدار پاداش: +${calculatedReward} زریک.`,
-                type: 'reward'
-            }
-        });
+        if (calculatedReward > 0) {
+            await db_1.default.notification.create({
+                data: {
+                    userId: req.user.id,
+                    title: 'ثبت پاداش آزمون 💰',
+                    message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}. مقدار پاداش: +${calculatedReward} زریک.`,
+                    type: 'reward'
+                }
+            });
+        }
         res.json({
             score: correctCount,
             total: questionsList.length,

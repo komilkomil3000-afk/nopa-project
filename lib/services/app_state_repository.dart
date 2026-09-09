@@ -162,6 +162,23 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   final List<SubmissionModel> submissions = [];
   final List<MentorRatingModel> mentorRatings = [];
 
+  /// Number of challenges that the student has not yet completed and gotten approved
+  int get uncompletedChallengesCount {
+    if (currentUser.role != UserRole.member) return 0;
+    int count = 0;
+    for (final c in challenges) {
+      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
+      final isApproved = (c.myStatus == 'approved') || (localSub != null && localSub.status == 'approved');
+      if (!isApproved) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /// Returns true if student has any pending/uncompleted challenges
+  bool get hasPendingChallenges => uncompletedChallengesCount > 0;
+
   // Mentor Satisfaction Data Cache
   final Map<String, Map<String, dynamic>> mentorData = {};
 

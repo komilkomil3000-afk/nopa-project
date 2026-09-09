@@ -10,6 +10,8 @@ import '../widgets/jarchi_item.dart';
 import '../widgets/station_card.dart';
 import '../widgets/notification_bell_button.dart';
 import '../widgets/safe_avatar.dart';
+import '../widgets/complete_profile_dialog.dart';
+import '../widgets/pending_challenges_dialog.dart';
 import '../main.dart'; // For MainScreenState
 
 class HomeScreen extends StatefulWidget {
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _banners = List<Map<String, dynamic>>.from(results[2] as List);
           _isLoading = false;
         });
+        Provider.of<AppRepository>(context, listen: false).refreshChallenges();
       }
     } catch (e) {
       if (mounted) {
@@ -195,8 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 60), // Spacing for floating card
+              const SizedBox(height: 50), // Spacing for floating card
               
+              // Profile completion banner prompt (100 coins reward)
+              if (user.nationalId == null || user.nationalId!.trim().length < 10)
+                _buildCompleteProfileBanner(user),
+
               // 3. Educational Stations Carousel
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -245,6 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             isLocked: isLocked,
                             isCurrent: isCurrent,
                             imageUrl: iconUrl,
+                            orderIndex: index,
                           );
 
                           return Padding(
@@ -252,13 +260,27 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: StationCard(
                               station: station,
                               onTap: () {
-                                if (!isLocked) {
-                                  Navigator.pushNamed(context, '/station_detail', arguments: station);
-                                } else {
+                                if (isLocked) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('این منزلگاه هنوز بازگشایی نشده است', style: TextStyle(fontFamily: 'Vazirmatn'))),
                                   );
+                                  return;
                                 }
+
+                                final isNewStation = index > 0 && !isCompleted;
+                                if (isNewStation && appState.hasPendingChallenges) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+                                      backgroundColor: Colors.redAccent,
+                                      duration: Duration(seconds: 3),
+                                    ),
+                                  );
+                                  PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
+                                  return;
+                                }
+
+                                Navigator.pushNamed(context, '/station_detail', arguments: station);
                               },
                             ),
                           );
@@ -310,6 +332,102 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCompleteProfileBanner(UserModel user) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B1E6D), Color(0xFF1E1138)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFFD54F).withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.stars_rounded, color: Color(0xFFFFD54F), size: 26),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'پروفایلتان را تکمیل کنید و سکه دریافت کنید! 🎁',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'با ثبت کد ملی و آدرس، ۱۰۰ زریک به کیف پول شما واریز می‌شود.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontFamily: 'Vazirmatn',
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => CompleteProfileDialog.show(context, user),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF8B5CF6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 2,
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.edit_note_rounded, size: 18),
+                SizedBox(width: 6),
+                Text(
+                  'تکمیل پروفایل (دریافت ۱۰۰ سکه 🪙)',
+                  style: TextStyle(
+                    fontFamily: 'Vazirmatn',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

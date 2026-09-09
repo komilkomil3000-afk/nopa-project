@@ -201,7 +201,7 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // Quiz / challenge history
-    const quizzes = await prisma.submission.findMany({ where: { studentId: id }, orderBy: { submittedAt: 'desc' }, take: 20 });
+    const quizzes = await prisma.submission.findMany({ where: { studentId: id }, include: { challenge: true }, orderBy: { submittedAt: 'desc' } });
 
     // Homework / assignment submissions
     const assignments = await prisma.quizSubmission.findMany({ where: { studentId: id }, orderBy: { submittedAt: 'desc' }, include: { quiz: true } });
@@ -378,10 +378,14 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
           totalQuizzes: totalQuizzesCount,
         },
         stations: stationBreakdown,
+        allStations,
       },
+      userProgressRecords,
       watchRecords,
       quizzes,
+      challenges: quizzes,
       assignments,
+      quizSubmissions: assignments,
       tickets,
       certificates,
       mentoredCaravans,

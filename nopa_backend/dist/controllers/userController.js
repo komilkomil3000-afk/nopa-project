@@ -99,47 +99,89 @@ async function completeProfile(req, res) {
         const user = await db_1.default.user.findUnique({ where: { id: req.user.id } });
         if (!user)
             return res.status(404).json({ error: 'کاربر یافت نشد' });
-        const isFirstTime = !user.identityVerified;
+        const existingReward = await db_1.default.zarikTransaction.findFirst({
+            where: {
+                userId: user.id,
+                reason: { contains: 'تکمیل پروفایل' }
+            }
+        });
+        const isEligibleForReward = !existingReward;
+        let rewardAmount = isEligibleForReward ? 100 : 0;
+        let updateData = {};
         if (user.role === 'student') {
             const { nationalId, name, city, dateOfBirth } = req.body;
             if (!nationalId || !name)
                 return res.status(400).json({ error: 'نام و کد ملی الزامی است' });
-            const updateData = {
+            updateData = {
                 name,
                 nationalId,
-                dateOfBirth,
+                dateOfBirth: dateOfBirth || user.dateOfBirth,
+                city: city || user.city,
                 identityVerified: true,
             };
-            if (isFirstTime) {
-                updateData.zarikBalance = { increment: 200 };
-            }
-            await db_1.default.user.update({
-                where: { id: user.id },
-                data: updateData
-            });
-            return res.json({ success: true, message: isFirstTime ? 'پروفایل تایید شد و 200 زریک پاداش گرفتید' : 'پروفایل با موفقیت بروزرسانی شد' });
         }
         else if (user.role === 'mentor') {
             const { nationalId, dateOfBirth, city, academicDegree, bio } = req.body;
-            const updateData = {
-                nationalId,
-                dateOfBirth,
-                city,
-                academicDegree,
-                bio,
+            updateData = {
+                nationalId: nationalId || user.nationalId,
+                dateOfBirth: dateOfBirth || user.dateOfBirth,
+                city: city || user.city,
+                academicDegree: academicDegree || user.academicDegree,
+                bio: bio || user.bio,
                 identityVerified: true,
             };
-            if (isFirstTime) {
+            if (!user.identityVerified) {
                 updateData.mentorLevel = { increment: 1 };
-                updateData.zarikBalance = { increment: 500 };
             }
-            await db_1.default.user.update({
+        }
+        else {
+            return res.status(400).json({ error: 'نقش کاربری نامعتبر' });
+        }
+        if (isEligibleForReward) {
+            updateData.zarikBalance = { increment: rewardAmount };
+        }
+        let updatedUser;
+        await db_1.default.$transaction(async (tx) => {
+            updatedUser = await tx.user.update({
                 where: { id: user.id },
                 data: updateData
             });
-            return res.json({ success: true, message: isFirstTime ? 'پروفایل راهبر تایید شد و 500 زریک دریافت کردید' : 'پروفایل با موفقیت بروزرسانی شد' });
-        }
-        res.status(400).json({ error: 'نقش کاربری نامعتبر' });
+            if (isEligibleForReward) {
+                await tx.zarikTransaction.create({
+                    data: {
+                        userId: user.id,
+                        amount: rewardAmount,
+                        category: 'Profile Completion',
+                        reason: 'پاداش تکمیل پروفایل',
+                        createdBy: 'SYSTEM'
+                    }
+                });
+                // Clean up prompt notifications
+                await tx.notification.deleteMany({
+                    where: {
+                        userId: user.id,
+                        type: 'profile_completion'
+                    }
+                });
+                // Create success notification
+                await tx.notification.create({
+                    data: {
+                        userId: user.id,
+                        title: 'پاداش تکمیل پروفایل واریز شد 🎉',
+                        message: 'مشخصات شما با موفقیت ثبت شد و ۱۰۰ زریک به کیف پول شما افزوده گردید.',
+                        type: 'reward'
+                    }
+                });
+            }
+        });
+        return res.json({
+            success: true,
+            rewardZarik: rewardAmount,
+            zarikBalance: updatedUser.zarikBalance,
+            message: isEligibleForReward
+                ? 'پروفایل با موفقیت تایید شد و ۱۰۰ زریک هدیه دریافت کردید! 🎉'
+                : 'پروفایل با موفقیت بروزرسانی شد'
+        });
     }
     catch (error) {
         console.error('completeProfile error:', error);

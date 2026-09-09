@@ -8,6 +8,28 @@ export async function getNotifications(req: AuthRequest, res: Response) {
       return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, nationalId: true, city: true }
+    });
+
+    const isProfileIncomplete = !user?.nationalId || user.nationalId.trim().length < 10;
+    if (isProfileIncomplete) {
+      const existingNotice = await prisma.notification.findFirst({
+        where: { userId: req.user.id, type: 'profile_completion' }
+      });
+      if (!existingNotice) {
+        await prisma.notification.create({
+          data: {
+            userId: req.user.id,
+            title: 'تکمیل پروفایل و دریافت سکه 🎁',
+            message: 'پروفایلتان را تکمیل کنید و ۱۰۰ سکه هدیه دریافت کنید! 🪙',
+            type: 'profile_completion'
+          }
+        });
+      }
+    }
+
     const notifications = await prisma.notification.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: 'desc' }

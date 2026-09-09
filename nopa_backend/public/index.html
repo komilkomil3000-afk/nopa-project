@@ -2013,14 +2013,58 @@
               <span style="font-size: 15px; font-weight: bold; color: white;">
                 <i class="fa-solid fa-clipboard-check" style="color: #10b981;"></i> بررسی و ارزیابی پاسخ‌های ارسالی دانش‌آموزان
               </span>
+              <span id="badge-submissions-filtered-count" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 11px;">۰ پاسخ</span>
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-              <select id="filter-submissions-status" onchange="window.loadAdminSubmissionsData()" style="padding: 6px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
-                <option value="pending">فقط در انتظار بررسی</option>
-                <option value="all">همه پاسخ‌ها (کلیه وضعیت‌ها)</option>
-                <option value="approved">تایید شده‌ها</option>
-                <option value="rejected">رد شده‌ها</option>
-              </select>
+          </div>
+
+          <!-- SUBMISSIONS FILTERS TOOLBAR -->
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+              <!-- Search Filter -->
+              <div style="flex: 2 1 220px; position: relative;">
+                <input type="text" id="filter-submissions-search" placeholder="🔍 جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." oninput="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; box-sizing: border-box;">
+              </div>
+
+              <!-- Student Filter -->
+              <div style="flex: 1 1 150px;">
+                <select id="filter-submissions-student" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                  <option value="all">👤 همه دانش‌آموزان</option>
+                </select>
+              </div>
+
+              <!-- Caravan Filter -->
+              <div style="flex: 1 1 150px;">
+                <select id="filter-submissions-caravan" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                  <option value="all">🏢 همه کاروان‌ها</option>
+                </select>
+              </div>
+
+              <!-- Mentor Filter -->
+              <div style="flex: 1 1 150px;">
+                <select id="filter-submissions-mentor" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                  <option value="all">🎓 همه راهبران</option>
+                </select>
+              </div>
+
+              <!-- Status Filter -->
+              <div style="flex: 1 1 140px;">
+                <select id="filter-submissions-status" onchange="window.loadAdminSubmissionsData()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                  <option value="pending">⏳ در انتظار بررسی</option>
+                  <option value="all">📑 کلیه وضعیت‌ها</option>
+                  <option value="approved">✅ تایید شده</option>
+                  <option value="rejected">❌ رد شده</option>
+                </select>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" onclick="window.resetAdminSubmissionsFilters()" class="btn-action" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="پاکسازی همه فیلترها">
+                  <i class="fa-solid fa-rotate-left"></i> پاکسازی فیلترها
+                </button>
+                <button type="button" onclick="window.loadAdminSubmissionsData()" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="بروزرسانی داده‌ها">
+                  <i class="fa-solid fa-sync"></i> بروزرسانی
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2028,14 +2072,15 @@
             <table class="data-table" id="admin-submissions-table">
               <thead>
                 <tr>
-                  <th>دانش‌آموز</th>
-                  <th>چالش / تکلیف</th>
+                  <th style="width: 160px;">دانش‌آموز</th>
+                  <th style="width: 170px;">کاروان و راهبر</th>
+                  <th style="width: 180px;">چالش / تکلیف</th>
                   <th>پاسخ ارسالی دانش‌آموز</th>
-                  <th>فایل پیوست</th>
-                  <th>تاریخ ارسال</th>
-                  <th>پاداش</th>
-                  <th>وضعیت</th>
-                  <th style="text-align: center; width: 190px;">مشاهده و ارزیابی پاسخ</th>
+                  <th style="width: 110px;">فایل پیوست</th>
+                  <th style="width: 110px;">تاریخ ارسال</th>
+                  <th style="width: 80px;">پاداش</th>
+                  <th style="width: 120px;">وضعیت</th>
+                  <th style="text-align: center; width: 180px;">مشاهده و ارزیابی پاسخ</th>
                 </tr>
               </thead>
               <tbody id="admin-submissions-tbody">

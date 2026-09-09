@@ -18,6 +18,26 @@ async function getNotifications(req, res) {
         if (!req.user) {
             return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
         }
+        const user = await db_1.default.user.findUnique({
+            where: { id: req.user.id },
+            select: { id: true, nationalId: true, city: true }
+        });
+        const isProfileIncomplete = !user?.nationalId || user.nationalId.trim().length < 10;
+        if (isProfileIncomplete) {
+            const existingNotice = await db_1.default.notification.findFirst({
+                where: { userId: req.user.id, type: 'profile_completion' }
+            });
+            if (!existingNotice) {
+                await db_1.default.notification.create({
+                    data: {
+                        userId: req.user.id,
+                        title: 'تکمیل پروفایل و دریافت سکه 🎁',
+                        message: 'پروفایلتان را تکمیل کنید و ۱۰۰ سکه هدیه دریافت کنید! 🪙',
+                        type: 'profile_completion'
+                    }
+                });
+            }
+        }
         const notifications = await db_1.default.notification.findMany({
             where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' }

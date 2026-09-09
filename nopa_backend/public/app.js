@@ -856,6 +856,10 @@ function populateCaravanDropdowns(caravans) {
   if (editChalSelect) {
     editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
   }
+
+  if (typeof populateSubmissionsFilterDropdowns === 'function') {
+    populateSubmissionsFilterDropdowns(window.cachedAdminSubmissions || []);
+  }
 }
 
 function renderAdminChallenges(challenges) {
@@ -1441,6 +1445,103 @@ window.closeChallengeStepsModal = function() {
 window.cachedAdminSubmissions = [];
 window.activeViewSubmissionId = null;
 
+function populateSubmissionsFilterDropdowns(submissions = []) {
+  const caravanSelect = document.getElementById('filter-submissions-caravan');
+  const mentorSelect = document.getElementById('filter-submissions-mentor');
+  const studentSelect = document.getElementById('filter-submissions-student');
+
+  // 1. Caravan dropdown
+  if (caravanSelect) {
+    const currentVal = caravanSelect.value || 'all';
+    const caravanMap = new Map();
+    if (Array.isArray(window.cachedAdminCaravans)) {
+      window.cachedAdminCaravans.forEach(c => {
+        if (c.id) caravanMap.set(c.id, c.name || `کاروان ${c.id}`);
+      });
+    }
+    submissions.forEach(s => {
+      const c = s.student?.caravan || s.challenge?.caravan;
+      if (c && c.id) {
+        caravanMap.set(c.id, c.name || `کاروان ${c.id}`);
+      } else if (s.student?.caravanId) {
+        if (!caravanMap.has(s.student.caravanId)) {
+          caravanMap.set(s.student.caravanId, `کاروان ${s.student.caravanId}`);
+        }
+      }
+    });
+
+    let options = '<option value="all">🏢 همه کاروان‌ها</option>';
+    caravanMap.forEach((name, id) => {
+      options += `<option value="${id}">${name}</option>`;
+    });
+    caravanSelect.innerHTML = options;
+    if (caravanMap.has(currentVal)) {
+      caravanSelect.value = currentVal;
+    }
+  }
+
+  // 2. Mentor dropdown
+  if (mentorSelect) {
+    const currentVal = mentorSelect.value || 'all';
+    const mentorMap = new Map();
+    if (Array.isArray(window.cachedAdminCaravans)) {
+      window.cachedAdminCaravans.forEach(c => {
+        if (c.mentor && c.mentor.id) {
+          mentorMap.set(c.mentor.id, c.mentor.name || 'راهبر کاروان');
+        }
+      });
+    }
+    submissions.forEach(s => {
+      const m = s.student?.caravan?.mentor;
+      if (m && m.id) {
+        mentorMap.set(m.id, m.name || 'راهبر کاروان');
+      }
+      const creator = s.challenge?.creatorInfo;
+      if (creator && creator.id && !creator.isByAdmin) {
+        mentorMap.set(creator.id, creator.name || 'راهبر چالش');
+      } else if (s.challenge?.createdByMentorId && !s.challenge.createdByMentorId.toLowerCase().includes('admin')) {
+        if (!mentorMap.has(s.challenge.createdByMentorId)) {
+          mentorMap.set(s.challenge.createdByMentorId, `راهبر ${s.challenge.createdByMentorId.slice(0, 8)}`);
+        }
+      }
+    });
+
+    let options = '<option value="all">🎓 همه راهبران</option>';
+    mentorMap.forEach((name, id) => {
+      options += `<option value="${id}">${name}</option>`;
+    });
+    mentorSelect.innerHTML = options;
+    if (mentorMap.has(currentVal)) {
+      mentorSelect.value = currentVal;
+    }
+  }
+
+  // 3. Student dropdown
+  if (studentSelect) {
+    const currentVal = studentSelect.value || 'all';
+    const studentMap = new Map();
+    submissions.forEach(s => {
+      if (s.student && s.student.id) {
+        const phone = s.student.phoneNumber ? ` (${s.student.phoneNumber})` : '';
+        studentMap.set(s.student.id, `${s.student.name || 'دانش‌آموز'}${phone}`);
+      } else if (s.studentId) {
+        if (!studentMap.has(s.studentId)) {
+          studentMap.set(s.studentId, `دانش‌آموز ${s.studentId.slice(0, 8)}`);
+        }
+      }
+    });
+
+    let options = '<option value="all">👤 همه دانش‌آموزان</option>';
+    studentMap.forEach((name, id) => {
+      options += `<option value="${id}">${name}</option>`;
+    });
+    studentSelect.innerHTML = options;
+    if (studentMap.has(currentVal)) {
+      studentSelect.value = currentVal;
+    }
+  }
+}
+
 window.loadAdminSubmissionsData = async function() {
   try {
     const statusFilter = document.getElementById('filter-submissions-status')?.value || 'pending';
@@ -1459,85 +1560,181 @@ window.loadAdminSubmissionsData = async function() {
     const appEl = document.getElementById('stat-approved-submissions');
     if (appEl) appEl.textContent = approvedCount;
 
-    const tbody = document.getElementById('admin-submissions-tbody');
-    if (!tbody) return;
-
-    if (submissions.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 25px; color: var(--text-muted);">هیچ پاسخی با فیلتر انتخابی یافت نشد</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = submissions.map(s => {
-      const studentName = s.student?.name || 'دانش‌آموز نپا';
-      const studentPhone = s.student?.phoneNumber || '';
-      const chalTitle = s.challenge?.title || s.challengeId || 'تکلیف کلاسی';
-      const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
-      const answer = s.answerText || 'بدون متن (فایل ارسالی)';
-      const fileLink = s.fileUrl
-        ? `<a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
-        : '<span style="color: #64748b;">-</span>';
-
-      const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
-      const rewardVal = s.challenge?.rewardZarik || 50;
-
-      // Status badge
-      let statusBadge = '';
-      const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
-      if (isPending) {
-        statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">در انتظار ارزیابی</span>`;
-      } else if (s.status === 'approved') {
-        statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
-      } else {
-        statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">رد شده</span>`;
-      }
-
-      // Actions Column with dedicated "مشاهده پاسخ"
-      const actionCell = `
-        <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-          <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
-            <i class="fa-solid fa-eye"></i> مشاهده پاسخ
-          </button>
-          ${isPending ? `
-            <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
-            <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
-          ` : `
-            <span style="font-size: 10.5px; color: #94a3b8; align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
-          `}
-        </div>
-      `;
-
-      return `
-        <tr>
-          <td>
-            <div style="font-weight: bold; color: white;">${studentName}</div>
-            <div style="font-size: 11px; color: #64748b;">${studentPhone}</div>
-          </td>
-          <td>
-            <div style="font-weight: bold; color: #c4b5fd;">${chalTitle}</div>
-            <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
-          </td>
-          <td>
-            <div style="max-width: 250px;">
-              <div style="font-size: 12.5px; color: #f1f5f9; line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
-                ${answer}
-              </div>
-              <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
-                <i class="fa-solid fa-eye"></i> مشاهده جواب
-              </button>
-            </div>
-          </td>
-          <td>${fileLink}</td>
-          <td style="font-size: 12px; color: #94a3b8;">${dateStr}</td>
-          <td><span style="color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
-          <td>${statusBadge}</td>
-          <td style="text-align: center;">${actionCell}</td>
-        </tr>
-      `;
-    }).join('');
+    populateSubmissionsFilterDropdowns(submissions);
+    window.filterAdminSubmissionsList();
   } catch (err) {
     console.error('loadAdminSubmissionsData error:', err);
   }
 };
+
+window.filterAdminSubmissionsList = function() {
+  const query = (document.getElementById('filter-submissions-search')?.value || '').trim().toLowerCase();
+  const selectedStudent = document.getElementById('filter-submissions-student')?.value || 'all';
+  const selectedCaravan = document.getElementById('filter-submissions-caravan')?.value || 'all';
+  const selectedMentor = document.getElementById('filter-submissions-mentor')?.value || 'all';
+
+  let filtered = Array.isArray(window.cachedAdminSubmissions) ? [...window.cachedAdminSubmissions] : [];
+
+  // Filter by Student
+  if (selectedStudent !== 'all') {
+    filtered = filtered.filter(s => s.studentId === selectedStudent || s.student?.id === selectedStudent);
+  }
+
+  // Filter by Caravan
+  if (selectedCaravan !== 'all') {
+    filtered = filtered.filter(s => {
+      const studentCaravanId = s.student?.caravanId || s.student?.caravan?.id;
+      const challengeCaravanId = s.challenge?.caravanId || s.challenge?.caravan?.id;
+      return studentCaravanId === selectedCaravan || challengeCaravanId === selectedCaravan;
+    });
+  }
+
+  // Filter by Mentor
+  if (selectedMentor !== 'all') {
+    filtered = filtered.filter(s => {
+      const challengeCreatorId = s.challenge?.createdByMentorId || s.challenge?.creatorInfo?.id;
+      const caravanMentorId = s.student?.caravan?.mentorId || s.student?.caravan?.mentor?.id;
+      return challengeCreatorId === selectedMentor || caravanMentorId === selectedMentor;
+    });
+  }
+
+  // Filter by Search text (student name, phone, challenge title, challenge id, answer text, caravan name, mentor name)
+  if (query) {
+    filtered = filtered.filter(s => {
+      const sName = (s.student?.name || '').toLowerCase();
+      const sPhone = (s.student?.phoneNumber || '').toLowerCase();
+      const cTitle = (s.challenge?.title || '').toLowerCase();
+      const cId = (s.challengeId || s.challenge?.id || '').toLowerCase();
+      const ans = (s.answerText || '').toLowerCase();
+      const carName = (s.student?.caravan?.name || s.challenge?.caravan?.name || '').toLowerCase();
+      const mName = (s.student?.caravan?.mentor?.name || s.challenge?.creatorInfo?.name || '').toLowerCase();
+
+      return sName.includes(query) ||
+             sPhone.includes(query) ||
+             cTitle.includes(query) ||
+             cId.includes(query) ||
+             ans.includes(query) ||
+             carName.includes(query) ||
+             mName.includes(query);
+    });
+  }
+
+  const badgeEl = document.getElementById('badge-submissions-filtered-count');
+  if (badgeEl) {
+    const total = window.cachedAdminSubmissions ? window.cachedAdminSubmissions.length : 0;
+    badgeEl.textContent = `${filtered.length} از ${total} پاسخ`;
+  }
+
+  renderAdminSubmissions(filtered);
+};
+
+window.resetAdminSubmissionsFilters = function() {
+  const searchInput = document.getElementById('filter-submissions-search');
+  if (searchInput) searchInput.value = '';
+
+  const studentSelect = document.getElementById('filter-submissions-student');
+  if (studentSelect) studentSelect.value = 'all';
+
+  const caravanSelect = document.getElementById('filter-submissions-caravan');
+  if (caravanSelect) caravanSelect.value = 'all';
+
+  const mentorSelect = document.getElementById('filter-submissions-mentor');
+  if (mentorSelect) mentorSelect.value = 'all';
+
+  const statusSelect = document.getElementById('filter-submissions-status');
+  if (statusSelect) statusSelect.value = 'pending';
+
+  window.loadAdminSubmissionsData();
+};
+
+function renderAdminSubmissions(submissions) {
+  const tbody = document.getElementById('admin-submissions-tbody');
+  if (!tbody) return;
+
+  if (submissions.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>هیچ پاسخی با فیلترهای انتخابی یافت نشد</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = submissions.map(s => {
+    const studentName = s.student?.name || 'دانش‌آموز نپا';
+    const studentPhone = s.student?.phoneNumber || '';
+    const caravanName = s.student?.caravan?.name || s.challenge?.caravan?.name || 'عمومی (فاقد کاروان)';
+    const mentorName = s.student?.caravan?.mentor?.name || s.challenge?.creatorInfo?.name || 'راهبر نامشخص';
+
+    const chalTitle = s.challenge?.title || s.challengeId || 'تکلیف کلاسی';
+    const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
+    const answer = s.answerText || 'بدون متن (فایل ارسالی)';
+    const fileLink = s.fileUrl
+      ? `<a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
+      : '<span style="color: #64748b;">-</span>';
+
+    const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
+    const rewardVal = s.challenge?.rewardZarik || 50;
+
+    // Status badge
+    let statusBadge = '';
+    const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
+    if (isPending) {
+      statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">در انتظار ارزیابی</span>`;
+    } else if (s.status === 'approved') {
+      statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
+    } else {
+      statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">رد شده</span>`;
+    }
+
+    // Actions Column with dedicated "مشاهده پاسخ"
+    const actionCell = `
+      <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+        <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
+          <i class="fa-solid fa-eye"></i> مشاهده پاسخ
+        </button>
+        ${isPending ? `
+          <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
+          <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
+        ` : `
+          <span style="font-size: 10.5px; color: #94a3b8; align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
+        `}
+      </div>
+    `;
+
+    return `
+      <tr>
+        <td>
+          <div style="font-weight: bold; color: white;">${studentName}</div>
+          <div style="font-size: 11px; color: #64748b;">${studentPhone}</div>
+        </td>
+        <td>
+          <div style="font-weight: bold; color: #60a5fa; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-users" style="font-size: 11px;"></i> ${caravanName}
+          </div>
+          <div style="font-size: 11px; color: #cbd5e1; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-user-tie" style="color: #c084fc; font-size: 11px;"></i> ${mentorName}
+          </div>
+        </td>
+        <td>
+          <div style="font-weight: bold; color: #c4b5fd;">${chalTitle}</div>
+          <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
+        </td>
+        <td>
+          <div style="max-width: 250px;">
+            <div style="font-size: 12.5px; color: #f1f5f9; line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+              ${answer}
+            </div>
+            <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+              <i class="fa-solid fa-eye"></i> مشاهده جواب
+            </button>
+          </div>
+        </td>
+        <td>${fileLink}</td>
+        <td style="font-size: 12px; color: #94a3b8;">${dateStr}</td>
+        <td><span style="color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
+        <td>${statusBadge}</td>
+        <td style="text-align: center;">${actionCell}</td>
+      </tr>
+    `;
+  }).join('');
+}
 
 // ==========================================
 // VIEW SUBMISSION & ANSWER MODAL

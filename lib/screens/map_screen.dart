@@ -3,6 +3,7 @@ import '../models/station.dart';
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
+import '../widgets/pending_challenges_dialog.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -33,6 +34,7 @@ class _MapScreenState extends State<MapScreen> {
           _userProgress = userProgress.cast<Map<String, dynamic>>();
           _isLoading = false;
         });
+        Provider.of<AppRepository>(context, listen: false).refreshChallenges();
       }
     } catch (e) {
       if (mounted) {
@@ -307,22 +309,38 @@ class _MapScreenState extends State<MapScreen> {
                           backgroundColor: Colors.grey,
                         ),
                       );
-                    } else {
-                      Navigator.pushNamed(
-                        context,
-                        '/station_detail',
-                        arguments: Station(
-                          id: item['id'] ?? '',
-                          title: stationTitle,
-                          teacher: teacherName,
-                          progress: stationProgress,
-                          isLocked: isLocked,
-                          isCurrent: isCurrent,
-                          imageUrl: iconUrl,
-                          classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
+                      return;
+                    }
+
+                    final isNewStation = index > 0 && !isCompleted;
+                    final appState = Provider.of<AppRepository>(context, listen: false);
+                    if (isNewStation && appState.hasPendingChallenges) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
+                          backgroundColor: Colors.redAccent,
+                          duration: Duration(seconds: 3),
                         ),
                       );
+                      PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
+                      return;
                     }
+
+                    Navigator.pushNamed(
+                      context,
+                      '/station_detail',
+                      arguments: Station(
+                        id: item['id'] ?? '',
+                        title: stationTitle,
+                        teacher: teacherName,
+                        progress: stationProgress,
+                        isLocked: isLocked,
+                        isCurrent: isCurrent,
+                        imageUrl: iconUrl,
+                        classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
+                        orderIndex: index,
+                      ),
+                    );
                   },
                   child: Row(
                     children: [

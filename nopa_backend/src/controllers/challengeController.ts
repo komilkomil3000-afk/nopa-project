@@ -186,7 +186,26 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
       }
     }
 
-    // Cascade delete submissions
+    // Revert awarded coins for any approved submissions before deletion
+    const approvedSubmissions = await prisma.submission.findMany({
+      where: { challengeId: id, status: 'approved' }
+    });
+
+    for (const sub of approvedSubmissions) {
+      if (sub.score && sub.score > 0) {
+        await prisma.user.update({
+          where: { id: sub.studentId },
+          data: { zarikBalance: { decrement: sub.score } }
+        });
+      }
+    }
+
+    // Clean up related transactions
+    await prisma.zarikTransaction.deleteMany({
+      where: { reason: { contains: existing.title } }
+    });
+
+    // Cascade delete submissions and the challenge
     await prisma.submission.deleteMany({ where: { challengeId: id } });
     await prisma.challenge.delete({ where: { id } });
 
@@ -424,6 +443,14 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       }
     }
 
+    // Prevent multiple submissions / repeat coin exploitation
+    const existingSubmission = await prisma.submission.findFirst({
+      where: { challengeId: id, studentId: req.user.id }
+    });
+    if (existingSubmission) {
+      return res.status(400).json({ error: 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست' });
+    }
+
     const questionsList = challenge.questions ? JSON.parse(challenge.questions) : [];
     let correctCount = 0;
 
@@ -435,35 +462,59 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
 
     const calculatedReward = correctCount * 10; // 10 Zarik per correct answer
 
-    // Update student balance
-    const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        zarikBalance: { increment: calculatedReward }
-      }
-    });
+    let submission: any;
+    let updatedUser: any;
 
-    // Save submission record
-    const submission = await prisma.submission.create({
-      data: {
-        challengeId: id,
-        studentId: req.user.id,
-        status: 'approved',
-        score: correctCount,
-        mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
-        answerText: `پاسخ‌ها: ${JSON.stringify(answers)}`
+    await prisma.$transaction(async (tx) => {
+      // Save submission record
+      submission = await tx.submission.create({
+        data: {
+          challengeId: id,
+          studentId: req.user!.id,
+          status: 'approved',
+          score: correctCount,
+          mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
+          answerText: `پاسخ‌ها: ${JSON.stringify(answers)}`
+        }
+      });
+
+      if (calculatedReward > 0) {
+        // Update student balance
+        updatedUser = await tx.user.update({
+          where: { id: req.user!.id },
+          data: {
+            zarikBalance: { increment: calculatedReward }
+          }
+        });
+
+        // Log transaction
+        await tx.zarikTransaction.create({
+          data: {
+            userId: req.user!.id,
+            amount: calculatedReward,
+            category: 'Quiz Rewards',
+            reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
+            createdBy: req.user!.id
+          }
+        });
+      } else {
+        updatedUser = await tx.user.findUnique({
+          where: { id: req.user!.id }
+        });
       }
     });
 
     // Send reward notification
-    await prisma.notification.create({
-      data: {
-        userId: req.user.id,
-        title: 'ثبت پاداش آزمون 💰',
-        message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ۵. مقدار پاداش: +${calculatedReward} زریک.`,
-        type: 'reward'
-      }
-    });
+    if (calculatedReward > 0) {
+      await prisma.notification.create({
+        data: {
+          userId: req.user.id,
+          title: 'ثبت پاداش آزمون 💰',
+          message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}. مقدار پاداش: +${calculatedReward} زریک.`,
+          type: 'reward'
+        }
+      });
+    }
 
     res.json({
       score: correctCount,

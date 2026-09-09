@@ -28,6 +28,9 @@ async function submitTask(req, res) {
         const existingSubmission = await db_1.default.submission.findFirst({
             where: { challengeId, studentId: req.user.id }
         });
+        if (existingSubmission && existingSubmission.status === 'approved') {
+            return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن دریافت گردیده است' });
+        }
         // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission
         if (challenge.caravanId && student?.caravanId && challenge.caravanId !== student.caravanId && !existingSubmission) {
             return res.status(403).json({ error: 'شما فقط مجاز به ارسال پاسخ برای چالش‌های کاروان خود هستید' });
@@ -84,7 +87,7 @@ async function getPendingSubmissions(req, res) {
         if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
             return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
         }
-        const { status, challengeId } = req.query;
+        const { status, challengeId, studentId, caravanId, mentorId, search } = req.query;
         const whereClause = {};
         if (status && status !== 'all') {
             if (status === 'pending') {
@@ -101,6 +104,41 @@ async function getPendingSubmissions(req, res) {
         if (challengeId) {
             whereClause.challengeId = challengeId;
         }
+        if (studentId && studentId !== 'all') {
+            whereClause.studentId = studentId;
+        }
+        if (caravanId && caravanId !== 'all') {
+            whereClause.OR = [
+                { student: { caravanId: caravanId } },
+                { challenge: { caravanId: caravanId } }
+            ];
+        }
+        if (mentorId && mentorId !== 'all') {
+            whereClause.OR = [
+                ...(whereClause.OR || []),
+                { challenge: { createdByMentorId: mentorId } },
+                { student: { caravan: { mentorId: mentorId } } }
+            ];
+        }
+        if (search && typeof search === 'string' && search.trim().length > 0) {
+            const q = search.trim();
+            const searchConditions = [
+                { student: { name: { contains: q } } },
+                { student: { phoneNumber: { contains: q } } },
+                { challenge: { title: { contains: q } } },
+                { answerText: { contains: q } }
+            ];
+            if (whereClause.OR) {
+                whereClause.AND = [
+                    { OR: whereClause.OR },
+                    { OR: searchConditions }
+                ];
+                delete whereClause.OR;
+            }
+            else {
+                whereClause.OR = searchConditions;
+            }
+        }
         // Caravan isolation for mentor: only view submissions from mentor's caravan / challenges
         if (req.user.role === 'mentor') {
             const mentorCaravans = await db_1.default.caravan.findMany({
@@ -108,28 +146,89 @@ async function getPendingSubmissions(req, res) {
                 select: { id: true }
             });
             const caravanIds = mentorCaravans.map(c => c.id);
-            whereClause.OR = [
+            const mentorConditions = [
                 { challenge: { createdByMentorId: req.user.id } },
                 ...(caravanIds.length > 0 ? [{ student: { caravanId: { in: caravanIds } } }] : [])
             ];
+            if (whereClause.AND) {
+                whereClause.AND.push({ OR: mentorConditions });
+            }
+            else if (whereClause.OR) {
+                whereClause.AND = [
+                    { OR: whereClause.OR },
+                    { OR: mentorConditions }
+                ];
+                delete whereClause.OR;
+            }
+            else {
+                whereClause.OR = mentorConditions;
+            }
         }
         const submissions = await db_1.default.submission.findMany({
             where: whereClause,
             include: {
-                challenge: true,
+                challenge: {
+                    include: {
+                        caravan: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
+                    }
+                },
                 student: {
                     select: {
                         id: true,
                         name: true,
                         phoneNumber: true,
                         caravanId: true,
-                        avatarUrl: true
+                        avatarUrl: true,
+                        caravan: {
+                            select: {
+                                id: true,
+                                name: true,
+                                mentorId: true,
+                                mentor: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        phoneNumber: true
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
             orderBy: { submittedAt: 'desc' }
         });
-        res.json(submissions);
+        const creatorIds = Array.from(new Set(submissions.map(s => s.challenge?.createdByMentorId).filter(Boolean)));
+        const creators = creatorIds.length > 0 ? await db_1.default.user.findMany({
+            where: { id: { in: creatorIds } },
+            select: { id: true, name: true, phoneNumber: true, role: true }
+        }) : [];
+        const creatorMap = new Map(creators.map(c => [c.id, c]));
+        const enriched = submissions.map(s => {
+            const creator = s.challenge?.createdByMentorId ? creatorMap.get(s.challenge.createdByMentorId) : null;
+            return {
+                ...s,
+                challenge: s.challenge ? {
+                    ...s.challenge,
+                    creatorInfo: creator ? {
+                        id: creator.id,
+                        name: creator.name,
+                        phoneNumber: creator.phoneNumber,
+                        isByAdmin: creator.role === 'admin'
+                    } : (s.challenge.createdByMentorId?.toLowerCase().includes('admin') ? {
+                        id: 'admin',
+                        name: 'مدیر سیستم',
+                        isByAdmin: true
+                    } : null)
+                } : null
+            };
+        });
+        res.json(enriched);
     }
     catch (error) {
         console.error('getPendingSubmissions error:', error);
@@ -168,6 +267,9 @@ async function reviewSubmission(req, res) {
             if (!isOwner) {
                 return res.status(403).json({ error: 'شما فقط مجاز به بررسی تکالیف اعضای کاروان خود هستید' });
             }
+        }
+        if (submission.status === 'approved' && status === 'approved') {
+            return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
         }
         const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
         let updatedSubmission;

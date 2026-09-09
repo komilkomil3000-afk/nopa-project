@@ -11,6 +11,7 @@ class Station {
   final String imageUrl;
   final String classesCount;
   final List<ClassCategoryModel> categories;
+  final int orderIndex;
 
   Station({
     required this.id,
@@ -23,7 +24,10 @@ class Station {
     required this.imageUrl,
     this.classesCount = '۲ دسته کلاس',
     this.categories = const [],
+    this.orderIndex = 0,
   });
+
+  bool get isCompleted => progress >= 1.0;
 
   factory Station.fromJson(Map<String, dynamic> json) {
     var rawCategories = json['categories'] as List? ?? [];
@@ -38,6 +42,7 @@ class Station {
       imageUrl: json['imageUrl'] ?? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800',
       classesCount: json['classesCount'] ?? '${rawCategories.length} دسته کلاس',
       categories: rawCategories.map((c) => ClassCategoryModel.fromJson(c)).toList(),
+      orderIndex: (json['orderIndex'] as num?)?.toInt() ?? 0,
     );
   }
 }

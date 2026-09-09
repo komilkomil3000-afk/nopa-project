@@ -223,19 +223,9 @@ async function register(req, res) {
                     passwordHash,
                     registrationCompleted: true,
                     role: 'student',
-                    zarikBalance: 200,
+                    zarikBalance: 0,
                     identityVerified: true,
                     userCode: nextUserCode
-                }
-            });
-            // Zarik transaction log
-            await db_1.default.zarikTransaction.create({
-                data: {
-                    userId: activeUser.id,
-                    amount: 200,
-                    category: 'Special Campaigns',
-                    reason: 'هدیه ثبت‌نام اولیه کاربر جدید',
-                    createdBy: 'SYSTEM'
                 }
             });
         }
