@@ -209,6 +209,11 @@ async function getUserAnalytics(req, res) {
         const quizzes = await prisma.submission.findMany({ where: { studentId: id }, include: { challenge: true }, orderBy: { submittedAt: 'desc' } });
         // Homework / assignment submissions
         const assignments = await prisma.quizSubmission.findMany({ where: { studentId: id }, orderBy: { submittedAt: 'desc' }, include: { quiz: true } });
+        // Available challenges (for caravan or global)
+        const allChallenges = await prisma.challenge.findMany({
+            where: user.caravanId ? { OR: [{ caravanId: user.caravanId }, { caravanId: null }] } : {},
+            orderBy: { createdAt: 'desc' },
+        });
         // Support tickets and replies
         const tickets = await prisma.supportTicket.findMany({ where: { studentId: id }, include: { replies: true } });
         // Certificates
@@ -355,6 +360,8 @@ async function getUserAnalytics(req, res) {
                     totalParts: totalPartsCount,
                     passedQuizzes: passedQuizzesCount,
                     totalQuizzes: totalQuizzesCount,
+                    passedChallenges: quizzes.filter((q) => q.status === 'approved').length,
+                    totalChallenges: allChallenges.length || quizzes.length,
                 },
                 stations: stationBreakdown,
                 allStations,
@@ -363,6 +370,7 @@ async function getUserAnalytics(req, res) {
             watchRecords,
             quizzes,
             challenges: quizzes,
+            allChallenges,
             assignments,
             quizSubmissions: assignments,
             tickets,

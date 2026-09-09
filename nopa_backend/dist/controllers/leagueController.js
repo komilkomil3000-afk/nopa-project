@@ -133,8 +133,19 @@ async function getCaravansLeaderboardDetailed(req, res) {
         });
         if (exportAs === 'csv') {
             let csv = 'رتبه,نام کاروان,راهبر,تعداد اعضا,زریک,نخ,فرش,بیرق,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
-            filtered.forEach((c, idx) => {
-                csv += `${idx + 1},${c.name},${c.mentorName},${c.memberCount},${c.zarik},${c.nakh},${c.farsh},${c.beyragh},${c.stars},${c.quizScore},${c.challengeScore},${c.overallProgress}%,${c.totalScore}\n`;
+            let currentR = 0;
+            let prevSc = null;
+            filtered.forEach((c) => {
+                let rStr = '-';
+                if (c.totalScore > 0) {
+                    if (prevSc === null)
+                        currentR = 1;
+                    else if (c.totalScore < prevSc)
+                        currentR++;
+                    rStr = String(currentR);
+                    prevSc = c.totalScore;
+                }
+                csv += `${rStr},${c.name},${c.mentorName},${c.memberCount},${c.zarik},${c.nakh},${c.farsh},${c.beyragh},${c.stars},${c.quizScore},${c.challengeScore},${c.overallProgress}%,${c.totalScore}\n`;
             });
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', 'attachment; filename="caravans_leaderboard.csv"');
@@ -271,8 +282,19 @@ async function getIndividualsLeaderboard(req, res) {
         });
         if (exportAs === 'csv') {
             let csv = 'رتبه,نام,نقش,شماره تماس,کاروان,زریک,نخ,فرش,بیرق,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
-            filtered.forEach((u, idx) => {
-                csv += `${idx + 1},${u.name},${u.role === 'mentor' ? 'راهبر' : 'دانش‌آموز'},${u.phoneNumber},${u.caravanName},${u.zarik},${u.nakh},${u.farsh},${u.beyragh},${u.stars},${u.quizScore},${u.challengeScore},${u.progressPercentage}%,${u.totalScore}\n`;
+            let currentR = 0;
+            let prevSc = null;
+            filtered.forEach((u) => {
+                let rStr = '-';
+                if (u.totalScore > 0) {
+                    if (prevSc === null)
+                        currentR = 1;
+                    else if (u.totalScore < prevSc)
+                        currentR++;
+                    rStr = String(currentR);
+                    prevSc = u.totalScore;
+                }
+                csv += `${rStr},${u.name},${u.role === 'mentor' ? 'راهبر' : 'دانش‌آموز'},${u.phoneNumber},${u.caravanName},${u.zarik},${u.nakh},${u.farsh},${u.beyragh},${u.stars},${u.quizScore},${u.challengeScore},${u.progressPercentage}%,${u.totalScore}\n`;
             });
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', 'attachment; filename="individuals_leaderboard.csv"');

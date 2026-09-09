@@ -501,9 +501,68 @@ body {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Drawer & Modal Tabs Header */
+.tabs-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.tabs-header .btn-action {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tabs-header .btn-action:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* General Active Tab Style */
+.tabs-header .btn-action.active {
+  color: #ffffff !important;
+  font-weight: 700;
+  transform: translateY(-1px);
+}
+
+/* Distinct Active Colors For Each Tab */
+.tabs-header #btn-tab-identity.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.45);
+}
+
+.tabs-header #btn-tab-class-progress.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%) !important;
+  border-color: #c4b5fd !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
+}
+
+.tabs-header #btn-tab-support.active {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  border-color: #6ee7b7 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+}
+
 /* Data Table Styles */
 .table-container {
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
   margin-bottom: 20px;
 }
 
@@ -628,8 +687,14 @@ body {
 /* Zarik Adjustments & Analytics Panel */
 .ledger-grid {
   display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 30px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 25px;
+  align-items: start;
+}
+
+.ledger-grid > div {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .panel-card {

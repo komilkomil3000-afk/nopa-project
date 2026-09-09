@@ -319,16 +319,16 @@
               <!-- Economy Overview Stats Bar -->
               <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 15px;">
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">💰 کل زریک پلتفرم</div><div class="stat-value" id="eco-zarik" style="font-size:18px; color:#fbbf24;">0</div></div>
+                  <div><div class="stat-label">کل زریک پلتفرم</div><div class="stat-value" id="eco-zarik" style="font-size:18px; color:#fbbf24;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">🧵 کل نخ</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
+                  <div><div class="stat-label">کل نخ</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">🧶 کل فرش</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
+                  <div><div class="stat-label">کل فرش</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">🚩 کل بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
+                  <div><div class="stat-label">کل بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
                 </div>
               </div>
 
@@ -337,16 +337,16 @@
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-arrow-down-wide-short"></i> مرتب‌سازی:</span>
                   <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" onchange="applyLeagueFilters()">
-                    <option value="totalScore">🌟 کل امتیازات (جام زرین)</option>
-                    <option value="zarik">💰 زریک</option>
-                    <option value="beyragh">🚩 بیرق</option>
-                    <option value="nakh">🧵 نخ</option>
-                    <option value="farsh">🧶 فرش</option>
-                    <option value="stars">⭐ ستاره‌ها و آزمون‌ها</option>
-                    <option value="quizScore">📝 نمره آزمون‌ها</option>
-                    <option value="challengeScore">🎯 امتیاز چالش‌ها</option>
-                    <option value="progress">📊 درصد پیشرفت دوره‌ها</option>
-                    <option value="wealth">💎 ارزش دارایی‌های نقد</option>
+                    <option value="totalScore">کل امتیازات (جام زرین)</option>
+                    <option value="zarik">زریک</option>
+                    <option value="beyragh">بیرق</option>
+                    <option value="nakh">نخ</option>
+                    <option value="farsh">فرش</option>
+                    <option value="stars">ستاره‌ها و آزمون‌ها</option>
+                    <option value="quizScore">نمره آزمون‌ها</option>
+                    <option value="challengeScore">امتیاز چالش‌ها</option>
+                    <option value="progress">درصد پیشرفت دوره‌ها</option>
+                    <option value="wealth">ارزش دارایی‌های نقد</option>
                   </select>
                 </div>
 
@@ -370,7 +370,7 @@
 
                 <!-- Search box -->
                 <div style="position: relative; flex: 1; min-width: 180px;">
-                  <input type="text" id="league-search-input" class="input-ctrl" placeholder="🔍 جستجوی نام، تلفن یا کاروان..." style="width: 100%; padding-right: 32px;" oninput="debounceLeagueSearch()">
+                  <input type="text" id="league-search-input" class="input-ctrl" placeholder="جستجوی نام، تلفن یا کاروان..." style="width: 100%; padding-right: 32px;" oninput="debounceLeagueSearch()">
                   <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 12px;"></i>
                 </div>
 
@@ -386,23 +386,23 @@
               </div>
 
               <!-- VIEW 1: Caravans Leaderboard -->
-              <div id="league-caravans-container">
-                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow-y: auto;">
-                  <table class="data-table" id="caravans-leaderboard-table">
+              <div id="league-caravans-container" style="max-width: 100%; overflow: hidden;">
+                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow: auto; max-width: 100%;">
+                  <table class="data-table" id="caravans-leaderboard-table" style="min-width: 780px;">
                     <thead>
                       <tr>
                         <th style="width: 60px; text-align: center;">رتبه</th>
                         <th>نام کاروان</th>
                         <th>راهبر</th>
                         <th style="text-align: center;">اعضا</th>
-                        <th style="color: #fbbf24;">زریک 💰</th>
-                        <th style="color: #a78bfa;">نخ 🧵</th>
-                        <th style="color: #ef4444;">فرش 🧶</th>
-                        <th style="color: #3b82f6;">بیرق 🚩</th>
-                        <th style="color: #f59e0b;">ستاره/آزمون ⭐</th>
-                        <th>امتیاز چالش 🎯</th>
-                        <th>پیشرفت کلاس 📈</th>
-                        <th style="color: #10b981; font-weight: bold;">امتیاز کل 🏆</th>
+                        <th style="color: #fbbf24;">زریک</th>
+                        <th style="color: #a78bfa;">نخ</th>
+                        <th style="color: #ef4444;">فرش</th>
+                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #f59e0b;">ستاره/آزمون</th>
+                        <th>امتیاز چالش</th>
+                        <th>پیشرفت کلاس</th>
+                        <th style="color: #10b981; font-weight: bold;">امتیاز کل</th>
                         <th style="text-align: center;">عملیات</th>
                       </tr>
                     </thead>
@@ -414,24 +414,24 @@
               </div>
 
               <!-- VIEW 2: Individuals Leaderboard -->
-              <div id="league-individuals-container" style="display: none;">
-                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow-y: auto;">
-                  <table class="data-table" id="individuals-leaderboard-table">
+              <div id="league-individuals-container" style="display: none; max-width: 100%; overflow: hidden;">
+                <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow: auto; max-width: 100%;">
+                  <table class="data-table" id="individuals-leaderboard-table" style="min-width: 880px;">
                     <thead>
                       <tr>
                         <th style="width: 60px; text-align: center;">رتبه</th>
                         <th>کاربر</th>
                         <th>نقش</th>
                         <th>کاروان</th>
-                        <th style="color: #fbbf24;">زریک 💰</th>
-                        <th style="color: #a78bfa;">نخ 🧵</th>
-                        <th style="color: #ef4444;">فرش 🧶</th>
-                        <th style="color: #3b82f6;">بیرق 🚩</th>
-                        <th style="color: #f59e0b;">ستاره‌ها ⭐</th>
-                        <th>نمره آزمون 📝</th>
-                        <th>نمره چالش 🎯</th>
-                        <th>پیشرفت کلاس 📊</th>
-                        <th style="color: #10b981; font-weight: bold;">امتیاز کل 🌟</th>
+                        <th style="color: #fbbf24;">زریک</th>
+                        <th style="color: #a78bfa;">نخ</th>
+                        <th style="color: #ef4444;">فرش</th>
+                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #f59e0b;">ستاره‌ها</th>
+                        <th>نمره آزمون</th>
+                        <th>نمره چالش</th>
+                        <th>پیشرفت کلاس</th>
+                        <th style="color: #10b981; font-weight: bold;">امتیاز کل</th>
                         <th style="text-align: center;">عملیات</th>
                       </tr>
                     </thead>

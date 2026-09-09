@@ -160,6 +160,9 @@ function setupEventListeners() {
   const menuItems = document.querySelectorAll('.menu-item');
   menuItems.forEach(item => {
     item.addEventListener('click', () => {
+      if (typeof window.closeUserDetailDrawer === 'function') {
+        window.closeUserDetailDrawer();
+      }
       const tabId = item.getAttribute('data-tab');
       switchTab(tabId, true);
     });
@@ -338,14 +341,32 @@ window.promptLevelOverride = async function(userId, currentLevel) {
   });
 
   // Modals & Drawer controls
-  document.getElementById('btn-close-drawer').addEventListener('click', () => {
-    document.getElementById('user-detail-drawer').classList.remove('active');
-    document.getElementById('user-drawer-overlay').style.display = 'none';
-  });
+  window.closeUserDetailDrawer = function() {
+    const drawer = document.getElementById('user-detail-drawer');
+    const overlay = document.getElementById('user-drawer-overlay');
+    if (drawer) {
+      drawer.classList.remove('active');
+    }
+    if (overlay) {
+      overlay.classList.remove('active');
+      overlay.style.display = 'none';
+    }
+  };
 
-  document.getElementById('user-drawer-overlay').addEventListener('click', () => {
-    document.getElementById('user-detail-drawer').classList.remove('active');
-    document.getElementById('user-drawer-overlay').style.display = 'none';
+  const btnCloseDrawer = document.getElementById('btn-close-drawer');
+  if (btnCloseDrawer) {
+    btnCloseDrawer.addEventListener('click', window.closeUserDetailDrawer);
+  }
+
+  const userDrawerOverlay = document.getElementById('user-drawer-overlay');
+  if (userDrawerOverlay) {
+    userDrawerOverlay.addEventListener('click', window.closeUserDetailDrawer);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      window.closeUserDetailDrawer();
+    }
   });
 
   document.getElementById('btn-add-user-modal').addEventListener('click', () => {
@@ -591,6 +612,11 @@ const TAB_REVERSE_HASH_MAP = {
 // Switch tabs with URL Hash updates
 function switchTab(tabId, updateUrl = true) {
   if (!tabId) tabId = 'users-tab';
+
+  // Automatically dismiss user detail drawer when navigating between pages/tabs
+  if (typeof window.closeUserDetailDrawer === 'function') {
+    window.closeUserDetailDrawer();
+  }
 
   const panels = document.querySelectorAll('.tab-panel');
   panels.forEach(panel => {
@@ -2061,7 +2087,7 @@ async function viewUserDetails(userId) {
           <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
         </button>
       ` : ''}
-      <button class="modal-close" id="btn-close-drawer" onclick="document.getElementById('user-drawer-overlay').classList.remove('active'); document.getElementById('user-detail-drawer').classList.remove('active');">&times;</button>
+      <button class="modal-close" id="btn-close-drawer" onclick="window.closeUserDetailDrawer();">&times;</button>
     `;
 
     // Calculate age
@@ -2102,10 +2128,9 @@ async function viewUserDetails(userId) {
 
           <div style="flex:1; min-width: 300px;">
             <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-              <button class="btn-action active" onclick="switchDrawerTab('tab-identity')" id="btn-tab-identity">هویت و پروفایل</button>
-              <button class="btn-action" onclick="switchDrawerTab('tab-class-progress')" id="btn-tab-class-progress">کلاس‌ها و آزمون</button>
-              <button class="btn-action" onclick="switchDrawerTab('tab-support')" id="btn-tab-support">پشتیبانی و کاروان</button>
-              <button class="btn-action" onclick="switchDrawerTab('tab-analytics')" id="btn-tab-analytics">تحلیل پیشرفت</button>
+              <button class="btn-action active" onclick="switchDrawerTab('tab-identity')" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
+              <button class="btn-action" onclick="switchDrawerTab('tab-class-progress')" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
+              <button class="btn-action" onclick="switchDrawerTab('tab-support')" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
             </div>
             
             <div id="tab-identity" class="drawer-tab-content active" style="display:block;">
@@ -2125,14 +2150,63 @@ async function viewUserDetails(userId) {
             </div>
 
             <div id="tab-class-progress" class="drawer-tab-content" style="display:none;">
-              <div class="panel-card glass" style="padding:12px; display:flex; gap:12px; flex-wrap:wrap;">
-                <div style="flex:1; min-width: 250px;">
-                  <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">مشاهده ویدئوها</h5>
-                  <ul id="drawer-watch-list" style="max-height:250px; overflow:auto; padding-left: 12px; margin-top: 10px; list-style: none;"></ul>
+              <div class="panel-card glass" style="padding:14px;">
+                <!-- 5 Stats Summary Cards Bar -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap:8px; margin-bottom:14px;">
+                  <div style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: #c4b5fd; font-weight: bold;"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
+                    <div id="drawer-stat-stations" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۵</div>
+                  </div>
+                  <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: #38bdf8; font-weight: bold;"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
+                    <div id="drawer-stat-classes" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  </div>
+                  <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: #34d399; font-weight: bold;"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
+                    <div id="drawer-stat-parts" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  </div>
+                  <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
+                    <div id="drawer-stat-quizzes" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  </div>
+                  <div style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: #f472b6; font-weight: bold;"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
+                    <div id="drawer-stat-challenges" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  </div>
                 </div>
-                <div style="flex:1; min-width: 200px;">
-                  <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">آزمون‌ها</h5>
-                  <ul id="drawer-quiz-list" style="max-height:250px; overflow:auto; padding-left: 12px; margin-top: 10px; list-style: none;"></ul>
+
+                <!-- Filter Chips & Search Bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                  <div style="display:flex; gap:6px; flex-wrap:wrap;" id="drawer-class-filter-chips">
+                    <button type="button" class="btn-action active" onclick="window.filterDrawerClassProgress('all')" id="btn-prog-filter-all" style="padding:4px 8px; font-size:11px; border-radius:6px;">همه موارد</button>
+                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('classes')" id="btn-prog-filter-classes" style="padding:4px 8px; font-size:11px; border-radius:6px;">کلاس‌ها</button>
+                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('parts')" id="btn-prog-filter-parts" style="padding:4px 8px; font-size:11px; border-radius:6px;">پارت‌ها</button>
+                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('stations')" id="btn-prog-filter-stations" style="padding:4px 8px; font-size:11px; border-radius:6px;">منزلگاه‌ها</button>
+                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('quizzes')" id="btn-prog-filter-quizzes" style="padding:4px 8px; font-size:11px; border-radius:6px;">آزمون‌ها</button>
+                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('challenges')" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
+                  </div>
+                  <div style="position:relative; flex: 1 1 150px; max-width: 220px;">
+                    <input type="text" id="drawer-class-search-input" placeholder="🔍 جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:11.5px; box-sizing:border-box;">
+                  </div>
+                </div>
+
+                <!-- 5-Column Table -->
+                <div class="table-container" style="max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+                  <table class="data-table" id="drawer-class-progress-table" style="margin: 0; width: 100%;">
+                    <thead style="position: sticky; top: 0; background: #0f172a; z-index: 2;">
+                      <tr>
+                        <th style="width: 130px;"><i class="fa-solid fa-map-location-dot" style="color: #c4b5fd;"></i> منزلگاه</th>
+                        <th style="width: 140px;"><i class="fa-solid fa-chalkboard-user" style="color: #38bdf8;"></i> کلاس</th>
+                        <th style="width: 150px;"><i class="fa-solid fa-circle-play" style="color: #34d399;"></i> پارت</th>
+                        <th style="width: 130px;"><i class="fa-solid fa-spell-check" style="color: #fbbf24;"></i> آزمون</th>
+                        <th style="width: 140px;"><i class="fa-solid fa-trophy" style="color: #f472b6;"></i> چالش</th>
+                        <th style="width: 110px; text-align: center;">وضعیت پیشرفت</th>
+                      </tr>
+                    </thead>
+                    <tbody id="drawer-class-progress-tbody">
+                      <!-- Automatically populated by JS -->
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -2145,17 +2219,6 @@ async function viewUserDetails(userId) {
               <div class="panel-card glass" style="padding:12px;">
                 <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">تاریخچه تیکت‌ها</h5>
                 <div id="drawer-ticket-list" style="max-height:200px; overflow:auto; padding-left:12px; margin-top: 10px;"></div>
-              </div>
-            </div>
-
-            <div id="tab-analytics" class="drawer-tab-content" style="display:none;">
-              <div class="panel-card glass" style="padding:12px;">
-                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">نمودار رشد سرمایه‌ها و مشارکت</h5>
-                <div style="display:flex; justify-content:center; align-items:center; margin-top:20px;">
-                  <div style="width: 300px; height: 300px;">
-                    <canvas id="drawer-radar-chart"></canvas>
-                  </div>
-                </div>
               </div>
             </div>
             
@@ -2186,35 +2249,9 @@ async function viewUserDetails(userId) {
       </div>
     `;
 
-    const wList = document.getElementById('drawer-watch-list');
-    wList.innerHTML = '';
-    if (payload.watchRecords && payload.watchRecords.length > 0) {
-      payload.watchRecords.forEach(w => {
-        const title = w.session?.title || 'جلسه ناشناس';
-        const percent = w.watchedPercentage || 0;
-        wList.innerHTML += `<li style="margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.05);">
-          <div><strong>${title}</strong></div>
-          <div style="width:100%; background:rgba(0,0,0,0.3); border-radius:5px; height:6px; margin-top:5px;">
-            <div style="width:${percent}%; background:var(--color-neon-blue); height:100%; border-radius:5px;"></div>
-          </div>
-          <div style="font-size:11px; text-align:right; margin-top:3px; color:var(--text-secondary);">${percent}% تماشا شده</div>
-        </li>`;
-      });
-    } else {
-      wList.innerHTML = '<li>هیچ جلسه‌ای تماشا نشده است.</li>';
-    }
-
-    const qList = document.getElementById('drawer-quiz-list');
-    qList.innerHTML = '';
-    if (payload.quizzes && payload.quizzes.length > 0) {
-      payload.quizzes.forEach(q => {
-        qList.innerHTML += `<li style="margin-bottom:8px; display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:4px;">
-          <span>${q.challengeId || 'آزمون'}</span>
-          <span style="color:${q.score > 70 ? 'var(--color-success)' : 'var(--color-warning)'}">نمره: ${q.score}</span>
-        </li>`;
-      });
-    } else {
-      qList.innerHTML = '<li>آزمونی یافت نشد.</li>';
+    // Automatically populate the 5 sections in #tab-class-progress (کلاس، پارت، منزلگاه، آزمون، چالش)
+    if (typeof window.populateDrawerClassProgress === 'function') {
+      window.populateDrawerClassProgress(payload);
     }
 
     const tList = document.getElementById('drawer-ticket-list');
@@ -2230,8 +2267,15 @@ async function viewUserDetails(userId) {
       tList.innerHTML = '<div>تیکتی ثبت نشده است.</div>';
     }
 
-    document.getElementById('user-drawer-overlay').classList.add('active');
-    document.getElementById('user-detail-drawer').classList.add('active');
+    const overlay = document.getElementById('user-drawer-overlay');
+    if (overlay) {
+      overlay.classList.add('active');
+      overlay.style.display = 'block';
+    }
+    const drawer = document.getElementById('user-detail-drawer');
+    if (drawer) {
+      drawer.classList.add('active');
+    }
 
     setTimeout(() => {
       const ctx = document.getElementById('drawer-radar-chart');
@@ -2275,6 +2319,433 @@ async function viewUserDetails(userId) {
     console.error('Error fetching user details:', error);
   }
 }
+
+// ==========================================
+// Class & Exam Progress Breakdown (#tab-class-progress)
+// Separate sections for: منزلگاه، کلاس، پارت، آزمون، چالش
+// ==========================================
+window.cachedDrawerClassRows = [];
+window.activeDrawerClassFilter = 'all';
+
+window.populateDrawerClassProgress = function(payload) {
+  if (!payload) return;
+  const summary = payload.stationsProgress?.summary || {};
+  const stations = payload.stationsProgress?.allStations || [];
+  const userProgressRecords = payload.userProgressRecords || [];
+  const challenges = payload.challenges || payload.quizzes || [];
+  const allChallenges = payload.allChallenges || [];
+  const quizSubmissions = payload.quizSubmissions || payload.assignments || [];
+
+  // Update 5 Header Stats Summary
+  const totalStations = summary.totalStations || stations.length || 5;
+  const passedStations = summary.passedStations || 0;
+  const statStationsEl = document.getElementById('drawer-stat-stations');
+  if (statStationsEl) statStationsEl.textContent = `${passedStations} از ${totalStations}`;
+
+  const totalClasses = summary.totalClasses || 0;
+  const passedClasses = summary.passedClasses || 0;
+  const statClassesEl = document.getElementById('drawer-stat-classes');
+  if (statClassesEl) statClassesEl.textContent = `${passedClasses} از ${totalClasses}`;
+
+  const totalParts = summary.totalParts || 0;
+  const passedParts = summary.passedParts || 0;
+  const statPartsEl = document.getElementById('drawer-stat-parts');
+  if (statPartsEl) statPartsEl.textContent = `${passedParts} از ${totalParts}`;
+
+  const totalQuizzes = summary.totalQuizzes || 0;
+  const passedQuizzes = summary.passedQuizzes || 0;
+  const statQuizzesEl = document.getElementById('drawer-stat-quizzes');
+  if (statQuizzesEl) statQuizzesEl.textContent = `${passedQuizzes} از ${totalQuizzes}`;
+
+  const completedChallenges = challenges.filter(c => c.status === 'approved').length;
+  const totalChCount = Math.max(allChallenges.length, challenges.length);
+  const statChallengesEl = document.getElementById('drawer-stat-challenges');
+  if (statChallengesEl) statChallengesEl.textContent = `${completedChallenges} از ${totalChCount}`;
+
+  // Build lookups for fast retrieval
+  const progressMap = {};
+  userProgressRecords.forEach(p => {
+    if (p.sessionId) progressMap[p.sessionId] = p;
+  });
+
+  const quizSubMap = {};
+  quizSubmissions.forEach(qs => {
+    const qid = qs.quizId || qs.quiz?.id;
+    if (qid) quizSubMap[qid] = qs;
+  });
+
+  const challengeSubMap = {};
+  challenges.forEach(ch => {
+    const cid = ch.challengeId || ch.challenge?.id;
+    if (cid) challengeSubMap[cid] = ch;
+  });
+
+  // Compile structured rows
+  const rows = [];
+
+  stations.forEach((st, stIdx) => {
+    const stNumber = st.stationNumber || (stIdx + 1);
+    const stTitle = st.title || `منزلگاه ${stNumber}`;
+
+    // Correlate challenges by station number or identifier
+    const stChallenges = allChallenges.filter(ch => {
+      const cid = (ch.id || '').toUpperCase();
+      const cTitle = (ch.title || '').toLowerCase();
+      return cid.includes(`CH${stNumber}`) || cid.includes(`${stNumber}0`) || cTitle.includes(`منزلگاه ${stNumber}`);
+    });
+
+    let stHasSessions = false;
+
+    (st.categories || []).forEach((cat) => {
+      (cat.sessions || []).forEach((sess, sessIdx) => {
+        stHasSessions = true;
+        const prog = progressMap[sess.id] || {};
+        const isWatched = !!prog.isWatched;
+        const quizPassed = !!prog.quizPassed;
+        const clips = sess.videoClips || [];
+        const quizzes = sess.quizzes || [];
+
+        // Match associated challenge for this session/station
+        let assocChallenge = null;
+        let assocSubmission = null;
+        if (stChallenges.length > 0) {
+          assocChallenge = stChallenges[sessIdx % stChallenges.length];
+        } else if (allChallenges.length > 0) {
+          assocChallenge = allChallenges[sessIdx % allChallenges.length];
+        }
+
+        if (assocChallenge) {
+          assocSubmission = challengeSubMap[assocChallenge.id] || null;
+        }
+
+        // Calculate progress percentage
+        let earnedScore = 0;
+        let maxScore = 0;
+
+        // Class & Part Weight (50%)
+        maxScore += 50;
+        if (isWatched) earnedScore += 50;
+
+        // Quiz Weight (30%)
+        if (quizzes.length > 0) {
+          maxScore += 30;
+          if (quizPassed) earnedScore += 30;
+        }
+
+        // Challenge Weight (20%)
+        if (assocChallenge) {
+          maxScore += 20;
+          if (assocSubmission?.status === 'approved') earnedScore += 20;
+          else if (assocSubmission?.status === 'pending') earnedScore += 10;
+        }
+
+        const pct = maxScore > 0 ? Math.round((earnedScore / maxScore) * 100) : (isWatched ? 100 : 0);
+
+        rows.push({
+          type: 'class_row',
+          stationId: st.id,
+          stationNumber: stNumber,
+          stationTitle: stTitle,
+          categoryTitle: cat.title,
+          sessionId: sess.id,
+          sessionTitle: sess.title,
+          clips,
+          isWatched,
+          quizzes,
+          quizPassed,
+          quizSubmissions: quizzes.map(q => quizSubMap[q.id]).filter(Boolean),
+          challenge: assocChallenge,
+          challengeSubmission: assocSubmission,
+          progressPct: pct,
+          isCompleted: pct === 100
+        });
+      });
+    });
+
+    // If station has no sessions registered yet
+    if (!stHasSessions) {
+      rows.push({
+        type: 'station_only',
+        stationId: st.id,
+        stationNumber: stNumber,
+        stationTitle: stTitle,
+        categoryTitle: '-',
+        sessionId: null,
+        sessionTitle: 'فاقد جلسه ثبت‌شده',
+        clips: [],
+        isWatched: false,
+        quizzes: [],
+        quizPassed: false,
+        quizSubmissions: [],
+        challenge: stChallenges[0] || null,
+        challengeSubmission: stChallenges[0] ? challengeSubMap[stChallenges[0].id] : null,
+        progressPct: 0,
+        isCompleted: false
+      });
+    }
+  });
+
+  // Include any standalone/caravan challenges not linked to rows
+  allChallenges.forEach(ch => {
+    const isAlreadyAssigned = rows.some(r => r.challenge && r.challenge.id === ch.id);
+    if (!isAlreadyAssigned) {
+      const sub = challengeSubMap[ch.id];
+      const isApproved = sub?.status === 'approved';
+      rows.push({
+        type: 'challenge_only',
+        stationId: null,
+        stationNumber: '-',
+        stationTitle: 'چالش‌های کاروان / عمومی',
+        categoryTitle: '-',
+        sessionId: null,
+        sessionTitle: '-',
+        clips: [],
+        isWatched: false,
+        quizzes: [],
+        quizPassed: false,
+        quizSubmissions: [],
+        challenge: ch,
+        challengeSubmission: sub,
+        progressPct: isApproved ? 100 : (sub ? 50 : 0),
+        isCompleted: isApproved
+      });
+    }
+  });
+
+  window.cachedDrawerClassRows = rows;
+  window.activeDrawerClassFilter = 'all';
+
+  // Reset filter buttons UI
+  const container = document.getElementById('drawer-class-filter-chips');
+  if (container) {
+    container.querySelectorAll('button').forEach(btn => {
+      btn.style.background = 'rgba(255,255,255,0.06)';
+      btn.style.color = '#cbd5e1';
+      btn.style.borderColor = 'rgba(255,255,255,0.1)';
+      btn.classList.remove('active');
+    });
+    const defaultBtn = document.getElementById('btn-prog-filter-all');
+    if (defaultBtn) {
+      defaultBtn.style.background = '#8b5cf6';
+      defaultBtn.style.color = 'white';
+      defaultBtn.style.borderColor = '#a78bfa';
+      defaultBtn.classList.add('active');
+    }
+  }
+
+  window.renderDrawerClassProgressTable();
+};
+
+window.renderDrawerClassProgressTable = function() {
+  const tbody = document.getElementById('drawer-class-progress-tbody');
+  if (!tbody) return;
+  const rows = window.cachedDrawerClassRows || [];
+  const filterType = window.activeDrawerClassFilter || 'all';
+  const searchInput = document.getElementById('drawer-class-search-input');
+  const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  const filtered = rows.filter(r => {
+    if (filterType === 'classes' && (!r.sessionId || r.type === 'challenge_only')) return false;
+    if (filterType === 'parts' && (!r.clips || r.clips.length === 0) && !r.sessionId) return false;
+    if (filterType === 'stations' && (!r.stationTitle || r.stationNumber === '-')) return false;
+    if (filterType === 'quizzes' && (!r.quizzes || r.quizzes.length === 0)) return false;
+    if (filterType === 'challenges' && !r.challenge) return false;
+
+    if (searchVal) {
+      const matchSt = (r.stationTitle || '').toLowerCase().includes(searchVal);
+      const matchCat = (r.categoryTitle || '').toLowerCase().includes(searchVal);
+      const matchSess = (r.sessionTitle || '').toLowerCase().includes(searchVal);
+      const matchClips = (r.clips || []).some(c => (c.title || '').toLowerCase().includes(searchVal));
+      const matchQuiz = (r.quizzes || []).some(q => (q.title || '').toLowerCase().includes(searchVal));
+      const matchCh = r.challenge && (r.challenge.title || '').toLowerCase().includes(searchVal);
+      if (!matchSt && !matchCat && !matchSess && !matchClips && !matchQuiz && !matchCh) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px 12px; color:var(--text-secondary);"><i class="fa-solid fa-inbox" style="font-size:24px; margin-bottom:8px; display:block; opacity:0.6;"></i>اطلاعاتی متناسب با فیلتر یافت نشد.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    // 1. منزلگاه
+    let stationCell = '';
+    if (r.stationNumber && r.stationNumber !== '-') {
+      stationCell = `
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="badge" style="background:rgba(139, 92, 246, 0.22); color:#c4b5fd; font-size:10px; width:fit-content; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <i class="fa-solid fa-map-location-dot" style="margin-left:3px;"></i>منزلگاه ${r.stationNumber}
+          </span>
+          <strong style="font-size:12px; color:white;">${r.stationTitle}</strong>
+        </div>`;
+    } else {
+      stationCell = `<span class="badge" style="background:rgba(255,255,255,0.08); color:#94a3b8; font-size:11px;"><i class="fa-solid fa-layer-group" style="margin-left:3px;"></i>عمومی / کاروان</span>`;
+    }
+
+    // 2. کلاس
+    let classCell = '';
+    if (r.sessionTitle && r.sessionTitle !== '-' && r.sessionId) {
+      classCell = `
+        <div style="display:flex; flex-direction:column; gap:3px;">
+          <strong style="font-size:12px; color:#38bdf8;">
+            <i class="fa-solid fa-chalkboard-user" style="margin-left:4px; opacity:0.85;"></i>${r.sessionTitle}
+          </strong>
+          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span style="font-size:10.5px; color:var(--text-secondary);">${r.categoryTitle}</span>` : ''}
+        </div>`;
+    } else {
+      classCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+    }
+
+    // 3. پارت
+    let partCell = '';
+    if (r.clips && r.clips.length > 0) {
+      partCell = `
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <span class="badge" style="background:${r.isWatched ? 'rgba(16, 185, 129, 0.2)' : 'rgba(56, 189, 248, 0.15)'}; color:${r.isWatched ? '#34d399' : '#38bdf8'}; font-size:10.5px; width:fit-content; border: 1px solid ${r.isWatched ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'};">
+            <i class="fa-solid fa-circle-play" style="margin-left:3px;"></i>${r.clips.length} پارت
+          </span>
+          <div style="font-size:10.5px; color:${r.isWatched ? '#34d399' : '#94a3b8'};">
+            ${r.isWatched ? '✓ کامل مشاهده شده' : `${r.clips[0]?.title || 'پارت ۱'} (مشاهده نشده)`}
+          </div>
+        </div>`;
+    } else if (r.sessionId) {
+      partCell = `
+        <div style="display:flex; align-items:center; gap:5px;">
+          <span class="badge" style="background:${r.isWatched ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255,255,255,0.06)'}; color:${r.isWatched ? '#34d399' : '#94a3b8'}; font-size:10.5px; border: 1px solid ${r.isWatched ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'};">
+            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'}" style="margin-left:3px;"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
+          </span>
+        </div>`;
+    } else {
+      partCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+    }
+
+    // 4. آزمون
+    let quizCell = '';
+    if (r.quizzes && r.quizzes.length > 0) {
+      const q = r.quizzes[0];
+      const qSub = (r.quizSubmissions && r.quizSubmissions[0]) || null;
+      if (r.quizPassed || (qSub && qSub.score >= 50)) {
+        quizCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
+              <i class="fa-solid fa-check-double" style="margin-left:3px;"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
+            </span>
+            <span style="font-size:10.5px; color:#cbd5e1;">${q.title || 'آزمون پایان کلاس'}</span>
+          </div>`;
+      } else if (qSub) {
+        quizCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
+              <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>مردود (${qSub.score})
+            </span>
+            <span style="font-size:10.5px; color:#cbd5e1;">${q.title || 'آزمون'}</span>
+          </div>`;
+      } else {
+        quizCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; font-size:10px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
+              <i class="fa-regular fa-clock" style="margin-left:3px;"></i>شرکت نکرده
+            </span>
+            <span style="font-size:10.5px; color:var(--text-secondary);">${q.title || 'آزمون پایان کلاس'}</span>
+          </div>`;
+      }
+    } else {
+      quizCell = `<span style="color:var(--text-secondary); font-size:11px;">بدون آزمون</span>`;
+    }
+
+    // 5. چالش
+    let challengeCell = '';
+    if (r.challenge) {
+      const ch = r.challenge;
+      const sub = r.challengeSubmission;
+      const chTypeLabel = ch.type === 'quiz' ? 'کوئیز' : ch.type === 'file' ? 'فایلی' : 'مهارتی';
+      if (sub && sub.status === 'approved') {
+        challengeCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
+              <i class="fa-solid fa-trophy" style="margin-left:3px;"></i>تایید (+${ch.rewardZarik || 50} زریک)
+            </span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+          </div>`;
+      } else if (sub && sub.status === 'pending') {
+        challengeCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; font-size:10.5px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
+              <i class="fa-solid fa-hourglass-start" style="margin-left:3px;"></i>در انتظار ارزیابی
+            </span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+          </div>`;
+      } else if (sub && sub.status === 'rejected') {
+        challengeCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
+              <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>نیازمند اصلاح
+            </span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+          </div>`;
+      } else {
+        challengeCell = `
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <span class="badge" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; font-size:10px; width:fit-content; border: 1px solid rgba(236, 72, 153, 0.25);">
+              <i class="fa-regular fa-circle" style="margin-left:3px;"></i>انجام نشده (${chTypeLabel})
+            </span>
+            <span style="font-size:10.5px; color:var(--text-secondary);" title="${ch.title}">${ch.title}</span>
+          </div>`;
+      }
+    } else {
+      challengeCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+    }
+
+    // 6. وضعیت پیشرفت
+    const pct = r.progressPct || 0;
+    const barColor = pct === 100 ? '#10b981' : pct >= 50 ? '#38bdf8' : pct > 0 ? '#fbbf24' : '#64748b';
+    const statusText = pct === 100 ? 'تکمیل شده' : pct > 0 ? `${pct}% پیشرفت` : 'شروع نشده';
+
+    const progressCell = `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:85px;">
+        <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
+          <div style="width:${pct}%; height:100%; background:${barColor}; border-radius:4px; transition:width 0.3s ease;"></div>
+        </div>
+        <span style="font-size:10px; font-weight:bold; color:${barColor};">${statusText}</span>
+      </div>`;
+
+    return `
+      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition:background 0.2s ease;">
+        <td style="vertical-align:middle; padding:10px 8px;">${stationCell}</td>
+        <td style="vertical-align:middle; padding:10px 8px;">${classCell}</td>
+        <td style="vertical-align:middle; padding:10px 8px;">${partCell}</td>
+        <td style="vertical-align:middle; padding:10px 8px;">${quizCell}</td>
+        <td style="vertical-align:middle; padding:10px 8px;">${challengeCell}</td>
+        <td style="vertical-align:middle; padding:10px 8px; text-align:center;">${progressCell}</td>
+      </tr>`;
+  }).join('');
+};
+
+window.filterDrawerClassProgress = function(filterType) {
+  if (filterType) {
+    window.activeDrawerClassFilter = filterType;
+    const container = document.getElementById('drawer-class-filter-chips');
+    if (container) {
+      container.querySelectorAll('button').forEach(btn => {
+        btn.style.background = 'rgba(255,255,255,0.06)';
+        btn.style.color = '#cbd5e1';
+        btn.style.borderColor = 'rgba(255,255,255,0.1)';
+        btn.classList.remove('active');
+      });
+      const activeBtn = document.getElementById(`btn-prog-filter-${filterType}`);
+      if (activeBtn) {
+        activeBtn.style.background = '#8b5cf6';
+        activeBtn.style.color = 'white';
+        activeBtn.style.borderColor = '#a78bfa';
+        activeBtn.classList.add('active');
+      }
+    }
+  }
+  window.renderDrawerClassProgressTable();
+};
 
 let isMentorView = false;
 window.toggleDualRoleView = function() {
@@ -2381,8 +2852,13 @@ window.viewMentorDetails = async function(mentorId) {
       </div>
     `;
 
-    document.getElementById('user-detail-drawer').classList.add('active');
-    document.getElementById('user-drawer-overlay').style.display = 'block';
+    const drawer = document.getElementById('user-detail-drawer');
+    if (drawer) drawer.classList.add('active');
+    const overlay = document.getElementById('user-drawer-overlay');
+    if (overlay) {
+      overlay.classList.add('active');
+      overlay.style.display = 'block';
+    }
   } catch (err) {
     console.error('Failed to view mentor details:', err);
   }
@@ -2530,19 +3006,62 @@ async function loadCaravansLeaderboard() {
       return;
     }
 
-    caravans.forEach((c, idx) => {
-      const rank = idx + 1;
-      let rankBadge = `<span style="font-weight:bold; color:var(--text-secondary);">${rank}</span>`;
+    // Calculate tie-aware & zero-aware ranks
+    function getCaravanSortValue(c) {
+      switch (sortBy) {
+        case 'zarik': return c.zarik || 0;
+        case 'beyragh': return c.beyragh || 0;
+        case 'nakh': return c.nakh || 0;
+        case 'farsh': return c.farsh || 0;
+        case 'stars':
+        case 'quizzes': return c.stars || 0;
+        case 'quizScore': return c.quizScore || 0;
+        case 'challenges':
+        case 'challengeScore': return c.challengeScore || 0;
+        case 'progress': return c.overallProgress || 0;
+        case 'members': return c.memberCount || 0;
+        case 'wealth': return c.totalWealth || 0;
+        case 'totalScore':
+        default: return c.totalScore || 0;
+      }
+    }
+
+    let currentRank = 0;
+    let prevScore = null;
+    const rankedCaravans = caravans.map((c) => {
+      const score = getCaravanSortValue(c);
+      let rank = null;
+      if (score > 0) {
+        if (prevScore === null) {
+          currentRank = 1;
+        } else if (score < prevScore) {
+          currentRank++;
+        }
+        rank = currentRank;
+        prevScore = score;
+      }
+      return { c, score, rank };
+    });
+
+    rankedCaravans.forEach(({ c, rank }) => {
+      let rankBadge = '';
       let trStyle = '';
-      if (rank === 1) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #fbbf24);" title="رتبه ۱ - طلایی">🥇</span>';
+
+      if (rank === null || rank === undefined) {
+        rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
+        trStyle = '';
+      } else if (rank === 1) {
+        rankBadge = '<span class="badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
         trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
       } else if (rank === 2) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #94a3b8);" title="رتبه ۲ - نقره‌ای">🥈</span>';
+        rankBadge = '<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
         trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
       } else if (rank === 3) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #b45309);" title="رتبه ۳ - برنزی">🥉</span>';
+        rankBadge = '<span class="badge" style="background: rgba(180, 83, 9, 0.2); color: #d97706; border: 1px solid rgba(180, 83, 9, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
         trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+      } else {
+        rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
+        trStyle = '';
       }
 
       const tr = document.createElement('tr');
@@ -2563,8 +3082,8 @@ async function loadCaravansLeaderboard() {
         <td style="color: #a78bfa; font-weight: 600;">${(c.nakh || 0).toLocaleString()}</td>
         <td style="color: #ef4444; font-weight: 600;">${(c.farsh || 0).toLocaleString()}</td>
         <td style="color: #3b82f6; font-weight: 600;">${(c.beyragh || 0).toLocaleString()}</td>
-        <td style="color: #f59e0b; font-weight: 600;">⭐ ${c.stars || 0}</td>
-        <td><span style="color: #00f2fe; font-weight: 600;">🎯 ${c.challengeScore || 0}</span></td>
+        <td style="color: #f59e0b; font-weight: 600;">${c.stars || 0}</td>
+        <td><span style="color: #00f2fe; font-weight: 600;">${c.challengeScore || 0}</span></td>
         <td style="min-width: 110px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
@@ -2609,19 +3128,61 @@ async function loadIndividualsLeaderboard() {
       return;
     }
 
-    users.forEach((u, idx) => {
-      const rank = idx + 1;
-      let rankBadge = `<span style="font-weight:bold; color:var(--text-secondary);">${rank}</span>`;
+    // Calculate tie-aware & zero-aware ranks
+    function getIndividualSortValue(u) {
+      switch (sortBy) {
+        case 'zarik': return u.zarik || 0;
+        case 'beyragh': return u.beyragh || 0;
+        case 'nakh': return u.nakh || 0;
+        case 'farsh': return u.farsh || 0;
+        case 'stars':
+        case 'quizzes': return u.stars || 0;
+        case 'quizScore': return u.quizScore || 0;
+        case 'challenges':
+        case 'challengeScore': return u.challengeScore || 0;
+        case 'progress': return u.progressPercentage || 0;
+        case 'wealth': return u.wealthScore || 0;
+        case 'totalScore':
+        default: return u.totalScore || 0;
+      }
+    }
+
+    let currentRankInd = 0;
+    let prevScoreInd = null;
+    const rankedUsers = users.map((u) => {
+      const score = getIndividualSortValue(u);
+      let rank = null;
+      if (score > 0) {
+        if (prevScoreInd === null) {
+          currentRankInd = 1;
+        } else if (score < prevScoreInd) {
+          currentRankInd++;
+        }
+        rank = currentRankInd;
+        prevScoreInd = score;
+      }
+      return { u, score, rank };
+    });
+
+    rankedUsers.forEach(({ u, rank }) => {
+      let rankBadge = '';
       let trStyle = '';
-      if (rank === 1) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #fbbf24);" title="رتبه ۱ - طلایی">🥇</span>';
+
+      if (rank === null || rank === undefined) {
+        rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
+        trStyle = '';
+      } else if (rank === 1) {
+        rankBadge = '<span class="badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
         trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
       } else if (rank === 2) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #94a3b8);" title="رتبه ۲ - نقره‌ای">🥈</span>';
+        rankBadge = '<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
         trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
       } else if (rank === 3) {
-        rankBadge = '<span style="font-size: 18px; filter: drop-shadow(0 0 6px #b45309);" title="رتبه ۳ - برنزی">🥉</span>';
+        rankBadge = '<span class="badge" style="background: rgba(180, 83, 9, 0.2); color: #d97706; border: 1px solid rgba(180, 83, 9, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
         trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+      } else {
+        rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
+        trStyle = '';
       }
 
       const roleBadge = u.role === 'mentor'
@@ -2649,9 +3210,9 @@ async function loadIndividualsLeaderboard() {
         <td style="color: #a78bfa; font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
         <td style="color: #ef4444; font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
         <td style="color: #3b82f6; font-weight: 600;">${(u.beyragh || 0).toLocaleString()}</td>
-        <td style="color: #f59e0b; font-weight: 600;">⭐ ${u.stars || 0}</td>
-        <td><span style="color: #38bdf8; font-weight: 600;">📝 ${u.quizScore || 0}</span></td>
-        <td><span style="color: #00f2fe; font-weight: 600;">🎯 ${u.challengeScore || 0}</span></td>
+        <td style="color: #f59e0b; font-weight: 600;">${u.stars || 0}</td>
+        <td><span style="color: #38bdf8; font-weight: 600;">${u.quizScore || 0}</span></td>
+        <td><span style="color: #00f2fe; font-weight: 600;">${u.challengeScore || 0}</span></td>
         <td style="min-width: 100px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
