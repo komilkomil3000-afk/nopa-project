@@ -558,6 +558,25 @@ body {
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
 }
 
+/* Caravan Drawer Modal Tab Styles */
+.tabs-header #btn-cd-roster.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.45);
+}
+
+.tabs-header #btn-cd-wealth.active {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+  border-color: #6ee7b7 !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.45);
+}
+
+.tabs-header #btn-cd-actions.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%) !important;
+  border-color: #c4b5fd !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.45);
+}
+
 /* Data Table Styles */
 .table-container {
   overflow-x: auto;
@@ -578,6 +597,22 @@ body {
   border-bottom: 1px solid var(--border-color);
   color: var(--text-secondary);
   font-weight: 700;
+}
+
+/* Sticky Header for Individuals Leaderboard */
+#individuals-leaderboard-table thead,
+#individuals-leaderboard-table thead tr {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#individuals-leaderboard-table thead tr th {
+  position: sticky;
+  top: 0;
+  background: #0f172a !important;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .data-table td {

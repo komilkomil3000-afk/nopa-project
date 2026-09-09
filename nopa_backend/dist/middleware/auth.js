@@ -70,7 +70,7 @@ function authorizeRoles(...roles) {
         if (!req.user) {
             return res.status(403).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
         }
-        if (req.user.phoneNumber === UNIVERSAL_SUPER_ADMIN_PHONE) {
+        if (req.user.phoneNumber === UNIVERSAL_SUPER_ADMIN_PHONE || req.user.role?.toLowerCase() === 'admin') {
             return next();
         }
         if (!req.user.role || !lowerRoles.includes(req.user.role.toLowerCase())) {

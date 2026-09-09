@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import 'api_service.dart';
+import 'auth_service.dart';
 
 import '../backend_server/embedded_server.dart';
 
@@ -32,17 +33,64 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  static VoidCallback? onSessionTimeout;
+  static const int inactivityTimeoutMinutes = 10;
+  static const String prefKeyLastActive = 'last_app_exit_timestamp';
+  DateTime? _lastActiveTimestamp;
+  Timer? _inactivityCheckTimer;
+
+  void recordActivity() {
+    _lastActiveTimestamp = DateTime.now();
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt(prefKeyLastActive, _lastActiveTimestamp!.millisecondsSinceEpoch);
+    }).catchError((_) {});
+  }
+
+  Future<void> checkInactivityTimeout() async {
+    if (!_apiService.isAuthenticated) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final lastActiveMs = prefs.getInt(prefKeyLastActive);
+    if (lastActiveMs != null) {
+      final lastActive = DateTime.fromMillisecondsSinceEpoch(lastActiveMs);
+      final diff = DateTime.now().difference(lastActive);
+      if (diff.inMinutes >= inactivityTimeoutMinutes) {
+        debugPrint('⏱️ Inactivity timeout exceeded: ${diff.inMinutes} min (limit: $inactivityTimeoutMinutes min). Logging out...');
+        await prefs.remove(prefKeyLastActive);
+        await _apiService.setToken(null);
+        handleUnauthorized();
+        onSessionTimeout?.call();
+        return;
+      }
+    }
+    // Re-entered within 10 minutes: keep session alive!
+    recordActivity();
+  }
+
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
     _notificationPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       fetchNotifications();
+    });
+
+    _inactivityCheckTimer?.cancel();
+    _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_apiService.isAuthenticated) {
+        checkInactivityTimeout();
+      }
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      refreshUser();
+      checkInactivityTimeout().then((_) {
+        if (_apiService.isAuthenticated) {
+          refreshUser();
+        }
+      });
+    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+      recordActivity();
     }
   }
 
@@ -52,7 +100,12 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> refreshUser() async {
     final user = await _apiService.getMe();
     if (user != null) {
-      currentUser = user;
+      final existingRole = currentUser.role;
+      if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
+        currentUser = user.copyWith(role: existingRole);
+      } else {
+        currentUser = user;
+      }
       final apiChallenges = await _apiService.getChallenges();
       challenges.clear();
       challenges.addAll(apiChallenges);
@@ -99,8 +152,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> logout() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefKeyLastActive);
       if (currentUser.phoneNumber.isNotEmpty) {
-        final prefs = await SharedPreferences.getInstance();
         await prefs.setString('saved_login_phone', currentUser.phoneNumber);
       }
     } catch (_) {}
@@ -277,13 +331,33 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
         notifications.clear();
         for (final item in notifs) {
+          String timeStr = 'اعلان سیستم';
+          if (item['createdAt'] != null) {
+            final dt = DateTime.tryParse(item['createdAt'].toString());
+            if (dt != null) {
+              final diff = DateTime.now().difference(dt.toLocal());
+              if (diff.inMinutes < 2) {
+                timeStr = 'همین الان';
+              } else if (diff.inMinutes < 60) {
+                timeStr = '${diff.inMinutes} دقیقه پیش';
+              } else if (diff.inHours < 24) {
+                timeStr = '${diff.inHours} ساعت پیش';
+              } else if (diff.inDays < 7) {
+                timeStr = '${diff.inDays} روز پیش';
+              } else {
+                timeStr = '${dt.year}/${dt.month}/${dt.day}';
+              }
+            }
+          }
+
           notifications.add({
             'id': item['id']?.toString() ?? '',
             'title': item['title'] ?? '',
             'body': item['message'] ?? '',
+            'type': item['type'] ?? 'alert',
             'isForMentor': isMentor,
             'isRead': item['isRead'] == true,
-            'time': 'اعلان سیستم',
+            'time': timeStr,
           });
         }
         notifyListeners();
@@ -295,6 +369,21 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   int get unreadNotificationsCount {
     return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)).length;
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    final idx = notifications.indexWhere((n) => n['id']?.toString() == id);
+    if (idx != -1) {
+      notifications[idx]['isRead'] = true;
+      notifyListeners();
+      if (id.isNotEmpty) {
+        try {
+          await _apiService.markNotificationAsRead(id);
+        } catch (e) {
+          debugPrint('markNotificationAsRead API error: $e');
+        }
+      }
+    }
   }
 
   void markAllNotificationsAsRead() {
@@ -422,21 +511,15 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  void setActiveRole(UserRole role) {
+    currentUser = currentUser.copyWith(role: role);
+    AuthService.selectedRole = role;
+    notifyListeners();
+  }
+
   void toggleUserRole() {
     final nextRole = currentUser.role == UserRole.member ? UserRole.mentor : UserRole.member;
-    currentUser = UserModel(
-      id: currentUser.id,
-      name: currentUser.name,
-      phoneNumber: currentUser.phoneNumber,
-      role: nextRole,
-      zarik: currentUser.zarik,
-      nakh: currentUser.nakh,
-      beyragh: currentUser.beyragh,
-      farsh: currentUser.farsh,
-      hasEvaluatedMentorThisSeason: currentUser.hasEvaluatedMentorThisSeason,
-      userCode: currentUser.userCode,
-    );
-    notifyListeners();
+    setActiveRole(nextRole);
   }
 
   Future<Map<String, dynamic>?> getStudentPerformance(String userId) async {

@@ -27,7 +27,9 @@ class CustomDrawer extends StatelessWidget {
     // Header Details
     final currentUser = Provider.of<AppRepository>(context).currentUser;
     final String displayName = currentUser.name;
-    final String displayRole = isMentor ? 'راهبر ارشد سرزمین نپا 🚩' : 'طلایه‌دار کاروان';
+    final String displayRole = (currentUser.role == UserRole.admin || currentUser.isDualRole)
+        ? (isMentor ? 'مدیر کل (پنل راهبری) 🚩' : 'مدیر کل (پنل دانش‌آموزی) 🎓')
+        : (isMentor ? 'راهبر ارشد سرزمین نپا 🚩' : 'طلایه‌دار کاروان');
     final String avatarUrl = isMentor 
         ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200'
         : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200';
@@ -188,6 +190,25 @@ class CustomDrawer extends StatelessWidget {
                       Navigator.pushNamed(context, '/mentor_league');
                     },
                   ),
+                  
+                  if (currentUser.isDualRole || currentUser.role == UserRole.admin) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4.0),
+                      child: Divider(color: Colors.white12, thickness: 1, indent: 8, endIndent: 8),
+                    ),
+                    _buildMenuItem(
+                      title: isMentor ? 'تغییر به پنل دانش‌آموز' : 'تغییر به پنل راهبر',
+                      emoji: isMentor ? '🎓' : '👑',
+                      isSelected: false,
+                      textColor: const Color(0xFFD946EF),
+                      onTap: () {
+                        Navigator.pop(context);
+                        final targetRole = isMentor ? UserRole.member : UserRole.mentor;
+                        Provider.of<AppRepository>(context, listen: false).setActiveRole(targetRole);
+                        onTabSelected(0);
+                      },
+                    ),
+                  ],
                   
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.0),

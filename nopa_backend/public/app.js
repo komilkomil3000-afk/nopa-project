@@ -753,29 +753,8 @@ window.addEventListener('popstate', handleHashRouting);
 
 // Caravan Drawer
 async function openCaravanDrawer(caravanId) {
-  try {
-    const res = await request(`/api/v1/admin/caravans/${caravanId}`);
-    if (!res.ok) return alert('خطا در دریافت اطلاعات کاروان');
-    const caravan = await res.json();
-    
-    document.getElementById('cd-title').textContent = `داشبورد کاروان: ${caravan.name}`;
-    document.getElementById('cd-mentor-name').textContent = caravan.mentor?.name || 'بدون راهبر';
-    document.getElementById('cd-capacity-text').textContent = `${caravan.memberCount || 0} / ${caravan.capacityLimit || 50} نفر`;
-    document.getElementById('cd-capacity-bar').style.width = `${Math.min(100, ((caravan.memberCount || 0) / (caravan.capacityLimit || 50)) * 100)}%`;
-    
-    document.getElementById('cd-wealth-zarik').textContent = caravan.assets?.zarik || 0;
-    document.getElementById('cd-wealth-nakh').textContent = caravan.assets?.nakh || 0;
-    document.getElementById('cd-wealth-farsh').textContent = caravan.assets?.farsh || 0;
-    document.getElementById('cd-wealth-beyragh').textContent = caravan.assets?.beyragh || 0;
-    
-    const progress = caravan.overallProgress || 0;
-    document.getElementById('cd-progress-text').textContent = `${progress}%`;
-    document.getElementById('cd-progress-bar').style.width = `${progress}%`;
-    
-    document.getElementById('caravan-drawer-modal').style.display = 'flex';
-  } catch (err) {
-    console.error(err);
-    alert('خطا در ارتباط با سرور');
+  if (typeof window.viewCaravanDetails === 'function') {
+    return window.viewCaravanDetails(caravanId);
   }
 }
 
@@ -3239,20 +3218,16 @@ async function loadIndividualsLeaderboard() {
   }
 }
 
-function exportCurrentLeague(type) {
-  const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
-  const search = document.getElementById('league-search-input')?.value || '';
-  const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
-  const role = document.getElementById('league-role-filter')?.value || 'all';
-
-  if (currentLeagueTab === 'caravans') {
-    const url = `/api/v1/admin/leaderboard/caravans?sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}&exportAs=csv`;
-    window.open(url, '_blank');
-  } else {
-    const url = `/api/v1/admin/leaderboard/individuals?role=${encodeURIComponent(role)}&caravanId=${encodeURIComponent(caravanId)}&sortBy=${encodeURIComponent(sortBy)}&search=${encodeURIComponent(search)}&exportAs=csv`;
-    window.open(url, '_blank');
-  }
+function exportCurrentLeague(format) {
+  format = format || 'excel';
+  document.querySelectorAll('.dropdown-wrapper.open').forEach(el => el.classList.remove('open'));
+  
+  const isCaravans = (typeof currentLeagueTab !== 'undefined' && currentLeagueTab === 'caravans') ||
+                     (document.getElementById('league-caravans-container') && document.getElementById('league-caravans-container').style.display !== 'none');
+  const exportType = isCaravans ? 'league_caravans' : 'league_individuals';
+  return window.exportData(exportType, format);
 }
+window.exportCurrentLeague = exportCurrentLeague;
 
 async function loadAssetLeaderboard() {
   loadLeagueCaravansOptions();
@@ -4445,14 +4420,28 @@ function setupSidebarControls() {
 window.exportData = async function(type, format) {
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
-    let url = `/api/v1/admin/export?type=${type}&format=${format}`;
+    let url = `/api/v1/admin/export?type=${encodeURIComponent(type)}&format=${encodeURIComponent(format)}`;
     
     // Append current filters for league
     if (type === 'mentors_league') {
       const search = document.getElementById('mentor-league-search')?.value || '';
       const timeframe = document.getElementById('mentor-league-filter')?.value || 'weekly';
       const sortBy = document.getElementById('mentor-league-sort')?.value || 'rating';
-      url += `&search=${encodeURIComponent(search)}&timeframe=${timeframe}&sortBy=${sortBy}`;
+      url += `&search=${encodeURIComponent(search)}&timeframe=${encodeURIComponent(timeframe)}&sortBy=${encodeURIComponent(sortBy)}`;
+    } else if (type === 'league_caravans' || type === 'caravans_league') {
+      const search = document.getElementById('league-search-input')?.value || '';
+      const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
+      url += `&search=${encodeURIComponent(search)}&sortBy=${encodeURIComponent(sortBy)}`;
+    } else if (type === 'league_individuals' || type === 'individuals_league') {
+      const search = document.getElementById('league-search-input')?.value || '';
+      const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
+      const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
+      const role = document.getElementById('league-role-filter')?.value || 'all';
+      url += `&search=${encodeURIComponent(search)}&sortBy=${encodeURIComponent(sortBy)}&caravanId=${encodeURIComponent(caravanId)}&role=${encodeURIComponent(role)}`;
+    }
+
+    if (typeof showToastSuccess === 'function') {
+      showToastSuccess('در حال آماده‌سازی و دانلود فایل خروجی...');
     }
 
     const res = await fetch(url, {
@@ -4471,7 +4460,13 @@ window.exportData = async function(type, format) {
     const downloadUrl = window.URL.createObjectURL(blob);
     
     const extension = format === 'excel' ? 'xlsx' : format;
-    const fileName = `export_${type}_${Date.now()}.${extension}`;
+    let label = type;
+    if (type === 'league_caravans' || type === 'caravans_league') label = 'لیگ_کاروان_ها';
+    else if (type === 'league_individuals' || type === 'individuals_league') label = 'لیگ_افراد_و_اعضا';
+    else if (type === 'mentors_league') label = 'لیگ_راهبران';
+    else if (type === 'mentors') label = 'راهبران';
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `${label}_${dateStr}.${extension}`;
     
     const a = document.createElement('a');
     a.href = downloadUrl;
@@ -4987,37 +4982,6 @@ window.viewMentorDossier = async function(mentorId) {
           <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
           <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
           <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
-        </div>
-
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-coins" style="color:#10b981;"></i> دارایی‌های راهبر</div>
-          <div style="font-size:14px; font-weight:bold; color:#10b981; display:flex; justify-content:center; gap:8px; margin-top:6px;">
-            <span>🪙 ${mentor?.zarikBalance || 0} زریک</span>
-            <span>🚩 ${mentor?.beyragh || 0} بیرق</span>
-          </div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">🧵 ${mentor?.nakh || 0} نخ | 🧶 ${mentor?.farsh || 0} فرش</div>
-        </div>
-
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-award" style="color:#a78bfa;"></i> رتبه و سطح کاربری</div>
-          <div style="font-size:18px; font-weight:bold; color:#a78bfa; margin-top:2px;">سطح ${mentor?.mentorLevel || 1}</div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">وضعیت: <span style="color:#10b981;">${mentor?.accountStatus || 'ACTIVE'}</span></div>
-        </div>
-      </div>
-
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
-          <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
-        </div>
-
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-coins" style="color:#10b981;"></i> دارایی‌های راهبر</div>
-          <div style="font-size:14px; font-weight:bold; color:#10b981; display:flex; justify-content:center; gap:8px; margin-top:6px;">
-            <span>🪙 ${mentor?.zarikBalance || 0} زریک</span>
-            <span>🚩 ${mentor?.beyragh || 0} بیرق</span>
-          </div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">🧵 ${mentor?.nakh || 0} نخ | 🧶 ${mentor?.farsh || 0} فرش</div>
         </div>
 
         <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
@@ -6157,61 +6121,224 @@ async function submitCaravan(e) {
 }
 
 let currentDrawerCaravanId = null;
+let currentCaravanDrawerData = null;
+
+window.renderCaravanDrawerData = function(data) {
+  if (!data) return;
+  currentCaravanDrawerData = data;
+  
+  // Header Info
+  const titleEl = document.getElementById('cd-title');
+  if (titleEl) titleEl.textContent = `داشبورد کاروان: ${data.name || ''}`;
+  
+  const mentorEl = document.getElementById('cd-mentor-name');
+  if (mentorEl) mentorEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${data.mentor?.name || data.mentorName || 'بدون راهبر'}`;
+  
+  const capText = document.getElementById('cd-capacity-text');
+  if (capText) capText.innerHTML = `<i class="fa-solid fa-users"></i> ظرفیت: ${data.membersList?.length || data.memberCount || 0} / ${data.capacityLimit || 50} نفر`;
+  
+  const statusText = document.getElementById('cd-status-text');
+  if (statusText) statusText.innerHTML = `<i class="fa-solid fa-circle-info"></i> وضعیت: ${data.status === 'active' ? 'فعال' : 'غیرفعال'}`;
+
+  // Tab 2: Wealth & Progress
+  const wealth = data.wealth || {};
+  const totalZarik = wealth.zarik ?? data.totalWealth ?? data.assets?.zarik ?? 0;
+  const totalNakh = wealth.nakh ?? data.assets?.nakh ?? 0;
+  const totalFarsh = wealth.farsh ?? data.assets?.farsh ?? 0;
+  const totalBeyragh = wealth.beyragh ?? data.assets?.beyragh ?? 0;
+  const progress = data.overallProgress || 0;
+
+  const zEl = document.getElementById('cd-wealth-zarik');
+  if (zEl) zEl.textContent = Number(totalZarik).toLocaleString('fa-IR');
+  
+  const nEl = document.getElementById('cd-wealth-nakh');
+  if (nEl) nEl.textContent = Number(totalNakh).toLocaleString('fa-IR');
+  
+  const fEl = document.getElementById('cd-wealth-farsh');
+  if (fEl) fEl.textContent = Number(totalFarsh).toLocaleString('fa-IR');
+  
+  const bEl = document.getElementById('cd-wealth-beyragh');
+  if (bEl) bEl.textContent = Number(totalBeyragh).toLocaleString('fa-IR');
+
+  const progBar = document.getElementById('cd-progress-bar');
+  if (progBar) progBar.style.width = `${progress}%`;
+
+  const progText = document.getElementById('cd-progress-text');
+  if (progText) progText.textContent = `${progress}%`;
+
+  // Tab 1: Roster Table
+  window.renderCaravanRosterTable(data.membersList || data.members || []);
+};
+
+window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
+  const tbody = document.querySelector('#cd-roster-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const q = (searchQuery || '').toLowerCase().trim();
+  const filtered = (membersList || []).filter(u => {
+    if (!q) return true;
+    const name = (u.name || '').toLowerCase();
+    const phone = (u.phoneNumber || '').toLowerCase();
+    const code = (u.userCode ? String(u.userCode) : '').toLowerCase();
+    return name.includes(q) || phone.includes(q) || code.includes(q);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color: var(--text-muted);">' + 
+      (q ? 'کاربری با این مشخصات در کاروان یافت نشد.' : 'عضوی در این کاروان یافت نشد.') + '</td></tr>';
+    return;
+  }
+
+  filtered.forEach(u => {
+    const tr = document.createElement('tr');
+    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'مدیر' : 'دانش‌آموز');
+    const displayCode = u.userCode ? `NP-${u.userCode}` : (u.phoneNumber || '-');
+    const zarik = (u.zarikBalance ?? u.zarik ?? 0).toLocaleString('fa-IR');
+    
+    tr.innerHTML = `
+      <td><strong>${u.name || 'بدون نام'}</strong></td>
+      <td style="font-family: monospace; color: var(--text-secondary);">${displayCode}</td>
+      <td style="font-family: monospace;" dir="ltr">${u.phoneNumber || '-'}</td>
+      <td><span class="badge" style="background: rgba(255,255,255,0.1);">${roleLabel}</span></td>
+      <td>سطح ${u.levelFrame || 1}</td>
+      <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+      <td>
+        <div style="display:flex; gap:6px;">
+          <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgba(2,132,199,0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+          <button class="page-btn" onclick="removeFromCaravan('${currentDrawerCaravanId}', '${u.id}')" title="حذف از کاروان" style="color: var(--color-danger); background:rgba(239,68,68,0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+            <i class="fa-solid fa-user-minus"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+};
+
 window.switchCaravanDrawerTab = function(tabId) {
-  document.querySelectorAll('.cd-tab-content').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('#caravan-drawer-modal .btn-action').forEach(el => el.classList.remove('active'));
-  document.getElementById(tabId).style.display = 'block';
-  document.getElementById('btn-' + tabId).classList.add('active');
+  const modal = document.getElementById('caravan-drawer-modal');
+  if (!modal) return;
+  
+  modal.querySelectorAll('.cd-tab-content').forEach(el => el.style.display = 'none');
+  modal.querySelectorAll('.tabs-header .btn-action').forEach(el => el.classList.remove('active'));
+  
+  const target = document.getElementById(tabId);
+  if (target) target.style.display = 'block';
+  
+  const btn = document.getElementById('btn-' + tabId);
+  if (btn) btn.classList.add('active');
+
+  // Update data display for the selected tab
+  if (currentCaravanDrawerData) {
+    if (tabId === 'cd-roster') {
+      const currentSearch = document.getElementById('cw-add-student-input')?.value || '';
+      window.renderCaravanRosterTable(currentCaravanDrawerData.membersList || currentCaravanDrawerData.members || [], currentSearch);
+    } else if (tabId === 'cd-wealth') {
+      const wealth = currentCaravanDrawerData.wealth || {};
+      const zEl = document.getElementById('cd-wealth-zarik');
+      if (zEl) zEl.textContent = Number(wealth.zarik ?? 0).toLocaleString('fa-IR');
+      const nEl = document.getElementById('cd-wealth-nakh');
+      if (nEl) nEl.textContent = Number(wealth.nakh ?? 0).toLocaleString('fa-IR');
+      const fEl = document.getElementById('cd-wealth-farsh');
+      if (fEl) fEl.textContent = Number(wealth.farsh ?? 0).toLocaleString('fa-IR');
+      const bEl = document.getElementById('cd-wealth-beyragh');
+      if (bEl) bEl.textContent = Number(wealth.beyragh ?? 0).toLocaleString('fa-IR');
+
+      const prog = currentCaravanDrawerData.overallProgress || 0;
+      const progBar = document.getElementById('cd-progress-bar');
+      if (progBar) progBar.style.width = `${prog}%`;
+      const progText = document.getElementById('cd-progress-text');
+      if (progText) progText.textContent = `${prog}%`;
+    }
+  }
 };
 
 window.viewCaravanDetails = async function(caravanId) {
   currentDrawerCaravanId = caravanId;
-  document.getElementById('caravan-drawer-modal').style.display = 'flex';
-  switchCaravanDrawerTab('cd-roster'); // Default tab
+  const modal = document.getElementById('caravan-drawer-modal');
+  if (modal) modal.style.display = 'flex';
+  
+  window.switchCaravanDrawerTab('cd-roster'); // Default tab
+
+  // Setup search input filter on typing in the drawer roster
+  const searchInput = document.getElementById('cw-add-student-input');
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.oninput = function() {
+      if (currentCaravanDrawerData) {
+        window.renderCaravanRosterTable(currentCaravanDrawerData.membersList || [], this.value);
+      }
+    };
+  }
+
+  const tbody = document.querySelector('#cd-roster-table tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اطلاعات کاروان...</td></tr>';
+
   try {
     const res = await request(`/api/v1/admin/caravans/${caravanId}`);
+    if (!res.ok) throw new Error('خطا در دریافت اطلاعات کاروان');
     const data = await res.json();
-    
-    document.getElementById('cd-title').textContent = `داشبورد کاروان: ${data.name}`;
-    document.getElementById('cd-mentor-name').innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${data.mentor?.name || data.mentors?.[0]?.name || 'بدون راهبر'}`;
-    document.getElementById('cd-capacity-text').innerHTML = `<i class="fa-solid fa-users"></i> ظرفیت: ${data.membersList?.length || 0} / ${data.capacityLimit} نفر`;
-    document.getElementById('cd-status-text').innerHTML = `<i class="fa-solid fa-circle-info"></i> وضعیت: ${data.status === 'active' ? 'فعال' : 'غیرفعال'}`;
-    
-    document.getElementById('cd-wealth-zarik').textContent = data.wealth?.zarik || 0;
-    document.getElementById('cd-wealth-nakh').textContent = data.wealth?.nakh || 0;
-    document.getElementById('cd-wealth-farsh').textContent = data.wealth?.farsh || 0;
-    document.getElementById('cd-wealth-beyragh').textContent = data.wealth?.beyragh || 0;
-    
-    document.getElementById('cd-progress-bar').style.width = `${data.overallProgress || 0}%`;
-    document.getElementById('cd-progress-text').textContent = `${data.overallProgress || 0}%`;
-    
-    // Populate Roster
-    const tbody = document.querySelector('#cd-roster-table tbody');
-    tbody.innerHTML = '';
-    if (data.membersList && data.membersList.length > 0) {
-      data.membersList.forEach(u => {
-        const tr = document.createElement('tr');
-        const roleLabel = u.role === 'student' ? 'مخاطب' : 'راهبر';
-        tr.innerHTML = `
-          <td><strong>${u.name}</strong></td>
-          <td style="font-family: monospace; color: var(--text-secondary);">NP-${u.userCode || u.phoneNumber}</td>
-          <td style="font-family: monospace;">${u.phoneNumber}</td>
-          <td><span class="badge" style="background: rgba(255,255,255,0.1);">${roleLabel}</span></td>
-          <td>سطح ${u.levelFrame || 1}</td>
-          <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${u.zarikBalance || 0}</td>
-          <td>
-            <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue);"><i class="fa-solid fa-eye"></i></button>
-            <button class="page-btn" onclick="removeFromCaravan('${caravanId}', '${u.id}')" title="حذف از کاروان"><i class="fa-solid fa-user-minus" style="color: var(--color-danger);"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } else {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">عضوی در این کاروان یافت نشد.</td></tr>';
-    }
-  } catch (err) { console.error(err); }
+    window.renderCaravanDrawerData(data);
+  } catch (err) {
+    console.error('viewCaravanDetails error:', err);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت اطلاعات از سرور</td></tr>';
+  }
 };
-function closeCaravanDrawer() { document.getElementById('caravan-drawer-modal').style.display = 'none'; }
+
+window.closeCaravanDrawer = function() {
+  const modal = document.getElementById('caravan-drawer-modal');
+  if (modal) modal.style.display = 'none';
+};
+function closeCaravanDrawer() { window.closeCaravanDrawer(); }
+
+window.editCaravanCapacity = async function(caravanId) {
+  const cId = caravanId || currentDrawerCaravanId;
+  if (!cId) return alert('شناسه کاروان نامعتبر است');
+  const initialVal = currentCaravanDrawerData?.capacityLimit || 50;
+  const val = prompt('ظرفیت جدید کاروان را وارد نمایید:', initialVal);
+  if (!val || isNaN(val) || parseInt(val) <= 0) return;
+  try {
+    const res = await request(`/api/v1/admin/caravans/${cId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capacityLimit: parseInt(val) })
+    });
+    if (res.ok) {
+      alert('ظرفیت کاروان با موفقیت به‌روزرسانی شد');
+      if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
+        window.viewCaravanDetails(currentDrawerCaravanId);
+      }
+      if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+    } else {
+      const d = await res.json();
+      alert(d.error || 'خطا در ویرایش ظرفیت');
+    }
+  } catch(e) { console.error(e); alert('خطا در ارتباط با سرور'); }
+};
+
+window.removeFromCaravan = async function(caravanId, studentId) {
+  const cId = caravanId || currentDrawerCaravanId;
+  if (!cId || !studentId) return;
+  if (confirm('آیا از حذف این کاربر از کاروان مطمئن هستید؟')) {
+    try {
+      const res = await request(`/api/v1/admin/caravans/${cId}/members/${studentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('کاربر با موفقیت از کاروان حذف شد');
+        if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
+          window.viewCaravanDetails(currentDrawerCaravanId);
+        }
+        if (typeof loadCaravanMembersRoster === 'function') loadCaravanMembersRoster();
+        if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'خطا در حذف عضو');
+      }
+    } catch(e) { console.error(e); alert('خطا در ارتباط با سرور'); }
+  }
+};
 
 async function sendCaravanBroadcast() {
   const title = document.getElementById('cd-broadcast-title').value;
@@ -7363,35 +7490,9 @@ window.submitBulkTransfer = async function() {
   }
 };
 
-window.addStudentToCaravan = async function() {
-  const q = document.getElementById('cw-add-student-input').value.trim();
-  if(!q) return alert('لطفاً نام یا کد ملی را وارد کنید');
-  if(!currentDrawerCaravanId) return alert('خطا: کاروان فعلی مشخص نیست');
-
-  try {
-    const searchRes = await request(`/api/v1/admin/users?role=student&search=${encodeURIComponent(q)}`);
-    const users = await searchRes.json();
-    
-    if(users.length === 0) return alert('دانش‌آموزی یافت نشد');
-    const targetUser = users.find(u => !u.caravanId) || users[0];
-
-    const res = await request(`/api/v1/admin/caravans/${currentDrawerCaravanId}/members/add`, {
-      method: 'PATCH',
-      body: JSON.stringify({ userId: targetUser.id })
-    });
-    
-    if(res.ok) {
-      alert('دانش‌آموز با موفقیت افزوده شد');
-      document.getElementById('cw-add-student-input').value = '';
-      if (typeof viewCaravanDetails === 'function') viewCaravanDetails(currentDrawerCaravanId);
-    } else {
-      const data = await res.json();
-      alert('خطا: ' + (data.error || 'ناشناخته'));
-    }
-  } catch(e) {
-    console.error(e);
-    alert('خطا در ارتباط با سرور');
-  }
+window.addStudentToCaravan = function() {
+  const initialSearch = document.getElementById('cw-add-student-input')?.value?.trim() || '';
+  window.openAddMemberToCaravanModal(currentDrawerCaravanId, initialSearch);
 };
 
 window.openCaravanStudentDetails = async function(userId) {
@@ -7441,7 +7542,7 @@ window.openCaravanStudentDetails = async function(userId) {
 
 window.selectedCandidateMembers = new Set();
 
-window.openAddMemberToCaravanModal = async function() {
+window.openAddMemberToCaravanModal = async function(preSelectedCaravanId, initialSearch = '') {
   window.selectedCandidateMembers.clear();
   const countEl = document.getElementById('add-member-selected-count');
   if (countEl) countEl.innerText = '0';
@@ -7449,39 +7550,57 @@ window.openAddMemberToCaravanModal = async function() {
   const modal = document.getElementById('add-member-to-caravan-modal');
   if (!modal) return;
 
+  const targetCaravanId = preSelectedCaravanId || currentDrawerCaravanId || (document.getElementById('target-caravan-picker') || document.getElementById('main-caravan-selector'))?.value || '';
+
   // Populate modal caravan picker options
   const modalPicker = document.getElementById('modal-add-member-caravan-picker');
-  const pagePicker = document.getElementById('target-caravan-picker') || document.getElementById('main-caravan-selector');
-  const selectedCaravanId = pagePicker ? pagePicker.value : '';
-
   if (modalPicker) {
     let optionsHtml = '<option value="">-- انتخاب کاروان --</option>';
-    const caravans = window.caravansData || window.caravansMasterList || caravansList || [];
-    if (caravans.length > 0) {
-      optionsHtml += caravans.map(c => `<option value="${c.id}" ${c.id === selectedCaravanId ? 'selected' : ''}>${c.name}</option>`).join('');
-    } else if (pagePicker && pagePicker.options) {
-      Array.from(pagePicker.options).forEach(opt => {
-        if (opt.value) {
-          optionsHtml += `<option value="${opt.value}" ${opt.value === selectedCaravanId ? 'selected' : ''}>${opt.text}</option>`;
-        }
-      });
+    let caravans = window.caravansData || window.caravansMasterList || window.caravansList || [];
+    
+    if (!caravans || caravans.length === 0) {
+      try {
+        const res = await request('/api/v1/admin/caravans');
+        caravans = await res.json();
+        window.caravansData = caravans;
+      } catch (err) {
+        console.error('Failed to load caravans', err);
+      }
+    }
+
+    if (Array.isArray(caravans) && caravans.length > 0) {
+      optionsHtml += caravans.map(c => `<option value="${c.id}" ${String(c.id) === String(targetCaravanId) ? 'selected' : ''}>${c.name}</option>`).join('');
+    } else {
+      const pagePicker = document.getElementById('target-caravan-picker') || document.getElementById('main-caravan-selector');
+      if (pagePicker && pagePicker.options) {
+        Array.from(pagePicker.options).forEach(opt => {
+          if (opt.value) {
+            optionsHtml += `<option value="${opt.value}" ${String(opt.value) === String(targetCaravanId) ? 'selected' : ''}>${opt.text}</option>`;
+          }
+        });
+      }
     }
     modalPicker.innerHTML = optionsHtml;
+    if (targetCaravanId) {
+      modalPicker.value = targetCaravanId;
+    }
   }
 
   const searchInput = document.getElementById('input-search-candidate-member');
-  if (searchInput) searchInput.value = '';
+  if (searchInput) {
+    searchInput.value = initialSearch;
+  }
 
   modal.style.display = 'flex';
-  modal.style.zIndex = '999999';
+  modal.style.zIndex = '100000';
 
-  // Load all candidates by default
-  window.searchCandidateMembers('');
+  // Load candidates with initialSearch
+  window.searchCandidateMembers(initialSearch);
 };
 
-function openAddMemberToCaravanModal() {
+function openAddMemberToCaravanModal(preSelectedCaravanId, initialSearch = '') {
   if (typeof window.openAddMemberToCaravanModal === 'function') {
-    return window.openAddMemberToCaravanModal();
+    return window.openAddMemberToCaravanModal(preSelectedCaravanId, initialSearch);
   }
 }
 
@@ -7510,36 +7629,52 @@ window.searchCandidateMembers = async function(query) {
   const container = document.getElementById('candidate-members-list');
   if (!container) return;
 
-  container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px; margin:10px 0;">در حال بارگذاری کاربران...</p>';
+  container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px; margin:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
 
   try {
     const qStr = query ? query.trim() : '';
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
-    const res = await fetch(`/api/v1/admin/users?limit=100&search=${encodeURIComponent(qStr)}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    // Request specifically students
+    const res = await request(`/api/v1/admin/users?role=student&limit=100&search=${encodeURIComponent(qStr)}`);
     const data = await res.json();
-    const users = data.users || (Array.isArray(data) ? data : []);
+    const rawUsers = data.users || (Array.isArray(data) ? data : []);
 
-    if (users.length === 0) {
-      container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px; margin:10px 0;">کاربری با این مشخصات یافت نشد</p>';
+    // Strict filter: ONLY students are allowed
+    let students = rawUsers.filter(u => u.role === 'student');
+
+    const unassignedOnly = document.getElementById('chk-candidate-unassigned-only')?.checked ?? false;
+    if (unassignedOnly) {
+      students = students.filter(u => !u.caravanId && (!u.caravanName || u.caravanName === 'فاقد کاروان' || u.caravanName === '-'));
+    }
+
+    if (students.length === 0) {
+      container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px; margin:10px 0;">دانش‌آموزی با این مشخصات یافت نشد</p>';
       return;
     }
 
-    container.innerHTML = users.map(u => {
-      const isChecked = window.selectedCandidateMembers.has(u.id) ? 'checked' : '';
-      const caravanBadge = u.caravanName ? `<span style="color:#a78bfa; font-size:11px; background:rgba(124,58,237,0.2); padding:1px 6px; border-radius:4px;">(${u.caravanName})</span>` : `<span style="color:#10b981; font-size:11px; background:rgba(16,185,129,0.2); padding:1px 6px; border-radius:4px;">(بدون کاروان)</span>`;
-      const roleBadge = u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'مدیر' : 'دانش‌آموز';
+    container.innerHTML = students.map(u => {
+      const hasCaravan = Boolean(u.caravanId || (u.caravanName && u.caravanName !== 'فاقد کاروان' && u.caravanName !== '-'));
+      const isChecked = window.selectedCandidateMembers.has(u.id) && !hasCaravan ? 'checked' : '';
+
+      const caravanBadge = hasCaravan 
+        ? `<span style="color:#ef4444; font-size:11px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${u.caravanName}» (غیرقابل انتخاب)</span>`
+        : `<span style="color:#10b981; font-size:11px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check" style="font-size:10px;"></i> فاقد کاروان (آماده عضویت)</span>`;
 
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px;">
-          <label style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1;">
-            <input type="checkbox" onchange="window.toggleCandidateSelection(this, '${u.id}')" ${isChecked}>
-            <div>
-              <strong style="color:white;">${u.name || 'بدون نام'}</strong>
-              <span style="color:#94a3b8; font-size:11px; margin-right:6px;" dir="ltr">${u.phoneNumber || '-'}</span>
-              <span style="color:#cbd5e1; font-size:11px; margin-right:4px;">[${roleBadge}]</span>
-              ${caravanBadge}
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgba(0,0,0,0.15)' : 'transparent'};">
+          <label style="display:flex; align-items:center; gap:12px; cursor:${hasCaravan ? 'not-allowed' : 'pointer'}; flex:1; margin:0;">
+            <input type="checkbox" 
+                   ${hasCaravan ? 'disabled' : `onchange="window.toggleCandidateSelection(this, '${u.id}')"`} 
+                   ${isChecked}
+                   style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong style="color:${hasCaravan ? '#94a3b8' : 'white'};">${u.name || 'بدون نام'}</strong>
+                <span style="color:#94a3b8; font-size:11px; font-family:monospace;" dir="ltr">${u.phoneNumber || '-'}</span>
+                <span style="color:#38bdf8; font-size:11px; background:rgba(56,189,248,0.1); padding:1px 6px; border-radius:4px;">دانش‌آموز</span>
+              </div>
+              <div style="margin-top:2px;">
+                ${caravanBadge}
+              </div>
             </div>
           </label>
         </div>
@@ -7547,14 +7682,14 @@ window.searchCandidateMembers = async function(query) {
     }).join('');
   } catch(e) {
     console.error(e);
-    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px;">خطا در جستجو و دریافت لیست کاربران</p>';
+    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px;">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
   }
 };
 
 window.confirmBulkAddUsersToCaravan = async function() {
   const modalPicker = document.getElementById('modal-add-member-caravan-picker');
   const pagePicker = document.getElementById('target-caravan-picker') || document.getElementById('main-caravan-selector');
-  const targetCaravanId = modalPicker?.value || pagePicker?.value;
+  const targetCaravanId = modalPicker?.value || pagePicker?.value || currentDrawerCaravanId;
 
   if (!targetCaravanId) {
     return alert('لطفاً کاروان مقصد را از کشوی بالای فرم انتخاب کنید');
@@ -7562,23 +7697,19 @@ window.confirmBulkAddUsersToCaravan = async function() {
 
   const userIds = Array.from(window.selectedCandidateMembers);
   if (userIds.length === 0) {
-    return alert('لطفاً حداقل یک کاربر را انتخاب کنید');
+    return alert('لطفاً حداقل یک دانش‌آموز را انتخاب کنید');
   }
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
-    const res = await fetch(`/api/v1/admin/caravans/${targetCaravanId}/members/bulk-add`, {
+    const res = await request(`/api/v1/admin/caravans/${targetCaravanId}/members/bulk-add`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify({ userIds })
     });
 
     if (res.ok) {
       window.closeAddMemberToCaravanModal();
-      alert('کاربران با موفقیت به کاروان اضافه شدند');
+      const resData = await res.json().catch(() => ({}));
+      alert(resData.message || 'دانش‌آموزان با موفقیت به کاروان اضافه شدند');
       
       // Update page caravan picker & refresh details
       if (pagePicker) {
@@ -7593,13 +7724,16 @@ window.confirmBulkAddUsersToCaravan = async function() {
       if (typeof window.loadCaravansTab === 'function') {
         window.loadCaravansTab();
       }
+      if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
+        window.viewCaravanDetails(currentDrawerCaravanId);
+      }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در افزودن کاربران به کاروان');
+      alert(err.error || 'خطا در افزودن دانش‌آموزان به کاروان');
     }
   } catch(e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    alert('خطا در برقراری ارتباط با سرور');
   }
 };
 
@@ -8182,87 +8316,44 @@ window.activeCaravanId = null;
 window.allCaravansDataCache = []; // To hold all caravans for the transfer dropdown
 
 window.openCaravanDetailDrawer = async function(caravanId) {
-  try {
-    const res = await fetch(`/api/v1/admin/caravans/${caravanId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
-    if (!res.ok) throw new Error('Failed to load caravan');
-    const caravan = await res.json();
-
-    document.getElementById('cd-title').textContent = `Caravan: ${caravan.name}`;
-    document.getElementById('cd-mentor-name').textContent = caravan.mentor?.name || 'No mentor';
-    document.getElementById('cd-wealth-zarik').textContent = caravan.assets?.zarik || 0;
-    document.getElementById('cd-completed-stations').textContent = caravan.completedStations || 0;
-    document.getElementById('cd-progress-text').textContent = `${caravan.overallProgress || 0}%`;
-
-    const tbody = document.querySelector('#cd-roster-table tbody');
-    tbody.innerHTML = '';
-
-    if (caravan.membersList && caravan.membersList.length > 0) {
-      caravan.membersList.forEach(member => {
-        const isBlocked = member.blocked ? 'Blocked' : 'Active';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${member.name}</strong></td>
-          <td>${member.phoneNumber}</td>
-          <td style="color: #fbbf24;">${member.zarikBalance || 0}</td>
-          <td>${member.completedStations || 0}</td>
-          <td><span class="badge" style="background:${isBlocked === 'Active' ? '#10b981' : '#ef4444'};">${isBlocked}</span></td>
-          <td>
-            <button onclick="window.editMember('${member.id}')" style="margin-right: 5px;"><i class="fa-solid fa-edit"></i></button>
-            <button onclick="window.toggleBlockMember('${member.id}', ${!member.blocked})" style="margin-right: 5px;"><i class="fa-solid ${member.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-            <button onclick="window.removeFromCaravan('${caravanId}', '${member.id}')" style="color:red;"><i class="fa-solid fa-trash"></i></button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } else {
-      tbody.innerHTML = '<tr><td colspan="6">No members found</td></tr>';
-    }
-
-    document.getElementById('caravan-detail-drawer').style.display = 'flex';
-    window.currentCaravanId = caravanId;
-  } catch (err) {
-    console.error(err);
-    alert('Error loading caravan');
-  }
+  return window.viewCaravanDetails(caravanId);
 };
 
 window.closeCaravanDetailDrawer = function() {
-  document.getElementById('caravan-detail-drawer').style.display = 'none';
+  return window.closeCaravanDrawer();
 };
 
 window.editMember = async function(userId) {
   try {
-    const res = await fetch(`/api/v1/admin/users/${userId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }});
+    const res = await request(`/api/v1/admin/users/${userId}`);
     const user = await res.json();
-    const newName = prompt('Enter new name:', user.name);
+    const newName = prompt('نام جدید کاربر را وارد کنید:', user.name);
     if (newName && newName.trim() !== '' && newName !== user.name) {
-      await fetch(`/api/v1/admin/users/${userId}`, {
+      await request(`/api/v1/admin/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ ...user, name: newName.trim() })
       });
-      alert('Member updated');
-      if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
+      alert('اطلاعات کاربر به‌روزرسانی شد');
+      if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId);
     }
   } catch (err) {
     console.error(err);
-    alert('Error updating member');
+    alert('خطا در به‌روزرسانی کاربر');
   }
 };
 
 window.toggleBlockMember = async function(userId, blockStatus) {
-  if (!confirm(`Are you sure you want to ${blockStatus ? 'block' : 'unblock'} this user?`)) return;
+  if (!confirm(`آیا از ${blockStatus ? 'مسدودسازی' : 'رفع مسدودی'} این کاربر اطمینان دارید؟`)) return;
   try {
-    await fetch(`/api/v1/admin/users/${userId}/block`, {
+    await request(`/api/v1/admin/users/${userId}/block`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
       body: JSON.stringify({ blocked: blockStatus })
     });
-    alert(`User ${blockStatus ? 'blocked' : 'unblocked'}`);
-    if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
+    alert(`وضعیت کاربر به ${blockStatus ? 'مسدود' : 'فعال'} تغییر یافت`);
+    if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId);
   } catch (err) {
     console.error(err);
-    alert('Error changing user status');
+    alert('خطا در تغییر وضعیت کاربر');
   }
 };
 
@@ -8274,41 +8365,8 @@ window.renderAllUsersNow = async function() {
 
 window.loadUsersData = loadUsers;
 
-window.removeFromCaravan = async function(caravanId, memberId) {
-  if (!confirm('Remove this member from caravan?')) return;
-  try {
-    await fetch(`/api/v1/admin/caravans/${caravanId}/members/${memberId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    });
-    alert('Member removed');
-    if (window.currentCaravanId) window.openCaravanDetailDrawer(window.currentCaravanId);
-  } catch (err) {
-    console.error(err);
-    alert('Error removing member');
-  }
-};
-
 window.openAddMemberModal = function() {
-  const userId = prompt('Enter user ID to add:');
-  if (!userId || !window.currentCaravanId) return;
-  
-  fetch(`/api/v1/admin/caravans/${window.currentCaravanId}/members`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-    body: JSON.stringify({ userId })
-  }).then(async res => {
-    if (res.ok) {
-      alert('Member added');
-      window.openCaravanDetailDrawer(window.currentCaravanId);
-    } else {
-      const data = await res.json();
-      alert(data.error || 'Error adding member');
-    }
-  }).catch(err => {
-    console.error(err);
-    alert('Server error');
-  });
+  window.openAddMemberToCaravanModal(currentDrawerCaravanId);
 };
 
 // --- CARAVAN EDIT MODAL LOGIC ---
@@ -8499,6 +8557,27 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   }, 300);
+});
+
+// 6. Universal Dropdown Toggle Handler (for export menus and dropdowns)
+document.addEventListener('click', (e) => {
+  const trigger = e.target.closest('.dropdown-wrapper > button, .dropdown-wrapper > .btn-action, .dropdown-wrapper > .btn-export');
+  if (trigger) {
+    e.preventDefault();
+    e.stopPropagation();
+    const wrapper = trigger.closest('.dropdown-wrapper');
+    const wasOpen = wrapper.classList.contains('open');
+    document.querySelectorAll('.dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
+    if (!wasOpen) wrapper.classList.add('open');
+    return;
+  }
+  if (e.target.closest('.dropdown-content a')) {
+    document.querySelectorAll('.dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
+    return;
+  }
+  if (!e.target.closest('.dropdown-wrapper')) {
+    document.querySelectorAll('.dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
+  }
 });
 
 

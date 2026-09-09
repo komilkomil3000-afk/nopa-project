@@ -201,6 +201,291 @@ const exportData = async (req, res) => {
             headers = ['رتبه', 'نام راهبر', 'موبایل', 'کاروان', 'میانگین ستاره', 'امتیاز فعالیت', 'پیشرفت کاروان'];
             data = rankedMentors.map((m, idx) => [idx + 1, m.name, m.phoneNumber, m.caravanName, m.rating, m.activityScore, m.caravanProgress + '%']);
         }
+        else if (type === 'league_caravans' || type === 'caravans_league') {
+            const sortBy = req.query.sortBy || 'totalScore';
+            const search = (req.query.search || '').trim().toLowerCase();
+            const caravans = await prisma.caravan.findMany({
+                where: { isDeleted: false },
+                include: {
+                    mentor: { select: { id: true, name: true, phoneNumber: true } },
+                    members: {
+                        where: { isDeleted: false },
+                        select: {
+                            id: true,
+                            name: true,
+                            phoneNumber: true,
+                            zarikBalance: true,
+                            nakh: true,
+                            farsh: true,
+                            beyragh: true,
+                            quizSubmissions: { select: { score: true, status: true } },
+                            submissions: { select: { score: true, status: true } },
+                            sessionWatchRecords: { select: { watchedPercentage: true } }
+                        }
+                    }
+                }
+            });
+            const totalSessions = await prisma.classSession.count({ where: { isDeleted: false } });
+            const rankedCaravans = caravans.map(c => {
+                const memberCount = c.members.length;
+                let totalZarik = 0;
+                let totalNakh = 0;
+                let totalFarsh = 0;
+                let totalBeyragh = 0;
+                let totalQuizScore = 0;
+                let totalPassedQuizzes = 0;
+                let totalChallengeScore = 0;
+                let totalApprovedChallenges = 0;
+                let totalWatchedPercentages = 0;
+                c.members.forEach(m => {
+                    totalZarik += m.zarikBalance || 0;
+                    totalNakh += m.nakh || 0;
+                    totalFarsh += m.farsh || 0;
+                    totalBeyragh += m.beyragh || 0;
+                    m.quizSubmissions.forEach(qs => {
+                        totalQuizScore += qs.score || 0;
+                        if (qs.score > 0 || qs.status?.toLowerCase() === 'approved' || qs.status?.toLowerCase() === 'passed') {
+                            totalPassedQuizzes += 1;
+                        }
+                    });
+                    m.submissions.forEach(sub => {
+                        if (sub.status?.toLowerCase() === 'approved' || (sub.score && sub.score > 0)) {
+                            totalChallengeScore += sub.score || 0;
+                            totalApprovedChallenges += 1;
+                        }
+                    });
+                    if (m.sessionWatchRecords.length > 0) {
+                        const avgUserWatch = m.sessionWatchRecords.reduce((sum, w) => sum + (w.watchedPercentage || 0), 0) / (totalSessions || 1);
+                        totalWatchedPercentages += Math.min(100, avgUserWatch);
+                    }
+                });
+                const avgProgress = memberCount > 0 ? parseFloat((totalWatchedPercentages / memberCount).toFixed(1)) : 0;
+                const wealthScore = totalZarik + (totalNakh * 50) + (totalFarsh * 500) + (totalBeyragh * 200);
+                const activityScore = (totalQuizScore * 5) + (totalPassedQuizzes * 20) + (totalChallengeScore * 10) + (totalApprovedChallenges * 15);
+                const totalScore = wealthScore + activityScore + Math.round(avgProgress * 10);
+                return {
+                    id: c.id,
+                    name: c.name,
+                    mentorName: c.mentor?.name || '-',
+                    memberCount,
+                    overallProgress: avgProgress,
+                    totalScore,
+                    zarik: totalZarik,
+                    nakh: totalNakh,
+                    farsh: totalFarsh,
+                    beyragh: totalBeyragh,
+                    stars: totalPassedQuizzes,
+                    quizScore: totalQuizScore,
+                    challengeScore: totalChallengeScore,
+                };
+            });
+            let filtered = rankedCaravans;
+            if (search) {
+                filtered = filtered.filter(c => c.name.toLowerCase().includes(search) ||
+                    c.mentorName.toLowerCase().includes(search));
+            }
+            filtered.sort((a, b) => {
+                switch (sortBy) {
+                    case 'zarik': return b.zarik - a.zarik;
+                    case 'beyragh': return b.beyragh - a.beyragh;
+                    case 'nakh': return b.nakh - a.nakh;
+                    case 'farsh': return b.farsh - a.farsh;
+                    case 'stars':
+                    case 'quizzes': return b.stars - a.stars;
+                    case 'quizScore': return b.quizScore - a.quizScore;
+                    case 'challengeScore': return b.challengeScore - a.challengeScore;
+                    case 'progress': return b.overallProgress - a.overallProgress;
+                    case 'totalScore':
+                    default: return b.totalScore - a.totalScore;
+                }
+            });
+            headers = [
+                'رتبه',
+                'نام کاروان',
+                'راهبر کاروان',
+                'تعداد اعضا',
+                'زریک',
+                'نخ',
+                'فرش',
+                'بیرق',
+                'ستاره/آزمون',
+                'نمره آزمون',
+                'امتیاز چالش',
+                'درصد پیشرفت',
+                'امتیاز کل (جام زرین)'
+            ];
+            let currentRank = 0;
+            let prevScore = null;
+            data = filtered.map((c) => {
+                let rankStr = '-';
+                if (c.totalScore > 0) {
+                    if (prevScore === null)
+                        currentRank = 1;
+                    else if (c.totalScore < prevScore)
+                        currentRank++;
+                    rankStr = String(currentRank);
+                    prevScore = c.totalScore;
+                }
+                return [
+                    rankStr,
+                    c.name,
+                    c.mentorName,
+                    c.memberCount,
+                    c.zarik,
+                    c.nakh,
+                    c.farsh,
+                    c.beyragh,
+                    c.stars,
+                    c.quizScore,
+                    c.challengeScore,
+                    `${c.overallProgress}%`,
+                    c.totalScore
+                ];
+            });
+        }
+        else if (type === 'league_individuals' || type === 'individuals_league') {
+            const role = req.query.role || 'all';
+            const caravanId = req.query.caravanId;
+            const sortBy = req.query.sortBy || 'totalScore';
+            const search = (req.query.search || '').trim().toLowerCase();
+            const whereClause = { isDeleted: false };
+            if (role === 'student' || role === 'mentor') {
+                whereClause.role = role;
+            }
+            if (caravanId && caravanId !== 'all') {
+                whereClause.caravanId = caravanId;
+            }
+            const totalSessions = await prisma.classSession.count({ where: { isDeleted: false } });
+            const users = await prisma.user.findMany({
+                where: whereClause,
+                select: {
+                    id: true,
+                    name: true,
+                    phoneNumber: true,
+                    role: true,
+                    zarikBalance: true,
+                    nakh: true,
+                    farsh: true,
+                    beyragh: true,
+                    caravan: { select: { id: true, name: true } },
+                    quizSubmissions: { select: { score: true, status: true } },
+                    submissions: { select: { score: true, status: true } },
+                    sessionWatchRecords: { select: { watchedPercentage: true } }
+                }
+            });
+            const enriched = users.map(u => {
+                const zarik = u.zarikBalance || 0;
+                const nakh = u.nakh || 0;
+                const farsh = u.farsh || 0;
+                const beyragh = u.beyragh || 0;
+                let quizScore = 0;
+                let passedQuizzes = 0;
+                u.quizSubmissions.forEach(qs => {
+                    quizScore += qs.score || 0;
+                    if (qs.score > 0 || qs.status?.toLowerCase() === 'approved' || qs.status?.toLowerCase() === 'passed') {
+                        passedQuizzes += 1;
+                    }
+                });
+                let challengeScore = 0;
+                let approvedChallenges = 0;
+                u.submissions.forEach(sub => {
+                    if (sub.status?.toLowerCase() === 'approved' || (sub.score && sub.score > 0)) {
+                        challengeScore += sub.score || 0;
+                        approvedChallenges += 1;
+                    }
+                });
+                let progressPercentage = 0;
+                if (u.sessionWatchRecords.length > 0) {
+                    const totalWatch = u.sessionWatchRecords.reduce((sum, w) => sum + (w.watchedPercentage || 0), 0);
+                    progressPercentage = Math.min(100, parseFloat((totalWatch / (totalSessions || 1)).toFixed(1)));
+                }
+                const wealthScore = zarik + (nakh * 50) + (farsh * 500) + (beyragh * 200);
+                const activityScore = (quizScore * 5) + (passedQuizzes * 20) + (challengeScore * 10) + (approvedChallenges * 15);
+                const totalScore = wealthScore + activityScore + Math.round(progressPercentage * 10);
+                return {
+                    id: u.id,
+                    name: u.name,
+                    phoneNumber: u.phoneNumber,
+                    role: u.role,
+                    caravanName: u.caravan?.name || 'بدون کاروان',
+                    zarik,
+                    nakh,
+                    farsh,
+                    beyragh,
+                    stars: passedQuizzes,
+                    quizScore,
+                    challengeScore,
+                    progressPercentage,
+                    totalScore
+                };
+            });
+            let filtered = enriched;
+            if (search) {
+                filtered = filtered.filter(u => u.name.toLowerCase().includes(search) ||
+                    u.phoneNumber.includes(search) ||
+                    u.caravanName.toLowerCase().includes(search));
+            }
+            filtered.sort((a, b) => {
+                switch (sortBy) {
+                    case 'zarik': return b.zarik - a.zarik;
+                    case 'beyragh': return b.beyragh - a.beyragh;
+                    case 'nakh': return b.nakh - a.nakh;
+                    case 'farsh': return b.farsh - a.farsh;
+                    case 'stars':
+                    case 'quizzes': return b.stars - a.stars;
+                    case 'quizScore': return b.quizScore - a.quizScore;
+                    case 'challengeScore': return b.challengeScore - a.challengeScore;
+                    case 'progress': return b.progressPercentage - a.progressPercentage;
+                    case 'totalScore':
+                    default: return b.totalScore - a.totalScore;
+                }
+            });
+            headers = [
+                'رتبه',
+                'نام و نام خانوادگی',
+                'نقش',
+                'شماره همراه',
+                'کاروان',
+                'زریک',
+                'نخ',
+                'فرش',
+                'بیرق',
+                'ستاره‌ها',
+                'نمره آزمون',
+                'نمره چالش',
+                'پیشرفت کلاس',
+                'امتیاز کل'
+            ];
+            let currentRank = 0;
+            let prevScore = null;
+            data = filtered.map((u) => {
+                let rankStr = '-';
+                if (u.totalScore > 0) {
+                    if (prevScore === null)
+                        currentRank = 1;
+                    else if (u.totalScore < prevScore)
+                        currentRank++;
+                    rankStr = String(currentRank);
+                    prevScore = u.totalScore;
+                }
+                return [
+                    rankStr,
+                    u.name || 'بدون نام',
+                    u.role === 'mentor' ? 'راهبر' : (u.role === 'admin' ? 'مدیر' : 'دانش‌آموز'),
+                    u.phoneNumber || '-',
+                    u.caravanName,
+                    u.zarik,
+                    u.nakh,
+                    u.farsh,
+                    u.beyragh,
+                    u.stars,
+                    u.quizScore,
+                    u.challengeScore,
+                    `${u.progressPercentage}%`,
+                    u.totalScore
+                ];
+            });
+        }
         else {
             return res.status(400).json({ error: 'Invalid export type' });
         }
@@ -215,6 +500,10 @@ const exportData = async (req, res) => {
             reportTitle = 'دفتر کل تراکنش‌های مالی و پاداش‌های زریک';
         else if (type === 'mentors_league')
             reportTitle = 'جدول لیگ و رتبه‌بندی برترین راهبران';
+        else if (type === 'league_caravans' || type === 'caravans_league')
+            reportTitle = 'جدول رتبه‌بندی لیگ کاروان‌ها (جام زرین)';
+        else if (type === 'league_individuals' || type === 'individuals_league')
+            reportTitle = 'جدول رتبه‌بندی انفرادی اعضا و دانش‌آموزان (جام زرین)';
         if (format === 'csv') {
             const BOM = '\uFEFF';
             const csvContent = BOM + [

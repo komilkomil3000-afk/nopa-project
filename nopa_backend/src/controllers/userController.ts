@@ -38,12 +38,23 @@ export async function getMe(req: AuthRequest, res: Response) {
       where: { userId: user.id, watchedPercentage: { gte: 70 } }
     });
 
+    const isDualRole = Boolean(user.isDualRole || user.role === 'admin');
     let managedMembersCount = 0;
     let satisfactionScore = 0;
     let assignedCaravan = null;
 
-    if (user.role === 'mentor' || user.role === 'SUPER_MENTOR') {
-      assignedCaravan = user.mentoredCaravans && user.mentoredCaravans.length > 0 ? user.mentoredCaravans[0] : null;
+    if (user.role === 'mentor' || user.role === 'SUPER_MENTOR' || isDualRole) {
+      if (user.mentoredCaravans && user.mentoredCaravans.length > 0) {
+        assignedCaravan = user.mentoredCaravans[0];
+      } else if (user.role === 'admin') {
+        assignedCaravan = await prisma.caravan.findFirst({
+          where: { isDeleted: false },
+          include: { 
+            members: { select: { id: true, name: true } },
+            mentor: { select: { id: true, name: true, phoneNumber: true } }
+          }
+        });
+      }
       managedMembersCount = assignedCaravan?.members?.length || 0;
       
       const totalRatings = user.ratingsReceived?.length || 0;
@@ -66,10 +77,11 @@ export async function getMe(req: AuthRequest, res: Response) {
       phoneNumber: user.phoneNumber,
       userCode: user.userCode,
       role: user.role,
+      isDualRole,
       caravanId: assignedCaravan ? assignedCaravan.id : user.caravanId,
       caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
-      caravanMentor: assignedCaravan ? user.name : (user.caravan?.mentor?.name || 'تعیین نشده'),
-      mentorPhone: assignedCaravan ? user.phoneNumber : (user.caravan?.mentor?.phoneNumber || ''),
+      caravanMentor: assignedCaravan ? ((assignedCaravan as any).mentor?.name || user.name) : (user.caravan?.mentor?.name || 'تعیین نشده'),
+      mentorPhone: assignedCaravan ? ((assignedCaravan as any).mentor?.phoneNumber || user.phoneNumber) : (user.caravan?.mentor?.phoneNumber || ''),
       socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
       managedMembersCount,
       satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),

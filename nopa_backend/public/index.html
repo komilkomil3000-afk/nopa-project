@@ -35,7 +35,6 @@
             <li class="menu-item" data-tab="mentors-profile-tab"><i class="fa-solid fa-id-card"></i><span class="menu-text">پروفایل و شناسنامه</span></li>
             <li class="menu-item" data-tab="mentors-tickets-tab"><i class="fa-solid fa-inbox"></i><span class="menu-text">میزکار و تیکت‌ها</span></li>
             <li class="menu-item" data-tab="mentors-docs-tab"><i class="fa-solid fa-file-check"></i><span class="menu-text">تایید مدارک و گواهینامه‌ها</span></li>
-            <li class="menu-item" data-tab="mentors-league-tab"><i class="fa-solid fa-ranking-star"></i><span class="menu-text">لیگ و ارزیابی</span></li>
           </ul>
         </li>
 
@@ -48,7 +47,7 @@
           </div>
           <ul class="accordion-content">
             <li class="menu-item active" data-tab="users-tab"><i class="fa-solid fa-users"></i><span class="menu-text">دایرکتوری مخاطبان</span></li>
-            <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و سرمایه‌ها</span></li>
+            <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و لیگ</span></li>
             <li class="menu-item" data-tab="levels-tab"><i class="fa-solid fa-layer-group"></i><span class="menu-text">سطوح و گواهینامه‌ها</span></li>
           </ul>
         </li>
@@ -417,8 +416,8 @@
               <div id="league-individuals-container" style="display: none; max-width: 100%; overflow: hidden;">
                 <div class="table-container" style="margin-bottom:0; max-height: 420px; overflow: auto; max-width: 100%;">
                   <table class="data-table" id="individuals-leaderboard-table" style="min-width: 880px;">
-                    <thead>
-                      <tr>
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                      <tr style="position: sticky; top: 0;">
                         <th style="width: 60px; text-align: center;">رتبه</th>
                         <th>کاربر</th>
                         <th>نقش</th>
@@ -1384,48 +1383,6 @@
                 <th>تاریخ</th>
                 <th>رتبه (ستاره)</th>
                 <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Populated by JS -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="mentors-league-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="margin-bottom: 20px;">
-          <div class="panel-title">لیگ و ارزیابی راهبران</div>
-          <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-             <input type="text" id="mentor-league-search" class="input-ctrl" placeholder="جستجوی نام یا موبایل...">
-             <select id="mentor-league-filter" class="select-ctrl">
-               <option value="all">فیلتر (همه)</option>
-               <option value="weekly">هفتگی</option>
-               <option value="monthly">ماهانه</option>
-             </select>
-             <select id="mentor-league-sort" class="select-ctrl">
-               <option value="rating">بیشترین ستاره</option>
-               <option value="progress">پیشرفت کاروان</option>
-               <option value="activity">امتیاز فعالیت</option>
-               <option value="level">سطح مربی</option>
-             </select>
-             <button class="btn-primary" onclick="loadMentorLeague()"><i class="fa-solid fa-filter"></i> اعمال فیلتر</button>
-             <button class="btn-action" onclick="exportData('mentors_league', 'excel')"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
-             <button class="btn-action" onclick="exportData('mentors_league', 'pdf')"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
-             <button class="btn-action" onclick="exportData('mentors_league', 'csv')" style="margin-right: auto;"><i class="fa-solid fa-file-csv"></i> خروجی CSV</button>
-          </div>
-        </div>
-        <div class="table-container glass">
-          <table class="data-table" id="mentor-league-table">
-            <thead>
-              <tr>
-                <th>رتبه</th>
-                <th>نام راهبر</th>
-                <th>موبایل</th>
-                <th>کاروان</th>
-                <th>میانگین ستاره</th>
-                <th>امتیاز فعالیت</th>
-                <th>پیشرفت کاروان</th>
               </tr>
             </thead>
             <tbody>
@@ -2604,10 +2561,7 @@
           
           <!-- Tab 1: Roster Ledger -->
           <div id="cd-roster" class="cd-tab-content" style="display:block;">
-            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
-              <div style="flex:1;">
-                <input type="text" id="cw-add-student-input" class="input-ctrl" placeholder="جستجوی نام یا کد ملی دانش‌آموز...">
-              </div>
+            <div style="display:flex; justify-content:flex-start; margin-bottom:15px;">
               <button id="cw-btn-add-student" class="btn-primary" style="background:var(--success);" onclick="addStudentToCaravan()"><i class="fa-solid fa-plus"></i> افزودن دانش‌آموز به کاروان</button>
             </div>
             <div class="table-container" style="background: rgba(0,0,0,0.2); border-radius: 12px; overflow: hidden;">
@@ -2674,20 +2628,20 @@
           <!-- Tab 3: Quick Actions -->
           <div id="cd-actions" class="cd-tab-content" style="display:none;">
              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="alert('به زودی...')">
-                 <i class="fa-solid fa-arrow-right-arrow-left" style="font-size: 32px; color: #3b82f6; margin-bottom: 10px;"></i>
-                 <h4>انتقال عضو به کاروان دیگر</h4>
-                 <p style="font-size: 12px; color: var(--text-muted);">جابجایی دسته جمعی اعضا</p>
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.openAddMemberToCaravanModal()">
+                 <i class="fa-solid fa-user-plus" style="font-size: 32px; color: #3b82f6; margin-bottom: 10px;"></i>
+                 <h4>افزودن و مدیریت اعضای کاروان</h4>
+                 <p style="font-size: 12px; color: var(--text-muted);">افزودن مستقیم دانش‌آموزان به کاروان</p>
                </div>
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="alert('به زودی...')">
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.openChangeCaravanMentorModalForCaravan(currentDrawerCaravanId)">
                  <i class="fa-solid fa-user-tie" style="font-size: 32px; color: #8b5cf6; margin-bottom: 10px;"></i>
                  <h4>تغییر مربی کاروان</h4>
-                 <p style="font-size: 12px; color: var(--text-muted);">انتساب مربی جدید</p>
+                 <p style="font-size: 12px; color: var(--text-muted);">انتساب راهبر جدید برای کاروان</p>
                </div>
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="alert('به زودی...')">
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.editCaravanCapacity(currentDrawerCaravanId)">
                  <i class="fa-solid fa-users-gear" style="font-size: 32px; color: #10b981; margin-bottom: 10px;"></i>
                  <h4>ویرایش ظرفیت</h4>
-                 <p style="font-size: 12px; color: var(--text-muted);">تغییر محدودیت ثبت نام</p>
+                 <p style="font-size: 12px; color: var(--text-muted);">تغییر سقف ظرفیت ثبت‌نام</p>
                </div>
                <div class="panel-card glass" style="text-align: center;">
                  <i class="fa-solid fa-bullhorn" style="font-size: 32px; color: #f59e0b; margin-bottom: 10px;"></i>
@@ -2706,7 +2660,7 @@
     </div>
 
     <!-- Student Detail Modal -->
-    <div id="caravan-student-detail-modal" class="modal-overlay" style="display:none;">
+    <div id="caravan-student-detail-modal" class="modal-overlay" style="display:none; z-index:100000;">
       <div class="modal-content glass" style="max-width:800px; display:flex; flex-direction:column; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px;">
           <div>
@@ -2741,16 +2695,17 @@
 
     <style>
     /* Basic dropdown styling for export button */
-    .dropdown-wrapper:hover .dropdown-content { display: block; }
+    .dropdown-wrapper:hover .dropdown-content,
+    .dropdown-wrapper.open .dropdown-content { display: block; }
     .dropdown-content {
-      display: none; position: absolute; right: 0; background: var(--bg-card); min-width: 120px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; border-radius: 8px; overflow: hidden;
+      display: none; position: absolute; right: 0; background: var(--bg-card); min-width: 140px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 1000; border-radius: 8px; overflow: hidden;
       border: 1px solid var(--border-color);
     }
     .dropdown-content a {
-      color: white; padding: 10px 15px; text-decoration: none; display: block; font-size: 12px;
+      color: white; padding: 10px 15px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; transition: background 0.2s;
     }
-    .dropdown-content a:hover { background: rgba(139, 92, 246, 0.2); }
+    .dropdown-content a:hover { background: rgba(139, 92, 246, 0.25); color: #a78bfa; }
 
     /* Caravan Table Scrollable Container & Custom Scrollbar */
     .caravans-table-scroll-container {
@@ -2965,7 +2920,7 @@
   </div>
 
   <!-- Add Member To Caravan Modal -->
-  <div id="add-member-to-caravan-modal" class="modal-overlay" style="display:none;">
+  <div id="add-member-to-caravan-modal" class="modal-overlay" style="display:none; z-index:100000;">
     <div class="modal-content glass" style="max-width:600px; width:90%; padding:24px; border-radius:16px; background:#1e293b; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
         <h3 style="color:white; font-size:16px; font-weight:bold; margin:0;"><i class="fa-solid fa-user-plus" style="color:#10b981;"></i> افزودن عضو جدید به کاروان</h3>
@@ -2979,13 +2934,21 @@
         </select>
       </div>
 
-      <div class="form-group" style="margin-bottom:15px;">
-        <label style="display:block; color:#94a3b8; font-size:12px; margin-bottom:6px;">جستجوی کاربر (نام، شماره تماس یا شناسه):</label>
-        <input type="text" id="input-search-candidate-member" class="input-ctrl" placeholder="نام، شماره همراه یا شناسه را وارد کنید..." oninput="searchCandidateMembers(this.value)" style="width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:white; font-size:13px;">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label style="display:block; color:#94a3b8; font-size:12px; margin-bottom:6px;">جستجوی دانش‌آموز (نام، شماره تماس یا شناسه):</label>
+        <input type="text" id="input-search-candidate-member" class="input-ctrl" placeholder="نام، شماره همراه یا شناسه دانش‌آموز..." oninput="searchCandidateMembers(this.value)" style="width:100%; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:white; font-size:13px;">
       </div>
 
-      <div id="candidate-members-list" style="max-height:220px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:8px; padding:8px; margin-bottom:15px; border:1px solid rgba(255,255,255,0.05);">
-        <p style="text-align:center; color:#64748b; font-size:12px; margin:10px 0;">در حال بارگذاری کاربران...</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px;">
+        <span style="color:#cbd5e1; font-weight:600;"><i class="fa-solid fa-graduation-cap" style="color:#38bdf8;"></i> لیست دانش‌آموزان:</span>
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#94a3b8; font-size:11px;">
+          <input type="checkbox" id="chk-candidate-unassigned-only" checked onchange="searchCandidateMembers(document.getElementById('input-search-candidate-member')?.value)">
+          فقط دانش‌آموزان بدون کاروان
+        </label>
+      </div>
+
+      <div id="candidate-members-list" style="max-height:240px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:8px; padding:8px; margin-bottom:15px; border:1px solid rgba(255,255,255,0.05);">
+        <p style="text-align:center; color:#64748b; font-size:12px; margin:10px 0;">در حال بارگذاری دانش‌آموزان...</p>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">
@@ -3003,7 +2966,7 @@
       </div>
     </div>
   </div>
-  <div id="change-caravan-mentor-modal" class="modal-overlay" style="display:none;">
+  <div id="change-caravan-mentor-modal" class="modal-overlay" style="display:none; z-index:100000;">
     <div class="modal-content glass" style="max-width:420px; width:90%; padding:24px; border-radius:16px; background:#1e293b; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
         <h3 style="color:white; font-size:16px; font-weight:bold; margin:0;"><i class="fa-solid fa-user-gear" style="color:#38bdf8;"></i> تغییر راهبر کاروان</h3>

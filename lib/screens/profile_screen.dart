@@ -18,6 +18,7 @@ import '../services/audio_exclusivity_service.dart';
 import '../widgets/safe_avatar.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/complete_profile_dialog.dart';
+import '../widgets/nopa_notification_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -338,6 +339,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildSettingTile('ویرایش مشخصات شخصی راهبر', Icons.edit_note, () {
           _showEditProfileDialog(currentUser);
         }),
+        _buildSettingTile(
+          'آرشیو اعلان‌ها و پیام‌ها',
+          Icons.archive_outlined,
+          () {
+            _showNotificationArchiveDialog(context);
+          },
+        ),
         _buildSettingTile(
           'تنظیم جلسات توجیهی آنلاین',
           Icons.calendar_month_outlined,
@@ -2072,6 +2080,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _showChangePasswordDialog(context);
         }),
         _buildSettingTile(
+          'آرشیو اعلان‌ها و پیام‌ها',
+          Icons.archive_outlined,
+          () {
+            _showNotificationArchiveDialog(context);
+          },
+        ),
+        _buildSettingTile(
           'ارزیابی و امتیازدهی به راهبر کاروان',
           Icons.star_rate_outlined,
           () {
@@ -2096,6 +2111,289 @@ class _ProfileScreenState extends State<ProfileScreen> {
           LogoutDialog.show(context);
         }, isDestructive: true),
       ],
+    );
+  }
+
+  void _showNotificationArchiveDialog(BuildContext context) {
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    repository.fetchNotifications();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return ListenableBuilder(
+          listenable: repository,
+          builder: (context, _) {
+            final userRole = repository.currentUser.role;
+            final isMentor = userRole == UserRole.mentor ||
+                userRole == UserRole.superMentor;
+            final archivedList = repository.notifications
+                .where((n) => n['isRead'] == true && n['isForMentor'] == isMentor)
+                .toList();
+
+            return Dialog(
+              backgroundColor: const Color(0xFF1E1435),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70),
+                          onPressed: () => Navigator.pop(dialogCtx),
+                        ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              margin: const EdgeInsets.only(left: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF8B5CF6)
+                                    .withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF8B5CF6)
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Text(
+                                '${archivedList.length} اعلان',
+                                style: const TextStyle(
+                                  color: Color(0xFFC084FC),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Vazirmatn',
+                                ),
+                              ),
+                            ),
+                            const Text(
+                              'آرشیو اعلان‌ها و پیام‌ها 📦',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: 8),
+                    if (archivedList.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.04),
+                              ),
+                              child: const Icon(Icons.archive_outlined,
+                                  color: Colors.white30, size: 42),
+                            ),
+                            const SizedBox(height: 14),
+                            const Text(
+                              'هنوز اعلانی در آرشیو ثبت نشده است 📭',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'اعلان‌هایی که خوانده شوند یا روی آن‌ها کلیک کنید\nبه این قسمت منتقل می‌شوند.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white30,
+                                fontSize: 11,
+                                height: 1.5,
+                                fontFamily: 'Vazirmatn',
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: archivedList.length,
+                          itemBuilder: (context, index) {
+                            final notify = archivedList[index];
+                            final String title =
+                                notify['title'] ?? 'اعلان آرشیو شده';
+                            final bool isReject =
+                                title.contains('رد شد') || title.contains('❌');
+                            final bool isApprove =
+                                title.contains('تایید شد') ||
+                                    title.contains('✅');
+                            final bool isNews = notify['type'] == 'news' ||
+                                title.contains('📢') ||
+                                title.contains('خبر');
+
+                            Color bgColor =
+                                Colors.white.withValues(alpha: 0.03);
+                            Color borderColor =
+                                Colors.white.withValues(alpha: 0.06);
+                            Color iconColor = const Color(0xFF94A3B8);
+                            IconData iconData = Icons.mark_email_read_outlined;
+
+                            if (isReject) {
+                              iconColor = const Color(0xFFF87171);
+                              iconData = Icons.cancel_outlined;
+                            } else if (isApprove) {
+                              iconColor = const Color(0xFF34D399);
+                              iconData = Icons.check_circle_outline_rounded;
+                            } else if (isNews) {
+                              iconColor = const Color(0xFF38BDF8);
+                              iconData = Icons.campaign_outlined;
+                            }
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              decoration: BoxDecoration(
+                                color: bgColor,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () {
+                                    Navigator.pop(dialogCtx);
+                                    NopaNotificationDialog.handleNotificationTap(
+                                      context,
+                                      repository,
+                                      notify,
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.done_all_rounded,
+                                                    size: 13,
+                                                    color: Color(0xFF10B981)),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  notify['time'] ?? 'قدیمی',
+                                                  style: const TextStyle(
+                                                    color: Colors.white30,
+                                                    fontSize: 9.5,
+                                                    fontFamily: 'Vazirmatn',
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Expanded(
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      title,
+                                                      textAlign: TextAlign.right,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        color: Colors.white70,
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontFamily: 'Vazirmatn',
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Icon(iconData,
+                                                      size: 16,
+                                                      color: iconColor),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          notify['body'] ?? '',
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 11,
+                                            height: 1.5,
+                                            fontFamily: 'Vazirmatn',
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            Icon(
+                                              Icons.arrow_back_ios_new_rounded,
+                                              size: 10,
+                                              color: Colors.white30,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'مشاهده مجدد',
+                                              style: TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 9.5,
+                                                fontFamily: 'Vazirmatn',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

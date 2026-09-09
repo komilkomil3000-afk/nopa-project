@@ -38,6 +38,54 @@ async function getNotifications(req, res) {
                 });
             }
         }
+        // Automatically ensure all published news matching user audience are present in notifications
+        try {
+            const publishedNews = await db_1.default.newsArticle.findMany({
+                where: { isPublished: true },
+                orderBy: { createdAt: 'desc' }
+            });
+            const userRole = (req.user.role || '').toLowerCase();
+            for (const news of publishedNews) {
+                const aud = (news.targetAudience || 'ALL').toUpperCase();
+                let isTarget = false;
+                if (aud === 'ALL' || userRole === 'admin')
+                    isTarget = true;
+                else if (aud === 'STUDENTS' && (userRole === 'student' || userRole === 'admin'))
+                    isTarget = true;
+                else if (aud === 'MENTORS' && (userRole === 'mentor' || userRole === 'admin'))
+                    isTarget = true;
+                else if (aud === 'CARAVAN_LEADERS' && (userRole === 'mentor' || userRole === 'admin'))
+                    isTarget = true;
+                if (isTarget) {
+                    const notifTitle = `📢 ${news.title}`;
+                    const existing = await db_1.default.notification.findFirst({
+                        where: {
+                            userId: req.user.id,
+                            OR: [
+                                { title: notifTitle },
+                                { title: news.title }
+                            ]
+                        }
+                    });
+                    if (!existing) {
+                        const bodyText = news.subtitle ? `${news.subtitle}\n\n${news.body}` : news.body;
+                        await db_1.default.notification.create({
+                            data: {
+                                userId: req.user.id,
+                                title: notifTitle,
+                                message: bodyText || 'خبر جدیدی در تابلوی اعلانات جارچی منتشر شد.',
+                                type: 'news',
+                                createdAt: news.publishDate || news.createdAt || new Date(),
+                                isRead: false
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        catch (newsSyncErr) {
+            console.error('Error syncing news into user notifications:', newsSyncErr);
+        }
         const notifications = await db_1.default.notification.findMany({
             where: { userId: req.user.id },
             orderBy: { createdAt: 'desc' }

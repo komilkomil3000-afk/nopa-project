@@ -59,12 +59,43 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   Future<void> _checkAutoLogin() async {
     if (_apiService.isAuthenticated) {
+      final prefs = await SharedPreferences.getInstance();
+      final lastActiveMs = prefs.getInt('last_app_exit_timestamp');
+      if (lastActiveMs != null) {
+        final lastActive = DateTime.fromMillisecondsSinceEpoch(lastActiveMs);
+        final diff = DateTime.now().difference(lastActive);
+        if (diff.inMinutes >= 10) {
+          debugPrint('⏱️ Inactivity timeout on launch: away for ${diff.inMinutes} minutes (>= 10 min). Auto-login blocked.');
+          await _apiService.setToken(null);
+          await prefs.remove('last_app_exit_timestamp');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('به دلیل عدم حضور بیش از ۱۰ دقیقه در برنامه، لطفاً مجدداً وارد شوید.', style: TextStyle(fontFamily: 'Vazirmatn')),
+                backgroundColor: Color(0xFFE11D48),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      // Within 10 minutes: refresh timestamp and proceed!
+      await prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
+      AppRepository().recordActivity();
+
       final user = await _apiService.getMe();
       if (user != null) {
         if (mounted) {
-          Provider.of<AppRepository>(context, listen: false).updateUser(user);
-          AuthService.selectedRole = user.role;
-          Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+          final appRepo = Provider.of<AppRepository>(context, listen: false);
+          appRepo.updateUser(user);
+          if (user.isDualRole || user.role == UserRole.admin) {
+            _showDualRoleSelectionDialog(user);
+          } else {
+            AuthService.selectedRole = user.role;
+            Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+          }
         }
       }
     }
@@ -153,36 +184,229 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       final token = response['data']['token'];
       final decodedToken = decodeJwt(token);
       final userRoleStr = decodedToken['role'] ?? response['data']['user']['role'];
+      final userData = response['data']['user'];
+
+      final bool isDualRole = userData['isDualRole'] == true || userRoleStr == 'admin';
 
       UserRole resolvedRole = UserRole.member;
-      if (userRoleStr == 'SUPER_MENTOR') {
+      if (userRoleStr == 'admin') {
+        resolvedRole = UserRole.admin;
+      } else if (userRoleStr == 'SUPER_MENTOR') {
         resolvedRole = UserRole.superMentor;
       } else if (userRoleStr == 'mentor') {
         resolvedRole = UserRole.mentor;
       }
 
-      AuthService.selectedRole = resolvedRole;
-      
-      final userData = response['data']['user'];
       final userPhone = userData['phoneNumber'] ?? _loginPhoneCtrl.text.trim();
-      if (userPhone != null && userPhone.toString().isNotEmpty) {
-        SharedPreferences.getInstance().then((prefs) {
+      SharedPreferences.getInstance().then((prefs) {
+        if (userPhone != null && userPhone.toString().isNotEmpty) {
           prefs.setString('saved_login_phone', userPhone.toString());
-        }).catchError((_) {});
-      }
+        }
+        prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
+      }).catchError((_) {});
+      AppRepository().recordActivity();
 
-      Provider.of<AppRepository>(context, listen: false).updateUser(UserModel(
+      final loggedInUser = UserModel(
         id: userData['id'],
-        name: userData['name'],
-        phoneNumber: userData['phoneNumber'],
+        name: userData['name'] ?? 'کاربر',
+        phoneNumber: userData['phoneNumber'] ?? '',
         avatarUrl: userData['avatarUrl'],
         role: resolvedRole,
+        isDualRole: isDualRole,
         zarik: userData['zarikBalance'] ?? 0,
         levelFrame: userData['levelFrame'] ?? 1,
-      ));
-      
-      _showWelcomeDialogAndNavigate();
+      );
+
+      final appRepo = Provider.of<AppRepository>(context, listen: false);
+      appRepo.updateUser(loggedInUser);
+
+      if (isDualRole) {
+        _showDualRoleSelectionDialog(loggedInUser);
+      } else {
+        AuthService.selectedRole = resolvedRole;
+        _showWelcomeDialogAndNavigate();
+      }
     }
+  }
+
+  void _showDualRoleSelectionDialog(UserModel user) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: const Color(0xFF160E29),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Color(0xFF6D28D9), width: 1.5),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(22.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.manage_accounts_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'انتخاب نقش ورود به سامانه',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${user.name} عزیز، شما دارای دسترسی چندگانه (مدیر کل / مربی و دانش‌آموز) هستید. مایلید با کدام نقش وارد شوید؟',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      height: 1.5,
+                      fontFamily: 'Vazirmatn',
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  // Option 1: Mentor / Leader Card
+                  _buildRoleCard(
+                    title: 'ورود به عنوان راهبر (مربی)',
+                    badge: 'پنل مدیریت کاروان و اعضا',
+                    description: 'مشاهده اعضا، مدیریت تکالیف و چالش‌ها، ارزیابی‌ها و گزارش‌ها',
+                    icon: Icons.supervisor_account_rounded,
+                    gradientColors: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      final appRepo = Provider.of<AppRepository>(context, listen: false);
+                      appRepo.setActiveRole(UserRole.mentor);
+                      AuthService.selectedRole = UserRole.mentor;
+                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.mentor);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  // Option 2: Student Card
+                  _buildRoleCard(
+                    title: 'ورود به عنوان دانش‌آموز',
+                    badge: 'پنل آموزش و منزلگاه‌ها',
+                    description: 'مشاهده جلسات آموزشی، ثبت تکالیف، نقشه پیشرفت و بازارچه',
+                    icon: Icons.school_rounded,
+                    gradientColors: const [Color(0xFF06B6D4), Color(0xFF0284C7)],
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      final appRepo = Provider.of<AppRepository>(context, listen: false);
+                      appRepo.setActiveRole(UserRole.member);
+                      AuthService.selectedRole = UserRole.member;
+                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.member);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRoleCard({
+    required String title,
+    required String badge,
+    required String description,
+    required IconData icon,
+    required List<Color> gradientColors,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF221538),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: gradientColors[0].withValues(alpha: 0.4), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: gradientColors[0].withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(colors: gradientColors),
+                ),
+                child: Icon(icon, color: Colors.white, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 11,
+                        height: 1.3,
+                        fontFamily: 'Vazirmatn',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showWelcomeDialogAndNavigate() {

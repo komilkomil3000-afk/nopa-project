@@ -16,10 +16,10 @@ exports.apiLimiter = (0, express_rate_limit_1.default)({
 });
 exports.authLimiter = (0, express_rate_limit_1.default)({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 15, // Limit each IP to 15 requests per windowMs for auth routes
+    max: 60, // Limit each IP to 60 requests per windowMs for auth routes
     standardHeaders: true,
     legacyHeaders: false,
     message: {
-        error: 'تعداد تلاش‌های ورود بیش از حد مجاز است. لطفا ۱۵ دقیقه دیگر تلاش کنید.'
+        error: 'تعداد درخواست‌های احراز هویت از این آدرس بیش از حد مجاز است. لطفا کمی بعد تلاش کنید.'
     }
 });

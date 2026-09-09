@@ -11,6 +11,7 @@ class UserModel {
   final String name;
   final String phoneNumber;
   final UserRole role;
+  final bool isDualRole;
   final int zarik;
   final int nakh;
   final int beyragh;
@@ -45,6 +46,7 @@ class UserModel {
     required this.name,
     required this.phoneNumber,
     required this.role,
+    this.isDualRole = false,
     this.zarik = 0,
     this.nakh = 0,
     this.beyragh = 0,
@@ -77,12 +79,94 @@ class UserModel {
 
   int get zarikBalance => zarik;
 
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? phoneNumber,
+    UserRole? role,
+    bool? isDualRole,
+    int? zarik,
+    int? nakh,
+    int? beyragh,
+    int? farsh,
+    bool? hasEvaluatedMentorThisSeason,
+    bool? hasPrePaidClasses,
+    int? mentorLevel,
+    int? levelFrame,
+    String? avatarUrl,
+    String? nationalId,
+    String? dateOfBirth,
+    bool? identityVerified,
+    int? totalTransactions,
+    int? totalZarikPurchases,
+    String? socialGroupLink,
+    int? userCode,
+    List<dynamic>? mentorDocuments,
+    String? city,
+    String? caravanId,
+    String? caravanName,
+    String? caravanMentor,
+    String? mentorPhone,
+    int? completedStationsCount,
+    int? completedSessionsCount,
+    List<dynamic>? certificates,
+    List<dynamic>? caravanMembers,
+    int? managedMembersCount,
+    double? satisfactionScore,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      role: role ?? this.role,
+      isDualRole: isDualRole ?? this.isDualRole,
+      zarik: zarik ?? this.zarik,
+      nakh: nakh ?? this.nakh,
+      beyragh: beyragh ?? this.beyragh,
+      farsh: farsh ?? this.farsh,
+      hasEvaluatedMentorThisSeason: hasEvaluatedMentorThisSeason ?? this.hasEvaluatedMentorThisSeason,
+      hasPrePaidClasses: hasPrePaidClasses ?? this.hasPrePaidClasses,
+      mentorLevel: mentorLevel ?? this.mentorLevel,
+      levelFrame: levelFrame ?? this.levelFrame,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      nationalId: nationalId ?? this.nationalId,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      identityVerified: identityVerified ?? this.identityVerified,
+      totalTransactions: totalTransactions ?? this.totalTransactions,
+      totalZarikPurchases: totalZarikPurchases ?? this.totalZarikPurchases,
+      socialGroupLink: socialGroupLink ?? this.socialGroupLink,
+      userCode: userCode ?? this.userCode,
+      mentorDocuments: mentorDocuments ?? this.mentorDocuments,
+      city: city ?? this.city,
+      caravanId: caravanId ?? this.caravanId,
+      caravanName: caravanName ?? this.caravanName,
+      caravanMentor: caravanMentor ?? this.caravanMentor,
+      mentorPhone: mentorPhone ?? this.mentorPhone,
+      completedStationsCount: completedStationsCount ?? this.completedStationsCount,
+      completedSessionsCount: completedSessionsCount ?? this.completedSessionsCount,
+      certificates: certificates ?? this.certificates,
+      caravanMembers: caravanMembers ?? this.caravanMembers,
+      managedMembersCount: managedMembersCount ?? this.managedMembersCount,
+      satisfactionScore: satisfactionScore ?? this.satisfactionScore,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rawRole = json['role']?.toString();
+    final bool isDual = json['isDualRole'] == true || rawRole == 'admin';
+    UserRole parsedRole = UserRole.member;
+    if (rawRole == 'admin') {
+      parsedRole = UserRole.admin;
+    } else if (rawRole == 'mentor' || rawRole == 'superMentor' || rawRole == 'SUPER_MENTOR') {
+      parsedRole = UserRole.mentor;
+    }
+
     return UserModel(
       id: json['id'] ?? '',
       name: json['name'] ?? 'کاربر',
       phoneNumber: json['phoneNumber'] ?? '',
-      role: (json['role'] == 'mentor' || json['role'] == 'superMentor' || json['role'] == 'SUPER_MENTOR') ? UserRole.mentor : UserRole.member,
+      role: parsedRole,
+      isDualRole: isDual,
       zarik: json['zarikBalance'] ?? json['zarik'] ?? 0,
       nakh: json['nakh'] ?? 0,
       beyragh: json['beyragh'] ?? 0,

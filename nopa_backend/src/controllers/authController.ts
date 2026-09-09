@@ -88,6 +88,22 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ error: 'دسترسی شما به سامانه موقتاً محدود شده است.' });
     }
 
+    // Hourly login limit check: max 12 logins per hour per individual
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const hourlyLogins = await prisma.auditLog.count({
+      where: {
+        actorId: user.id,
+        action: 'USER_LOGIN',
+        createdAt: { gte: oneHourAgo }
+      }
+    });
+
+    if (hourlyLogins >= 12) {
+      return res.status(429).json({
+        error: 'شما به سقف مجاز ورود (۱۲ بار در هر ساعت) رسیده‌اید. لطفاً پس از گذشت یک ساعت مجدداً تلاش کنید.'
+      });
+    }
+
     // Password verification (Bcrypt check or universal passcode)
     let isPasswordCorrect = false;
     if (rawPassword === '123456') {
@@ -126,12 +142,34 @@ export async function login(req: Request, res: Response) {
     // Reset attempts on success
     await prisma.user.update({
       where: { id: user.id },
-      data: { failedLoginAttempts: 0, lockoutUntil: null }
+      data: { failedLoginAttempts: 0, lockoutUntil: null, lastActiveTimestamp: new Date() }
+    });
+
+    // Record login for individual hourly tracking
+    await prisma.auditLog.create({
+      data: {
+        actorId: user.id,
+        actorName: user.name || 'کاربر',
+        actorRole: user.role || 'student',
+        action: 'USER_LOGIN',
+        targetEntity: 'User',
+        targetEntityId: user.id,
+        details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} از ۱۲ در این ساعت)`,
+        ipAddress: clientIp
+      }
     });
 
     const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
     const token = jwt.sign(
-      { id: user.id, role: user.role, phoneNumber: user.phoneNumber, tokenVersion: user.tokenVersion, identityVerified: true, name: user.name },
+      { 
+        id: user.id, 
+        role: user.role, 
+        phoneNumber: user.phoneNumber, 
+        tokenVersion: user.tokenVersion, 
+        identityVerified: true, 
+        name: user.name,
+        nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+      },
       secret,
       { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
     );
@@ -164,7 +202,8 @@ export async function login(req: Request, res: Response) {
         phoneNumber: user.phoneNumber,
         role: user.role,
         caravanId: user.caravanId,
-        identityVerified: true
+        identityVerified: true,
+        isDualRole: Boolean(user.isDualRole || user.role === 'admin')
       }
     });
   } catch (error) {
@@ -250,7 +289,15 @@ export async function register(req: Request, res: Response) {
     // Generate token and session
     const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
     const token = jwt.sign(
-      { id: activeUser.id, role: activeUser.role, phoneNumber: activeUser.phoneNumber, tokenVersion: activeUser.tokenVersion, identityVerified: true, name: activeUser.name },
+      { 
+        id: activeUser.id, 
+        role: activeUser.role, 
+        phoneNumber: activeUser.phoneNumber, 
+        tokenVersion: activeUser.tokenVersion, 
+        identityVerified: true, 
+        name: activeUser.name,
+        nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+      },
       secret,
       { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
     );

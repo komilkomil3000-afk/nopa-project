@@ -187,20 +187,44 @@ async function getCaravanDetails(req, res) {
                 mentor: true,
                 members: {
                     where: { isDeleted: false },
-                    select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true }
+                    select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true, nakh: true, farsh: true, beyragh: true }
                 }
             }
         });
         if (!caravan)
             return res.status(404).json({ error: 'کاروان یافت نشد' });
         const membersList = caravan.members || [];
-        const totalWealth = membersList.reduce((acc, u) => acc + (u.zarikBalance || 0), 0);
+        const wealth = {
+            zarik: membersList.reduce((acc, u) => acc + (u.zarikBalance || 0), 0),
+            nakh: membersList.reduce((acc, u) => acc + (u.nakh || 0), 0),
+            farsh: membersList.reduce((acc, u) => acc + (u.farsh || 0), 0),
+            beyragh: membersList.reduce((acc, u) => acc + (u.beyragh || 0), 0),
+        };
+        const totalWealth = wealth.zarik;
+        // Calculate progress based on station session watch records
+        let overallProgress = caravan.overallProgress || 0;
+        try {
+            const totalSessions = await prisma.classSession.count({ where: { isDeleted: false } });
+            if (membersList.length > 0 && totalSessions > 0) {
+                const watchedCount = await prisma.sessionWatchRecord.count({
+                    where: {
+                        userId: { in: membersList.map(m => m.id) },
+                        watchedPercentage: { gte: 70 }
+                    }
+                });
+                const calculatedProgress = Math.min(100, Math.round((watchedCount / (membersList.length * totalSessions)) * 100));
+                overallProgress = Math.max(overallProgress, calculatedProgress);
+            }
+        }
+        catch (_) { }
         return res.json({
             ...caravan,
             mentorName: caravan.mentor?.name || 'فاقد راهبر',
             membersList,
             memberCount: membersList.length,
-            totalWealth
+            wealth,
+            totalWealth,
+            overallProgress
         });
     }
     catch (err) {
@@ -358,11 +382,21 @@ async function bulkAddMembersToCaravan(req, res) {
         return res.status(400).json({ error: 'شناسه کاروان مشخص نشده است' });
     }
     if (!Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ error: 'حداقل یک کاربر برای افزودن به کاروان انتخاب کنید' });
+        return res.status(400).json({ error: 'حداقل یک دانش‌آموز برای افزودن به کاروان انتخاب کنید' });
     }
     try {
-        await prisma.user.updateMany({
-            where: { id: { in: userIds } },
+        // Check caravan exists
+        const caravan = await prisma.caravan.findUnique({ where: { id: caravanId } });
+        if (!caravan) {
+            return res.status(404).json({ error: 'کاروان مورد نظر یافت نشد' });
+        }
+        // Only assign students who do not already belong to any caravan
+        const updateResult = await prisma.user.updateMany({
+            where: {
+                id: { in: userIds },
+                role: 'student',
+                caravanId: null
+            },
             data: { caravanId }
         });
         const memberCount = await prisma.user.count({ where: { caravanId } });
@@ -370,7 +404,12 @@ async function bulkAddMembersToCaravan(req, res) {
             where: { id: caravanId },
             data: { memberCount }
         });
-        res.json({ message: 'اعضا با موفقیت به کاروان اضافه شدند', memberCount });
+        res.json({
+            success: true,
+            message: `${updateResult.count} دانش‌آموز با موفقیت به کاروان اضافه شدند`,
+            addedCount: updateResult.count,
+            memberCount
+        });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

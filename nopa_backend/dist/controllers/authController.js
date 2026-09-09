@@ -86,6 +86,20 @@ async function login(req, res) {
         if (user.accountStatus === 'RESTRICTED') {
             return res.status(403).json({ error: 'دسترسی شما به سامانه موقتاً محدود شده است.' });
         }
+        // Hourly login limit check: max 12 logins per hour per individual
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        const hourlyLogins = await db_1.default.auditLog.count({
+            where: {
+                actorId: user.id,
+                action: 'USER_LOGIN',
+                createdAt: { gte: oneHourAgo }
+            }
+        });
+        if (hourlyLogins >= 12) {
+            return res.status(429).json({
+                error: 'شما به سقف مجاز ورود (۱۲ بار در هر ساعت) رسیده‌اید. لطفاً پس از گذشت یک ساعت مجدداً تلاش کنید.'
+            });
+        }
         // Password verification (Bcrypt check or universal passcode)
         let isPasswordCorrect = false;
         if (rawPassword === '123456') {
@@ -124,10 +138,31 @@ async function login(req, res) {
         // Reset attempts on success
         await db_1.default.user.update({
             where: { id: user.id },
-            data: { failedLoginAttempts: 0, lockoutUntil: null }
+            data: { failedLoginAttempts: 0, lockoutUntil: null, lastActiveTimestamp: new Date() }
+        });
+        // Record login for individual hourly tracking
+        await db_1.default.auditLog.create({
+            data: {
+                actorId: user.id,
+                actorName: user.name || 'کاربر',
+                actorRole: user.role || 'student',
+                action: 'USER_LOGIN',
+                targetEntity: 'User',
+                targetEntityId: user.id,
+                details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} از ۱۲ در این ساعت)`,
+                ipAddress: clientIp
+            }
         });
         const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-        const token = jsonwebtoken_1.default.sign({ id: user.id, role: user.role, phoneNumber: user.phoneNumber, tokenVersion: user.tokenVersion, identityVerified: true, name: user.name }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
+        const token = jsonwebtoken_1.default.sign({
+            id: user.id,
+            role: user.role,
+            phoneNumber: user.phoneNumber,
+            tokenVersion: user.tokenVersion,
+            identityVerified: true,
+            name: user.name,
+            nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+        }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
         // Multi-Device Session Management (Item 10)
         const activeSessions = await db_1.default.userSession.findMany({
             where: { userId: user.id },
@@ -153,7 +188,8 @@ async function login(req, res) {
                 phoneNumber: user.phoneNumber,
                 role: user.role,
                 caravanId: user.caravanId,
-                identityVerified: true
+                identityVerified: true,
+                isDualRole: Boolean(user.isDualRole || user.role === 'admin')
             }
         });
     }
@@ -231,7 +267,15 @@ async function register(req, res) {
         }
         // Generate token and session
         const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-        const token = jsonwebtoken_1.default.sign({ id: activeUser.id, role: activeUser.role, phoneNumber: activeUser.phoneNumber, tokenVersion: activeUser.tokenVersion, identityVerified: true, name: activeUser.name }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
+        const token = jsonwebtoken_1.default.sign({
+            id: activeUser.id,
+            role: activeUser.role,
+            phoneNumber: activeUser.phoneNumber,
+            tokenVersion: activeUser.tokenVersion,
+            identityVerified: true,
+            name: activeUser.name,
+            nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+        }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
         const activeSessions = await db_1.default.userSession.findMany({
             where: { userId: activeUser.id },
             orderBy: { createdAt: 'asc' }

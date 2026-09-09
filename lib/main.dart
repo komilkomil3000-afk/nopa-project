@@ -45,6 +45,23 @@ void main() async {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (route) => false);
   };
 
+  // Setup automatic 10-minute inactivity session timeout
+  AppRepository.onSessionTimeout = () {
+    debugPrint('⏱️ [Auth] Routing to /auth due to 10-minute inactivity timeout');
+    AppRepository().handleUnauthorized();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (route) => false);
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(
+          content: Text('به دلیل عدم فعالیت بیش از ۱۰ دقیقه، لطفاً مجدداً وارد شوید.', style: TextStyle(fontFamily: 'Vazirmatn')),
+          backgroundColor: Color(0xFFE11D48),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  };
+
   await HttpApiService().checkBackendHealth();
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -90,55 +107,60 @@ class NepaApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: AppStrings.appName,
-      debugShowCheckedModeBanner: false,
-      themeMode: themeProvider.themeMode,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        primaryColor: AppColors.purple,
-        textTheme: _buildTextTheme(ThemeData.light().textTheme, themeProvider.fontScale),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.purple,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => AppRepository().recordActivity(),
+      onPointerMove: (_) => AppRepository().recordActivity(),
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        title: AppStrings.appName,
+        debugShowCheckedModeBanner: false,
+        themeMode: themeProvider.themeMode,
+        theme: ThemeData(
           brightness: Brightness.light,
-          surface: Colors.white,
+          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+          primaryColor: AppColors.purple,
+          textTheme: _buildTextTheme(ThemeData.light().textTheme, themeProvider.fontScale),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.purple,
+            brightness: Brightness.light,
+            surface: Colors.white,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.purple,
-        textTheme: _buildTextTheme(ThemeData.dark().textTheme, themeProvider.fontScale),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.purple,
+        darkTheme: ThemeData(
           brightness: Brightness.dark,
-          surface: AppColors.cardBackground,
+          scaffoldBackgroundColor: AppColors.background,
+          primaryColor: AppColors.purple,
+          textTheme: _buildTextTheme(ThemeData.dark().textTheme, themeProvider.fontScale),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: AppColors.purple,
+            brightness: Brightness.dark,
+            surface: AppColors.cardBackground,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        // RTL Support for Persian (Farsi)
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('fa', 'IR')],
+        locale: const Locale('fa', 'IR'),
+        initialRoute: '/auth',
+        routes: {
+          '/auth': (context) => const AuthScreen(),
+          '/main': (context) => const SuccessScreen(),
+          '/dashboard': (context) => MainScreen(key: mainScreenKey),
+          '/station_detail': (context) => const StationDetailScreen(),
+          '/class_player': (context) => const ClassPlayerScreen(),
+          '/mentor_ratings': (context) => const MentorRatingsDetailScreen(),
+          '/mentor_league': (context) => const MentorLeagueScreen(),
+          '/mentor_workbench': (context) => const MentorWorkbenchScreen(),
+          '/tickets': (context) => const TicketsScreen(),
+        },
       ),
-      // RTL Support for Persian (Farsi)
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [Locale('fa', 'IR')],
-      locale: const Locale('fa', 'IR'),
-      initialRoute: '/auth',
-      routes: {
-        '/auth': (context) => const AuthScreen(),
-        '/main': (context) => const SuccessScreen(),
-        '/dashboard': (context) => MainScreen(key: mainScreenKey),
-        '/station_detail': (context) => const StationDetailScreen(),
-        '/class_player': (context) => const ClassPlayerScreen(),
-        '/mentor_ratings': (context) => const MentorRatingsDetailScreen(),
-        '/mentor_league': (context) => const MentorLeagueScreen(),
-        '/mentor_workbench': (context) => const MentorWorkbenchScreen(),
-        '/tickets': (context) => const TicketsScreen(),
-      },
     );
   }
 }
