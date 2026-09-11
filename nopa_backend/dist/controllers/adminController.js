@@ -70,6 +70,8 @@ async function getUsers(req, res) {
         const role = req.query.role || '';
         const caravanId = req.query.caravanId || '';
         const levelFrame = parseInt(req.query.levelFrame) || null;
+        const startDate = req.query.startDate || '';
+        const endDate = req.query.endDate || '';
         const skip = (page - 1) * limit;
         // Build Prisma query filters
         const whereClause = {};
@@ -91,6 +93,23 @@ async function getUsers(req, res) {
         }
         if (levelFrame !== null) {
             whereClause.levelFrame = levelFrame;
+        }
+        if (startDate || endDate) {
+            whereClause.createdAt = {};
+            if (startDate) {
+                const start = new Date(startDate);
+                if (!isNaN(start.getTime())) {
+                    start.setHours(0, 0, 0, 0);
+                    whereClause.createdAt.gte = start;
+                }
+            }
+            if (endDate) {
+                const end = new Date(endDate);
+                if (!isNaN(end.getTime())) {
+                    end.setHours(23, 59, 59, 999);
+                    whereClause.createdAt.lte = end;
+                }
+            }
         }
         // Get paginated users and total count in parallel
         const [users, totalCount] = await prisma.$transaction([

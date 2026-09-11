@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show InternetAddressType, NetworkInterface;
+import 'dart:io' show InternetAddressType, NetworkInterface, SocketException;
 import 'dart:io' as io show File;
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
@@ -26,32 +27,46 @@ class HttpApiService {
 
   String? _token;
   String? get token => _token;
-  bool get isAuthenticated => _token != null;
+  String? _refreshToken;
+  String? get refreshToken => _refreshToken;
+  DateTime? _tokenExpiry;
+  DateTime? get tokenExpiry => _tokenExpiry;
+  bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
   bool _isHandling401 = false;
+  bool _isRefreshing = false;
+  Completer<bool>? _refreshCompleter;
 
   /// Offload JSON decoding to a background isolate when payload exceeds 10KB
   static Future<dynamic> parseJsonAsync(String source) async {
-    if (source.isEmpty) return null;
-    if (source.length > 10240) {
-      return compute(_isolateJsonDecode, source);
+    try {
+      if (source.isEmpty) return null;
+      if (source.length > 10240) {
+        return compute(_isolateJsonDecode, source);
+      }
+      return jsonDecode(source);
+    } catch (e) {
+      debugPrint('⚠️ [HttpApiService] JSON parse error: $e');
+      return null;
     }
-    return jsonDecode(source);
   }
 
   static dynamic _isolateJsonDecode(String source) {
-    return jsonDecode(source);
+    try {
+      return jsonDecode(source);
+    } catch (_) {
+      return null;
+    }
   }
 
-  /// Automatic token invalidation on 401 Unauthorized
+  /// Automatic token invalidation on 401 Unauthorized when silent refresh is unrecoverable
   void handleUnauthorized() {
     if (_isHandling401) return;
     _isHandling401 = true;
-    debugPrint('🚨 [HttpApiService] 401 Unauthorized received! Clearing token and routing to /auth...');
+    debugPrint('🚨 [HttpApiService] 401 Unauthorized unrecoverable! Clearing tokens and routing to /auth...');
 
-    _token = null;
-    _secureStorage.delete(key: 'auth_token').catchError((e) {
-      debugPrint('Failed to delete auth_token: $e');
+    clearTokens().catchError((e) {
+      debugPrint('Failed to clear tokens on unauthorized: $e');
     });
 
     Future.microtask(() {
@@ -63,37 +78,222 @@ class HttpApiService {
     });
   }
 
-  /// Internal HTTP wrappers that monitor status codes for 401 Unauthorized
-  Future<http.Response> _get(Uri url, {Map<String, String>? headers, bool checkAuth = true}) async {
-    final response = await http.get(url, headers: headers ?? _getHeaders());
-    if (checkAuth && response.statusCode == 401) {
-      handleUnauthorized();
+  /// Persists access_token, refresh_token, and expiration in secure storage and memory
+  Future<void> setAuthTokens({
+    required String? token,
+    String? refreshToken,
+    DateTime? expiresAt,
+  }) async {
+    _token = token;
+    if (refreshToken != null) {
+      _refreshToken = refreshToken;
     }
-    return response;
+    if (expiresAt != null) {
+      _tokenExpiry = expiresAt;
+    }
+
+    try {
+      if (token != null) {
+        await _secureStorage.write(key: 'auth_token', value: token);
+      } else {
+        await _secureStorage.delete(key: 'auth_token');
+      }
+
+      if (refreshToken != null) {
+        await _secureStorage.write(key: 'refresh_token', value: refreshToken);
+      } else if (token == null) {
+        await _secureStorage.delete(key: 'refresh_token');
+      }
+
+      if (expiresAt != null) {
+        await _secureStorage.write(key: 'token_expiry', value: expiresAt.toIso8601String());
+      } else if (token == null) {
+        await _secureStorage.delete(key: 'token_expiry');
+      }
+    } catch (e) {
+      debugPrint('⚠️ [HttpApiService] Error persisting tokens to secure storage: $e');
+    }
+  }
+
+  Future<void> setToken(String? token) async {
+    await setAuthTokens(token: token);
+  }
+
+  Future<void> clearTokens() async {
+    _token = null;
+    _refreshToken = null;
+    _tokenExpiry = null;
+    try {
+      await _secureStorage.delete(key: 'auth_token');
+      await _secureStorage.delete(key: 'refresh_token');
+      await _secureStorage.delete(key: 'token_expiry');
+    } catch (e) {
+      debugPrint('⚠️ [HttpApiService] Error clearing tokens from secure storage: $e');
+    }
+  }
+
+  /// Silent Auto-Refresh: seamlessly exchanges the refresh token for a fresh access token
+  Future<bool> silentRefreshToken() async {
+    // If a refresh is already in flight, await the existing future to prevent race conditions
+    if (_isRefreshing) {
+      if (_refreshCompleter != null) {
+        return await _refreshCompleter!.future;
+      }
+      return false;
+    }
+
+    if (_refreshToken == null || _refreshToken!.isEmpty) {
+      try {
+        _refreshToken = await _secureStorage.read(key: 'refresh_token');
+      } catch (e) {
+        debugPrint('⚠️ [HttpApiService] Failed to read refresh_token: $e');
+      }
+    }
+
+    if (_refreshToken == null || _refreshToken!.isEmpty) {
+      debugPrint('⚠️ [HttpApiService] No refresh token available for silent refresh.');
+      return false;
+    }
+
+    _isRefreshing = true;
+    _refreshCompleter = Completer<bool>();
+
+    try {
+      final refreshUrl = Uri.parse('$baseUrl/auth/refresh');
+      final res = await http.post(
+        refreshUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': _refreshToken}),
+      ).timeout(const Duration(seconds: 12));
+
+      if (res.statusCode == 200) {
+        final dynamic parsed = await parseJsonAsync(res.body);
+        if (parsed is Map<String, dynamic>) {
+          final String? newToken = parsed['accessToken'] ?? parsed['token'];
+          final String? newRefreshToken = parsed['refreshToken'];
+          final String? expiresAtStr = parsed['expiresAt'];
+          final int? expiresIn = parsed['expiresIn'] as int?;
+
+          if (newToken != null && newToken.isNotEmpty) {
+            DateTime? expiresAt;
+            if (expiresAtStr != null) {
+              expiresAt = DateTime.tryParse(expiresAtStr);
+            } else if (expiresIn != null) {
+              expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
+            }
+
+            await setAuthTokens(
+              token: newToken,
+              refreshToken: newRefreshToken ?? _refreshToken,
+              expiresAt: expiresAt,
+            );
+
+            debugPrint('✨ [HttpApiService] Silent refresh succeeded! New access token secured.');
+            _refreshCompleter?.complete(true);
+            return true;
+          }
+        }
+      }
+
+      debugPrint('❌ [HttpApiService] Silent refresh rejected (status ${res.statusCode})');
+      _refreshCompleter?.complete(false);
+      return false;
+    } catch (e) {
+      debugPrint('❌ [HttpApiService] Silent refresh exception: $e');
+      _refreshCompleter?.complete(false);
+      return false;
+    } finally {
+      _isRefreshing = false;
+      _refreshCompleter = null;
+    }
+  }
+
+  /// Network Interceptor: handles token injection, silent 401 refresh interception, and request replay
+  Future<http.Response> _sendWithAuthRetry(
+    String method,
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+    bool checkAuth = true,
+  }) async {
+    try {
+      final reqHeaders = headers ?? _getHeaders();
+      http.Response response;
+
+      switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
+          break;
+        case 'POST':
+          response = await http.post(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          break;
+        case 'PATCH':
+          response = await http.patch(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          break;
+        case 'DELETE':
+          response = await http.delete(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          break;
+        case 'PUT':
+          response = await http.put(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          break;
+        default:
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
+      }
+
+      // If 401 occurs on an authenticated route, attempt silent refresh and replay once seamlessly
+      if (checkAuth && response.statusCode == 401) {
+        debugPrint('🔄 [HttpApiService] 401 encountered for $url. Initiating silent refresh...');
+        final bool refreshed = await silentRefreshToken();
+        if (refreshed && _token != null) {
+          debugPrint('🔁 [HttpApiService] Replaying original $method request after silent refresh...');
+          final replayedHeaders = Map<String, String>.from(headers ?? _getHeaders());
+          replayedHeaders['Authorization'] = 'Bearer $_token';
+
+          switch (method.toUpperCase()) {
+            case 'GET':
+              return await http.get(url, headers: replayedHeaders).timeout(const Duration(seconds: 15));
+            case 'POST':
+              return await http.post(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+            case 'PATCH':
+              return await http.patch(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+            case 'DELETE':
+              return await http.delete(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+            case 'PUT':
+              return await http.put(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+          }
+        } else {
+          handleUnauthorized();
+        }
+      }
+
+      return response;
+    } on SocketException catch (e) {
+      debugPrint('⚠️ [HttpApiService] Network drop / SocketException for $url: $e');
+      return http.Response('{"error":"Network connection lost. Please check your internet.","offline":true}', 503);
+    } on TimeoutException catch (e) {
+      debugPrint('⚠️ [HttpApiService] Request timeout for $url: $e');
+      return http.Response('{"error":"Request timed out. Please try again.","timeout":true}', 504);
+    } catch (e) {
+      debugPrint('⚠️ [HttpApiService] Network exception for $url: $e');
+      return http.Response('{"error":"Network communication failed: $e"}', 500);
+    }
+  }
+
+  /// Internal HTTP wrappers with automatic silent refresh & crash resilience
+  Future<http.Response> _get(Uri url, {Map<String, String>? headers, bool checkAuth = true}) async {
+    return _sendWithAuthRetry('GET', url, headers: headers, checkAuth: checkAuth);
   }
 
   Future<http.Response> _post(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
-    final response = await http.post(url, headers: headers ?? _getHeaders(), body: body);
-    if (checkAuth && response.statusCode == 401) {
-      handleUnauthorized();
-    }
-    return response;
+    return _sendWithAuthRetry('POST', url, headers: headers, body: body, checkAuth: checkAuth);
   }
 
   Future<http.Response> _patch(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
-    final response = await http.patch(url, headers: headers ?? _getHeaders(), body: body);
-    if (checkAuth && response.statusCode == 401) {
-      handleUnauthorized();
-    }
-    return response;
+    return _sendWithAuthRetry('PATCH', url, headers: headers, body: body, checkAuth: checkAuth);
   }
 
   Future<http.Response> _delete(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
-    final response = await http.delete(url, headers: headers ?? _getHeaders(), body: body);
-    if (checkAuth && response.statusCode == 401) {
-      handleUnauthorized();
-    }
-    return response;
+    return _sendWithAuthRetry('DELETE', url, headers: headers, body: body, checkAuth: checkAuth);
   }
 
   Future<http.Response> authenticatedDelete(String path) async {
@@ -138,14 +338,24 @@ class HttpApiService {
     }
   }
 
-  /// Fast-path backend health check that uses cached IP to eliminate startup UI freezes
-  Future<void> checkBackendHealth() async {
+  /// Loads saved access token, refresh token, and expiration timestamp from secure storage
+  Future<void> loadSavedTokens() async {
     try {
       _token = await _secureStorage.read(key: 'auth_token');
-      debugPrint('🔑 Loaded cached token: ${_token != null ? "exists" : "null"}');
+      _refreshToken = await _secureStorage.read(key: 'refresh_token');
+      final expiryStr = await _secureStorage.read(key: 'token_expiry');
+      if (expiryStr != null) {
+        _tokenExpiry = DateTime.tryParse(expiryStr);
+      }
+      debugPrint('🔑 Loaded cached tokens -> AccessToken: ${_token != null ? "exists" : "null"}, RefreshToken: ${_refreshToken != null ? "exists" : "null"}, Expiry: $_tokenExpiry');
     } catch (e) {
-      debugPrint('Failed to read token from secure storage: $e');
+      debugPrint('⚠️ [HttpApiService] Failed to read tokens from secure storage: $e');
     }
+  }
+
+  /// Fast-path backend health check that uses cached IP to eliminate startup UI freezes
+  Future<void> checkBackendHealth() async {
+    await loadSavedTokens();
 
     String? cachedHost;
     try {
@@ -197,15 +407,6 @@ class HttpApiService {
     }
   }
 
-  Future<void> setToken(String? token) async {
-    _token = token;
-    if (token != null) {
-      await _secureStorage.write(key: 'auth_token', value: token);
-    } else {
-      await _secureStorage.delete(key: 'auth_token');
-    }
-  }
-
   Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
@@ -214,22 +415,71 @@ class HttpApiService {
   }
 
   // Auth & Login
-  Future<Map<String, dynamic>?> verifyPhone(String phoneNumber) async {
+  Future<Map<String, dynamic>> verifyPhone(String phoneNumber, {String? websiteSource}) async {
     try {
+      final bodyMap = <String, dynamic>{'phoneNumber': phoneNumber};
+      if (websiteSource != null) {
+        bodyMap['website_source'] = websiteSource;
+      }
+
       final response = await _post(
         Uri.parse('$baseUrl/auth/verify-phone'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phoneNumber': phoneNumber}),
+        body: jsonEncode(bodyMap),
         checkAuth: false,
       );
+
+      final dynamic parsed = await parseJsonAsync(response.body);
+      final Map<String, dynamic> data = (parsed is Map<String, dynamic>) ? parsed : {};
+
       if (response.statusCode == 200) {
-        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+        return {
+          'status': 'success',
+          'statusCode': 200,
+          'success': true,
+          'message': data['message'] ?? 'کد تأیید با موفقیت ارسال شد',
+          ...data,
+        };
       }
-      return null;
+
+      if (response.statusCode == 429) {
+        int retryAfter = 120;
+        final headerRetry = response.headers['retry-after'];
+        if (headerRetry != null) {
+          retryAfter = int.tryParse(headerRetry) ?? retryAfter;
+        } else if (data['retryAfter'] != null) {
+          retryAfter = (data['retryAfter'] as num).toInt();
+        }
+
+        return {
+          'status': 'rate_limited',
+          'statusCode': 429,
+          'success': false,
+          'retryAfter': retryAfter,
+          'message': data['error'] ?? data['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
+          ...data,
+        };
+      }
+
+      return {
+        'status': 'error',
+        'statusCode': response.statusCode,
+        'success': false,
+        'message': data['error'] ?? data['message'] ?? 'خطایی در بررسی شماره رخ داد',
+        ...data,
+      };
     } catch (e) {
       debugPrint('Verify phone error: $e');
-      return null;
+      return {
+        'status': 'error',
+        'success': false,
+        'message': 'خطای ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.',
+      };
     }
+  }
+
+  Future<Map<String, dynamic>> sendOtp(String phoneNumber, {String? websiteSource}) async {
+    return verifyPhone(phoneNumber, websiteSource: websiteSource);
   }
 
   Future<dynamic> login(String phoneNumber, {String? password, String? role}) async {
@@ -252,12 +502,43 @@ class HttpApiService {
       }
 
       if (response.statusCode == 200) {
-        _token = data['token'];
-        await _secureStorage.write(key: 'auth_token', value: _token);
+        final accessToken = data['accessToken'] ?? data['token'];
+        final refreshToken = data['refreshToken'];
+        final expiresAtStr = data['expiresAt'];
+        DateTime? expiresAt;
+        if (expiresAtStr != null) {
+          expiresAt = DateTime.tryParse(expiresAtStr);
+        } else if (data['expiresIn'] != null) {
+          expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
+        }
+
+        await setAuthTokens(
+          token: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: expiresAt,
+        );
         return {'status': 'success', 'data': data};
       }
       
-      return {'status': 'error', 'message': data['message'] ?? data['error'] ?? 'خطایی رخ داده است'};
+      if (response.statusCode == 429) {
+        int retryAfter = 120;
+        final headerRetry = response.headers['retry-after'];
+        if (headerRetry != null) {
+          retryAfter = int.tryParse(headerRetry) ?? retryAfter;
+        } else if (data is Map && data['retryAfter'] != null) {
+          retryAfter = (data['retryAfter'] as num).toInt();
+        }
+        return {
+          'status': 'rate_limited',
+          'statusCode': 429,
+          'success': false,
+          'retryAfter': retryAfter,
+          'message': data?['error'] ?? data?['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
+          if (data is Map<String, dynamic>) ...data,
+        };
+      }
+
+      return {'status': 'error', 'message': data?['message'] ?? data?['error'] ?? 'خطایی رخ داده است'};
     } catch (e) {
       debugPrint('Login error: $e');
       return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
@@ -290,12 +571,43 @@ class HttpApiService {
       final data = await parseJsonAsync(response.body);
 
       if (response.statusCode == 200) {
-        _token = data['token'];
-        await _secureStorage.write(key: 'auth_token', value: _token);
+        final accessToken = data['accessToken'] ?? data['token'];
+        final refreshToken = data['refreshToken'];
+        final expiresAtStr = data['expiresAt'];
+        DateTime? expiresAt;
+        if (expiresAtStr != null) {
+          expiresAt = DateTime.tryParse(expiresAtStr);
+        } else if (data['expiresIn'] != null) {
+          expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
+        }
+
+        await setAuthTokens(
+          token: accessToken,
+          refreshToken: refreshToken,
+          expiresAt: expiresAt,
+        );
         return {'status': 'success', 'data': data};
       }
+
+      if (response.statusCode == 429) {
+        int retryAfter = 120;
+        final headerRetry = response.headers['retry-after'];
+        if (headerRetry != null) {
+          retryAfter = int.tryParse(headerRetry) ?? retryAfter;
+        } else if (data is Map && data['retryAfter'] != null) {
+          retryAfter = (data['retryAfter'] as num).toInt();
+        }
+        return {
+          'status': 'rate_limited',
+          'statusCode': 429,
+          'success': false,
+          'retryAfter': retryAfter,
+          'message': data?['error'] ?? data?['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
+          if (data is Map<String, dynamic>) ...data,
+        };
+      }
       
-      return {'status': 'error', 'message': data['message'] ?? data['error'] ?? 'خطایی در ثبت‌نام رخ داده است'};
+      return {'status': 'error', 'message': data?['message'] ?? data?['error'] ?? 'خطایی در ثبت‌نام رخ داده است'};
     } catch (e) {
       debugPrint('Register error: $e');
       return {'status': 'error', 'message': 'خطای ارتباط با سرور'};
@@ -307,9 +619,9 @@ class HttpApiService {
       final response = await _post(
         Uri.parse('$baseUrl/auth/logout'),
         headers: _getHeaders(),
+        checkAuth: false,
       );
-      _token = null;
-      await _secureStorage.delete(key: 'auth_token');
+      await clearTokens();
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('Logout error: $e');

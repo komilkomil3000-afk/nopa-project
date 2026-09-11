@@ -228,6 +228,23 @@
               <option value="4">سطح ۴</option>
               <option value="5">سطح ۵</option>
             </select>
+            <div class="date-filter-box" id="users-date-filter-box">
+              <span class="date-filter-label">
+                <i class="fa-solid fa-calendar-days"></i>
+                تاریخ عضویت:
+              </span>
+              <div class="date-input-wrapper">
+                <label for="filter-user-start-date">از</label>
+                <input type="date" id="filter-user-start-date" class="input-ctrl date-ctrl" title="از تاریخ">
+              </div>
+              <div class="date-input-wrapper">
+                <label for="filter-user-end-date">تا</label>
+                <input type="date" id="filter-user-end-date" class="input-ctrl date-ctrl" title="تا تاریخ">
+              </div>
+              <button id="btn-clear-user-date-filter" type="button" title="پاک کردن فیلتر تاریخ" class="btn-clear-date">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
           <div>
             <button id="btn-add-user-modal" class="btn-action btn-add"><i class="fa-solid fa-plus"></i>ایجاد کاربر</button>
@@ -254,12 +271,13 @@
                 <th>کاروان</th>
                 <th>موجودی زریک</th>
                 <th>سطح</th>
+                <th>تاریخ عضویت</th>
                 <th>پیشرفت</th>
                 <th>عملیات</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">در حال بارگذاری کاربران...</td></tr>
+              <tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 20px;">در حال بارگذاری کاربران...</td></tr>
             </tbody>
           </table>
         </div>

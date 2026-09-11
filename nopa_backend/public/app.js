@@ -10,6 +10,8 @@ let userSearchVal = '';
 let filterRoleVal = '';
 let filterCaravanVal = '';
 let filterLevelVal = '';
+let filterStartDateVal = '';
+let filterEndDateVal = '';
 
 let caravansList = [];
 let allUsersList = []; // Used for Zarik target selection dropdowns
@@ -324,6 +326,36 @@ window.promptLevelOverride = async function(userId, currentLevel) {
     usersPage = 1;
     loadUsers();
   });
+
+  const userStartDateInput = document.getElementById('filter-user-start-date');
+  if (userStartDateInput) {
+    userStartDateInput.addEventListener('change', (e) => {
+      filterStartDateVal = e.target.value;
+      usersPage = 1;
+      loadUsers();
+    });
+  }
+
+  const userEndDateInput = document.getElementById('filter-user-end-date');
+  if (userEndDateInput) {
+    userEndDateInput.addEventListener('change', (e) => {
+      filterEndDateVal = e.target.value;
+      usersPage = 1;
+      loadUsers();
+    });
+  }
+
+  const clearUserDateBtn = document.getElementById('btn-clear-user-date-filter');
+  if (clearUserDateBtn) {
+    clearUserDateBtn.addEventListener('click', () => {
+      if (userStartDateInput) userStartDateInput.value = '';
+      if (userEndDateInput) userEndDateInput.value = '';
+      filterStartDateVal = '';
+      filterEndDateVal = '';
+      usersPage = 1;
+      loadUsers();
+    });
+  }
 
   // Pagination buttons
   document.getElementById('btn-prev-users').addEventListener('click', () => {
@@ -1972,7 +2004,7 @@ async function loadCaravans() {
 // Load users (paginated)
 async function loadUsers() {
   try {
-    const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}`;
+    const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}&startDate=${encodeURIComponent(filterStartDateVal)}&endDate=${encodeURIComponent(filterEndDateVal)}`;
     const res = await request(url);
     const data = await res.json();
 
@@ -2004,7 +2036,7 @@ async function loadUsers() {
     tbody.innerHTML = '';
 
     if (data.users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">هیچ کاربری یافت نشد</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 20px;">هیچ کاربری یافت نشد</td></tr>';
       return;
     }
 
@@ -2016,6 +2048,7 @@ async function loadUsers() {
       }
       
       const blockBadge = u.blocked ? `<span class="badge badge-blocked">مسدود شده</span>` : '';
+      const regDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fa-IR') : '-';
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -2026,6 +2059,7 @@ async function loadUsers() {
         <td>${u.caravanName || '-'}</td>
         <td><strong style="color: var(--color-neon-blue);">${u.zarikBalance.toLocaleString()}</strong></td>
         <td>${u.levelFrame}</td>
+        <td style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${regDate}</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="progress-bar-container" style="flex: 1; margin:0; width:60px;">

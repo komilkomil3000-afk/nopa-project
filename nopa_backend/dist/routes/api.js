@@ -29,9 +29,13 @@ const admin_1 = __importDefault(require("./admin"));
 const router = (0, express_1.Router)();
 // A. Auth & User Profile Routes
 router.use('/auth', rateLimit_1.authLimiter);
-router.post('/auth/verify-phone', authController_1.verifyPhone);
+router.post('/auth/verify-phone', rateLimit_1.smsProtectionMiddleware, authController_1.verifyPhone);
+router.post('/auth/send-otp', rateLimit_1.smsProtectionMiddleware, authController_1.sendOtp);
+router.post('/auth/request-otp', rateLimit_1.smsProtectionMiddleware, authController_1.requestOtp);
 router.post('/auth/login', authController_1.login);
 router.post('/auth/register', authController_1.register);
+router.post('/auth/refresh', authController_1.refreshToken);
+router.post('/auth/refresh-token', authController_1.refreshToken);
 router.post('/auth/logout', auth_1.authenticateJWT, authController_1.logout);
 router.post('/auth/change-password', auth_1.authenticateJWT, authController_1.changePassword);
 router.get('/users/me', auth_1.authenticateJWT, userController_1.getMe);

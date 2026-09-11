@@ -3,14 +3,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.requestOtp = exports.sendOtp = void 0;
 exports.verifyPhone = verifyPhone;
 exports.login = login;
 exports.register = register;
+exports.refreshToken = refreshToken;
 exports.logout = logout;
 exports.changePassword = changePassword;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_1 = __importDefault(require("../config/db"));
+const smsProtection_1 = require("../middleware/smsProtection");
 const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
 const normalizePhone = (phone) => {
     if (!phone)
@@ -47,13 +50,18 @@ async function verifyPhone(req, res) {
         if (userCount === 0) {
             return res.status(404).json({ error: 'شماره شما در سامانه ثبت نشده است. لطفا با مدیریت تماس بگیرید' });
         }
-        res.json({ success: true, count: userCount });
+        // Record SMS dispatch to activate 120s phone cooldown and hourly IP counter
+        const clientIp = (0, smsProtection_1.getClientIp)(req);
+        (0, smsProtection_1.recordSmsDispatch)(cleanPhone, clientIp);
+        res.json({ success: true, count: userCount, message: 'کد تایید ارسال شد' });
     }
     catch (error) {
         console.error('Verify phone error:', error);
         res.status(500).json({ error: 'خطایی در بررسی شماره رخ داد' });
     }
 }
+exports.sendOtp = verifyPhone;
+exports.requestOtp = verifyPhone;
 async function login(req, res) {
     try {
         let { phoneNumber, password, role } = req.body;
@@ -154,6 +162,9 @@ async function login(req, res) {
             }
         });
         const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+        const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+        const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
         const token = jsonwebtoken_1.default.sign({
             id: user.id,
             role: user.role,
@@ -163,6 +174,11 @@ async function login(req, res) {
             name: user.name,
             nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
         }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            id: user.id,
+            tokenVersion: user.tokenVersion,
+            type: 'refresh'
+        }, refreshSecret, { expiresIn: '90d' });
         // Multi-Device Session Management (Item 10)
         const activeSessions = await db_1.default.userSession.findMany({
             where: { userId: user.id },
@@ -182,6 +198,10 @@ async function login(req, res) {
         });
         res.status(200).json({
             token,
+            accessToken: token,
+            refreshToken,
+            expiresIn: expiresInSeconds,
+            expiresAt,
             user: {
                 id: user.id,
                 name: user.name,
@@ -267,6 +287,9 @@ async function register(req, res) {
         }
         // Generate token and session
         const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+        const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+        const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
         const token = jsonwebtoken_1.default.sign({
             id: activeUser.id,
             role: activeUser.role,
@@ -276,6 +299,11 @@ async function register(req, res) {
             name: activeUser.name,
             nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
         }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            id: activeUser.id,
+            tokenVersion: activeUser.tokenVersion,
+            type: 'refresh'
+        }, refreshSecret, { expiresIn: '90d' });
         const activeSessions = await db_1.default.userSession.findMany({
             where: { userId: activeUser.id },
             orderBy: { createdAt: 'asc' }
@@ -294,6 +322,10 @@ async function register(req, res) {
         });
         res.status(200).json({
             token,
+            accessToken: token,
+            refreshToken,
+            expiresIn: expiresInSeconds,
+            expiresAt,
             user: {
                 id: activeUser.id,
                 name: activeUser.name,
@@ -310,6 +342,86 @@ async function register(req, res) {
     catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ error: 'خطایی در ثبت‌نام رخ داد' });
+    }
+}
+async function refreshToken(req, res) {
+    try {
+        const rawRefreshToken = req.body.refreshToken || req.body.refresh_token || req.headers['x-refresh-token'];
+        if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
+            return res.status(400).json({ error: 'Refresh token is required' });
+        }
+        const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+        const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+        let decoded;
+        try {
+            decoded = jsonwebtoken_1.default.verify(rawRefreshToken, refreshSecret);
+        }
+        catch (err) {
+            // Fallback verification if signed with primary secret
+            try {
+                decoded = jsonwebtoken_1.default.verify(rawRefreshToken, secret);
+            }
+            catch (e2) {
+                return res.status(401).json({ error: 'Refresh token is invalid or expired' });
+            }
+        }
+        if (!decoded || !decoded.id) {
+            return res.status(401).json({ error: 'Invalid token payload' });
+        }
+        const user = await db_1.default.user.findUnique({
+            where: { id: decoded.id }
+        });
+        if (!user || user.isDeleted || user.blocked || user.accountStatus === 'SUSPENDED') {
+            return res.status(401).json({ error: 'User account is inactive, suspended, or not found' });
+        }
+        if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
+            return res.status(401).json({ error: 'Token version revoked. Please log in again.' });
+        }
+        const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+        const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+        const newAccessToken = jsonwebtoken_1.default.sign({
+            id: user.id,
+            role: user.role,
+            phoneNumber: user.phoneNumber,
+            tokenVersion: user.tokenVersion,
+            identityVerified: true,
+            name: user.name,
+            nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+        }, secret, { expiresIn: (process.env.JWT_EXPIRATION || '30d') });
+        const newRefreshToken = jsonwebtoken_1.default.sign({
+            id: user.id,
+            tokenVersion: user.tokenVersion,
+            type: 'refresh'
+        }, refreshSecret, { expiresIn: '90d' });
+        // Track active session
+        await db_1.default.userSession.create({
+            data: {
+                userId: user.id,
+                token: newAccessToken,
+                deviceInfo: req.headers['user-agent'] || null
+            }
+        }).catch(() => { });
+        res.status(200).json({
+            success: true,
+            token: newAccessToken,
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+            expiresIn: expiresInSeconds,
+            expiresAt,
+            user: {
+                id: user.id,
+                name: user.name,
+                phoneNumber: user.phoneNumber,
+                role: user.role,
+                caravanId: user.caravanId,
+                identityVerified: true,
+                isDualRole: Boolean(user.isDualRole || user.role === 'admin')
+            }
+        });
+    }
+    catch (error) {
+        console.error('Silent refresh error:', error);
+        res.status(500).json({ error: 'Internal server error during silent token refresh' });
     }
 }
 async function logout(req, res) {

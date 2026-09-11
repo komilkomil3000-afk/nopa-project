@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateJWT, authorizeRoles } from '../middleware/auth';
-import { authLimiter } from '../middleware/rateLimit';
-import { login, verifyPhone, changePassword, register, logout } from '../controllers/authController';
+import { authLimiter, smsProtectionMiddleware } from '../middleware/rateLimit';
+import { login, verifyPhone, sendOtp, requestOtp, changePassword, register, logout, refreshToken } from '../controllers/authController';
 import { getMe, getMentorById, completeProfile } from '../controllers/userController';
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
@@ -34,9 +34,13 @@ const router = Router();
 
 // A. Auth & User Profile Routes
 router.use('/auth', authLimiter);
-router.post('/auth/verify-phone', verifyPhone as any);
+router.post('/auth/verify-phone', smsProtectionMiddleware as any, verifyPhone as any);
+router.post('/auth/send-otp', smsProtectionMiddleware as any, sendOtp as any);
+router.post('/auth/request-otp', smsProtectionMiddleware as any, requestOtp as any);
 router.post('/auth/login', login as any);
 router.post('/auth/register', register as any);
+router.post('/auth/refresh', refreshToken as any);
+router.post('/auth/refresh-token', refreshToken as any);
 router.post('/auth/logout', authenticateJWT as any, logout as any);
 router.post('/auth/change-password', authenticateJWT as any, changePassword as any);
 router.get('/users/me', authenticateJWT as any, getMe as any);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
@@ -14,7 +15,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-enum LoginMethod { password, testBypass }
+enum LoginMethod { password, otp, testBypass }
 
 class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
   bool _isLoginTab = true;
@@ -24,6 +25,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   // Input Controllers
   final TextEditingController _loginPhoneCtrl = TextEditingController();
   final TextEditingController _loginPasswordCtrl = TextEditingController();
+  final TextEditingController _loginOtpCtrl = TextEditingController();
+  final TextEditingController _honeypotCtrl = TextEditingController();
 
   final TextEditingController _regNameCtrl = TextEditingController();
   final TextEditingController _regPhoneCtrl = TextEditingController();
@@ -34,6 +37,11 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   DateTime? _selectedDob;
   bool _isPasswordVisible = false;
 
+  // Rate Limiting & Countdown Timer
+  Timer? _countdownTimer;
+  int _cooldownRemainingSeconds = 0;
+  bool _isSendingCode = false;
+
   final HttpApiService _apiService = HttpApiService();
 
   @override
@@ -41,6 +49,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     super.initState();
     _loadSavedPhone();
     _checkAutoLogin();
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    _loginPhoneCtrl.dispose();
+    _loginPasswordCtrl.dispose();
+    _loginOtpCtrl.dispose();
+    _honeypotCtrl.dispose();
+    _regNameCtrl.dispose();
+    _regPhoneCtrl.dispose();
+    _regCityCtrl.dispose();
+    _regDobCtrl.dispose();
+    _regPasswordCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSavedPhone() async {
@@ -155,21 +178,43 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     return '$jy/$monthStr/$dayStr';
   }
 
-  // Decodes role securely from cryptographically signed JWT payload
+  // Decodes role securely from cryptographically signed JWT payload safely
   Map<String, dynamic> decodeJwt(String token) {
-    final parts = token.split('.');
-    if (parts.length != 3) {
-      throw Exception('Invalid token');
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return {};
+      }
+      final payload = parts[1];
+      var normalized = base64Url.normalize(payload);
+      var resp = utf8.decode(base64Url.decode(normalized));
+      final decoded = jsonDecode(resp);
+      return (decoded is Map<String, dynamic>) ? decoded : {};
+    } catch (e) {
+      debugPrint('⚠️ [AuthScreen] Error decoding JWT token: $e');
+      return {};
     }
-    final payload = parts[1];
-    var normalized = base64Url.normalize(payload);
-    var resp = utf8.decode(base64Url.decode(normalized));
-    return jsonDecode(resp);
   }
 
   void _processLoginResponse(dynamic response) {
     if (response == null) {
       _showError('ارتباط با سرور برقرار نشد');
+      return;
+    }
+
+    if (response['status'] == 'rate_limited') {
+      final retryAfter = (response['retryAfter'] as num?)?.toInt() ?? 120;
+      _startCooldownTimer(retryAfter);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            response['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
+            style: const TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+          backgroundColor: const Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
     
@@ -483,20 +528,124 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _startCooldownTimer([int seconds = 120]) {
+    _countdownTimer?.cancel();
+    setState(() {
+      _cooldownRemainingSeconds = seconds;
+    });
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_cooldownRemainingSeconds > 1) {
+          _cooldownRemainingSeconds--;
+        } else {
+          _cooldownRemainingSeconds = 0;
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  String _formatSeconds(int totalSeconds) {
+    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  void _showWarning(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontFamily: 'Vazirmatn')),
+        backgroundColor: const Color(0xFFF59E0B),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _handleSendVerificationCode() async {
+    final phone = toEnglishDigits(_loginPhoneCtrl.text.trim());
+    if (phone.isEmpty) {
+      _showError('لطفاً شماره همراه خود را وارد کنید');
+      return;
+    }
+
+    if (_cooldownRemainingSeconds > 0) {
+      _showWarning('لطفاً ${_formatSeconds(_cooldownRemainingSeconds)} دیگر دوباره تلاش کنید.');
+      return;
+    }
+
+    setState(() {
+      _isSendingCode = true;
+    });
+
+    final res = await _apiService.verifyPhone(
+      phone,
+      websiteSource: _honeypotCtrl.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isSendingCode = false;
+    });
+
+    if (res['status'] == 'success') {
+      _startCooldownTimer(120);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['message'] ?? 'کد تأیید برای شماره شما ارسال شد.',
+            style: const TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else if (res['status'] == 'rate_limited') {
+      final retryAfter = (res['retryAfter'] as num?)?.toInt() ?? 120;
+      _startCooldownTimer(retryAfter);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
+            style: const TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+          backgroundColor: const Color(0xFFF59E0B),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      _showError(res['message'] ?? 'خطایی در بررسی شماره رخ داد');
+    }
+  }
+
   Future<void> _handleLogin() async {
     String phone = toEnglishDigits(_loginPhoneCtrl.text.trim());
     if (phone.isEmpty) {
       _showError('لطفا شماره تماس را وارد کنید');
       return;
     }
-    
-    String password = _loginMethod == LoginMethod.testBypass ? '123456' : _loginPasswordCtrl.text;
-    if (_loginMethod == LoginMethod.password && password.isEmpty) {
-      _showError('لطفا رمز عبور خود را وارد کنید');
-      return;
+
+    String password;
+    if (_loginMethod == LoginMethod.testBypass) {
+      password = '123456';
+    } else if (_loginMethod == LoginMethod.otp) {
+      password = _loginOtpCtrl.text.trim();
+      if (password.isEmpty) {
+        _showError('لطفا کد تایید پیامک شده را وارد کنید');
+        return;
+      }
+    } else {
+      password = _loginPasswordCtrl.text;
+      if (password.isEmpty) {
+        _showError('لطفا رمز عبور خود را وارد کنید');
+        return;
+      }
     }
 
-    final response = await _apiService.login(phone, password: password); 
+    final response = await _apiService.login(phone, password: password);
     _processLoginResponse(response);
   }
 
@@ -690,6 +839,17 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 28),
 
                   if (_isLoginTab) ...[
+                    // Honeypot hidden input for bot protection (invisible to real users)
+                    Offstage(
+                      offstage: true,
+                      child: TextField(
+                        controller: _honeypotCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Website Source',
+                        ),
+                      ),
+                    ),
+
                     // LOGIN TAB VIEW
                     _buildPhoneWithCountryDropdown(_loginPhoneCtrl),
                     const SizedBox(height: 16),
@@ -700,7 +860,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       children: [
                         Expanded(
                           child: ChoiceChip(
-                            label: const Text('ورود با رمز عبور', style: TextStyle(fontFamily: 'Vazirmatn')),
+                            label: const Text('رمز عبور', style: TextStyle(fontFamily: 'Vazirmatn', fontSize: 12)),
                             selected: _loginMethod == LoginMethod.password,
                             onSelected: (selected) {
                               if (selected) setState(() => _loginMethod = LoginMethod.password);
@@ -710,10 +870,23 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                             labelStyle: TextStyle(color: _loginMethod == LoginMethod.password ? Colors.white : Colors.white60),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: ChoiceChip(
-                            label: const Text('ورود سریع آزمایشی (123456)', style: TextStyle(fontFamily: 'Vazirmatn', fontSize: 11)),
+                            label: const Text('کد پیامکی', style: TextStyle(fontFamily: 'Vazirmatn', fontSize: 12)),
+                            selected: _loginMethod == LoginMethod.otp,
+                            onSelected: (selected) {
+                              if (selected) setState(() => _loginMethod = LoginMethod.otp);
+                            },
+                            selectedColor: const Color(0xFF8B5CF6),
+                            backgroundColor: const Color(0xFF1E1435),
+                            labelStyle: TextStyle(color: _loginMethod == LoginMethod.otp ? Colors.white : Colors.white60),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('آزمایشی', style: TextStyle(fontFamily: 'Vazirmatn', fontSize: 12)),
                             selected: _loginMethod == LoginMethod.testBypass,
                             onSelected: (selected) {
                               if (selected) setState(() => _loginMethod = LoginMethod.testBypass);
@@ -727,7 +900,19 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     ),
                     const SizedBox(height: 16),
 
-                    if (_loginMethod == LoginMethod.password) ...[
+                    if (_loginMethod == LoginMethod.otp) ...[
+                      _buildSendCodeButton(),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        controller: _loginOtpCtrl,
+                        hintText: 'کد تأیید پیامک شده (یا ۱۲۳۴۵۶)',
+                        suffixIcon: const Icon(
+                          Icons.pin_outlined,
+                          color: Colors.white60,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ] else if (_loginMethod == LoginMethod.password) ...[
                       _buildTextField(
                         controller: _loginPasswordCtrl,
                         hintText: 'رمز عبور',
@@ -757,8 +942,21 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       const SizedBox(height: 24),
                     ],
 
-                    _buildActionButton('ورود به سامانه', _handleLogin),
+                    _buildActionButton(
+                      _loginMethod == LoginMethod.otp ? 'تأیید و ورود به سامانه' : 'ورود به سامانه',
+                      _handleLogin,
+                    ),
                   ] else ...[
+                    // Honeypot hidden input for register
+                    Offstage(
+                      offstage: true,
+                      child: TextField(
+                        controller: _honeypotCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Website Source',
+                        ),
+                      ),
+                    ),
                     // REGISTER TAB VIEW
                     _buildTextField(controller: _regNameCtrl, hintText: 'نام و نام خانوادگی'),
                     const SizedBox(height: 12),
@@ -787,6 +985,49 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSendCodeButton() {
+    final bool isCooldownActive = _cooldownRemainingSeconds > 0;
+    final bool isDisabled = isCooldownActive || _isSendingCode;
+
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        color: isDisabled ? const Color(0xFF2C224D).withValues(alpha: 0.5) : const Color(0xFF1E1435),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDisabled ? const Color(0xFF4C3E7A).withValues(alpha: 0.4) : const Color(0xFF8B5CF6),
+          width: 1.2,
+        ),
+      ),
+      child: TextButton.icon(
+        onPressed: isDisabled ? null : _handleSendVerificationCode,
+        icon: _isSendingCode
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+              )
+            : Icon(
+                isCooldownActive ? Icons.timer_outlined : Icons.sms_outlined,
+                color: isDisabled ? Colors.white38 : const Color(0xFFD946EF),
+                size: 18,
+              ),
+        label: Text(
+          isCooldownActive
+              ? 'ارسال مجدد کد (${_formatSeconds(_cooldownRemainingSeconds)})'
+              : (_isSendingCode ? 'در حال ارسال کد...' : 'ارسال کد تأیید پیامکی'),
+          style: TextStyle(
+            color: isDisabled ? Colors.white38 : Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Vazirmatn',
           ),
         ),
       ),

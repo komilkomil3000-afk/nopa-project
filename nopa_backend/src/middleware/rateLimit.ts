@@ -18,3 +18,6 @@ export const authLimiter = rateLimit({
     error: 'تعداد درخواست‌های احراز هویت از این آدرس بیش از حد مجاز است. لطفا کمی بعد تلاش کنید.'
   }
 });
+
+export * from './smsProtection';
+

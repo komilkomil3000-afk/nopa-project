@@ -469,6 +469,96 @@ body {
   color: var(--text-primary);
 }
 
+.date-filter-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 4px 12px;
+  transition: all 0.2s ease;
+}
+
+.date-filter-box:focus-within {
+  border-color: var(--color-neon-purple, #8B5CF6);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.date-filter-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.date-filter-label i {
+  color: var(--color-neon-purple, #8B5CF6);
+}
+
+.date-input-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.date-input-wrapper label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin: 0;
+  cursor: pointer;
+}
+
+.date-ctrl {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  height: 32px !important;
+  color: var(--text-primary) !important;
+  color-scheme: dark;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.date-ctrl:focus {
+  border-color: var(--color-neon-blue, #06B6D4) !important;
+}
+
+.btn-clear-date {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-date:hover {
+  color: var(--color-danger, #ef4444);
+  transform: scale(1.15);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) brightness(1.2);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .btn-action {
   padding: 10px 20px;
   border-radius: 10px;

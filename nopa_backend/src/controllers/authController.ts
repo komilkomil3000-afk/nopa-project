@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
+import { recordSmsDispatch, getClientIp } from '../middleware/smsProtection';
 
 const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
 
@@ -39,12 +40,20 @@ export async function verifyPhone(req: Request, res: Response) {
     if (userCount === 0) {
       return res.status(404).json({ error: 'شماره شما در سامانه ثبت نشده است. لطفا با مدیریت تماس بگیرید' });
     }
-    res.json({ success: true, count: userCount });
+
+    // Record SMS dispatch to activate 120s phone cooldown and hourly IP counter
+    const clientIp = getClientIp(req);
+    recordSmsDispatch(cleanPhone, clientIp);
+
+    res.json({ success: true, count: userCount, message: 'کد تایید ارسال شد' });
   } catch (error) {
     console.error('Verify phone error:', error);
     res.status(500).json({ error: 'خطایی در بررسی شماره رخ داد' });
   }
 }
+
+export const sendOtp = verifyPhone;
+export const requestOtp = verifyPhone;
 
 export async function login(req: Request, res: Response) {
   try {
@@ -160,6 +169,10 @@ export async function login(req: Request, res: Response) {
     });
 
     const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+    const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+
     const token = jwt.sign(
       { 
         id: user.id, 
@@ -172,6 +185,16 @@ export async function login(req: Request, res: Response) {
       },
       secret,
       { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        id: user.id,
+        tokenVersion: user.tokenVersion,
+        type: 'refresh'
+      },
+      refreshSecret,
+      { expiresIn: '90d' }
     );
 
     // Multi-Device Session Management (Item 10)
@@ -196,6 +219,10 @@ export async function login(req: Request, res: Response) {
 
     res.status(200).json({
       token,
+      accessToken: token,
+      refreshToken,
+      expiresIn: expiresInSeconds,
+      expiresAt,
       user: {
         id: user.id,
         name: user.name,
@@ -288,6 +315,10 @@ export async function register(req: Request, res: Response) {
 
     // Generate token and session
     const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+    const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+
     const token = jwt.sign(
       { 
         id: activeUser.id, 
@@ -300,6 +331,16 @@ export async function register(req: Request, res: Response) {
       },
       secret,
       { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
+    );
+
+    const refreshToken = jwt.sign(
+      {
+        id: activeUser.id,
+        tokenVersion: activeUser.tokenVersion,
+        type: 'refresh'
+      },
+      refreshSecret,
+      { expiresIn: '90d' }
     );
 
     const activeSessions = await prisma.userSession.findMany({
@@ -323,6 +364,10 @@ export async function register(req: Request, res: Response) {
 
     res.status(200).json({
       token,
+      accessToken: token,
+      refreshToken,
+      expiresIn: expiresInSeconds,
+      expiresAt,
       user: {
         id: activeUser.id,
         name: activeUser.name,
@@ -338,6 +383,103 @@ export async function register(req: Request, res: Response) {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'خطایی در ثبت‌نام رخ داد' });
+  }
+}
+
+export async function refreshToken(req: Request, res: Response) {
+  try {
+    const rawRefreshToken = req.body.refreshToken || req.body.refresh_token || req.headers['x-refresh-token'];
+    if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
+      return res.status(400).json({ error: 'Refresh token is required' });
+    }
+
+    const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(rawRefreshToken, refreshSecret);
+    } catch (err) {
+      // Fallback verification if signed with primary secret
+      try {
+        decoded = jwt.verify(rawRefreshToken, secret);
+      } catch (e2) {
+        return res.status(401).json({ error: 'Refresh token is invalid or expired' });
+      }
+    }
+
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ error: 'Invalid token payload' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
+    });
+
+    if (!user || user.isDeleted || user.blocked || user.accountStatus === 'SUSPENDED') {
+      return res.status(401).json({ error: 'User account is inactive, suspended, or not found' });
+    }
+
+    if (decoded.tokenVersion !== undefined && user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({ error: 'Token version revoked. Please log in again.' });
+    }
+
+    const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
+
+    const newAccessToken = jwt.sign(
+      {
+        id: user.id,
+        role: user.role,
+        phoneNumber: user.phoneNumber,
+        tokenVersion: user.tokenVersion,
+        identityVerified: true,
+        name: user.name,
+        nonce: `${Date.now()}_${Math.random().toString(36).substring(2)}`
+      },
+      secret,
+      { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
+    );
+
+    const newRefreshToken = jwt.sign(
+      {
+        id: user.id,
+        tokenVersion: user.tokenVersion,
+        type: 'refresh'
+      },
+      refreshSecret,
+      { expiresIn: '90d' }
+    );
+
+    // Track active session
+    await prisma.userSession.create({
+      data: {
+        userId: user.id,
+        token: newAccessToken,
+        deviceInfo: req.headers['user-agent'] || null
+      }
+    }).catch(() => {});
+
+    res.status(200).json({
+      success: true,
+      token: newAccessToken,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: expiresInSeconds,
+      expiresAt,
+      user: {
+        id: user.id,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        caravanId: user.caravanId,
+        identityVerified: true,
+        isDualRole: Boolean(user.isDualRole || user.role === 'admin')
+      }
+    });
+  } catch (error) {
+    console.error('Silent refresh error:', error);
+    res.status(500).json({ error: 'Internal server error during silent token refresh' });
   }
 }
 
