@@ -327,31 +327,85 @@ window.promptLevelOverride = async function(userId, currentLevel) {
     loadUsers();
   });
 
+  // Collapsible Date Filter Dropdown & Listeners
+  const usersDateFilterBox = document.getElementById('users-date-filter-box');
+  const usersDateFilterTrigger = document.getElementById('users-date-filter-trigger');
+  const usersDateFilterBadge = document.getElementById('users-date-filter-badge');
   const userStartDateInput = document.getElementById('filter-user-start-date');
+  const userEndDateInput = document.getElementById('filter-user-end-date');
+  const clearUserDateBtn = document.getElementById('btn-clear-user-date-filter');
+
+  function updateUserDateFilterBadge() {
+    const s = userStartDateInput ? userStartDateInput.value : '';
+    const e = userEndDateInput ? userEndDateInput.value : '';
+
+    if (usersDateFilterBadge && usersDateFilterTrigger) {
+      if (s && e) {
+        usersDateFilterBadge.textContent = `${s} تا ${e}`;
+        usersDateFilterBadge.style.display = 'inline-block';
+        usersDateFilterTrigger.classList.add('active-filtered');
+      } else if (s) {
+        usersDateFilterBadge.textContent = `از ${s}`;
+        usersDateFilterBadge.style.display = 'inline-block';
+        usersDateFilterTrigger.classList.add('active-filtered');
+      } else if (e) {
+        usersDateFilterBadge.textContent = `تا ${e}`;
+        usersDateFilterBadge.style.display = 'inline-block';
+        usersDateFilterTrigger.classList.add('active-filtered');
+      } else {
+        usersDateFilterBadge.textContent = '';
+        usersDateFilterBadge.style.display = 'none';
+        usersDateFilterTrigger.classList.remove('active-filtered');
+      }
+    }
+  }
+
+  if (usersDateFilterTrigger && usersDateFilterBox) {
+    usersDateFilterTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      usersDateFilterBox.classList.toggle('open');
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!usersDateFilterBox.contains(e.target)) {
+        usersDateFilterBox.classList.remove('open');
+      }
+    });
+
+    // Prevent panel clicks from bubbling up to close it
+    const panel = document.getElementById('users-date-filter-panel');
+    if (panel) {
+      panel.addEventListener('click', (e) => e.stopPropagation());
+    }
+  }
+
   if (userStartDateInput) {
     userStartDateInput.addEventListener('change', (e) => {
       filterStartDateVal = e.target.value;
+      updateUserDateFilterBadge();
       usersPage = 1;
       loadUsers();
     });
   }
 
-  const userEndDateInput = document.getElementById('filter-user-end-date');
   if (userEndDateInput) {
     userEndDateInput.addEventListener('change', (e) => {
       filterEndDateVal = e.target.value;
+      updateUserDateFilterBadge();
       usersPage = 1;
       loadUsers();
     });
   }
 
-  const clearUserDateBtn = document.getElementById('btn-clear-user-date-filter');
   if (clearUserDateBtn) {
-    clearUserDateBtn.addEventListener('click', () => {
+    clearUserDateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (userStartDateInput) userStartDateInput.value = '';
       if (userEndDateInput) userEndDateInput.value = '';
       filterStartDateVal = '';
       filterEndDateVal = '';
+      updateUserDateFilterBadge();
       usersPage = 1;
       loadUsers();
     });
