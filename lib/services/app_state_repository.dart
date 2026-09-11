@@ -20,6 +20,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   static final AppRepository _instance = AppRepository._internal();
   factory AppRepository() => _instance;
   AppRepository._internal() {
+    _lastActiveTimestamp = DateTime.now();
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
     _startPeriodicNotificationSync();
@@ -34,7 +35,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   static VoidCallback? onSessionTimeout;
-  static const int inactivityTimeoutMinutes = 10;
+  static const int inactivityTimeoutMinutes = 15;
   static const String prefKeyLastActive = 'last_app_exit_timestamp';
   DateTime? _lastActiveTimestamp;
   Timer? _inactivityCheckTimer;
@@ -49,28 +50,27 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> checkInactivityTimeout() async {
     if (!_apiService.isAuthenticated) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final lastActiveMs = prefs.getInt(prefKeyLastActive);
-    if (lastActiveMs != null) {
-      final lastActive = DateTime.fromMillisecondsSinceEpoch(lastActiveMs);
-      final diff = DateTime.now().difference(lastActive);
-      if (diff.inMinutes >= inactivityTimeoutMinutes) {
-        debugPrint('⏱️ Inactivity timeout exceeded: ${diff.inMinutes} min (limit: $inactivityTimeoutMinutes min). Logging out...');
-        await prefs.remove(prefKeyLastActive);
-        await _apiService.setToken(null);
-        handleUnauthorized();
-        onSessionTimeout?.call();
-        return;
-      }
+    final now = DateTime.now();
+    _lastActiveTimestamp ??= now;
+    final diff = now.difference(_lastActiveTimestamp!);
+    if (diff.inMinutes >= inactivityTimeoutMinutes) {
+      debugPrint('⏱️ Inactivity timeout exceeded: ${diff.inMinutes} min (limit: $inactivityTimeoutMinutes min). Logging out...');
+      _lastActiveTimestamp = now;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefKeyLastActive);
+      await _apiService.setToken(null);
+      handleUnauthorized();
+      onSessionTimeout?.call();
+      return;
     }
-    // Re-entered within 10 minutes: keep session alive!
-    recordActivity();
   }
 
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
-    _notificationPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      fetchNotifications();
+    _notificationPollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_apiService.isAuthenticated) {
+        fetchNotifications();
+      }
     });
 
     _inactivityCheckTimer?.cancel();

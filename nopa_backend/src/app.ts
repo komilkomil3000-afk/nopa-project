@@ -37,7 +37,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/', apiLimiter);
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/v1/health'], (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 

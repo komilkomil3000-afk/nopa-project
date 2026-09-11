@@ -29,7 +29,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
   bool _isLoadingClasses = true;
   List<dynamic> _userProgress = [];
 
-  late VideoPlayerController _videoPlayerController;
+  VideoPlayerController? _videoPlayerController;
   bool _isVideoInitialized = false;
   bool _hasVideoError = false;
   bool _isQuizUnlocked = false;
@@ -147,12 +147,13 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
 
   // ignore: unused_element
   void _addBookmark() {
-    if (!_videoPlayerController.value.isInitialized) return;
+    final controller = _videoPlayerController;
+    if (controller == null || !controller.value.isInitialized) return;
 
-    final currentPos = _videoPlayerController.value.position.inSeconds;
+    final currentPos = controller.value.position.inSeconds;
     final noteController = TextEditingController();
 
-    _videoPlayerController.pause();
+    controller.pause();
 
     showDialog(
       context: context,
@@ -174,7 +175,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              _videoPlayerController.play();
+              _videoPlayerController?.play();
             },
             child: const Text(
               'انصراف',
@@ -195,7 +196,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
               }
               if (!ctx.mounted) return;
               Navigator.pop(ctx);
-              _videoPlayerController.play();
+              _videoPlayerController?.play();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFD946EF),
@@ -207,9 +208,28 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
     );
   }
 
+  void _disposeVideoController() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    final controller = _videoPlayerController;
+    if (controller != null) {
+      _videoPlayerController = null;
+      try {
+        controller.removeListener(_videoListener);
+        AudioExclusivityService.unregisterVideoController(controller);
+        controller.dispose();
+      } catch (e) {
+        debugPrint('Error disposing video controller: $e');
+      }
+    }
+  }
+
   void _proceedWithVideo() {
     if (!mounted) return;
+    _disposeVideoController();
     setState(() {
+      _isVideoInitialized = false;
+      _hasVideoError = false;
       _isMiniQuizShowing = false;
     });
     final currentClass = _classes[_currentClassIndex];
@@ -242,59 +262,67 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
           .replaceAll('127.0.0.1', hostIp);
     }
 
-    _videoPlayerController =
-        VideoPlayerController.networkUrl(Uri.parse(resolvedUrl))
-          ..initialize()
-              .then((_) async {
-                if (!mounted) return;
+    final newController =
+        VideoPlayerController.networkUrl(Uri.parse(resolvedUrl));
+    _videoPlayerController = newController;
 
-                final progress = await HttpApiService().getWatchProgress(
-                  currentClass['id'],
-                );
-                int resumePos = 0;
-                bool isUnlocked = false;
-                if (progress != null) {
-                  resumePos =
-                      (progress['resumePosition'] as num?)?.toInt() ?? 0;
-                  isUnlocked =
-                      (progress['watchedPercentage'] as num? ?? 0.0) >= 60.0;
-                }
+    newController.initialize().then((_) async {
+      if (!mounted || _videoPlayerController != newController) {
+        newController.dispose();
+        return;
+      }
 
-                setState(() {
-                  _isVideoInitialized = true;
-                  _isQuizUnlocked = isUnlocked;
-                });
+      final progress = await HttpApiService().getWatchProgress(
+        currentClass['id'],
+      );
+      if (!mounted || _videoPlayerController != newController) return;
 
-                if (resumePos > 0) {
-                  await _videoPlayerController.seekTo(
-                    Duration(seconds: resumePos),
-                  );
-                }
+      int resumePos = 0;
+      bool isUnlocked = false;
+      if (progress != null) {
+        resumePos =
+            (progress['resumePosition'] as num?)?.toInt() ?? 0;
+        isUnlocked =
+            (progress['watchedPercentage'] as num? ?? 0.0) >= 60.0;
+      }
 
-                _videoPlayerController.setPlaybackSpeed(_playbackSpeed);
-                _videoPlayerController.addListener(_videoListener);
-                AudioExclusivityService.registerVideoController(
-                  _videoPlayerController,
-                );
+      setState(() {
+        _isVideoInitialized = true;
+        _isQuizUnlocked = isUnlocked;
+      });
 
-                _videoPlayerController.play();
-                AudioExclusivityService.onVideoPlay();
-                _startHeartbeatTimer();
-              })
-              .catchError((error) {
-                debugPrint('Video init error: $error');
-                if (mounted) {
-                  setState(() {
-                    _hasVideoError = true;
-                  });
-                }
-              });
+      if (resumePos > 0) {
+        await newController.seekTo(
+          Duration(seconds: resumePos),
+        );
+      }
+
+      if (!mounted || _videoPlayerController != newController) return;
+
+      newController.setPlaybackSpeed(_playbackSpeed);
+      newController.addListener(_videoListener);
+      AudioExclusivityService.registerVideoController(
+        newController,
+      );
+
+      newController.play();
+      AudioExclusivityService.onVideoPlay();
+      _startHeartbeatTimer();
+    }).catchError((error) {
+      debugPrint('Video init error: $error');
+      if (mounted && _videoPlayerController == newController) {
+        setState(() {
+          _hasVideoError = true;
+        });
+      }
+    });
   }
 
   void _videoListener() {
-    if (_videoPlayerController.value.isInitialized) {
-      final pos = _videoPlayerController.value.position.inMilliseconds;
-      final dur = _videoPlayerController.value.duration.inMilliseconds;
+    final controller = _videoPlayerController;
+    if (controller != null && controller.value.isInitialized) {
+      final pos = controller.value.position.inMilliseconds;
+      final dur = controller.value.duration.inMilliseconds;
 
       final currentClass = _classes[_currentClassIndex];
       final List clips = currentClass['videoClips'] ?? [];
@@ -304,7 +332,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
         setState(() {
           _isMiniQuizShowing = true;
         });
-        _videoPlayerController.pause();
+        controller.pause();
 
         // Show the quiz and wait for it to close
         Future.delayed(Duration.zero, () {
@@ -358,10 +386,11 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
         timer.cancel();
         return;
       }
-      if (_isVideoInitialized && _videoPlayerController.value.isPlaying) {
+      final controller = _videoPlayerController;
+      if (_isVideoInitialized && controller != null && controller.value.isPlaying) {
         final currentClass = _classes[_currentClassIndex];
-        final pos = _videoPlayerController.value.position.inSeconds;
-        final dur = _videoPlayerController.value.duration.inSeconds;
+        final pos = controller.value.position.inSeconds;
+        final dur = controller.value.duration.inSeconds;
         if (dur > 0) {
           final res = await HttpApiService().sendWatchHeartbeat(
             currentClass['id'],
@@ -380,16 +409,9 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
     });
   }
 
-  void _stopHeartbeatTimer() {
-    _heartbeatTimer?.cancel();
-  }
-
   @override
   void dispose() {
-    _stopHeartbeatTimer();
-    _videoPlayerController.removeListener(_videoListener);
-    AudioExclusivityService.unregisterVideoController(_videoPlayerController);
-    _videoPlayerController.dispose();
+    _disposeVideoController();
     super.dispose();
   }
 
@@ -408,6 +430,10 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
   }
 
   Widget _buildVideoControlsOverlay() {
+    final controller = _videoPlayerController;
+    if (controller == null || !_isVideoInitialized) {
+      return const SizedBox.shrink();
+    }
     return Positioned(
       bottom: 0,
       left: 0,
@@ -419,7 +445,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
           children: [
             IconButton(
               icon: Icon(
-                _videoPlayerController.value.isPlaying
+                controller.value.isPlaying
                     ? Icons.pause
                     : Icons.play_arrow,
                 color: Colors.white,
@@ -427,10 +453,10 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
               ),
               onPressed: () {
                 setState(() {
-                  if (_videoPlayerController.value.isPlaying) {
-                    _videoPlayerController.pause();
+                  if (controller.value.isPlaying) {
+                    controller.pause();
                   } else {
-                    _videoPlayerController.play();
+                    controller.play();
                     AudioExclusivityService.onVideoPlay();
                   }
                 });
@@ -438,7 +464,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
             ),
             Expanded(
               child: VideoProgressIndicator(
-                _videoPlayerController,
+                controller,
                 allowScrubbing: false,
                 colors: const VideoProgressColors(
                   playedColor: Color(0xFFD946EF),
@@ -449,7 +475,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
             ),
             const SizedBox(width: 8),
             ValueListenableBuilder(
-              valueListenable: _videoPlayerController,
+              valueListenable: controller,
               builder: (context, VideoPlayerValue value, child) {
                 final duration = value.duration;
                 final position = value.position;
@@ -474,7 +500,7 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
               onSelected: (double speed) {
                 setState(() {
                   _playbackSpeed = speed;
-                  _videoPlayerController.setPlaybackSpeed(speed);
+                  controller.setPlaybackSpeed(speed);
                 });
               },
               itemBuilder: (context) => [
@@ -636,34 +662,37 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                   ),
                                 ),
                               )
-                            : (_isVideoInitialized
-                                  ? Stack(
-                                      alignment: Alignment.bottomCenter,
-                                      children: [
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              if (_videoPlayerController
-                                                  .value
-                                                  .isPlaying) {
-                                                _videoPlayerController.pause();
-                                              } else {
-                                                _videoPlayerController.play();
-                                              }
-                                            });
-                                          },
-                                          child: VideoPlayer(
-                                            _videoPlayerController,
-                                          ),
+                            : (_isVideoInitialized &&
+                                    _videoPlayerController != null &&
+                                    _videoPlayerController!.value.isInitialized
+                                ? Stack(
+                                    alignment: Alignment.bottomCenter,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (_videoPlayerController == null) return;
+                                          setState(() {
+                                            if (_videoPlayerController!
+                                                .value
+                                                .isPlaying) {
+                                              _videoPlayerController!.pause();
+                                            } else {
+                                              _videoPlayerController!.play();
+                                            }
+                                          });
+                                        },
+                                        child: VideoPlayer(
+                                          _videoPlayerController!,
                                         ),
-                                        _buildVideoControlsOverlay(),
-                                      ],
-                                    )
-                                  : const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Color(0xFFD946EF),
                                       ),
-                                    ))),
+                                      _buildVideoControlsOverlay(),
+                                    ],
+                                  )
+                                : const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Color(0xFFD946EF),
+                                    ),
+                                  ))),
                 ),
               ),
             ),
@@ -696,8 +725,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                   setState(() {
                                     _currentClipIndex--;
                                   });
-                                  _videoPlayerController.removeListener(_videoListener);
-                                  _videoPlayerController.dispose();
                                   _proceedWithVideo();
                                 }
                               : null,
@@ -724,8 +751,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                     setState(() {
                                       _currentClipIndex++;
                                     });
-                                    _videoPlayerController.removeListener(_videoListener);
-                                    _videoPlayerController.dispose();
                                     _proceedWithVideo();
                                   }
                                 : null,
@@ -811,8 +836,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                 setState(() {
                                   _currentClipIndex = index;
                                 });
-                                _videoPlayerController.removeListener(_videoListener);
-                                _videoPlayerController.dispose();
                                 _proceedWithVideo();
                               }
                             },
@@ -1186,7 +1209,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                       ? () {
                           setState(() {
                             _currentClassIndex++;
-                            _videoPlayerController.dispose();
                             _initializeVideo();
                           });
                         }
@@ -1213,7 +1235,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                       ? () {
                           setState(() {
                             _currentClassIndex--;
-                            _videoPlayerController.dispose();
                             _initializeVideo();
                           });
                         }
@@ -1657,8 +1678,6 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                               setState(() {
                                                 _currentClipIndex = partIndex + 1;
                                               });
-                                              _videoPlayerController.removeListener(_videoListener);
-                                              _videoPlayerController.dispose();
                                               _proceedWithVideo();
                                             }
                                           },

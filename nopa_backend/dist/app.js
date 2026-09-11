@@ -34,7 +34,7 @@ app.use(express_1.default.static(path_1.default.join(__dirname, '../public')));
 // General API Rate Limiter (1000 requests per 15 minutes per IP)
 app.use('/api/', rateLimit_1.apiLimiter);
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get(['/health', '/api/v1/health'], (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 // API Routes prefix

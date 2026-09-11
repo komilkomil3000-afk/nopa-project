@@ -17,15 +17,20 @@ class AudioExclusivityService {
   }
 
   static void onVideoPlay() {
-    if (_activeAudioPlayer != null) {
-      _activeAudioPlayer!.pause();
-      debugPrint('AudioExclusivityService: Paused active audio player because video started playing');
+    try {
+      if (_activeAudioPlayer != null) {
+        _activeAudioPlayer!.pause();
+        debugPrint(
+            'AudioExclusivityService: Paused active audio player because video started playing');
+      }
+    } catch (e) {
+      debugPrint('AudioExclusivityService onVideoPlay error: $e');
     }
   }
 
   static void registerAudioPlayer(AudioPlayer player) {
     _activeAudioPlayer = player;
-    
+
     // Listen to audio player state changes
     player.onPlayerStateChanged.listen((state) {
       if (state == PlayerState.playing) {
@@ -35,9 +40,16 @@ class AudioExclusivityService {
   }
 
   static void onAudioPlay() {
-    if (_activeVideoController != null && _activeVideoController!.value.isPlaying) {
-      _activeVideoController!.pause();
-      debugPrint('AudioExclusivityService: Paused active video controller because audio started playing');
+    try {
+      if (_activeVideoController != null &&
+          _activeVideoController!.value.isInitialized &&
+          _activeVideoController!.value.isPlaying) {
+        _activeVideoController!.pause();
+        debugPrint(
+            'AudioExclusivityService: Paused active video controller because audio started playing');
+      }
+    } catch (e) {
+      debugPrint('AudioExclusivityService onAudioPlay error: $e');
     }
   }
 }
