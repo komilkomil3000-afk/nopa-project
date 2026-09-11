@@ -598,23 +598,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 3,
               ),
             ),
-            child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400',
-                width: 108,
-                height: 108,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 108,
-                  height: 108,
-                  color: Colors.white10,
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white30,
-                    size: 54,
-                  ),
-                ),
-              ),
+            child: SafeAvatar(
+              radius: 54,
+              imageUrl: currentUser.avatarUrl,
+              name: currentUser.name,
+              backgroundColor: Colors.transparent,
             ),
           ),
           const SizedBox(height: 16),

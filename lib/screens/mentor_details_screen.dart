@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../core/constants/api_constants.dart';
 import '../utils/global_state.dart';
 import '../services/app_state_repository.dart';
 import 'mentor_qualification_detail_screen.dart';
@@ -94,12 +96,17 @@ class MentorDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   ClipOval(
-                    child: Image.network(
-                      mentor['avatar'],
+                    child: CachedNetworkImage(
+                      imageUrl: ApiConstants.resolveImageUrl(mentor['avatar']),
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                      placeholder: (context, url) => Container(
+                        width: 96,
+                        height: 96,
+                        color: const Color(0xFF160E2A),
+                      ),
+                      errorWidget: (context, url, error) => Container(
                         width: 96,
                         height: 96,
                         color: Colors.white10,

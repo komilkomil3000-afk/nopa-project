@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/station.dart';
+import '../core/constants/api_constants.dart';
 
 class StationCard extends StatelessWidget {
   final Station station;
@@ -57,17 +59,21 @@ class StationCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      station.imageUrl,
+                    CachedNetworkImage(
+                      imageUrl: ApiConstants.resolveImageUrl(station.imageUrl),
                       fit: BoxFit.cover,
                       color: station.isLocked ? Colors.black54 : null,
                       colorBlendMode: station.isLocked ? BlendMode.saturation : null,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.white10,
-                          child: const Icon(Icons.broken_image, color: Colors.white30, size: 40),
-                        );
-                      },
+                      placeholder: (context, url) => Container(
+                        color: const Color(0xFF160E2A),
+                        alignment: Alignment.center,
+                        child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6)),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: const Color(0xFF160E2A),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image_rounded, color: Colors.white30, size: 40),
+                      ),
                     ),
                     // Gradient overlay on image
                     Container(
@@ -144,7 +150,7 @@ class StationCard extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -1,52 +1,20 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { apiLimiter } from './middleware/rateLimit';
-import { errorHandler } from './middleware/error';
-import apiRouter from './routes/api';
+import app from './app';
 import prisma from './config/db';
-
-import path from 'path';
 
 // Load Environment Config
 dotenv.config();
 
-const app = express();
+// Process protection against unhandled rejections and uncaught exceptions
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('🚨 [Process Protection] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('🚨 [Process Protection] Uncaught Exception thrown:', error);
+});
+
 const PORT = process.env.PORT || 5000;
-
-// Security & Request Parsing Middlewares
-app.use(
-  helmet({
-    contentSecurityPolicy: false, // Disable CSP to allow external CDNs like Google Fonts, Chart.js, etc.
-  })
-);
-app.use(cors({ origin: '*' }));
-app.use(express.json());
-
-// Serve static admin files
-app.use('/admin', express.static(path.join(__dirname, '../public')));
-app.use('/admin/libs/chartjs', express.static(path.join(__dirname, '../node_modules/chart.js/dist')));
-app.use('/admin/libs/fontawesome', express.static(path.join(__dirname, '../node_modules/@fortawesome/fontawesome-free')));
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// API Rate Limiter
-app.use('/api/', apiLimiter);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
-});
-
-// API Routes prefix
-app.use('/api/admin/lms/stations', (req, res) => {
-  res.redirect(307, `/api/v1/lms/stations${req.url === '/' ? '' : req.url}`);
-});
-app.use('/api/v1', apiRouter);
-
-// Global Error Handler Middleware
-app.use(errorHandler);
 
 async function runAuditLogCleanup() {
   try {

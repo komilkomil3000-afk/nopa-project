@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/station.dart';
 import '../services/api_service.dart';
+import '../core/constants/api_constants.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
@@ -407,17 +409,20 @@ class _MapScreenState extends State<MapScreen> {
                           border: Border.all(color: accentColor, width: 2),
                         ),
                         child: ClipOval(
-                          child: Image.network(
-                            iconUrl,
+                          child: CachedNetworkImage(
+                            imageUrl: ApiConstants.resolveImageUrl(iconUrl),
                             fit: BoxFit.cover,
                             color: isLocked ? Colors.black54 : null,
                             colorBlendMode: isLocked ? BlendMode.saturation : null,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.white10,
-                                child: const Icon(Icons.school, color: Colors.white30, size: 20),
-                              );
-                            },
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFF160E2A),
+                              alignment: Alignment.center,
+                              child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6)),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.white10,
+                              child: const Icon(Icons.school, color: Colors.white30, size: 20),
+                            ),
                           ),
                         ),
                       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../core/constants/api_constants.dart';
 
 class JarchiItem extends StatelessWidget {
   final String title;
@@ -56,19 +58,24 @@ class JarchiItem extends StatelessWidget {
                     const SizedBox(height: 12),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        imageUrl,
+                      child: CachedNetworkImage(
+                        imageUrl: ApiConstants.resolveImageUrl(imageUrl),
                         width: double.infinity,
                         height: 140,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: double.infinity,
-                            height: 140,
-                            color: Colors.white10,
-                            child: const Icon(Icons.broken_image, color: Colors.white30, size: 40),
-                          );
-                        },
+                        placeholder: (context, url) => Container(
+                          width: double.infinity,
+                          height: 140,
+                          color: const Color(0xFF160E2A),
+                          alignment: Alignment.center,
+                          child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6)),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          width: double.infinity,
+                          height: 140,
+                          color: const Color(0xFF160E2A),
+                          child: const Icon(Icons.broken_image_rounded, color: Colors.white30, size: 40),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -146,19 +153,22 @@ class JarchiItem extends StatelessWidget {
               // Right: Image (renders first on the right in RTL)
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: ApiConstants.resolveImageUrl(imageUrl),
                   width: 52,
                   height: 52,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 52,
-                      height: 52,
-                      color: Colors.white10,
-                      child: const Icon(Icons.broken_image, color: Colors.white30, size: 20),
-                    );
-                  },
+                  placeholder: (context, url) => Container(
+                    width: 52,
+                    height: 52,
+                    color: const Color(0xFF160E2A),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    width: 52,
+                    height: 52,
+                    color: const Color(0xFF160E2A),
+                    child: const Icon(Icons.broken_image_rounded, color: Colors.white30, size: 20),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),

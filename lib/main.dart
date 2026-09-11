@@ -36,7 +36,7 @@ void navigateToMainTab(int index) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  GoogleFonts.config.allowRuntimeFetching = true;
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Setup automatic 401 unauthorized token invalidation & login redirect
   HttpApiService.onUnauthorized = () {
@@ -81,23 +81,24 @@ void main() async {
 }
 
 TextTheme _buildTextTheme(TextTheme base, double scale) {
-  return GoogleFonts.vazirmatnTextTheme(base.copyWith(
-    displayLarge: (base.displayLarge ?? const TextStyle()).copyWith(fontSize: 57 * scale),
-    displayMedium: (base.displayMedium ?? const TextStyle()).copyWith(fontSize: 45 * scale),
-    displaySmall: (base.displaySmall ?? const TextStyle()).copyWith(fontSize: 36 * scale),
-    headlineLarge: (base.headlineLarge ?? const TextStyle()).copyWith(fontSize: 32 * scale),
-    headlineMedium: (base.headlineMedium ?? const TextStyle()).copyWith(fontSize: 28 * scale),
-    headlineSmall: (base.headlineSmall ?? const TextStyle()).copyWith(fontSize: 24 * scale),
-    titleLarge: (base.titleLarge ?? const TextStyle()).copyWith(fontSize: 22 * scale),
-    titleMedium: (base.titleMedium ?? const TextStyle()).copyWith(fontSize: 16 * scale),
-    titleSmall: (base.titleSmall ?? const TextStyle()).copyWith(fontSize: 14 * scale),
-    bodyLarge: (base.bodyLarge ?? const TextStyle()).copyWith(fontSize: 16 * scale),
-    bodyMedium: (base.bodyMedium ?? const TextStyle()).copyWith(fontSize: 14 * scale),
-    bodySmall: (base.bodySmall ?? const TextStyle()).copyWith(fontSize: 12 * scale),
-    labelLarge: (base.labelLarge ?? const TextStyle()).copyWith(fontSize: 14 * scale),
-    labelMedium: (base.labelMedium ?? const TextStyle()).copyWith(fontSize: 12 * scale),
-    labelSmall: (base.labelSmall ?? const TextStyle()).copyWith(fontSize: 11 * scale),
-  ));
+  const fontFamily = 'Vazirmatn';
+  return base.copyWith(
+    displayLarge: (base.displayLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 57 * scale),
+    displayMedium: (base.displayMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 45 * scale),
+    displaySmall: (base.displaySmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 36 * scale),
+    headlineLarge: (base.headlineLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 32 * scale),
+    headlineMedium: (base.headlineMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 28 * scale),
+    headlineSmall: (base.headlineSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 24 * scale),
+    titleLarge: (base.titleLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 22 * scale),
+    titleMedium: (base.titleMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 16 * scale),
+    titleSmall: (base.titleSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
+    bodyLarge: (base.bodyLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 16 * scale),
+    bodyMedium: (base.bodyMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
+    bodySmall: (base.bodySmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 12 * scale),
+    labelLarge: (base.labelLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
+    labelMedium: (base.labelMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 12 * scale),
+    labelSmall: (base.labelSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 11 * scale),
+  );
 }
 
 class NepaApp extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
@@ -219,7 +220,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   image: DecorationImage(
-                    image: NetworkImage(HttpApiService().resolveMediaUrl(banner['imageUrl'])),
+                    image: CachedNetworkImageProvider(HttpApiService().resolveMediaUrl(banner['imageUrl'])),
                     onError: (e, s) => debugPrint('Image failed to load'),
                     fit: BoxFit.cover,
                   ),

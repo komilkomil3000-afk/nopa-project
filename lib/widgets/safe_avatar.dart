@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../core/constants/api_constants.dart';
 
 class SafeAvatar extends StatelessWidget {
   final String? imageUrl;
@@ -17,7 +19,8 @@ class SafeAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial = name.trim().isNotEmpty ? name.trim()[0] : '؟';
-    final hasValidUrl = imageUrl != null && imageUrl!.startsWith('http');
+    final resolvedUrl = ApiConstants.resolveImageUrl(imageUrl);
+    final hasValidUrl = resolvedUrl.isNotEmpty && resolvedUrl.startsWith('http');
 
     if (!hasValidUrl) {
       return _buildFallback(initial);
@@ -27,16 +30,13 @@ class SafeAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: backgroundColor ?? Colors.indigo.shade800,
       child: ClipOval(
-        child: Image.network(
-          imageUrl!,
+        child: CachedNetworkImage(
+          imageUrl: resolvedUrl,
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => _buildFallback(initial),
-          loadingBuilder: (context, child, progress) {
-            if (progress == null) return child;
-            return _buildFallback(initial);
-          },
+          placeholder: (context, url) => _buildFallback(initial),
+          errorWidget: (context, url, error) => _buildFallback(initial),
         ),
       ),
     );

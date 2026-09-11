@@ -3,6 +3,7 @@ import 'dart:io' show InternetAddressType, NetworkInterface;
 import 'dart:io' as io show File;
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
+import '../core/constants/api_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -452,17 +453,30 @@ class HttpApiService {
     }
   }
   String resolveMediaUrl(String url) {
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/')) {
-      return '${baseUrl.replaceAll('/api/v1', '')}$url';
-    }
-    return '${baseUrl.replaceAll('/api/v1', '')}/$url';
+    return ApiConstants.resolveImageUrl(url);
   }
 
   // Get Course Classes
-  Future<List<Map<String, dynamic>>> getClasses() async {
+  // In-memory caches for LMS and Static Resources
+  List<Map<String, dynamic>>? _cachedStations;
+  List<Map<String, dynamic>>? _cachedClasses;
+  List<Map<String, dynamic>>? _cachedNews;
+  final Map<String, List<Map<String, dynamic>>> _cachedBanners = {};
+
+  /// Invalidate cached LMS data to force a fresh fetch
+  void clearLmsCache() {
+    _cachedStations = null;
+    _cachedClasses = null;
+    _cachedNews = null;
+    _cachedBanners.clear();
+    debugPrint('🧹 [HttpApiService] LMS in-memory cache cleared');
+  }
+
+  // Get Course Classes (with in-memory cache)
+  Future<List<Map<String, dynamic>>> getClasses({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedClasses != null && _cachedClasses!.isNotEmpty) {
+      return _cachedClasses!;
+    }
     try {
       final response = await _get(
         Uri.parse('$baseUrl/classes'),
@@ -472,18 +486,22 @@ class HttpApiService {
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
+          _cachedClasses = List<Map<String, dynamic>>.from(data);
+          return _cachedClasses!;
         }
       }
-      return [];
+      return _cachedClasses ?? [];
     } catch (e) {
       debugPrint('HTTP getClasses error: $e');
-      return [];
+      return _cachedClasses ?? [];
     }
   }
 
-  // Get Stations
-  Future<List<Map<String, dynamic>>> getStations() async {
+  // Get Stations (with in-memory cache)
+  Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty) {
+      return _cachedStations!;
+    }
     try {
       final response = await _get(
         Uri.parse('$baseUrl/lms/stations'),
@@ -493,13 +511,14 @@ class HttpApiService {
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
+          _cachedStations = List<Map<String, dynamic>>.from(data);
+          return _cachedStations!;
         }
       }
-      return [];
+      return _cachedStations ?? [];
     } catch (e) {
       debugPrint('HTTP getStations error: $e');
-      return [];
+      return _cachedStations ?? [];
     }
   }
 
@@ -519,36 +538,46 @@ class HttpApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getNews() async {
+  Future<List<Map<String, dynamic>>> getNews({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty) {
+      return _cachedNews!;
+    }
     try {
       final response = await _get(Uri.parse('$baseUrl/news'), headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
+          _cachedNews = List<Map<String, dynamic>>.from(data);
+          return _cachedNews!;
         }
       }
-      return [];
+      return _cachedNews ?? [];
     } catch (e) {
       debugPrint('getNews error: $e');
-      return [];
+      return _cachedNews ?? [];
     }
   }
 
-  Future<List<Map<String, dynamic>>> getBanners({String? position}) async {
+  Future<List<Map<String, dynamic>>> getBanners({String? position, bool forceRefresh = false}) async {
+    final cacheKey = position ?? 'all';
+    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty) {
+      return _cachedBanners[cacheKey]!;
+    }
     try {
       final url = position != null ? '$baseUrl/banners?position=$position' : '$baseUrl/banners';
       final response = await _get(Uri.parse(url), headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return List<Map<String, dynamic>>.from(data);
+          final list = List<Map<String, dynamic>>.from(data);
+          _cachedBanners[cacheKey] = list;
+          return list;
         }
       }
-      return [];
+      return _cachedBanners[cacheKey] ?? [];
     } catch (e) {
       debugPrint('getBanners error: $e');
-      return [];
+      return _cachedBanners[cacheKey] ?? [];
     }
   }
 

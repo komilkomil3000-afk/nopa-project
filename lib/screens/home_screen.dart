@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
+import '../core/constants/api_constants.dart';
 import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
 import '../models/station.dart';
@@ -62,24 +64,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBackdropHeader(UserModel? user) {
-    final bannerImageUrl = _banners.isNotEmpty 
-        ? HttpApiService().resolveMediaUrl(_banners[0]['imageUrl']) 
-        : 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800';
+    final hasCustomBanner = _banners.isNotEmpty && 
+        _banners[0]['imageUrl'] != null && 
+        _banners[0]['imageUrl'].toString().trim().isNotEmpty;
+    final bannerImageUrl = hasCustomBanner
+        ? ApiConstants.resolveImageUrl(_banners[0]['imageUrl'].toString()) 
+        : null;
 
     return Container(
       height: 240,
       width: double.infinity,
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: NetworkImage(bannerImageUrl),
-          onError: (e, s) => debugPrint('Banner image failed to load'),
-          fit: BoxFit.cover,
+        color: const Color(0xFF1E103A),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B1768), Color(0xFF160E2A), Color(0xFF0F081D)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
         ),
+        image: bannerImageUrl != null
+            ? DecorationImage(
+                image: CachedNetworkImageProvider(bannerImageUrl),
+                onError: (e, s) => debugPrint('Banner image failed to load'),
+                fit: BoxFit.cover,
+              )
+            : null,
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.black54, Color(0xFF0F081D)],
+            colors: bannerImageUrl != null 
+                ? [Colors.black54, const Color(0xFF0F081D)]
+                : [Colors.transparent, const Color(0xFF0F081D).withValues(alpha: 0.7)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -219,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 170,
+                height: 200,
                 child: _stations.isEmpty
                     ? const Center(child: Text('منزلگاهی یافت نشد', style: TextStyle(color: Colors.white54, fontFamily: 'Vazirmatn')))
                     : ListView.builder(
