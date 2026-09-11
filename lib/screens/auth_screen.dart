@@ -41,6 +41,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Timer? _countdownTimer;
   int _cooldownRemainingSeconds = 0;
   bool _isSendingCode = false;
+  bool _hasSentCodeOnce = false;
 
   final HttpApiService _apiService = HttpApiService();
 
@@ -592,6 +593,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     });
 
     if (res['status'] == 'success') {
+      _hasSentCodeOnce = true;
       _startCooldownTimer(120);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -604,6 +606,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         ),
       );
     } else if (res['status'] == 'rate_limited') {
+      _hasSentCodeOnce = true;
       final retryAfter = (res['retryAfter'] as num?)?.toInt() ?? 120;
       _startCooldownTimer(retryAfter);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -995,6 +998,17 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final bool isCooldownActive = _cooldownRemainingSeconds > 0;
     final bool isDisabled = isCooldownActive || _isSendingCode;
 
+    String buttonLabel;
+    if (isCooldownActive) {
+      buttonLabel = 'ارسال مجدد کد (${_formatSeconds(_cooldownRemainingSeconds)})';
+    } else if (_isSendingCode) {
+      buttonLabel = 'در حال ارسال کد...';
+    } else if (_hasSentCodeOnce) {
+      buttonLabel = 'ارسال مجدد کد';
+    } else {
+      buttonLabel = 'ارسال کد تأیید پیامکی';
+    }
+
     return Container(
       width: double.infinity,
       height: 48,
@@ -1020,9 +1034,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 size: 18,
               ),
         label: Text(
-          isCooldownActive
-              ? 'ارسال مجدد کد (${_formatSeconds(_cooldownRemainingSeconds)})'
-              : (_isSendingCode ? 'در حال ارسال کد...' : 'ارسال کد تأیید پیامکی'),
+          buttonLabel,
           style: TextStyle(
             color: isDisabled ? Colors.white38 : Colors.white,
             fontSize: 13,
