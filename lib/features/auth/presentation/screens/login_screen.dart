@@ -808,6 +808,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final screenWidth = mediaQuery.size.width;
+    final double topSpacing = (screenHeight * 0.065).clamp(20.0, 64.0);
+    final double horizontalPadding = (screenWidth * 0.06).clamp(16.0, 26.0);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -826,15 +832,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               physics: const BouncingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                  minHeight: screenHeight - mediaQuery.padding.top - mediaQuery.padding.bottom,
                 ),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 64),
+                        SizedBox(height: topSpacing),
 
                         // 1. Top Header: SVG Logo (nopa_logo.svg) above Persian Poetry
                         _buildTopHeader(),
@@ -1051,7 +1057,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  /// Input Container with Gradient Border
+  /// Input Container with Gradient Border and Responsive MinHeight
   Widget _buildDecoratedInputBox({required Widget child, EdgeInsetsGeometry? padding}) {
     return Container(
       decoration: BoxDecoration(
@@ -1060,12 +1066,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       ),
       padding: const EdgeInsets.all(AppColors.borderWidth),
       child: Container(
-        height: 50,
+        constraints: const BoxConstraints(minHeight: 48),
         decoration: BoxDecoration(
           gradient: AppColors.darkSurfaceGradient,
           borderRadius: BorderRadius.circular(9),
         ),
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 12),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         alignment: Alignment.center,
         child: child,
       ),
