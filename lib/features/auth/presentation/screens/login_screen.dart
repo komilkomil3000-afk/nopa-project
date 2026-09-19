@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,18 +36,61 @@ class _CountryOption {
 
 const List<_CountryOption> _availableCountries = [
   _CountryOption(name: 'ایران', code: '+98', flag: '🇮🇷'),
-  _CountryOption(name: 'عراق', code: '+964', flag: '🇮🇶'),
   _CountryOption(name: 'افغانستان', code: '+93', flag: '🇦🇫'),
+  _CountryOption(name: 'تاجیکستان', code: '+992', flag: '🇹🇯'),
+  _CountryOption(name: 'عراق', code: '+964', flag: '🇮🇶'),
   _CountryOption(name: 'ترکیه', code: '+90', flag: '🇹🇷'),
-  _CountryOption(name: 'امارات', code: '+971', flag: '🇦🇪'),
+  _CountryOption(name: 'امارات متحده عربی', code: '+971', flag: '🇦🇪'),
   _CountryOption(name: 'عمان', code: '+968', flag: '🇴🇲'),
-  _CountryOption(name: 'عربستان', code: '+966', flag: '🇸🇦'),
+  _CountryOption(name: 'عربستان سعودی', code: '+966', flag: '🇸🇦'),
+  _CountryOption(name: 'قطر', code: '+974', flag: '🇶🇦'),
+  _CountryOption(name: 'کویت', code: '+965', flag: '🇰🇼'),
+  _CountryOption(name: 'بحرین', code: '+973', flag: '🇧🇭'),
   _CountryOption(name: 'لبنان', code: '+961', flag: '🇱🇧'),
   _CountryOption(name: 'سوریه', code: '+963', flag: '🇸🇾'),
+  _CountryOption(name: 'یمن', code: '+967', flag: '🇾🇪'),
+  _CountryOption(name: 'اردن', code: '+962', flag: '🇯🇴'),
   _CountryOption(name: 'پاکستان', code: '+92', flag: '🇵🇰'),
+  _CountryOption(name: 'ترکمنستان', code: '+993', flag: '🇹🇲'),
+  _CountryOption(name: 'ازبکستان', code: '+998', flag: '🇺🇿'),
+  _CountryOption(name: 'آذربایجان', code: '+994', flag: '🇦🇿'),
+  _CountryOption(name: 'ارمنستان', code: '+374', flag: '🇦🇲'),
+  _CountryOption(name: 'گرجستان', code: '+995', flag: '🇬🇪'),
+  _CountryOption(name: 'قزاقستان', code: '+7', flag: '🇰🇿'),
+  _CountryOption(name: 'روسیه', code: '+7', flag: '🇷🇺'),
   _CountryOption(name: 'آلمان', code: '+49', flag: '🇩🇪'),
-  _CountryOption(name: 'بریتانیا', code: '+44', flag: '🇬🇧'),
-  _CountryOption(name: 'آمریکا / کانادا', code: '+1', flag: '🇺🇸'),
+  _CountryOption(name: 'بریتانیا (انگلستان)', code: '+44', flag: '🇬🇧'),
+  _CountryOption(name: 'فرانسه', code: '+33', flag: '🇫🇷'),
+  _CountryOption(name: 'ایتالیا', code: '+39', flag: '🇮🇹'),
+  _CountryOption(name: 'کانادا', code: '+1', flag: '🇨🇦'),
+  _CountryOption(name: 'ایالات متحده آمریکا', code: '+1', flag: '🇺🇸'),
+  _CountryOption(name: 'سوئد', code: '+46', flag: '🇸🇪'),
+  _CountryOption(name: 'سوئیس', code: '+41', flag: '🇨🇭'),
+  _CountryOption(name: 'نروژ', code: '+47', flag: '🇳🇴'),
+  _CountryOption(name: 'هلند', code: '+31', flag: '🇳🇱'),
+  _CountryOption(name: 'دانمارک', code: '+45', flag: '🇩🇰'),
+  _CountryOption(name: 'اتریش', code: '+43', flag: '🇦🇹'),
+  _CountryOption(name: 'بلژیک', code: '+32', flag: '🇧🇪'),
+  _CountryOption(name: 'اسپانیا', code: '+34', flag: '🇪🇸'),
+  _CountryOption(name: 'پرتغال', code: '+351', flag: '🇵🇹'),
+  _CountryOption(name: 'یونان', code: '+30', flag: '🇬🇷'),
+  _CountryOption(name: 'فنلاند', code: '+358', flag: '🇫🇮'),
+  _CountryOption(name: 'لهستان', code: '+48', flag: '🇵🇱'),
+  _CountryOption(name: 'اوکراین', code: '+380', flag: '🇺🇦'),
+  _CountryOption(name: 'استرالیا', code: '+61', flag: '🇦🇺'),
+  _CountryOption(name: 'نیوزیلند', code: '+64', flag: '🇳🇿'),
+  _CountryOption(name: 'هند', code: '+91', flag: '🇮🇳'),
+  _CountryOption(name: 'چین', code: '+86', flag: '🇨🇳'),
+  _CountryOption(name: 'ژاپن', code: '+81', flag: '🇯🇵'),
+  _CountryOption(name: 'کره جنوبی', code: '+82', flag: '🇰🇷'),
+  _CountryOption(name: 'مالزی', code: '+60', flag: '🇲🇾'),
+  _CountryOption(name: 'اندونزی', code: '+62', flag: '🇮🇩'),
+  _CountryOption(name: 'تایلند', code: '+66', flag: '🇹🇭'),
+  _CountryOption(name: 'سنگاپور', code: '+65', flag: '🇸🇬'),
+  _CountryOption(name: 'برزیل', code: '+55', flag: '🇧🇷'),
+  _CountryOption(name: 'آرژانتین', code: '+54', flag: '🇦🇷'),
+  _CountryOption(name: 'مصر', code: '+20', flag: '🇪🇬'),
+  _CountryOption(name: 'آفریقای جنوبی', code: '+27', flag: '🇿🇦'),
 ];
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
@@ -97,12 +141,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
     _logoAnimCtrl.forward();
 
+    _phoneCtrl.addListener(_onPhoneChanged);
     _loadSavedPhone();
     _checkAutoLogin();
   }
 
+  void _onPhoneChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool get _isPhoneComplete {
+    final raw = _toEnglishDigits(_phoneCtrl.text).replaceAll(RegExp(r'\D'), '');
+    if (_selectedCountry.code == '+98') {
+      return raw.length >= 10;
+    }
+    return raw.length >= 7;
+  }
+
   @override
   void dispose() {
+    _phoneCtrl.removeListener(_onPhoneChanged);
     _logoAnimCtrl.dispose();
     _countdownTimer?.cancel();
     _phoneCtrl.dispose();
@@ -198,84 +258,150 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _openCountryPickerModal() {
+    String searchQuery = '';
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1E1435),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'انتخاب کشور و پیش‌شماره',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _availableCountries.length,
-                    separatorBuilder: (_, _) => Divider(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      height: 1,
-                    ),
-                    itemBuilder: (context, idx) {
-                      final item = _availableCountries[idx];
-                      final isSelected = item.code == _selectedCountry.code;
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredCountries = _availableCountries.where((c) {
+              final q = searchQuery.trim().toLowerCase();
+              if (q.isEmpty) return true;
+              return c.name.toLowerCase().contains(q) ||
+                  c.code.replaceAll('+', '').contains(q.replaceAll('+', ''));
+            }).toList();
 
-                      return ListTile(
-                        leading: Text(item.flag, style: const TextStyle(fontSize: 22)),
-                        title: Text(
-                          item.name,
-                          style: TextStyle(
-                            color: isSelected ? AppColors.accentGoldEnd : Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 14,
-                          ),
-                        ),
-                        trailing: Text(
-                          item.code,
-                          style: TextStyle(
-                            color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D),
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 14,
-                          ),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            _selectedCountry = item;
-                          });
-                          Navigator.pop(ctx);
-                        },
-                      );
-                    },
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.72,
+                decoration: const BoxDecoration(
+                  gradient: AppColors.screenBackgroundGradient,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  image: DecorationImage(
+                    image: AssetImage('assets/images/login_bg.png'),
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ],
-            ),
-          ),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'انتخاب کشور و پیش‌شماره',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Search Bar
+                    Container(
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF6C6C63).withValues(alpha: 0.35),
+                          width: 0.8,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search, color: Color(0xFF8E889D), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              onChanged: (val) {
+                                setModalState(() {
+                                  searchQuery = val;
+                                });
+                              },
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 13,
+                              ),
+                              decoration: const InputDecoration(
+                                hintText: 'جستجوی نام کشور یا پیش‌شماره...',
+                                hintStyle: TextStyle(
+                                  color: Color(0xFF8E889D),
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 12,
+                                ),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: filteredCountries.length,
+                        separatorBuilder: (_, _) => Divider(
+                          color: Colors.white.withValues(alpha: 0.07),
+                          height: 1,
+                        ),
+                        itemBuilder: (context, idx) {
+                          final item = filteredCountries[idx];
+                          final isSelected = item.code == _selectedCountry.code && item.name == _selectedCountry.name;
+
+                          return ListTile(
+                            leading: Text(item.flag, style: const TextStyle(fontSize: 22)),
+                            title: Text(
+                              item.name,
+                              style: TextStyle(
+                                color: isSelected ? AppColors.accentGoldEnd : Colors.white,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            trailing: Text(
+                              item.code,
+                              style: TextStyle(
+                                color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D),
+                                fontWeight: FontWeight.w600,
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _selectedCountry = item;
+                              });
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -690,6 +816,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           height: double.infinity,
           decoration: const BoxDecoration(
             gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
           ),
           child: SafeArea(
             child: SingleChildScrollView(
@@ -700,21 +830,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 ),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 26.0, vertical: 12.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 64),
 
                         // 1. Top Header: SVG Logo (nopa_logo.svg) above Persian Poetry
                         _buildTopHeader(),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 14),
 
-                        // 2. Segmented Mode Switcher: OTP vs Password + Test badge
+                        // 2. Segmented Mode Switcher: OTP vs Password + Test badge (Responsive & Zero Overflow)
                         _buildSegmentedModeSwitcher(),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 14),
 
                         // 3. Login Form
                         _buildLoginForm(),
@@ -724,7 +854,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         // 4. Bottom Footer: Campaign & Version
                         _buildBottomFooter(),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                       ],
                     ),
                   ),
@@ -752,15 +882,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 children: [
                   // Centered Nopa SVG Logo directly above the Persian Poetry
                   SizedBox(
-                    width: 155,
-                    height: 185,
+                    width: 105,
+                    height: 126,
                     child: SvgPicture.asset(
                       'assets/images/nopa_logo.svg',
                       fit: BoxFit.contain,
                       placeholderBuilder: (BuildContext context) => const Center(
                         child: SizedBox(
-                          width: 36,
-                          height: 36,
+                          width: 26,
+                          height: 26,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             color: Color(0xFFCD8449),
@@ -770,7 +900,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 8),
 
                   // Persian Poetry Subtitle
                   const Text(
@@ -778,8 +908,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Color(0xFFC7B299),
-                      fontSize: 13,
-                      height: 1.65,
+                      fontSize: 11,
+                      height: 1.5,
                       fontWeight: FontWeight.w400,
                       fontFamily: AppTheme.fontFamily,
                       fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -794,99 +924,102 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  /// Segmented Mode Switcher matching screenshot proportions
+  /// Segmented Mode Switcher (Wrapped in FittedBox to guarantee 0px overflow on all screen sizes)
   Widget _buildSegmentedModeSwitcher() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Mode Switcher Pill Container (Right in RTL)
-        Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.strokeGradient,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.all(AppColors.borderWidth),
-          child: Container(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Mode Switcher Pill Container (Right in RTL)
+          Container(
             decoration: BoxDecoration(
-              gradient: AppColors.darkSurfaceGradient,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            padding: const EdgeInsets.all(3),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 1. OTP Mode Button
-                _buildModeItem(
-                  title: 'ورود با رمز یکبارمصرف',
-                  isSelected: _loginMode == AuthLoginMode.otp,
-                  onTap: () {
-                    setState(() {
-                      _loginMode = AuthLoginMode.otp;
-                      _secretCtrl.clear();
-                    });
-                  },
-                ),
-
-                const SizedBox(width: 4),
-
-                // 2. Fixed Password Mode Button
-                _buildModeItem(
-                  title: 'ورود با رمز عبور ثابت',
-                  isSelected: _loginMode == AuthLoginMode.password,
-                  onTap: () {
-                    setState(() {
-                      _loginMode = AuthLoginMode.password;
-                      _secretCtrl.clear();
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // "آزمایشی" Test Bypass Pill Badge (Left in RTL)
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _loginMode = AuthLoginMode.testBypass;
-              _secretCtrl.clear();
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('حالت آزمایشی (بدون نیاز به دریافت پیامک) فعال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(8),
+              gradient: AppColors.strokeGradient,
+              borderRadius: BorderRadius.circular(10),
             ),
             padding: const EdgeInsets.all(AppColors.borderWidth),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(7),
+                gradient: AppColors.darkSurfaceGradient,
+                borderRadius: BorderRadius.circular(9),
               ),
-              child: Text(
-                'آزمایشی',
-                style: TextStyle(
-                  color: _loginMode == AuthLoginMode.testBypass ? Colors.white : const Color(0xFFC7B299),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: AppTheme.fontFamily,
+              padding: const EdgeInsets.all(3),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 1. OTP Mode Button
+                  _buildModeItem(
+                    title: 'ورود با رمز یکبارمصرف',
+                    isSelected: _loginMode == AuthLoginMode.otp,
+                    onTap: () {
+                      setState(() {
+                        _loginMode = AuthLoginMode.otp;
+                        _secretCtrl.clear();
+                      });
+                    },
+                  ),
+
+                  const SizedBox(width: 4),
+
+                  // 2. Fixed Password Mode Button
+                  _buildModeItem(
+                    title: 'ورود با رمز عبور ثابت',
+                    isSelected: _loginMode == AuthLoginMode.password,
+                    onTap: () {
+                      setState(() {
+                        _loginMode = AuthLoginMode.password;
+                        _secretCtrl.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // "آزمایشی" Test Bypass Pill Badge (Left in RTL)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _loginMode = AuthLoginMode.testBypass;
+                _secretCtrl.clear();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('حالت آزمایشی (بدون نیاز به دریافت پیامک) فعال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.strokeGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(AppColors.borderWidth),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6.5),
+                decoration: BoxDecoration(
+                  gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  'آزمایشی',
+                  style: TextStyle(
+                    color: _loginMode == AuthLoginMode.testBypass ? Colors.white : const Color(0xFFC7B299),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -900,7 +1033,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           gradient: isSelected ? AppColors.accentGradient : null,
           borderRadius: BorderRadius.circular(8),
@@ -909,7 +1042,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           title,
           style: TextStyle(
             color: isSelected ? Colors.white : const Color(0xFF8E889D),
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             fontFamily: AppTheme.fontFamily,
           ),
@@ -927,7 +1060,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       ),
       padding: const EdgeInsets.all(AppColors.borderWidth),
       child: Container(
-        height: 52,
+        height: 50,
         decoration: BoxDecoration(
           gradient: AppColors.darkSurfaceGradient,
           borderRadius: BorderRadius.circular(9),
@@ -959,7 +1092,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     _selectedCountry.code,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14.5,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
                     ),
@@ -977,7 +1110,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   const SizedBox(width: 8),
                   Container(
                     width: 1,
-                    height: 24,
+                    height: 22,
                     color: const Color(0xFF6C6C63).withValues(alpha: 0.35),
                   ),
                   const SizedBox(width: 6),
@@ -986,23 +1119,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ),
           ),
 
-          // Center: Phone Text Field
+          // Center: Phone Text Field (Reactive onChange updates "ارسال کد" instantly, max 10 chars)
           Expanded(
             child: TextField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.right,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(10),
+              ],
+              onChanged: (_) => setState(() {}),
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: AppTheme.fontFamily,
-                fontSize: 16,
+                fontSize: 15.5,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 1.0,
               ),
               decoration: const InputDecoration(
                 hintText: '9380346668',
-                hintStyle: TextStyle(color: Colors.white24, fontFamily: AppTheme.fontFamily, fontSize: 14.5),
+                hintStyle: TextStyle(color: Colors.white24, fontFamily: AppTheme.fontFamily, fontSize: 14),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -1021,21 +1158,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   /// Inline OTP Dispatch Button inside Phone Input
+  /// Enabled ONLY when a valid full phone number (>= 10 digits) is entered
   Widget _buildOtpDispatchInlineButton() {
     final bool isTimerActive = _cooldownRemainingSeconds > 0;
+    final bool isEnabled = _isPhoneComplete && !isTimerActive && !_isSendingCode;
     final String buttonLabel = isTimerActive
         ? _formatTimer(_cooldownRemainingSeconds)
         : (_hasSentOnce ? 'ارسال مجدد' : 'ارسال کد');
 
     return GestureDetector(
-      onTap: (_isSendingCode || isTimerActive) ? null : _handleSendVerificationCode,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      onTap: isEnabled ? _handleSendVerificationCode : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
         decoration: BoxDecoration(
           color: const Color(0xFF2A2835),
           borderRadius: BorderRadius.circular(7),
           border: Border.all(
-            color: const Color(0xFF6C6C63).withValues(alpha: 0.5),
+            color: isTimerActive
+                ? const Color(0xFF6C6C63).withValues(alpha: 0.35)
+                : (isEnabled
+                    ? const Color(0xFFCD8449).withValues(alpha: 0.6)
+                    : const Color(0xFF6C6C63).withValues(alpha: 0.2)),
             width: 0.8,
           ),
         ),
@@ -1043,15 +1187,20 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ? const SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)),
               )
             : Text(
                 buttonLabel,
                 style: TextStyle(
-                  color: isTimerActive ? const Color(0xFFC7B299) : Colors.white,
-                  fontWeight: FontWeight.w500,
+                  color: isTimerActive
+                      ? const Color(0xFFC7B299)
+                      : (isEnabled
+                          ? const Color(0xFFCD8449)
+                          : const Color(0xFF8E889D).withValues(alpha: 0.45)),
+                  fontWeight: isEnabled ? FontWeight.bold : FontWeight.w500,
                   fontFamily: AppTheme.fontFamily,
-                  fontSize: 11.5,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  fontSize: 11,
                 ),
               ),
       ),
@@ -1059,8 +1208,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   /// Secret / Password Input Widget:
-  /// - In OTP mode: NO three dots / bullets, clean empty text box.
-  /// - In Password mode: Eye toggle icon placed at the FAR LEFT of the box.
+  /// - In OTP mode: NO three dots / bullets, clean empty text box, max 10 chars.
+  /// - In Password mode: Eye toggle icon placed at the FAR LEFT of the box, max 10 chars.
   Widget _buildSecretInput() {
     final bool isOtp = _loginMode == AuthLoginMode.otp;
 
@@ -1069,7 +1218,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Text Input (Starts on the Right in RTL)
+          // Text Input (Starts on the Right in RTL, limited to 10 chars)
           Expanded(
             child: TextField(
               controller: _secretCtrl,
@@ -1077,6 +1226,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               keyboardType: isOtp ? TextInputType.number : TextInputType.text,
               textDirection: isOtp ? TextDirection.ltr : TextDirection.rtl,
               textAlign: isOtp ? TextAlign.right : TextAlign.right,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(10),
+              ],
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: AppTheme.fontFamily,
@@ -1117,49 +1269,51 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 1. Phone Label
+        // 1. Phone Label (Concise)
         const Align(
           alignment: Alignment.centerRight,
           child: Text(
-            'شماره همراه خود را وارد کنید',
+            'شماره همراه',
             style: TextStyle(
               color: Color(0xFF8E889D),
               fontSize: 12,
               fontWeight: FontWeight.w400,
               fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         _buildPhoneNumberInput(),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
 
-        // 2. Secret Label
+        // 2. Secret Label (Concise)
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            isOtp ? 'کد تایید پیامک‌شده را وارد کنید' : 'رمز خود را وارد کنید',
+            isOtp ? 'کد تایید' : 'رمز عبور',
             style: const TextStyle(
               color: Color(0xFF8E889D),
               fontSize: 12,
               fontWeight: FontWeight.w400,
               fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         _buildSecretInput(),
 
-        const SizedBox(height: 28),
+        const SizedBox(height: 18),
 
         // 3. Centered Golden Submit CTA: "تایید و ورود"
         Center(
           child: GestureDetector(
             onTap: _isLoading ? null : _handleLogin,
             child: Container(
-              width: 175,
-              height: 44,
+              width: 170,
+              height: 42,
               decoration: BoxDecoration(
                 gradient: AppColors.accentGradient,
                 borderRadius: BorderRadius.circular(10),
@@ -1175,7 +1329,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         'تایید و ورود',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                         ),
@@ -1190,25 +1344,29 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   /// Bottom Footer: Campaign Name + Version Tag
   Widget _buildBottomFooter() {
+    final footerColor = Colors.white.withValues(alpha: 0.35);
+
     return Column(
       children: [
-        const Text(
+        Text(
           'پویش خانواده انقلابی',
           style: TextStyle(
-            color: Color(0xFFC7B299),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            color: footerColor,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w400,
             fontFamily: AppTheme.fontFamily,
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           'komeil 1.01.01',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.35),
-            fontSize: 11,
+            color: footerColor,
+            fontSize: 10.5,
             fontWeight: FontWeight.w400,
             fontFamily: AppTheme.fontFamily,
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
         ),
       ],

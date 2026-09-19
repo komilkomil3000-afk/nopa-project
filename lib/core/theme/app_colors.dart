@@ -14,8 +14,9 @@ class AppColors {
   static const Color textSecondary = Colors.white70;
 
   // Login & Figma Design Colors
-  static const Color bgGradientTop = Color(0xFF40395F);
-  static const Color bgGradientBottom = Color(0xFF1B1829);
+  static const Color bgGradientTop = Color(0xFF383155);
+  static const Color bgGradientMid = Color(0xFF201A36);
+  static const Color bgGradientBottom = Color(0xFF0F0B1A);
 
   static const Color accentGoldStart = Color(0xFFCD8449);
   static const Color accentGoldEnd = Color(0xFFE1BC96);
@@ -31,14 +32,16 @@ class AppColors {
   static const Color textWhite = Colors.white;
 
   // Gradients
-  /// 1. Screen Background Gradient
+  /// 1. Screen Background Gradient (Matching desktop background image)
   static const LinearGradient screenBackgroundGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
       bgGradientTop,
+      bgGradientMid,
       bgGradientBottom,
     ],
+    stops: [0.0, 0.45, 1.0],
   );
 
   /// 2. Accent Button / Active Tab Gradient (Golden / Bronze)

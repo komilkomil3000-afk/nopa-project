@@ -41,6 +41,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/nopa_logo.svg
+    - assets/images/login_bg.png
     - assets/fonts/
     - assets/fonts/YekanBakh-Regular.ttf
     - assets/fonts/YekanBakh-Medium.ttf
