@@ -1,17 +1,4 @@
-import 'package:flutter/material.dart';
-
-class AppColors {
-  static const Color purple = Color(0xFF8B5CF6);
-  static const Color pink = Color(0xFFEC4899);
-  static const Color emerald = Color(0xFF10B981);
-  static const Color orange = Color(0xFFF97316);
-  static const Color gold = Color(0xFFEAB308);
-  static const Color blue = Color(0xFF3B82F6);
-  static const Color background = Color(0xFF120C1F);
-  static const Color cardBackground = Color(0xFF1E1633);
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Colors.white70;
-}
+export '../core/theme/app_colors.dart';
 
 class AppStrings {
   static const String appName = 'نپا';

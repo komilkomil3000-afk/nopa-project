@@ -25,6 +25,7 @@ import 'widgets/custom_drawer.dart';
 import 'models/user_model.dart';
 import 'services/app_state_repository.dart';
 
+import 'core/theme/app_theme.dart';
 import 'services/theme_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -54,7 +55,7 @@ void main() async {
     if (ctx != null) {
       ScaffoldMessenger.of(ctx).showSnackBar(
         const SnackBar(
-          content: Text('به دلیل عدم فعالیت بیش از ۱۰ دقیقه، لطفاً مجدداً وارد شوید.', style: TextStyle(fontFamily: 'Vazirmatn')),
+          content: Text('به دلیل عدم فعالیت بیش از ۱۰ دقیقه، لطفاً مجدداً وارد شوید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
           backgroundColor: Color(0xFFE11D48),
           behavior: SnackBarBehavior.floating,
         ),
@@ -80,27 +81,6 @@ void main() async {
   );
 }
 
-TextTheme _buildTextTheme(TextTheme base, double scale) {
-  const fontFamily = 'Vazirmatn';
-  return base.copyWith(
-    displayLarge: (base.displayLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 57 * scale),
-    displayMedium: (base.displayMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 45 * scale),
-    displaySmall: (base.displaySmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 36 * scale),
-    headlineLarge: (base.headlineLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 32 * scale),
-    headlineMedium: (base.headlineMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 28 * scale),
-    headlineSmall: (base.headlineSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 24 * scale),
-    titleLarge: (base.titleLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 22 * scale),
-    titleMedium: (base.titleMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 16 * scale),
-    titleSmall: (base.titleSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
-    bodyLarge: (base.bodyLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 16 * scale),
-    bodyMedium: (base.bodyMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
-    bodySmall: (base.bodySmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 12 * scale),
-    labelLarge: (base.labelLarge ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 14 * scale),
-    labelMedium: (base.labelMedium ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 12 * scale),
-    labelSmall: (base.labelSmall ?? const TextStyle()).copyWith(fontFamily: fontFamily, fontSize: 11 * scale),
-  );
-}
-
 class NepaApp extends StatelessWidget {
   const NepaApp({super.key});
 
@@ -117,30 +97,8 @@ class NepaApp extends StatelessWidget {
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
         themeMode: themeProvider.themeMode,
-        theme: ThemeData(
-          brightness: Brightness.light,
-          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          primaryColor: AppColors.purple,
-          textTheme: _buildTextTheme(ThemeData.light().textTheme, themeProvider.fontScale),
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.purple,
-            brightness: Brightness.light,
-            surface: Colors.white,
-          ),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: AppColors.background,
-          primaryColor: AppColors.purple,
-          textTheme: _buildTextTheme(ThemeData.dark().textTheme, themeProvider.fontScale),
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.purple,
-            brightness: Brightness.dark,
-            surface: AppColors.cardBackground,
-          ),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme(themeProvider.fontScale),
+        darkTheme: AppTheme.darkTheme(themeProvider.fontScale),
         // RTL Support for Persian (Farsi)
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
