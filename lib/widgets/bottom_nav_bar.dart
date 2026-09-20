@@ -22,49 +22,49 @@ class CustomBottomNavBar extends StatelessWidget {
     final List<_NavItemData> items = isMentor
         ? [
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_home.svg',
+              iconPath: 'assets/svg_icons/home01.svg',
               fallbackIcon: Icons.dashboard_rounded,
               label: 'میز کار',
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_profile.svg',
+              iconPath: 'assets/svg_icons/profile01.svg',
               fallbackIcon: Icons.people_rounded,
               label: 'اعضا',
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_challenge.svg',
+              iconPath: 'assets/svg_icons/challeng01.svg',
               fallbackIcon: Icons.assignment_rounded,
               label: 'تکالیف',
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_profile.svg',
+              iconPath: 'assets/svg_icons/profile01.svg',
               fallbackIcon: Icons.person_rounded,
               label: 'پروفایل',
             ),
           ]
         : [
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_home.svg',
+              iconPath: 'assets/svg_icons/home01.svg',
               fallbackIcon: Icons.home_rounded,
               label: AppStrings.navHome,
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_learning.svg',
+              iconPath: 'assets/svg_icons/classes01.svg',
               fallbackIcon: Icons.map_rounded,
               label: AppStrings.navMap,
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_challenge.svg',
+              iconPath: 'assets/svg_icons/challeng01.svg',
               fallbackIcon: Icons.local_fire_department_rounded,
               label: AppStrings.navChallenges,
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_market.svg',
+              iconPath: 'assets/svg_icons/stor01.svg',
               fallbackIcon: Icons.storefront_rounded,
               label: AppStrings.navMarket,
             ),
             const _NavItemData(
-              iconPath: 'assets/svg_icons/nav_profile.svg',
+              iconPath: 'assets/svg_icons/profile01.svg',
               fallbackIcon: Icons.person_rounded,
               label: AppStrings.navProfile,
             ),
@@ -141,17 +141,17 @@ class CustomBottomNavBar extends StatelessWidget {
 
   Widget _buildNavIcon(_NavItemData item, bool isSelected) {
     final Color iconColor = isSelected
-        ? const Color(0xFFC7A280) // Warm gold/tan color from screenshot
-        : const Color(0xFF7E7B9F); // Purple/lavender inactive color
+        ? const Color(0xFFDFB690) // Gold/tan color
+        : const Color(0xFF9292E2); // Lavender/purple color
 
     return SvgPicture.asset(
       item.iconPath,
-      width: 26,
-      height: 26,
+      width: 25,
+      height: 25,
       colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
       placeholderBuilder: (context) => Icon(
         item.fallbackIcon,
-        size: 26,
+        size: 25,
         color: iconColor,
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:video_player/video_player.dart';
 import 'package:provider/provider.dart';
 import '../utils/constants.dart';
@@ -622,10 +623,11 @@ class _ClassPlayerScreenState extends State<ClassPlayerScreen> {
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
-                                        Icons.error_outline,
-                                        color: Colors.redAccent,
-                                        size: 48,
+                                      SvgPicture.asset(
+                                        'assets/svg_icons/vedionot01.svg',
+                                        width: 56,
+                                        height: 56,
+                                        fit: BoxFit.contain,
                                       ),
                                       const SizedBox(height: 12),
                                       const Text(

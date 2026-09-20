@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/station.dart';
 import '../core/constants/api_constants.dart';
 import '../core/theme/app_theme.dart';
@@ -79,27 +80,30 @@ class StationCard extends StatelessWidget {
                                   placeholder: (context, url) => Container(
                                     color: const Color(0xFF2E2E50),
                                     alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.image_rounded,
-                                      color: Color(0xFF686690),
-                                      size: 44,
+                                    child: SvgPicture.asset(
+                                      'assets/svg_icons/imagenot01.svg',
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
                                   errorWidget: (context, url, error) => Container(
                                     color: const Color(0xFF2E2E50),
                                     alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.image_rounded,
-                                      color: Color(0xFF686690),
-                                      size: 44,
+                                    child: SvgPicture.asset(
+                                      'assets/svg_icons/imagenot01.svg',
+                                      width: 48,
+                                      height: 48,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
                                 )
-                              : const Center(
-                                  child: Icon(
-                                    Icons.image_rounded,
-                                    color: Color(0xFF686690),
-                                    size: 44,
+                              : Center(
+                                  child: SvgPicture.asset(
+                                    'assets/svg_icons/imagenot01.svg',
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.contain,
                                   ),
                                 ),
                         ),
