@@ -12,8 +12,8 @@ import 'screens/map_screen.dart';
 import 'screens/challenges_screen.dart';
 import 'screens/market_screen.dart';
 import 'screens/profile_screen.dart';
-import 'screens/station_detail_screen.dart';
-import 'screens/class_player_screen.dart';
+import 'screens/class1/class1_screen.dart';
+import 'screens/class2/class2_screen.dart';
 import 'screens/mentor_dashboard_screen.dart';
 import 'screens/mentor_members_screen.dart';
 import 'screens/mentor_tasks_screen.dart';
@@ -115,8 +115,10 @@ class NepaApp extends StatelessWidget {
           '/auth': (context) => const AuthScreen(),
           '/main': (context) => const SuccessScreen(),
           '/dashboard': (context) => const MainScreen(),
-          '/station_detail': (context) => const StationDetailScreen(),
-          '/class_player': (context) => const ClassPlayerScreen(),
+          '/class1': (context) => const Class1Screen(),
+          '/class2': (context) => const Class2Screen(),
+          '/station_detail': (context) => const Class1Screen(),
+          '/class_player': (context) => const Class2Screen(),
           '/mentor_ratings': (context) => const MentorRatingsDetailScreen(),
           '/mentor_league': (context) => const MentorLeagueScreen(),
           '/mentor_workbench': (context) => const MentorWorkbenchScreen(),
