@@ -48,20 +48,37 @@ flutter:
   fonts:
     - family: YekanBakh
       fonts:
+        - asset: assets/fonts/YekanBakh-Light.ttf
+          weight: 300
         - asset: assets/fonts/YekanBakh-Regular.ttf
           weight: 400
-        - asset: assets/fonts/YekanBakh-Medium.ttf
+        - asset: assets/fonts/YekanBakh-Regular.ttf
           weight: 500
         - asset: assets/fonts/YekanBakh-Bold.ttf
           weight: 700
+        - asset: assets/fonts/YekanBakh-ExtraBold.ttf
+          weight: 800
     - family: Vazirmatn
       fonts:
+        - asset: assets/fonts/YekanBakh-Light.ttf
+          weight: 300
         - asset: assets/fonts/YekanBakh-Regular.ttf
           weight: 400
-        - asset: assets/fonts/YekanBakh-Medium.ttf
+        - asset: assets/fonts/YekanBakh-Regular.ttf
           weight: 500
         - asset: assets/fonts/YekanBakh-Bold.ttf
           weight: 700
-    - family: ChochoAuraDemo
+        - asset: assets/fonts/YekanBakh-ExtraBold.ttf
+          weight: 800
+    - family: IranYekan
       fonts:
-        - asset: assets/fonts/ChochoAuraDemo.ttf
+        - asset: assets/fonts/YekanBakh-Light.ttf
+          weight: 300
+        - asset: assets/fonts/YekanBakh-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/YekanBakh-Regular.ttf
+          weight: 500
+        - asset: assets/fonts/YekanBakh-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/YekanBakh-ExtraBold.ttf
+          weight: 800
