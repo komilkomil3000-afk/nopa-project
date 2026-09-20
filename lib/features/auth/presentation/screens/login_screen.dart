@@ -546,16 +546,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       final appRepo = Provider.of<AppRepository>(context, listen: false);
       appRepo.updateUser(loggedInUser);
 
-      if (isDualRole) {
-        _showDualRoleSelectionDialog(loggedInUser);
-      } else {
-        AuthService.selectedRole = resolvedRole;
-        Navigator.pushReplacementNamed(context, '/dashboard', arguments: resolvedRole);
-      }
+      _showLoginSuccessDialog(
+        user: loggedInUser,
+        resolvedRole: resolvedRole,
+        isDualRole: isDualRole,
+      );
     }
   }
 
-  void _showDualRoleSelectionDialog(UserModel user) {
+  void _showLoginSuccessDialog({
+    required UserModel user,
+    required UserRole resolvedRole,
+    required bool isDualRole,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -563,80 +566,90 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
-            backgroundColor: const Color(0xFF160E29),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: Color(0xFF6D28D9), width: 1.5),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22.0),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2E4B),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 28,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: AppColors.accentGradient,
-                      ),
-                      child: const Icon(
-                        Icons.manage_accounts_rounded,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
                   const Text(
-                    'انتخاب نقش ورود به سامانه',
+                    'ورود موفق',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${user.name} عزیز، شما دارای دسترسی چندگانه هستید. مایلید با کدام نقش وارد شوید؟',
+                  const SizedBox(height: 12),
+                  const Text(
+                    'باموفقیت احراز هویت شدید. خوش آمدید!',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.5,
+                    style: TextStyle(
+                      color: Color(0xFF9EA1BA),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
                       fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
                     ),
                   ),
                   const SizedBox(height: 22),
-                  _buildRoleCard(
-                    title: 'ورود به عنوان راهبر (مربی)',
-                    description: 'مشاهده اعضا، مدیریت تکالیف و چالش‌ها، ارزیابی‌ها و گزارش‌ها',
-                    icon: Icons.supervisor_account_rounded,
-                    gradientColors: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      final appRepo = Provider.of<AppRepository>(context, listen: false);
-                      appRepo.setActiveRole(UserRole.mentor);
-                      AuthService.selectedRole = UserRole.mentor;
-                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.mentor);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRoleCard(
-                    title: 'ورود به عنوان دانش‌آموز',
-                    description: 'مشاهده جلسات آموزشی، ثبت تکالیف، نقشه پیشرفت و بازارچه',
-                    icon: Icons.school_rounded,
-                    gradientColors: const [Color(0xFFCD8449), Color(0xFFE1BC96)],
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      final appRepo = Provider.of<AppRepository>(context, listen: false);
-                      appRepo.setActiveRole(UserRole.member);
-                      AuthService.selectedRole = UserRole.member;
-                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.member);
-                    },
+                  Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          if (isDualRole) {
+                            _showDualRoleSelectionDialog(user);
+                          } else {
+                            AuthService.selectedRole = resolvedRole;
+                            Navigator.pushReplacementNamed(context, '/dashboard', arguments: resolvedRole);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF282842),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF8B6343),
+                              width: 1.1,
+                            ),
+                          ),
+                          child: const Text(
+                            'ادامه',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFD6D7E5),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -647,65 +660,116 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildRoleCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required List<Color> gradientColors,
+  void _showDualRoleSelectionDialog(UserModel user) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 440),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D2E4B),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 28,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Text(
+                    'با کدام نقش‌تان می‌خواهید وارد شوید؟',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 10,
+                    children: [
+                      _buildRoleActionButton(
+                        text: 'ورود به عنوان راهبر',
+                        borderColor: const Color(0xFF6E688E),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final appRepo = Provider.of<AppRepository>(context, listen: false);
+                          appRepo.setActiveRole(UserRole.mentor);
+                          AuthService.selectedRole = UserRole.mentor;
+                          Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.mentor);
+                        },
+                      ),
+                      _buildRoleActionButton(
+                        text: 'ورود به عنوان دانش آموز',
+                        borderColor: const Color(0xFF8B6343),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          final appRepo = Provider.of<AppRepository>(context, listen: false);
+                          appRepo.setActiveRole(UserRole.member);
+                          AuthService.selectedRole = UserRole.member;
+                          Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.member);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRoleActionButton({
+    required String text,
+    required Color borderColor,
     required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF221538),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: gradientColors[0].withValues(alpha: 0.4), width: 1.2),
+            color: const Color(0xFF282842),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: borderColor,
+              width: 1.1,
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(colors: gradientColors),
-                ),
-                child: Icon(icon, color: Colors.white, size: 26),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        height: 1.3,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 16),
-            ],
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFFD6D7E5),
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            ),
           ),
         ),
       ),

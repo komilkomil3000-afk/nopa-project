@@ -10,7 +10,11 @@ FOR /F "tokens=5" %%T IN ('netstat -ano ^| findstr :5000') DO (
 )
 
 echo [2/3] Starting Offline Local Server on 127.0.0.1...
-cd nopa_backend
-npm run dev
+if exist package.json (
+    npm run dev
+) else (
+    cd nopa_backend
+    npm run dev
+)
 
 pause
