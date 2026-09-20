@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../services/api_service.dart';
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 
 enum EventType { mediaClass, skillClass, overdue, assignment }
@@ -633,7 +634,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     );
   }
 
-  /// Bottom 3-Column Class Details Card matching exact user screenshot
+  /// Bottom 3-Column Class Details Card matching exact login box stroke and color styling
   Widget _buildClassesSummaryCard() {
     final dayEvents = _events.where((e) =>
         e.year == _selectedYear &&
@@ -649,215 +650,218 @@ class _EducationCalendarState extends State<EducationCalendar> {
     final String overdueText = overdueEvents.isNotEmpty ? overdueEvents.map((e) => e.title).join('، ') : '-';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1C38),
+        gradient: AppColors.strokeGradient,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF38365C),
-          width: 1.2,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // 3 Column Headers (Right: کلاس‌های رسانه‌ای • | Middle: کلاس‌های مهارتی • | Left: معوقه •)
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              children: [
-                // Right Column Header: کلاس‌های رسانه‌ای (Cyan)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4DE2EC),
-                          shape: BoxShape.circle,
+      padding: const EdgeInsets.all(AppColors.borderWidth),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: AppColors.darkSurfaceGradient,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            // 3 Column Headers (Right: کلاس‌های رسانه‌ای • | Middle: کلاس‌های مهارتی • | Left: معوقه •)
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Row(
+                children: [
+                  // Right Column Header: کلاس‌های رسانه‌ای (Cyan)
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF4DE2EC),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'کلاس‌های رسانه‌ای',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF4DE2EC),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 5),
+                        const Text(
+                          'کلاس‌های رسانه‌ای',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF4DE2EC),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                // Middle Column Header: کلاس‌های مهارتی (Yellow)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF9E872),
-                          shape: BoxShape.circle,
+                  // Middle Column Header: کلاس‌های مهارتی (Yellow)
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF9E872),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'کلاس‌های مهارتی',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFF9E872),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 5),
+                        const Text(
+                          'کلاس‌های مهارتی',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFF9E872),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
 
-                // Left Column Header: معوقه (Coral Red)
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF67575),
-                          shape: BoxShape.circle,
+                  // Left Column Header: معوقه (Coral Red)
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF67575),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      const Text(
-                        'معوقه',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFF67575),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 5),
+                        const Text(
+                          'معوقه',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFFF67575),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 10),
-          Divider(
-            color: Colors.white.withValues(alpha: 0.08),
-            height: 1,
-            thickness: 1,
-          ),
-          const SizedBox(height: 12),
-
-          // 3 Column Values Row
-          Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Right Column Value
-                Expanded(
-                  child: Text(
-                    mediaText,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-
-                // Middle Column Value
-                Expanded(
-                  child: Text(
-                    skillText,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-
-                // Left Column Value
-                Expanded(
-                  child: Text(
-                    overdueText,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 10),
+            Divider(
+              color: Colors.white.withValues(alpha: 0.08),
+              height: 1,
+              thickness: 1,
             ),
-          ),
+            const SizedBox(height: 12),
 
-          const SizedBox(height: 10),
-
-          // Bottom Circular Dropdown Chevron Indicator matching screenshot
-          Center(
-            child: GestureDetector(
-              onTap: () => setState(() => _isExpanded = !_isExpanded),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2A4A),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF3D3B62),
-                    width: 1,
+            // 3 Column Values Row
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Right Column Value
+                  Expanded(
+                    child: Text(
+                      mediaText,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
                   ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Color(0xFF8E8CAE),
-                    size: 17,
+
+                  // Middle Column Value
+                  Expanded(
+                    child: Text(
+                      skillText,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+                  ),
+
+                  // Left Column Value
+                  Expanded(
+                    child: Text(
+                      overdueText,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Bottom Circular Dropdown Chevron Indicator matching screenshot & login palette
+            Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _isExpanded = !_isExpanded),
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.darkSurfaceGradient,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF6C6C63).withValues(alpha: 0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Color(0xFF8E889D),
+                      size: 17,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -10,7 +10,7 @@ import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
 import '../models/station.dart';
 import '../widgets/education_calendar.dart';
-import '../widgets/jarchi_item.dart';
+import '../widgets/home_challenges_section.dart';
 import '../widgets/station_card.dart';
 import '../widgets/nopa_notification_dialog.dart';
 import '../widgets/pending_challenges_dialog.dart';
@@ -26,7 +26,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _stations = [];
-  List<Map<String, dynamic>> _news = [];
   List<Map<String, dynamic>> _banners = [];
   String? _errorMessage;
 
@@ -68,14 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final results = await Future.wait([
         HttpApiService().getStations(),
-        HttpApiService().getNews(),
         HttpApiService().getBanners(position: 'home_top'),
       ]);
       if (mounted) {
         setState(() {
           _stations = List<Map<String, dynamic>>.from(results[0] as List);
-          _news = List<Map<String, dynamic>>.from(results[1] as List);
-          _banners = List<Map<String, dynamic>>.from(results[2] as List);
+          _banners = List<Map<String, dynamic>>.from(results[1] as List);
           _isLoading = false;
         });
         Provider.of<AppRepository>(context, listen: false).refreshChallenges();
@@ -100,16 +97,27 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Left: NOPA Text Logo
-            const Text(
-              'NOPA',
-              style: TextStyle(
-                color: Color(0xFFC7B299),
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
+            // Left: NOPA Text Logo with exact Login Screen Gold Gradient
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [
+                  Color(0xFFCD8449),
+                  Color(0xFFE1BC96),
+                  Color(0xFFCD8449),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'NOPA',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.8,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                ),
               ),
             ),
 
@@ -777,39 +785,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 5. Jarchi Announcements List
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20.0),
-                      child: Text('تابلوی اعلانات (جارچی)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(height: 12),
-                    if (_news.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20.0),
-                        child: Text('بدون خبر', style: TextStyle(color: Colors.white54, fontFamily: 'Vazirmatn')),
-                      )
-                    else
-                      ..._news.map((newsItem) {
-                        final date = DateTime.tryParse(newsItem['createdAt'] ?? '');
-                        final dateStr = date != null ? '${date.year}/${date.month}/${date.day}' : 'نامشخص';
-                        final imageUrl = newsItem['imageUrl'] != null ? '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${newsItem['imageUrl']}' : 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
-                        return JarchiItem(
-                          title: newsItem['title'] ?? 'بدون عنوان',
-                          date: dateStr,
-                          imageUrl: imageUrl,
-                          content: newsItem['body'] ?? '',
-                          link: newsItem['reporter'],
-                        );
-                      }),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              // 5. Special Challenges Section (چالش‌های مخصوص تو)
+              const HomeChallengesSection(),
+              const SizedBox(height: 40),
             ],
           ),
         ),
