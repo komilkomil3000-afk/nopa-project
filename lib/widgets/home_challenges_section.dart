@@ -47,22 +47,22 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                         fontFamilyFallback: AppTheme.fontFamilyFallback,
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () {
+                    TextButton(
+                      onPressed: () {
                         context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
                       },
-                      behavior: HitTestBehavior.opaque,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                        child: Text(
-                          'همه',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(40, 30),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'همه',
+                        style: TextStyle(
+                          color: Color(0xFFB5B3C8),
+                          fontSize: 13.5,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
                         ),
                       ),
                     ),
@@ -278,35 +278,26 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
       }).toList();
 
       for (var c in activeChallenges.take(2)) {
-        final creator = c.isByAdmin ? 'مدیر سیستم' : (c.creatorName ?? myMentorName);
         items.add(_ChallengeItemData(
           id: c.id,
           title: c.title,
-          subtitle: 'ایجاد شده توسط $creator',
-          actionText: 'بزن بریم',
         ));
       }
 
-      // Fallback items strictly from the student's mentor or system admin
+      // Fallback items
       if (items.isEmpty) {
-        items.add(_ChallengeItemData(
+        items.add(const _ChallengeItemData(
           id: 'CH_SAMPLE_1',
           title: 'پوسترینو',
-          subtitle: 'ایجاد شده توسط آقای $myMentorName',
-          actionText: 'بزن بریم',
         ));
-        items.add(_ChallengeItemData(
+        items.add(const _ChallengeItemData(
           id: 'CH_SAMPLE_2',
           title: 'تدوین خلاقانه',
-          subtitle: 'ایجاد شده توسط آقای $myMentorName',
-          actionText: 'مشاهده',
         ));
       } else if (items.length == 1) {
-        items.add(_ChallengeItemData(
+        items.add(const _ChallengeItemData(
           id: 'CH_SAMPLE_2',
           title: 'تدوین خلاقانه',
-          subtitle: 'ایجاد شده توسط آقای $myMentorName',
-          actionText: 'مشاهده',
         ));
       }
     } else if (_selectedTab == ChallengeTabType.inProgress) {
@@ -317,27 +308,20 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
       }).toList();
 
       for (var c in inProgressChallenges.take(2)) {
-        final creator = c.isByAdmin ? 'مدیر سیستم' : (c.creatorName ?? myMentorName);
         items.add(_ChallengeItemData(
           id: c.id,
           title: c.title,
-          subtitle: 'ایجاد شده توسط $creator',
-          actionText: 'ادامه چالش',
         ));
       }
 
       if (items.isEmpty) {
-        items.add(_ChallengeItemData(
+        items.add(const _ChallengeItemData(
           id: 'CH_PROG_1',
           title: 'طراحی پوستر مفهومی',
-          subtitle: 'ایجاد شده توسط آقای $myMentorName',
-          actionText: 'ادامه چالش',
         ));
         items.add(const _ChallengeItemData(
           id: 'CH_PROG_2',
           title: 'ارزیابی خودشناسی',
-          subtitle: 'ایجاد شده توسط مدیر سیستم',
-          actionText: 'مشاهده وضعیت',
         ));
       }
     } else {
@@ -349,27 +333,20 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
       }).toList();
 
       for (var c in expiredChallenges.take(2)) {
-        final creator = c.isByAdmin ? 'مدیر سیستم' : (c.creatorName ?? myMentorName);
         items.add(_ChallengeItemData(
           id: c.id,
           title: c.title,
-          subtitle: 'ایجاد شده توسط $creator',
-          actionText: 'مشاهده نتیجه',
         ));
       }
 
       if (items.isEmpty) {
-        items.add(_ChallengeItemData(
+        items.add(const _ChallengeItemData(
           id: 'CH_EXP_1',
           title: 'آزمونک اینشات',
-          subtitle: 'ایجاد شده توسط آقای $myMentorName',
-          actionText: 'مشاهده نتیجه',
         ));
         items.add(const _ChallengeItemData(
           id: 'CH_EXP_2',
           title: 'چالش عمومی نپا',
-          subtitle: 'ایجاد شده توسط مدیر سیستم',
-          actionText: 'پایان یافته',
         ));
       }
     }
@@ -419,44 +396,49 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                item.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
-              ),
+              const SizedBox(width: 10),
 
-              // Middle: Subtitle (ایجاد شده توسط ...)
+              // Title (Expanded to fill space smoothly)
               Expanded(
                 child: Text(
-                  item.subtitle,
-                  textAlign: TextAlign.center,
+                  item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF9E9CB8),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w400,
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
                 ),
               ),
 
-              // Left: Action Text (بزن بریم / مشاهده)
-              Text(
-                item.actionText,
-                style: const TextStyle(
-                  color: Color(0xFFE5A66B),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+              const SizedBox(width: 10),
+
+              // Far Left (in RTL): "مشاهده" Button with exact Login Screen "آزمایشی" Stroke & Surface Gradient
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.strokeGradient,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.all(AppColors.borderWidth),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.darkSurfaceGradient,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: const Text(
+                    'مشاهده',
+                    style: TextStyle(
+                      color: Color(0xFFC7B299),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -470,13 +452,9 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
 class _ChallengeItemData {
   final String id;
   final String title;
-  final String subtitle;
-  final String actionText;
 
   const _ChallengeItemData({
     required this.id,
     required this.title,
-    required this.subtitle,
-    required this.actionText,
   });
 }

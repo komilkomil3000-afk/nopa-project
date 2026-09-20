@@ -44,10 +44,6 @@ flutter:
     - assets/images/nopa_logo.svg
     - assets/images/login_bg.png
     - assets/svg_icons/
-    - assets/fonts/
-    - assets/fonts/YekanBakh-Regular.ttf
-    - assets/fonts/YekanBakh-Medium.ttf
-    - assets/fonts/YekanBakh-Bold.ttf
 
   fonts:
     - family: YekanBakh
@@ -66,3 +62,6 @@ flutter:
           weight: 500
         - asset: assets/fonts/YekanBakh-Bold.ttf
           weight: 700
+    - family: ChochoAuraDemo
+      fonts:
+        - asset: assets/fonts/ChochoAuraDemo.ttf

@@ -121,10 +121,21 @@ class StationCard extends StatelessWidget {
                     ),
                   ),
 
-                  // 2. Subtle horizontal divider line
+                  // 2. Gradient Stroke divider line matching the outer station card container
                   Container(
-                    height: 1,
-                    color: Colors.white.withValues(alpha: 0.08),
+                    height: 1.2,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: [0.0, 0.5, 1.0],
+                        colors: [
+                          Color(0xFF3A3A6A),
+                          Color(0xFF9292E2),
+                          Color(0xFF3A3A6A),
+                        ],
+                      ),
+                    ),
                   ),
 
                   // 3. Bottom Info Bar: Number & Title in RTL
@@ -140,7 +151,7 @@ class StationCard extends StatelessWidget {
                             '${station.orderIndex + 1}',
                             style: const TextStyle(
                               color: Color(0xFF9292E2),
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
                               fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -156,7 +167,7 @@ class StationCard extends StatelessWidget {
                               textAlign: TextAlign.right,
                               style: const TextStyle(
                                 color: Color(0xFFF4EFEA),
-                                fontSize: 14,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: AppTheme.fontFamily,
                                 fontFamilyFallback: AppTheme.fontFamilyFallback,

@@ -104,8 +104,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
     if (!_daysScrollController.hasClients) return;
     const double itemWidth = 56.0; // width (48) + margin/spacing (8)
     final double screenWidth = MediaQuery.of(context).size.width;
-    final double targetOffset =
-        ((_selectedDay - 1) * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+    // Day item N (1-indexed) center position in horizontal list with padding 16.0
+    final double itemCenter = 16.0 + ((_selectedDay - 1) * itemWidth) + 24.0;
+    final double targetOffset = itemCenter - (screenWidth / 2);
     final double maxScroll = _daysScrollController.position.maxScrollExtent;
     final double clampedOffset = targetOffset.clamp(0.0, maxScroll > 0 ? maxScroll : 0.0);
 
@@ -336,7 +337,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                'زمان',
+                'روزمان',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.5,
@@ -679,54 +680,66 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             color: Color(0xFF4DE2EC),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'کلاس‌های رسانه‌ای',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFF4DE2EC),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 4),
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'رسانه‌ای',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFF4DE2EC),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Middle Column Header: کلاس‌های مهارتی (Yellow)
+                  // Middle Column Header: مهارتی (Yellow)
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             color: Color(0xFFF9E872),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'کلاس‌های مهارتی',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFFF9E872),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 4),
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'مهارتی',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFF9E872),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -737,25 +750,31 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: const BoxDecoration(
                             color: Color(0xFFF67575),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'معوقه',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Color(0xFFF67575),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        const SizedBox(width: 4),
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'معوقه',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFFF67575),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -765,13 +784,13 @@ class _EducationCalendarState extends State<EducationCalendar> {
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Divider(
               color: Colors.white.withValues(alpha: 0.08),
               height: 1,
               thickness: 1,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // 3 Column Values Row
             Directionality(
@@ -781,51 +800,63 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 children: [
                   // Right Column Value
                   Expanded(
-                    child: Text(
-                      mediaText,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      child: Text(
+                        mediaText,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
                       ),
                     ),
                   ),
 
                   // Middle Column Value
                   Expanded(
-                    child: Text(
-                      skillText,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      child: Text(
+                        skillText,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
                       ),
                     ),
                   ),
 
                   // Left Column Value
                   Expanded(
-                    child: Text(
-                      overdueText,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      child: Text(
+                        overdueText,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
                       ),
                     ),
                   ),

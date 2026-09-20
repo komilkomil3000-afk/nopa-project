@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _bannerPageCtrl = PageController();
+    _bannerPageCtrl = PageController(viewportFraction: 0.88);
     _fetchData();
     _startBannerAutoScroll();
   }
@@ -97,26 +97,25 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Left: NOPA Text Logo with exact Login Screen Gold Gradient
+            // Left: NOPA Text Logo with ChochoAuraDemo Font and C09268 to F4DCC5 Gradient (Darker at bottom, lighter at top)
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
                 colors: [
-                  Color(0xFFCD8449),
-                  Color(0xFFE1BC96),
-                  Color(0xFFCD8449),
+                  Color(0xFFC09268),
+                  Color(0xFFF4DCC5),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
               ).createShader(bounds),
               child: const Text(
                 'NOPA',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.8,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontFamily: 'ChochoAuraDemo',
+                  fontFamilyFallback: ['ChochoAuraDemo', AppTheme.fontFamily],
                 ),
               ),
             ),
@@ -220,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Banner Slider Carousel: Pure image display with generous height (~225px) and dot indicators
+  /// Banner Slider Carousel: Compact height (~155px), peek adjacent banners on sides, and dot indicators
   Widget _buildBannerSection() {
     final List<Map<String, dynamic>> bannerList = _banners.isNotEmpty
         ? _banners
@@ -239,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 225,
+          height: 155,
           child: PageView.builder(
             controller: _bannerPageCtrl,
             itemCount: bannerList.length,
@@ -254,9 +253,9 @@ class _HomeScreenState extends State<HomeScreen> {
               final String assetPath = item['assetImage']?.toString() ?? 'assets/images/banners/banner1.jpg';
 
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                padding: const EdgeInsets.symmetric(horizontal: 6.0),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(20),
                   child: imageUrl != null
                       ? CachedNetworkImage(
                           imageUrl: imageUrl,
@@ -300,19 +299,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        // Dots Indicator
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            bannerList.length,
-            (index) => AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: _currentBannerIndex == index ? 8 : 6,
-              height: _currentBannerIndex == index ? 8 : 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentBannerIndex == index ? const Color(0xFFE2B788) : const Color(0xFF4A4D6B),
+        // Dots Indicator matching physical slide direction
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              bannerList.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: _currentBannerIndex == index ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _currentBannerIndex == index
+                      ? const Color(0xFFCD8449)
+                      : Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
             ),
           ),
@@ -321,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی)
+  /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned
   Widget _buildUserInfoStrip(UserModel? user) {
     final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 0)}';
 
@@ -341,6 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
+              const SizedBox(width: 6),
               Expanded(
                 child: _buildInfoColumn(
                   title: 'کاروان',
@@ -348,6 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
+              const SizedBox(width: 6),
               Expanded(
                 child: _buildInfoColumn(
                   title: 'راهبر',
@@ -355,6 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
+              const SizedBox(width: 6),
               Expanded(
                 child: _buildInfoColumn(
                   title: 'منزلگاه کنونی',
@@ -371,14 +378,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildInfoColumn({required String title, required String value}) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start, // Right aligned in RTL
       children: [
         Text(
           title,
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.right,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
-            fontSize: 14.5,
+            fontSize: 12.5,
             fontFamily: AppTheme.fontFamily,
             fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
@@ -386,12 +394,12 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 3),
         Text(
           value,
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.right,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Color(0xFFB5B3C8),
-            fontSize: 12,
+            fontSize: 10.5,
             fontFamily: AppTheme.fontFamily,
             fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
@@ -399,6 +407,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
+  int _selectedAssetIndex = 0;
 
   /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4) matching screenshot
   Widget _buildAssetsSection(UserModel? user) {
@@ -434,28 +444,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   badgeNumber: '1',
                   label: 'زریک',
                   value: '${user?.zarik ?? 0}',
-                  isGold: true,
+                  isGold: _selectedAssetIndex == 0,
+                  onTap: () => setState(() => _selectedAssetIndex = 0),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '2',
                   label: 'بیرق',
                   value: '${user?.beyragh ?? 0}',
-                  isGold: false,
+                  isGold: _selectedAssetIndex == 1,
+                  onTap: () => setState(() => _selectedAssetIndex = 1),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '3',
                   label: 'نخ',
                   value: '${user?.nakh ?? 0}',
-                  isGold: false,
+                  isGold: _selectedAssetIndex == 2,
+                  onTap: () => setState(() => _selectedAssetIndex = 2),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '4',
                   label: 'فرش',
                   value: '${user?.farsh ?? 0}',
-                  isGold: false,
+                  isGold: _selectedAssetIndex == 3,
+                  onTap: () => setState(() => _selectedAssetIndex = 3),
                 ),
               ],
             ),
@@ -470,106 +484,110 @@ class _HomeScreenState extends State<HomeScreen> {
     required String label,
     required String value,
     required bool isGold,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 130),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: isGold
-            ? const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Color(0xFF8D5B2C),
-                  Color(0xFFFFD580),
-                  Color(0xFF8D5B2C),
-                ],
-              )
-            : const LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Color(0xFF3A3A6A),
-                  Color(0xFF9292E2),
-                  Color(0xFF3A3A6A),
-                ],
-              ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(1.2), // Gradient border matching StationCard
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        constraints: const BoxConstraints(minWidth: 130),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20.8),
+          borderRadius: BorderRadius.circular(22),
           gradient: isGold
               ? const LinearGradient(
-                  colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF8D5B2C),
+                    Color(0xFFFFD580),
+                    Color(0xFF8D5B2C),
+                  ],
                 )
-              : null,
-          color: isGold ? null : const Color(0xFF28274A),
-        ),
-        child: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Right: Circular Badge with Number 1, 2, 3, 4
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: isGold ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
-                  shape: BoxShape.circle,
+              : const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
+                  ],
                 ),
-                child: Center(
-                  child: Text(
-                    badgeNumber,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(1.2), // Gradient border matching StationCard
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.8),
+            gradient: isGold
+                ? const LinearGradient(
+                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+            color: isGold ? null : const Color(0xFF28274A),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Right: Circular Badge with Number 1, 2, 3, 4
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: isGold ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      badgeNumber,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Middle: Label (زریک, بیرق, نخ, فرش)
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                const SizedBox(width: 8),
+                // Middle: Label (زریک, بیرق, نخ, فرش)
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Left: Value (0, 100, etc.)
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                const SizedBox(width: 16),
+                // Left: Value (0, 100, etc.)
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 2),
-            ],
+                const SizedBox(width: 2),
+              ],
+            ),
           ),
         ),
       ),
