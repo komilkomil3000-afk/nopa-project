@@ -38,13 +38,19 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   static const int inactivityTimeoutMinutes = 15;
   static const String prefKeyLastActive = 'last_app_exit_timestamp';
   DateTime? _lastActiveTimestamp;
+  DateTime? _lastDiskPersistTimestamp;
   Timer? _inactivityCheckTimer;
 
   void recordActivity() {
-    _lastActiveTimestamp = DateTime.now();
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setInt(prefKeyLastActive, _lastActiveTimestamp!.millisecondsSinceEpoch);
-    }).catchError((_) {});
+    final now = DateTime.now();
+    _lastActiveTimestamp = now;
+    // Throttle disk writes to SharedPreferences (at most once every 60s) to prevent UI lag on gestures
+    if (_lastDiskPersistTimestamp == null || now.difference(_lastDiskPersistTimestamp!) > const Duration(seconds: 60)) {
+      _lastDiskPersistTimestamp = now;
+      SharedPreferences.getInstance().then((prefs) {
+        prefs.setInt(prefKeyLastActive, now.millisecondsSinceEpoch);
+      }).catchError((_) {});
+    }
   }
 
   Future<void> checkInactivityTimeout() async {

@@ -323,7 +323,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
       );
     }
 
-    final String currentMonthName = "${_jalaliMonthNames[_selectedMonth]}ماه";
+    final String currentMonthName = (_selectedMonth >= 1 && _selectedMonth <= 12)
+        ? _jalaliMonthNames[_selectedMonth]
+        : 'مهر';
 
     return Directionality(
       textDirection: TextDirection.rtl,

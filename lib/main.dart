@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -154,6 +155,8 @@ class MainScreenState extends State<MainScreen> {
     }
   }
 
+  DateTime? _lastBackPressTime;
+
   @override
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
@@ -178,25 +181,57 @@ class MainScreenState extends State<MainScreen> {
       _currentIndex = 0;
     }
 
-    return Scaffold(
-      drawer: CustomDrawer(
-        role: userRole,
-        currentIndex: _currentIndex,
-        onTabSelected: (index) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // If user is on Map, Challenges, Market, or Profile -> Return to Home (Index 0)
+        if (_currentIndex != 0) {
           setState(() {
-            _currentIndex = index;
+            _currentIndex = 0;
           });
-        },
-      ),
-      body: IndexedStack(index: _currentIndex, children: screens),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _currentIndex,
-        role: userRole,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+          return;
+        }
+
+        // If user is on Home tab -> Require double back tap within 2 seconds to exit app
+        final now = DateTime.now();
+        if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'برای خروج از برنامه، دوباره دکمه برگشت را بزنید.',
+                style: TextStyle(fontFamily: AppTheme.fontFamily),
+              ),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        drawer: CustomDrawer(
+          role: userRole,
+          currentIndex: _currentIndex,
+          onTabSelected: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+        ),
+        body: IndexedStack(index: _currentIndex, children: screens),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: _currentIndex,
+          role: userRole,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+        ),
       ),
     );
   }

@@ -235,69 +235,72 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ];
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 155,
-          child: PageView.builder(
-            controller: _bannerPageCtrl,
-            itemCount: bannerList.length,
-            onPageChanged: (index) {
-              setState(() => _currentBannerIndex = index);
-            },
-            itemBuilder: (context, index) {
-              final item = bannerList[index];
-              final String? imageUrl = item['imageUrl'] != null && item['imageUrl'].toString().trim().isNotEmpty
-                  ? ApiConstants.resolveImageUrl(item['imageUrl'].toString())
-                  : null;
-              final String assetPath = item['assetImage']?.toString() ?? 'assets/images/banners/banner1.jpg';
+    return RepaintBoundary(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 155,
+            child: PageView.builder(
+              controller: _bannerPageCtrl,
+              itemCount: bannerList.length,
+              onPageChanged: (index) {
+                setState(() => _currentBannerIndex = index);
+              },
+              itemBuilder: (context, index) {
+                final item = bannerList[index];
+                final String? imageUrl = item['imageUrl'] != null && item['imageUrl'].toString().trim().isNotEmpty
+                    ? ApiConstants.resolveImageUrl(item['imageUrl'].toString())
+                    : null;
+                final String assetPath = item['assetImage']?.toString() ?? 'assets/images/banners/banner1.jpg';
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: imageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          placeholder: (context, url) => Container(
-                            color: const Color(0xFF231C38),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFCD8449),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: imageUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            memCacheWidth: 600,
+                            memCacheHeight: 350,
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFF231C38),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFCD8449),
+                                ),
                               ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Image.asset(
+                            errorWidget: (context, url, error) => Image.asset(
+                              assetPath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                          )
+                        : Image.asset(
                             assetPath,
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                          ),
-                        )
-                      : Image.asset(
-                          assetPath,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF6B3A1E), Color(0xFF381F14)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF6B3A1E), Color(0xFF381F14)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                ),
-              );
-            },
+                  ),
+                );
+              },
+            ),
           ),
-        ),
         const SizedBox(height: 10),
         // Dots Indicator synchronized with banner carousel direction
         Directionality(
@@ -326,8 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   final Set<String> _expandedInfoTitles = {};
 

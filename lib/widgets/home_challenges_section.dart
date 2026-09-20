@@ -135,11 +135,11 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                             ),
                             const SizedBox(width: 8),
 
-                            // Tab 3: منقضی شده (fir03.svg - Slate/Purple)
+                            // Tab 3: منقضی (fir03.svg - Slate/Purple)
                             Expanded(
                               child: _buildTabPill(
                                 type: ChallengeTabType.expired,
-                                title: 'منقضی شده',
+                                title: 'منقضی',
                                 badgeColor: const Color(0xFF3A3763),
                                 iconPath: 'assets/svg_icons/fir03.svg',
                                 selectedGradient: const LinearGradient(
