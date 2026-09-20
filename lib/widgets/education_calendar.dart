@@ -40,7 +40,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
   late int _selectedYear;
   late int _selectedMonth;
   late int _selectedDay;
-  bool _isExpanded = false;
 
   late final ScrollController _daysScrollController;
   List<CalendarEvent> _events = [];
@@ -370,14 +369,14 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       children: [
                         const Icon(
                           Icons.chevron_left_rounded,
-                          color: Color(0xFFA5A4F5),
+                          color: Color(0xFFDEB58A),
                           size: 22,
                         ),
                         const SizedBox(width: 3),
                         Text(
                           _getNextMonthName(),
                           style: const TextStyle(
-                            color: Color(0xFFA5A4F5),
+                            color: Color(0xFF9E9CEB),
                             fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,
@@ -410,7 +409,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         Text(
                           _getPreviousMonthName(),
                           style: const TextStyle(
-                            color: Color(0xFFA5A4F5),
+                            color: Color(0xFF9E9CEB),
                             fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,
@@ -420,7 +419,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         const SizedBox(width: 3),
                         const Icon(
                           Icons.chevron_right_rounded,
-                          color: Color(0xFFA5A4F5),
+                          color: Color(0xFFDEB58A),
                           size: 22,
                         ),
                       ],
@@ -502,7 +501,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     );
   }
 
-  /// Individual Day Pill Card
+  /// Individual Day Pill Card matching screenshot design
   Widget _buildDayCard({
     required int dayNum,
     required String weekDayName,
@@ -521,23 +520,19 @@ class _EducationCalendarState extends State<EducationCalendar> {
           borderRadius: BorderRadius.circular(20),
           gradient: isSelected
               ? const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF8D5B2C),
-                    Color(0xFFFFD580),
-                    Color(0xFF8D5B2C),
+                    Color(0xFFE5A86D),
+                    Color(0xFFA86C38),
                   ],
                 )
               : const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF3A3A6A),
-                    Color(0xFF9292E2),
-                    Color(0xFF3A3A6A),
+                    Color(0xFF6C6BC2),
+                    Color(0xFF3B396E),
                   ],
                 ),
           boxShadow: [
@@ -554,12 +549,21 @@ class _EducationCalendarState extends State<EducationCalendar> {
             borderRadius: BorderRadius.circular(18.8),
             gradient: isSelected
                 ? const LinearGradient(
-                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFDE9959),
+                      Color(0xFFB87239),
+                    ],
                   )
-                : null,
-            color: isSelected ? null : const Color(0xFF28274A),
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF383768),
+                      Color(0xFF2C2B54),
+                    ],
+                  ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -567,23 +571,23 @@ class _EducationCalendarState extends State<EducationCalendar> {
               // 1. Day Number on Top
               Text(
                 '$dayNum',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
                   fontFamily: AppTheme.fontFamily,
                   fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 2),
 
               // 2. Weekday Name
               Text(
                 weekDayName,
                 style: TextStyle(
-                  color: isSelected ? const Color(0xFF3B1E0A) : const Color(0xFFB5B3D8),
+                  color: isSelected ? const Color(0xFF5A3114) : const Color(0xFF9897D2),
                   fontSize: 10.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
                   fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
@@ -600,7 +604,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       height: 5.5,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
                       decoration: const BoxDecoration(
-                        color: Color(0xFF4DE2EC), // Cyan dot for media class
+                        color: Color(0xFF38CCD6), // Cyan dot
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -610,7 +614,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       height: 5.5,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF9E872), // Yellow dot for skill class
+                        color: Color(0xFFF9E872), // Yellow dot
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -620,7 +624,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                       height: 5.5,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF67575), // Coral red dot for overdue
+                        color: Color(0xFFF67575), // Coral red dot
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -861,34 +865,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Bottom Circular Dropdown Chevron Indicator matching screenshot & login palette
-            Center(
-              child: GestureDetector(
-                onTap: () => setState(() => _isExpanded = !_isExpanded),
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.darkSurfaceGradient,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF6C6C63).withValues(alpha: 0.4),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Color(0xFF8E889D),
-                      size: 17,
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

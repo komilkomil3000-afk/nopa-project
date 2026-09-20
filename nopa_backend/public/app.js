@@ -808,10 +808,9 @@ function switchTab(tabId, updateUrl = true) {
     if (typeof loadAnalytics === 'function') loadAnalytics();
   } else if (tabId === 'notifications-tab') {
     if (typeof loadNotificationData === 'function') loadNotificationData();
-  } else if (tabId === 'banners-tab') {
-    if (typeof loadBannersTab === 'function') loadBannersTab();
-  } else if (tabId === 'news-tab') {
-    if (typeof loadNewsTab === 'function') loadNewsTab();
+  } else if (tabId === 'banners-tab' || tabId === 'news-tab') {
+    if (typeof loadNewsAndBanners === 'function') loadNewsAndBanners();
+    else if (typeof loadNewsTab === 'function') loadNewsTab();
   } else if (tabId === 'chat-tab') {
     if (typeof loadChats === 'function') loadChats();
   } else if (tabId === 'mentors-tickets-tab') {
@@ -7946,66 +7945,225 @@ window.updateCaravanMentor = async function() {
 
 // --- BANNERS & NEWS MANAGEMENT ---
 
+window.switchJarchiSubTab = function(subtab) {
+  const bannersView = document.getElementById('jarchi-banners-view');
+  const newsView = document.getElementById('jarchi-news-view');
+  const btnBanners = document.getElementById('subtab-btn-banners');
+  const btnNews = document.getElementById('subtab-btn-news');
+
+  if (subtab === 'banners') {
+    if (bannersView) bannersView.style.display = 'block';
+    if (newsView) newsView.style.display = 'none';
+    if (btnBanners) {
+      btnBanners.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+      btnBanners.style.color = 'white';
+      btnBanners.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.35)';
+      btnBanners.style.border = 'none';
+    }
+    if (btnNews) {
+      btnNews.style.background = 'rgba(255,255,255,0.06)';
+      btnNews.style.color = '#94a3b8';
+      btnNews.style.boxShadow = 'none';
+      btnNews.style.border = '1px solid rgba(255,255,255,0.1)';
+    }
+    window.loadBannersTab();
+  } else {
+    if (bannersView) bannersView.style.display = 'none';
+    if (newsView) newsView.style.display = 'block';
+    if (btnNews) {
+      btnNews.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+      btnNews.style.color = 'white';
+      btnNews.style.boxShadow = '0 4px 12px rgba(2, 132, 199, 0.35)';
+      btnNews.style.border = 'none';
+    }
+    if (btnBanners) {
+      btnBanners.style.background = 'rgba(255,255,255,0.06)';
+      btnBanners.style.color = '#94a3b8';
+      btnBanners.style.boxShadow = 'none';
+      btnBanners.style.border = '1px solid rgba(255,255,255,0.1)';
+    }
+    window.loadNewsTab();
+  }
+};
+
+window.previewBannerImage = function(e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById('banner-image-preview');
+  if (file && preview) {
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      preview.src = evt.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+window.loadNewsAndBanners = function() {
+  window.loadBannersTab();
+  window.loadNewsTab();
+};
+
+window.cachedBannerList = [];
+
 window.loadBannersTab = async function() {
+  const tbody = document.querySelector('#banners-tbody') || document.querySelector('#banners-table tbody');
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری بنرها...</td></tr>';
+  }
+
   try {
-    const res = await fetch('/api/v1/banners', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const res = await fetch('/api/v1/admin/banners', { 
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
+    });
+    
+    if (!res.ok) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت بنرها از سرور</td></tr>';
+      return;
+    }
+
     const banners = await res.json();
-    const tbody = document.querySelector('#banners-table tbody');
-    tbody.innerHTML = '';
-    banners.forEach(b => {
-      tbody.innerHTML += `
+    const bannerList = Array.isArray(banners) ? banners : [];
+    window.cachedBannerList = bannerList;
+
+    // Update Stats
+    const totalCount = bannerList.length;
+    const homeCount = bannerList.filter(b => b.position === 'home_top').length;
+    const bazaarCount = bannerList.filter(b => b.position === 'bazaar_top').length;
+    const activeCount = bannerList.filter(b => b.isActive).length;
+
+    const elTotal = document.getElementById('banners-stat-total');
+    const elHome = document.getElementById('banners-stat-home');
+    const elBazaar = document.getElementById('banners-stat-bazaar');
+    const elActive = document.getElementById('banners-stat-active');
+
+    if (elTotal) elTotal.textContent = `${totalCount} بنر`;
+    if (elHome) elHome.textContent = `${homeCount} بنر`;
+    if (elBazaar) elBazaar.textContent = `${bazaarCount} بنر`;
+    if (elActive) elActive.textContent = `${activeCount} بنر فعال`;
+
+    if (!tbody) return;
+    if (bannerList.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-images" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هنوز بنری ثبت نشده است. با زدن دکمه بالا بنر جدید اضافه کنید.</td></tr>';
+      return;
+    }
+
+    const positionLabels = {
+      'home_top': '<span class="badge" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
+      'bazaar_top': '<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
+      'general': '<span class="badge" style="background:rgba(168, 85, 247, 0.15); color:#c084fc; border:1px solid rgba(168, 85, 247, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-globe"></i> عمومی</span>'
+    };
+
+    tbody.innerHTML = bannerList.map(b => {
+      const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
+      const statusBadge = b.isActive
+        ? '<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;">فعال</span>'
+        : '<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;">غیرفعال</span>';
+      
+      const imgMarkup = b.imageUrl
+        ? `<img src="${b.imageUrl}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
+        : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color:#64748b;"><i class="fa-solid fa-image"></i></div>';
+
+      const targetText = b.targetRoute ? `<code style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:#cbd5e1;" dir="ltr">${b.targetRoute}</code>` : '<span style="color:#64748b;">-</span>';
+
+      return `
         <tr>
-          <td><img src="${b.imageUrl}" style="width: 60px; border-radius: 4px;" /></td>
-          <td>${b.title}</td>
-          <td>${b.position}</td>
-          <td>${b.orderIndex}</td>
-          <td>${b.isActive ? '<span class="status-badge status-active">فعال</span>' : '<span class="status-badge status-inactive">غیرفعال</span>'}</td>
-          <td>
-            <button class="btn-action" style="background:var(--color-primary); color:white;" onclick="editBanner('${b.id}')"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-action" style="background:var(--color-danger); color:white;" onclick="deleteBanner('${b.id}')"><i class="fa-solid fa-trash"></i></button>
+          <td style="text-align: center;">${imgMarkup}</td>
+          <td style="font-weight: bold; color: white;">${b.title || 'بدون عنوان'}</td>
+          <td style="text-align: center;">${posLabel}</td>
+          <td>${targetText}</td>
+          <td style="text-align: center; color: #f59e0b; font-weight: bold;">${b.orderIndex ?? 0}</td>
+          <td style="text-align: center;">${statusBadge}</td>
+          <td style="text-align: center;">
+            <div style="display: flex; gap: 6px; justify-content: center;">
+              <button type="button" class="btn-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.editBanner('${b.id}')" title="ویرایش بنر">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button type="button" class="btn-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.deleteBanner('${b.id}')" title="حذف بنر">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
-    });
+    }).join('');
   } catch(e) {
-    console.error('Error loading banners', e);
+    console.error('Error loading banners:', e);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">ارتباط با سرور برقرار نشد</td></tr>';
   }
 };
 
 window.openCreateBannerModal = function() {
-  document.getElementById('banner-form').reset();
-  document.getElementById('banner-id').value = '';
-  document.getElementById('banner-modal-title').innerHTML = '<i class="fa-solid fa-image" style="color: #f59e0b;"></i> افزودن بنر';
+  const form = document.getElementById('banner-form');
+  if (form) form.reset();
+  const idEl = document.getElementById('banner-id');
+  if (idEl) idEl.value = '';
+  const titleModalEl = document.getElementById('banner-modal-title');
+  if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-image" style="color: #f59e0b;"></i> بارگذاری و افزودن بنر جدید';
+  const preview = document.getElementById('banner-image-preview');
+  if (preview) {
+    preview.src = '';
+    preview.style.display = 'none';
+  }
   
   const m = document.getElementById('banner-modal');
   if (m) {
     m.style.display = 'flex';
     m.classList.remove('hidden');
-  } else {
-    console.error("Modal #banner-modal not found in DOM");
   }
 };
 
 window.closeBannerModal = function() {
   const m = document.getElementById('banner-modal');
-  if (m) m.style.display = 'none';
+  if (m) {
+    m.style.display = 'none';
+    m.classList.add('hidden');
+  }
 };
 
 window.editBanner = async function(id) {
   try {
-    const res = await fetch('/api/v1/admin/banners', { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-    const banners = await res.json();
-    const b = banners.find(x => x.id === id);
+    let b = (window.cachedBannerList || []).find(x => x.id === id);
+    if (!b) {
+      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+      const res = await fetch('/api/v1/admin/banners', { 
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
+      });
+      const banners = await res.json();
+      b = (Array.isArray(banners) ? banners : []).find(x => x.id === id);
+    }
     if (!b) return;
-    document.getElementById('banner-id').value = b.id;
-    document.getElementById('banner-title').value = b.title;
+
+    document.getElementById('banner-id').value = b.id || '';
+    document.getElementById('banner-title').value = b.title || '';
     document.getElementById('banner-target').value = b.targetRoute || '';
-    document.getElementById('banner-position').value = b.position;
-    document.getElementById('banner-order').value = b.orderIndex;
-    document.getElementById('banner-active').checked = b.isActive;
-    document.getElementById('banner-modal-title').innerHTML = '<i class="fa-solid fa-pen" style="color: #f59e0b;"></i> ویرایش بنر';
-    document.getElementById('banner-modal').style.display = 'flex';
-  } catch (e) { console.error(e); }
+    document.getElementById('banner-position').value = b.position || 'home_top';
+    document.getElementById('banner-order').value = b.orderIndex ?? 0;
+    document.getElementById('banner-active').checked = (b.isActive === true || b.isActive === 'true');
+
+    const preview = document.getElementById('banner-image-preview');
+    if (preview) {
+      if (b.imageUrl) {
+        preview.src = b.imageUrl;
+        preview.style.display = 'block';
+      } else {
+        preview.src = '';
+        preview.style.display = 'none';
+      }
+    }
+
+    const titleModalEl = document.getElementById('banner-modal-title');
+    if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-pen" style="color: #f59e0b;"></i> ویرایش و اصلاح بنر';
+
+    const m = document.getElementById('banner-modal');
+    if (m) {
+      m.style.display = 'flex';
+      m.classList.remove('hidden');
+    }
+  } catch (e) {
+    console.error('Error fetching banner for edit:', e);
+  }
 };
 
 window.saveBannerItem = async function(e) {
@@ -8018,36 +8176,57 @@ window.saveBannerItem = async function(e) {
   formData.append('orderIndex', document.getElementById('banner-order').value);
   formData.append('isActive', document.getElementById('banner-active').checked);
   const fileInput = document.getElementById('banner-file');
-  if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+  if (fileInput && fileInput.files[0]) {
+    formData.append('image', fileInput.files[0]);
+  }
   
   const url = id ? `/api/v1/admin/banners/${id}` : '/api/v1/admin/banners';
   const method = id ? 'PUT' : 'POST';
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   
   try {
     const res = await fetch(url, {
       method,
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: formData
     });
     if (res.ok) {
+      if (typeof showToastSuccess === 'function') {
+        showToastSuccess(id ? '✅ بنر با موفقیت ویرایش شد' : '✅ بنر جدید با موفقیت بارگذاری شد');
+      } else {
+        alert(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
+      }
       closeBannerModal();
       loadBannersTab();
     } else {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       alert(err.error || 'خطا در ثبت بنر');
     }
-  } catch(e) { alert('Network Error'); }
+  } catch(e) {
+    console.error('Network error saving banner:', e);
+    alert('خطا در برقراری ارتباط با سرور');
+  }
 };
 
 window.deleteBanner = async function(id) {
-  if (!confirm('آیا از حذف این بنر مطمئن هستید؟')) return;
+  if (!confirm('آیا از حذف این بنر اطمینان دارید؟')) return;
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(`/api/v1/admin/banners/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
     });
-    if (res.ok) loadBannersTab();
-  } catch(e) { console.error(e); }
+    if (res.ok) {
+      if (typeof showToastSuccess === 'function') {
+        showToastSuccess('✅ بنر با موفقیت حذف شد');
+      }
+      loadBannersTab();
+    } else {
+      alert('خطا در حذف بنر');
+    }
+  } catch(e) {
+    console.error('Error deleting banner:', e);
+  }
 };
 
 window.cachedNewsList = [];

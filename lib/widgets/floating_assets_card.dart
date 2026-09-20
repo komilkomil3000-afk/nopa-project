@@ -49,13 +49,10 @@ class FloatingAssetsCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            shadows: [
-              Shadow(color: color.withValues(alpha: 0.5), blurRadius: 10),
-            ],
           ),
         ),
         Text(

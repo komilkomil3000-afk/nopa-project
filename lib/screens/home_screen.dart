@@ -299,25 +299,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        // Dots Indicator matching physical slide direction
+        // Dots Indicator synchronized with banner carousel direction
         Directionality(
-          textDirection: TextDirection.ltr,
+          textDirection: TextDirection.rtl,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               bannerList.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: _currentBannerIndex == index ? 18 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: _currentBannerIndex == index
-                      ? const Color(0xFFCD8449)
-                      : Colors.white.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
+              (index) {
+                final bool isActive = _currentBannerIndex == index;
+
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: isActive ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFFCD8449)
+                        : Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -325,7 +329,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned
+  final Set<String> _expandedInfoTitles = {};
+
+  /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned & Tap-to-expand
   Widget _buildUserInfoStrip(UserModel? user) {
     final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 0)}';
 
@@ -336,6 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
@@ -376,35 +383,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildInfoColumn({required String title, required String value}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start, // Right aligned in RTL
-      children: [
-        Text(
-          title,
-          textAlign: TextAlign.right,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12.5,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
+    final bool isExpanded = _expandedInfoTitles.contains(title);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedInfoTitles.remove(title);
+          } else {
+            _expandedInfoTitles.add(title);
+          }
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start, // Right aligned in RTL
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12.5,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          textAlign: TextAlign.right,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFB5B3C8),
-            fontSize: 10.5,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
+          const SizedBox(height: 3),
+          Text(
+            value,
+            textAlign: TextAlign.right,
+            maxLines: isExpanded ? 3 : 1,
+            overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFB5B3C8),
+              fontSize: 10.5,
+              height: 1.25,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

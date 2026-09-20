@@ -198,15 +198,6 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
             color: isSelected ? borderColor : borderColor.withValues(alpha: 0.3),
             width: 1.2,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: borderColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         child: Row(
@@ -356,36 +347,63 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
     );
   }
 
-  /// Builds an individual Challenge item row matching the login box gradient stroke and background
+  /// Builds an individual Challenge item row (Grayscale & locked if expired)
   Widget _buildChallengeItemRow(_ChallengeItemData item) {
+    final bool isExpired = _selectedTab == ChallengeTabType.expired;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       height: 52,
       decoration: BoxDecoration(
-        gradient: AppColors.strokeGradient,
+        gradient: isExpired
+            ? const LinearGradient(
+                colors: [Color(0xFF42424E), Color(0xFF282832)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : AppColors.strokeGradient,
         borderRadius: BorderRadius.circular(14),
       ),
       padding: const EdgeInsets.all(AppColors.borderWidth),
       child: Container(
         decoration: BoxDecoration(
-          gradient: AppColors.darkSurfaceGradient,
+          gradient: isExpired
+              ? const LinearGradient(
+                  colors: [Color(0xFF25252D), Color(0xFF1B1B22)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : AppColors.darkSurfaceGradient,
           borderRadius: BorderRadius.circular(13),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: InkWell(
-          onTap: () {
-            // Navigate to full challenges screen
-            context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
-          },
+          onTap: isExpired
+              ? () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'این چالش منقضی شده است و امکان مشاهده یا ثبت پاسخ وجود ندارد.',
+                        style: TextStyle(fontFamily: AppTheme.fontFamily),
+                      ),
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              : () {
+                  // Navigate to full challenges screen
+                  context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
+                },
           borderRadius: BorderRadius.circular(13),
           child: Row(
             children: [
-              // Right: Circular Avatar Badge with champun / trophy SVG
+              // Right: Circular Avatar Badge with champun / trophy SVG (Grayscale if expired)
               Container(
                 width: 28,
                 height: 28,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF332F5C),
+                decoration: BoxDecoration(
+                  color: isExpired ? const Color(0xFF383842) : const Color(0xFF332F5C),
                   shape: BoxShape.circle,
                 ),
                 padding: const EdgeInsets.all(5),
@@ -393,21 +411,24 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   child: SvgPicture.asset(
                     'assets/svg_icons/champun01.svg',
                     fit: BoxFit.contain,
+                    colorFilter: isExpired
+                        ? const ColorFilter.mode(Color(0xFF7A7A88), BlendMode.srcIn)
+                        : null,
                   ),
                 ),
               ),
               const SizedBox(width: 10),
 
-              // Title (Expanded to fill space smoothly)
+              // Title (Muted gray if expired)
               Expanded(
                 child: Text(
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: isExpired ? const Color(0xFF7E7E8E) : Colors.white,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: isExpired ? FontWeight.normal : FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
@@ -416,23 +437,35 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
 
               const SizedBox(width: 10),
 
-              // Far Left (in RTL): "مشاهده" Button with exact Login Screen "آزمایشی" Stroke & Surface Gradient
+              // Far Left (in RTL): "مشاهده" Button (Grayscale if expired)
               Container(
                 decoration: BoxDecoration(
-                  gradient: AppColors.strokeGradient,
+                  gradient: isExpired
+                      ? const LinearGradient(
+                          colors: [Color(0xFF4A4A55), Color(0xFF353540)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : AppColors.strokeGradient,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.all(AppColors.borderWidth),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    gradient: AppColors.darkSurfaceGradient,
+                    gradient: isExpired
+                        ? const LinearGradient(
+                            colors: [Color(0xFF282830), Color(0xFF1E1E24)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : AppColors.darkSurfaceGradient,
                     borderRadius: BorderRadius.circular(7),
                   ),
-                  child: const Text(
-                    'مشاهده',
+                  child: Text(
+                    isExpired ? 'منقضی' : 'مشاهده',
                     style: TextStyle(
-                      color: Color(0xFFC7B299),
+                      color: isExpired ? const Color(0xFF787886) : const Color(0xFFC7B299),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       fontFamily: AppTheme.fontFamily,

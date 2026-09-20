@@ -893,6 +893,113 @@ class HttpApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getAdminBanners({bool forceRefresh = false}) async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/admin/banners'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+      }
+      return await getBanners(forceRefresh: forceRefresh);
+    } catch (e) {
+      debugPrint('getAdminBanners error: $e');
+      return await getBanners(forceRefresh: forceRefresh);
+    }
+  }
+
+  Future<Map<String, dynamic>?> createBanner({
+    required String title,
+    String? targetRoute,
+    String position = 'home_top',
+    bool isActive = true,
+    int orderIndex = 0,
+    io.File? imageFile,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/admin/banners');
+      final request = http.MultipartRequest('POST', uri);
+      if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      request.fields['title'] = title;
+      if (targetRoute != null && targetRoute.isNotEmpty) {
+        request.fields['targetRoute'] = targetRoute;
+      }
+      request.fields['position'] = position;
+      request.fields['isActive'] = isActive.toString();
+      request.fields['orderIndex'] = orderIndex.toString();
+
+      if (imageFile != null) {
+        final multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
+        request.files.add(multipartFile);
+      }
+
+      final streamed = await request.send();
+      final resp = await http.Response.fromStream(streamed);
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        _cachedBanners.clear();
+        return await parseJsonAsync(resp.body) as Map<String, dynamic>?;
+      }
+      debugPrint('createBanner failed: ${resp.statusCode} ${resp.body}');
+      return null;
+    } catch (e) {
+      debugPrint('createBanner error: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> updateBanner({
+    required String id,
+    String? title,
+    String? targetRoute,
+    String? position,
+    bool? isActive,
+    int? orderIndex,
+    io.File? imageFile,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/admin/banners/$id');
+      final request = http.MultipartRequest('PUT', uri);
+      if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      if (title != null) request.fields['title'] = title;
+      if (targetRoute != null) request.fields['targetRoute'] = targetRoute;
+      if (position != null) request.fields['position'] = position;
+      if (isActive != null) request.fields['isActive'] = isActive.toString();
+      if (orderIndex != null) request.fields['orderIndex'] = orderIndex.toString();
+
+      if (imageFile != null) {
+        final multipartFile = await http.MultipartFile.fromPath('image', imageFile.path);
+        request.files.add(multipartFile);
+      }
+
+      final streamed = await request.send();
+      final resp = await http.Response.fromStream(streamed);
+      if (resp.statusCode == 200) {
+        _cachedBanners.clear();
+        return await parseJsonAsync(resp.body) as Map<String, dynamic>?;
+      }
+      debugPrint('updateBanner failed: ${resp.statusCode} ${resp.body}');
+      return null;
+    } catch (e) {
+      debugPrint('updateBanner error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> deleteBanner(String id) async {
+    try {
+      final response = await _delete(Uri.parse('$baseUrl/admin/banners/$id'), headers: _getHeaders());
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        _cachedBanners.clear();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('deleteBanner error: $e');
+      return false;
+    }
+  }
+
   // Buy Zarik (Mock Payment Simulator)
   Future<bool> buyZarikPackage(int packageZarikAmount) async {
     await Future.delayed(const Duration(seconds: 2));
