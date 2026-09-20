@@ -252,7 +252,7 @@ class _MapScreenState extends State<MapScreen> {
         item['teacher']?.toString() ??
         'استاد کاروان نپا';
 
-    final String stationTitle = item['title']?.toString() ?? 'منزلگاه ${index + 1}';
+    final String stationTitle = Station.resolveTitle(item['title']?.toString(), index);
     final String stationDesc = (item['subtitle'] != null && item['subtitle'].toString().trim().isNotEmpty)
         ? item['subtitle'].toString()
         : ((item['description'] != null && item['description'].toString().trim().isNotEmpty)

@@ -29,10 +29,12 @@ import 'core/theme/app_theme.dart';
 import 'services/theme_provider.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
 
 void navigateToMainTab(int index) {
-  mainScreenKey.currentState?.setIndex(index);
+  final ctx = navigatorKey.currentContext;
+  if (ctx != null) {
+    ctx.findAncestorStateOfType<MainScreenState>()?.setIndex(index);
+  }
 }
 
 void main() async {
@@ -111,7 +113,7 @@ class NepaApp extends StatelessWidget {
         routes: {
           '/auth': (context) => const AuthScreen(),
           '/main': (context) => const SuccessScreen(),
-          '/dashboard': (context) => MainScreen(key: mainScreenKey),
+          '/dashboard': (context) => const MainScreen(),
           '/station_detail': (context) => const StationDetailScreen(),
           '/class_player': (context) => const ClassPlayerScreen(),
           '/mentor_ratings': (context) => const MentorRatingsDetailScreen(),

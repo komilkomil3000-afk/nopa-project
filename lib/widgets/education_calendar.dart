@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../utils/constants.dart';
-import '../services/api_service.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../services/api_service.dart';
+import '../core/theme/app_theme.dart';
 
-enum EventType { mediaClass, skillClass, assignment }
+enum EventType { mediaClass, skillClass, overdue, assignment }
+typedef CalendarEventType = EventType;
 
 class CalendarEvent {
   final int year;
@@ -12,11 +13,8 @@ class CalendarEvent {
   final EventType type;
   final String title;
   final String time;
-  final String? stationTitle;
-  final String? stationSubtitle;
   final String? instructor;
   final String? id;
-  final String? jalaliDate;
 
   CalendarEvent({
     required this.year,
@@ -25,11 +23,8 @@ class CalendarEvent {
     required this.type,
     required this.title,
     required this.time,
-    this.stationTitle,
-    this.stationSubtitle,
     this.instructor,
     this.id,
-    this.jalaliDate,
   });
 }
 
@@ -41,187 +36,279 @@ class EducationCalendar extends StatefulWidget {
 }
 
 class _EducationCalendarState extends State<EducationCalendar> {
-  late Jalali _currentJalaliMonth;
   late int _selectedYear;
   late int _selectedMonth;
   late int _selectedDay;
   bool _isExpanded = false;
-  
+
+  late final ScrollController _daysScrollController;
   List<CalendarEvent> _events = [];
-  List<int> _holidays = [];
   bool _isLoading = true;
 
-  final List<String> _jalaliMonthNames = [
-    "", "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
+  static const List<String> _jalaliMonthNames = [
+    "",
+    "فروردین",
+    "اردیبهشت",
+    "خرداد",
+    "تیر",
+    "مرداد",
+    "شهریور",
+    "مهر",
+    "آبان",
+    "آذر",
+    "دی",
+    "بهمن",
+    "اسفند",
   ];
 
-  final List<String> _persianWeekDays = [
-    "شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"
+  static const List<String> _persianWeekDays = [
+    "شنبه",
+    "یکشنبه",
+    "دوشنبه",
+    "سه‌شنبه",
+    "چهارشنبه",
+    "پنجشنبه",
+    "جمعه",
   ];
 
   @override
   void initState() {
     super.initState();
+    _daysScrollController = ScrollController();
+
+    // Default to active curriculum semester (Mehr 1405) or current Jalali date
     final now = Jalali.now();
-    _currentJalaliMonth = Jalali(now.year, now.month, 1);
-    _selectedYear = now.year;
-    _selectedMonth = now.month;
-    _selectedDay = now.day;
+    final int initialYear = now.year >= 1403 ? now.year : 1405;
+    final int initialMonth = 7; // Mehr
+    final int initialDay = 7;
+
+    _selectedYear = initialYear;
+    _selectedMonth = initialMonth;
+    _selectedDay = initialDay;
+
     _fetchEvents();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToSelectedDay(animate: false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _daysScrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelectedDay({bool animate = true}) {
+    if (!_daysScrollController.hasClients) return;
+    const double itemWidth = 56.0; // width (48) + margin/spacing (8)
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double targetOffset =
+        ((_selectedDay - 1) * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+    final double maxScroll = _daysScrollController.position.maxScrollExtent;
+    final double clampedOffset = targetOffset.clamp(0.0, maxScroll > 0 ? maxScroll : 0.0);
+
+    if (animate) {
+      _daysScrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _daysScrollController.jumpTo(clampedOffset);
+    }
   }
 
   Future<void> _fetchEvents() async {
     try {
       final data = await HttpApiService().getCalendarEvents();
-      if (data != null && mounted) {
-        final List<CalendarEvent> loadedEvents = [];
-        if (data['events'] != null) {
-          for (var e in data['events']) {
-            // Exclude assignments and challenges from education calendar
-            if (e['type'] == 'assignment' || e['type'] == 'challenge') {
-              continue;
-            }
-            EventType type = EventType.skillClass;
-            if (e['type'] == 'mediaClass') {
-              type = EventType.mediaClass;
-            }
-            
-            int evYear = _selectedYear;
-            int evMonth = _selectedMonth;
-            int evDay = 1;
+      final List<CalendarEvent> loadedEvents = [];
 
-            try {
-              if (e['jalaliDate'] != null && e['jalaliDate'].toString().contains('/')) {
-                final parts = e['jalaliDate'].toString().split('/');
-                if (parts.length == 3) {
-                  evYear = int.parse(parts[0]);
-                  evMonth = int.parse(parts[1]);
-                  evDay = int.parse(parts[2]);
-                }
-              } else if (e['year'] != null && e['month'] != null && e['day'] != null) {
-                evYear = e['year'] is int ? e['year'] : int.parse(e['year'].toString());
-                evMonth = e['month'] is int ? e['month'] : int.parse(e['month'].toString());
-                evDay = e['day'] is int ? e['day'] : int.parse(e['day'].toString());
-              } else if (e['eventDate'] != null) {
-                final dt = DateTime.parse(e['eventDate']);
-                final jalaliDt = Jalali.fromDateTime(dt);
-                evYear = jalaliDt.year;
-                evMonth = jalaliDt.month;
-                evDay = jalaliDt.day;
-              } else {
-                evDay = e['day'] ?? 1;
+      if (data != null && data['events'] != null) {
+        for (var e in data['events']) {
+          EventType type = EventType.skillClass;
+          final String rawType = e['type']?.toString() ?? '';
+          if (rawType == 'mediaClass' || rawType.contains('media')) {
+            type = EventType.mediaClass;
+          } else if (rawType == 'overdue' || rawType == 'missed') {
+            type = EventType.overdue;
+          } else if (rawType == 'assignment' || rawType == 'challenge') {
+            type = EventType.overdue;
+          }
+
+          int evYear = _selectedYear;
+          int evMonth = _selectedMonth;
+          int evDay = 1;
+
+          try {
+            if (e['jalaliDate'] != null && e['jalaliDate'].toString().contains('/')) {
+              final parts = e['jalaliDate'].toString().split('/');
+              if (parts.length == 3) {
+                evYear = int.parse(parts[0]);
+                evMonth = int.parse(parts[1]);
+                evDay = int.parse(parts[2]);
               }
-            } catch (_) {
-              evDay = e['day'] ?? 1;
+            } else if (e['year'] != null && e['month'] != null && e['day'] != null) {
+              evYear = e['year'] is int ? e['year'] : int.parse(e['year'].toString());
+              evMonth = e['month'] is int ? e['month'] : int.parse(e['month'].toString());
+              evDay = e['day'] is int ? e['day'] : int.parse(e['day'].toString());
             }
-            
-            loadedEvents.add(CalendarEvent(
-              year: evYear,
-              month: evMonth,
-              day: evDay,
-              type: type,
-              title: e['title'] ?? 'کلاس آموزشی',
-              time: e['time'] ?? 'ساعت ۱۶:۰۰',
-              stationTitle: e['stationTitle'],
-              stationSubtitle: e['stationSubtitle'],
-              instructor: e['instructor'],
-              id: e['id']?.toString(),
-              jalaliDate: e['jalaliDate'],
-            ));
+          } catch (_) {
+            evDay = e['day'] ?? 1;
           }
-        }
-        
-        final List<int> loadedHolidays = [];
-        if (data['holidays'] != null) {
-          for (var h in data['holidays']) {
-            if (h is int) loadedHolidays.add(h);
-          }
-        }
 
-        // Smart month targeting:
-        // If current month has no scheduled events (e.g. app opened in Shahrivar),
-        // automatically switch to the nearest upcoming month that has classes (Mehr 1405)!
-        int targetYear = _selectedYear;
-        int targetMonth = _selectedMonth;
-        int targetDay = _selectedDay;
-
-        final currentMonthHasEvents = loadedEvents.any((ev) => ev.year == targetYear && ev.month == targetMonth);
-        if (!currentMonthHasEvents && loadedEvents.isNotEmpty) {
-          final upcomingEvents = loadedEvents.where((ev) {
-            if (ev.year > targetYear) return true;
-            if (ev.year == targetYear && ev.month >= targetMonth) return true;
-            return false;
-          }).toList();
-
-          final firstEvent = upcomingEvents.isNotEmpty ? upcomingEvents.first : loadedEvents.first;
-          targetYear = firstEvent.year;
-          targetMonth = firstEvent.month;
-          targetDay = firstEvent.day;
-        } else {
-          // If current month has events, ensure selectedDay has events if possible
-          final todayEvents = loadedEvents.where((ev) => ev.year == targetYear && ev.month == targetMonth && ev.day == targetDay).toList();
-          if (todayEvents.isEmpty) {
-            final monthEvents = loadedEvents.where((ev) => ev.year == targetYear && ev.month == targetMonth).toList();
-            if (monthEvents.isNotEmpty) {
-              targetDay = monthEvents.first.day;
-            }
-          }
+          loadedEvents.add(CalendarEvent(
+            year: evYear,
+            month: evMonth,
+            day: evDay,
+            type: type,
+            title: e['title'] ?? 'کلاس آموزشی',
+            time: e['time'] ?? 'ساعت ۱۸:۰۰',
+            instructor: e['instructor'],
+            id: e['id']?.toString(),
+          ));
         }
-        
+      }
+
+      // Master Curriculum Schedule strictly synchronized with CRM Database (Sheet 03 & Sheet 05)
+      final List<CalendarEvent> masterCurriculum = [
+        // =====================================================================
+        // مهرماه (Month 7) - منزلگاه اول (شوک و اینشات) و منزلگاه دوم (خودشناسی و آدیشن)
+        // =====================================================================
+        CalendarEvent(year: _selectedYear, month: 7, day: 2, type: EventType.mediaClass, title: 'آشنایی با محیط اینشات', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 3, type: EventType.mediaClass, title: 'برش، ویرایش و موسیقی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 5, type: EventType.skillClass, title: 'تعریف شوک و انواع آن', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیراینه‌گر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 6, type: EventType.skillClass, title: 'خودشناسی: مفاهیم پایه', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 7, type: EventType.skillClass, title: 'راهکارهای تغییر نگرش', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیراینه‌گر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 8, type: EventType.skillClass, title: 'نقاط قوت و ضعف', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 9, type: EventType.mediaClass, title: 'آشنایی با نرم‌افزار آدیشن', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 10, type: EventType.mediaClass, title: 'ویرایش و برش صدا در آدیشن', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 13, type: EventType.skillClass, title: 'ارزش‌ها و باورها', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 15, type: EventType.skillClass, title: 'هدف‌گذاری در خودشناسی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 16, type: EventType.mediaClass, title: 'افکت‌ها و فیلترهای صوتی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 17, type: EventType.mediaClass, title: 'مولتی‌ترک و میکس اولیه', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 20, type: EventType.skillClass, title: 'مدیریت هیجانات', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 20, type: EventType.overdue, title: 'چالش ۳۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 22, type: EventType.skillClass, title: 'ارتباط مؤثر با خود و دیگران', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 22, type: EventType.overdue, title: 'چالش ۳۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 23, type: EventType.mediaClass, title: 'تکنیک‌های پیشرفته ضبط', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 24, type: EventType.mediaClass, title: 'مسترینگ و آماده‌سازی نهایی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 24, type: EventType.overdue, title: 'چالش ۴۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 26, type: EventType.overdue, title: 'چالش ۴۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 27, type: EventType.skillClass, title: 'مدیریت زمان و انرژی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 28, type: EventType.overdue, title: 'چالش ۵۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 29, type: EventType.skillClass, title: 'خودشناسی و سبک زندگی سالم', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 30, type: EventType.mediaClass, title: 'تولید پادکست حرفه‌ای (بخش اول)', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 30, type: EventType.overdue, title: 'چالش ۵۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
+        CalendarEvent(year: _selectedYear, month: 7, day: 31, type: EventType.mediaClass, title: 'تولید پادکست حرفه‌ای (بخش دوم و انتشار)', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
+
+        // =====================================================================
+        // آبان‌ماه (Month 8) - منزلگاه سوم (همراهان و کنوا)
+        // =====================================================================
+        CalendarEvent(year: _selectedYear, month: 8, day: 3, type: EventType.skillClass, title: 'تعریف همراهان و دشمنان', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 5, type: EventType.skillClass, title: 'تأثیر دوستان و همکاران', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 6, type: EventType.mediaClass, title: 'آشنایی با اپلیکیشن کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 7, type: EventType.mediaClass, title: 'کار با قالب‌ها و المان‌ها', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 10, type: EventType.skillClass, title: 'شناخت مخالفان و رقبا', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 12, type: EventType.skillClass, title: 'راهکارهای عملی در تعاملات', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 13, type: EventType.mediaClass, title: 'طراحی پوستر و اینفوگرافی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 14, type: EventType.mediaClass, title: 'ویدئو و انیمیشن در کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 17, type: EventType.skillClass, title: 'رهبری و همراهی در تیم', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 19, type: EventType.skillClass, title: 'پایداری در مسیر همراهی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 20, type: EventType.mediaClass, title: 'طراحی محتوا برای شبکه‌های اجتماعی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 8, day: 21, type: EventType.mediaClass, title: 'پروژه نهایی و جمع‌بندی کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+
+        // =====================================================================
+        // آذرماه (Month 9) - منزلگاه چهارم (هستی‌شناسی و کنوا پیشرفته) و منزلگاه پنجم (هدف‌گذاری و فتوشاپ)
+        // =====================================================================
+        CalendarEvent(year: _selectedYear, month: 9, day: 1, type: EventType.skillClass, title: 'مفاهیم هستی‌شناسی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 3, type: EventType.skillClass, title: 'شناخت خدا در هستی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 4, type: EventType.mediaClass, title: 'کنوا پیشرفته: تکنیک‌های حرفه‌ای', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 5, type: EventType.mediaClass, title: 'طراحی هویت بصری کامل', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 8, type: EventType.skillClass, title: 'شناخت ولی و امامت', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 10, type: EventType.skillClass, title: 'تأثیر شناخت هستی و ولی در زندگی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 11, type: EventType.mediaClass, title: 'انیمیشن و موشن گرافیک پیشرفته', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 12, type: EventType.mediaClass, title: 'پروژه نهایی: کمپین تبلیغاتی کامل', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 15, type: EventType.skillClass, title: 'مبانی هدف‌گذاری', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 16, type: EventType.skillClass, title: 'هدف‌گذاری هوشمند (SMART)', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 17, type: EventType.skillClass, title: 'برنامه‌ریزی عملیاتی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 18, type: EventType.mediaClass, title: 'آشنایی با فتوشاپ و محیط کار', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 19, type: EventType.mediaClass, title: 'ابزارهای انتخاب و برش', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 22, type: EventType.skillClass, title: 'انگیزه و پایداری', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 22, type: EventType.mediaClass, title: 'لایه‌ها و ماسک‌ها', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 23, type: EventType.mediaClass, title: 'رنگ و تنظیمات نور', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 24, type: EventType.skillClass, title: 'ارزیابی و بازنگری اهداف', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
+        CalendarEvent(year: _selectedYear, month: 9, day: 24, type: EventType.mediaClass, title: 'پروژه نهایی و خروجی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
+      ];
+
+      // Merge loaded backend events with master curriculum
+      for (var ev in masterCurriculum) {
+        final exists = loadedEvents.any((e) =>
+            e.year == ev.year &&
+            e.month == ev.month &&
+            e.day == ev.day &&
+            e.type == ev.type &&
+            e.title == ev.title);
+        if (!exists) {
+          loadedEvents.add(ev);
+        }
+      }
+
+      if (mounted) {
         setState(() {
           _events = loadedEvents;
-          _holidays = loadedHolidays;
-          _currentJalaliMonth = Jalali(targetYear, targetMonth, 1);
-          _selectedYear = targetYear;
-          _selectedMonth = targetMonth;
-          _selectedDay = targetDay;
           _isLoading = false;
         });
-      } else if (mounted) {
-        setState(() => _isLoading = false);
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-
   void _goToPreviousMonth() {
     setState(() {
-      if (_currentJalaliMonth.month == 1) {
-        _currentJalaliMonth = Jalali(_currentJalaliMonth.year - 1, 12, 1);
-      } else {
-        _currentJalaliMonth = Jalali(_currentJalaliMonth.year, _currentJalaliMonth.month - 1, 1);
+      int newMonth = _selectedMonth - 1;
+      int newYear = _selectedYear;
+      if (newMonth < 1) {
+        newMonth = 12;
+        newYear -= 1;
       }
-      _selectedYear = _currentJalaliMonth.year;
-      _selectedMonth = _currentJalaliMonth.month;
-      final monthEvents = _events.where((e) => e.year == _selectedYear && e.month == _selectedMonth).toList();
-      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
+      _selectedYear = newYear;
+      _selectedMonth = newMonth;
+      final int maxDays = Jalali(_selectedYear, _selectedMonth, 1).monthLength;
+      if (_selectedDay > maxDays) {
+        _selectedDay = maxDays;
+      }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay(animate: true));
   }
 
   void _goToNextMonth() {
     setState(() {
-      if (_currentJalaliMonth.month == 12) {
-        _currentJalaliMonth = Jalali(_currentJalaliMonth.year + 1, 1, 1);
-      } else {
-        _currentJalaliMonth = Jalali(_currentJalaliMonth.year, _currentJalaliMonth.month + 1, 1);
+      int newMonth = _selectedMonth + 1;
+      int newYear = _selectedYear;
+      if (newMonth > 12) {
+        newMonth = 1;
+        newYear += 1;
       }
-      _selectedYear = _currentJalaliMonth.year;
-      _selectedMonth = _currentJalaliMonth.month;
-      final monthEvents = _events.where((e) => e.year == _selectedYear && e.month == _selectedMonth).toList();
-      _selectedDay = monthEvents.isNotEmpty ? monthEvents.first.day : 1;
+      _selectedYear = newYear;
+      _selectedMonth = newMonth;
+      final int maxDays = Jalali(_selectedYear, _selectedMonth, 1).monthLength;
+      if (_selectedDay > maxDays) {
+        _selectedDay = maxDays;
+      }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay(animate: true));
   }
 
-  void _goToToday() {
-    final now = Jalali.now();
-    setState(() {
-      _currentJalaliMonth = Jalali(now.year, now.month, 1);
-      _selectedYear = now.year;
-      _selectedMonth = now.month;
-      _selectedDay = now.day;
-    });
+  String _getPreviousMonthName() {
+    final int prevMonth = _selectedMonth == 1 ? 12 : _selectedMonth - 1;
+    return _jalaliMonthNames[prevMonth];
+  }
+
+  String _getNextMonthName() {
+    final int nextMonth = _selectedMonth == 12 ? 1 : _selectedMonth + 1;
+    return _jalaliMonthNames[nextMonth];
   }
 
   @override
@@ -230,641 +317,546 @@ class _EducationCalendarState extends State<EducationCalendar> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24.0),
-          child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+          child: CircularProgressIndicator(color: Color(0xFFCD8449)),
         ),
       );
     }
 
-    final jalaliNow = Jalali.now();
-    final int jYear = _currentJalaliMonth.year;
-    final int jMonth = _currentJalaliMonth.month;
-    final int daysInMonth = _currentJalaliMonth.monthLength;
-
-    // First day of month weekday (0 = Saturday, 6 = Friday)
-    final firstDayJalali = Jalali(jYear, jMonth, 1);
-    final int firstDayWeekdayIdx = firstDayJalali.weekDay - 1;
-
-    final bool isThisCurrentMonth = (jYear == jalaliNow.year && jMonth == jalaliNow.month);
+    final String currentMonthName = "${_jalaliMonthNames[_selectedMonth]}ماه";
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.cardBackground,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
+          // 1. Top Section Title: "زمان"
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'زمان',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Top Actions: بزرگنمایی and امروز
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _isExpanded = !_isExpanded),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.35)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isExpanded ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
-                              color: const Color(0xFFFFD54F),
-                              size: 17,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isExpanded ? "کوچک‌نمایی" : "بزرگنمایی",
-                              style: const TextStyle(
-                                color: Color(0xFFFFD54F),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (!isThisCurrentMonth)
-                      GestureDetector(
-                        onTap: _goToToday,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.today_rounded, color: Color(0xFFC4B5FD), size: 14),
-                              SizedBox(width: 4),
-                              Text(
-                                "امروز",
-                                style: TextStyle(color: Color(0xFFC4B5FD), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                // Month Switcher with Two Arrows on Sides
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // فلش ماه قبل (سمت راست در راست‌به‌چپ)
-                      InkWell(
-                        onTap: _goToPreviousMonth,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 13),
-                              SizedBox(width: 4),
-                              Text(
-                                "ماه قبل",
-                                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      // عنوان ماه و سال در وسط
-                      Text(
-                        "${_jalaliMonthNames[jMonth]} $jYear",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Vazirmatn',
-                        ),
-                      ),
-
-                      // فلش ماه بعد (سمت چپ در راست‌به‌چپ)
-                      InkWell(
-                        onTap: _goToNextMonth,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "ماه بعد",
-                                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                              ),
-                              SizedBox(width: 4),
-                              Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 13),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Day Headers
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: const [
-                    Text("ش", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("ی", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("د", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("س", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("چ", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("پ", style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                    Text("ج", style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Calendar Grid or Compact Week Row (with swipe support)
-                GestureDetector(
-                  onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity != null) {
-                      if (details.primaryVelocity! > 250) {
-                        _goToPreviousMonth();
-                      } else if (details.primaryVelocity! < -250) {
-                        _goToNextMonth();
-                      }
-                    }
-                  },
-                  child: _isExpanded 
-                      ? _buildFullMonthGrid(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1) 
-                      : _buildCompactWeekRow(daysInMonth, firstDayWeekdayIdx, isThisCurrentMonth ? jalaliNow.day : -1),
-                ),
-                
-                const SizedBox(height: 14),
-                _buildLegend(),
-              ],
+              ),
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // 2. Month Selector Row matching exact user screenshot:
+          // Left: < آبان  |  Center: مهرماه  |  Right: شهریور >
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Directionality(
+              textDirection: TextDirection.ltr, // LTR structure: [Left: < آبان] [Center: مهرماه] [Right: شهریور >]
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Side: Next Month (< آبان)
+                  GestureDetector(
+                    onTap: _goToNextMonth,
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.chevron_left_rounded,
+                          color: Color(0xFFA5A4F5),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          _getNextMonthName(),
+                          style: const TextStyle(
+                            color: Color(0xFFA5A4F5),
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Center: Current Month Title (مهرماه)
+                  Text(
+                    currentMonthName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 23,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+
+                  // Right Side: Previous Month (شهریور >)
+                  GestureDetector(
+                    onTap: _goToPreviousMonth,
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _getPreviousMonthName(),
+                          style: const TextStyle(
+                            color: Color(0xFFA5A4F5),
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFA5A4F5),
+                          size: 22,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 16),
-          _buildEventDetailsSection(),
+
+          // 3. Scrollable Month Days Strip (Scrollable left/right through all days of the month)
+          _buildMonthDaysStrip(),
+
+          const SizedBox(height: 16),
+
+          // 4. Bottom 3-Column Class Details Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18.0),
+            child: _buildClassesSummaryCard(),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCompactWeekRow(int daysInMonth, int firstDayWeekdayIdx, int realToday) {
-    final int selectedCellIdx = firstDayWeekdayIdx + (_selectedDay - 1);
-    final int weekRow = selectedCellIdx ~/ 7;
-    final int startCellIdx = weekRow * 7;
+  /// Builds horizontally scrollable day cards for the entire current Persian month (1 to 30/31)
+  Widget _buildMonthDaysStrip() {
+    final int daysInMonth = Jalali(_selectedYear, _selectedMonth, 1).monthLength;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: List.generate(7, (col) {
-        final int cellIndex = startCellIdx + col;
-        if (cellIndex < firstDayWeekdayIdx || cellIndex >= firstDayWeekdayIdx + daysInMonth) {
-          return const Expanded(
-            child: SizedBox(height: 44),
-          );
-        }
+    return SizedBox(
+      height: 94,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: ListView.separated(
+          controller: _daysScrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: daysInMonth,
+          separatorBuilder: (context, index) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final int dayNum = index + 1;
+            final Jalali dayJalali = Jalali(_selectedYear, _selectedMonth, dayNum);
+            final int weekDayIdx = (dayJalali.weekDay - 1) % 7;
+            final String weekDayName = _persianWeekDays[weekDayIdx];
 
-        final int dayNum = cellIndex - firstDayWeekdayIdx + 1;
-        final bool isFriday = (col == 6);
-        final bool isToday = (dayNum == realToday);
+            final bool isSelected = (_selectedYear == dayJalali.year &&
+                _selectedMonth == dayJalali.month &&
+                _selectedDay == dayNum);
 
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.5),
-            child: SizedBox(
-              height: 48,
-              child: _buildDayCell(dayNum, isToday, isFriday),
-            ),
-          ),
-        );
-      }),
-    );
-  }
+            final dayEvents = _events.where((e) =>
+                e.year == dayJalali.year &&
+                e.month == dayJalali.month &&
+                e.day == dayNum).toList();
 
-  Widget _buildFullMonthGrid(int daysInMonth, int firstDayWeekdayIdx, int realToday) {
-    final int totalCells = daysInMonth + firstDayWeekdayIdx;
-    
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: totalCells,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 7,
-        mainAxisSpacing: 6,
-        crossAxisSpacing: 6,
-        childAspectRatio: 0.95,
-      ),
-      itemBuilder: (context, index) {
-        if (index < firstDayWeekdayIdx) {
-          return const SizedBox.shrink();
-        }
+            final bool hasMedia = dayEvents.any((e) => e.type == EventType.mediaClass);
+            final bool hasSkill = dayEvents.any((e) => e.type == EventType.skillClass);
+            final bool hasOverdue = dayEvents.any((e) => e.type == EventType.overdue);
 
-        final int dayNum = index - firstDayWeekdayIdx + 1;
-        final int weekdayOfCell = index % 7;
-        final bool isFriday = weekdayOfCell == 6;
-        final bool isToday = (dayNum == realToday);
-
-        return _buildDayCell(dayNum, isToday, isFriday);
-      },
-    );
-  }
-
-  Widget _buildDayCell(int dayNum, bool isToday, bool isFriday) {
-    final bool isSelected = (_selectedYear == _currentJalaliMonth.year && 
-                             _selectedMonth == _currentJalaliMonth.month && 
-                             _selectedDay == dayNum);
-    
-    final bool isHoliday = _holidays.contains(dayNum);
-    
-    // Filter events for this exact day in the displayed month/year
-    final dayEvents = _events.where((e) => 
-      e.year == _currentJalaliMonth.year && 
-      e.month == _currentJalaliMonth.month && 
-      e.day == dayNum
-    ).toList();
-
-    final bool hasSkillClass = dayEvents.any((e) => e.type == EventType.skillClass);
-    final bool hasMediaClass = dayEvents.any((e) => e.type == EventType.mediaClass);
-
-    // Color theme for cell based on scheduled classes
-    Color cellBorderColor = Colors.white.withValues(alpha: 0.06);
-    Color cellBgColor = Colors.transparent;
-
-    if (isSelected) {
-      cellBgColor = const Color(0xFF7C3AED);
-      cellBorderColor = const Color(0xFFA78BFA);
-    } else if (isToday) {
-      cellBgColor = const Color(0xFF8B5CF6).withValues(alpha: 0.2);
-      cellBorderColor = const Color(0xFFFFD54F);
-    } else if (dayEvents.isNotEmpty) {
-      if (hasSkillClass && hasMediaClass) {
-        cellBgColor = const Color(0xFF3B82F6).withValues(alpha: 0.12);
-        cellBorderColor = const Color(0xFF38BDF8).withValues(alpha: 0.35);
-      } else if (hasSkillClass) {
-        cellBgColor = const Color(0xFFEF4444).withValues(alpha: 0.1);
-        cellBorderColor = const Color(0xFFEF4444).withValues(alpha: 0.3);
-      } else if (hasMediaClass) {
-        cellBgColor = const Color(0xFF3B82F6).withValues(alpha: 0.1);
-        cellBorderColor = const Color(0xFF38BDF8).withValues(alpha: 0.3);
-      }
-    }
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedYear = _currentJalaliMonth.year;
-          _selectedMonth = _currentJalaliMonth.month;
-          _selectedDay = dayNum;
-        });
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: cellBgColor,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: cellBorderColor,
-            width: isSelected || isToday ? 1.8 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  )
-                ]
-              : null,
+            return _buildDayCard(
+              dayNum: dayNum,
+              weekDayName: weekDayName,
+              isSelected: isSelected,
+              hasMedia: hasMedia,
+              hasSkill: hasSkill,
+              hasOverdue: hasOverdue,
+              onTap: () {
+                setState(() {
+                  _selectedDay = dayNum;
+                });
+                _scrollToSelectedDay(animate: true);
+              },
+            );
+          },
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              "$dayNum",
-              style: TextStyle(
-                color: isSelected 
-                    ? Colors.white 
-                    : (isFriday || isHoliday 
-                        ? const Color(0xFFF87171) 
-                        : (isToday 
-                            ? const Color(0xFFFFD54F) 
-                            : (dayEvents.isNotEmpty ? Colors.white : Colors.white60))),
-                fontWeight: isSelected || isToday || dayEvents.isNotEmpty ? FontWeight.bold : FontWeight.normal,
-                fontSize: 13,
-                fontFamily: 'Vazirmatn',
-              ),
+      ),
+    );
+  }
+
+  /// Individual Day Pill Card
+  Widget _buildDayCard({
+    required int dayNum,
+    required String weekDayName,
+    required bool isSelected,
+    required bool hasMedia,
+    required bool hasSkill,
+    required bool hasOverdue,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 92,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: isSelected
+              ? const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF8D5B2C),
+                    Color(0xFFFFD580),
+                    Color(0xFF8D5B2C),
+                  ],
+                )
+              : const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
+                  ],
+                ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-            if (dayEvents.isNotEmpty) ...[
+          ],
+        ),
+        padding: const EdgeInsets.all(1.2), // Gradient border matching StationCard & Asset pills
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.8),
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )
+                : null,
+            color: isSelected ? null : const Color(0xFF28274A),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 1. Day Number on Top
+              Text(
+                '$dayNum',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                ),
+              ),
               const SizedBox(height: 3),
+
+              // 2. Weekday Name
+              Text(
+                weekDayName,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF3B1E0A) : const Color(0xFFB5B3D8),
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                ),
+              ),
+              const SizedBox(height: 4),
+
+              // 3. Indicator Dot(s)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (hasSkillClass) _buildDot(EventType.skillClass),
-                  if (hasMediaClass) _buildDot(EventType.mediaClass),
+                  if (hasMedia)
+                    Container(
+                      width: 5.5,
+                      height: 5.5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4DE2EC), // Cyan dot for media class
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (hasSkill)
+                    Container(
+                      width: 5.5,
+                      height: 5.5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF9E872), // Yellow dot for skill class
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (hasOverdue)
+                    Container(
+                      width: 5.5,
+                      height: 5.5,
+                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF67575), // Coral red dot for overdue
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  if (!hasMedia && !hasSkill && !hasOverdue)
+                    const SizedBox(height: 5.5),
                 ],
               ),
             ],
-            if (isHoliday && dayEvents.isEmpty) ...[
-              const SizedBox(height: 2),
-              const Icon(Icons.star, color: Colors.redAccent, size: 7),
-            ],
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLegend() {
-    return Container(
-      padding: const EdgeInsets.only(top: 6),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 14,
-        runSpacing: 6,
-        children: [
-          _buildLegendItem(const Color(0xFFEF4444), "کلاس مهارتی"),
-          _buildLegendItem(const Color(0xFF38BDF8), "کلاس رسانه‌ای"),
-        ],
-      ),
-    );
-  }
+  /// Bottom 3-Column Class Details Card matching exact user screenshot
+  Widget _buildClassesSummaryCard() {
+    final dayEvents = _events.where((e) =>
+        e.year == _selectedYear &&
+        e.month == _selectedMonth &&
+        e.day == _selectedDay).toList();
 
-  Widget _buildLegendItem(Color color, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 5),
-        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontFamily: 'Vazirmatn')),
-      ],
-    );
-  }
+    final mediaEvents = dayEvents.where((e) => e.type == EventType.mediaClass).toList();
+    final skillEvents = dayEvents.where((e) => e.type == EventType.skillClass).toList();
+    final overdueEvents = dayEvents.where((e) => e.type == EventType.overdue).toList();
 
-  Widget _buildDot(EventType type) {
-    Color color;
-    switch (type) {
-      case EventType.mediaClass: color = const Color(0xFF38BDF8); break; // Sky blue
-      case EventType.skillClass: color = const Color(0xFFEF4444); break; // Red
-      case EventType.assignment: color = const Color(0xFF10B981); break; // Emerald
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1.5),
-      width: 5,
-      height: 5,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-
-  Widget _buildEventDetailsSection() {
-    // Filter events for the selected date
-    final dayEvents = _events.where((e) => 
-      e.year == _selectedYear && 
-      e.month == _selectedMonth && 
-      e.day == _selectedDay
-    ).toList();
-
-    // Calculate Persian day of the week for the selected date
-    final selectedJalali = Jalali(_selectedYear, _selectedMonth, _selectedDay);
-    final String weekDayName = _persianWeekDays[selectedJalali.weekDay - 1];
-    final String fullSelectedDateStr = "$weekDayName $_selectedDay ${_jalaliMonthNames[_selectedMonth]} $_selectedYear";
-
-    final isHoliday = _holidays.contains(_selectedDay);
+    final String mediaText = mediaEvents.isNotEmpty ? mediaEvents.map((e) => e.title).join('، ') : '-';
+    final String skillText = skillEvents.isNotEmpty ? skillEvents.map((e) => e.title).join('، ') : '-';
+    final String overdueText = overdueEvents.isNotEmpty ? overdueEvents.map((e) => e.title).join('، ') : '-';
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: const Color(0xFF1E1C38),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF38365C),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
-            offset: const Offset(0, 3),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.event_note, color: Color(0xFF38BDF8), size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    "برنامه $fullSelectedDateStr",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ],
-              ),
-              if (dayEvents.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
-                  ),
-                  child: Text(
-                    "${dayEvents.length} کلاس",
-                    style: const TextStyle(color: Color(0xFFC4B5FD), fontSize: 10.5, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                  ),
-                ),
-            ],
-          ),
-          const Divider(color: Colors.white10, height: 20),
-          
-          if (isHoliday) ...[
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.redAccent.withValues(alpha: 0.25)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.celebration, color: Colors.redAccent, size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "تعطیل رسمی تقویم",
-                      style: TextStyle(color: Colors.redAccent, fontSize: 11.5, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          if (dayEvents.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: Column(
-                  children: [
-                    Icon(Icons.event_available, color: Colors.white.withValues(alpha: 0.2), size: 36),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "در این روز کلاس یا رویدادی برنامه‌ریزی نشده است.",
-                      style: TextStyle(color: Colors.white38, fontSize: 11.5, fontFamily: 'Vazirmatn'),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Column(
-              children: dayEvents.map((event) {
-                Color typeColor = const Color(0xFFEF4444);
-                String typeName = "کلاس مهارتی";
-                IconData typeIcon = Icons.fitness_center;
-                
-                if (event.type == EventType.mediaClass) {
-                  typeColor = const Color(0xFF38BDF8);
-                  typeName = "کلاس رسانه‌ای";
-                  typeIcon = Icons.mic;
-                }
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF150D27),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: typeColor.withValues(alpha: 0.25)),
-                  ),
+          // 3 Column Headers (Right: کلاس‌های رسانه‌ای • | Middle: کلاس‌های مهارتی • | Left: معوقه •)
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              children: [
+                // Right Column Header: کلاس‌های رسانه‌ای (Cyan)
+                Expanded(
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: typeColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF4DE2EC),
+                          shape: BoxShape.circle,
                         ),
-                        child: Icon(typeIcon, color: typeColor, size: 18),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    event.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Vazirmatn',
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: typeColor.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    typeName,
-                                    style: TextStyle(
-                                      color: typeColor,
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Vazirmatn',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            if (event.stationTitle != null)
-                              Text(
-                                "📍 ${event.stationTitle}${event.stationSubtitle != null ? ' - ${event.stationSubtitle}' : ''}",
-                                style: const TextStyle(
-                                  color: Color(0xFF38BDF8),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: 'Vazirmatn',
-                                ),
-                              ),
-                            const SizedBox(height: 3),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "⏰ ${event.time}",
-                                  style: const TextStyle(color: Colors.white60, fontSize: 10.5, fontFamily: 'Vazirmatn'),
-                                ),
-                                if (event.instructor != null)
-                                  Text(
-                                    "👤 ${event.instructor}",
-                                    style: const TextStyle(color: Colors.white60, fontSize: 10.5, fontFamily: 'Vazirmatn'),
-                                  ),
-                              ],
-                            ),
-                          ],
+                      const SizedBox(width: 5),
+                      const Text(
+                        'کلاس‌های رسانه‌ای',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF4DE2EC),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
                         ),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
+                ),
+
+                // Middle Column Header: کلاس‌های مهارتی (Yellow)
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF9E872),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Text(
+                        'کلاس‌های مهارتی',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFF9E872),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Left Column Header: معوقه (Coral Red)
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF67575),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      const Text(
+                        'معوقه',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFF67575),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
+
+          const SizedBox(height: 10),
+          Divider(
+            color: Colors.white.withValues(alpha: 0.08),
+            height: 1,
+            thickness: 1,
+          ),
+          const SizedBox(height: 12),
+
+          // 3 Column Values Row
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Right Column Value
+                Expanded(
+                  child: Text(
+                    mediaText,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                ),
+
+                // Middle Column Value
+                Expanded(
+                  child: Text(
+                    skillText,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                ),
+
+                // Left Column Value
+                Expanded(
+                  child: Text(
+                    overdueText,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Bottom Circular Dropdown Chevron Indicator matching screenshot
+          Center(
+            child: GestureDetector(
+              onTap: () => setState(() => _isExpanded = !_isExpanded),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C2A4A),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF3D3B62),
+                    width: 1,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xFF8E8CAE),
+                    size: 17,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
