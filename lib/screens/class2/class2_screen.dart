@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../utils/constants.dart';
 import '../../utils/global_state.dart';
 import '../../services/app_state_repository.dart';
+import '../../core/theme/app_colors.dart';
 import '../../models/models.dart';
 import '../../services/api_service.dart';
 import '../../widgets/reward_popup.dart';
@@ -582,7 +583,7 @@ class _Class2ScreenState extends State<Class2Screen> {
     final currentClass = _classes[_currentClassIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F081D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -608,11 +609,21 @@ class _Class2ScreenState extends State<Class2Screen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             AspectRatio(
               aspectRatio: 16 / 9,
               child: ClipRRect(
@@ -907,15 +918,17 @@ class _Class2ScreenState extends State<Class2Screen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Icon(
-                                    isLocked
-                                        ? Icons.lock
-                                        : (isCompleted ? Icons.check_circle : Icons.play_circle_fill),
-                                    color: isLocked
-                                        ? Colors.white30
-                                        : (isCompleted ? Colors.green : const Color(0xFF8B5CF6)),
-                                    size: 20,
-                                  ),
+                                  if (isLocked)
+                                    SvgPicture.asset(
+                                      'assets/svg_icons/lock02.svg',
+                                      width: 16,
+                                      height: 16,
+                                      fit: BoxFit.contain,
+                                    )
+                                  else if (isCompleted)
+                                    const Icon(Icons.check_circle, color: Colors.green, size: 20)
+                                  else
+                                    const Icon(Icons.play_circle_fill, color: Color(0xFF8B5CF6), size: 20),
                                 ],
                               ),
                             ),
@@ -1267,7 +1280,8 @@ class _Class2ScreenState extends State<Class2Screen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildChapterItem(String text) {
@@ -2486,7 +2500,12 @@ class _Class2ScreenState extends State<Class2Screen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.lock, color: Colors.white54, size: 48),
+          SvgPicture.asset(
+          'assets/svg_icons/lock02.svg',
+          width: 48,
+          height: 48,
+          fit: BoxFit.contain,
+        ),
           const SizedBox(height: 12),
           const Text(
             'این کلاس قفل است',

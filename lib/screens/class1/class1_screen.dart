@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/station.dart';
 import '../../models/models.dart';
 import '../../services/app_state_repository.dart';
+import '../../core/theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../widgets/pending_challenges_dialog.dart';
 
@@ -157,7 +158,7 @@ class _Class1ScreenState extends State<Class1Screen> {
     final hasPendingChallenges = isNewStation && appState.hasPendingChallenges;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F081D),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -178,11 +179,21 @@ class _Class1ScreenState extends State<Class1Screen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          children: [
-            if (hasPendingChallenges) ...[
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Column(
+            children: [
+              if (hasPendingChallenges) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -288,8 +299,9 @@ class _Class1ScreenState extends State<Class1Screen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCircularProgressCard(Station station) {
     return Container(

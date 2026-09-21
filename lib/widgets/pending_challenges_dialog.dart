@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../main.dart'; // For MainScreenState
 
 class PendingChallengesDialog extends StatelessWidget {
@@ -16,10 +17,13 @@ class PendingChallengesDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E1435),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: const Color(0xFF231C38),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFFF87171), width: 1.5),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -28,22 +32,29 @@ class PendingChallengesDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
                   onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
-                const Row(
+                Row(
                   children: [
-                    Text(
-                      'ورود به منزلگاه جدید',
+                    const Text(
+                      'عدم دسترسی به منزلگاه جدید',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Color(0xFFF87171),
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Vazirmatn',
                       ),
                     ),
-                    SizedBox(width: 6),
-                    Icon(Icons.lock_rounded, color: Color(0xFFF87171), size: 20),
+                    const SizedBox(width: 6),
+                    SvgPicture.asset(
+                      'assets/svg_icons/lock02.svg',
+                      width: 20,
+                      height: 20,
+                      fit: BoxFit.contain,
+                    ),
                   ],
                 ),
               ],

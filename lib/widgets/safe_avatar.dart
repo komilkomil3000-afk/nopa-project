@@ -35,6 +35,8 @@ class SafeAvatar extends StatelessWidget {
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
+          memCacheWidth: 160,
+          memCacheHeight: 160,
           placeholder: (context, url) => _buildFallback(initial),
           errorWidget: (context, url, error) => _buildFallback(initial),
         ),

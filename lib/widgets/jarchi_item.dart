@@ -63,6 +63,8 @@ class JarchiItem extends StatelessWidget {
                         width: double.infinity,
                         height: 140,
                         fit: BoxFit.cover,
+                        memCacheWidth: 600,
+                        memCacheHeight: 300,
                         placeholder: (context, url) => Container(
                           width: double.infinity,
                           height: 140,
@@ -158,6 +160,8 @@ class JarchiItem extends StatelessWidget {
                   width: 52,
                   height: 52,
                   fit: BoxFit.cover,
+                  memCacheWidth: 150,
+                  memCacheHeight: 150,
                   placeholder: (context, url) => Container(
                     width: 52,
                     height: 52,

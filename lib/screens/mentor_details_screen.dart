@@ -101,6 +101,8 @@ class MentorDetailsScreen extends StatelessWidget {
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
+                      memCacheWidth: 200,
+                      memCacheHeight: 200,
                       placeholder: (context, url) => Container(
                         width: 96,
                         height: 96,

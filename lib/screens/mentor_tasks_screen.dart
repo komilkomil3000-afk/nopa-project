@@ -23,11 +23,8 @@ class MentorTasksScreen extends StatefulWidget {
 
 class _MentorTasksScreenState extends State<MentorTasksScreen> {
   int _activeTab = 0; // 0: Tasks, 1: Tickets
-  int _currentSlide = 0;
-  final PageController _pageController = PageController();
-  java_timer.Timer? _bannerTimer;
 
-  final List<Map<String, String>> _slides = [
+  final List<Map<String, String>> _slides = const [
     {
       'title': 'برنامه‌ریزی آموزشی کاروان‌ها 🍂',
       'desc': 'ساماندهی تکالیف و پایش مستمر روند رشد اعضا',
@@ -45,31 +42,8 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
     },
   ];
 
-
   // Read from shared repository
   final List<Map<String, dynamic>> _assignments = TasksRepository.assignments;
-
-  @override
-  void initState() {
-    super.initState();
-    _bannerTimer = java_timer.Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_pageController.hasClients) {
-        final next = (_currentSlide + 1) % _slides.length;
-        _pageController.animateToPage(
-          next,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _bannerTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
 
 
   @override
@@ -390,55 +364,7 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
       width: double.infinity,
       child: Stack(
         children: [
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (val) {
-              setState(() {
-                _currentSlide = val;
-              });
-            },
-            itemCount: _slides.length,
-            itemBuilder: (context, idx) {
-              final slide = _slides[idx];
-              return Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(slide['image']!),
-          onError: (e, s) => debugPrint('Image load error'),
-          fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.black54, Color(0xFF0F081D)],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: SafeArea(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          slide['title']!,
-                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          slide['desc']!,
-                          style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Vazirmatn'),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+          _MentorHeroBanner(slides: _slides),
           Positioned(
             top: 0,
             left: 0,
@@ -493,24 +419,6 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
                   ],
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 12,
-            right: 20,
-            child: Row(
-              children: List.generate(_slides.length, (idx) {
-                final isSel = _currentSlide == idx;
-                return Container(
-                  margin: const EdgeInsets.only(left: 4),
-                  width: isSel ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isSel ? const Color(0xFFEC4899) : Colors.white30,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              }),
             ),
           ),
         ],
@@ -848,3 +756,119 @@ class _MentorTasksScreenState extends State<MentorTasksScreen> {
     );
   }
 }
+
+/// Isolated Mentor Hero Banner with self-contained auto-scroll timer and RepaintBoundary
+class _MentorHeroBanner extends StatefulWidget {
+  final List<Map<String, String>> slides;
+
+  const _MentorHeroBanner({required this.slides});
+
+  @override
+  State<_MentorHeroBanner> createState() => _MentorHeroBannerState();
+}
+
+class _MentorHeroBannerState extends State<_MentorHeroBanner> {
+  int _currentSlide = 0;
+  final PageController _pageController = PageController();
+  java_timer.Timer? _bannerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerTimer = java_timer.Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_pageController.hasClients) {
+        final next = (_currentSlide + 1) % widget.slides.length;
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (val) {
+              setState(() {
+                _currentSlide = val;
+              });
+            },
+            itemCount: widget.slides.length,
+            itemBuilder: (context, idx) {
+              final slide = widget.slides[idx];
+              return Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(slide['image']!),
+                    onError: (e, s) => debugPrint('Image load error'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.black54, Color(0xFF0F081D)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          slide['title']!,
+                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          slide['desc']!,
+                          style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'Vazirmatn'),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          Positioned(
+            bottom: 12,
+            right: 20,
+            child: Row(
+              children: List.generate(widget.slides.length, (idx) {
+                final isSel = _currentSlide == idx;
+                return Container(
+                  margin: const EdgeInsets.only(left: 4),
+                  width: isSel ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: isSel ? const Color(0xFFEC4899) : Colors.white30,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

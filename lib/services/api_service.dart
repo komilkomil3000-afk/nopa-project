@@ -697,10 +697,18 @@ class HttpApiService {
   }
 
   // Get Challenges
-  Future<List<ChallengeModel>> getChallenges() async {
+  Future<List<ChallengeModel>> getChallenges({int? limit, int? page}) async {
     try {
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (page != null) queryParams['page'] = page.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/challenges').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/challenges');
+
       final response = await _get(
-        Uri.parse('$baseUrl/challenges'),
+        uri,
         headers: _getHeaders(),
       );
 
@@ -864,13 +872,21 @@ class HttpApiService {
   };
 
   // Get Stations (with in-memory cache and Station 0 guaranteed)
-  Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty) {
+  Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false, int? limit, int? page}) async {
+    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty && limit == null && page == null) {
       return _cachedStations!;
     }
     try {
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (page != null) queryParams['page'] = page.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/lms/stations').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/lms/stations');
+
       final response = await _get(
-        Uri.parse('$baseUrl/lms/stations'),
+        uri,
         headers: _getHeaders(),
       );
 
@@ -918,12 +934,20 @@ class HttpApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getNews({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty) {
+  Future<List<Map<String, dynamic>>> getNews({bool forceRefresh = false, int? limit, int? page}) async {
+    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty && limit == null && page == null) {
       return _cachedNews!;
     }
     try {
-      final response = await _get(Uri.parse('$baseUrl/news'), headers: _getHeaders());
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (page != null) queryParams['page'] = page.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/news').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/news');
+
+      final response = await _get(uri, headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
@@ -938,14 +962,21 @@ class HttpApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getBanners({String? position, bool forceRefresh = false}) async {
+  Future<List<Map<String, dynamic>>> getBanners({String? position, bool forceRefresh = false, int? limit}) async {
     final cacheKey = position ?? 'all';
-    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty) {
+    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty && limit == null) {
       return _cachedBanners[cacheKey]!;
     }
     try {
-      final url = position != null ? '$baseUrl/banners?position=$position' : '$baseUrl/banners';
-      final response = await _get(Uri.parse(url), headers: _getHeaders());
+      final queryParams = <String, String>{};
+      if (position != null) queryParams['position'] = position;
+      if (limit != null) queryParams['limit'] = limit.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/banners').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/banners');
+
+      final response = await _get(uri, headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
@@ -1100,9 +1131,17 @@ class HttpApiService {
   }
 
   // Get pending submissions for mentors
-  Future<List<Map<String, dynamic>>> getPendingSubmissions() async {
+  Future<List<Map<String, dynamic>>> getPendingSubmissions({int? limit, int? page}) async {
     try {
-      final response = await _get(Uri.parse('$baseUrl/submissions/pending'), headers: _getHeaders());
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (page != null) queryParams['page'] = page.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/submissions/pending').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/submissions/pending');
+
+      final response = await _get(uri, headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
@@ -1245,9 +1284,16 @@ class HttpApiService {
   }
 
   // --- CHAT API ---
-  Future<List<dynamic>> getDirectMessages(String mentorId) async {
+  Future<List<dynamic>> getDirectMessages(String mentorId, {int? limit}) async {
     try {
-      final response = await _get(Uri.parse('$baseUrl/chat/direct/$mentorId'), headers: _getHeaders());
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/chat/direct/$mentorId').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/chat/direct/$mentorId');
+
+      final response = await _get(uri, headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) return data;
@@ -1259,9 +1305,16 @@ class HttpApiService {
     }
   }
 
-  Future<List<dynamic>> getCaravanMessages(String caravanId) async {
+  Future<List<dynamic>> getCaravanMessages(String caravanId, {int? limit}) async {
     try {
-      final response = await _get(Uri.parse('$baseUrl/chat/caravan/$caravanId'), headers: _getHeaders());
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/chat/caravan/$caravanId').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/chat/caravan/$caravanId');
+
+      final response = await _get(uri, headers: _getHeaders());
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) return data;
@@ -1427,10 +1480,19 @@ class HttpApiService {
   }
 
   // --- Mentor Tickets & Workbench ---
-  Future<List<Map<String, dynamic>>> getTickets() async {
+  Future<List<Map<String, dynamic>>> getTickets({int? limit, int? page, String? status}) async {
     try {
+      final queryParams = <String, String>{};
+      if (limit != null) queryParams['limit'] = limit.toString();
+      if (page != null) queryParams['page'] = page.toString();
+      if (status != null) queryParams['status'] = status;
+
+      final uri = queryParams.isNotEmpty
+          ? Uri.parse('$baseUrl/support/tickets').replace(queryParameters: queryParams)
+          : Uri.parse('$baseUrl/support/tickets');
+
       final response = await _get(
-        Uri.parse('$baseUrl/support/tickets'),
+        uri,
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../widgets/create_challenge_dialog.dart';
 import '../services/app_state_repository.dart';
@@ -140,10 +141,13 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
     return Container(
       height: 180,
       width: double.infinity,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         image: DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800'),
-          onError: (e, s) => debugPrint('Image failed to load: $e'),
+          image: CachedNetworkImageProvider(
+            'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800',
+            maxWidth: 600,
+            maxHeight: 300,
+          ),
           fit: BoxFit.cover,
         ),
       ),

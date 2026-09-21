@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
@@ -58,6 +59,9 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     if (mounted) {
+      if (silent && _messages.length == msgs.length && (_messages.isEmpty || _messages.last['id'] == msgs.last['id'])) {
+        return; // No new messages, avoid rebuilding chat tree
+      }
       setState(() {
         _messages = msgs;
         _isLoading = false;
@@ -220,8 +224,31 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: msg['fileType'] == 'image'
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
-                      child: Image.network(msg['fileUrl'], height: 120, width: 180, fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => Container(height: 100, width: 150, color: Colors.grey, child: const Icon(Icons.error)),
+                      child: CachedNetworkImage(
+                        imageUrl: msg['fileUrl'],
+                        height: 120,
+                        width: 180,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 360,
+                        memCacheHeight: 240,
+                        placeholder: (context, url) => Container(
+                          height: 120,
+                          width: 180,
+                          color: Colors.white10,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (c, e, s) => Container(
+                          height: 120,
+                          width: 180,
+                          color: Colors.grey.shade900,
+                          child: const Icon(Icons.broken_image_outlined, color: Colors.white54),
+                        ),
                       ),
                     )
                   : Row(

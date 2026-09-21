@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
+import '../main.dart';
 import '../models/user_model.dart';
 import '../utils/rating_manager.dart';
 import '../utils/global_state.dart';
@@ -6,11 +9,8 @@ import '../widgets/contact_us_dialog.dart';
 import 'certificate_view_screen.dart';
 import 'mentor_qualification_detail_screen.dart';
 import 'map_screen.dart';
-import '../main.dart';
 import 'package:provider/provider.dart';
-import 'package:record/record.dart';
-import 'package:audioplayers/audioplayers.dart';
-
+import '../core/theme/app_colors.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../services/theme_provider.dart';
@@ -67,15 +67,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // --- MENTOR PROFILE LAYOUT ---
   Widget _buildMentorProfile(BuildContext context, UserModel currentUser) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: () =>
-            Provider.of<AppRepository>(context, listen: false).refreshUser(),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Mentor Header Section
-              _buildMentorHeader(currentUser),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () =>
+              Provider.of<AppRepository>(context, listen: false).refreshUser(),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Mentor Header Section
+                _buildMentorHeader(currentUser),
 
               const SizedBox(height: 24),
 
@@ -103,8 +113,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 30),
               _buildSupportSection(context),
 
-              const SizedBox(height: 100),
-            ],
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),
@@ -542,22 +553,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // --- MEMBER PROFILE LAYOUT (Retained from previous changes) ---
   Widget _buildMemberProfile(BuildContext context, UserModel currentUser) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: RefreshIndicator(
-        onRefresh: () =>
-            Provider.of<AppRepository>(context, listen: false).refreshUser(),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildMemberPremiumHeader(currentUser),
-              const SizedBox(height: 24),
-              _buildMemberStatsGrid(currentUser),
-              const SizedBox(height: 30),
-              _buildIdentityAndFinancialCards(currentUser),
-              const SizedBox(height: 30),
-              _buildSettingsList(context),
-              const SizedBox(height: 100),
-            ],
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () =>
+              Provider.of<AppRepository>(context, listen: false).refreshUser(),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildMemberPremiumHeader(currentUser),
+                const SizedBox(height: 24),
+                _buildMemberStatsGrid(currentUser),
+                const SizedBox(height: 30),
+                _buildIdentityAndFinancialCards(currentUser),
+                const SizedBox(height: 30),
+                _buildSettingsList(context),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),

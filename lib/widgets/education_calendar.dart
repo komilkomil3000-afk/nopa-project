@@ -588,7 +588,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 weekDayName,
                 style: TextStyle(
                   color: isSelected ? const Color(0xFF5A3114) : const Color(0xFF9897D2),
-                  fontSize: 10.5,
+                  fontSize: 8.5,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
                   fontFamilyFallback: AppTheme.fontFamilyFallback,

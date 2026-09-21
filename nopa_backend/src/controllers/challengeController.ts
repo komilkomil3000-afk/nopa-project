@@ -294,8 +294,14 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       }
     }
 
+    const { limit, page, take, skip } = req.query;
+    const parsedTake = limit || take ? Math.min(Number(limit || take), 100) : undefined;
+    const parsedSkip = skip ? Number(skip) : (page && parsedTake ? (Number(page) - 1) * parsedTake : undefined);
+
     const challenges = await prisma.challenge.findMany({
       where: whereClause,
+      take: parsedTake,
+      skip: parsedSkip,
       include: {
         caravan: {
           include: {

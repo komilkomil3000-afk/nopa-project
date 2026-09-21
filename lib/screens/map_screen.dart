@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,6 +7,7 @@ import '../models/station.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../core/constants/api_constants.dart';
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
@@ -74,73 +76,40 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
-    int totalClipsOverall = 0;
-    int completedClipsOverall = 0;
-
-    for (var station in _stations) {
-      if (station['categories'] != null) {
-        for (var cat in station['categories']) {
-          if (cat['sessions'] != null) {
-            for (var sess in cat['sessions']) {
-              if (sess['videoClips'] != null) {
-                totalClipsOverall += (sess['videoClips'] as List).length;
-                for (var clip in sess['videoClips']) {
-                  final progressRecord = _userProgress.firstWhere(
-                    (p) => p['clipId'] == clip['id'],
-                    orElse: () => <String, dynamic>{},
-                  );
-                  if (progressRecord['isWatched'] == true || progressRecord['quizPassed'] == true) {
-                    completedClipsOverall++;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    double progress = 0.0;
-    if (totalClipsOverall > 0) {
-      progress = completedClipsOverall / totalClipsOverall;
-    } else if (_stations.isNotEmpty) {
-      final userLvl = user.levelFrame < 1 ? 1 : user.levelFrame;
-      progress = (userLvl - 1) / _stations.length;
-    }
-    if (progress > 1.0) progress = 1.0;
-    if (progress < 0.0) progress = 0.0;
-
-    final progressPercentText = '${(progress * 100).toInt()}%';
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
     final int currentStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F081D),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _fetchStationsData,
-          color: const Color(0xFFCD8449),
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Top Bar with NOPA Logo, Notifications & Drawer Menu
-                _buildTopBar(user),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: _fetchStationsData,
+            color: const Color(0xFFCD8449),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Top Bar with NOPA Logo, Notifications & Drawer Menu
+                  _buildTopBar(user),
 
                 // 2. Horizontal Station Selection & Progress Track Header
                 _buildStationTrackHeader(currentStationIndex, totalStationNodes),
-
-                // 3. Overall Progress Summary Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                  child: _buildOverallProgressCard(progress, progressPercentText),
-                ),
                 const SizedBox(height: 16),
 
-                // 4. Map list of stations
+                // 3. Map list of stations
                 _isLoading
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 40),
@@ -181,8 +150,9 @@ class _MapScreenState extends State<MapScreen> {
                               },
                             ),
                           )),
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
@@ -607,45 +577,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildOverallProgressCard(double progress, String progressPercentText) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                progressPercentText,
-                style: const TextStyle(color: Color(0xFFFFD54F), fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const Text(
-                'پیشرفت کلی مسیر',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              backgroundColor: const Color(0xFF160E2A),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD54F)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
@@ -711,270 +642,459 @@ class _MapScreenState extends State<MapScreen> {
             ? item['imageUrl'].toString()
             : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200');
 
-    final Color accentColor = isLocked
-        ? Colors.grey
-        : (isCompleted ? const Color(0xFF10B981) : const Color(0xFFFFD54F));
     final bool isExpanded = _expandedIndices.contains(index);
+    final bool isGold = isCurrent;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isCurrent ? accentColor : accentColor.withValues(alpha: 0.3),
-          width: isCurrent ? 2.0 : 1.2,
+    return _RotatingBorderCard(
+      isCurrent: isCurrent,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20.4),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.53, 1.0],
+            colors: [
+              Color(0xFF3D3C67),
+              Color(0xFF36345C),
+              Color(0xFF333359),
+            ],
+          ),
         ),
-        boxShadow: isCurrent
-            ? [
-                BoxShadow(
-                  color: accentColor.withValues(alpha: 0.4),
-                  blurRadius: 15,
-                  spreadRadius: 3,
-                ),
-                BoxShadow(
-                  color: accentColor.withValues(alpha: 0.15),
-                  blurRadius: 30,
-                  spreadRadius: 8,
-                )
-              ]
-            : null,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Column(
-              children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () {
-                    if (isLocked) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('این منزلگاه هنوز باز نشده است و قفل می‌باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                          backgroundColor: Colors.grey,
-                        ),
-                      );
-                      return;
-                    }
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Directionality(
+              textDirection: TextDirection.rtl,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (isLocked) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('این منزلگاه هنوز باز نشده است و قفل می‌باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                              backgroundColor: Colors.grey,
+                            ),
+                          );
+                          return;
+                        }
 
-                    final isNewStation = index > 0 && !isCompleted;
-                    final appState = Provider.of<AppRepository>(context, listen: false);
-                    if (isNewStation && appState.hasPendingChallenges) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                          backgroundColor: Colors.redAccent,
-                          duration: Duration(seconds: 3),
-                        ),
-                      );
-                      PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
-                      return;
-                    }
+                        final isNewStation = index > 0 && !isCompleted;
+                        final appState = Provider.of<AppRepository>(context, listen: false);
+                        if (isNewStation && appState.hasPendingChallenges) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+                              backgroundColor: Colors.redAccent,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
+                          return;
+                        }
 
-                    Navigator.pushNamed(
-                      context,
-                      '/class1',
-                      arguments: Station(
-                        id: item['id'] ?? '',
-                        title: stationTitle,
-                        teacher: teacherName,
-                        progress: stationProgress,
-                        isLocked: isLocked,
-                        isCurrent: isCurrent,
-                        imageUrl: iconUrl,
-                        classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
-                        orderIndex: index,
+                        Navigator.pushNamed(
+                          context,
+                          '/class1',
+                          arguments: Station(
+                            id: item['id'] ?? '',
+                            title: stationTitle,
+                            teacher: teacherName,
+                            progress: stationProgress,
+                            isLocked: isLocked,
+                            isCurrent: isCurrent,
+                            imageUrl: iconUrl,
+                            classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
+                            orderIndex: index,
+                          ),
+                        );
+                      },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // 1. Right in RTL: Rectangular Station Image (Proportional to A4 aspect ratio 1:1.414)
+                          Container(
+                            width: 56,
+                            height: 79,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isGold ? const Color(0xFFFFD580) : const Color(0xFF9292E2),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.5),
+                              child: CachedNetworkImage(
+                                imageUrl: ApiConstants.resolveImageUrl(iconUrl),
+                                fit: BoxFit.cover,
+                                memCacheWidth: 200,
+                                memCacheHeight: 280,
+                                color: isLocked ? Colors.black54 : null,
+                                colorBlendMode: isLocked ? BlendMode.saturation : null,
+                                placeholder: (context, url) => Container(
+                                  color: const Color(0xFF28274A),
+                                  alignment: Alignment.center,
+                                  child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF9292E2)),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  color: const Color(0xFF28274A),
+                                  child: const Icon(Icons.school, color: Colors.white30, size: 20),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(width: 14),
+
+                          // 2. Middle: Station Details & Number directly beside Title (Right-aligned in RTL)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isGold
+                                            ? const Color(0xFFFFD580)
+                                            : const Color(0xFF9292E2).withValues(alpha: 0.25),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: isGold ? const Color(0xFFFFD580) : const Color(0xFF9292E2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: TextStyle(
+                                          color: isGold ? const Color(0xFF462306) : Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        stationTitle,
+                                        textAlign: TextAlign.right,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isLocked ? Colors.white54 : Colors.white,
+                                          fontSize: 15.5,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  stationDesc,
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isLocked ? Colors.white30 : const Color(0xFFB5B3C8),
+                                    fontSize: 12,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'استاد: $teacherName',
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          // 3. Left in RTL: Clean SVG Lock/Unlock Icon (No Circle Background behind it)
+                          if (isCompleted)
+                            SvgPicture.asset(
+                              'assets/svg_icons/lock01.svg',
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            )
+                          else if (isCurrent)
+                            SvgPicture.asset(
+                              'assets/svg_icons/lock01.svg',
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                              colorFilter: const ColorFilter.mode(Color(0xFFFFD580), BlendMode.srcIn),
+                            )
+                          else
+                            SvgPicture.asset(
+                              'assets/svg_icons/lock02.svg',
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            ),
+                        ],
                       ),
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      // Left: Circular Action Status Indicator
-                      Container(
-                        width: 36,
-                        height: 36,
+                    ),
+
+                    // Expandable Panel with summary info (Right-aligned in RTL)
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox(width: double.infinity),
+                      secondChild: Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: accentColor.withValues(alpha: 0.5), width: 1.5),
-                          color: isCurrent ? accentColor.withValues(alpha: 0.2) : Colors.transparent,
+                          color: const Color(0xFF28274A),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFF3A3A6A), width: 1.0),
                         ),
-                        child: Center(
-                          child: isCompleted
-                              ? const Icon(Icons.check, color: Color(0xFF10B981), size: 18)
-                              : (isCurrent
-                                  ? Text('${index + 1}', style: const TextStyle(color: Color(0xFFFFD54F), fontWeight: FontWeight.bold, fontSize: 13))
-                                  : const Text('🔒', style: TextStyle(fontSize: 14))),
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      // Middle: Station Details
-                      Expanded(
-                        flex: 6,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              stationTitle,
+                              '👤 استاد راهنما: $teacherName',
                               textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: isLocked ? Colors.white30 : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              stationDesc,
+                              '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "$totalSessions جلسه آموزشی" : "${categoriesList.length} سرفصل"}',
                               textAlign: TextAlign.right,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '📊 وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده ✅' : (isCurrent ? 'در حال یادگیری ⚡' : 'قفل شده 🔒')}',
+                              textAlign: TextAlign.right,
                               style: TextStyle(
-                                color: isLocked ? Colors.white24 : Colors.white60,
-                                fontSize: 12,
+                                color: isCurrent
+                                    ? const Color(0xFFFFD580)
+                                    : (isCompleted ? const Color(0xFF10B981) : Colors.white54),
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
                               ),
                             ),
                           ],
                         ),
                       ),
+                      crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 250),
+                    ),
 
-                      const SizedBox(width: 16),
-
-                      // Right: Station Circular Image Box
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: accentColor, width: 2),
-                        ),
-                        child: ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: ApiConstants.resolveImageUrl(iconUrl),
-                            fit: BoxFit.cover,
-                            color: isLocked ? Colors.black54 : null,
-                            colorBlendMode: isLocked ? BlendMode.saturation : null,
-                            placeholder: (context, url) => Container(
-                              color: const Color(0xFF160E2A),
-                              alignment: Alignment.center,
-                              child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6)),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.white10,
-                              child: const Icon(Icons.school, color: Colors.white30, size: 20),
-                            ),
+                    // Small Expand/Collapse Button
+                    const SizedBox(height: 8),
+                    Center(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              _expandedIndices.remove(index);
+                            } else {
+                              _expandedIndices.add(index);
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                color: Colors.white54,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isExpanded ? 'بستن جزئیات' : 'نمایش جزئیات',
+                                style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: AppTheme.fontFamily),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Badge overlay at top-right
+            Positioned(
+              top: -10,
+              right: 18,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3.5),
+                decoration: BoxDecoration(
+                  gradient: isCurrent
+                      ? const LinearGradient(
+                          colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        )
+                      : null,
+                  color: isCurrent
+                      ? null
+                      : (isCompleted ? const Color(0xFF10B981) : const Color(0xFF28274A)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: isCurrent ? null : Border.all(color: const Color(0xFF3A3A6A), width: 1.0),
+                ),
+                child: Text(
+                  isLocked ? 'قفل' : (isCompleted ? 'تکمیل شده' : 'منزلگاه جاری'),
+                  style: TextStyle(
+                    color: isCurrent ? const Color(0xFF5A3114) : Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                // Expandable Panel with summary info
-                AnimatedCrossFade(
-                  firstChild: const SizedBox(width: double.infinity),
-                  secondChild: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF160E2A),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '👤 استاد راهنما: $teacherName',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "$totalSessions جلسه آموزشی" : "${categoriesList.length} سرفصل"}',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '📊 وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده ✅' : (isCurrent ? 'در حال یادگیری ⚡' : 'قفل شده 🔒')}',
-                          style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                        ),
-                      ],
-                    ),
-                  ),
-                  crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                  duration: const Duration(milliseconds: 250),
+/// Rotating animated gradient border widget for current station card
+class _RotatingBorderCard extends StatefulWidget {
+  final bool isCurrent;
+  final Widget child;
+
+  const _RotatingBorderCard({
+    required this.isCurrent,
+    required this.child,
+  });
+
+  @override
+  State<_RotatingBorderCard> createState() => _RotatingBorderCardState();
+}
+
+class _RotatingBorderCardState extends State<_RotatingBorderCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    );
+    if (widget.isCurrent) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _RotatingBorderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCurrent && !_controller.isAnimating) {
+      _controller.repeat();
+    } else if (!widget.isCurrent && _controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isCurrent) {
+      return Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            stops: [0.0, 0.5, 1.0],
+            colors: [
+              Color(0xFF3A3A6A),
+              Color(0xFF9292E2),
+              Color(0xFF3A3A6A),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(1.2),
+        child: widget.child,
+      );
+    }
+
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: SweepGradient(
+                center: Alignment.center,
+                transform: GradientRotation(_controller.value * 2 * math.pi),
+                colors: const [
+                  Color(0xFF8D5B2C),
+                  Color(0xFFFFE082),
+                  Color(0xFFEAA835),
+                  Color(0xFFFFD574),
+                  Color(0xFF8D5B2C),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEAA835).withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  spreadRadius: 1.5,
                 ),
-
-                // Small Expand/Collapse Button
-                const SizedBox(height: 8),
-                Center(
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        if (isExpanded) {
-                          _expandedIndices.remove(index);
-                        } else {
-                          _expandedIndices.add(index);
-                        }
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                            color: Colors.white54,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isExpanded ? 'بستن جزئیات' : 'نمایش جزئیات',
-                            style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: AppTheme.fontFamily),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-          ),
-
-          // Badge overlay at top-right
-          Positioned(
-            top: -12,
-            right: 20,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                isLocked ? 'قفل' : (isCompleted ? 'تکمیل' : 'جاری'),
-                style: TextStyle(
-                  color: isCurrent ? Colors.black : Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-            ),
-          ),
-        ],
+            padding: const EdgeInsets.all(1.8),
+            child: widget.child,
+          );
+        },
       ),
     );
   }

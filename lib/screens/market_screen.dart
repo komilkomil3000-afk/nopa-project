@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../core/theme/app_colors.dart';
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
@@ -220,7 +221,11 @@ class _MarketScreenState extends State<MarketScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   image: DecorationImage(
-                    image: CachedNetworkImageProvider(HttpApiService().resolveMediaUrl(banner['imageUrl'])),
+                    image: CachedNetworkImageProvider(
+                      HttpApiService().resolveMediaUrl(banner['imageUrl']),
+                      maxHeight: 250,
+                      maxWidth: 600,
+                    ),
                     onError: (e, s) => debugPrint('Image failed to load'),
                     fit: BoxFit.cover,
                   ),
@@ -262,7 +267,7 @@ class _MarketScreenState extends State<MarketScreen> {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
         return Scaffold(
-          backgroundColor: const Color(0xFF0F081D),
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
             title: Row(
               mainAxisSize: MainAxisSize.min,
@@ -279,22 +284,33 @@ class _MarketScreenState extends State<MarketScreen> {
             elevation: 0,
             centerTitle: true,
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildMarketBannerCarousel(),
-                const SizedBox(height: 16),
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.screenBackgroundGradient,
+              image: DecorationImage(
+                image: AssetImage('assets/images/login_bg.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildMarketBannerCarousel(),
+                  const SizedBox(height: 16),
 
-                // Section 1: Compact & Summarized Market Rates for Caravan Assets
-                _buildMarketRatesGrid(),
-                const SizedBox(height: 18),
+                  // Section 1: Compact & Summarized Market Rates for Caravan Assets
+                  _buildMarketRatesGrid(),
+                  const SizedBox(height: 18),
 
-                // Section 2: Caravan Exchange (Interactive panel)
-                _buildCaravanExchangePanel(),
-                const SizedBox(height: 30),
-              ],
+                  // Section 2: Caravan Exchange (Interactive panel)
+                  _buildCaravanExchangePanel(),
+                  const SizedBox(height: 30),
+                ],
+              ),
             ),
           ),
         );

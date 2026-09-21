@@ -110,6 +110,7 @@ class _MentorLeagueScreenState extends State<MentorLeagueScreen> {
               child: _selectedLeagueTab == 0
                   ? ListView.builder(
                       padding: const EdgeInsets.all(20),
+                      itemExtent: 104.0,
                       itemCount: caravansList.length,
                       itemBuilder: (context, index) {
                         final caravan = caravansList[index];
@@ -175,6 +176,7 @@ class _MentorLeagueScreenState extends State<MentorLeagueScreen> {
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.all(20),
+                      itemExtent: 84.0,
                       itemCount: wealthyPlayers.length,
                       itemBuilder: (context, index) {
                         final player = wealthyPlayers[index];

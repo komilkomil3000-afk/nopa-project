@@ -28,6 +28,7 @@ import 'services/app_state_repository.dart';
 
 import 'core/theme/app_theme.dart';
 import 'services/theme_provider.dart';
+import 'utils/asset_precache_helper.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -144,6 +145,7 @@ class MainScreenState extends State<MainScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        AssetPrecacheHelper.precacheCoreAssets(context);
         Provider.of<AppRepository>(context, listen: false).refreshChallenges();
       }
     });
@@ -215,6 +217,7 @@ class MainScreenState extends State<MainScreen> {
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         drawer: CustomDrawer(
           role: userRole,
           currentIndex: _currentIndex,
@@ -224,7 +227,18 @@ class MainScreenState extends State<MainScreen> {
             });
           },
         ),
-        body: IndexedStack(index: _currentIndex, children: screens),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: IndexedStack(index: _currentIndex, children: screens),
+        ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: _currentIndex,
           role: userRole,

@@ -12,6 +12,7 @@ import '../../../../models/user_model.dart';
 import '../../../../services/api_service.dart';
 import '../../../../services/app_state_repository.dart';
 import '../../../../services/auth_service.dart';
+import '../../../../utils/asset_precache_helper.dart';
 
 enum AuthLoginMode { otp, password, testBypass }
 
@@ -113,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // OTP Countdown Timer (119s -> 01:59)
   Timer? _countdownTimer;
-  int _cooldownRemainingSeconds = 0;
+  final ValueNotifier<int> _cooldownNotifier = ValueNotifier<int>(0);
   bool _isSendingCode = false;
   bool _hasSentOnce = false;
 
@@ -144,6 +145,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _phoneCtrl.addListener(_onPhoneChanged);
     _loadSavedPhone();
     _checkAutoLogin();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        AssetPrecacheHelper.precacheCoreAssets(context);
+      }
+    });
   }
 
   void _onPhoneChanged() {
@@ -165,6 +171,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _phoneCtrl.removeListener(_onPhoneChanged);
     _logoAnimCtrl.dispose();
     _countdownTimer?.cancel();
+    _cooldownNotifier.dispose();
     _phoneCtrl.dispose();
     _secretCtrl.dispose();
     _honeypotCtrl.dispose();
@@ -237,23 +244,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   void _startCountdownTimer([int seconds = 119]) {
     _countdownTimer?.cancel();
-    setState(() {
-      _cooldownRemainingSeconds = seconds;
-      _hasSentOnce = true;
-    });
+    _cooldownNotifier.value = seconds;
+    _hasSentOnce = true;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      setState(() {
-        if (_cooldownRemainingSeconds > 0) {
-          _cooldownRemainingSeconds--;
-        } else {
-          _cooldownRemainingSeconds = 0;
-          timer.cancel();
-        }
-      });
+      if (_cooldownNotifier.value > 0) {
+        _cooldownNotifier.value--;
+      } else {
+        _cooldownNotifier.value = 0;
+        timer.cancel();
+      }
     });
   }
 
@@ -414,8 +417,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       return;
     }
 
-    if (_cooldownRemainingSeconds > 0) {
-      _showWarning('لطفاً ${_formatTimer(_cooldownRemainingSeconds)} دیگر دوباره تلاش کنید.');
+    if (_cooldownNotifier.value > 0) {
+      _showWarning('لطفاً ${_formatTimer(_cooldownNotifier.value)} دیگر دوباره تلاش کنید.');
       return;
     }
 
@@ -939,58 +942,60 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   /// Top Header: Clean Floating SVG Logo with entrance animation positioned directly ABOVE the poetry text
   Widget _buildTopHeader() {
-    return AnimatedBuilder(
-      animation: _logoAnimCtrl,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: _logoFloatAnim.value,
-          child: Opacity(
-            opacity: _logoFadeAnim.value,
-            child: Transform.scale(
-              scale: _logoScaleAnim.value,
-              child: Column(
-                children: [
-                  // Centered Nopa SVG Logo directly above the Persian Poetry
-                  SizedBox(
-                    width: 105,
-                    height: 126,
-                    child: SvgPicture.asset(
-                      'assets/images/nopa_logo.svg',
-                      fit: BoxFit.contain,
-                      placeholderBuilder: (BuildContext context) => const Center(
-                        child: SizedBox(
-                          width: 26,
-                          height: 26,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFCD8449),
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _logoAnimCtrl,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: _logoFloatAnim.value,
+            child: Opacity(
+              opacity: _logoFadeAnim.value,
+              child: Transform.scale(
+                scale: _logoScaleAnim.value,
+                child: Column(
+                  children: [
+                    // Centered Nopa SVG Logo directly above the Persian Poetry
+                    SizedBox(
+                      width: 105,
+                      height: 126,
+                      child: SvgPicture.asset(
+                        'assets/images/nopa_logo.svg',
+                        fit: BoxFit.contain,
+                        placeholderBuilder: (BuildContext context) => const Center(
+                          child: SizedBox(
+                            width: 26,
+                            height: 26,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFCD8449),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                  // Persian Poetry Subtitle
-                  const Text(
-                    'گر چه راهیست پر از بیم ز ما تا بر دوست\nرفتن آسان بود ار واقف منزل باشی',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFFC7B299),
-                      fontSize: 11,
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    // Persian Poetry Subtitle
+                    const Text(
+                      'گر چه راهیست پر از بیم ز ما تا بر دوست\nرفتن آسان بود ار واقف منزل باشی',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFC7B299),
+                        fontSize: 11,
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1230,50 +1235,55 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   /// Inline OTP Dispatch Button inside Phone Input
   /// Enabled ONLY when a valid full phone number (>= 10 digits) is entered
   Widget _buildOtpDispatchInlineButton() {
-    final bool isTimerActive = _cooldownRemainingSeconds > 0;
-    final bool isEnabled = _isPhoneComplete && !isTimerActive && !_isSendingCode;
-    final String buttonLabel = isTimerActive
-        ? _formatTimer(_cooldownRemainingSeconds)
-        : (_hasSentOnce ? 'ارسال مجدد' : 'ارسال کد');
+    return ValueListenableBuilder<int>(
+      valueListenable: _cooldownNotifier,
+      builder: (context, cooldownSeconds, _) {
+        final bool isTimerActive = cooldownSeconds > 0;
+        final bool isEnabled = _isPhoneComplete && !isTimerActive && !_isSendingCode;
+        final String buttonLabel = isTimerActive
+            ? _formatTimer(cooldownSeconds)
+            : (_hasSentOnce ? 'ارسال مجدد' : 'ارسال کد');
 
-    return GestureDetector(
-      onTap: isEnabled ? _handleSendVerificationCode : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A2835),
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(
-            color: isTimerActive
-                ? const Color(0xFF6C6C63).withValues(alpha: 0.35)
-                : (isEnabled
-                    ? const Color(0xFFCD8449).withValues(alpha: 0.6)
-                    : const Color(0xFF6C6C63).withValues(alpha: 0.2)),
-            width: 0.8,
-          ),
-        ),
-        child: _isSendingCode
-            ? const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)),
-              )
-            : Text(
-                buttonLabel,
-                style: TextStyle(
-                  color: isTimerActive
-                      ? const Color(0xFFC7B299)
-                      : (isEnabled
-                          ? const Color(0xFFCD8449)
-                          : const Color(0xFF8E889D).withValues(alpha: 0.45)),
-                  fontWeight: isEnabled ? FontWeight.bold : FontWeight.w500,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  fontSize: 11,
-                ),
+        return GestureDetector(
+          onTap: isEnabled ? _handleSendVerificationCode : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2835),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(
+                color: isTimerActive
+                    ? const Color(0xFF6C6C63).withValues(alpha: 0.35)
+                    : (isEnabled
+                        ? const Color(0xFFCD8449).withValues(alpha: 0.6)
+                        : const Color(0xFF6C6C63).withValues(alpha: 0.2)),
+                width: 0.8,
               ),
-      ),
+            ),
+            child: _isSendingCode
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)),
+                  )
+                : Text(
+                    buttonLabel,
+                    style: TextStyle(
+                      color: isTimerActive
+                          ? const Color(0xFFC7B299)
+                          : (isEnabled
+                              ? const Color(0xFFCD8449)
+                              : const Color(0xFF8E889D).withValues(alpha: 0.45)),
+                      fontWeight: isEnabled ? FontWeight.bold : FontWeight.w500,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      fontSize: 11,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 

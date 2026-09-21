@@ -542,12 +542,22 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: RefreshIndicator(
-          onRefresh: () => repository.refreshChallenges(),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: RefreshIndicator(
+            onRefresh: () => repository.refreshChallenges(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
               children: [
                 // Top RTL Header
                 Container(
@@ -683,8 +693,9 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildArchiveToggleButtons() {
     return Padding(

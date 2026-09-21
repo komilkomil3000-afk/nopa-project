@@ -29,37 +29,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _banners = [];
   String? _errorMessage;
 
-  late final PageController _bannerPageCtrl;
-  int _currentBannerIndex = 0;
-  Timer? _bannerAutoScrollTimer;
-
   @override
   void initState() {
     super.initState();
-    _bannerPageCtrl = PageController(viewportFraction: 0.88);
     _fetchData();
-    _startBannerAutoScroll();
-  }
-
-  void _startBannerAutoScroll() {
-    _bannerAutoScrollTimer?.cancel();
-    _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (!mounted || !_bannerPageCtrl.hasClients) return;
-      final int totalPages = _banners.isNotEmpty ? _banners.length : 3;
-      final int nextIndex = (_currentBannerIndex + 1) % totalPages;
-      _bannerPageCtrl.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _bannerAutoScrollTimer?.cancel();
-    _bannerPageCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -221,117 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Banner Slider Carousel: Compact height (~155px), peek adjacent banners on sides, and dot indicators
   Widget _buildBannerSection() {
-    final List<Map<String, dynamic>> bannerList = _banners.isNotEmpty
-        ? _banners
-        : [
-            {
-              'assetImage': 'assets/images/banners/banner1.jpg',
-            },
-            {
-              'assetImage': 'assets/images/banners/banner1.jpg',
-            },
-            {
-              'assetImage': 'assets/images/banners/banner1.jpg',
-            },
-          ];
-
-    return RepaintBoundary(
-      child: Column(
-        children: [
-          SizedBox(
-            height: 155,
-            child: PageView.builder(
-              controller: _bannerPageCtrl,
-              itemCount: bannerList.length,
-              onPageChanged: (index) {
-                setState(() => _currentBannerIndex = index);
-              },
-              itemBuilder: (context, index) {
-                final item = bannerList[index];
-                final String? imageUrl = item['imageUrl'] != null && item['imageUrl'].toString().trim().isNotEmpty
-                    ? ApiConstants.resolveImageUrl(item['imageUrl'].toString())
-                    : null;
-                final String assetPath = item['assetImage']?.toString() ?? 'assets/images/banners/banner1.jpg';
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: imageUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            memCacheWidth: 600,
-                            memCacheHeight: 350,
-                            placeholder: (context, url) => Container(
-                              color: const Color(0xFF231C38),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFFCD8449),
-                                ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Image.asset(
-                              assetPath,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            ),
-                          )
-                        : Image.asset(
-                            assetPath,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Color(0xFF6B3A1E), Color(0xFF381F14)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                );
-              },
-            ),
-          ),
-        const SizedBox(height: 10),
-        // Dots Indicator synchronized with banner carousel direction
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              bannerList.length,
-              (index) {
-                final bool isActive = _currentBannerIndex == index;
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: isActive ? 18 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? const Color(0xFFCD8449)
-                        : Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    return _HomeBannerCarousel(banners: _banners);
+  }
 
   final Set<String> _expandedInfoTitles = {};
 
@@ -760,6 +624,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemExtent: 164.0,
                           itemCount: _stations.length,
                           itemBuilder: (context, index) {
                             final stationMap = _stations[index];
@@ -823,10 +688,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
 
               // 4. Jalali Education Calendar
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.0),
-                child: EducationCalendar(),
-              ),
+              const EducationCalendar(),
               const SizedBox(height: 24),
 
               // 5. Special Challenges Section (چالش‌های مخصوص تو)
@@ -839,4 +701,161 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
   );
 }
+}
+
+/// Isolated Banner Carousel with internal timer and RepaintBoundary to avoid parent screen rebuilds
+class _HomeBannerCarousel extends StatefulWidget {
+  final List<Map<String, dynamic>> banners;
+
+  const _HomeBannerCarousel({required this.banners});
+
+  @override
+  State<_HomeBannerCarousel> createState() => _HomeBannerCarouselState();
+}
+
+class _HomeBannerCarouselState extends State<_HomeBannerCarousel> {
+  late final PageController _bannerPageCtrl;
+  int _currentBannerIndex = 0;
+  Timer? _bannerAutoScrollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerPageCtrl = PageController(viewportFraction: 0.88);
+    _startBannerAutoScroll();
+  }
+
+  void _startBannerAutoScroll() {
+    _bannerAutoScrollTimer?.cancel();
+    _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || !_bannerPageCtrl.hasClients) return;
+      final int totalPages = widget.banners.isNotEmpty ? widget.banners.length : 3;
+      final int nextIndex = (_currentBannerIndex + 1) % totalPages;
+      _bannerPageCtrl.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerAutoScrollTimer?.cancel();
+    _bannerPageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Map<String, dynamic>> bannerList = widget.banners.isNotEmpty
+        ? widget.banners
+        : const [
+            {
+              'assetImage': 'assets/images/banners/banner1.jpg',
+            },
+            {
+              'assetImage': 'assets/images/banners/banner1.jpg',
+            },
+            {
+              'assetImage': 'assets/images/banners/banner1.jpg',
+            },
+          ];
+
+    return RepaintBoundary(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 155,
+            child: PageView.builder(
+              controller: _bannerPageCtrl,
+              itemCount: bannerList.length,
+              onPageChanged: (index) {
+                setState(() => _currentBannerIndex = index);
+              },
+              itemBuilder: (context, index) {
+                final item = bannerList[index];
+                final String? imageUrl = item['imageUrl'] != null && item['imageUrl'].toString().trim().isNotEmpty
+                    ? ApiConstants.resolveImageUrl(item['imageUrl'].toString())
+                    : null;
+                final String assetPath = item['assetImage']?.toString() ?? 'assets/images/banners/banner1.jpg';
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: imageUrl != null
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            memCacheWidth: 600,
+                            memCacheHeight: 350,
+                            placeholder: (context, url) => Container(
+                              color: const Color(0xFF231C38),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFCD8449),
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Image.asset(
+                              assetPath,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                          )
+                        : Image.asset(
+                            assetPath,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Color(0xFF6B3A1E), Color(0xFF381F14)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                            ),
+                          ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+          Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                bannerList.length,
+                (index) {
+                  final bool isActive = _currentBannerIndex == index;
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: isActive ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? const Color(0xFFCD8449)
+                          : Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

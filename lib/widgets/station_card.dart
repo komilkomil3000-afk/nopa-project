@@ -77,6 +77,8 @@ class StationCard extends StatelessWidget {
                               ? CachedNetworkImage(
                                   imageUrl: resolvedImg,
                                   fit: BoxFit.cover,
+                                  memCacheWidth: 400,
+                                  memCacheHeight: 400,
                                   placeholder: (context, url) => Container(
                                     color: const Color(0xFF2E2E50),
                                     alignment: Alignment.center,
@@ -111,10 +113,11 @@ class StationCard extends StatelessWidget {
                           Container(
                             color: Colors.black.withValues(alpha: 0.45),
                             alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.lock_rounded,
-                              color: Colors.white70,
-                              size: 32,
+                            child: SvgPicture.asset(
+                              'assets/svg_icons/lock02.svg',
+                              width: 34,
+                              height: 34,
+                              fit: BoxFit.contain,
                             ),
                           ),
                       ],

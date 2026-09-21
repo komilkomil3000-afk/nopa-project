@@ -19,6 +19,28 @@ class HomeChallengesSection extends StatefulWidget {
 class _HomeChallengesSectionState extends State<HomeChallengesSection> {
   ChallengeTabType _selectedTab = ChallengeTabType.newChallenges;
 
+  int _getTabFlex(ChallengeTabType type) {
+    if (_selectedTab == type) {
+      switch (type) {
+        case ChallengeTabType.newChallenges:
+          return 11;
+        case ChallengeTabType.inProgress:
+          return 16;
+        case ChallengeTabType.expired:
+          return 12;
+      }
+    } else {
+      switch (type) {
+        case ChallengeTabType.newChallenges:
+          return 8;
+        case ChallengeTabType.inProgress:
+          return 9;
+        case ChallengeTabType.expired:
+          return 8;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppRepository>(
@@ -75,90 +97,95 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
               // 2. Outer Card Container with exact Login Box Stroke & Gradient
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.strokeGradient,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                child: RepaintBoundary(
                   child: Container(
-                    padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      gradient: AppColors.darkSurfaceGradient,
-                      borderRadius: BorderRadius.circular(19),
-                    ),
-                    child: Column(
-                      children: [
-                        // 3 Tabs in Row (Right: جدید fir01 | Center: شروع شده fir02 | Left: منقضی شده fir03)
-                        Row(
-                          children: [
-                            // Tab 1: جدید (fir01.svg - Green)
-                            Expanded(
-                              child: _buildTabPill(
-                                type: ChallengeTabType.newChallenges,
-                                title: 'جدید',
-                                badgeColor: const Color(0xFF133C24),
-                                iconPath: 'assets/svg_icons/fir01.svg',
-                                selectedGradient: const LinearGradient(
-                                  colors: [Color(0xFF2E8B57), Color(0xFF1E5E3A)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                                unselectedColor: const Color(0xFF22362C),
-                                borderColor: const Color(0xFF3EA369),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Tab 2: شروع شده (fir02.svg - Amber/Orange)
-                            Expanded(
-                              child: _buildTabPill(
-                                type: ChallengeTabType.inProgress,
-                                title: 'شروع شده',
-                                badgeColor: const Color(0xFF5E3200),
-                                iconPath: 'assets/svg_icons/fir02.svg',
-                                selectedGradient: const LinearGradient(
-                                  colors: [Color(0xFFE59819), Color(0xFFC77700)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                                unselectedColor: const Color(0xFF3A2D1A),
-                                borderColor: const Color(0xFFE08D18),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Tab 3: منقضی (fir03.svg - Slate/Purple)
-                            Expanded(
-                              child: _buildTabPill(
-                                type: ChallengeTabType.expired,
-                                title: 'منقضی',
-                                badgeColor: const Color(0xFF3A3763),
-                                iconPath: 'assets/svg_icons/fir03.svg',
-                                selectedGradient: const LinearGradient(
-                                  colors: [Color(0xFF4B487A), Color(0xFF343259)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                                unselectedColor: const Color(0xFF272544),
-                                borderColor: const Color(0xFF5A578E),
-                              ),
-                            ),
-                          ],
+                      gradient: AppColors.strokeGradient,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
                         ),
-
-                        const SizedBox(height: 14),
-
-                        // 2 Latest Challenge Items List for the Active Tab
-                        _buildItemsList(challenges, submissions, repository.currentUser),
                       ],
+                    ),
+                    padding: const EdgeInsets.all(AppColors.borderWidth),
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.darkSurfaceGradient,
+                        borderRadius: BorderRadius.circular(19),
+                      ),
+                      child: Column(
+                        children: [
+                          // 3 Tabs in Row (Right: جدید fir01 | Center: شروع شده fir02 | Left: منقضی شده fir03)
+                          Row(
+                            children: [
+                              // Tab 1: جدید (fir01.svg - Green)
+                              Expanded(
+                                flex: _getTabFlex(ChallengeTabType.newChallenges),
+                                child: _buildTabPill(
+                                  type: ChallengeTabType.newChallenges,
+                                  title: 'جدید',
+                                  badgeColor: const Color(0xFF133C24),
+                                  iconPath: 'assets/svg_icons/fir01.svg',
+                                  selectedGradient: const LinearGradient(
+                                    colors: [Color(0xFF2E8B57), Color(0xFF1E5E3A)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  unselectedColor: const Color(0xFF22362C),
+                                  borderColor: const Color(0xFF3EA369),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // Tab 2: شروع شده (fir02.svg - Amber/Orange)
+                              Expanded(
+                                flex: _getTabFlex(ChallengeTabType.inProgress),
+                                child: _buildTabPill(
+                                  type: ChallengeTabType.inProgress,
+                                  title: 'شروع شده',
+                                  badgeColor: const Color(0xFF5E3200),
+                                  iconPath: 'assets/svg_icons/fir02.svg',
+                                  selectedGradient: const LinearGradient(
+                                    colors: [Color(0xFFE59819), Color(0xFFC77700)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  unselectedColor: const Color(0xFF3A2D1A),
+                                  borderColor: const Color(0xFFE08D18),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // Tab 3: منقضی (fir03.svg - Slate/Purple)
+                              Expanded(
+                                flex: _getTabFlex(ChallengeTabType.expired),
+                                child: _buildTabPill(
+                                  type: ChallengeTabType.expired,
+                                  title: 'منقضی',
+                                  badgeColor: const Color(0xFF3A3763),
+                                  iconPath: 'assets/svg_icons/fir03.svg',
+                                  selectedGradient: const LinearGradient(
+                                    colors: [Color(0xFF4B487A), Color(0xFF343259)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  unselectedColor: const Color(0xFF272544),
+                                  borderColor: const Color(0xFF5A578E),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // 2 Latest Challenge Items List for the Active Tab
+                          _buildItemsList(challenges, submissions, repository.currentUser),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -188,7 +215,9 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           _selectedTab = type;
         });
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOutCubic,
         height: 46,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
@@ -199,14 +228,18 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
             width: 1.2,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: isSelected ? 8 : 4,
+          vertical: 4,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // 1. Right side in RTL: Circular Badge with SVG Flame Icon (fir01 / fir02 / fir03)
             Container(
-              width: 30,
-              height: 30,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: badgeColor,
                 shape: BoxShape.circle,
@@ -214,27 +247,29 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
               child: Center(
                 child: SvgPicture.asset(
                   iconPath,
-                  width: 18,
-                  height: 23,
+                  width: 16,
+                  height: 21,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 5),
 
-            // 2. Left side in RTL: Title text
+            // 2. Left side in RTL: Title text adapting to container size
             Flexible(
-              child: Text(
-                title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isSelected ? 12.5 : 11.5,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
                 ),
               ),
             ),
