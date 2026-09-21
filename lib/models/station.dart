@@ -28,6 +28,7 @@ class Station {
   });
 
   static const List<String> defaultStationTitles = [
+    'منزلگاه صفر (راهنمای کاروان)',
     'کاروانسرای غبارگرفته',
     'معدن زیرزمینی',
     'قلعه',
@@ -36,13 +37,18 @@ class Station {
   ];
 
   static String resolveTitle(String? originalTitle, int index) {
+    if (index == 0) {
+      return (originalTitle != null && originalTitle.contains('صفر'))
+          ? originalTitle.trim()
+          : 'منزلگاه صفر (راهنمای کاروان)';
+    }
     if (index >= 0 && index < defaultStationTitles.length) {
       return defaultStationTitles[index];
     }
     if (originalTitle != null && originalTitle.trim().isNotEmpty && !originalTitle.contains('منزلگاه')) {
       return originalTitle.trim();
     }
-    return 'منزلگاه ${index + 1}';
+    return 'منزلگاه $index';
   }
 
   bool get isCompleted => progress >= 1.0;

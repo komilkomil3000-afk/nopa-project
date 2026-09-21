@@ -809,7 +809,61 @@ class HttpApiService {
     }
   }
 
-  // Get Stations (with in-memory cache)
+  static final Map<String, dynamic> stationZeroData = {
+    'id': 'station_0',
+    'title': 'منزلگاه صفر (راهنمای کاروان)',
+    'subtitle': 'آشنایی با مسیر کاروان و اطلاعات کلی در مورد تمامی منزلگاه‌ها',
+    'instructors': 'راهبر ارشد کاروان',
+    'teacher': 'راهبر ارشد کاروان',
+    'orderIndex': 0,
+    'iconUrl': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500',
+    'imageUrl': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500',
+    'categories': [
+      {
+        'id': 'cat_s0_intro',
+        'title': 'راهنمای سفر و آشنایی با منزلگاه‌ها',
+        'orderIndex': 0,
+        'sessions': [
+          {
+            'id': 'sess_s0_1',
+            'title': 'فیلم اول: معرفی مسیر کاروان و نقشه راه',
+            'name': 'فیلم اول: معرفی مسیر کاروان و نقشه راه',
+            'orderIndex': 0,
+            'maxZarikReward': 50,
+            'videoClips': [
+              {
+                'id': 'clip_s0_1',
+                'title': 'فیلم اول: معرفی مسیر کاروان و نقشه راه کلیه منزلگاه‌ها',
+                'clipOrder': 1,
+                'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+                'durationSeconds': 240,
+                'description': 'در این فیلم کوتاه با اهداف کاروان نپا، نحوه عبور از منزلگاه‌ها و قوانین مسیر آشنا می‌شوید.',
+              },
+            ],
+          },
+          {
+            'id': 'sess_s0_2',
+            'title': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
+            'name': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
+            'orderIndex': 1,
+            'maxZarikReward': 50,
+            'videoClips': [
+              {
+                'id': 'clip_s0_2',
+                'title': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
+                'clipOrder': 1,
+                'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+                'durationSeconds': 180,
+                'description': 'در این فیلم با نحوه شرکت در کلاس‌ها، آزمون‌های زریک و تکمیل تکالیف ویژه آشنا می‌شوید.',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  // Get Stations (with in-memory cache and Station 0 guaranteed)
   Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty) {
       return _cachedStations!;
@@ -820,17 +874,31 @@ class HttpApiService {
         headers: _getHeaders(),
       );
 
+      List<Map<String, dynamic>> list = [];
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          _cachedStations = List<Map<String, dynamic>>.from(data);
-          return _cachedStations!;
+          list = List<Map<String, dynamic>>.from(data);
         }
       }
-      return _cachedStations ?? [];
+
+      // Ensure Station 0 is always at index 0
+      final bool hasStation0 = list.any((s) =>
+          s['id'] == 'station_0' ||
+          s['orderIndex'] == 0 ||
+          s['title'].toString().contains('صفر'));
+      if (!hasStation0) {
+        list.insert(0, Map<String, dynamic>.from(stationZeroData));
+      }
+
+      _cachedStations = list;
+      return _cachedStations!;
     } catch (e) {
       debugPrint('HTTP getStations error: $e');
-      return _cachedStations ?? [];
+      if (_cachedStations == null || _cachedStations!.isEmpty) {
+        _cachedStations = [Map<String, dynamic>.from(stationZeroData)];
+      }
+      return _cachedStations!;
     }
   }
 
