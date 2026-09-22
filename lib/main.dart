@@ -25,6 +25,7 @@ import 'screens/tickets_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/custom_drawer.dart';
+import 'widgets/app_top_bar.dart';
 import 'models/user_model.dart';
 import 'services/app_state_repository.dart';
 
@@ -262,7 +263,25 @@ class MainScreenState extends State<MainScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          child: IndexedStack(index: _currentIndex, children: screens),
+          child: SafeArea(
+            child: Column(
+              children: [
+                AppTopBar(
+                  showBackButton: _currentIndex != 0,
+                  showNotificationIcon: true,
+                  showDrawerButton: true,
+                  onBackTap: () {
+                    setState(() {
+                      _currentIndex = 0;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: IndexedStack(index: _currentIndex, children: screens),
+                ),
+              ],
+            ),
+          ),
         ),
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: _currentIndex,

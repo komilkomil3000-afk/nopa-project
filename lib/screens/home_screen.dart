@@ -60,144 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Top Bar: NOPA text on the left, Notification Bell & Menu button on the right
-  Widget _buildTopBar(UserModel? user) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Text Logo with AppTheme.fontFamily and C09268 to F4DCC5 Gradient
-            SizedBox(
-              height: 42,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFFC09268),
-                      Color(0xFFF4DCC5),
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ).createShader(bounds),
-                  child: const Text(
-                      'NOPA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Right: Notification Bell Button + Drawer Hamburger Menu
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
-                                ),
-                              ),
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 10),
-                Builder(
-                  builder: (ctx) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF23223D),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Banner Slider Carousel: Compact height (~155px), peek adjacent banners on sides, and dot indicators
   Widget _buildBannerSection() {
     return _HomeBannerCarousel(banners: _banners);
@@ -539,33 +401,18 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: AppColors.screenBackgroundGradient,
-        image: DecorationImage(
-          image: AssetImage('assets/images/login_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: RefreshIndicator(
-        onRefresh: _fetchData,
-        color: const Color(0xFFCD8449),
-        backgroundColor: const Color(0xFF231C38),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Top Bar: NOPA Logo & Notification Bell + Menu Button
-                _buildTopBar(user),
-
-                const SizedBox(height: 12),
-
-                // 2. Banner Slider Carousel with Dots
-                _buildBannerSection(),
+    return RefreshIndicator(
+      onRefresh: _fetchData,
+      color: const Color(0xFFCD8449),
+      backgroundColor: const Color(0xFF231C38),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(top: 4, bottom: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Banner Slider Carousel with Dots
+            _buildBannerSection(),
 
                 const SizedBox(height: 16),
 

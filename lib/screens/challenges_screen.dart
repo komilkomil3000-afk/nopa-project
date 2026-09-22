@@ -742,235 +742,51 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       }
     }).toList();
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: AppColors.screenBackgroundGradient,
-        image: DecorationImage(
-          image: AssetImage('assets/images/login_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: SafeArea(
+    return RefreshIndicator(
+      color: const Color(0xFFCD8449),
+      backgroundColor: const Color(0xFF231C38),
+      onRefresh: () async {
+        await repository.refreshChallenges();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Top Bar: Gradient NOPA + Back SVG icon on Left, Hamburger Menu on Right
-            _buildTopBar(),
+            // 1. Clean Station Banner Carousel with 3 indicator dots (No text overlay)
+            _buildStationBannerSlider(),
 
-            // 2. Main Scrollable Content: Clean Banner + Category Tabs + Challenge Cards
-            Expanded(
-              child: RefreshIndicator(
-                color: const Color(0xFFCD8449),
-                backgroundColor: const Color(0xFF231C38),
-                onRefresh: () async {
-                  await repository.refreshChallenges();
+            const SizedBox(height: 18),
+
+            // 2. Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
+            _buildCategoryTabsBar(),
+
+            const SizedBox(height: 18),
+
+            // 3. Challenge Cards List or Empty State
+            if (filtered.isEmpty)
+              _buildEmptyState()
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filtered.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = filtered[index];
+                  final String id = item['id']?.toString() ?? 'ch_$index';
+                  final bool isExpanded = _expandedChallengeIds.contains(id);
+
+                  return _buildChallengeCard(
+                    item: item,
+                    id: id,
+                    isExpanded: isExpanded,
+                  );
                 },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 2.1 Clean Station Banner Carousel with 3 indicator dots (No text overlay)
-                      _buildStationBannerSlider(),
-
-                      const SizedBox(height: 18),
-
-                      // 2.2 Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
-                      _buildCategoryTabsBar(),
-
-                      const SizedBox(height: 18),
-
-                      // 2.3 Challenge Cards List or Empty State
-                      if (filtered.isEmpty)
-                        _buildEmptyState()
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filtered.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final item = filtered[index];
-                            final String id = item['id']?.toString() ?? 'ch_$index';
-                            final bool isExpanded = _expandedChallengeIds.contains(id);
-
-                            return _buildChallengeCard(
-                              item: item,
-                              id: id,
-                              isExpanded: isExpanded,
-                            );
-                          },
-                        ),
-
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  /// Top Bar matching Notifications screen: Left = NOPA + raw back01.svg, Right = Hamburger Menu Button
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Logo + Back SVG Icon (No extra text, identical to notifications screen)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: _handleBackAction,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Right: Notification Bell Button + Drawer Hamburger Menu Button (height 42)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
-                                ),
-                              ),
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 10),
-                Builder(
-                  builder: (ctx) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF23223D),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            const SizedBox(height: 30),
           ],
         ),
       ),

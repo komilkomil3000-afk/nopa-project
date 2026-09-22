@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_colors.dart';
+import '../main.dart';
 import '../services/api_service.dart';
+import '../services/app_state_repository.dart';
+import '../widgets/custom_drawer.dart';
 
 class CertificateViewScreen extends StatefulWidget {
   final Map<String, dynamic> certificate;
@@ -283,9 +287,21 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
     final String teacher = widget.certificate['teacher'] ?? 'راهبر کاروان';
     final String sessions = widget.certificate['sessionsCount'] ?? '۶ جلسه';
 
+    final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: Colors.transparent,
+        drawer: CustomDrawer(
+          role: userRole,
+          currentIndex: 4,
+          onTabSelected: (idx) {
+            Navigator.pop(context);
+            Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+            navigateToMainTab(idx);
+          },
+        ),
         body: Container(
           width: double.infinity,
           height: double.infinity,
@@ -299,7 +315,7 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // Top Bar matching HomeScreen / CertificatesScreen
+                // Top Bar matching Challenges / Profile / Certificates
                 _buildTopBar(),
 
                 // Scrollable Content
@@ -651,17 +667,17 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
     );
   }
 
-  /// Top Bar matching HomeScreen
+  /// Top Bar matching ChallengesScreen / ProfileScreen / CertificatesScreen
   Widget _buildTopBar() {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+    return Padding(
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Logo + Back Icon
+            // Left: NOPA Logo + Back SVG Icon
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -695,31 +711,116 @@ class _CertificateViewScreenState extends State<CertificateViewScreen> {
                 const SizedBox(height: 2),
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: SvgPicture.asset(
-                    'assets/svg_icons/back01.svg',
-                    width: 28,
-                    height: 28,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFFC7B299),
-                      BlendMode.srcIn,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
 
-            // Right: Screen Title
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text(
-                'مشاهده و دانلود گواهی',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
+            // Right: Notification Bell Button + Drawer Hamburger Menu Button
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<AppRepository>(
+                  builder: (context, repository, _) {
+                    final count = repository.unreadNotificationsCount;
+                    final bool hasUnread = count > 0;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          repository.fetchNotifications();
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF23223D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFFC7B299),
+                                  size: 23,
+                                ),
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      count > 9 ? '+۹' : count.toPersian(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ),
+                const SizedBox(width: 10),
+                Builder(
+                  builder: (ctx) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Scaffold.of(ctx).openDrawer(),
+                      borderRadius: BorderRadius.circular(22),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF23223D),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFFC7B299),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

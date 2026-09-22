@@ -13,6 +13,8 @@ import '../widgets/logout_dialog.dart';
 import '../widgets/safe_avatar.dart';
 import 'certificates_screen.dart';
 import 'edit_profile_screen.dart';
+import '../widgets/bottom_nav_bar.dart';
+import '../widgets/custom_drawer.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -572,6 +574,23 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      drawer: CustomDrawer(
+        role: user.role,
+        currentIndex: 4,
+        onTabSelected: (idx) {
+          Navigator.pop(context);
+          Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+          navigateToMainTab(idx);
+        },
+      ),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 4,
+        role: user.role,
+        onTap: (idx) {
+          Navigator.pop(context);
+          navigateToMainTab(idx);
+        },
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -583,152 +602,323 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Top bar with Back Button
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'کارنامه و دستاوردها',
+          child: Column(
+            children: [
+              // 1. Top Bar matching Profile / Challenges
+              _buildTopBar(context),
+
+              // 2. Scrollable Report Content
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1. Overall Progress Card
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF28274A),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'وضعیت کلی مسافر در کاروان',
+                                style: TextStyle(
+                                  color: Color(0xFFFFD580),
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
+                                  _buildStatBox('ویدیوهای دیده‌شده', watchedClipsCount.toPersian()),
+                                  _buildStatBox('آزمون‌های قبول‌شده', passedQuizzesCount.toPersian()),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // 2. Wealth & Assets Card
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF28274A),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'دارایی‌ها و پاداش‌ها',
+                                style: TextStyle(
+                                  color: Color(0xFFFFD580),
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
+                                  _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
+                                  _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
+                                  _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // 3. Station Road Map Summary
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF28274A),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'پیشرفت در منزلگاه‌ها',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: (i + 1) <= user.levelFrame
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFF383562),
+                                        ),
+                                        child: Center(
+                                          child: Icon(
+                                            (i + 1) <= user.levelFrame
+                                                ? Icons.check_rounded
+                                                : Icons.lock_outline_rounded,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'منزلگاه ${i.toPersian()}: ${i < stations.length ? (stations[i]['title'] ?? '') : 'آموزش کاروان'}',
+                                          style: TextStyle(
+                                            color: (i + 1) <= user.levelFrame ? Colors.white : Colors.white54,
+                                            fontSize: 12.5,
+                                            fontFamily: AppTheme.fontFamily,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Top Bar matching Profile / Challenges
+  Widget _buildTopBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: NOPA Logo + Back SVG Icon
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 21,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 1. Overall Progress Card
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF28274A),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF453F73), width: 1.2),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'وضعیت کلی مسافر در کاروان',
-                          style: TextStyle(color: Color(0xFFFFD580), fontSize: 14.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Right: Notification Bell Button + Drawer Hamburger Menu Button
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<AppRepository>(
+                  builder: (context, repository, _) {
+                    final count = repository.unreadNotificationsCount;
+                    final bool hasUnread = count > 0;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          repository.fetchNotifications();
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
-                            _buildStatBox('ویدیوهای دیده‌شده', watchedClipsCount.toPersian()),
-                            _buildStatBox('آزمون‌های قبول‌شده', passedQuizzesCount.toPersian()),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 2. Wealth & Assets Card
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF28274A),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'دارایی‌ها و پاداش‌ها',
-                          style: TextStyle(color: Color(0xFFFFD580), fontSize: 14.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
-                            _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
-                            _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
-                            _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // 3. Station Road Map Summary
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF28274A),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'پیشرفت در منزلگاه‌ها',
-                          style: TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 12),
-                        for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 24,
-                                  height: 24,
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF23223D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFFC7B299),
+                                  size: 23,
+                                ),
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
                                   decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
                                     shape: BoxShape.circle,
-                                    color: (i + 1) <= user.levelFrame ? const Color(0xFF10B981) : const Color(0xFF383562),
+                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
                                   ),
                                   child: Center(
-                                    child: Icon(
-                                      (i + 1) <= user.levelFrame ? Icons.check_rounded : Icons.lock_outline_rounded,
-                                      color: Colors.white,
-                                      size: 14,
+                                    child: Text(
+                                      count > 9 ? '+۹' : count.toPersian(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'منزلگاه ${i.toPersian()}: ${i < stations.length ? (stations[i]['title'] ?? '') : 'آموزش کاروان'}',
-                                    style: TextStyle(
-                                      color: (i + 1) <= user.levelFrame ? Colors.white : Colors.white54,
-                                      fontSize: 12.5,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 10),
+                Builder(
+                  builder: (ctx) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Scaffold.of(ctx).openDrawer(),
+                      borderRadius: BorderRadius.circular(22),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF23223D),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFFC7B299),
+                            size: 24,
                           ),
-                      ],
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+          ],
         ),
       ),
     );
