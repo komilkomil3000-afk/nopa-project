@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import '../utils/constants.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';
-import '../widgets/notification_bell_button.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/app_colors.dart';
+import '../main.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -14,17 +18,91 @@ class ChallengesScreen extends StatefulWidget {
 }
 
 class _ChallengesScreenState extends State<ChallengesScreen> {
-  bool _showArchived = false;
+  // 0: فردی, 1: گروهی, 2: میان گروهی
+  int _selectedCategoryIndex = 0;
+  final Set<String> _expandedChallengeIds = {};
+
+  late final PageController _bannerPageCtrl;
+  int _currentBannerIndex = 0;
+  Timer? _bannerAutoScrollTimer;
 
   @override
   void initState() {
     super.initState();
+    _bannerPageCtrl = PageController(viewportFraction: 0.92);
+    _startBannerAutoScroll();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AppRepository>(context, listen: false).refreshChallenges();
+      if (mounted) {
+        Provider.of<AppRepository>(context, listen: false).refreshChallenges();
+      }
     });
   }
 
-  // Read reactively from AppRepository
+  void _startBannerAutoScroll() {
+    _bannerAutoScrollTimer?.cancel();
+    _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || !_bannerPageCtrl.hasClients) return;
+      final int nextIndex = (_currentBannerIndex + 1) % 3;
+      _bannerPageCtrl.animateToPage(
+        nextIndex,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerAutoScrollTimer?.cancel();
+    _bannerPageCtrl.dispose();
+    super.dispose();
+  }
+
+  void _handleBackAction() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      navigateToMainTab(0); // Return to Home
+    }
+  }
+
+  String _formatDate(dynamic createdAt) {
+    if (createdAt != null) {
+      try {
+        final dt = createdAt is DateTime ? createdAt : DateTime.tryParse(createdAt.toString());
+        if (dt != null) {
+          final j = Jalali.fromDateTime(dt);
+          final y = (j.year % 100).toString().padLeft(2, '0');
+          final m = j.month.toString().padLeft(2, '0');
+          final d = j.day.toString().padLeft(2, '0');
+          return '$d/$m/۱۴$y'.toPersianDigits();
+        }
+      } catch (_) {}
+    }
+    final nowJ = Jalali.now();
+    final y = (nowJ.year % 100).toString().padLeft(2, '0');
+    final m = nowJ.month.toString().padLeft(2, '0');
+    final d = nowJ.day.toString().padLeft(2, '0');
+    return '$d/$m/۱۴$y'.toPersianDigits();
+  }
+
+  String _resolveChallengeTypeLabel(String type) {
+    switch (type.toLowerCase()) {
+      case 'quiz':
+      case 'step_by_step_quiz':
+      case 'multiple_choice':
+        return 'تستی';
+      case 'skill':
+        return 'مهارتی';
+      case 'file':
+        return 'پروژه‌ای';
+      case 'text':
+      default:
+        return 'تشریحی';
+    }
+  }
+
   List<Map<String, dynamic>> _getChallenges(AppRepository repository) {
     final List<Map<String, dynamic>> list = [];
     final submissions = repository.submissions;
@@ -41,13 +119,27 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
       final String status;
       if (rawStatus == 'approved') {
-        status = 'archived_completed';
+        status = 'completed';
       } else if (rawStatus == 'pending') {
-        status = 'archived_pending';
+        status = 'started';
       } else if (rawStatus == 'rejected') {
         status = 'rejected';
       } else {
-        status = 'active';
+        status = 'new';
+      }
+
+      // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
+      String category = 'individual';
+      final String rawCat = (c.category ?? '').toLowerCase();
+      final String title = c.title.toLowerCase();
+      final String desc = c.description.toLowerCase();
+
+      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+        category = 'inter_group';
+      } else if (rawCat.contains('group') || rawCat.contains('گروهی') || title.contains('گروهی') || desc.contains('گروهی')) {
+        category = 'group';
+      } else {
+        category = 'individual';
       }
 
       list.add({
@@ -57,6 +149,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         'reward': c.rewardZarik,
         'type': c.type,
         'status': status,
+        'category': category,
         'questions': c.questions,
         'progress': c.progress,
         'mentorName': c.mentorName,
@@ -64,8 +157,9 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         'mentorFeedback': c.mentorFeedback ?? localSub?.scoreFeedback,
         'myAnswerText': c.myAnswerText ?? localSub?.answerText,
         'isByAdmin': c.isByAdmin,
-        'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر کاروان')),
-        'targetAudienceLabel': c.targetAudienceLabel ?? (c.caravanName != null ? 'کاروان: ${c.caravanName}' : 'عمومی (همه کاروان‌ها)'),
+        'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
+        'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
+        'durationDays': c.durationDays ?? 5,
       });
     }
     return list;
@@ -114,7 +208,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  fontFamily: 'Vazirmatn',
+                                  fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
                             ),
@@ -134,12 +228,12 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            'جایزه: ${challenge['reward']} زریک 🪙',
+                            'جایزه: ${challenge['reward'].toString().toPersianDigits()} زریک 🪙',
                             style: const TextStyle(
                               color: Color(0xFFFFD54F),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                         ),
@@ -153,7 +247,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               color: Colors.white70,
                               fontSize: 13,
                               height: 1.5,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -165,18 +259,18 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               color: Colors.white70,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                           const SizedBox(height: 8),
                           TextField(
                             controller: textCtrl,
                             maxLines: 3,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: 'Vazirmatn'),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
                             textAlign: TextAlign.right,
                             decoration: InputDecoration(
                               hintText: 'متن پاسخ شما برای راهبر کاروان...',
-                              hintStyle: const TextStyle(color: Colors.white24, fontSize: 11, fontFamily: 'Vazirmatn'),
+                              hintStyle: const TextStyle(color: Colors.white24, fontSize: 11, fontFamily: AppTheme.fontFamily),
                               filled: true,
                               fillColor: const Color(0xFF160E2A),
                               border: OutlineInputBorder(
@@ -203,7 +297,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                 color: Colors.white70,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                fontFamily: 'Vazirmatn',
+                                fontFamily: AppTheme.fontFamily,
                               ),
                             ),
                             const SizedBox(height: 10),
@@ -248,7 +342,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                             color: isSel ? Colors.white : Colors.white70,
                                             fontSize: 12.5,
                                             fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                            fontFamily: 'Vazirmatn',
+                                            fontFamily: AppTheme.fontFamily,
                                           ),
                                         ),
                                       ),
@@ -267,7 +361,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               color: Colors.white70,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -299,7 +393,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                       color: attachedFileName == null ? Colors.white38 : const Color(0xFF10B981),
                                       fontSize: 12,
                                       fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
-                                      fontFamily: 'Vazirmatn',
+                                      fontFamily: AppTheme.fontFamily,
                                     ),
                                   ),
                                 ],
@@ -316,12 +410,12 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              'مرحله ${currentStep + 1} از ${qList.length}',
+                              'مرحله ${(currentStep + 1).toString().toPersianDigits()} از ${qList.length.toString().toPersianDigits()}',
                               style: const TextStyle(
                                 color: Color(0xFFD946EF),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                fontFamily: 'Vazirmatn',
+                                fontFamily: AppTheme.fontFamily,
                               ),
                             ),
                           ),
@@ -334,7 +428,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               height: 1.5,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -379,7 +473,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                         style: TextStyle(
                                           color: isSel ? Colors.white : Colors.white70,
                                           fontSize: 12.5,
-                                          fontFamily: 'Vazirmatn',
+                                          fontFamily: AppTheme.fontFamily,
                                         ),
                                       ),
                                     ),
@@ -407,7 +501,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                     const SnackBar(
                                       content: Text(
                                         'لطفاً یکی از گزینه‌ها را برای این مرحله انتخاب کنید.',
-                                        style: TextStyle(fontFamily: 'Vazirmatn'),
+                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
                                       ),
                                       backgroundColor: Color(0xFFEF4444),
                                       behavior: SnackBarBehavior.floating,
@@ -432,7 +526,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                     const SnackBar(
                                       content: Text(
                                         'فیلد پاسخ خالی است! لطفاً متن پاسخ یا فایل مورد نظر را وارد نمایید.',
-                                        style: TextStyle(fontFamily: 'Vazirmatn'),
+                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
                                       ),
                                       backgroundColor: Color(0xFFEF4444),
                                       behavior: SnackBarBehavior.floating,
@@ -493,7 +587,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                     isStepByStep
                                         ? 'آزمون مرحله‌ای ثبت شد! ${challenge['reward']}+ زریک کسب کردید! 🎓🏆'
                                         : 'پاسخ شما با موفقیت ثبت شد و برای راهبر کاروان ارسال گردید ✅',
-                                    style: const TextStyle(fontFamily: 'Vazirmatn'),
+                                    style: const TextStyle(fontFamily: AppTheme.fontFamily),
                                   ),
                                   backgroundColor: const Color(0xFF10B981),
                                   behavior: SnackBarBehavior.floating,
@@ -509,7 +603,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               (isStepByStep && currentStep < qList.length - 1)
                                   ? 'مرحله بعدی ⬅️'
                                   : 'ثبت و ارسال نهایی چالش',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
                             ),
                           ),
                         ),
@@ -530,422 +624,759 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     final repository = Provider.of<AppRepository>(context);
     final allChallenges = _getChallenges(repository);
 
-    // Filter challenges based on the active tab toggle
+    // Filter by selected category (0: فردی, 1: گروهی, 2: میان گروهی)
     final filtered = allChallenges.where((c) {
-      if (_showArchived) {
-        return c['status'] == 'archived_completed';
+      if (_selectedCategoryIndex == 0) {
+        return c['category'] == 'individual';
+      } else if (_selectedCategoryIndex == 1) {
+        return c['category'] == 'group';
       } else {
-        return c['status'] == 'active' || c['status'] == 'archived_pending' || c['status'] == 'rejected';
+        return c['category'] == 'inter_group';
       }
     }).toList();
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            image: DecorationImage(
-              image: AssetImage('assets/images/login_bg.png'),
-              fit: BoxFit.cover,
-            ),
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(
+            image: AssetImage('assets/images/login_bg.png'),
+            fit: BoxFit.cover,
           ),
-          child: RefreshIndicator(
-            onRefresh: () => repository.refreshChallenges(),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-              children: [
-                // Top RTL Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: SafeArea(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Right: Title & Badge
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD946EF).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFD946EF), size: 22),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'چالش‌ها و تکالیف نپا',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Vazirmatn',
-                              ),
-                            ),
-                          ],
-                        ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 1. Top Bar: Gradient NOPA + Back button on Left, Hamburger Menu on Right
+              _buildTopBar(),
 
-                        // Left: Actions (Notification & Drawer)
-                        Row(
-                          children: [
-                            const NotificationBellButton(
-                              iconSize: 20,
-                              padding: EdgeInsets.all(10),
+              // 2. Main Scrollable Content: Slim Banner + Category Tabs + Challenge Cards
+              Expanded(
+                child: RefreshIndicator(
+                  color: const Color(0xFFCD8449),
+                  backgroundColor: const Color(0xFF231C38),
+                  onRefresh: () async {
+                    await repository.refreshChallenges();
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 2.1 Compact Station Banner Carousel with 3 indicator dots
+                        _buildStationBannerSlider(),
+
+                        const SizedBox(height: 18),
+
+                        // 2.2 Category Tabs: فردی / گروهی / میان گروهی
+                        _buildCategoryTabsBar(),
+
+                        const SizedBox(height: 18),
+
+                        // 2.3 Challenge Cards List or Empty State
+                        if (filtered.isEmpty)
+                          _buildEmptyState()
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filtered.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = filtered[index];
+                              final String id = item['id']?.toString() ?? 'ch_$index';
+                              final bool isExpanded = _expandedChallengeIds.contains(id);
+
+                              return _buildChallengeCard(
+                                item: item,
+                                id: id,
+                                isExpanded: isExpanded,
+                              );
+                            },
+                          ),
+
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Top Bar matching user design: Left = NOPA + بازگشت, Right = Hamburger Menu Button
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: NOPA Logo + Return / Back button
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 38,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _handleBackAction,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg_icons/back01.svg',
+                          width: 17,
+                          height: 17,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFC7B299),
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Text(
+                          'بازگشت',
+                          style: TextStyle(
+                            color: Color(0xFFC7B299),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Right: Drawer Hamburger Menu Button (height 42)
+            Builder(
+              builder: (ctx) => Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Scaffold.of(ctx).openDrawer(),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF23223D),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.menu_rounded,
+                        color: Color(0xFFC7B299),
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Compact Banner Slider with 3 indicator dots matching Home screen
+  Widget _buildStationBannerSlider() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 82,
+          child: PageView.builder(
+            controller: _bannerPageCtrl,
+            itemCount: 3,
+            onPageChanged: (index) {
+              setState(() => _currentBannerIndex = index);
+            },
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Banner Image
+                      Image.asset(
+                        'assets/images/banners/banner1.jpg',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF5A3825), Color(0xFF382318)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            const SizedBox(width: 8),
-                            Builder(
-                              builder: (menuContext) => GestureDetector(
-                                onTap: () => Scaffold.of(menuContext).openDrawer(),
-                                child: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black38,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white10),
+                          ),
+                        ),
+                      ),
+
+                      // Soft dark vignette overlay
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withValues(alpha: 0.25),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.35),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+
+                      // Glowing Center Badge matching screenshot
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'منزلگاه اول',
+                              style: TextStyle(
+                                color: Color(0xFFF4DCC5),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                shadows: [
+                                  Shadow(
+                                    color: Color(0xCC000000),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 1),
                                   ),
-                                  child: const Icon(Icons.menu, color: Colors.white, size: 20),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.55),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFDE9959).withValues(alpha: 0.7),
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFE5A86D).withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'کاروانسرای غبارگرفته',
+                                style: TextStyle(
+                                  color: Color(0xFFFFB366),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  shadows: [
+                                    Shadow(
+                                      color: Color(0xFFDE9959),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 12),
-
-                // Toggle active / archived (Active on Right, Archived on Left in RTL)
-                _buildArchiveToggleButtons(),
-
-                const SizedBox(height: 16),
-
-                // Challenges list
-                if (filtered.isEmpty)
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1435),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.assignment_turned_in_outlined,
-                            color: Color(0xFF8B5CF6),
-                            size: 36,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _showArchived ? 'چالشی در آرشیو وجود ندارد' : 'در حال حاضر چالشی ابلاغ نشده است',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _showArchived
-                              ? 'چالش‌های تکمیل شده یا ارزیابی شده شما در این بخش ذخیره می‌شوند.'
-                              : 'به محض اینکه مربی یا مدیر کاروان چالش جدیدی برای شما ایجاد و ارسال کند، در این قسمت نمایش داده خواهد شد.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
-                            height: 1.5,
-                            fontFamily: 'Vazirmatn',
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return _buildChallengeItemCard(item);
-                    },
-                  ),
-
-                const SizedBox(height: 100),
-              ],
-            ),
+              );
+            },
           ),
         ),
-      ),
-    ),
-  );
-}
 
-  Widget _buildArchiveToggleButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // Active Challenges Button (Right in RTL)
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _showArchived = false),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 11),
+        const SizedBox(height: 8),
+
+        // 3 Animated Dot Indicators matching Home Banner
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            3,
+            (index) {
+              final bool isActive = _currentBannerIndex == index;
+
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: isActive ? 18 : 6,
+                height: 6,
                 decoration: BoxDecoration(
-                  color: !_showArchived ? const Color(0xFFEC4899) : const Color(0xFF1E1435),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: !_showArchived ? const Color(0xFFEC4899) : Colors.white.withValues(alpha: 0.05),
-                  ),
+                  color: isActive
+                      ? const Color(0xFFCD8449)
+                      : Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                child: const Center(
-                  child: Text(
-                    'چالش‌های فعال ⚡',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
           ),
-          const SizedBox(width: 12),
+        ),
+      ],
+    );
+  }
 
-          // Archived Challenges Button (Left in RTL)
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _showArchived = true),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: _showArchived ? const Color(0xFF8B5CF6) : const Color(0xFF1E1435),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _showArchived ? const Color(0xFF8B5CF6) : Colors.white.withValues(alpha: 0.05),
-                  ),
-                ),
-                child: const Center(
+  /// Category Tabs: فردی / گروهی / میان گروهی matching screenshot
+  Widget _buildCategoryTabsBar() {
+    final tabs = [
+      {'title': 'فردی', 'index': 0},
+      {'title': 'گروهی', 'index': 1},
+      {'title': 'میان گروهی', 'index': 2},
+    ];
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: tabs.map((tab) {
+              final int idx = tab['index'] as int;
+              final bool isSelected = _selectedCategoryIndex == idx;
+
+              return GestureDetector(
+                onTap: () => setState(() => _selectedCategoryIndex = idx),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: Text(
-                    'آرشیو شده‌ها 📂',
+                    tab['title'] as String,
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazirmatn',
+                      color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
+                      fontSize: isSelected ? 16 : 14.5,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      shadows: isSelected
+                          ? [
+                              Shadow(
+                                color: const Color(0xFFDE9959).withValues(alpha: 0.4),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 8),
+          // Subtle Thin Divider
+          Container(
+            height: 1.0,
+            width: double.infinity,
+            color: const Color(0xFF383556).withValues(alpha: 0.7),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChallengeItemCard(Map<String, dynamic> item) {
-    bool isCompleted = item['status'] == 'archived_completed';
-    bool isPending = item['status'] == 'archived_pending';
-    bool isRejected = item['status'] == 'rejected';
+  /// Responsive Challenge Card with Title -> Status Tag -> Prize Icon -> Description & Participate Button
+  Widget _buildChallengeCard({
+    required Map<String, dynamic> item,
+    required String id,
+    required bool isExpanded,
+  }) {
+    final String title = item['title'] ?? 'چالش نپا';
+    final String desc = item['desc'] ?? '';
+    final String status = item['status'] ?? 'new';
+    final int reward = item['reward'] ?? 50;
+    final String dateStr = _formatDate(item['createdAt']);
+    final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
+    final int durationDays = item['durationDays'] ?? 5;
+    final String? feedback = item['mentorFeedback']?.toString();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12, left: 20, right: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isCompleted 
-              ? const Color(0xFF10B981).withValues(alpha: 0.3)
-              : (isPending 
-                  ? const Color(0xFFFFD54F).withValues(alpha: 0.3) 
-                  : (isRejected 
-                      ? const Color(0xFFEF4444).withValues(alpha: 0.4) 
-                      : Colors.white.withValues(alpha: 0.04))),
+    // Status label, text color & background
+    String statusLabel = 'جدید';
+    Color statusColor = const Color(0xFF22C55E);
+    Color statusBg = const Color(0xFF22C55E).withValues(alpha: 0.15);
+    Color statusBorder = const Color(0xFF22C55E).withValues(alpha: 0.4);
+
+    if (status == 'started') {
+      statusLabel = 'شروع شده';
+      statusColor = const Color(0xFFE5A86D);
+      statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
+    } else if (status == 'rejected') {
+      statusLabel = 'اصلاحیه';
+      statusColor = const Color(0xFFEF4444);
+      statusBg = const Color(0xFFEF4444).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFFEF4444).withValues(alpha: 0.45);
+    } else if (status == 'completed') {
+      statusLabel = 'تکمیل شده';
+      statusColor = const Color(0xFF10B981);
+      statusBg = const Color(0xFF10B981).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF10B981).withValues(alpha: 0.4);
+    } else if (status == 'expired') {
+      statusLabel = 'منقضی شده';
+      statusColor = const Color(0xFF9D99B8);
+      statusBg = const Color(0xFF9D99B8).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF9D99B8).withValues(alpha: 0.35);
+    }
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            stops: [0.0, 0.5, 1.0],
+            colors: [
+              Color(0xFF3A3A6A),
+              Color(0xFF9292E2),
+              Color(0xFF3A3A6A),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.all(1.2), // Gradient border
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14.8),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.53, 1.0],
+              colors: [
+                Color(0xFF3D3C67),
+                Color(0xFF36345C),
+                Color(0xFF333359),
+              ],
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Challenge Title & Mentor Info (Right in RTL)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // 1. Top Row: Title on Right -> Status Tag -> Prize Icon -> Expand Toggle
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    if (_expandedChallengeIds.contains(id)) {
+                      _expandedChallengeIds.remove(id);
+                    } else {
+                      _expandedChallengeIds.add(id);
+                    }
+                  });
+                },
+                behavior: HitTestBehavior.opaque,
+                child: Row(
                   children: [
-                    Text(
-                      item['title'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        fontFamily: 'Vazirmatn',
+                    // Right: Title (Flexible so it adapts smoothly to screen width)
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
                       ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Next: Status Tag (جدید / شروع شده / اصلاحیه / منقضی شده)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: statusBorder, width: 0.9),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Next: Zaric Reward Prize Badge with Gold Coin Icon
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF231E3D).withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFDE9959).withValues(alpha: 0.5),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '+${reward.toString().toPersianDigits()}',
+                            style: const TextStyle(
+                              color: Color(0xFFF4DCC5),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(
+                            Icons.monetization_on_rounded,
+                            size: 13,
+                            color: Color(0xFFFFD54F),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // Expand / Collapse Chevron Icon on the far left
+                    Icon(
+                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: const Color(0xFF9897D2),
+                      size: 20,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
 
-              // Status Badge (Left in RTL)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isCompleted 
-                      ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                      : (isPending 
-                          ? const Color(0xFFFFD54F).withValues(alpha: 0.15) 
-                          : (isRejected 
-                              ? const Color(0xFFEF4444).withValues(alpha: 0.15) 
-                              : const Color(0xFF8B5CF6).withValues(alpha: 0.15))),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isCompleted 
-                        ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                        : (isPending 
-                            ? const Color(0xFFFFD54F).withValues(alpha: 0.4) 
-                            : (isRejected 
-                                ? const Color(0xFFEF4444).withValues(alpha: 0.45) 
-                                : const Color(0xFF8B5CF6).withValues(alpha: 0.4))),
+              // 2. Challenge Description (متن توضیحات چالش)
+              if (desc.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  desc,
+                  textAlign: TextAlign.right,
+                  maxLines: isExpanded ? 8 : 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFFD3D0E3),
+                    fontSize: 11.5,
+                    height: 1.55,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
                 ),
-                child: Text(
-                  isCompleted 
-                      ? 'تایید شد ✅' 
-                      : (isPending 
-                          ? 'در انتظار بررسی' 
-                          : (isRejected ? 'نیاز به اصلاح ❌' : 'فعال')),
-                  style: TextStyle(
-                    color: isCompleted 
-                        ? const Color(0xFF10B981) 
-                        : (isPending 
-                            ? const Color(0xFFFFD54F) 
-                            : (isRejected ? const Color(0xFFF87171) : const Color(0xFF8B5CF6))),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Vazirmatn',
+              ],
+
+              // 3. Mentor Feedback if rejected
+              if (status == 'rejected' && feedback != null && feedback.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 15),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'توضیح راهبر: $feedback',
+                          style: const TextStyle(
+                            color: Color(0xFFFCA5A5),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            item['desc'] ?? '',
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              height: 1.45,
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
+              ],
 
-          // Mentor Rejection Feedback Box
-          if (isRejected && item['mentorFeedback'] != null && (item['mentorFeedback'] as String).trim().isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
-              ),
-              child: Row(
+              const SizedBox(height: 10),
+
+              // 4. Bottom Row: Info on Right -> Participate Button on Left
+              Row(
                 children: [
-                  const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 16),
-                  const SizedBox(width: 8),
+                  // Right: Info chips (Type + Creation Date + Deadline)
                   Expanded(
-                    child: Text(
-                      'علت رد: ${item['mentorFeedback']}',
-                      style: const TextStyle(
-                        color: Color(0xFFFCA5A5),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Vazirmatn',
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'نوع: $typeLabel',
+                          style: const TextStyle(
+                            color: Color(0xFFB8B5CE),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        Text(
+                          'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                          style: const TextStyle(
+                            color: Color(0xFFB8B5CE),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        Text(
+                          'تاریخ: $dateStr',
+                          style: const TextStyle(
+                            color: Color(0xFF9D99B8),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Left: Participate Button (دکمه شرکت در سمت چپ)
+                  GestureDetector(
+                    onTap: () => _showSubmissionDialog(item),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2835),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
+                        style: const TextStyle(
+                          color: Color(0xFFF4DCC5),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-
-          const SizedBox(height: 14),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Reward text (Right in RTL)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFD54F).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'جایزه: ${item['reward']} زریک 🪙',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD54F),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-
-              // Action button (Left in RTL)
-              if (!isCompleted && !isPending)
-                ElevatedButton.icon(
-                  onPressed: () => _showSubmissionDialog(item),
-                  icon: Icon(isRejected ? Icons.refresh_rounded : Icons.send_rounded, size: 14, color: Colors.white),
-                  label: Text(
-                    isRejected ? 'پاسخ مجدد و اصلاح چالش' : 'پاسخ و ارسال تکلیف',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isRejected ? const Color(0xFFDC2626) : const Color(0xFFEC4899),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                )
-              else if (isPending)
-                const Text(
-                  'پاسخ شما برای راهبر ارسال شده است',
-                  style: TextStyle(color: Colors.white38, fontSize: 11, fontFamily: 'Vazirmatn'),
-                )
-              else
-                const Text(
-                  'این چالش با موفقیت تایید شد ✅',
-                  style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Empty State Widget
+  Widget _buildEmptyState() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 30),
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1435).withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF453F73).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.emoji_events_outlined,
+            size: 44,
+            color: Color(0xFF676296),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'چالشی در این دسته‌بندی وجود ندارد',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'چالش‌های جدید ثبت شده توسط راهبر یا مدیر در این بخش نمایش داده خواهند شد.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFF9D99B8),
+              fontSize: 11.5,
+              height: 1.5,
+              fontFamily: AppTheme.fontFamily,
+            ),
           ),
         ],
       ),

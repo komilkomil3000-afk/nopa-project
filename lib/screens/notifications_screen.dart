@@ -547,7 +547,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// Filter Pills Bar (Exact calendar day selection styling)
+  /// Filter Pills Bar (Styled identically to the Test Bypass "آزمایشی" button in Login screen)
   Widget _buildFilterPills(List<Map<String, dynamic>> allList, int unreadCount) {
     final filters = [
       {'title': 'همه', 'count': allList.length},
@@ -563,59 +563,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final int count = item['count'] as int;
 
           return Padding(
-            padding: const EdgeInsets.only(left: 10.0),
+            padding: const EdgeInsets.only(left: 8.0),
             child: GestureDetector(
               onTap: () => setState(() => _selectedFilterIndex = idx),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFFE5A86D),
-                            Color(0xFFA86C38),
-                          ],
-                        )
-                      : const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Color(0xFF6C6BC2),
-                            Color(0xFF3B396E),
-                          ],
-                        ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                  gradient: isSelected ? AppColors.accentGradient : AppColors.strokeGradient,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.all(1.2), // Gradient border matching Calendar
+                padding: const EdgeInsets.all(AppColors.borderWidth),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12.8),
-                    gradient: isSelected
-                        ? const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFFDE9959),
-                              Color(0xFFB87239),
-                            ],
-                          )
-                        : const LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0xFF383768),
-                              Color(0xFF2C2B54),
-                            ],
-                          ),
+                    gradient: isSelected ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
+                    borderRadius: BorderRadius.circular(7),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -623,28 +584,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Text(
                         item['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
-                          fontSize: 12.5,
+                          color: isSelected ? Colors.white : const Color(0xFFC7B299),
+                          fontSize: 11,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
                         ),
                       ),
                       if (count > 0) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? Colors.white.withValues(alpha: 0.22)
                                 : const Color(0xFF23223D),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             count.toPersian(),
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
-                              fontSize: 10,
+                              color: isSelected ? Colors.white : const Color(0xFFC7B299),
+                              fontSize: 9.5,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
                             ),
@@ -662,7 +623,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// Compact Notification Card matching user screenshot & Calendar pill styling
+  /// Compact Notification Card matching Station Card stroke/gradient and Home Challenge button
   Widget _buildNotificationCard({
     required Map<String, dynamic> notify,
     required String id,
@@ -679,7 +640,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Top Header Box: Title on Right, Date in Center/Left, Action Button on Left
+          // 1. Top Header Box: Station card gradient stroke + dark surface
           GestureDetector(
             onTap: () => _toggleExpanded(id, notify, repository),
             child: Container(
@@ -691,24 +652,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       )
                     : BorderRadius.circular(16),
                 gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
                   colors: [
-                    Color(0xFF6C6BC2),
-                    Color(0xFF3B396E),
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(1.2), // Gradient border matching Calendar
+              padding: const EdgeInsets.all(1.2), // Gradient border matching station card
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
                 decoration: BoxDecoration(
                   borderRadius: isExpanded
                       ? const BorderRadius.only(
@@ -719,55 +682,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
                     colors: [
-                      Color(0xFF383768),
-                      Color(0xFF2C2B54),
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
                     ],
                   ),
                 ),
                 child: Row(
                   children: [
-                    // Action Button on the far left in RTL
-                    GestureDetector(
-                      onTap: () => _handleActionClick(notify, repository),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF231E3D).withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFFE5A86D).withValues(alpha: 0.85),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: Text(
-                          actionLabel,
-                          style: const TextStyle(
-                            color: Color(0xFFF4DCC5),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    // Date
-                    Text(
-                      dateStr,
-                      style: const TextStyle(
-                        color: Color(0xFF9897D2),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Title on the right in RTL
+                    // Title on the right in RTL (smaller font size)
                     Expanded(
                       child: Text(
                         title,
@@ -776,10 +701,54 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 13.5,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Date in center-left (smaller font size)
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        color: Color(0xFF9D99B8),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // Action Button on the far left (styled identical to "شرکت" button in Home challenges)
+                    GestureDetector(
+                      onTap: () => _handleActionClick(notify, repository),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.strokeGradient,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(AppColors.borderWidth),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.darkSurfaceGradient,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            actionLabel,
+                            style: const TextStyle(
+                              color: Color(0xFFC7B299),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -793,15 +762,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           if (isExpanded)
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF19172B).withValues(alpha: 0.95),
+                color: const Color(0xFF2C2B4F).withValues(alpha: 0.95),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
                 ),
                 border: Border(
-                  left: BorderSide(color: const Color(0xFF6C6BC2).withValues(alpha: 0.5), width: 1.2),
-                  right: BorderSide(color: const Color(0xFF6C6BC2).withValues(alpha: 0.5), width: 1.2),
-                  bottom: BorderSide(color: const Color(0xFF3B396E).withValues(alpha: 0.8), width: 1.2),
+                  left: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  right: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  bottom: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
                 ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

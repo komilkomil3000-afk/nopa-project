@@ -18,6 +18,9 @@ class ChallengeModel {
   final bool isByAdmin;
   final String? creatorName;
   final String? targetAudienceLabel;
+  final String? category; // 'individual' (فردی), 'group' (گروهی), 'inter_group' (میان گروهی)
+  final DateTime? createdAt;
+  final int? durationDays;
 
   ChallengeModel({
     required this.id,
@@ -37,6 +40,9 @@ class ChallengeModel {
     this.isByAdmin = false,
     this.creatorName,
     this.targetAudienceLabel,
+    this.category,
+    this.createdAt,
+    this.durationDays,
   });
 }
 

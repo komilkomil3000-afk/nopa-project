@@ -42,6 +42,8 @@ void navigateToMainTab(int index) {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB ceiling
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // Setup automatic 401 unauthorized token invalidation & login redirect

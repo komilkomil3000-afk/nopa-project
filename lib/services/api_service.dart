@@ -723,6 +723,9 @@ class HttpApiService {
                 (json['createdByMentorId'] != null && json['createdByMentorId'].toString().toLowerCase().contains('admin'));
             final String creatorName = creatorInfo?['name'] ?? (isByAdmin ? 'مدیر سیستم' : (caravanInfo?['mentorName'] ?? 'راهبر'));
             final String targetLabel = targetAudience?['label'] ?? (caravanInfo?['name'] != null ? 'کاروان: ${caravanInfo!['name']}' : 'عمومی (همه کاروان‌ها)');
+            final String? category = json['category'] ?? json['targetScope'] ?? json['scope'];
+            final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null;
+            final int durationDays = json['durationDays'] ?? 5;
 
             return ChallengeModel(
               id: json['id'],
@@ -742,6 +745,9 @@ class HttpApiService {
               isByAdmin: isByAdmin,
               creatorName: creatorName,
               targetAudienceLabel: targetLabel,
+              category: category,
+              createdAt: createdAt,
+              durationDays: durationDays,
             );
           }).toList();
         }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -5,9 +6,19 @@ import 'package:audioplayers/audioplayers.dart';
 class AudioExclusivityService {
   static VideoPlayerController? _activeVideoController;
   static AudioPlayer? _activeAudioPlayer;
+  static StreamSubscription<PlayerState>? _audioSubscription;
 
   static void registerVideoController(VideoPlayerController controller) {
-    _activeVideoController = controller;
+    try {
+      if (_activeVideoController != null && _activeVideoController != controller) {
+        if (_activeVideoController!.value.isInitialized && _activeVideoController!.value.isPlaying) {
+          _activeVideoController!.pause();
+        }
+      }
+      _activeVideoController = controller;
+    } catch (e) {
+      debugPrint('AudioExclusivityService registerVideoController error: $e');
+    }
   }
 
   static void unregisterVideoController(VideoPlayerController controller) {
@@ -29,14 +40,34 @@ class AudioExclusivityService {
   }
 
   static void registerAudioPlayer(AudioPlayer player) {
-    _activeAudioPlayer = player;
+    try {
+      _activeAudioPlayer = player;
+      _audioSubscription?.cancel();
+      _audioSubscription = player.onPlayerStateChanged.listen(
+        (state) {
+          if (state == PlayerState.playing) {
+            onAudioPlay();
+          }
+        },
+        onError: (err) {
+          debugPrint('AudioExclusivityService player state error: $err');
+        },
+      );
+    } catch (e) {
+      debugPrint('AudioExclusivityService registerAudioPlayer error: $e');
+    }
+  }
 
-    // Listen to audio player state changes
-    player.onPlayerStateChanged.listen((state) {
-      if (state == PlayerState.playing) {
-        onAudioPlay();
+  static void unregisterAudioPlayer(AudioPlayer player) {
+    try {
+      if (_activeAudioPlayer == player) {
+        _audioSubscription?.cancel();
+        _audioSubscription = null;
+        _activeAudioPlayer = null;
       }
-    });
+    } catch (e) {
+      debugPrint('AudioExclusivityService unregisterAudioPlayer error: $e');
+    }
   }
 
   static void onAudioPlay() {
@@ -53,3 +84,4 @@ class AudioExclusivityService {
     }
   }
 }
+
