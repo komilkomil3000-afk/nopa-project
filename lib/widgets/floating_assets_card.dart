@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
-
+import '../core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 
@@ -30,10 +30,10 @@ class FloatingAssetsCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildAssetItem(AppStrings.zarik, '${user.zarik}', AppColors.gold, Icons.monetization_on),
-              _buildAssetItem(AppStrings.nakh, '${user.nakh}', AppColors.purple, Icons.grain),
-              _buildAssetItem(AppStrings.beyragh, '${user.beyragh}', AppColors.pink, Icons.flag),
-              _buildAssetItem(AppStrings.farsh, '${user.farsh}', AppColors.purple, Icons.grid_view),
+              _buildAssetItem(AppStrings.zarik, user.zarik.toPersian(), AppColors.gold, Icons.monetization_on),
+              _buildAssetItem(AppStrings.nakh, user.nakh.toPersian(), AppColors.purple, Icons.grain),
+              _buildAssetItem(AppStrings.beyragh, user.beyragh.toPersian(), AppColors.pink, Icons.flag),
+              _buildAssetItem(AppStrings.farsh, user.farsh.toPersian(), AppColors.purple, Icons.grid_view),
             ],
           ),
         );

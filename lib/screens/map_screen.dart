@@ -12,7 +12,7 @@ import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
 import '../widgets/nopa_notification_dialog.dart';
-import 'class1/class1_screen.dart';
+import '../main.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -25,7 +25,6 @@ class _MapScreenState extends State<MapScreen> {
   final Set<int> _expandedIndices = {};
   bool _isLoading = true;
   int _selectedStationIndex = 0;
-  Station? _selectedStationForClass1;
   List<Map<String, dynamic>> _stations = [];
   List<Map<String, dynamic>> _userProgress = [];
   final ScrollController _scrollController = ScrollController();
@@ -78,20 +77,6 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedStationForClass1 != null) {
-      return Class1Screen(
-        initialStation: _selectedStationForClass1,
-        isEmbeddedInMain: true,
-        onBack: () {
-          if (mounted) {
-            setState(() {
-              _selectedStationForClass1 = null;
-            });
-          }
-        },
-      );
-    }
-
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
@@ -263,7 +248,7 @@ class _MapScreenState extends State<MapScreen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      count > 9 ? '+9' : '$count',
+                                      count > 9 ? '+۹' : count.toPersian(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 8,
@@ -508,7 +493,7 @@ class _MapScreenState extends State<MapScreen> {
         ),
         child: Center(
           child: Text(
-            '$index',
+            '$index'.toPersianDigits(),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -737,8 +722,10 @@ class _MapScreenState extends State<MapScreen> {
                           return;
                         }
 
-                        setState(() {
-                          _selectedStationForClass1 = Station(
+                        final result = await Navigator.pushNamed(
+                          context,
+                          '/class1',
+                          arguments: Station(
                             id: item['id'] ?? '',
                             title: stationTitle,
                             teacher: teacherName,
@@ -748,8 +735,11 @@ class _MapScreenState extends State<MapScreen> {
                             imageUrl: iconUrl,
                             classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
                             orderIndex: index,
-                          );
-                        });
+                          ),
+                        );
+                        if (result is int && context.mounted) {
+                          navigateToMainTab(result);
+                        }
                       },
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -809,7 +799,7 @@ class _MapScreenState extends State<MapScreen> {
                                         ),
                                       ),
                                       child: Text(
-                                        '$index',
+                                        '$index'.toPersianDigits(),
                                         style: TextStyle(
                                           color: isGold ? const Color(0xFF462306) : Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -918,7 +908,7 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "$totalSessions جلسه آموزشی" : "${categoriesList.length} سرفصل"}',
+                              '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "${totalSessions.toPersian()} جلسه آموزشی" : "${categoriesList.length.toPersian()} سرفصل"}',
                               textAlign: TextAlign.right,
                               style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
                             ),

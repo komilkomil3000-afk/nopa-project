@@ -45,7 +45,7 @@ class _Class1ScreenState extends State<Class1Screen> {
   int _currentClipIndex = 0;
   bool _isDescriptionExpanded = false;
   int _currentStationIndex = 0;
-  final PageController _videoPageController = PageController(viewportFraction: 0.90);
+  final PageController _videoPageController = PageController();
 
   @override
   void initState() {
@@ -76,69 +76,69 @@ class _Class1ScreenState extends State<Class1Screen> {
   // Station lore, descriptions, and statistics
   static const Map<int, Map<String, String>> _stationLore = {
     0: {
-      'ordinalTitle': 'منزلگاه صفر',
+      'ordinalTitle': 'منزلگاه ۰',
       'fullTitle': 'منزلگاه صفر (راهنمای کاروان)',
       'desc':
           'اینجا منزلگاه صفر، نقطه آغازین سفر کاروان نپا است. کاروانسرایی برای آشنایی، دریافت توشه‌ی راه و شناخت قوانین پیمایش. در این ایستگاه مقدماتی، راهبران مسیر و همراهان کاروان خود را خواهید شناخت و آماده ورود به صحرای ماجراجویی می‌شوید.',
       'skillSessions': '۱ جلسه',
       'mediaSessions': '۲ جلسه',
-      'animationCount': 'یک قسمت',
+      'animationCount': '۱ قسمت',
       'stayDuration': '۵ روز',
       'clipTitle': 'انیمیشن مقدماتی راهنمای کاروان (منزلگاه ۰)',
     },
     1: {
-      'ordinalTitle': 'منزلگاه اول',
+      'ordinalTitle': 'منزلگاه ۱',
       'fullTitle': 'منزلگاه اول (کاروانسرای غبارگرفته)',
       'desc':
           'اینجا منزلگاه اول، جایی در مناطق حاشیه‌ای صحرای فراموشی است. کاروانسرای غبارگرفته‌ای که اکنون در آن اقامت گزیده‌ایم، همیشه مسافران تازه‌کار را غافلگیر می‌کند. دیوارهای اینجا همه از آیینه هایی ساخته شده‌اند که می‌توانند چیزی فراتر از ظاهر را نشان دهند. عمق فکر و علایق و آرزوهای ما. پیر آیینه گر، مرشد و استادی است که در این منزلگاه سکونت دارد. همه‌ی این آیینه های خارق‌العاده، به دست او ساخته شده‌اند...',
       'skillSessions': '۲ جلسه',
       'mediaSessions': '۴ جلسه',
-      'animationCount': 'دو قسمت',
-      'stayDuration': 'ده روز',
+      'animationCount': '۲ قسمت',
+      'stayDuration': '۱۰ روز',
       'clipTitle': 'انیمیشن کاروانسرای غبارگرفته (منزلگاه ۱)',
     },
     2: {
-      'ordinalTitle': 'منزلگاه دوم',
+      'ordinalTitle': 'منزلگاه ۲',
       'fullTitle': 'منزلگاه دوم (معدن زیرزمینی)',
       'desc':
           'اینجا منزلگاه دوم، در اعماق کوهستان‌های پر رمز و راز و معدن‌های باستانی است. جایی که سنگ‌های درخشان و ارزشمند در دل تاریکی نهفته‌اند. در این منزلگاه، مسافران یاد می‌گیرند که چگونه با تلاش و مهارت، گوهر استعدادها و توانمندی‌های خود را کشف و صیقل دهند.',
       'skillSessions': '۳ جلسه',
       'mediaSessions': '۴ جلسه',
-      'animationCount': 'دو قسمت',
-      'stayDuration': 'دوازده روز',
+      'animationCount': '۲ قسمت',
+      'stayDuration': '۱۲ روز',
       'clipTitle': 'انیمیشن اسرار معدن زیرزمینی (منزلگاه ۲)',
     },
     3: {
-      'ordinalTitle': 'منزلگاه سوم',
+      'ordinalTitle': 'منزلگاه ۳',
       'fullTitle': 'منزلگاه سوم (قلعه)',
       'desc':
           'اینجا منزلگاه سوم، قلعه‌ای با شکوه و استوار بر فراز صخره‌های کهن است. در این سنگر مستحکم، اعضای کاروان یاد می‌گیرند که چگونه در کنار یکدیگر به عنوان یک تیم متحد عمل کنند و در برابر چالش‌ها و بادهای سخت مقاومت ورزند.',
       'skillSessions': '۳ جلسه',
       'mediaSessions': '۵ جلسه',
-      'animationCount': 'سه قسمت',
-      'stayDuration': 'پانزده روز',
+      'animationCount': '۳ قسمت',
+      'stayDuration': '۱۵ روز',
       'clipTitle': 'انیمیشن دفاع از قلعه کهن (منزلگاه ۳)',
     },
     4: {
-      'ordinalTitle': 'منزلگاه چهارم',
+      'ordinalTitle': 'منزلگاه ۴',
       'fullTitle': 'منزلگاه چهارم (دهکده ساحلی)',
       'desc':
           'اینجا منزلگاه چهارم، دهکده‌ای آرام و پرامید در کنار ساحل دریای بیکران است. در این منزلگاه، اعضای کاروان مهارت‌های برقراری ارتباط، داستان‌پردازی و خلق آثار مشترک را تمرین می‌کنند تا یادگاری ماندگار از خود بر جای گذارند.',
       'skillSessions': '۴ جلسه',
       'mediaSessions': '۴ جلسه',
-      'animationCount': 'دو قسمت',
-      'stayDuration': 'ده روز',
+      'animationCount': '۲ قسمت',
+      'stayDuration': '۱۰ روز',
       'clipTitle': 'انیمیشن رویاهای دهکده ساحلی (منزلگاه ۴)',
     },
     5: {
-      'ordinalTitle': 'منزلگاه پنجم',
+      'ordinalTitle': 'منزلگاه ۵',
       'fullTitle': 'منزلگاه پنجم (فانوس دریایی)',
       'desc':
           'اینجا منزلگاه پنجم، فانوس دریایی فروزان و نقطه اوج سفر کاروان نپا است. نوری درخشان که افق‌های آینده را روشن می‌سازد. در این مقصد، مسافران ثمره تلاش‌ها و تجربیات خود را جشن گرفته و آماده رهبری مسیرهای آینده می‌شوند.',
       'skillSessions': '۴ جلسه',
       'mediaSessions': '۶ جلسه',
-      'animationCount': 'چهار قسمت',
-      'stayDuration': 'بیست روز',
+      'animationCount': '۴ قسمت',
+      'stayDuration': '۲۰ روز',
       'clipTitle': 'انیمیشن روشنایی فانوس دریایی (منزلگاه ۵)',
     },
   };
@@ -382,10 +382,10 @@ class _Class1ScreenState extends State<Class1Screen> {
       }
     }
 
-    final String skillText = skillSessionsCount > 0 ? '$skillSessionsCount جلسه' : (lore['skillSessions'] ?? '۲ جلسه');
-    final String mediaText = mediaSessionsCount > 0 ? '$mediaSessionsCount جلسه' : (lore['mediaSessions'] ?? '۴ جلسه');
-    final String animText = _allClips.isNotEmpty ? '${_allClips.length} قسمت' : (lore['animationCount'] ?? 'دو قسمت');
-    final String stayText = lore['stayDuration'] ?? 'ده روز';
+    final String skillText = skillSessionsCount > 0 ? '${skillSessionsCount.toPersian()} جلسه' : (lore['skillSessions'] ?? '۲ جلسه');
+    final String mediaText = mediaSessionsCount > 0 ? '${mediaSessionsCount.toPersian()} جلسه' : (lore['mediaSessions'] ?? '۴ جلسه');
+    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : (lore['animationCount'] ?? '۲ قسمت');
+    final String stayText = lore['stayDuration'] ?? '۱۰ روز';
 
     final String currentClipTitle = _allClips.isNotEmpty && _currentClipIndex < _allClips.length
         ? (_allClips[_currentClipIndex]['title'] ?? lore['clipTitle'] ?? 'انیمیشن منزلگاه')
@@ -642,7 +642,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      count > 9 ? '+9' : '$count',
+                                      count > 9 ? '+۹' : count.toPersian(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 8,
@@ -878,7 +878,7 @@ class _Class1ScreenState extends State<Class1Screen> {
         ),
         child: Center(
           child: Text(
-            '$index',
+            '$index'.toPersianDigits(),
             style: TextStyle(
               color: isCurrent ? const Color(0xFF221503) : Colors.white,
               fontSize: isCurrent ? 15.5 : 14,
@@ -1304,39 +1304,36 @@ class _Class1ScreenState extends State<Class1Screen> {
         ),
         const SizedBox(height: 10),
 
-        // Video Preview Box with Full Bleed Swipeable PageView strictly 16:9 without edge clipping
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: -16),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: PageView.builder(
-              clipBehavior: Clip.none,
-              controller: _videoPageController,
-              itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
-              onPageChanged: (idx) {
-                setState(() {
-                  _currentClipIndex = idx;
-                });
-              },
-              itemBuilder: (context, index) {
-                final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
-                final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
-                    ? clip['videoUrl'].toString().trim()
-                    : 'https://www.aparat.com/v/dbjk750';
-                final String title = clip?['title']?.toString() ?? clipTitle;
-                final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
+        // Video Preview Box with Swipeable PageView strictly 16:9
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: PageView.builder(
+            clipBehavior: Clip.none,
+            controller: _videoPageController,
+            itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
+            onPageChanged: (idx) {
+              setState(() {
+                _currentClipIndex = idx;
+              });
+            },
+            itemBuilder: (context, index) {
+              final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
+              final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
+                  ? clip['videoUrl'].toString().trim()
+                  : 'https://www.aparat.com/v/dbjk750';
+              final String title = clip?['title']?.toString() ?? clipTitle;
+              final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                  child: NopaInlineVideoPlayer(
-                    key: ValueKey('clip_${_currentStationIndex}_$index'),
-                    videoUrl: videoUrl,
-                    title: title,
-                    coverImageUrl: poster,
-                  ),
-                );
-              },
-            ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: NopaInlineVideoPlayer(
+                  key: ValueKey('clip_${_currentStationIndex}_$index'),
+                  videoUrl: videoUrl,
+                  title: title,
+                  coverImageUrl: poster,
+                ),
+              );
+            },
           ),
         ),
 

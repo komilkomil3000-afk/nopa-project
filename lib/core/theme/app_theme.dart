@@ -72,3 +72,37 @@ class AppTheme {
     );
   }
 }
+
+/// Universal Persian Number Extensions
+extension PersianNumberExtension on String {
+  /// Converts all English digits (0-9) in the string to Persian digits (۰-۹)
+  String toPersianDigits() {
+    const english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const farsi = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    String result = this;
+    for (int i = 0; i < english.length; i++) {
+      result = result.replaceAll(english[i], farsi[i]);
+    }
+    return result;
+  }
+}
+
+extension PersianNumExtension on num {
+  /// Converts numeric value to Persian digit string
+  String toPersianDigits([int? fractionDigits]) {
+    if (fractionDigits != null) {
+      return toStringAsFixed(fractionDigits).toPersianDigits();
+    }
+    return toString().toPersianDigits();
+  }
+
+  /// Short alias for toPersianDigits()
+  String toPersian([int? fractionDigits]) => toPersianDigits(fractionDigits);
+}
+
+/// Helper function to convert any value to Persian digits string
+String farsiDigits(dynamic value) {
+  if (value == null) return '';
+  return value.toString().toPersianDigits();
+}
+
