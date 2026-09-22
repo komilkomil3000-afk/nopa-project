@@ -789,12 +789,12 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
 
                 const SizedBox(width: 14),
 
-                // 2. Left in RTL: Title, Details, and Status Badge
+                // 2. Left in RTL: Title, Details, and Action Buttons / Progress
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Course Title
+                      // Short Title
                       Text(
                         title,
                         textAlign: TextAlign.right,
@@ -802,71 +802,109 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 4),
 
-                      // Description / Subtitle
+                      // Topic & Sessions Count
                       Text(
-                        desc,
+                        'موضوع: $desc',
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFB5B3C8),
-                          fontSize: 11.5,
+                          fontSize: 11,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
 
-                      // Instructor & Session info
+                      // Sessions & Instructor info
                       Text(
-                        'استاد: $teacher • $sessionsCount ${date.isNotEmpty ? "• $date" : ""}',
+                        'تعداد جلسات: $sessionsCount • استاد: $teacher ${date.isNotEmpty ? "• $date" : ""}',
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFC7B299),
-                          fontSize: 11,
+                          fontSize: 10.5,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
 
                       const SizedBox(height: 8),
 
-                      // Status Badge / Progress
+                      // Action Buttons for completed courses / Progress for ongoing
                       if (isCompleted)
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2C2849),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: const Color(0xFFC09268),
-                                  width: 1.0,
+                            // 1. دانلود گواهی Button
+                            GestureDetector(
+                              onTap: () => _handleVirtualCertificate(course),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2A2835),
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
+                                    color: const Color(0xFFCD8449).withValues(alpha: 0.7),
+                                    width: 0.9,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.download_rounded, color: Color(0xFFCD8449), size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'دانلود گواهی',
+                                      style: TextStyle(
+                                        color: Color(0xFFCD8449),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.verified_rounded, color: Color(0xFFE5A855), size: 13),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'گواهی صادر شده • کلیک برای دریافت',
-                                    style: TextStyle(
-                                      color: Color(0xFFE5A855),
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                            ),
+
+                            // 2. درخواست گواهی فیزیکی Button
+                            GestureDetector(
+                              onTap: () => _openPhysicalRequestDialog(course),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2A2835),
+                                  borderRadius: BorderRadius.circular(7),
+                                  border: Border.all(
+                                    color: const Color(0xFF7A6B9E).withValues(alpha: 0.8),
+                                    width: 0.9,
                                   ),
-                                ],
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.local_shipping_outlined, color: Color(0xFFDDD9EE), size: 14),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'درخواست گواهی فیزیکی',
+                                      style: TextStyle(
+                                        color: Color(0xFFDDD9EE),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],

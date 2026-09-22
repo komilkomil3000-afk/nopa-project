@@ -398,39 +398,34 @@ class _TicketsScreenState extends State<TicketsScreen> {
           ],
         ),
 
-        // Create New Request Button (NOPA Gold Style)
-        InkWell(
+        // Create New Request Button (matching OTP dispatch button in Login)
+        GestureDetector(
           onTap: _openNewRequestDialog,
-          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
             decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0xFF2A2835),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(
+                color: const Color(0xFFCD8449).withValues(alpha: 0.7),
+                width: 0.9,
+              ),
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: const Color(0xFFC09268), width: 1.0),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_rounded, color: Color(0xFFE1BC96), size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    'ایجاد درخواست',
-                    style: TextStyle(
-                      color: Color(0xFFE1BC96),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, color: Color(0xFFCD8449), size: 15),
+                SizedBox(width: 4),
+                Text(
+                  'ایجاد درخواست',
+                  style: TextStyle(
+                    color: Color(0xFFCD8449),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -640,39 +635,6 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     ),
                   ),
 
-                  const SizedBox(width: 10),
-
-                  // Status / Action Button on the far left
-                  GestureDetector(
-                    onTap: () => _toggleExpanded(id),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.strokeGradient,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.all(AppColors.borderWidth),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.darkSurfaceGradient,
-                          borderRadius: BorderRadius.circular(7),
-                          border: Border.all(
-                            color: isAnswered ? const Color(0xFF10B981) : const Color(0xFFC09268),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isAnswered ? Icons.check_circle_outline : Icons.hourglass_top_rounded,
-                              size: 12,
-                              color: isAnswered ? const Color(0xFF10B981) : const Color(0xFFC7B299),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isAnswered ? 'پاسخ داده شد' : 'مشاهده',
-                              style: TextStyle(
                                 color: isAnswered ? const Color(0xFF10B981) : const Color(0xFFC7B299),
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,

@@ -168,13 +168,13 @@ class _MarketScreenState extends State<MarketScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top Header: Flame/Fire Icon in circle on top left in RTL + Title in center
+                  // Top Header: Flame/Fire Icon in circle on top right in RTL + Title in center
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Fire/Flame Icon on Left in RTL (Right in LTR)
+                      // Fire/Flame Icon on Right in RTL
                       Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: Alignment.centerRight,
                         child: Container(
                           width: 36,
                           height: 36,
@@ -216,27 +216,16 @@ class _MarketScreenState extends State<MarketScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Row 1: ارائه: (Right pill) + Amount & Source asset (Left)
+                  // Row 1: ارائه: (Right pill, no fill) + Amount & Source asset (Left)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Left Value in RTL
-                      Text(
-                        '${amountStr.toPersianDigits()} $_sourceAsset',
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-
-                      // Right Pill in RTL
+                      // Right Pill in RTL (First child) - No fill color
                       Container(
                         width: 76,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF20183B),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: const Color(0xFF5A4E88),
@@ -254,18 +243,10 @@ class _MarketScreenState extends State<MarketScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 12),
-
-                  // Row 2: خرید: (Right pill) + Result & Target asset (Left)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left Value in RTL
+                      // Left Value in RTL (Second child)
                       Text(
-                        '${resultStr.toPersianDigits()} $_targetAsset',
+                        '${amountStr.toPersianDigits()} $_sourceAsset',
                         style: const TextStyle(
                           color: Color(0xFFE2E0F0),
                           fontSize: 13,
@@ -273,13 +254,21 @@ class _MarketScreenState extends State<MarketScreen> {
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
+                    ],
+                  ),
 
-                      // Right Pill in RTL
+                  const SizedBox(height: 12),
+
+                  // Row 2: خرید: (Right pill, no fill) + Result & Target asset (Left)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Right Pill in RTL (First child) - No fill color
                       Container(
                         width: 76,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF20183B),
+                          color: Colors.transparent,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: const Color(0xFF5A4E88),
@@ -295,6 +284,17 @@ class _MarketScreenState extends State<MarketScreen> {
                             fontWeight: FontWeight.w600,
                             fontFamily: AppTheme.fontFamily,
                           ),
+                        ),
+                      ),
+
+                      // Left Value in RTL (Second child)
+                      Text(
+                        '${resultStr.toPersianDigits()} $_targetAsset',
+                        style: const TextStyle(
+                          color: Color(0xFFE2E0F0),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ],

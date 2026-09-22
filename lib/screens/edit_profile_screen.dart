@@ -781,34 +781,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
 
-              // Embedded Change Request Button (English NOPA Gold Gradient Style)
-              InkWell(
+              // Embedded Change Request Button (matching OTP dispatch button in Login)
+              GestureDetector(
                 onTap: onButtonPressed,
-                borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                   decoration: BoxDecoration(
-                    gradient: AppColors.strokeGradient,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.darkSurfaceGradient,
-                      borderRadius: BorderRadius.circular(7),
-                      border: Border.all(
-                        color: const Color(0xFFC09268),
-                        width: 1.0,
-                      ),
+                    color: const Color(0xFF2A2835),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                      color: const Color(0xFFCD8449).withValues(alpha: 0.7),
+                      width: 0.9,
                     ),
-                    child: Text(
-                      buttonLabel,
-                      style: const TextStyle(
-                        color: Color(0xFFE1BC96),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                  ),
+                  child: Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      color: Color(0xFFCD8449),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
                 ),
