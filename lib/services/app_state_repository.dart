@@ -21,6 +21,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   factory AppRepository() => _instance;
   AppRepository._internal() {
     _lastActiveTimestamp = DateTime.now();
+    HttpApiService.onActivity = recordActivity;
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
     _startPeriodicNotificationSync();
@@ -351,7 +352,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       if (data != null && data['notifications'] is List) {
         final List notifs = data['notifications'];
         final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
-        notifications.clear();
+        final List<Map<String, dynamic>> updatedNotifs = [];
         for (final item in notifs) {
           String timeStr = 'اعلان سیستم';
           if (item['createdAt'] != null) {
@@ -372,7 +373,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
             }
           }
 
-          notifications.add({
+          updatedNotifs.add({
             'id': item['id']?.toString() ?? '',
             'title': item['title'] ?? '',
             'body': item['message'] ?? '',
@@ -382,6 +383,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
             'time': timeStr,
           });
         }
+        notifications.clear();
+        notifications.addAll(updatedNotifs);
         notifyListeners();
       }
     } catch (e) {

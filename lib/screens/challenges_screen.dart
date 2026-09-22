@@ -43,12 +43,15 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     _bannerAutoScrollTimer?.cancel();
     _bannerAutoScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (!mounted || !_bannerPageCtrl.hasClients) return;
-      final int nextIndex = (_currentBannerIndex + 1) % 3;
-      _bannerPageCtrl.animateToPage(
-        nextIndex,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
-      );
+      try {
+        final int nextIndex = (_currentBannerIndex + 1) % 3;
+        _currentBannerIndex = nextIndex;
+        _bannerPageCtrl.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        );
+      } catch (_) {}
     });
   }
 

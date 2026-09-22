@@ -19,6 +19,7 @@ class HttpApiService {
 
   static const _secureStorage = FlutterSecureStorage();
   static VoidCallback? onUnauthorized;
+  static VoidCallback? onActivity;
 
   String _activeHost = _defaultHost;
   String get activeHost => _activeHost;
@@ -217,6 +218,9 @@ class HttpApiService {
     bool checkAuth = true,
   }) async {
     try {
+      if (checkAuth) {
+        onActivity?.call();
+      }
       final reqHeaders = headers ?? _getHeaders();
       http.Response response;
 
