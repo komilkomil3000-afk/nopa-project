@@ -3,16 +3,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../../models/station.dart';
-import '../../models/user_model.dart';
 import '../../services/app_state_repository.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import '../../services/api_service.dart';
+import '../../widgets/app_scaffold.dart';
 import '../../widgets/pending_challenges_dialog.dart';
-import '../../widgets/custom_drawer.dart';
-import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/nopa_inline_video_player.dart';
+import '../../widgets/station_progress_stepper.dart';
 import '../../main.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -341,21 +339,12 @@ class _Class1ScreenState extends State<Class1Screen> {
     }
   }
 
-  void _handleBottomNavTap(int idx) {
-    if (idx == 1 && widget.isEmbeddedInMain) {
-      return;
-    }
-    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-    navigateToMainTab(idx);
-  }
-
   @override
   Widget build(BuildContext context) {
     final lore = _stationLore[_currentStationIndex] ?? _stationLore[1]!;
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 6;
-    final int activeUserStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
 
     // Check if selected station is locked
     final bool isLocked = _currentStationIndex > 0 &&
@@ -382,95 +371,68 @@ class _Class1ScreenState extends State<Class1Screen> {
         ? (_allClips[_currentClipIndex]['title'] ?? lore['clipTitle'] ?? 'انیمیشن منزلگاه')
         : (lore['clipTitle'] ?? 'انیمیشن کاروانسرای غبارگرفته (منزلگاه ۱)');
 
-    final Widget content = SafeArea(
+    final Widget scrollableContent = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. Top Bar with NOPA Logo & Back SVG below
-          _buildTopBar(user),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 2. Horizontal Station Selection & Progress Track Header
-                  _buildStationTrackHeader(
-                    currentStationIndex: _currentStationIndex,
-                    activeUserStationIndex: activeUserStationIndex,
-                    totalNodes: totalStationNodes,
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  if (isLocked)
-                    // Locked Station State
-                    _buildLockedStationCard()
-                  else ...[
-                    // 3. Station Header: Description on Left & Station Image Box on Right
-                    _buildStationLoreHeader(lore),
-
-                    const SizedBox(height: 18),
-
-                    // 4. Class Information & Statistics Strip
-                    _buildStatsStrip(
-                      skillText: skillText,
-                      mediaText: mediaText,
-                      animText: animText,
-                      stayText: stayText,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
-                    _buildAnimationCarouselSection(currentClipTitle),
-
-                    const SizedBox(height: 22),
-
-                    // 6. Action Buttons
-                    _buildActionButtonsRow(),
-
-                    const SizedBox(height: 24),
-                  ],
-                ],
-              ),
-            ),
+          // 2. Horizontal Station Selection & Progress Track Header
+          StationProgressStepper(
+            currentStationIndex: _currentStationIndex,
+            totalNodes: totalStationNodes,
+            userLevelFrame: userLevelFrame,
+            completedStationsCount: user.completedStationsCount,
+            title: lore['fullTitle'],
+            onStationSelected: _switchStation,
           ),
+
+          const SizedBox(height: 14),
+
+          if (isLocked)
+            // Locked Station State
+            _buildLockedStationCard()
+          else ...[
+            // 3. Station Header: Description on Left & Station Image Box on Right
+            _buildStationLoreHeader(lore),
+
+            const SizedBox(height: 18),
+
+            // 4. Class Information & Statistics Strip
+            _buildStatsStrip(
+              skillText: skillText,
+              mediaText: mediaText,
+              animText: animText,
+              stayText: stayText,
+            ),
+
+            const SizedBox(height: 20),
+
+            // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
+            _buildAnimationCarouselSection(currentClipTitle),
+
+            const SizedBox(height: 22),
+
+            // 6. Action Buttons
+            _buildActionButtonsRow(),
+
+            const SizedBox(height: 24),
+          ],
         ],
       ),
     );
 
     if (widget.isEmbeddedInMain) {
-      return content;
+      return scrollableContent;
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      drawer: CustomDrawer(
-        onTabSelected: (idx) {
-          Navigator.pop(context);
-          _handleBottomNavTap(idx);
-        },
-        currentIndex: 1,
-        role: user.role,
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 1,
-        role: user.role,
-        onTap: (idx) => _handleBottomNavTap(idx),
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: content,
-      ),
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: true,
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: 1,
+      onBackTap: _handleBackAction,
+      body: scrollableContent,
     );
   }
 
@@ -522,450 +484,7 @@ class _Class1ScreenState extends State<Class1Screen> {
     );
   }
 
-  /// 1. Top Bar with NOPA Logo on same vertical line with right circles + Back SVG without circular background
-  Widget _buildTopBar(UserModel user) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 2),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Text Logo (height 42 to vertically align with right circles) + Back SVG below it
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                          'NOPA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                // Back Button: Only the raw SVG icon without any circle or black background
-                GestureDetector(
-                  onTap: _handleBackAction,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
 
-            // Right: Notification Bell Button + Drawer Hamburger Menu (height 42)
-            Row(
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
-                                ),
-                              ),
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                Builder(
-                  builder: (ctx) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF23223D),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 2. Top Station Track Header matching MapScreen
-  Widget _buildStationTrackHeader({
-    required int currentStationIndex,
-    required int activeUserStationIndex,
-    required int totalNodes,
-  }) {
-    const double nodeSize = 40.0;
-    const double trophySize = 52.0;
-    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final lore = _stationLore[currentStationIndex] ?? _stationLore[0]!;
-    final String displayTitle = lore['fullTitle'] ?? 'منزلگاه $currentStationIndex';
-
-    return Column(
-      children: [
-        const SizedBox(height: 6),
-        Text(
-          displayTitle,
-          style: const TextStyle(
-            color: Color(0xFFEDE8F5),
-            fontSize: 14.5,
-            fontWeight: FontWeight.w700,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 12),
-
-        SingleChildScrollView(
-          clipBehavior: Clip.none,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: SizedBox(
-              height: 68,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  for (int i = 0; i < totalNodes; i++) ...[
-                    _buildStationNode(
-                      index: i,
-                      isSelected: i == currentStationIndex,
-                      currentStationIndex: activeUserStationIndex,
-                      userLevelFrame: userLevelFrame,
-                      completedStationsCount: user.completedStationsCount,
-                      size: nodeSize,
-                    ),
-                    _buildTrackConnector(
-                      index: i,
-                      currentStationIndex: currentStationIndex,
-                      userLevelFrame: userLevelFrame,
-                      width: 22.0,
-                    ),
-                  ],
-                  _buildChampionBadge(trophySize),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Subtle gradient divider
-        Container(
-          height: 1,
-          margin: const EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.0),
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.0),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStationNode({
-    required int index,
-    required bool isSelected,
-    required int currentStationIndex,
-    required int userLevelFrame,
-    required int completedStationsCount,
-    required double size,
-  }) {
-    final bool isCurrent = isSelected;
-    final bool isPassed = index < (userLevelFrame - 1) || index < completedStationsCount;
-    final bool isFirstNext = index == currentStationIndex + 1;
-    final bool isSecondNext = index == currentStationIndex + 2;
-
-    Gradient gradient;
-    Border border;
-    List<BoxShadow>? boxShadow;
-
-    if (isCurrent) {
-      // Selected station: luminous bright golden glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFFD574),
-          Color(0xFFE59819),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFF0B8), width: 2.2);
-      boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFFFB800).withValues(alpha: 0.8),
-          blurRadius: 16,
-          spreadRadius: 2.5,
-        ),
-        BoxShadow(
-          color: const Color(0xFFFFE599).withValues(alpha: 0.5),
-          blurRadius: 6,
-          spreadRadius: 1,
-        ),
-      ];
-    } else if (isPassed) {
-      // Stations the user has completed: Keep their warm gold light/glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFE5A133),
-          Color(0xFFC07F1C),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.3);
-      boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFD4973B).withValues(alpha: 0.4),
-          blurRadius: 8,
-          spreadRadius: 1,
-        ),
-      ];
-    } else if (isFirstNext) {
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFA57C46),
-          Color(0xFF8B6230),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFC9985E), width: 1.2);
-    } else if (isSecondNext) {
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF755530),
-          Color(0xFF5A3E20),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF906D44), width: 1.2);
-    } else {
-      gradient = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFF38355F),
-          Color(0xFF2B284E),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF5C578F), width: 1.2);
-    }
-
-    return GestureDetector(
-      onTap: () => _switchStation(index),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: gradient,
-          border: border,
-          boxShadow: boxShadow,
-        ),
-        child: Center(
-          child: Text(
-            '$index'.toPersianDigits(),
-            style: TextStyle(
-              color: isCurrent ? const Color(0xFF221503) : Colors.white,
-              fontSize: isCurrent ? 15.5 : 14,
-              fontWeight: isCurrent ? FontWeight.w900 : FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrackConnector({
-    required int index,
-    required int currentStationIndex,
-    required int userLevelFrame,
-    required double width,
-  }) {
-    final bool isPassed = index < (userLevelFrame - 1);
-    final bool isGlowingSegment = index == currentStationIndex || isPassed;
-
-    return SizedBox(
-      width: width,
-      height: 14,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(height: 1.5, color: const Color(0xFF453F73)),
-              const SizedBox(height: 4),
-              Container(height: 1.5, color: const Color(0xFF453F73)),
-            ],
-          ),
-          if (isGlowingSegment)
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  colors: isPassed
-                      ? [const Color(0xFFE5A133), const Color(0xFFC07F1C)]
-                      : [const Color(0xFFFFB732), const Color(0x00FFB732)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFB732).withValues(alpha: 0.4),
-                    blurRadius: 6,
-                    spreadRadius: 0.5,
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChampionBadge(double trophySize) {
-    return Container(
-      width: trophySize,
-      height: trophySize,
-      margin: const EdgeInsets.only(left: 4),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF3C79E),
-            Color(0xFFDCA472),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFDCA472).withValues(alpha: 0.45),
-            blurRadius: 16,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/svg_icons/champun01.svg',
-          width: 26,
-          height: 26,
-          colorFilter: const ColorFilter.mode(
-            Color(0xFF5A3114),
-            BlendMode.srcIn,
-          ),
-        ),
-      ),
-    );
-  }
 
   /// 3. Station Lore Header: Text on Left & Station Image Box on Right (No shadow, no bottom text, Home gradient border)
   Widget _buildStationLoreHeader(Map<String, String> lore) {

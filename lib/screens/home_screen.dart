@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
 import '../core/constants/api_constants.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
@@ -358,45 +357,29 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = appState.currentUser;
 
     if (_isLoading) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: const Center(child: CircularProgressIndicator(color: Color(0xFFCD8449))),
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFCD8449)),
       );
     }
 
     if (_errorMessage != null) {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-              const SizedBox(height: 16),
-              Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.white, fontFamily: AppTheme.fontFamily)),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _fetchData,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFCD8449),
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('تلاش مجدد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.white, fontFamily: AppTheme.fontFamily)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFCD8449),
+                foregroundColor: Colors.white,
               ),
-            ],
-          ),
+              child: const Text('تلاش مجدد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            ),
+          ],
         ),
       );
     }
@@ -553,10 +536,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-    ),
-  );
-}
+      );
+  }
 }
 
 /// Isolated Banner Carousel with internal timer and RepaintBoundary to avoid parent screen rebuilds

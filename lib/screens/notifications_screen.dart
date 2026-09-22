@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../services/app_state_repository.dart';
@@ -7,8 +6,7 @@ import '../services/api_service.dart';
 import '../models/user_model.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_colors.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/custom_drawer.dart';
+import '../widgets/app_scaffold.dart';
 import '../widgets/complete_profile_dialog.dart';
 import '../widgets/jarchi_item.dart';
 import '../main.dart';
@@ -41,11 +39,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     } else {
       navigateToMainTab(0);
     }
-  }
-
-  void _handleBottomNavTap(int idx) {
-    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-    navigateToMainTab(idx);
   }
 
   void _toggleExpanded(String id, Map<String, dynamic> notify, AppRepository repository) {
@@ -286,185 +279,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     final int unreadCount = repository.unreadNotificationsCount;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      drawer: CustomDrawer(
-        onTabSelected: (idx) {
-          Navigator.pop(context);
-          _handleBottomNavTap(idx);
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: false, // Messages screen: Hide the Messages/Notification icon
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: -1,
+      onBackTap: _handleBackAction,
+      body: RefreshIndicator(
+        color: const Color(0xFFCD8449),
+        backgroundColor: const Color(0xFF231C38),
+        onRefresh: () async {
+          await repository.fetchNotifications();
         },
-        currentIndex: -1,
-        role: user.role,
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: -1,
-        role: user.role,
-        onTap: (idx) => _handleBottomNavTap(idx),
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Top Bar: Gradient NOPA + Back SVG on Left, Hamburger Menu on Right (NO Bell)
-              _buildTopBar(),
+              // Header Title & Mark All Read
+              _buildSectionHeader(repository, unreadCount),
 
-              // 2. Main Notification Feed
-              Expanded(
-                child: RefreshIndicator(
-                  color: const Color(0xFFCD8449),
-                  backgroundColor: const Color(0xFF231C38),
-                  onRefresh: () async {
-                    await repository.fetchNotifications();
+              const SizedBox(height: 14),
+
+              // Filter Pills Bar (Styled identically to Calendar day pill cards)
+              _buildFilterPills(allList, unreadCount),
+
+              const SizedBox(height: 16),
+
+              // Notifications List or Empty State
+              if (filteredList.isEmpty)
+                _buildEmptyState()
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredList.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final notify = filteredList[index];
+                    final String id = notify['id']?.toString() ?? 'notif_$index';
+                    final bool isExpanded = _expandedItemIds.contains(id);
+
+                    return _buildNotificationCard(
+                      notify: notify,
+                      id: id,
+                      isExpanded: isExpanded,
+                      repository: repository,
+                    );
                   },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Header Title & Mark All Read
-                        _buildSectionHeader(repository, unreadCount),
-
-                        const SizedBox(height: 14),
-
-                        // Filter Pills Bar (Styled identically to Calendar day pill cards)
-                        _buildFilterPills(allList, unreadCount),
-
-                        const SizedBox(height: 16),
-
-                        // Notifications List or Empty State
-                        if (filteredList.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: filteredList.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final notify = filteredList[index];
-                              final String id = notify['id']?.toString() ?? 'notif_$index';
-                              final bool isExpanded = _expandedItemIds.contains(id);
-
-                              return _buildNotificationCard(
-                                notify: notify,
-                                id: id,
-                                isExpanded: isExpanded,
-                                repository: repository,
-                              );
-                            },
-                          ),
-
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
+
+              const SizedBox(height: 24),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Top Bar matching Class 1 screen: Left = Gradient NOPA + Back SVG, Right = Drawer Hamburger Menu (NO Bell)
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Text Logo (height 42) + Back SVG below it
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                // Back Button: Only the raw SVG icon without background
-                GestureDetector(
-                  onTap: _handleBackAction,
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Right: Drawer Hamburger Menu Button (height 42)
-            Builder(
-              builder: (ctx) => Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Scaffold.of(ctx).openDrawer(),
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF23223D),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.menu_rounded,
-                        color: Color(0xFFC7B299),
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

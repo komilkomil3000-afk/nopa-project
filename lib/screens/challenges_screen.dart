@@ -8,8 +8,6 @@ import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';
 import '../core/theme/app_theme.dart';
-import '../core/theme/app_colors.dart';
-import '../main.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -61,14 +59,6 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
     super.dispose();
-  }
-
-  void _handleBackAction() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      navigateToMainTab(0); // Return to Home
-    }
   }
 
   String _formatDate(dynamic createdAt) {

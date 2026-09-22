@@ -1,14 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:file_picker/file_picker.dart';
 import '../core/theme/app_theme.dart';
-import '../core/theme/app_colors.dart';
 import '../services/api_service.dart';
-import '../services/app_state_repository.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/custom_drawer.dart';
+import '../widgets/app_scaffold.dart';
 import '../main.dart';
 
 class TicketsScreen extends StatefulWidget {
@@ -123,11 +118,6 @@ class _TicketsScreenState extends State<TicketsScreen> {
     }
   }
 
-  void _handleBottomNavTap(int idx) {
-    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-    navigateToMainTab(idx);
-  }
-
   void _toggleExpanded(String id) {
     setState(() {
       if (_expandedItemIds.contains(id)) {
@@ -172,203 +162,67 @@ class _TicketsScreenState extends State<TicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final repository = Provider.of<AppRepository>(context);
-    final user = repository.currentUser;
     final filteredList = _filteredTickets;
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        drawer: CustomDrawer(
-          onTabSelected: (idx) {
-            Navigator.pop(context);
-            _handleBottomNavTap(idx);
-          },
-          currentIndex: -1,
-          role: user.role,
-        ),
-        bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: -1,
-          role: user.role,
-          onTap: (idx) => _handleBottomNavTap(idx),
-        ),
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            image: DecorationImage(
-              image: AssetImage('assets/images/login_bg.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // 1. Top Bar: Gradient NOPA + Back SVG on Left, Hamburger Menu on Right
-                _buildTopBar(),
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: true,
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: -1,
+      onBackTap: _handleBackAction,
+      body: RefreshIndicator(
+        color: const Color(0xFFCD8449),
+        backgroundColor: const Color(0xFF231C38),
+        onRefresh: _fetchTickets,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header: Title & Create New Request Button
+              _buildSectionHeader(),
 
-                // 2. Main Body
-                Expanded(
-                  child: RefreshIndicator(
-                    color: const Color(0xFFCD8449),
-                    backgroundColor: const Color(0xFF231C38),
-                    onRefresh: _fetchTickets,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Header: Title & Create New Request Button
-                          _buildSectionHeader(),
+              const SizedBox(height: 14),
 
-                          const SizedBox(height: 14),
+              // Filter Tabs Bar: همه / در حال بررسی / پاسخ داده شده
+              _buildFilterPills(),
 
-                          // Filter Tabs Bar: همه / در حال بررسی / پاسخ داده شده
-                          _buildFilterPills(),
+              const SizedBox(height: 16),
 
-                          const SizedBox(height: 16),
-
-                          // Tickets List or Empty State
-                          if (_isLoading)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(32.0),
-                                child: CircularProgressIndicator(color: Color(0xFFCD8449)),
-                              ),
-                            )
-                          else if (filteredList.isEmpty)
-                            _buildEmptyState()
-                          else
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: filteredList.length,
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final ticket = filteredList[index];
-                                final String id = ticket['id']?.toString() ?? 'ticket_$index';
-                                final bool isExpanded = _expandedItemIds.contains(id);
-
-                                return _buildTicketCard(
-                                  ticket: ticket,
-                                  id: id,
-                                  isExpanded: isExpanded,
-                                );
-                              },
-                            ),
-
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Top Bar matching NotificationsScreen and ProfileScreen
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Text Logo (height 42) + Back SVG below it
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: _handleBackAction,
-                  behavior: HitTestBehavior.opaque,
+              // Tickets List or Empty State
+              if (_isLoading)
+                const Center(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(color: Color(0xFFCD8449)),
                   ),
-                ),
-              ],
-            ),
+                )
+              else if (filteredList.isEmpty)
+                _buildEmptyState()
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: filteredList.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final ticket = filteredList[index];
+                    final String id = ticket['id']?.toString() ?? 'ticket_$index';
+                    final bool isExpanded = _expandedItemIds.contains(id);
 
-            // Right: Drawer Hamburger Menu Button
-            Builder(
-              builder: (ctx) => Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Scaffold.of(ctx).openDrawer(),
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF23223D),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/svg_icons/Manual01.svg',
-                        width: 22,
-                        height: 22,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFFC7B299),
-                          BlendMode.srcIn,
-                        ),
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.menu_rounded,
-                          color: Color(0xFFC7B299),
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
+                    return _buildTicketCard(
+                      ticket: ticket,
+                      id: id,
+                      isExpanded: isExpanded,
+                    );
+                  },
                 ),
-              ),
-            ),
-          ],
+
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

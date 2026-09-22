@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
-import '../main.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/app_state_repository.dart';
-import '../utils/constants.dart';
 import '../widgets/contact_us_dialog.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/safe_avatar.dart';
 import 'certificates_screen.dart';
 import 'edit_profile_screen.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/custom_drawer.dart';
+import '../widgets/app_scaffold.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -46,14 +42,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (_) {}
   }
 
-  void _handleBackAction() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    } else {
-      navigateToMainTab(0); // Return to Home
-    }
-  }
-
   void _openEditProfile(UserModel user) {
     Navigator.push(
       context,
@@ -68,230 +56,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final repository = Provider.of<AppRepository>(context);
     final currentUser = repository.currentUser;
 
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: AppColors.screenBackgroundGradient,
-        image: DecorationImage(
-          image: AssetImage('assets/images/login_bg.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => Provider.of<AppRepository>(context, listen: false).refreshUser(),
-          color: const Color(0xFFCD8449),
-          backgroundColor: const Color(0xFF231C38),
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Top Bar: NOPA Logo on Left, Bell + Drawer Menu on Right
-                _buildTopBar(),
+    return RefreshIndicator(
+      onRefresh: () => Provider.of<AppRepository>(context, listen: false).refreshUser(),
+      color: const Color(0xFFCD8449),
+      backgroundColor: const Color(0xFF231C38),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 10),
 
-                const SizedBox(height: 18),
+            // 1. User Info Card (Avatar with double ring & pencil badge on right, Name & Caravan on left)
+            _buildUserHeaderCard(currentUser),
 
-                // 2. User Info Card (Avatar with double ring & pencil badge on right, Name & Caravan on left)
-                _buildUserHeaderCard(currentUser),
+            const SizedBox(height: 16),
 
-                const SizedBox(height: 16),
-
-                // 3. Edit Profile Item (Clean Row without box background)
-                _buildProfileMenuItem(
-                  title: 'ویرایش اطلاعات',
-                  svgAsset: 'assets/svg_icons/setting01.svg',
-                  fallbackIcon: Icons.settings_rounded,
-                  onTap: () => _openEditProfile(currentUser),
-                ),
-
-                // 4. Section: پیام ها (Messages / Notifications with Bell Icon)
-                _buildProfileMenuItem(
-                  title: 'پیام ها',
-                  svgAsset: '',
-                  fallbackIcon: Icons.notifications_none_rounded,
-                  onTap: () => Navigator.pushNamed(context, '/notifications'),
-                ),
-
-                const SizedBox(height: 4),
-                _buildSubtleDivider(),
-                const SizedBox(height: 4),
-
-                // 5. Group 1: کارنامه و دستاوردها, گواهی ها, تیکت های شما
-                _buildGroupOneList(currentUser),
-
-                const SizedBox(height: 4),
-                _buildSubtleDivider(),
-                const SizedBox(height: 4),
-
-                // 6. Group 2: داستان, پشتیبانی و ارتباط با ما, خروج از حساب کاربری
-                _buildGroupTwoList(currentUser),
-
-                const SizedBox(height: 30),
-              ],
+            // 2. Edit Profile Item (Clean Row without box background)
+            _buildProfileMenuItem(
+              title: 'ویرایش اطلاعات',
+              svgAsset: 'assets/svg_icons/setting01.svg',
+              fallbackIcon: Icons.settings_rounded,
+              onTap: () => _openEditProfile(currentUser),
             ),
-          ),
+
+            // 3. Section: پیام ها (Messages / Notifications with Bell Icon)
+            _buildProfileMenuItem(
+              title: 'پیام ها',
+              svgAsset: '',
+              fallbackIcon: Icons.notifications_none_rounded,
+              onTap: () => Navigator.pushNamed(context, '/notifications'),
+            ),
+
+            const SizedBox(height: 4),
+            _buildSubtleDivider(),
+            const SizedBox(height: 4),
+
+            // 4. Group 1: کارنامه و دستاوردها, گواهی ها, تیکت های شما
+            _buildGroupOneList(currentUser),
+
+            const SizedBox(height: 4),
+            _buildSubtleDivider(),
+            const SizedBox(height: 4),
+
+            // 5. Group 2: داستان, پشتیبانی و ارتباط با ما, خروج از حساب کاربری
+            _buildGroupTwoList(currentUser),
+
+            const SizedBox(height: 30),
+          ],
         ),
-      ),
-    );
-  }
-
-  /// Top Bar matching other main tabs
-  Widget _buildTopBar() {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Left: NOPA Logo + Back SVG Icon
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 42,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        Color(0xFFC09268),
-                        Color(0xFFF4DCC5),
-                      ],
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'NOPA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              GestureDetector(
-                onTap: _handleBackAction,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                  child: SvgPicture.asset(
-                    'assets/svg_icons/back01.svg',
-                    width: 20,
-                    height: 20,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFFC7B299),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Right: Notification Bell Button + Drawer Hamburger Menu
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Consumer<AppRepository>(
-                builder: (context, repository, _) {
-                  final count = repository.unreadNotificationsCount;
-                  final bool hasUnread = count > 0;
-
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        repository.fetchNotifications();
-                        Navigator.pushNamed(context, '/notifications');
-                      },
-                      borderRadius: BorderRadius.circular(22),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF23223D),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.notifications_none_rounded,
-                                color: Color(0xFFC7B299),
-                                size: 23,
-                              ),
-                            ),
-                          ),
-                          if (hasUnread)
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEF4444),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    count > 9 ? '+۹' : count.toPersian(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 10),
-              Builder(
-                builder: (ctx) => Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Scaffold.of(ctx).openDrawer(),
-                    borderRadius: BorderRadius.circular(22),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF23223D),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.menu_rounded,
-                          color: Color(0xFFC7B299),
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
@@ -572,353 +386,156 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
     int watchedClipsCount = progressList.where((p) => p['isWatched'] == true).length;
     int passedQuizzesCount = progressList.where((p) => p['quizPassed'] == true).length;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      drawer: CustomDrawer(
-        role: user.role,
-        currentIndex: 4,
-        onTabSelected: (idx) {
-          Navigator.pop(context);
-          Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-          navigateToMainTab(idx);
-        },
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 4,
-        role: user.role,
-        onTap: (idx) {
-          Navigator.pop(context);
-          navigateToMainTab(idx);
-        },
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: true,
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: 4,
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Top Bar matching Profile / Challenges
-              _buildTopBar(context),
-
-              // 2. Scrollable Report Content
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+              // 1. Overall Progress Card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF28274A),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'وضعیت کلی مسافر در کاروان',
+                      style: TextStyle(
+                        color: Color(0xFFFFD580),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // 1. Overall Progress Card
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF28274A),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'وضعیت کلی مسافر در کاروان',
-                                style: TextStyle(
-                                  color: Color(0xFFFFD580),
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
-                                  _buildStatBox('ویدیوهای دیده‌شده', watchedClipsCount.toPersian()),
-                                  _buildStatBox('آزمون‌های قبول‌شده', passedQuizzesCount.toPersian()),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 2. Wealth & Assets Card
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF28274A),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'دارایی‌ها و پاداش‌ها',
-                                style: TextStyle(
-                                  color: Color(0xFFFFD580),
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
-                                  _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
-                                  _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
-                                  _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 3. Station Road Map Summary
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF28274A),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'پیشرفت در منزلگاه‌ها',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 6),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: (i + 1) <= user.levelFrame
-                                              ? const Color(0xFF10B981)
-                                              : const Color(0xFF383562),
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            (i + 1) <= user.levelFrame
-                                                ? Icons.check_rounded
-                                                : Icons.lock_outline_rounded,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          'منزلگاه ${i.toPersian()}: ${i < stations.length ? (stations[i]['title'] ?? '') : 'آموزش کاروان'}',
-                                          style: TextStyle(
-                                            color: (i + 1) <= user.levelFrame ? Colors.white : Colors.white54,
-                                            fontSize: 12.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                        _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
+                        _buildStatBox('ویدیوهای دیده‌شده', watchedClipsCount.toPersian()),
+                        _buildStatBox('آزمون‌های قبول‌شده', passedQuizzesCount.toPersian()),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  /// Top Bar matching Profile / Challenges
-  Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Logo + Back SVG Icon
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+              const SizedBox(height: 20),
+
+              // 2. Wealth & Assets Card
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF28274A),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'دارایی‌ها و پاداش‌ها',
+                      style: TextStyle(
+                        color: Color(0xFFFFD580),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
+              ),
+
+              const SizedBox(height: 20),
+
+              // 3. Station Road Map Summary
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF28274A),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'پیشرفت در منزلگاه‌ها',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Right: Notification Bell Button + Drawer Hamburger Menu Button
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
+                    const SizedBox(height: 12),
+                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
                           children: [
                             Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: (i + 1) <= user.levelFrame
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF383562),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
+                                  (i + 1) <= user.levelFrame
+                                      ? Icons.check_rounded
+                                      : Icons.lock_outline_rounded,
+                                  color: Colors.white,
+                                  size: 14,
                                 ),
                               ),
                             ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'منزلگاه ${i.toPersian()}: ${i < stations.length ? (stations[i]['title'] ?? '') : 'آموزش کاروان'}',
+                                style: TextStyle(
+                                  color: (i + 1) <= user.levelFrame ? Colors.white : Colors.white54,
+                                  fontSize: 12.5,
+                                  fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                  ],
                 ),
-                const SizedBox(width: 10),
-                Builder(
-                  builder: (ctx) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF23223D),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

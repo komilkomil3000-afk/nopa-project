@@ -1,16 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
-import '../../main.dart';
 import '../../services/api_service.dart';
-import '../../services/app_state_repository.dart';
 import '../../services/audio_exclusivity_service.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/app_scaffold.dart';
 import '../../widgets/contact_us_dialog.dart';
 import '../../widgets/reward_popup.dart';
 
@@ -417,249 +412,60 @@ class _Class2ScreenState extends State<Class2Screen> {
 
   @override
   Widget build(BuildContext context) {
-    final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: true,
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: 1,
+      onBackTap: () => Navigator.of(context).pop(),
+      body: _isLoadingClasses
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFC09268)),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Video Player Box (مثل صفحه کلاس1 قسمت انیمیشن باید ببینید)
+                  _buildVideoPlayerCard(),
+                  const SizedBox(height: 8),
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: 1,
-        role: userRole,
-        onTap: (idx) {
-          Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-          navigateToMainTab(idx);
-        },
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 1. Top Bar (مثل صفحه هوم - بدون متن بالای اضافه)
-              _buildTopBar(),
-
-              // 2. Scrollable Content (Video Box + Tabs + Accordion / Details)
-              Expanded(
-                child: _isLoadingClasses
-                    ? const Center(
-                        child: CircularProgressIndicator(color: Color(0xFFC09268)),
-                      )
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Video Player Box (مثل صفحه کلاس1 قسمت انیمیشن باید ببینید)
-                            _buildVideoPlayerCard(),
-                            const SizedBox(height: 8),
-
-                            // Active Playing Part Title
-                            Directionality(
-                              textDirection: TextDirection.rtl,
-                              child: Text(
-                                _currentPlayingTitle,
-                                style: const TextStyle(
-                                  color: Color(0xFFDDD9EE),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.normal,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-
-                            // Navigation Tabs Row (مهارتی | رسانه ای | مشخصات جلسه)
-                            _buildTabsRow(),
-                            const SizedBox(height: 12),
-
-                            // Tab Body Content (باکس‌های جلسات و پارت‌ها منطبق بر رفرنس عکس)
-                            if (_selectedTab == 2)
-                              _buildSessionDetailsTab()
-                            else
-                              _buildSessionsAccordion(),
-
-                            const SizedBox(height: 14),
-
-                            // Action Buttons (جای منزلگاه قبل و بعد عوض شده)
-                            _buildBottomActionBar(),
-                            const SizedBox(height: 10),
-                          ],
-                        ),
+                  // Active Playing Part Title
+                  Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Text(
+                      _currentPlayingTitle,
+                      style: const TextStyle(
+                        color: Color(0xFFDDD9EE),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.normal,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Navigation Tabs Row (مهارتی | رسانه ای | مشخصات جلسه)
+                  _buildTabsRow(),
+                  const SizedBox(height: 12),
+
+                  // Tab Body Content (باکس‌های جلسات و پارت‌ها منطبق بر رفرنس عکس)
+                  if (_selectedTab == 2)
+                    _buildSessionDetailsTab()
+                  else
+                    _buildSessionsAccordion(),
+
+                  const SizedBox(height: 14),
+
+                  // Action Buttons (جای منزلگاه قبل و بعد عوض شده)
+                  _buildBottomActionBar(),
+                  const SizedBox(height: 10),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 1. Top Bar: NOPA Logo & Notification Bell + Menu Button (کاملاً مشابه صفحه هوم)
-  Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 4),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Text Logo + Back SVG Button
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                // Back Button SVG
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ),
-
-            // Right: Notification Bell + Hamburger Menu
-            Row(
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
-                                ),
-                              ),
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                Builder(
-                  builder: (ctx) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                      borderRadius: BorderRadius.circular(22),
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF23223D),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 

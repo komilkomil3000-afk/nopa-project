@@ -36,7 +36,7 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
     final activeData = repository.activeCaravanStats;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F081D),
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(

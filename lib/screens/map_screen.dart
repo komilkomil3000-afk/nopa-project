@@ -4,13 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../models/station.dart';
-import '../models/models.dart';
 import '../services/api_service.dart';
 import '../core/constants/api_constants.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
+import '../widgets/station_progress_stepper.dart';
 import '../main.dart';
 
 class MapScreen extends StatefulWidget {
@@ -79,7 +78,6 @@ class _MapScreenState extends State<MapScreen> {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
-    final int activeUserStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
 
     return RefreshIndicator(
       onRefresh: _fetchStationsData,
@@ -91,13 +89,18 @@ class _MapScreenState extends State<MapScreen> {
           children: [
             const SizedBox(height: 6),
             // 1. Horizontal Station Progress Track Header with Nodes
-            _buildStationTrackHeader(
-              selectedStationIndex: _selectedStationIndex,
-              activeUserStationIndex: activeUserStationIndex,
+            StationProgressStepper(
+              currentStationIndex: _selectedStationIndex,
+              totalNodes: totalStationNodes,
               userLevelFrame: userLevelFrame,
-                  completedStationsCount: user.completedStationsCount,
-                  totalNodes: totalStationNodes,
-                ),
+              completedStationsCount: user.completedStationsCount,
+              onStationSelected: (index) {
+                setState(() {
+                  _selectedStationIndex = index;
+                });
+                _scrollToStation(index);
+              },
+            ),
 
                 // 3. Station Road List
                 Padding(
@@ -146,313 +149,10 @@ class _MapScreenState extends State<MapScreen> {
               ],
             ),
           ),
-        ),
-      ),
     );
   }
 
-  /// Top Progress Track Header with Glowing Active Station, Faded Next Steps, and Champion Trophy Badge
-  Widget _buildStationTrackHeader({
-    required int selectedStationIndex,
-    required int activeUserStationIndex,
-    required int userLevelFrame,
-    required int completedStationsCount,
-    required int totalNodes,
-  }) {
-    const double nodeSize = 40.0;
-    const double trophySize = 52.0;
 
-    return Column(
-      children: [
-        const SizedBox(height: 14),
-        // Title: "منزلگاه را انتخاب کنید"
-        const Text(
-          'منزلگاه را انتخاب کنید',
-          style: TextStyle(
-            color: Color(0xFFEDE8F5),
-            fontSize: 14.5,
-            fontWeight: FontWeight.w600,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 14),
-
-        // Horizontal Nodes Track (Left to Right: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> Champion)
-        SingleChildScrollView(
-          clipBehavior: Clip.none,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: SizedBox(
-              height: 68,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  for (int i = 0; i < totalNodes; i++) ...[
-                    // Station Node Circle
-                    _buildStationNode(
-                      index: i,
-                      isSelected: i == selectedStationIndex,
-                      currentStationIndex: activeUserStationIndex,
-                      userLevelFrame: userLevelFrame,
-                      completedStationsCount: completedStationsCount,
-                      size: nodeSize,
-                    ),
-
-                    // Connecting Rails Track Segment between node i and node i+1 (or Champion)
-                    _buildTrackConnector(
-                      index: i,
-                      currentStationIndex: selectedStationIndex,
-                      userLevelFrame: userLevelFrame,
-                      width: 22.0,
-                    ),
-                  ],
-
-                  // Champion Win Trophy Badge (champun01.svg) at the end of the track
-                  _buildChampionBadge(trophySize),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Subtle gradient divider below the track
-        Container(
-          height: 1,
-          margin: const EdgeInsets.only(left: 24, right: 24, top: 14, bottom: 12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: 0.0),
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.0),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Individual Station Node with Dynamic Styling Based on Distance from Current Station
-  Widget _buildStationNode({
-    required int index,
-    required bool isSelected,
-    required int currentStationIndex,
-    required int userLevelFrame,
-    required int completedStationsCount,
-    required double size,
-  }) {
-    final bool isCurrent = isSelected;
-    final bool isPassed = index < (userLevelFrame - 1) || index < completedStationsCount;
-    final bool isFirstNext = index == currentStationIndex + 1;
-    final bool isSecondNext = index == currentStationIndex + 2;
-
-    Gradient gradient;
-    Border border;
-    List<BoxShadow>? boxShadow;
-
-    if (isCurrent) {
-      // Selected station: bright golden glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFFBF42),
-          Color(0xFFD68B18),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFE599), width: 1.8);
-      boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFEAA835).withValues(alpha: 0.55),
-          blurRadius: 12,
-          spreadRadius: 1,
-        ),
-      ];
-    } else if (isPassed) {
-      // Completed stations: Keep warm gold light and glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFE5A133),
-          Color(0xFFC07F1C),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.3);
-      boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFD4973B).withValues(alpha: 0.4),
-          blurRadius: 8,
-          spreadRadius: 1,
-        ),
-      ];
-    } else if (isFirstNext) {
-      // 1 step next: Medium warm bronze/gold tint
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFA57C46),
-          Color(0xFF8B6230),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFC9985E), width: 1.2);
-    } else if (isSecondNext) {
-      // 2 steps next: Darker bronze tint
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF755530),
-          Color(0xFF5A3E20),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF906D44), width: 1.2);
-    } else {
-      // Subsequent locked stations: Dark purple matching home station box style
-      gradient = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFF38355F),
-          Color(0xFF2B284E),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF5C578F), width: 1.2);
-    }
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedStationIndex = index;
-        });
-        _scrollToStation(index);
-      },
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: gradient,
-          border: border,
-          boxShadow: boxShadow,
-        ),
-        child: Center(
-          child: Text(
-            '$index'.toPersianDigits(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Connecting Horizontal Rail Track Segment between Stations
-  Widget _buildTrackConnector({
-    required int index,
-    required int currentStationIndex,
-    required int userLevelFrame,
-    required double width,
-  }) {
-    final bool isPassed = index < (userLevelFrame - 1);
-    final bool isGlowingSegment = index == currentStationIndex || isPassed;
-
-    return SizedBox(
-      width: width,
-      height: 14,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Double rail horizontal lines
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                height: 1.5,
-                color: const Color(0xFF453F73),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                height: 1.5,
-                color: const Color(0xFF453F73),
-              ),
-            ],
-          ),
-
-          // Glowing amber line segment transitioning away from current active node
-          if (isGlowingSegment)
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(
-                  colors: isPassed
-                      ? [const Color(0xFFE5A133), const Color(0xFFC07F1C)]
-                      : [const Color(0xFFFFB732), const Color(0x00FFB732)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFFB732).withValues(alpha: 0.4),
-                    blurRadius: 6,
-                    spreadRadius: 0.5,
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// End-of-track Champion Victory Badge with SVG `champun01.svg`
-  Widget _buildChampionBadge(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF3C79E),
-            Color(0xFFDCA472),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFDCA472).withValues(alpha: 0.45),
-            blurRadius: 16,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/svg_icons/champun01.svg',
-          width: 26,
-          height: 26,
-          colorFilter: const ColorFilter.mode(
-            Color(0xFF5A3114),
-            BlendMode.srcIn,
-          ),
-        ),
-      ),
-    );
-  }
 
 
   Widget _buildMapStationCard(BuildContext context, int index, Map<String, dynamic> item) {

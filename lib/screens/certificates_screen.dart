@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
-import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
-import '../services/app_state_repository.dart';
+import '../widgets/app_scaffold.dart';
 import 'certificate_view_screen.dart';
 
 class CertificatesScreen extends StatefulWidget {
@@ -129,208 +127,27 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     final completedCourses = _getCompletedCourses();
     final ongoingCourses = _getOngoingCourses();
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            image: DecorationImage(
-              image: AssetImage('assets/images/login_bg.png'),
-              fit: BoxFit.cover,
-            ),
+    return AppScaffold(
+      showBackButton: true,
+      showNotificationIcon: true,
+      showDrawerButton: true,
+      showBottomNavBar: true,
+      currentBottomNavIndex: 4,
+      onBackTap: () => Navigator.of(context).pop(),
+      body: Column(
+        children: [
+          // 1. Filter Tabs: دوره‌های جاری / دوره‌های گذرانده شده
+          _buildFilterTabsBar(),
+
+          const SizedBox(height: 10),
+
+          // 2. Main List of Courses (Matching MapScreen Station Card style)
+          Expanded(
+            child: _selectedTabIndex == 1
+                ? _buildCompletedCoursesList(completedCourses)
+                : _buildOngoingCoursesList(ongoingCourses),
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // 1. Top Bar matching ProfileScreen exactly
-                _buildTopBar(),
-
-                // 2. Filter Tabs: دوره‌های جاری / دوره‌های گذرانده شده
-                _buildFilterTabsBar(),
-
-                const SizedBox(height: 10),
-
-                // 3. Main List of Courses (Matching MapScreen Station Card style)
-                Expanded(
-                  child: _selectedTabIndex == 1
-                      ? _buildCompletedCoursesList(completedCourses)
-                      : _buildOngoingCoursesList(ongoingCourses),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Top Bar matching ProfileScreen
-  Widget _buildTopBar() {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: NOPA Logo + Back SVG Icon
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 42,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          Color(0xFFC09268),
-                          Color(0xFFF4DCC5),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: SvgPicture.asset(
-                      'assets/svg_icons/back01.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFFC7B299),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            // Right: Notification Bell Button + Drawer Hamburger Menu
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final count = repository.unreadNotificationsCount;
-                    final bool hasUnread = count > 0;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          repository.fetchNotifications();
-                          Navigator.pushNamed(context, '/notifications');
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF23223D),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.notifications_none_rounded,
-                                  color: Color(0xFFC7B299),
-                                  size: 23,
-                                ),
-                              ),
-                            ),
-                            if (hasUnread)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      count > 9 ? '+۹' : count.toPersian(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                        height: 1,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 10),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    borderRadius: BorderRadius.circular(22),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF23223D),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: SvgPicture.asset(
-                          'assets/svg_icons/Manual01.svg',
-                          width: 22,
-                          height: 22,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFFC7B299),
-                            BlendMode.srcIn,
-                          ),
-                          errorBuilder: (context, error, stackTrace) => const Icon(
-                            Icons.menu_rounded,
-                            color: Color(0xFFC7B299),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

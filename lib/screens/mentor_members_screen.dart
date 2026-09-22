@@ -110,13 +110,13 @@ class _MentorMembersScreenState extends State<MentorMembersScreen> {
 
     if (_isLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0F081D),
+        backgroundColor: Colors.transparent,
         body: Center(child: CircularProgressIndicator(color: Color(0xFF8B5CF6))),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F081D),
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         child: Column(
           children: [
