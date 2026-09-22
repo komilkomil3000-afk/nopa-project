@@ -607,7 +607,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                       child: InkWell(
                         onTap: () {
                           repository.fetchNotifications();
-                          NopaNotificationDialog.show(context);
+                          Navigator.pushNamed(context, '/notifications');
                         },
                         borderRadius: BorderRadius.circular(22),
                         child: Stack(

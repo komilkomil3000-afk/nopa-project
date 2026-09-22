@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: InkWell(
                         onTap: () {
                           repository.fetchNotifications();
-                          NopaNotificationDialog.show(context);
+                          Navigator.pushNamed(context, '/notifications');
                         },
                         borderRadius: BorderRadius.circular(22),
                         child: Stack(
@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      count > 9 ? '+9' : '$count',
+                                      count > 9 ? '+۹' : count.toPersian(),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 8,
@@ -331,33 +331,33 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               children: [
                 _buildAssetPill(
-                  badgeNumber: '1',
+                  badgeNumber: '۱',
                   label: 'زریک',
-                  value: '${user?.zarik ?? 0}',
+                  value: (user?.zarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '2',
+                  badgeNumber: '۲',
                   label: 'بیرق',
-                  value: '${user?.beyragh ?? 0}',
+                  value: (user?.beyragh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 1,
                   onTap: () => setState(() => _selectedAssetIndex = 1),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '3',
+                  badgeNumber: '۳',
                   label: 'نخ',
-                  value: '${user?.nakh ?? 0}',
+                  value: (user?.nakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
-                  badgeNumber: '4',
+                  badgeNumber: '۴',
                   label: 'فرش',
-                  value: '${user?.farsh ?? 0}',
+                  value: (user?.farsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
                 ),

@@ -21,6 +21,7 @@ import 'screens/mentor_ratings_detail_screen.dart';
 import 'screens/mentor_league_screen.dart';
 import 'screens/mentor_workbench_screen.dart';
 import 'screens/tickets_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/custom_drawer.dart';
 import 'models/user_model.dart';
@@ -124,6 +125,7 @@ class NepaApp extends StatelessWidget {
           '/mentor_league': (context) => const MentorLeagueScreen(),
           '/mentor_workbench': (context) => const MentorWorkbenchScreen(),
           '/tickets': (context) => const TicketsScreen(),
+          '/notifications': (context) => const NotificationsScreen(),
         },
       ),
     );

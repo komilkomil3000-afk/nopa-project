@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
-import 'nopa_notification_dialog.dart';
+import '../core/theme/app_theme.dart';
 
 class NotificationBellButton extends StatelessWidget {
   final double iconSize;
@@ -23,7 +23,7 @@ class NotificationBellButton extends StatelessWidget {
         return GestureDetector(
           onTap: () {
             repository.fetchNotifications();
-            NopaNotificationDialog.show(context);
+            Navigator.pushNamed(context, '/notifications');
           },
           child: Stack(
             clipBehavior: Clip.none,
@@ -69,13 +69,13 @@ class NotificationBellButton extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        count > 9 ? '+9' : '$count',
+                        count > 9 ? '+۹' : count.toPersian(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 8,
                           fontWeight: FontWeight.bold,
                           height: 1,
-                          fontFamily: 'Vazirmatn',
+                          fontFamily: AppTheme.fontFamily,
                         ),
                         textAlign: TextAlign.center,
                       ),

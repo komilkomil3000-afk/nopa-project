@@ -572,7 +572,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
             children: [
               // 1. Day Number on Top
               Text(
-                '$dayNum',
+                '$dayNum'.toPersianDigits(),
                 style: TextStyle(
                   color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
                   fontSize: 22,

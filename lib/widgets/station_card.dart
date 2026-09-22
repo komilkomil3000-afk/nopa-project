@@ -109,17 +109,32 @@ class StationCard extends StatelessWidget {
                                   ),
                                 ),
                         ),
-                        if (station.isLocked)
+                        if (station.isLocked) ...[
                           Container(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            alignment: Alignment.center,
-                            child: SvgPicture.asset(
-                              'assets/svg_icons/lock02.svg',
-                              width: 34,
-                              height: 34,
-                              fit: BoxFit.contain,
+                            color: Colors.black.withValues(alpha: 0.35),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E1435).withValues(alpha: 0.85),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF676296).withValues(alpha: 0.6),
+                                  width: 1,
+                                ),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/svg_icons/lock02.svg',
+                                width: 14,
+                                height: 14,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),

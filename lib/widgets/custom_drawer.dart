@@ -148,61 +148,22 @@ class CustomDrawer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: 32),
 
               // 1. Profile Header with Avatar on the Right and Name/Role on the Left
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 10.0),
                 child: Directionality(
-                  textDirection: TextDirection.ltr,
+                  textDirection: TextDirection.rtl,
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // User Info (Left of Avatar)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              displayName,
-                              textAlign: TextAlign.right,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              displaySubtitle,
-                              textAlign: TextAlign.right,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF9D99B8),
-                                fontSize: 12,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-
-                      // Avatar with edit badge
+                      // Avatar on the right in RTL with edit badge
                       Stack(
                         clipBehavior: Clip.none,
                         children: [
                           Container(
-                            width: 64,
-                            height: 64,
+                            width: 62,
+                            height: 62,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFF47436B),
@@ -261,6 +222,43 @@ class CustomDrawer extends StatelessWidget {
                           ),
                         ],
                       ),
+                      const SizedBox(width: 16),
+
+                      // User Info on the left in RTL
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              displayName,
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              displaySubtitle,
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF9D99B8),
+                                fontSize: 11.5,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -269,7 +267,7 @@ class CustomDrawer extends StatelessWidget {
               // Subtle Gradient Divider
               _buildGradientDivider(),
 
-              // 2. Menu Navigation Items List
+              // 2. Menu Navigation Items List (Icons on Right, Text on Left, Lighter Font, Unified Soft Lilac Icons & Active Brown)
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -278,6 +276,7 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'پروفایل',
                       svgPath: 'assets/svg_icons/profile01.svg',
+                      isSelected: currentIndex == (isMentor ? 3 : 4),
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
@@ -287,8 +286,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'آموزگاه',
                       svgPath: 'assets/svg_icons/classes01.svg',
-                      iconColor: const Color(0xFFDEB58A), // Warm sand tone matching folded map
-                      iconSize: 24,
+                      isSelected: currentIndex == 1,
+                      iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
                         onTabSelected(1);
@@ -297,7 +296,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'چالش ها',
                       svgPath: 'assets/svg_icons/challeng01.svg',
-                      iconSize: 23,
+                      isSelected: currentIndex == 2,
+                      iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
                         onTabSelected(2);
@@ -306,7 +306,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'بازارچه',
                       svgPath: 'assets/svg_icons/stor01.svg',
-                      iconSize: 23,
+                      isSelected: currentIndex == 3,
+                      iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
                         onTabSelected(3);
@@ -315,7 +316,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'برترین ها',
                       svgPath: 'assets/svg_icons/champun01.svg',
-                      iconSize: 24,
+                      isSelected: false,
+                      iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
                         Navigator.pushNamed(context, '/mentor_league');
@@ -329,7 +331,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'پشتیبانی',
                       svgPath: 'assets/svg_icons/Support01.svg',
-                      iconSize: 23,
+                      isSelected: false,
+                      iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
                         ContactUsDialog.show(context);
@@ -338,7 +341,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'راهنما',
                       svgPath: 'assets/svg_icons/Manual01.svg',
-                      iconSize: 22,
+                      isSelected: false,
+                      iconSize: 21,
                       onTap: () {
                         Navigator.pop(context);
                         _showGuideDialog(context);
@@ -347,7 +351,8 @@ class CustomDrawer extends StatelessWidget {
                     _buildMenuItem(
                       title: 'خروج از حساب',
                       svgPath: 'assets/svg_icons/exit01.svg',
-                      iconSize: 22,
+                      isSelected: false,
+                      iconSize: 21,
                       onTap: () {
                         Navigator.pop(context);
                         LogoutDialog.show(context);
@@ -360,8 +365,9 @@ class CustomDrawer extends StatelessWidget {
                       _buildMenuItem(
                         title: isMentor ? 'تغییر به پنل دانش‌آموز' : 'تغییر به پنل راهبر',
                         svgPath: 'assets/svg_icons/profile01.svg',
-                        iconColor: const Color(0xFFD946EF),
-                        textColor: const Color(0xFFD946EF),
+                        isSelected: false,
+                        customIconColor: const Color(0xFFD946EF),
+                        customTextColor: const Color(0xFFD946EF),
                         iconSize: 20,
                         onTap: () {
                           Navigator.pop(context);
@@ -412,39 +418,29 @@ class CustomDrawer extends StatelessWidget {
     required String title,
     required String svgPath,
     required VoidCallback onTap,
-    Color? iconColor,
-    Color textColor = const Color(0xFFEDE8F5),
-    double iconSize = 24.0,
+    bool isSelected = false,
+    Color? customIconColor,
+    Color? customTextColor,
+    double iconSize = 22.0,
   }) {
+    final Color effectiveIconColor = customIconColor ??
+        (isSelected ? const Color(0xFFC09268) : const Color(0xFFA5A0C8));
+    final Color effectiveTextColor = customTextColor ??
+        (isSelected ? const Color(0xFFF4DCC5) : const Color(0xFFD3D0E3));
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         hoverColor: Colors.white.withValues(alpha: 0.04),
-        splashColor: Colors.white.withValues(alpha: 0.08),
+        splashColor: const Color(0xFFC09268).withValues(alpha: 0.12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 11),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Row(
               children: [
-                // Text Label on the left in RTL (aligned right towards icon)
-                Expanded(
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 18),
-
                 // Icon on the right in RTL
                 SizedBox(
                   width: 32,
@@ -455,9 +451,23 @@ class CustomDrawer extends StatelessWidget {
                       width: iconSize,
                       height: iconSize,
                       fit: BoxFit.contain,
-                      colorFilter: iconColor != null
-                          ? ColorFilter.mode(iconColor, BlendMode.srcIn)
-                          : null,
+                      colorFilter: ColorFilter.mode(effectiveIconColor, BlendMode.srcIn),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Text Label on the left of Icon in RTL with lighter weight and smaller size
+                Expanded(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: effectiveTextColor,
+                      fontSize: 13.5,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
                     ),
                   ),
                 ),

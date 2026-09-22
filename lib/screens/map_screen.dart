@@ -213,7 +213,7 @@ class _MapScreenState extends State<MapScreen> {
                       child: InkWell(
                         onTap: () {
                           repository.fetchNotifications();
-                          NopaNotificationDialog.show(context);
+                          Navigator.pushNamed(context, '/notifications');
                         },
                         borderRadius: BorderRadius.circular(22),
                         child: Stack(
