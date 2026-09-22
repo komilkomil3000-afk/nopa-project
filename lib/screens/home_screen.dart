@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Text Logo with ChochoAuraDemo Font and C09268 to F4DCC5 Gradient
+            // Left: NOPA Text Logo with AppTheme.fontFamily and C09268 to F4DCC5 Gradient
             SizedBox(
               height: 42,
               child: Align(
@@ -85,14 +85,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     end: Alignment.topCenter,
                   ).createShader(bounds),
                   child: const Text(
-                    'NOPA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 21,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontFamily: 'ChochoAuraDemo',
-                    ),
+                      'NOPA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
                   ),
                 ),
               ),

@@ -143,10 +143,13 @@ class _Class1ScreenState extends State<Class1Screen> {
     },
   };
 
+  bool _isInitialized = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_station == null && widget.initialStation == null) {
+    if (!_isInitialized && _station == null && widget.initialStation == null) {
+      _isInitialized = true;
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Station) {
         _station = args;
@@ -560,14 +563,14 @@ class _Class1ScreenState extends State<Class1Screen> {
                         end: Alignment.topCenter,
                       ).createShader(bounds),
                       child: const Text(
-                        'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: 'ChochoAuraDemo',
-                        ),
+                          'NOPA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
                       ),
                     ),
                   ),

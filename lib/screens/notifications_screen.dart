@@ -414,7 +414,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: 'ChochoAuraDemo',
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),

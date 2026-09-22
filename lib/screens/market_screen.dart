@@ -140,107 +140,219 @@ class _MarketScreenState extends State<MarketScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (BuildContext ctx) {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
-            backgroundColor: const Color(0xFF28274A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: BorderSide(
-                color: const Color(0xFF5A588B).withValues(alpha: 0.5),
-                width: 1.2,
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C244A),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: const Color(0xFF4C4175),
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Center(
-                    child: Text(
-                      'تایید درخواست مبادله',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
+                  // Top Header: Flame/Fire Icon in circle on top left in RTL + Title in center
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Fire/Flame Icon on Left in RTL (Right in LTR)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF3F3765),
+                          ),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            'assets/svg_icons/fir01.svg',
+                            width: 20,
+                            height: 20,
+                            fit: BoxFit.contain,
+                            colorFilter: const ColorFilter.mode(
+                              Color(0xFF8B88E8),
+                              BlendMode.srcIn,
+                            ),
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.local_fire_department_rounded,
+                              color: Color(0xFF8B88E8),
+                              size: 20,
+                            ),
+                          ),
+                        ),
                       ),
+
+                      // Title in center
+                      const Text(
+                        'ثبت درخواست مبادله',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Row 1: ارائه: (Right pill) + Amount & Source asset (Left)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left Value in RTL
+                      Text(
+                        '${amountStr.toPersianDigits()} $_sourceAsset',
+                        style: const TextStyle(
+                          color: Color(0xFFE2E0F0),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+
+                      // Right Pill in RTL
+                      Container(
+                        width: 76,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF20183B),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF5A4E88),
+                            width: 1.0,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'ارائه:',
+                          style: TextStyle(
+                            color: Color(0xFFE2E0F0),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Row 2: خرید: (Right pill) + Result & Target asset (Left)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Left Value in RTL
+                      Text(
+                        '${resultStr.toPersianDigits()} $_targetAsset',
+                        style: const TextStyle(
+                          color: Color(0xFFE2E0F0),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+
+                      // Right Pill in RTL
+                      Container(
+                        width: 76,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF20183B),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF5A4E88),
+                            width: 1.0,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'خرید:',
+                          style: TextStyle(
+                            color: Color(0xFFE2E0F0),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Description text
+                  const Text(
+                    'درخواست شما پس از ثبت برای راهبر ارسال شده و در صورت تایید، خرید شما اعمال میشود. شما میتوانید با راهبر خود در ارتباط باشید.',
+                    textAlign: TextAlign.justify,
+                    style: TextStyle(
+                      color: Color(0xFFB3AFD0),
+                      fontSize: 11,
+                      height: 1.45,
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1D36),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF3D3B66), width: 1),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'ارائه: ${amountStr.toPersianDigits()} $_sourceAsset',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'دریافت: ${resultStr.toPersianDigits()} $_targetAsset',
-                          style: const TextStyle(
-                            color: Color(0xFFFFD580),
+
+                  const SizedBox(height: 22),
+
+                  // Bottom Action Buttons: ارسال (Gold/Orange text) & لغو (Purple text)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // لغو on Left in RTL
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'لغو',
+                          style: TextStyle(
+                            color: Color(0xFF9E9CD6),
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'درخواست شما پس از ثبت برای راهبر ارسال شده و در صورت تایید، سرمایه‌ها جابه‌جا می‌شوند.',
-                    style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4, fontFamily: AppTheme.fontFamily),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text('انصراف', style: TextStyle(color: Color(0xFF9D99B8), fontFamily: AppTheme.fontFamily)),
-                        ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                backgroundColor: Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            height: 40,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.accentGradient,
-                              borderRadius: BorderRadius.circular(10),
+
+                      // ارسال on Right in RTL
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                              backgroundColor: Color(0xFF10B981),
+                              behavior: SnackBarBehavior.floating,
                             ),
-                            child: const Center(
-                              child: Text(
-                                'ثبت نهایی',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ),
+                          );
+                        },
+                        child: const Text(
+                          'ارسال',
+                          style: TextStyle(
+                            color: Color(0xFFE5A855),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
                           ),
                         ),
                       ),
@@ -360,7 +472,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: 'ChochoAuraDemo',
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),
@@ -486,7 +598,7 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Section 1: نرخنامه - Cards based on Home Station Cards with gallery SVG and footer price
+  /// Section 1: نرخنامه - Cards based on Home Station Cards with gallery SVG and divider line
   Widget _buildRateSheetSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -528,7 +640,7 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Single Rate Sheet Card matching Station Card design
+  /// Single Rate Sheet Card matching Station Card design with gradient divider line
   Widget _buildRateCard(Map<String, dynamic> item) {
     return Container(
       width: 106,
@@ -605,15 +717,29 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
               ),
 
-              // 2. Bottom Footer Pill: Price Tag (e.g. 500 زریک, 5 نخ, غیر قابل خرید)
+              // 2. Middle Divider Line matching Station Cards in Home
+              Container(
+                height: 1.2,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    stops: [0.0, 0.5, 1.0],
+                    colors: [
+                      Color(0xFF3A3A6A),
+                      Color(0xFF9292E2),
+                      Color(0xFF3A3A6A),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Bottom Footer Pill: Price Tag (e.g. 500 زریک, 5 نخ, غیر قابل خرید)
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 5.5, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF23223D).withValues(alpha: 0.75),
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18.8)),
-                  border: const Border(
-                    top: BorderSide(color: Color(0xFF43416A), width: 0.8),
-                  ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF23223D),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(18.8)),
                 ),
                 child: Center(
                   child: Text(
@@ -1102,91 +1228,109 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Dark Asset Selector Dropdown Box matching challenge CTA box
+  /// Dark Asset Selector Dropdown Box matching notification and login dark surface styling
   Widget _buildAssetDropdown({
     required String value,
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
       height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1D36),
+        gradient: AppColors.strokeGradient,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          dropdownColor: const Color(0xFF28274A),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 18),
-          isDense: true,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
+      padding: const EdgeInsets.all(AppColors.borderWidth),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.darkSurfaceGradient,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: value,
+            dropdownColor: const Color(0xFF1E1633),
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFC7B299), size: 18),
+            isDense: true,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            items: _availableAssets.map((asset) {
+              return DropdownMenuItem<String>(
+                value: asset,
+                child: Text(asset, style: const TextStyle(fontSize: 12, color: Colors.white)),
+              );
+            }).toList(),
+            onChanged: onChanged,
           ),
-          items: _availableAssets.map((asset) {
-            return DropdownMenuItem<String>(
-              value: asset,
-              child: Text(asset, style: const TextStyle(fontSize: 12, color: Colors.white)),
-            );
-          }).toList(),
-          onChanged: onChanged,
         ),
       ),
     );
   }
 
-  /// Dark Amount Input Box
+  /// Dark Amount Input Box matching notification action button style
   Widget _buildAmountInputBox() {
     return Container(
       width: 54,
       height: 38,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1D36),
+        gradient: AppColors.strokeGradient,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
       ),
-      alignment: Alignment.center,
-      child: TextField(
-        controller: _amountController,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
+      padding: const EdgeInsets.all(AppColors.borderWidth),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.darkSurfaceGradient,
+          borderRadius: BorderRadius.circular(7),
         ),
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-          border: InputBorder.none,
+        alignment: Alignment.center,
+        child: TextField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.fontFamily,
+          ),
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+            border: InputBorder.none,
+          ),
         ),
       ),
     );
   }
 
-  /// Dark Result Box
+  /// Dark Result Box matching notification action button style
   Widget _buildResultBox(String resultText) {
     return Container(
       width: 54,
       height: 38,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1D36),
+        gradient: AppColors.strokeGradient,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
       ),
-      alignment: Alignment.center,
-      child: Text(
-        resultText,
-        style: const TextStyle(
-          color: Color(0xFFFFD580),
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
+      padding: const EdgeInsets.all(AppColors.borderWidth),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.darkSurfaceGradient,
+          borderRadius: BorderRadius.circular(7),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          resultText,
+          style: const TextStyle(
+            color: Color(0xFFFFD580),
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.fontFamily,
+          ),
         ),
       ),
     );
@@ -1328,104 +1472,84 @@ class _MarketScreenState extends State<MarketScreen> {
         ),
         const SizedBox(height: 14),
 
-        // 2. Tab Switcher Box: "برترین شرکت کننده ها" | "برترین کاروان ها"
+        // 2. Tab Switcher Box styled like Login OTP/Password Segmented Box
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Container(
-            height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFF1B1A32),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFF453F73).withValues(alpha: 0.6),
-                width: 1.1,
-              ),
+              gradient: AppColors.strokeGradient,
+              borderRadius: BorderRadius.circular(10),
             ),
-            padding: const EdgeInsets.all(4),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Row(
-                children: [
-                  // Tab 0: برترین شرکت کننده ها
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedLeaderboardTab = 0),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: _selectedLeaderboardTab == 0 ? AppColors.accentGradient : null,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: _selectedLeaderboardTab == 0
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFC7844E).withValues(alpha: 0.35),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            'برترین شرکت کننده ها',
-                            style: TextStyle(
-                              color: _selectedLeaderboardTab == 0 ? Colors.white : const Color(0xFFB5B3C8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            padding: const EdgeInsets.all(AppColors.borderWidth),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.darkSurfaceGradient,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              padding: const EdgeInsets.all(3),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Row(
+                  children: [
+                    // Tab 0: برترین شرکت کننده ها
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedLeaderboardTab = 0),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: _selectedLeaderboardTab == 0 ? AppColors.accentGradient : null,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'برترین شرکت کننده ها',
+                              style: TextStyle(
+                                color: _selectedLeaderboardTab == 0 ? Colors.white : const Color(0xFF8E889D),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Subtle divider between tabs
-                  Container(
-                    width: 1,
-                    height: 22,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    color: const Color(0xFF453F73).withValues(alpha: 0.5),
-                  ),
+                    const SizedBox(width: 4),
 
-                  // Tab 1: برترین کاروان ها
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedLeaderboardTab = 1),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: _selectedLeaderboardTab == 1 ? AppColors.accentGradient : null,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: _selectedLeaderboardTab == 1
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFC7844E).withValues(alpha: 0.35),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            'برترین کاروان ها',
-                            style: TextStyle(
-                              color: _selectedLeaderboardTab == 1 ? Colors.white : const Color(0xFFB5B3C8),
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    // Tab 1: برترین کاروان ها
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedLeaderboardTab = 1),
+                        behavior: HitTestBehavior.opaque,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: _selectedLeaderboardTab == 1 ? AppColors.accentGradient : null,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'برترین کاروان ها',
+                              style: TextStyle(
+                                color: _selectedLeaderboardTab == 1 ? Colors.white : const Color(0xFF8E889D),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -1542,7 +1666,7 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Single Podium Item (Circle Avatar with border + Rank Number + Name + Wealth)
+  /// Single Podium Item (Clean Flat Avatar without neon glow, with Rank Number placed on the RIGHT of the name)
   Widget _buildPodiumItem({
     required Map<String, dynamic> item,
     required String rankNumber,
@@ -1554,7 +1678,7 @@ class _MarketScreenState extends State<MarketScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Circle Avatar with matching border
+        // Clean Circle Avatar with solid matching border (no neon/glowing shadows)
         Container(
           width: circleSize,
           height: circleSize,
@@ -1563,15 +1687,8 @@ class _MarketScreenState extends State<MarketScreen> {
             color: const Color(0xFF28274A),
             border: Border.all(
               color: rankColor,
-              width: rankNumber == '1' ? 2.2 : 1.8,
+              width: rankNumber == '1' ? 2.0 : 1.6,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: rankColor.withValues(alpha: rankNumber == '1' ? 0.35 : 0.2),
-                blurRadius: rankNumber == '1' ? 14 : 8,
-                spreadRadius: 0.5,
-              ),
-            ],
           ),
           child: Center(
             child: SvgPicture.asset(
@@ -1586,12 +1703,26 @@ class _MarketScreenState extends State<MarketScreen> {
 
         const SizedBox(height: 10),
 
-        // Name & Rank Number row
+        // Name & Rank Number row: Rank Number placed on the RIGHT in RTL
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // 1. Right in RTL: Rank Number (1, 2, 3)
+            Text(
+              rankNumber.toPersianDigits(),
+              style: TextStyle(
+                color: rankColor,
+                fontSize: rankNumber == '1' ? 18 : 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+            const SizedBox(width: 5),
+
+            // 2. Left in RTL: Name (flat, non-luminous text)
             Flexible(
               child: Text(
                 item['name'] as String,
@@ -1607,23 +1738,12 @@ class _MarketScreenState extends State<MarketScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 4),
-            Text(
-              rankNumber.toPersianDigits(),
-              style: TextStyle(
-                color: rankColor,
-                fontSize: rankNumber == '1' ? 18 : 16,
-                fontWeight: FontWeight.w900,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
-            ),
           ],
         ),
 
         const SizedBox(height: 4),
 
-        // Zarik Wealth
+        // Zarik Wealth (flat text, no glowing shadows)
         Text(
           (item['zarik'] as String).toPersianDigits(),
           style: const TextStyle(
@@ -1638,3 +1758,4 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 }
+

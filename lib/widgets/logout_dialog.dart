@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 
 class LogoutDialog extends StatefulWidget {
@@ -48,7 +49,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
           SnackBar(
             content: Text(
               'خطا در خروج از حساب: $e',
-              style: const TextStyle(fontFamily: 'Vazirmatn'),
+              style: const TextStyle(fontFamily: AppTheme.fontFamily),
             ),
             backgroundColor: Colors.redAccent,
           ),
@@ -63,17 +64,19 @@ class _LogoutDialogState extends State<LogoutDialog> {
       textDirection: TextDirection.rtl,
       child: Dialog(
         backgroundColor: Colors.transparent,
+        elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1435),
+            color: const Color(0xFF2C2849),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFF4C3E7A)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: Colors.black.withValues(alpha: 0.45),
                 blurRadius: 24,
+                spreadRadius: 2,
                 offset: const Offset(0, 8),
               ),
             ],
@@ -81,115 +84,89 @@ class _LogoutDialogState extends State<LogoutDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon with glowing container
-              Container(
-                width: 68,
-                height: 68,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.redAccent.withValues(alpha: 0.15),
-                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.35)),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.logout_rounded,
-                    color: Colors.redAccent,
-                    size: 34,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Title
+              // Title Question
               const Text(
-                'خروج از حساب کاربری',
+                'واقعا میخواهید از برنامه خارج شوید؟',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 16.5,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Vazirmatn',
+                  fontFamily: AppTheme.fontFamily,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 22),
 
-              // Description
-              const Text(
-                'آیا برای خروج از حساب کاربری خود اطمینان دارید؟ شماره و اطلاعات شما ذخیره شده و پس از خروج به صفحه ورود منتقل می‌شوید.',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  height: 1.6,
-                  fontFamily: 'Vazirmatn',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-
-              // Action Buttons
+              // Action Buttons Row
               Row(
                 children: [
-                  // Cancel Button
+                  // 1. Right Button (in RTL): نه، دستم خورد
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white24),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      onTap: _isLoading ? null : () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF7A709E),
+                            width: 1.1,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        'انصراف',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Vazirmatn',
+                        child: const Text(
+                          'نه، دستم خورد',
+                          style: TextStyle(
+                            color: Color(0xFFDDD9EE),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
 
-                  // Confirm Logout Button
+                  // 2. Left Button (in RTL): آره ولی زود برمیگردم
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogout,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      onTap: _isLoading ? null : _handleLogout,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFFC09268),
+                            width: 1.1,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.logout_rounded, size: 18),
-                                SizedBox(width: 6),
-                                Text(
-                                  'خروج',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Vazirmatn',
-                                  ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFFE5A855),
                                 ),
-                              ],
-                            ),
+                              )
+                            : const Text(
+                                'آره ولی زود برمیگردم',
+                                style: TextStyle(
+                                  color: Color(0xFFE5A855),
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                      ),
                     ),
                   ),
                 ],

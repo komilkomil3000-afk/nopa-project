@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../core/theme/app_theme.dart';
+import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/app_state_repository.dart';
@@ -25,6 +26,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nationalIdCtrl;
   late TextEditingController _addressCtrl;
 
+  // Password fields
+  late TextEditingController _newPasswordCtrl;
+  late TextEditingController _confirmPasswordCtrl;
+  bool _isNewPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+
   bool _isSaving = false;
 
   @override
@@ -46,6 +53,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _dobCtrl = TextEditingController(text: widget.user.dateOfBirth ?? '');
     _nationalIdCtrl = TextEditingController(text: widget.user.nationalId ?? '');
     _addressCtrl = TextEditingController(text: widget.user.city ?? '');
+
+    _newPasswordCtrl = TextEditingController();
+    _confirmPasswordCtrl = TextEditingController();
   }
 
   @override
@@ -57,6 +67,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _dobCtrl.dispose();
     _nationalIdCtrl.dispose();
     _addressCtrl.dispose();
+    _newPasswordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -94,6 +106,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
+    // Password validation if entered
+    final newPassword = _newPasswordCtrl.text.trim();
+    final confirmPassword = _confirmPasswordCtrl.text.trim();
+
+    if (newPassword.isNotEmpty) {
+      if (newPassword.length < 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('رمز عبور باید حداقل ۴ کاراکتر باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+      if (newPassword != confirmPassword) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('رمز عبور جدید و تکرار آن مطابقت ندارند', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -104,6 +141,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'dateOfBirth': _dobCtrl.text.trim(),
         'city': _addressCtrl.text.trim(),
       });
+
+      if (newPassword.isNotEmpty) {
+        await api.changePassword(null, newPassword);
+      }
 
       if (!mounted) return;
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
@@ -140,33 +181,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFF161028),
         body: Container(
+          width: double.infinity,
+          height: double.infinity,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E1736), Color(0xFF140D26), Color(0xFF0F091F)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
             ),
           ),
           child: SafeArea(
             child: Column(
               children: [
-                // Top Bar
+                // Top Bar identical to ProfileScreen
                 _buildTopBar(),
 
                 // Scrollable Form Body
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Large Avatar with Double Ring and Pencil Badge
                         _buildAvatarSection(),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 24),
 
                         // Form Row 1: نام (Right) & نام خانوادگی (Left)
                         Row(
@@ -188,7 +230,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Form Row 2: شماره همراه (Right) & آدرس ایمیل (Left)
                         Row(
@@ -212,7 +254,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Form Row 3: تاریخ تولد (Right) & کدملی (Left)
                         Row(
@@ -235,7 +277,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Form Row 4 (Full-width): نام کاروان + دکمه درخواست تغییر کاروان
                         _buildSpecialRequestField(
@@ -244,7 +286,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           buttonLabel: 'درخواست تغییر کاروان',
                           onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر کاروان'),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Form Row 5 (Full-width): نام راهبر + دکمه درخواست تغییر راهبر
                         _buildSpecialRequestField(
@@ -253,7 +295,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           buttonLabel: 'درخواست تغییر راهبر',
                           onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر راهبر'),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Form Row 6 (Full-width): آدرس
                         _buildFormField(
@@ -261,74 +303,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           controller: _addressCtrl,
                           hintText: 'تهران، خیابان ولیعصر...',
                         ),
-                        const SizedBox(height: 34),
+                        const SizedBox(height: 22),
+
+                        // Section: ایجاد / تغییر رمز عبور ثابت
+                        _buildPasswordSection(),
+
+                        const SizedBox(height: 28),
 
                         // Bottom Action Buttons: ثبت تغییرات & لغو
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // 1. ثبت تغییرات Button (Bronze/Gold border & text)
+                            // 1. ثبت تغییرات Button (English NOPA Gold Gradient Style)
                             Expanded(
                               child: InkWell(
                                 onTap: _isSaving ? null : _saveChanges,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 child: Container(
-                                  height: 46,
-                                  alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1E1736),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFFC89255),
-                                      width: 1.2,
-                                    ),
+                                    gradient: AppColors.strokeGradient,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: _isSaving
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Color(0xFFC89255),
+                                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                                  child: Container(
+                                    height: 44,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.darkSurfaceGradient,
+                                      borderRadius: BorderRadius.circular(9),
+                                      border: Border.all(
+                                        color: const Color(0xFFC09268),
+                                        width: 1.1,
+                                      ),
+                                    ),
+                                    child: _isSaving
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFFCD8449),
+                                            ),
+                                          )
+                                        : const Text(
+                                            'ثبت تغییرات',
+                                            style: TextStyle(
+                                              color: Color(0xFFE1BC96),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: AppTheme.fontFamily,
+                                            ),
                                           ),
-                                        )
-                                      : const Text(
-                                          'ثبت تغییرات',
-                                          style: TextStyle(
-                                            color: Color(0xFFE5A855),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
-                                        ),
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 14),
 
                             // 2. لغو Button (Purple border & text)
                             Expanded(
                               child: InkWell(
                                 onTap: () => Navigator.pop(context),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 child: Container(
-                                  height: 46,
-                                  alignment: Alignment.center,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1E1736),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFF6B5B95),
-                                      width: 1.2,
-                                    ),
+                                    gradient: AppColors.strokeGradient,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Text(
-                                    'لغو',
-                                    style: TextStyle(
-                                      color: Color(0xFFB5B0D8),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
+                                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                                  child: Container(
+                                    height: 44,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.darkSurfaceGradient,
+                                      borderRadius: BorderRadius.circular(9),
+                                      border: Border.all(
+                                        color: const Color(0xFF5A4D80),
+                                        width: 1.1,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'لغو',
+                                      style: TextStyle(
+                                        color: Color(0xFFB5B0D8),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -349,89 +410,170 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// Top Bar with NOPA Logo on left + back button, and Hamburger Drawer button on right
+  /// Top Bar matching ProfileScreen exactly (Left: NOPA Logo + Back icon; Right: Bell + Drawer Hamburger)
   Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left: NOPA Text Logo & Back Button underneath
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFFE8C58D), Color(0xFFECC281), Color(0xFFDF9F57)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ).createShader(bounds),
-                child: const Text(
-                  'NOPA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.0,
-                    fontFamily: 'ChochoAuraDemo',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              InkWell(
-                onTap: () => Navigator.of(context).pop(),
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(2.0),
-                  child: SvgPicture.asset(
-                    'assets/svg_icons/back01.svg',
-                    width: 22,
-                    height: 22,
-                    fit: BoxFit.contain,
-                    colorFilter: const ColorFilter.mode(
-                      Color(0xFFE2E0F0),
-                      BlendMode.srcIn,
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: NOPA Logo + Back SVG Icon
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          // Right: Hamburger Menu Icon (42x42)
-          InkWell(
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            borderRadius: BorderRadius.circular(21),
-            child: Container(
-              width: 42,
-              height: 42,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.08),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-              ),
-              child: SvgPicture.asset(
-                'assets/svg_icons/Manual01.svg',
-                width: 23,
-                height: 23,
-                fit: BoxFit.contain,
-                colorFilter: const ColorFilter.mode(
-                  Color(0xFFE2E0F0),
-                  BlendMode.srcIn,
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
                 ),
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.menu_rounded,
-                  color: Color(0xFFE2E0F0),
-                  size: 23,
-                ),
-              ),
+              ],
             ),
-          ),
-        ],
+
+            // Right: Notification Bell Button + Drawer Hamburger Menu
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<AppRepository>(
+                  builder: (context, repository, _) {
+                    final count = repository.unreadNotificationsCount;
+                    final bool hasUnread = count > 0;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          repository.fetchNotifications();
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF23223D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFFC7B299),
+                                  size: 23,
+                                ),
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      count > 9 ? '+۹' : count.toPersian(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 10),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF23223D),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: SvgPicture.asset(
+                          'assets/svg_icons/Manual01.svg',
+                          width: 22,
+                          height: 22,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFFC7B299),
+                            BlendMode.srcIn,
+                          ),
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFFC7B299),
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -444,8 +586,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           // Outer subtle ring
           Container(
-            width: 104,
-            height: 104,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -455,8 +597,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             alignment: Alignment.center,
             child: Container(
-              width: 90,
-              height: 90,
+              width: 86,
+              height: 86,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Color(0xFF4A467D),
@@ -478,8 +620,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             bottom: 2,
             left: 2,
             child: Container(
-              width: 28,
-              height: 28,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFFE5B585),
@@ -496,7 +638,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: const Icon(
                 Icons.edit_rounded,
                 color: Color(0xFF332014),
-                size: 14,
+                size: 13,
               ),
             ),
           ),
@@ -511,14 +653,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       alignment: Alignment.center,
       child: SvgPicture.asset(
         'assets/svg_icons/profile01.svg',
-        width: 50,
-        height: 50,
+        width: 46,
+        height: 46,
         colorFilter: const ColorFilter.mode(Color(0xFF433F75), BlendMode.srcIn),
         errorBuilder: (context, error, stackTrace) => const Icon(
           Icons.person_rounded,
           color: Color(0xFF433F75),
-          size: 50,
+          size: 46,
         ),
+      ),
+    );
+  }
+
+  /// Decorated Input Box (matching password box in login screen)
+  Widget _buildDecoratedInputBox({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.strokeGradient,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.all(AppColors.borderWidth),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 44),
+        decoration: BoxDecoration(
+          gradient: AppColors.darkSurfaceGradient,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        alignment: Alignment.center,
+        child: child,
       ),
     );
   }
@@ -547,19 +710,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
 
-        // Input Container
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1735),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFF382F58),
-              width: 1.0,
-            ),
-          ),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+        // Decorated Input Box
+        _buildDecoratedInputBox(
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
@@ -577,6 +729,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 fontSize: 12.5,
                 fontFamily: AppTheme.fontFamily,
               ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
         ),
@@ -608,18 +761,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
 
-        // Container with text on right and button on left
-        Container(
-          height: 48,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1735),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFF382F58),
-              width: 1.0,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+        // Decorated Box with text on right and button on left
+        _buildDecoratedInputBox(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -637,27 +781,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
 
-              // Embedded Change Request Button (left in RTL)
+              // Embedded Change Request Button (English NOPA Gold Gradient Style)
               InkWell(
                 onTap: onButtonPressed,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF261D40),
+                    gradient: AppColors.strokeGradient,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFC89255).withValues(alpha: 0.8),
-                      width: 1.0,
-                    ),
                   ),
-                  child: Text(
-                    buttonLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFE5A855),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: AppColors.darkSurfaceGradient,
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(
+                        color: const Color(0xFFC09268),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Text(
+                      buttonLabel,
+                      style: const TextStyle(
+                        color: Color(0xFFE1BC96),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
                     ),
                   ),
                 ),
@@ -668,9 +819,169 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ],
     );
   }
+
+  /// Section for creating/updating fixed password
+  Widget _buildPasswordSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            children: [
+              const Text(
+                'ایجاد / تغییر رمز عبور ثابت',
+                style: TextStyle(
+                  color: Color(0xFFC09268),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFC09268).withValues(alpha: 0.5),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Password Inputs Row
+        Row(
+          children: [
+            // New Password Field
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 6, right: 4),
+                    child: Text(
+                      'رمز عبور جدید',
+                      style: TextStyle(
+                        color: Color(0xFF9E9BB8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                  ),
+                  _buildDecoratedInputBox(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _newPasswordCtrl,
+                            obscureText: !_isNewPasswordVisible,
+                            style: const TextStyle(
+                              color: Color(0xFFEAE8F8),
+                              fontSize: 13,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              hintText: 'رمز عبور جدید',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                fontSize: 11.5,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
+                          child: Icon(
+                            _isNewPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: const Color(0xFF8E889D),
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+
+            // Confirm Password Field
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 6, right: 4),
+                    child: Text(
+                      'تکرار رمز عبور',
+                      style: TextStyle(
+                        color: Color(0xFF9E9BB8),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                  ),
+                  _buildDecoratedInputBox(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _confirmPasswordCtrl,
+                            obscureText: !_isConfirmPasswordVisible,
+                            style: const TextStyle(
+                              color: Color(0xFFEAE8F8),
+                              fontSize: 13,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                            decoration: InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              hintText: 'تکرار رمز عبور',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                fontSize: 11.5,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                          child: Icon(
+                            _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: const Color(0xFF8E889D),
+                            size: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 }
 
-/// Modal Dialog for Support Change Request (Matching Photo 2)
+/// Modal Dialog for Support Change Request
 class _ChangeRequestSupportDialog extends StatefulWidget {
   final String requestType;
   final String currentDate;
@@ -746,10 +1057,10 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF2C244A),
+            gradient: AppColors.screenBackgroundGradient,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: const Color(0xFF4C4175),
+              color: const Color(0xFF5A4D80),
               width: 1.0,
             ),
             boxShadow: [
@@ -768,7 +1079,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Profile/Shield icon on left in RTL (right in LTR)
+                  // Profile icon on left in RTL
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Container(
@@ -777,14 +1088,14 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: const Color(0xFFC89255).withValues(alpha: 0.8),
+                          color: const Color(0xFFC09268).withValues(alpha: 0.8),
                           width: 1.2,
                         ),
                       ),
                       alignment: Alignment.center,
                       child: const Icon(
                         Icons.person_outline_rounded,
-                        color: Color(0xFFC89255),
+                        color: Color(0xFFC09268),
                         size: 22,
                       ),
                     ),
@@ -810,21 +1121,24 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                 content: Container(
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF20183B),
+                    gradient: AppColors.strokeGradient,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF4C4175),
-                      width: 1.0,
-                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    widget.requestType,
-                    style: const TextStyle(
-                      color: Color(0xFFE2E0F0),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
+                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.darkSurfaceGradient,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.requestType,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E0F0),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
                     ),
                   ),
                 ),
@@ -837,21 +1151,24 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                 content: Container(
                   height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF20183B),
+                    gradient: AppColors.strokeGradient,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF4C4175),
-                      width: 1.0,
-                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    widget.currentDate,
-                    style: const TextStyle(
-                      color: Color(0xFFE2E0F0),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
+                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.darkSurfaceGradient,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.currentDate,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E0F0),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
                     ),
                   ),
                 ),
@@ -865,30 +1182,33 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                 content: Container(
                   height: 110,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF20183B),
+                    gradient: AppColors.strokeGradient,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF4C4175),
-                      width: 1.0,
-                    ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: TextField(
-                    controller: _descCtrl,
-                    maxLines: 4,
-                    style: const TextStyle(
-                      color: Color(0xFFE2E0F0),
-                      fontSize: 12.5,
-                      fontFamily: AppTheme.fontFamily,
+                  padding: const EdgeInsets.all(AppColors.borderWidth),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.darkSurfaceGradient,
+                      borderRadius: BorderRadius.circular(9),
                     ),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: 'ما را در جریان قرار دهید',
-                      hintStyle: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        fontSize: 12,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: TextField(
+                      controller: _descCtrl,
+                      maxLines: 4,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E0F0),
+                        fontSize: 12.5,
                         fontFamily: AppTheme.fontFamily,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: 'ما را در جریان قرار دهید',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
                     ),
                   ),
@@ -921,7 +1241,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFFE5A855),
+                            color: Color(0xFFCD8449),
                           ),
                         )
                       : TextButton(
@@ -929,7 +1249,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                           child: const Text(
                             'ارسال',
                             style: TextStyle(
-                              color: Color(0xFFE5A855),
+                              color: Color(0xFFE1BC96),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,

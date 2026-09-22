@@ -207,7 +207,7 @@ class _MapScreenState extends State<MapScreen> {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: 'ChochoAuraDemo',
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),
