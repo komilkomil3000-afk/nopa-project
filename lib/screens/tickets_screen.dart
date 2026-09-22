@@ -124,9 +124,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
   }
 
   void _handleBottomNavTap(int idx) {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
+    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
     navigateToMainTab(idx);
   }
 

@@ -44,9 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _handleBottomNavTap(int idx) {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
+    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
     navigateToMainTab(idx);
   }
 

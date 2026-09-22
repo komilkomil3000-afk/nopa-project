@@ -1071,15 +1071,15 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                       child: Text(
                         tab['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
-                          fontSize: isSelected ? 16 : 14.5,
+                          color: isSelected ? const Color(0xFFE1BC96) : const Color(0xFF9D99B8),
+                          fontSize: isSelected ? 15.5 : 14,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
                           shadows: isSelected
                               ? [
                                   Shadow(
-                                    color: const Color(0xFFDE9959).withValues(alpha: 0.4),
+                                    color: const Color(0xFFC09268).withValues(alpha: 0.45),
                                     blurRadius: 8,
                                   ),
                                 ]
@@ -1218,15 +1218,15 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 child: Row(
                   children: [
-                    // Right: Challenge Title
-                    Flexible(
+                    // Right: Challenge Title (Smaller, concise)
+                    Expanded(
                       child: Text(
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 13.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -1236,9 +1236,10 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
                     const SizedBox(width: 8),
 
-                    // Next: Status Tag (جدید / شروع شده / اصلاحیه / منقضی شده)
+                    // Left Group: Status Tag -> Reward Amount -> Chevron
+                    // 1. Status Tag
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
                       decoration: BoxDecoration(
                         color: statusBg,
                         borderRadius: BorderRadius.circular(6),
@@ -1248,16 +1249,16 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                         statusLabel,
                         style: TextStyle(
                           color: statusColor,
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),
 
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
 
-                    // Next: Reward Amount with Purple Color and Purple SVG (No box)
+                    // 2. Reward Amount
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1265,7 +1266,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                           '+${reward.toString().toPersianDigits()}',
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
-                            fontSize: 11.5,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,
                           ),
@@ -1283,7 +1284,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                       ],
                     ),
 
-                    const Spacer(),
+                    const SizedBox(width: 6),
 
                     // Far Left: Expand / Collapse Chevron Icon
                     Icon(

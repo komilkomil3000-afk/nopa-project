@@ -342,23 +342,11 @@ class _Class1ScreenState extends State<Class1Screen> {
   }
 
   void _handleBottomNavTap(int idx) {
-    if (idx == 1) {
-      if (widget.onBack != null) {
-        widget.onBack!();
-      } else if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
+    if (idx == 1 && widget.isEmbeddedInMain) {
       return;
     }
-
+    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
     navigateToMainTab(idx);
-    if (widget.onBack != null) {
-      widget.onBack!();
-    } else if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop(idx);
-    } else {
-      Navigator.of(context).pushReplacementNamed('/dashboard');
-    }
   }
 
   @override

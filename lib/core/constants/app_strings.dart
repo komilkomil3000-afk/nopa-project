@@ -1,4 +1,4 @@
-﻿class AppStrings {
+class AppStrings {
   static const String appName = 'نپا';
   static const String zarik = 'زریک';
   static const String nakh = 'نخ';
@@ -6,7 +6,7 @@
   static const String farsh = 'فرش';
   
   static const String navHome = 'خانه';
-  static const String navMap = 'نقشه';
+  static const String navMap = 'آموزگاه';
   static const String navChallenges = 'چالش‌ها';
   static const String navMarket = 'بازار';
   static const String navProfile = 'پروفایل';
