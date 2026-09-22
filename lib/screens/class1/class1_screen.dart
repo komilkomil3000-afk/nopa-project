@@ -1361,50 +1361,12 @@ class _Class1ScreenState extends State<Class1Screen> {
                 ),
               ),
 
-              // Left in RTL: Thin Brown-Stroked Prev & Next Video Buttons
+              // Left in RTL: Thin Brown-Stroked Next & Prev Video Buttons (Swapped)
               if (hasMultipleClips)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Previous Button (On right in RTL: Chevron Right points to previous)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _currentClipIndex > 0
-                            ? () {
-                                _videoPageController.previousPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(15),
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _currentClipIndex > 0
-                                  ? const Color(0xFFC09268)
-                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.chevron_right_rounded,
-                            color: _currentClipIndex > 0
-                                ? const Color(0xFFDEB58A)
-                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
-                            size: 19,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-
-                    // 2. Next Button (On left in RTL: Chevron Left points to next)
+                    // 1. Next Button (On right in RTL: moves to next clip)
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -1433,6 +1395,44 @@ class _Class1ScreenState extends State<Class1Screen> {
                           child: Icon(
                             Icons.chevron_left_rounded,
                             color: _currentClipIndex < _allClips.length - 1
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // 2. Previous Button (On left in RTL: moves to previous clip)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _currentClipIndex > 0
+                            ? () {
+                                _videoPageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _currentClipIndex > 0
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: _currentClipIndex > 0
                                 ? const Color(0xFFDEB58A)
                                 : const Color(0xFFDEB58A).withValues(alpha: 0.3),
                             size: 19,

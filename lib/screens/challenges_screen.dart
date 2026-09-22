@@ -165,183 +165,212 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     return list;
   }
 
+  /// Interactive Question Dialog matching exact reference designs
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
     final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
-    int tempSelectedOption = -1;
+    int selectedOptionIndex = -1;
     String? attachedFileName;
-    int currentStep = 0;
-    List<dynamic> qList = (challenge['questions'] != null && challenge['questions'] is List)
+
+    final String type = challenge['type']?.toString().toLowerCase() ?? '';
+    final List<dynamic> qList = (challenge['questions'] != null && challenge['questions'] is List)
         ? (challenge['questions'] as List)
         : [];
-    List<int> answers = List.filled(qList.isEmpty ? 3 : qList.length, -1);
+    final bool isMultipleChoice = type == 'quiz' ||
+        type == 'step_by_step_quiz' ||
+        type == 'multiple_choice' ||
+        qList.isNotEmpty ||
+        (challenge['options'] != null && (challenge['options'] as List).isNotEmpty);
+
+    // Extract options
+    List<String> options = [];
+    String questionText = challenge['desc'] ?? '';
+    if (qList.isNotEmpty) {
+      final firstQ = qList[0];
+      if (firstQ is Map) {
+        questionText = firstQ['q'] ?? firstQ['question'] ?? firstQ['text'] ?? questionText;
+        final rawOpts = firstQ['options'] ?? firstQ['opts'];
+        if (rawOpts is List) {
+          options = rawOpts.map((e) => e.toString()).toList();
+        }
+      }
+    } else if (challenge['options'] != null && challenge['options'] is List) {
+      options = (challenge['options'] as List).map((e) => e.toString()).toList();
+    }
+    if (options.isEmpty && isMultipleChoice) {
+      options = [
+        'پاسخ شماره اول',
+        'پاسخ شماره دوم',
+        'پاسخ شماره سوم',
+        'پاسخ شماره چهارم',
+      ];
+    }
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            bool hasOptions = challenge['options'] != null && (challenge['options'] as List).isNotEmpty;
-            bool isStepByStep = (challenge['type'] == 'step_by_step_quiz' || challenge['type'] == 'quiz') && qList.isNotEmpty;
-
             return Directionality(
               textDirection: TextDirection.rtl,
               child: Dialog(
-                backgroundColor: const Color(0xFF1E1435),
+                backgroundColor: const Color(0xFF28274A),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
-                  side: BorderSide(color: const Color(0xFF8B5CF6).withValues(alpha: 0.3)),
+                  side: BorderSide(
+                    color: const Color(0xFF5A588B).withValues(alpha: 0.5),
+                    width: 1.2,
+                  ),
                 ),
+                insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(22),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        // 1. Top Header: Flame/Challenge Icon on Left + Title centered
+                        Stack(
+                          alignment: Alignment.center,
                           children: [
+                            // Center Title
+                            const Text(
+                              'شرکت در چالش',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
+
+                            // Top-Left Glowing Flame Icon (LTR alignment = Left)
+                            Positioned(
+                              left: 0,
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7E72B8).withValues(alpha: 0.35),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.local_fire_department_rounded,
+                                    color: Color(0xFF9E92E8),
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // 2. Row: تیتر: | Title
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Pill Badge "تیتر:"
+                            _buildDialogPillBadge('تیتر:'),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                challenge['title'],
+                                challenge['title'] ?? '',
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD6D3E6),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                   fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.close, color: Colors.white54, size: 20),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: () => Navigator.pop(context),
+                          ],
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // 3. Row: سوال: | Question
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Pill Badge "سوال:"
+                            _buildDialogPillBadge(isMultipleChoice ? 'سوال۱:' : 'سوال:'),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                questionText.isNotEmpty ? questionText : 'توضیحات تکمیلی این چالش',
+                                style: const TextStyle(
+                                  color: Color(0xFFD6D3E6),
+                                  fontSize: 12.5,
+                                  height: 1.5,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'جایزه: ${challenge['reward'].toString().toPersianDigits()} زریک 🪙',
-                            style: const TextStyle(
-                              color: Color(0xFFFFD54F),
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                        const Divider(color: Colors.white10, height: 24),
 
-                        if (!isStepByStep) ...[
-                          Text(
-                            challenge['desc'] ?? '',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                              height: 1.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                          // Descriptive Text Submission
-                          const Text(
-                            'پاسخ تشریحی خود را بنویسید:',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: textCtrl,
-                            maxLines: 3,
-                            style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              hintText: 'متن پاسخ شما برای راهبر کاروان...',
-                              hintStyle: const TextStyle(color: Colors.white24, fontSize: 11, fontFamily: AppTheme.fontFamily),
-                              filled: true,
-                              fillColor: const Color(0xFF160E2A),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Colors.white10),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Colors.white10),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Color(0xFF8B5CF6)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                        // 4. Input Area: Multiple Choice OR Descriptive Text + File Picker
+                        if (isMultipleChoice) ...[
+                          // Multiple Choice Options List matching photo
+                          ...List.generate(options.length, (index) {
+                            final bool isSelected = selectedOptionIndex == index;
+                            final String optionNumber = (index + 1).toString().toPersianDigits();
 
-                          // Multiple Choice
-                          if (hasOptions) ...[
-                            const Text(
-                              'گزینه پاسخ صحیح را انتخاب کنید:',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            ...List.generate((challenge['options'] as List).length, (index) {
-                              bool isSel = tempSelectedOption == index;
-                              return GestureDetector(
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10.0),
+                              child: GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
-                                    tempSelectedOption = index;
+                                    selectedOptionIndex = index;
                                   });
                                 },
-                                child: Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: isSel ? const Color(0xFF8B5CF6).withValues(alpha: 0.15) : const Color(0xFF160E2A),
+                                    color: isSelected
+                                        ? const Color(0xFF383568)
+                                        : const Color(0xFF1E1D38),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isSel ? const Color(0xFF8B5CF6) : Colors.white10,
+                                      color: isSelected
+                                          ? const Color(0xFF9292E2)
+                                          : const Color(0xFF454270),
+                                      width: isSelected ? 1.4 : 1.0,
                                     ),
                                   ),
                                   child: Row(
                                     children: [
-                                      Container(
-                                        width: 18,
-                                        height: 18,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isSel ? const Color(0xFF8B5CF6) : Colors.white30,
-                                            width: 2,
-                                          ),
-                                          color: isSel ? const Color(0xFF8B5CF6) : Colors.transparent,
+                                      // Option Number on Right in RTL
+                                      Text(
+                                        optionNumber,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? const Color(0xFFDE9959)
+                                              : const Color(0xFF8E88B0),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: AppTheme.fontFamily,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
+                                      // Option Text
                                       Expanded(
                                         child: Text(
-                                          challenge['options'][index],
-                                          textAlign: TextAlign.right,
+                                          options[index],
                                           style: TextStyle(
-                                            color: isSel ? Colors.white : Colors.white70,
-                                            fontSize: 12.5,
-                                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : const Color(0xFFD3D0E3),
+                                            fontSize: 12,
+                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                                             fontFamily: AppTheme.fontFamily,
                                           ),
                                         ),
@@ -349,273 +378,248 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                     ],
                                   ),
                                 ),
-                              );
-                            }),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // File Upload Attachment Section
-                          const Text(
-                            'پیوست فایل تکلیف (عکس / صوت / مدرک):',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () {
-                              setDialogState(() {
-                                attachedFileName = 'فایل_تکلیف_نپا_${challenge['id'].toString().substring(0, 4)}.mp3';
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF160E2A),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white10),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    attachedFileName == null ? Icons.attach_file : Icons.check_circle_outline,
-                                    color: attachedFileName == null ? Colors.white38 : const Color(0xFF10B981),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    attachedFileName ?? 'انتخاب و پیوست فایل از دستگاه',
-                                    style: TextStyle(
-                                      color: attachedFileName == null ? Colors.white38 : const Color(0xFF10B981),
-                                      fontSize: 12,
-                                      fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                        ] else ...[
-                          // Step-by-step quiz UI
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD946EF).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'مرحله ${(currentStep + 1).toString().toPersianDigits()} از ${qList.length.toString().toPersianDigits()}',
-                              style: const TextStyle(
-                                color: Color(0xFFD946EF),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            qList[currentStep]['q'] ?? qList[currentStep]['question'] ?? qList[currentStep]['text'] ?? '',
-                            textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              height: 1.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          ...List.generate(((qList[currentStep]['options'] ?? qList[currentStep]['opts'] ?? []) as List).length, (index) {
-                            final currentOpts = (qList[currentStep]['options'] ?? qList[currentStep]['opts'] ?? []) as List;
-                            bool isSel = answers[currentStep] == index;
-                            return GestureDetector(
-                              onTap: () {
-                                setDialogState(() {
-                                  answers[currentStep] = index;
-                                });
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: isSel ? const Color(0xFF8B5CF6).withValues(alpha: 0.15) : const Color(0xFF160E2A),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isSel ? const Color(0xFF8B5CF6) : Colors.white10,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 18,
-                                      height: 18,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isSel ? const Color(0xFF8B5CF6) : Colors.white30,
-                                          width: 2,
-                                        ),
-                                        color: isSel ? const Color(0xFF8B5CF6) : Colors.transparent,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        currentOpts[index].toString(),
-                                        textAlign: TextAlign.right,
-                                        style: TextStyle(
-                                          color: isSel ? Colors.white : Colors.white70,
-                                          fontSize: 12.5,
-                                          fontFamily: AppTheme.fontFamily,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
                             );
                           }),
-                          const SizedBox(height: 24),
+                        ] else ...[
+                          // Descriptive Question Area (پاسخ:)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDialogPillBadge('پاسخ:'),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: textCtrl,
+                                  maxLines: 4,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12.5,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                  decoration: InputDecoration(
+                                    hintText: 'پاسخ تشریحی خود را بنویسید...',
+                                    hintStyle: const TextStyle(
+                                      color: Color(0xFF7E789F),
+                                      fontSize: 11.5,
+                                      fontFamily: AppTheme.fontFamily,
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFF1E1D38),
+                                    contentPadding: const EdgeInsets.all(12),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(color: Color(0xFF454270)),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(color: Color(0xFF454270)),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(color: Color(0xFF9292E2)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // File Attachment Row (پیوست فایل:)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              _buildDialogPillBadge('پیوست فایل:'),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setDialogState(() {
+                                      attachedFileName = 'فایل_تکلیف_${challenge['id'].toString().substring(0, 4)}.pdf';
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1E1D38),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFF454270)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          attachedFileName ?? 'انتخاب',
+                                          style: TextStyle(
+                                            color: attachedFileName == null
+                                                ? const Color(0xFF7E789F)
+                                                : const Color(0xFF22C55E),
+                                            fontSize: 11.5,
+                                            fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
+                                            fontFamily: AppTheme.fontFamily,
+                                          ),
+                                        ),
+                                        Icon(
+                                          attachedFileName == null ? Icons.attach_file : Icons.check_circle_outline,
+                                          color: attachedFileName == null ? const Color(0xFF7E789F) : const Color(0xFF22C55E),
+                                          size: 16,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
 
-                        // Submit Button
-                        Container(
-                          width: double.infinity,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)]),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (isStepByStep) {
-                                if (answers[currentStep] == -1) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'لطفاً یکی از گزینه‌ها را برای این مرحله انتخاب کنید.',
-                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                                      ),
-                                      backgroundColor: Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-                                if (currentStep < qList.length - 1) {
-                                  setDialogState(() {
-                                    currentStep++;
-                                  });
-                                  return;
-                                }
-                              } else {
-                                final String textValue = textCtrl.text.trim();
-                                final bool hasText = textValue.isNotEmpty;
-                                final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
-                                final bool hasOption = hasOptions && tempSelectedOption != -1;
+                          const SizedBox(height: 24),
 
-                                if (!hasText && !hasFile && !hasOption) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'فیلد پاسخ خالی است! لطفاً متن پاسخ یا فایل مورد نظر را وارد نمایید.',
-                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                                      ),
-                                      backgroundColor: Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                  return;
-                                }
-                              }
-
-                              Navigator.pop(context);
-
-                              final repository = Provider.of<AppRepository>(context, listen: false);
-                              if (isStepByStep) {
-                                repository.submitAssignment(SubmissionModel(
-                                  id: 's_${DateTime.now().millisecondsSinceEpoch}',
-                                  challengeId: challenge['id'],
-                                  studentId: repository.currentUser.id,
-                                  studentName: repository.currentUser.name,
-                                  answerText: 'کوییز مرحله‌ای پاسخ داده شد. پاسخ‌ها: $answers',
-                                  submittedAt: DateTime.now(),
-                                  status: 'approved',
-                                  scoreFeedback: 'آزمون مرحله‌ای ثبت شد! ${challenge['reward']}+ زریک کسب کردید! 🎓🏆',
-                                ));
-                                repository.currentUser = UserModel(
-                                  id: repository.currentUser.id,
-                                  name: repository.currentUser.name,
-                                  phoneNumber: repository.currentUser.phoneNumber,
-                                  role: repository.currentUser.role,
-                                  zarik: repository.currentUser.zarik + (challenge['reward'] as int),
-                                  nakh: repository.currentUser.nakh,
-                                  beyragh: repository.currentUser.beyragh,
-                                  farsh: repository.currentUser.farsh,
-                                  hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
-                                );
-                                HttpApiService().submitQuizChallenge(challenge['id'], answers);
-                              } else {
-                                String ansText = textCtrl.text;
-                                if (attachedFileName != null) {
-                                  ansText += '\nفایل: $attachedFileName';
-                                }
-                                if (tempSelectedOption != -1) {
-                                  ansText += '\nگزینه انتخابی: $tempSelectedOption';
-                                }
-                                repository.submitAssignment(SubmissionModel(
-                                  id: 's_${DateTime.now().millisecondsSinceEpoch}',
-                                  challengeId: challenge['id'],
-                                  studentId: repository.currentUser.id,
-                                  studentName: repository.currentUser.name,
-                                  answerText: ansText,
-                                  submittedAt: DateTime.now(),
-                                  status: 'pending',
-                                ));
-                              }
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    isStepByStep
-                                        ? 'آزمون مرحله‌ای ثبت شد! ${challenge['reward']}+ زریک کسب کردید! 🎓🏆'
-                                        : 'پاسخ شما با موفقیت ثبت شد و برای راهبر کاروان ارسال گردید ✅',
-                                    style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                          // 5. Bottom Action Row: ارسال (Right) | لغو (Left)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // لغو Button on Left in RTL
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  'لغو',
+                                  style: TextStyle(
+                                    color: Color(0xFF9D99B8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: AppTheme.fontFamily,
                                   ),
-                                  backgroundColor: const Color(0xFF10B981),
-                                  behavior: SnackBarBehavior.floating,
                                 ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                            child: Text(
-                              (isStepByStep && currentStep < qList.length - 1)
-                                  ? 'مرحله بعدی ⬅️'
-                                  : 'ثبت و ارسال نهایی چالش',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                            ),
+                              ),
+
+                              // ارسال Button on Right in RTL
+                              TextButton(
+                                onPressed: () {
+                                  if (isMultipleChoice) {
+                                    if (selectedOptionIndex == -1) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('لطفاً یکی از گزینه‌ها را انتخاب کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Color(0xFFEF4444),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  } else {
+                                    final String textValue = textCtrl.text.trim();
+                                    final bool hasText = textValue.isNotEmpty;
+                                    final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
+                                    if (!hasText && !hasFile) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('لطفاً متن پاسخ یا فایل را وارد نمایید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Color(0xFFEF4444),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  }
+
+                                  Navigator.pop(context);
+
+                                  final repository = Provider.of<AppRepository>(context, listen: false);
+                                  if (isMultipleChoice) {
+                                    repository.submitAssignment(SubmissionModel(
+                                      id: 's_${DateTime.now().millisecondsSinceEpoch}',
+                                      challengeId: challenge['id'],
+                                      studentId: repository.currentUser.id,
+                                      studentName: repository.currentUser.name,
+                                      answerText: 'گزینه انتخابی: ${(selectedOptionIndex + 1).toString().toPersianDigits()}',
+                                      submittedAt: DateTime.now(),
+                                      status: 'approved',
+                                      scoreFeedback: 'پاسخ ثبت شد و ${challenge['reward']} زریک به حساب شما اضافه شد.',
+                                    ));
+                                    repository.currentUser = UserModel(
+                                      id: repository.currentUser.id,
+                                      name: repository.currentUser.name,
+                                      phoneNumber: repository.currentUser.phoneNumber,
+                                      role: repository.currentUser.role,
+                                      zarik: repository.currentUser.zarik + (challenge['reward'] as int),
+                                      nakh: repository.currentUser.nakh,
+                                      beyragh: repository.currentUser.beyragh,
+                                      farsh: repository.currentUser.farsh,
+                                      hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
+                                    );
+                                    HttpApiService().submitQuizChallenge(challenge['id'], [selectedOptionIndex]);
+                                  } else {
+                                    String ansText = textCtrl.text;
+                                    if (attachedFileName != null) {
+                                      ansText += '\nفایل: $attachedFileName';
+                                    }
+                                    repository.submitAssignment(SubmissionModel(
+                                      id: 's_${DateTime.now().millisecondsSinceEpoch}',
+                                      challengeId: challenge['id'],
+                                      studentId: repository.currentUser.id,
+                                      studentName: repository.currentUser.name,
+                                      answerText: ansText,
+                                      submittedAt: DateTime.now(),
+                                      status: 'pending',
+                                    ));
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        isMultipleChoice
+                                            ? 'پاسخ شما با موفقیت ثبت شد و جایزه تعلق گرفت.'
+                                            : 'پاسخ شما با موفقیت برای راهبر کاروان ارسال شد.',
+                                        style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                      ),
+                                      backgroundColor: const Color(0xFF10B981),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'ارسال',
+                                  style: TextStyle(
+                                    color: Color(0xFFDE9959),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      );
+    }
+
+  static Widget _buildDialogPillBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF383562),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF535084), width: 1.0),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFFD6D3E6),
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.fontFamily,
+        ),
+      ),
     );
   }
 
@@ -650,10 +654,10 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // 1. Top Bar: Gradient NOPA + Back button on Left, Hamburger Menu on Right
+              // 1. Top Bar: Gradient NOPA + Back SVG icon on Left, Hamburger Menu on Right
               _buildTopBar(),
 
-              // 2. Main Scrollable Content: Slim Banner + Category Tabs + Challenge Cards
+              // 2. Main Scrollable Content: Clean Banner + Category Tabs + Challenge Cards
               Expanded(
                 child: RefreshIndicator(
                   color: const Color(0xFFCD8449),
@@ -667,12 +671,12 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // 2.1 Compact Station Banner Carousel with 3 indicator dots
+                        // 2.1 Clean Station Banner Carousel with 3 indicator dots (No text overlay)
                         _buildStationBannerSlider(),
 
                         const SizedBox(height: 18),
 
-                        // 2.2 Category Tabs: فردی / گروهی / میان گروهی
+                        // 2.2 Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
                         _buildCategoryTabsBar(),
 
                         const SizedBox(height: 18),
@@ -712,7 +716,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
-  /// Top Bar matching user design: Left = NOPA + بازگشت, Right = Hamburger Menu Button
+  /// Top Bar matching Notifications screen: Left = NOPA + raw back01.svg, Right = Hamburger Menu Button
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
@@ -722,13 +726,13 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Logo + Return / Back button
+            // Left: NOPA Logo + Back SVG Icon (No extra text, identical to notifications screen)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  height: 38,
+                  height: 42,
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: ShaderMask(
@@ -754,64 +758,119 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 2),
                 GestureDetector(
                   onTap: _handleBackAction,
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/svg_icons/back01.svg',
-                          width: 17,
-                          height: 17,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFFC7B299),
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'بازگشت',
-                          style: TextStyle(
-                            color: Color(0xFFC7B299),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ],
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
 
-            // Right: Drawer Hamburger Menu Button (height 42)
-            Builder(
-              builder: (ctx) => Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => Scaffold.of(ctx).openDrawer(),
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF23223D),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.menu_rounded,
-                        color: Color(0xFFC7B299),
-                        size: 24,
+            // Right: Notification Bell Button + Drawer Hamburger Menu Button (height 42)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<AppRepository>(
+                  builder: (context, repository, _) {
+                    final count = repository.unreadNotificationsCount;
+                    final bool hasUnread = count > 0;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          repository.fetchNotifications();
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF23223D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFFC7B299),
+                                  size: 23,
+                                ),
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      count > 9 ? '+۹' : count.toPersian(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 10),
+                Builder(
+                  builder: (ctx) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Scaffold.of(ctx).openDrawer(),
+                      borderRadius: BorderRadius.circular(22),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF23223D),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFFC7B299),
+                            size: 24,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -819,7 +878,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
-  /// Compact Banner Slider with 3 indicator dots matching Home screen
+  /// Clean Banner Slider (No text overlay) with 3 animated indicator dots
   Widget _buildStationBannerSlider() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -837,99 +896,18 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Banner Image
-                      Image.asset(
-                        'assets/images/banners/banner1.jpg',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF5A3825), Color(0xFF382318)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
+                  child: Image.asset(
+                    'assets/images/banners/banner1.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF5A3825), Color(0xFF382318)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
                       ),
-
-                      // Soft dark vignette overlay
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withValues(alpha: 0.25),
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.35),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                      ),
-
-                      // Glowing Center Badge matching screenshot
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'منزلگاه اول',
-                              style: TextStyle(
-                                color: Color(0xFFF4DCC5),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                shadows: [
-                                  Shadow(
-                                    color: Color(0xCC000000),
-                                    blurRadius: 4,
-                                    offset: Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3.5),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.55),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFFDE9959).withValues(alpha: 0.7),
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFE5A86D).withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: const Text(
-                                'کاروانسرای غبارگرفته',
-                                style: TextStyle(
-                                  color: Color(0xFFFFB366),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  shadows: [
-                                    Shadow(
-                                      color: Color(0xFFDE9959),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );
@@ -939,7 +917,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
         const SizedBox(height: 8),
 
-        // 3 Animated Dot Indicators matching Home Banner
+        // 3 Animated Dot Indicators
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -966,7 +944,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
-  /// Category Tabs: فردی / گروهی / میان گروهی matching screenshot
+  /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
   Widget _buildCategoryTabsBar() {
     final tabs = [
       {'title': 'فردی', 'index': 0},
@@ -979,32 +957,36 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: tabs.map((tab) {
               final int idx = tab['index'] as int;
               final bool isSelected = _selectedCategoryIndex == idx;
 
-              return GestureDetector(
-                onTap: () => setState(() => _selectedCategoryIndex = idx),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Text(
-                    tab['title'] as String,
-                    style: TextStyle(
-                      color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
-                      fontSize: isSelected ? 16 : 14.5,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      shadows: isSelected
-                          ? [
-                              Shadow(
-                                color: const Color(0xFFDE9959).withValues(alpha: 0.4),
-                                blurRadius: 8,
-                              ),
-                            ]
-                          : null,
+              return Expanded(
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedCategoryIndex = idx),
+                    behavior: HitTestBehavior.opaque,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        tab['title'] as String,
+                        style: TextStyle(
+                          color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
+                          fontSize: isSelected ? 16 : 14.5,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          shadows: isSelected
+                              ? [
+                                  Shadow(
+                                    color: const Color(0xFFDE9959).withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1023,7 +1005,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
-  /// Responsive Challenge Card with Title -> Status Tag -> Prize Icon -> Description & Participate Button
+  /// Compact Challenge Box (collapsed shows only Title, Tag, Reward) -> expands on tap showing info & participate button
   Widget _buildChallengeCard({
     required Map<String, dynamic> item,
     required String id,
@@ -1068,61 +1050,71 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            stops: [0.0, 0.5, 1.0],
-            colors: [
-              Color(0xFF3A3A6A),
-              Color(0xFF9292E2),
-              Color(0xFF3A3A6A),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(1.2), // Gradient border
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14.8),
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: [0.0, 0.53, 1.0],
-              colors: [
-                Color(0xFF3D3C67),
-                Color(0xFF36345C),
-                Color(0xFF333359),
-              ],
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Top Row: Title on Right -> Status Tag -> Prize Icon -> Expand Toggle
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (_expandedChallengeIds.contains(id)) {
-                      _expandedChallengeIds.remove(id);
-                    } else {
-                      _expandedChallengeIds.add(id);
-                    }
-                  });
-                },
-                behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                if (_expandedChallengeIds.contains(id)) {
+                  _expandedChallengeIds.remove(id);
+                } else {
+                  _expandedChallengeIds.add(id);
+                }
+              });
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: isExpanded
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      )
+                    : BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(1.2), // Gradient border
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: isExpanded
+                      ? const BorderRadius.only(
+                          topLeft: Radius.circular(14.8),
+                          topRight: Radius.circular(14.8),
+                        )
+                      : BorderRadius.circular(14.8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
+                    colors: [
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                 child: Row(
                   children: [
-                    // Right: Title (Flexible so it adapts smoothly to screen width)
+                    // Right: Challenge Title
                     Flexible(
                       child: Text(
                         title,
@@ -1161,7 +1153,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
                     const SizedBox(width: 8),
 
-                    // Next: Zaric Reward Prize Badge with Gold Coin Icon
+                    // Next: Reward Prize Badge (No text emoji)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
@@ -1196,7 +1188,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
                     const Spacer(),
 
-                    // Expand / Collapse Chevron Icon on the far left
+                    // Far Left: Expand / Collapse Chevron Icon
                     Icon(
                       isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
                       color: const Color(0xFF9897D2),
@@ -1205,136 +1197,154 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                   ],
                 ),
               ),
+            ),
+          ),
 
-              // 2. Challenge Description (متن توضیحات چالش)
-              if (desc.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  desc,
-                  textAlign: TextAlign.right,
-                  maxLines: isExpanded ? 8 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFD3D0E3),
-                    fontSize: 11.5,
-                    height: 1.55,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+          // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
+          if (isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF242240).withValues(alpha: 0.95),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
-              ],
+                border: Border(
+                  left: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  right: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                  bottom: BorderSide(color: const Color(0xFF3A3A6A).withValues(alpha: 0.8), width: 1.2),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Description
+                  if (desc.isNotEmpty) ...[
+                    Text(
+                      desc,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: Color(0xFFD3D0E3),
+                        fontSize: 11.5,
+                        height: 1.55,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
 
-              // 3. Mentor Feedback if rejected
-              if (status == 'rejected' && feedback != null && feedback.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
-                  ),
-                  child: Row(
+                  // Mentor Feedback if rejected
+                  if (status == 'rejected' && feedback != null && feedback.trim().isNotEmpty) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 15),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'توضیح راهبر: $feedback',
+                              style: const TextStyle(
+                                color: Color(0xFFFCA5A5),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Bottom Action Row: Details on Right -> Participate Button on Left
+                  Row(
                     children: [
-                      const Icon(Icons.error_outline_rounded, color: Color(0xFFF87171), size: 15),
-                      const SizedBox(width: 6),
+                      // Right: Details (Type + Creation Date + Deadline)
                       Expanded(
-                        child: Text(
-                          'توضیح راهبر: $feedback',
-                          style: const TextStyle(
-                            color: Color(0xFFFCA5A5),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'نوع: $typeLabel',
+                              style: const TextStyle(
+                                color: Color(0xFFB8B5CE),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                            Text(
+                              'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                              style: const TextStyle(
+                                color: Color(0xFFB8B5CE),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                            Text(
+                              'تاریخ: $dateStr',
+                              style: const TextStyle(
+                                color: Color(0xFF9D99B8),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Left: Participate Button (دکمه شرکت)
+                      GestureDetector(
+                        onTap: () => _showSubmissionDialog(item),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2A2835),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
+                            style: const TextStyle(
+                              color: Color(0xFFF4DCC5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-
-              const SizedBox(height: 10),
-
-              // 4. Bottom Row: Info on Right -> Participate Button on Left
-              Row(
-                children: [
-                  // Right: Info chips (Type + Creation Date + Deadline)
-                  Expanded(
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          'نوع: $typeLabel',
-                          style: const TextStyle(
-                            color: Color(0xFFB8B5CE),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                        Text(
-                          'مهلت: ${durationDays.toString().toPersianDigits()} روز',
-                          style: const TextStyle(
-                            color: Color(0xFFB8B5CE),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                        Text(
-                          'تاریخ: $dateStr',
-                          style: const TextStyle(
-                            color: Color(0xFF9D99B8),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Left: Participate Button (دکمه شرکت در سمت چپ)
-                  GestureDetector(
-                    onTap: () => _showSubmissionDialog(item),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2A2835),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFC09268).withValues(alpha: 0.85),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
-                        style: const TextStyle(
-                          color: Color(0xFFF4DCC5),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+        ],
       ),
     );
   }

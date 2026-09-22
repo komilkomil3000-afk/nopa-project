@@ -124,9 +124,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     // 1. News / جارچی اطلاعیه‌ها
     if (type == 'news' ||
-        title.contains('📢') ||
         title.contains('خبر') ||
         body.contains('خبر') ||
+        title.contains('اطلاعیه') ||
         title.contains('جارچی')) {
       try {
         final newsList = await HttpApiService().getNews();
@@ -135,7 +135,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           final nTitle = n['title']?.toString() ?? '';
           if (nTitle.isNotEmpty &&
               (title.contains(nTitle) ||
-                  nTitle.contains(title.replaceAll('📢', '').trim()))) {
+                  nTitle.contains(title.trim()))) {
             matched = n;
             break;
           }
@@ -547,7 +547,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// Filter Pills Bar (Styled identically to the Test Bypass "آزمایشی" button in Login screen)
+  /// Filter Tabs Bar: Text-only tabs matching the category tabs in Challenges screen
   Widget _buildFilterPills(List<Map<String, dynamic>> allList, int unreadCount) {
     final filters = [
       {'title': 'همه', 'count': allList.length},
@@ -556,56 +556,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Row(
-        children: List.generate(filters.length, (idx) {
-          final isSelected = _selectedFilterIndex == idx;
-          final item = filters[idx];
-          final int count = item['count'] as int;
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(filters.length, (idx) {
+              final isSelected = _selectedFilterIndex == idx;
+              final item = filters[idx];
+              final int count = item['count'] as int;
 
-          return Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedFilterIndex = idx),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: isSelected ? AppColors.accentGradient : AppColors.strokeGradient,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.all(AppColors.borderWidth),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
-                  decoration: BoxDecoration(
-                    gradient: isSelected ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
+              return Padding(
+                padding: const EdgeInsets.only(left: 20.0),
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedFilterIndex = idx),
+                  behavior: HitTestBehavior.opaque,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         item['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFFC7B299),
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
+                          fontSize: isSelected ? 15.5 : 14,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          shadows: isSelected
+                              ? [
+                                  Shadow(
+                                    color: const Color(0xFFDE9959).withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                  ),
+                                ]
+                              : null,
                         ),
                       ),
                       if (count > 0) ...[
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white.withValues(alpha: 0.22)
+                                ? const Color(0xFFDE9959).withValues(alpha: 0.25)
                                 : const Color(0xFF23223D),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFFDE9959).withValues(alpha: 0.6)
+                                  : const Color(0xFF383556),
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
                             count.toPersian(),
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFFC7B299),
-                              fontSize: 9.5,
+                              color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
+                              fontSize: 10,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
                             ),
@@ -615,10 +620,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ],
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 1.0,
+            width: double.infinity,
+            color: const Color(0xFF383556).withValues(alpha: 0.6),
+          ),
+        ],
       ),
     );
   }
