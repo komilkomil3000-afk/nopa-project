@@ -341,7 +341,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 'روزمان',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16.5,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
                   fontFamilyFallback: AppTheme.fontFamilyFallback,

@@ -36,6 +36,15 @@ class Station {
     'منزلگاه پنجم (فانوس دریایی)',
   ];
 
+  static const List<String> pureStationNames = [
+    'راهنمای کاروان',
+    'کاروانسرای غبارگرفته',
+    'معدن زیرزمینی',
+    'قلعه',
+    'دهکده ساحلی',
+    'فانوس دریایی',
+  ];
+
   static const List<String> ordinalNames = [
     'منزلگاه صفر',
     'منزلگاه اول',
@@ -50,6 +59,19 @@ class Station {
       return ordinalNames[index];
     }
     return 'منزلگاه $index';
+  }
+
+  static String getPureName(int index, [String? originalTitle]) {
+    if (index >= 0 && index < pureStationNames.length) {
+      return pureStationNames[index];
+    }
+    if (originalTitle != null && originalTitle.trim().isNotEmpty) {
+      String clean = originalTitle.replaceAll(RegExp(r'منزلگاه\s+[\u0600-\u06FF\d]+\s*[\(\:–\-]?\s*'), '');
+      clean = clean.replaceAll(RegExp(r'[\(\)]'), '').trim();
+      if (clean.isNotEmpty) return clean;
+      return originalTitle.trim();
+    }
+    return 'ایستگاه $index';
   }
 
   static String resolveTitle(String? originalTitle, int index) {

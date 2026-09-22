@@ -31,12 +31,12 @@ import 'services/theme_provider.dart';
 import 'utils/asset_precache_helper.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
+final ValueNotifier<int> mainTabNotifier = ValueNotifier<int>(0);
 
 void navigateToMainTab(int index) {
-  final ctx = navigatorKey.currentContext;
-  if (ctx != null) {
-    ctx.findAncestorStateOfType<MainScreenState>()?.setIndex(index);
-  }
+  mainTabNotifier.value = index;
+  mainScreenKey.currentState?.setIndex(index);
 }
 
 void main() async {
@@ -115,7 +115,7 @@ class NepaApp extends StatelessWidget {
         routes: {
           '/auth': (context) => const AuthScreen(),
           '/main': (context) => const SuccessScreen(),
-          '/dashboard': (context) => const MainScreen(),
+          '/dashboard': (context) => MainScreen(key: mainScreenKey),
           '/class1': (context) => const Class1Screen(),
           '/class2': (context) => const Class2Screen(),
           '/station_detail': (context) => const Class1Screen(),
@@ -143,6 +143,8 @@ class MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = mainTabNotifier.value;
+    mainTabNotifier.addListener(_handleTabNotifierChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         AssetPrecacheHelper.precacheCoreAssets(context);
@@ -151,8 +153,23 @@ class MainScreenState extends State<MainScreen> {
     });
   }
 
+  void _handleTabNotifierChange() {
+    if (mounted && _currentIndex != mainTabNotifier.value) {
+      setState(() {
+        _currentIndex = mainTabNotifier.value;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    mainTabNotifier.removeListener(_handleTabNotifierChange);
+    super.dispose();
+  }
+
   void setIndex(int index) {
-    if (mounted) {
+    mainTabNotifier.value = index;
+    if (mounted && _currentIndex != index) {
       setState(() {
         _currentIndex = index;
       });
@@ -222,9 +239,7 @@ class MainScreenState extends State<MainScreen> {
           role: userRole,
           currentIndex: _currentIndex,
           onTabSelected: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            setIndex(index);
           },
         ),
         body: Container(
@@ -243,9 +258,7 @@ class MainScreenState extends State<MainScreen> {
           currentIndex: _currentIndex,
           role: userRole,
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            setIndex(index);
           },
         ),
       ),

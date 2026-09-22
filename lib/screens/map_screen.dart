@@ -23,6 +23,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final Set<int> _expandedIndices = {};
   bool _isLoading = true;
+  int _selectedStationIndex = 0;
   List<Map<String, dynamic>> _stations = [];
   List<Map<String, dynamic>> _userProgress = [];
   final ScrollController _scrollController = ScrollController();
@@ -78,7 +79,7 @@ class _MapScreenState extends State<MapScreen> {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
-    final int currentStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
+    final int activeUserStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -105,8 +106,14 @@ class _MapScreenState extends State<MapScreen> {
                   // 1. Top Bar with NOPA Logo, Notifications & Drawer Menu
                   _buildTopBar(user),
 
-                // 2. Horizontal Station Selection & Progress Track Header
-                _buildStationTrackHeader(currentStationIndex, totalStationNodes),
+                // 2. Horizontal Station Selection & Progress Track Header (Starts at 0)
+                _buildStationTrackHeader(
+                  selectedStationIndex: _selectedStationIndex,
+                  activeUserStationIndex: activeUserStationIndex,
+                  userLevelFrame: userLevelFrame,
+                  completedStationsCount: user.completedStationsCount,
+                  totalNodes: totalStationNodes,
+                ),
                 const SizedBox(height: 16),
 
                 // 3. Map list of stations
@@ -292,7 +299,13 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /// Top Progress Track Header with Glowing Active Station, Faded Next Steps, and Champion Trophy Badge
-  Widget _buildStationTrackHeader(int currentStationIndex, int totalNodes) {
+  Widget _buildStationTrackHeader({
+    required int selectedStationIndex,
+    required int activeUserStationIndex,
+    required int userLevelFrame,
+    required int completedStationsCount,
+    required int totalNodes,
+  }) {
     const double nodeSize = 40.0;
     const double trophySize = 52.0;
 
@@ -311,16 +324,17 @@ class _MapScreenState extends State<MapScreen> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
 
         // Horizontal Nodes Track (Left to Right: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> Champion)
         SingleChildScrollView(
+          clipBehavior: Clip.none,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Directionality(
             textDirection: TextDirection.ltr,
             child: SizedBox(
-              height: trophySize + 10,
+              height: 68,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -329,14 +343,18 @@ class _MapScreenState extends State<MapScreen> {
                     // Station Node Circle
                     _buildStationNode(
                       index: i,
-                      currentStationIndex: currentStationIndex,
+                      isSelected: i == selectedStationIndex,
+                      currentStationIndex: activeUserStationIndex,
+                      userLevelFrame: userLevelFrame,
+                      completedStationsCount: completedStationsCount,
                       size: nodeSize,
                     ),
 
                     // Connecting Rails Track Segment between node i and node i+1 (or Champion)
                     _buildTrackConnector(
                       index: i,
-                      currentStationIndex: currentStationIndex,
+                      currentStationIndex: selectedStationIndex,
+                      userLevelFrame: userLevelFrame,
                       width: 22.0,
                     ),
                   ],
@@ -352,7 +370,7 @@ class _MapScreenState extends State<MapScreen> {
         // Subtle gradient divider below the track
         Container(
           height: 1,
-          margin: const EdgeInsets.only(left: 24, right: 24, top: 18, bottom: 12),
+          margin: const EdgeInsets.only(left: 24, right: 24, top: 14, bottom: 12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -370,39 +388,55 @@ class _MapScreenState extends State<MapScreen> {
   /// Individual Station Node with Dynamic Styling Based on Distance from Current Station
   Widget _buildStationNode({
     required int index,
+    required bool isSelected,
     required int currentStationIndex,
+    required int userLevelFrame,
+    required int completedStationsCount,
     required double size,
   }) {
-    final bool isCurrent = index == currentStationIndex;
+    final bool isCurrent = isSelected;
+    final bool isPassed = index < (userLevelFrame - 1) || index < completedStationsCount;
     final bool isFirstNext = index == currentStationIndex + 1;
     final bool isSecondNext = index == currentStationIndex + 2;
-    final bool isCompleted = index < currentStationIndex;
 
     Gradient gradient;
     Border border;
     List<BoxShadow>? boxShadow;
 
     if (isCurrent) {
-      // Current active station: Glowing bright golden/amber with soft aura
+      // Selected station: bright golden glow
       gradient = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color(0xFFEAA835),
-          Color(0xFFC7841F),
+          Color(0xFFFFBF42),
+          Color(0xFFD68B18),
         ],
       );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.5);
+      border = Border.all(color: const Color(0xFFFFE599), width: 1.8);
       boxShadow = [
         BoxShadow(
           color: const Color(0xFFEAA835).withValues(alpha: 0.55),
-          blurRadius: 16,
-          spreadRadius: 2,
+          blurRadius: 12,
+          spreadRadius: 1,
         ),
+      ];
+    } else if (isPassed) {
+      // Completed stations: Keep warm gold light and glow
+      gradient = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFE5A133),
+          Color(0xFFC07F1C),
+        ],
+      );
+      border = Border.all(color: const Color(0xFFFFD574), width: 1.3);
+      boxShadow = [
         BoxShadow(
-          color: const Color(0xFFC7841F).withValues(alpha: 0.35),
-          blurRadius: 24,
-          spreadRadius: 4,
+          color: const Color(0xFFD4973B).withValues(alpha: 0.4),
+          blurRadius: 8,
+          spreadRadius: 1,
         ),
       ];
     } else if (isFirstNext) {
@@ -427,17 +461,6 @@ class _MapScreenState extends State<MapScreen> {
         ],
       );
       border = Border.all(color: const Color(0xFF906D44), width: 1.2);
-    } else if (isCompleted) {
-      // Previously completed stations: Amber/Gold with warm finish
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFD4973B),
-          Color(0xFFB57822),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.2);
     } else {
       // Subsequent locked stations: Dark purple matching home station box style
       gradient = const LinearGradient(
@@ -452,7 +475,12 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return GestureDetector(
-      onTap: () => _scrollToStation(index),
+      onTap: () {
+        setState(() {
+          _selectedStationIndex = index;
+        });
+        _scrollToStation(index);
+      },
       child: Container(
         width: size,
         height: size,
@@ -465,14 +493,8 @@ class _MapScreenState extends State<MapScreen> {
         child: Center(
           child: Text(
             '$index',
-            style: TextStyle(
-              color: isCurrent || isCompleted
-                  ? Colors.white
-                  : (isFirstNext
-                      ? Colors.white.withValues(alpha: 0.95)
-                      : (isSecondNext
-                          ? Colors.white.withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.7))),
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.bold,
               fontFamily: AppTheme.fontFamily,
@@ -488,9 +510,11 @@ class _MapScreenState extends State<MapScreen> {
   Widget _buildTrackConnector({
     required int index,
     required int currentStationIndex,
+    required int userLevelFrame,
     required double width,
   }) {
-    final bool isGlowingSegment = index == currentStationIndex;
+    final bool isPassed = index < (userLevelFrame - 1);
+    final bool isGlowingSegment = index == currentStationIndex || isPassed;
 
     return SizedBox(
       width: width,
@@ -517,19 +541,19 @@ class _MapScreenState extends State<MapScreen> {
           // Glowing amber line segment transitioning away from current active node
           if (isGlowingSegment)
             Container(
-              height: 5,
+              height: 4,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2.5),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFEAA835),
-                    Color(0x00EAA835),
-                  ],
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: isPassed
+                      ? [const Color(0xFFE5A133), const Color(0xFFC07F1C)]
+                      : [const Color(0xFFFFB732), const Color(0x00FFB732)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFEAA835).withValues(alpha: 0.5),
-                    blurRadius: 8,
+                    color: const Color(0xFFFFB732).withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    spreadRadius: 0.5,
                   ),
                 ],
               ),

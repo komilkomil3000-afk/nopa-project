@@ -13,8 +13,9 @@ import '../../widgets/pending_challenges_dialog.dart';
 import '../../widgets/nopa_notification_dialog.dart';
 import '../../widgets/custom_drawer.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/nopa_inline_video_player.dart';
 import '../../main.dart';
-import '../chat_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Class 1 Screen (صفحه اطلاعات و توضیحات منزلگاه)
 class Class1Screen extends StatefulWidget {
@@ -35,6 +36,13 @@ class _Class1ScreenState extends State<Class1Screen> {
   int _currentClipIndex = 0;
   bool _isDescriptionExpanded = false;
   int _currentStationIndex = 0;
+  final PageController _videoPageController = PageController(viewportFraction: 0.92);
+
+  @override
+  void dispose() {
+    _videoPageController.dispose();
+    super.dispose();
+  }
 
   // Station lore, descriptions, and statistics
   static const Map<int, Map<String, String>> _stationLore = {
@@ -115,17 +123,18 @@ class _Class1ScreenState extends State<Class1Screen> {
         _station = args;
         _currentStationIndex = args.orderIndex;
       } else {
+        final lore0 = _stationLore[0]!;
         _station = Station(
-          id: '1',
-          title: 'منزلگاه اول (کاروانسرای غبارگرفته)',
-          teacher: 'پیر آیینه‌گر',
+          id: '0',
+          title: lore0['fullTitle'] ?? 'منزلگاه صفر (راهنمای کاروان)',
+          teacher: 'استاد کاروان',
           progress: 0.0,
           isLocked: false,
           isCurrent: true,
           imageUrl: '',
-          orderIndex: 1,
+          orderIndex: 0,
         );
-        _currentStationIndex = 1;
+        _currentStationIndex = 0;
       }
       _loadClassCategories();
     }
@@ -170,6 +179,9 @@ class _Class1ScreenState extends State<Class1Screen> {
           _allClips = clipsList;
           _currentClipIndex = 0;
         });
+        if (_videoPageController.hasClients) {
+          _videoPageController.jumpToPage(0);
+        }
       }
     } catch (e) {
       debugPrint('Error loading station details: $e');
@@ -250,15 +262,52 @@ class _Class1ScreenState extends State<Class1Screen> {
     );
   }
 
-  void _navigateToChat() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ChatScreen(
-          title: 'ارتباط با راهبر',
-        ),
-      ),
-    );
+  Future<void> _contactMentor() async {
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    String targetUrl = (user.socialGroupLink != null && user.socialGroupLink!.trim().isNotEmpty)
+        ? user.socialGroupLink!.trim()
+        : 'https://eitaa.com/komeilgraph';
+
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      if (targetUrl.startsWith('@')) {
+        targetUrl = 'https://eitaa.com/${targetUrl.substring(1)}';
+      } else if (targetUrl.contains('eitaa.com') || targetUrl.contains('t.me') || targetUrl.contains('rubika.ir') || targetUrl.contains('bale.ai')) {
+        targetUrl = 'https://$targetUrl';
+      } else {
+        targetUrl = 'https://eitaa.com/$targetUrl';
+      }
+    }
+
+    try {
+      final uri = Uri.parse(targetUrl);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'خطا در باز کردن لینک راهبر: $targetUrl',
+              style: const TextStyle(fontFamily: AppTheme.fontFamily),
+            ),
+            backgroundColor: const Color(0xFFE11D48),
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleBottomNavTap(int idx) {
+    navigateToMainTab(idx);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+      navigateToMainTab(idx);
+    } else {
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+      navigateToMainTab(idx);
+    }
   }
 
   @override
@@ -268,6 +317,11 @@ class _Class1ScreenState extends State<Class1Screen> {
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 6;
     final int activeUserStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
+
+    // Check if selected station is locked
+    final bool isLocked = _currentStationIndex > 0 &&
+        (_currentStationIndex + 1) > userLevelFrame &&
+        _currentStationIndex > user.completedStationsCount;
 
     // Dynamic counts from categories or fallback lore
     int skillSessionsCount = 0;
@@ -294,8 +348,7 @@ class _Class1ScreenState extends State<Class1Screen> {
       drawer: CustomDrawer(
         onTabSelected: (idx) {
           Navigator.pop(context);
-          Navigator.pop(context);
-          navigateToMainTab(idx);
+          _handleBottomNavTap(idx);
         },
         currentIndex: 1,
         role: user.role,
@@ -303,10 +356,7 @@ class _Class1ScreenState extends State<Class1Screen> {
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: 1,
         role: user.role,
-        onTap: (idx) {
-          Navigator.pop(context);
-          navigateToMainTab(idx);
-        },
+        onTap: (idx) => _handleBottomNavTap(idx),
       ),
       body: Container(
         width: double.infinity,
@@ -321,12 +371,12 @@ class _Class1ScreenState extends State<Class1Screen> {
         child: SafeArea(
           child: Column(
             children: [
-              // 1. Top Bar with NOPA Logo, Back Arrow, Notifications & Drawer Menu
+              // 1. Top Bar with NOPA Logo (vertically aligned with right circles) & Back SVG below
               _buildTopBar(user),
 
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -339,30 +389,35 @@ class _Class1ScreenState extends State<Class1Screen> {
 
                       const SizedBox(height: 14),
 
-                      // 3. Station Header: Description on Left & Station Card on Right (Home Screen Stroke Style)
-                      _buildStationLoreHeader(lore),
+                      if (isLocked)
+                        // Locked Station State
+                        _buildLockedStationCard()
+                      else ...[
+                        // 3. Station Header: Description on Left & Station Image Box on Right
+                        _buildStationLoreHeader(lore),
 
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 18),
 
-                      // 4. Class Information & Statistics Strip (Right-aligned, 2-line expandable on tap)
-                      _buildStatsStrip(
-                        skillText: skillText,
-                        mediaText: mediaText,
-                        animText: animText,
-                        stayText: stayText,
-                      ),
+                        // 4. Class Information & Statistics Strip (Right-aligned, 2-line expandable on tap)
+                        _buildStatsStrip(
+                          skillText: skillText,
+                          mediaText: mediaText,
+                          animText: animText,
+                          stayText: stayText,
+                        ),
 
-                      const SizedBox(height: 22),
+                        const SizedBox(height: 20),
 
-                      // 5. Animation & Video Carousel Section (16:9 Full Horizontal Aspect Ratio with vedionot01.svg)
-                      _buildAnimationCarouselSection(currentClipTitle),
+                        // 5. Animation & Video Carousel Section (Spacious PageView, Right-aligned Caption, Flipped Chevron Controls)
+                        _buildAnimationCarouselSection(currentClipTitle),
 
-                      const SizedBox(height: 22),
+                        const SizedBox(height: 20),
 
-                      // 6. Action Buttons Styled with NOPA Logo Colors & Single-Line Fit
-                      _buildActionButtonsRow(),
+                        // 6. Action Buttons Styled with NOPA Logo Colors & Single-Line Fit
+                        _buildActionButtonsRow(),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
+                      ],
                     ],
                   ),
                 ),
@@ -374,64 +429,110 @@ class _Class1ScreenState extends State<Class1Screen> {
     );
   }
 
-  /// 1. Top Bar with NOPA Logo + Back Arrow underneath & Notifications + Drawer
+  /// Locked Station State Card
+  Widget _buildLockedStationCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF28274A),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF3E3B68), width: 1.2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/svg_icons/lock02.svg',
+            width: 48,
+            height: 48,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'این منزلگاه هنوز باز نشده است.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'جهت دسترسی به محتوا و کلاس‌های این منزلگاه، ابتدا مراحل و چالش‌های منزلگاه‌های قبلی را تکمیل نمایید.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xFFB5B3C8),
+              fontSize: 12,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 1. Top Bar with NOPA Logo on same vertical line with right circles + Back SVG without circular background
   Widget _buildTopBar(UserModel user) {
     return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 4),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 2),
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Text Logo with Gradient + Back Arrow directly under it
+            // Left: NOPA Text Logo (height 42 to vertically align with right circles) + Back SVG below it
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFFC09268),
-                      Color(0xFFF4DCC5),
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ).createShader(bounds),
-                  child: const Text(
-                    'NOPA',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                SizedBox(
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Navigator.pop(context),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF23223D),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: SvgPicture.asset(
-                        'assets/svg_icons/back01.svg',
-                        width: 16,
-                        height: 16,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFFC7B299),
-                          BlendMode.srcIn,
-                        ),
+                const SizedBox(height: 2),
+                // Back Button: Only the raw SVG icon without any circle or black background
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
                       ),
                     ),
                   ),
@@ -439,7 +540,7 @@ class _Class1ScreenState extends State<Class1Screen> {
               ],
             ),
 
-            // Right: Notification Bell Button + Drawer Hamburger Menu
+            // Right: Notification Bell Button + Drawer Hamburger Menu (height 42)
             Row(
               children: [
                 Consumer<AppRepository>(
@@ -546,30 +647,35 @@ class _Class1ScreenState extends State<Class1Screen> {
   }) {
     const double nodeSize = 40.0;
     const double trophySize = 52.0;
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
+    final lore = _stationLore[currentStationIndex] ?? _stationLore[0]!;
+    final String displayTitle = lore['fullTitle'] ?? 'منزلگاه $currentStationIndex';
 
     return Column(
       children: [
-        const SizedBox(height: 10),
-        const Text(
-          'منزلگاه را انتخاب کنید',
-          style: TextStyle(
+        const SizedBox(height: 6),
+        Text(
+          displayTitle,
+          style: const TextStyle(
             color: Color(0xFFEDE8F5),
             fontSize: 14.5,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             fontFamily: AppTheme.fontFamily,
             fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
 
         SingleChildScrollView(
+          clipBehavior: Clip.none,
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Directionality(
             textDirection: TextDirection.ltr,
             child: SizedBox(
-              height: trophySize + 10,
+              height: 68,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -579,11 +685,14 @@ class _Class1ScreenState extends State<Class1Screen> {
                       index: i,
                       isSelected: i == currentStationIndex,
                       currentStationIndex: activeUserStationIndex,
+                      userLevelFrame: userLevelFrame,
+                      completedStationsCount: user.completedStationsCount,
                       size: nodeSize,
                     ),
                     _buildTrackConnector(
                       index: i,
                       currentStationIndex: currentStationIndex,
+                      userLevelFrame: userLevelFrame,
                       width: 22.0,
                     ),
                   ],
@@ -597,7 +706,7 @@ class _Class1ScreenState extends State<Class1Screen> {
         // Subtle gradient divider
         Container(
           height: 1,
-          margin: const EdgeInsets.only(left: 14, right: 14, top: 16, bottom: 10),
+          margin: const EdgeInsets.only(left: 14, right: 14, top: 10, bottom: 10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -616,37 +725,53 @@ class _Class1ScreenState extends State<Class1Screen> {
     required int index,
     required bool isSelected,
     required int currentStationIndex,
+    required int userLevelFrame,
+    required int completedStationsCount,
     required double size,
   }) {
     final bool isCurrent = isSelected;
+    final bool isPassed = index < (userLevelFrame - 1) || index < completedStationsCount;
     final bool isFirstNext = index == currentStationIndex + 1;
     final bool isSecondNext = index == currentStationIndex + 2;
-    final bool isCompleted = index < currentStationIndex;
 
     Gradient gradient;
     Border border;
     List<BoxShadow>? boxShadow;
 
     if (isCurrent) {
+      // Selected station: bright golden glow
       gradient = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color(0xFFEAA835),
-          Color(0xFFC7841F),
+          Color(0xFFFFBF42),
+          Color(0xFFD68B18),
         ],
       );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.5);
+      border = Border.all(color: const Color(0xFFFFE599), width: 1.8);
       boxShadow = [
         BoxShadow(
           color: const Color(0xFFEAA835).withValues(alpha: 0.55),
-          blurRadius: 16,
-          spreadRadius: 2,
+          blurRadius: 12,
+          spreadRadius: 1,
         ),
+      ];
+    } else if (isPassed) {
+      // Stations the user has completed: Keep their warm gold light/glow
+      gradient = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFFE5A133),
+          Color(0xFFC07F1C),
+        ],
+      );
+      border = Border.all(color: const Color(0xFFFFD574), width: 1.3);
+      boxShadow = [
         BoxShadow(
-          color: const Color(0xFFC7841F).withValues(alpha: 0.35),
-          blurRadius: 24,
-          spreadRadius: 4,
+          color: const Color(0xFFD4973B).withValues(alpha: 0.4),
+          blurRadius: 8,
+          spreadRadius: 1,
         ),
       ];
     } else if (isFirstNext) {
@@ -669,16 +794,6 @@ class _Class1ScreenState extends State<Class1Screen> {
         ],
       );
       border = Border.all(color: const Color(0xFF906D44), width: 1.2);
-    } else if (isCompleted) {
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFD4973B),
-          Color(0xFFB57822),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.2);
     } else {
       gradient = const LinearGradient(
         begin: Alignment.topCenter,
@@ -721,9 +836,11 @@ class _Class1ScreenState extends State<Class1Screen> {
   Widget _buildTrackConnector({
     required int index,
     required int currentStationIndex,
+    required int userLevelFrame,
     required double width,
   }) {
-    final bool isGlowingSegment = index == currentStationIndex;
+    final bool isPassed = index < (userLevelFrame - 1);
+    final bool isGlowingSegment = index == currentStationIndex || isPassed;
 
     return SizedBox(
       width: width,
@@ -741,20 +858,19 @@ class _Class1ScreenState extends State<Class1Screen> {
           ),
           if (isGlowingSegment)
             Container(
-              height: 5,
+              height: 4,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFFB732),
-                    Color(0xFF8B6230),
-                  ],
+                borderRadius: BorderRadius.circular(2),
+                gradient: LinearGradient(
+                  colors: isPassed
+                      ? [const Color(0xFFE5A133), const Color(0xFFC07F1C)]
+                      : [const Color(0xFFFFB732), const Color(0x00FFB732)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFFB732).withValues(alpha: 0.6),
-                    blurRadius: 8,
-                    spreadRadius: 1,
+                    color: const Color(0xFFFFB732).withValues(alpha: 0.4),
+                    blurRadius: 6,
+                    spreadRadius: 0.5,
                   ),
                 ],
               ),
@@ -802,10 +918,10 @@ class _Class1ScreenState extends State<Class1Screen> {
     );
   }
 
-  /// 3. Station Lore Header: Text on Left (Right-aligned) & Home-styled Station Card on Right
+  /// 3. Station Lore Header: Text on Left & Station Image Box on Right (No shadow, no bottom text, Home gradient border)
   Widget _buildStationLoreHeader(Map<String, String> lore) {
-    const double cardWidth = 126.0;
-    const double cardHeight = 175.0;
+    const double cardWidth = 105.0;
+    const double cardHeight = 138.0;
     final String stationImage = _station?.imageUrl ?? '';
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
     final String ordinalTitle = lore['ordinalTitle'] ?? 'منزلگاه اول';
@@ -816,103 +932,12 @@ class _Class1ScreenState extends State<Class1Screen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Left in RTL: Text Title & Description (Right-aligned text)
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 2),
-                // Title (Right-aligned)
-                Text(
-                  ordinalTitle,
-                  textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 23,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Description text with Expand / Collapse
-                if (!_isDescriptionExpanded) ...[
-                  // Collapsed: Constrained to card height with "بیشتر" button
-                  SizedBox(
-                    height: cardHeight - 48,
-                    child: Text(
-                      fullDescription,
-                      textAlign: TextAlign.right,
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFD3D0E3),
-                        fontSize: 11.5,
-                        height: 1.6,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => setState(() => _isDescriptionExpanded = true),
-                    child: const Padding(
-                      padding: EdgeInsets.only(top: 2.0),
-                      child: Text(
-                        'بیشتر...',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: Color(0xFFF4DCC5),
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ),
-                ] else ...[
-                  // Expanded full text
-                  Text(
-                    fullDescription,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Color(0xFFD3D0E3),
-                      fontSize: 11.5,
-                      height: 1.6,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  GestureDetector(
-                    onTap: () => setState(() => _isDescriptionExpanded = false),
-                    child: const Text(
-                      'بستن (کمتر)',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: Color(0xFFFFD574),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          // Right in RTL: Station Card (Matching Home Screen StationCard Stroke & Shape)
+          // 1. Right in RTL: Station Image Card (Home Screen style, no shadow, no bottom info text)
           Container(
             width: cardWidth,
             height: cardHeight,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               gradient: const LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
@@ -923,134 +948,178 @@ class _Class1ScreenState extends State<Class1Screen> {
                   Color(0xFF3A3A6A),
                 ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
             ),
-            padding: const EdgeInsets.all(1.2), // Gradient border stroke width
+            padding: const EdgeInsets.all(1.2), // Gradient border stroke
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18.8),
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: [0.0, 0.53, 1.0],
-                  colors: [
-                    Color(0xFF3D3C67),
-                    Color(0xFF36345C),
-                    Color(0xFF333359),
-                  ],
-                ),
+                borderRadius: BorderRadius.circular(14.8),
+                color: const Color(0xFF2E2E50),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18.8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Upper Area: Image / imagenot01.svg
-                    Expanded(
-                      child: Container(
-                        color: const Color(0xFF2E2E50),
-                        child: hasValidImg
-                            ? CachedNetworkImage(
-                                imageUrl: ApiConstants.resolveImageUrl(stationImage),
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: const Color(0xFF2E2E50),
-                                  alignment: Alignment.center,
-                                  child: SvgPicture.asset(
-                                    'assets/svg_icons/imagenot01.svg',
-                                    width: 44,
-                                    height: 44,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: const Color(0xFF2E2E50),
-                                  alignment: Alignment.center,
-                                  child: SvgPicture.asset(
-                                    'assets/svg_icons/imagenot01.svg',
-                                    width: 44,
-                                    height: 44,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              )
-                            : Center(
-                                child: SvgPicture.asset(
-                                  'assets/svg_icons/imagenot01.svg',
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                      ),
-                    ),
-
-                    // 2. Stroke divider line
-                    Container(
-                      height: 1.2,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          stops: [0.0, 0.5, 1.0],
-                          colors: [
-                            Color(0xFF3A3A6A),
-                            Color(0xFF9292E2),
-                            Color(0xFF3A3A6A),
-                          ],
+                borderRadius: BorderRadius.circular(14.8),
+                child: hasValidImg
+                    ? CachedNetworkImage(
+                        imageUrl: ApiConstants.resolveImageUrl(stationImage),
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFF2E2E50),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            'assets/svg_icons/imagenot01.svg',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFF2E2E50),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            'assets/svg_icons/imagenot01.svg',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: SvgPicture.asset(
+                          'assets/svg_icons/imagenot01.svg',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                    ),
+              ),
+            ),
+          ),
 
-                    // 3. Bottom Info Bar: Number & Title
-                    Container(
-                      height: 42,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: Row(
-                          children: [
-                            // Station Number
-                            Text(
-                              '$_currentStationIndex',
-                              style: const TextStyle(
-                                color: Color(0xFF9292E2),
-                                fontSize: 16,
+          const SizedBox(width: 14),
+
+          // 2. Left in RTL: Title & Description Column
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 2),
+                // Title (Smaller font size ~17.5 as requested)
+                Text(
+                  ordinalTitle,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17.5,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Description with 6-line detection
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final textSpan = TextSpan(
+                      text: fullDescription,
+                      style: const TextStyle(
+                        color: Color(0xFFD3D0E3),
+                        fontSize: 10.5,
+                        height: 1.38,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    );
+                    final textPainter = TextPainter(
+                      text: textSpan,
+                      textDirection: TextDirection.rtl,
+                      maxLines: 6,
+                    )..layout(maxWidth: constraints.maxWidth);
+
+                    final bool exceeds6Lines = textPainter.didExceedMaxLines;
+
+                    if (_isDescriptionExpanded) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fullDescription,
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              color: Color(0xFFD3D0E3),
+                              fontSize: 10.5,
+                              height: 1.38,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => setState(() => _isDescriptionExpanded = false),
+                            child: const Text(
+                              'بستن (کمتر)',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: Color(0xFFFFD574),
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            // Station Title
-                            Expanded(
-                              child: Text(
-                                ordinalTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  color: Color(0xFFF4EFEA),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
+                      );
+                    }
+
+                    if (!exceeds6Lines) {
+                      return Text(
+                        fullDescription,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Color(0xFFD3D0E3),
+                          fontSize: 10.5,
+                          height: 1.38,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
                         ),
-                      ),
-                    ),
-                  ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullDescription,
+                          textAlign: TextAlign.right,
+                          maxLines: 6,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFD3D0E3),
+                            fontSize: 10.5,
+                            height: 1.38,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        GestureDetector(
+                          onTap: () => setState(() => _isDescriptionExpanded = true),
+                          child: const Text(
+                            'بیشتر...',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Color(0xFFF4DCC5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -1066,7 +1135,7 @@ class _Class1ScreenState extends State<Class1Screen> {
     required String stayText,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
       child: Directionality(
         textDirection: TextDirection.rtl,
         child: Row(
@@ -1107,7 +1176,7 @@ class _Class1ScreenState extends State<Class1Screen> {
           },
           borderRadius: BorderRadius.circular(8),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 2.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1119,7 +1188,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -1133,7 +1202,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFFB3B0C7),
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.normal,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -1150,126 +1219,171 @@ class _Class1ScreenState extends State<Class1Screen> {
   Widget _buildVerticalDivider() {
     return Container(
       width: 1,
-      height: 30,
+      height: 28,
       color: const Color(0xFF534E7E).withValues(alpha: 0.7),
     );
   }
 
-  /// 5. Animation / Video Clip Preview with Large 16:9 Aspect Ratio & vedionot01.svg
+  /// 5. Animation / Video Clip Preview with Swipeable PageView & Bottom-Left Navigation Buttons
   Widget _buildAnimationCarouselSection(String clipTitle) {
+    final bool hasMultipleClips = _allClips.length > 1;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Heading
         const Text(
           'انیمیشن هایی که باید ببینید',
           textAlign: TextAlign.right,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             fontFamily: AppTheme.fontFamily,
             fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
-        // Carousel Video Box with Large Horizontal 16:9 Aspect Ratio
-        Row(
-          children: [
-            // Left Chevron
-            IconButton(
-              onPressed: _allClips.length > 1 && _currentClipIndex > 0
-                  ? () => setState(() => _currentClipIndex--)
-                  : null,
-              icon: Icon(
-                Icons.chevron_left_rounded,
-                color: _allClips.length > 1 && _currentClipIndex > 0 ? Colors.white70 : Colors.white24,
-                size: 32,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
+        // Video Preview Box with Swipeable PageView strictly 16:9 with rich inline video player
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: PageView.builder(
+            controller: _videoPageController,
+            itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
+            onPageChanged: (idx) {
+              setState(() {
+                _currentClipIndex = idx;
+              });
+            },
+            itemBuilder: (context, index) {
+              final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
+              final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
+                  ? clip['videoUrl'].toString().trim()
+                  : 'https://www.aparat.com/v/dbjk750';
+              final String title = clip?['title']?.toString() ?? clipTitle;
+              final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
 
-            // Video Preview Box strictly 16:9
-            Expanded(
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: GestureDetector(
-                  onTap: () => _navigateToClass('رسانه'),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF3F3B66),
-                          Color(0xFF282648),
-                        ],
-                      ),
-                      border: Border.all(
-                        color: const Color(0xFF555088),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 68,
-                        height: 68,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF524C83).withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/svg_icons/vedionot01.svg',
-                            width: 38,
-                            height: 38,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 5.0),
+                child: NopaInlineVideoPlayer(
+                  key: ValueKey('clip_${_currentStationIndex}_$index'),
+                  videoUrl: videoUrl,
+                  title: title,
+                  coverImageUrl: poster,
                 ),
-              ),
-            ),
-
-            // Right Chevron
-            IconButton(
-              onPressed: _allClips.length > 1 && _currentClipIndex < _allClips.length - 1
-                  ? () => setState(() => _currentClipIndex++)
-                  : null,
-              icon: Icon(
-                Icons.chevron_right_rounded,
-                color: _allClips.length > 1 && _currentClipIndex < _allClips.length - 1 ? Colors.white70 : Colors.white24,
-                size: 32,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            ),
-          ],
+              );
+            },
+          ),
         ),
 
         const SizedBox(height: 8),
 
-        // Caption text below video (Smaller size as requested)
-        Text(
-          clipTitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF9D99B8),
-            fontSize: 10.5,
-            fontWeight: FontWeight.w400,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
+        // Video Caption (Right-aligned in RTL) + Prev/Next Buttons (Left corner in RTL)
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Right: Caption text
+              Expanded(
+                child: Text(
+                  clipTitle,
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF9D99B8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+              ),
+
+              // Left in RTL: Thin Brown-Stroked Next & Prev Video Buttons (Matching Calendar Month Switcher)
+              if (hasMultipleClips)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 1. Next Button (Chevron Left points forward in RTL)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _currentClipIndex < _allClips.length - 1
+                            ? () {
+                                _videoPageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _currentClipIndex < _allClips.length - 1
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: _currentClipIndex < _allClips.length - 1
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // 2. Previous Button (Chevron Right points backward in RTL)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _currentClipIndex > 0
+                            ? () {
+                                _videoPageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _currentClipIndex > 0
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: _currentClipIndex > 0
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
           ),
         ),
       ],
@@ -1304,7 +1418,7 @@ class _Class1ScreenState extends State<Class1Screen> {
           Expanded(
             child: _buildActionButton(
               title: 'ارتباط با راهبر',
-              onTap: _navigateToChat,
+              onTap: _contactMentor,
             ),
           ),
         ],

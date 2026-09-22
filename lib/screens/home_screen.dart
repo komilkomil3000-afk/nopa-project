@@ -313,7 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'سرمایه ها',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16.5,
+                fontSize: 14.5,
                 fontWeight: FontWeight.bold,
                 fontFamily: AppTheme.fontFamily,
                 fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -585,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'منزلگاه ها',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16.5,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,

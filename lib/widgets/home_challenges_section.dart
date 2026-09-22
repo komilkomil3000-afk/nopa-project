@@ -19,28 +19,6 @@ class HomeChallengesSection extends StatefulWidget {
 class _HomeChallengesSectionState extends State<HomeChallengesSection> {
   ChallengeTabType _selectedTab = ChallengeTabType.newChallenges;
 
-  int _getTabFlex(ChallengeTabType type) {
-    if (_selectedTab == type) {
-      switch (type) {
-        case ChallengeTabType.newChallenges:
-          return 11;
-        case ChallengeTabType.inProgress:
-          return 16;
-        case ChallengeTabType.expired:
-          return 12;
-      }
-    } else {
-      switch (type) {
-        case ChallengeTabType.newChallenges:
-          return 8;
-        case ChallengeTabType.inProgress:
-          return 9;
-        case ChallengeTabType.expired:
-          return 8;
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<AppRepository>(
@@ -63,7 +41,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       'چالش‌های مخصوص تو',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16.5,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.bold,
                         fontFamily: AppTheme.fontFamily,
                         fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -119,12 +97,12 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       ),
                       child: Column(
                         children: [
-                          // 3 Tabs in Row (Right: جدید fir01 | Center: شروع شده fir02 | Left: منقضی شده fir03)
+                          // 3 Tabs in Row with custom flex so "شروع شده" displays completely
                           Row(
                             children: [
                               // Tab 1: جدید (fir01.svg - Green)
                               Expanded(
-                                flex: _getTabFlex(ChallengeTabType.newChallenges),
+                                flex: 9,
                                 child: _buildTabPill(
                                   type: ChallengeTabType.newChallenges,
                                   title: 'جدید',
@@ -139,11 +117,11 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                                   borderColor: const Color(0xFF3EA369),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
 
-                              // Tab 2: شروع شده (fir02.svg - Amber/Orange)
+                              // Tab 2: شروع شده (fir02.svg - Amber/Orange) - Larger flex to fit text
                               Expanded(
-                                flex: _getTabFlex(ChallengeTabType.inProgress),
+                                flex: 13,
                                 child: _buildTabPill(
                                   type: ChallengeTabType.inProgress,
                                   title: 'شروع شده',
@@ -158,11 +136,11 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                                   borderColor: const Color(0xFFE08D18),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
 
                               // Tab 3: منقضی (fir03.svg - Slate/Purple)
                               Expanded(
-                                flex: _getTabFlex(ChallengeTabType.expired),
+                                flex: 9,
                                 child: _buildTabPill(
                                   type: ChallengeTabType.expired,
                                   title: 'منقضی',
@@ -197,7 +175,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
     );
   }
 
-  /// Builds individual Tab Pill Button with fir01 / fir02 / fir03 icon on the RIGHT of the text (RTL)
+  /// Builds individual Tab Pill Button: right-aligned icon and text in RTL, fixed size
   Widget _buildTabPill({
     required ChallengeTabType type,
     required String title,
@@ -215,12 +193,10 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           _selectedTab = type;
         });
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOutCubic,
-        height: 46,
+      child: Container(
+        height: 42,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(21),
           gradient: isSelected ? selectedGradient : null,
           color: isSelected ? null : unselectedColor,
           border: Border.all(
@@ -228,18 +204,18 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
             width: 1.2,
           ),
         ),
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 8 : 4,
-          vertical: 4,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 6,
+          vertical: 3,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 1. Right side in RTL: Circular Badge with SVG Flame Icon (fir01 / fir02 / fir03)
+            // 1. Right side in RTL: Circular Flame Badge
             Container(
-              width: 28,
-              height: 28,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 color: badgeColor,
                 shape: BoxShape.circle,
@@ -247,29 +223,27 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
               child: Center(
                 child: SvgPicture.asset(
                   iconPath,
-                  width: 16,
-                  height: 21,
+                  width: 13,
+                  height: 16,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
             const SizedBox(width: 5),
 
-            // 2. Left side in RTL: Title text adapting to container size
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isSelected ? 12.5 : 11.5,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+            // 2. Title text (Center-aligned within the tab pill without affecting icon)
+            Expanded(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11.5,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
               ),
             ),
@@ -462,7 +436,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isExpired ? const Color(0xFF7E7E8E) : Colors.white,
-                    fontSize: 13.5,
+                    fontSize: 12,
                     fontWeight: isExpired ? FontWeight.normal : FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -486,7 +460,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                 ),
                 padding: const EdgeInsets.all(AppColors.borderWidth),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     gradient: isExpired
                         ? const LinearGradient(
@@ -501,7 +475,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                     isExpired ? 'منقضی' : 'مشاهده',
                     style: TextStyle(
                       color: isExpired ? const Color(0xFF787886) : const Color(0xFFC7B299),
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600,
                       fontFamily: AppTheme.fontFamily,
                       fontFamilyFallback: AppTheme.fontFamilyFallback,

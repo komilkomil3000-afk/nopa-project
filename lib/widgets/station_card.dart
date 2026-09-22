@@ -161,10 +161,10 @@ class StationCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Station Title (Left in RTL)
+                          // Station Title (Left in RTL - pure name without prefix)
                           Expanded(
                             child: Text(
-                              station.title,
+                              Station.getPureName(station.orderIndex, station.title),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
