@@ -1451,26 +1451,19 @@ class _Class1ScreenState extends State<Class1Screen> {
       textDirection: TextDirection.rtl,
       child: Row(
         children: [
-          // 1. ورود به کلاس مهارتی
+          // 1. ورود به کلاس‌ها (ادغام مهارتی و رسانه‌ای)
           Expanded(
+            flex: 3,
             child: _buildActionButton(
-              title: 'ورود به کلاس مهارتی',
+              title: 'ورود به کلاس‌ها',
               onTap: () => _navigateToClass('مهارت'),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 10),
 
-          // 2. ورود به کلاس رسانه‌ای
+          // 2. ارتباط با راهبر
           Expanded(
-            child: _buildActionButton(
-              title: 'ورود به کلاس رسانه‌ای',
-              onTap: () => _navigateToClass('رسانه'),
-            ),
-          ),
-          const SizedBox(width: 6),
-
-          // 3. ارتباط با راهبر
-          Expanded(
+            flex: 2,
             child: _buildActionButton(
               title: 'ارتباط با راهبر',
               onTap: _contactMentor,

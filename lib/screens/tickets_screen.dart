@@ -965,18 +965,16 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxWidth: 440),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF5A4D80),
-              width: 1.0,
-            ),
+            color: const Color(0xFF2C2849),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 16,
+                blurRadius: 24,
+                spreadRadius: 2,
                 offset: const Offset(0, 8),
               ),
             ],
@@ -986,41 +984,27 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header Row: Shield Profile Icon on top right/left & Title in center
-                Stack(
+                // Header: Icon on right (in RTL) and Centered Title
+                const Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Profile/Shield icon on left in RTL
                     Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFC09268).withValues(alpha: 0.8),
-                            width: 1.2,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.support_agent_rounded,
-                          color: Color(0xFFC09268),
-                          size: 22,
-                        ),
+                      alignment: Alignment.centerRight,
+                      child: Icon(
+                        Icons.support_agent_rounded,
+                        color: Color(0xFF9E9CD6),
+                        size: 32,
                       ),
                     ),
-
-                    // Center Title
-                    const Text(
+                    Text(
                       'پیام به راهبر و پشتیبانی',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 16.5,
                         fontWeight: FontWeight.bold,
                         fontFamily: AppTheme.fontFamily,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -1028,236 +1012,184 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
 
                 // Row 1: نوع درخواست (Dropdown)
                 _buildDialogRow(
-                  label: 'نوع درخواست:',
+                  label: 'نوع پیام:',
                   content: Container(
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF221E3A),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                        width: 1.0,
+                      ),
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.strokeGradient,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Container(
-                      height: 38,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.darkSurfaceGradient,
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedCategory,
-                          isExpanded: true,
-                          dropdownColor: const Color(0xFF28274A),
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFC09268)),
-                          style: const TextStyle(
-                            color: Color(0xFFE2E0F0),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          items: _categories.map((cat) {
-                            return DropdownMenuItem<String>(
-                              value: cat,
-                              child: Text(cat, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedCategory = val);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Row 2: تاریخ جاری
-                _buildDialogRow(
-                  label: 'تاریخ:',
-                  content: Container(
-                    height: 38,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.strokeGradient,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.all(AppColors.borderWidth),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.darkSurfaceGradient,
-                        borderRadius: BorderRadius.circular(9),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.currentDate,
+                    alignment: Alignment.center,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF28274A),
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFFE1BC96)),
                         style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12.5,
+                          color: Color(0xFFE1BC96),
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           fontFamily: AppTheme.fontFamily,
                         ),
+                        items: _categories.map((cat) {
+                          return DropdownMenuItem<String>(
+                            value: cat,
+                            child: Text(cat, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedCategory = val);
+                          }
+                        },
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
+
+                // Row 2: تاریخ جاری
+                _buildInfoTextRow(
+                  label: 'تاریخ:',
+                  value: widget.currentDate,
+                ),
+                const SizedBox(height: 10),
 
                 // Row 3: موضوع (اختیاری)
                 _buildDialogRow(
                   label: 'موضوع:',
                   content: Container(
+                    height: 42,
                     decoration: BoxDecoration(
-                      gradient: AppColors.strokeGradient,
+                      color: const Color(0xFF221E3A),
                       borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.all(AppColors.borderWidth),
-                    child: Container(
-                      height: 38,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.darkSurfaceGradient,
-                        borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                        width: 1.0,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      alignment: Alignment.center,
-                      child: TextField(
-                        controller: _subjectCtrl,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    alignment: Alignment.center,
+                    child: TextField(
+                      controller: _subjectCtrl,
+                      style: const TextStyle(
+                        color: Color(0xFFE1BC96),
+                        fontSize: 12.5,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: _selectedCategory,
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          fontSize: 11.5,
                           fontFamily: AppTheme.fontFamily,
                         ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          border: InputBorder.none,
-                          hintText: _selectedCategory,
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            fontSize: 11.5,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 6),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Row 4: شرح دهید (Multi-line)
                 _buildDialogRow(
-                  label: 'شرح دهید:',
+                  label: 'شرح پیام:',
                   crossAxisAlignment: CrossAxisAlignment.start,
                   content: Container(
+                    height: 90,
                     decoration: BoxDecoration(
-                      gradient: AppColors.strokeGradient,
+                      color: const Color(0xFF221E3A),
                       borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.all(AppColors.borderWidth),
-                    child: Container(
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.darkSurfaceGradient,
-                        borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                        width: 1.0,
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      child: TextField(
-                        controller: _descCtrl,
-                        maxLines: 4,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: TextField(
+                      controller: _descCtrl,
+                      maxLines: 4,
+                      style: const TextStyle(
+                        color: Color(0xFFE1BC96),
+                        fontSize: 12.5,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        border: InputBorder.none,
+                        hintText: 'ما را در جریان قرار دهید...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          fontSize: 11.5,
                           fontFamily: AppTheme.fontFamily,
-                        ),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          border: InputBorder.none,
-                          hintText: 'ما را در جریان قرار دهید...',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            fontSize: 11.5,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 // Row 5: ضمیمه فایل
                 _buildDialogRow(
-                  label: 'پیوست فایل:',
+                  label: 'پیوست:',
                   content: InkWell(
                     onTap: _pickFile,
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
+                      height: 42,
                       decoration: BoxDecoration(
-                        gradient: AppColors.strokeGradient,
+                        color: const Color(0xFF221E3A),
                         borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                          width: 1.0,
+                        ),
                       ),
-                      padding: const EdgeInsets.all(AppColors.borderWidth),
-                      child: Container(
-                        height: 38,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.darkSurfaceGradient,
-                          borderRadius: BorderRadius.circular(9),
-                          border: Border.all(
-                            color: _attachedFileName != null ? const Color(0xFFC09268) : Colors.transparent,
-                            width: 0.8,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _attachedFileName != null ? Icons.check_circle_rounded : Icons.attach_file_rounded,
+                            color: const Color(0xFFE1BC96),
+                            size: 18,
                           ),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _attachedFileName != null ? Icons.check_circle_rounded : Icons.attach_file_rounded,
-                              color: const Color(0xFFC09268),
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                _attachedFileName ?? 'انتخاب فایل یا عکس (اختیاری)',
-                                style: TextStyle(
-                                  color: _attachedFileName != null ? const Color(0xFFE1BC96) : Colors.white38,
-                                  fontSize: 11,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _attachedFileName ?? 'انتخاب فایل یا عکس (اختیاری)',
+                              style: TextStyle(
+                                color: _attachedFileName != null ? const Color(0xFFE1BC96) : Colors.white38,
+                                fontSize: 11.5,
+                                fontFamily: AppTheme.fontFamily,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            if (_attachedFileName != null)
-                              GestureDetector(
-                                onTap: () => setState(() => _attachedFileName = null),
-                                child: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
-                              ),
-                          ],
-                        ),
+                          ),
+                          if (_attachedFileName != null)
+                            GestureDetector(
+                              onTap: () => setState(() => _attachedFileName = null),
+                              child: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                            ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 22),
 
-                // Bottom Actions: ارسال (Gold text) & لغو (Purple text)
+                // Bottom Actions: ارسال (Right in RTL) & لغو (Left in RTL)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // لغو
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'لغو',
-                        style: TextStyle(
-                          color: Color(0xFF9E9CD6),
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-
                     // ارسال
                     _isSubmitting
                         ? const SizedBox(
@@ -1265,21 +1197,35 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFFCD8449),
+                              color: Color(0xFFE1BC96),
                             ),
                           )
                         : TextButton(
                             onPressed: _submitTicket,
                             child: const Text(
-                              'ارسال',
+                              'ارسال پیام',
                               style: TextStyle(
                                 color: Color(0xFFE1BC96),
-                                fontSize: 14,
+                                fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
                               ),
                             ),
                           ),
+
+                    // لغو
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'لغو',
+                        style: TextStyle(
+                          color: Color(0xFF9E9CD6),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1287,6 +1233,53 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoTextRow({required String label, required String value}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // 1. Label Pill on RIGHT (First child in RTL)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7A709E),
+              width: 1.1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFDDD9EE),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // 2. Value on LEFT (Second child in RTL)
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.left,
+            style: const TextStyle(
+              color: Color(0xFFE1BC96),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -1298,22 +1291,31 @@ class _CreateSupportTicketDialogState extends State<_CreateSupportTicketDialog> 
     return Row(
       crossAxisAlignment: crossAxisAlignment,
       children: [
-        // Label on Right in RTL
-        SizedBox(
-          width: 80,
+        // 1. Label Pill on RIGHT (First child in RTL)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7A709E),
+              width: 1.1,
+            ),
+          ),
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 11.5,
+              color: Color(0xFFDDD9EE),
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               fontFamily: AppTheme.fontFamily,
             ),
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
 
-        // Content Field
+        // 2. Content Field on LEFT (Second child in RTL)
         Expanded(child: content),
       ],
     );
