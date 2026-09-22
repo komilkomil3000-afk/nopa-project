@@ -63,36 +63,44 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Top Bar: NOPA text on the left, Notification Bell & Menu button on the right
   Widget _buildTopBar(UserModel? user) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Text Logo with ChochoAuraDemo Font and C09268 to F4DCC5 Gradient (Darker at bottom, lighter at top)
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFFC09268),
-                  Color(0xFFF4DCC5),
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ).createShader(bounds),
-              child: const Text(
-                'NOPA',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  fontFamily: 'ChochoAuraDemo',
+            // Left: NOPA Text Logo with ChochoAuraDemo Font and C09268 to F4DCC5 Gradient
+            SizedBox(
+              height: 42,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFFC09268),
+                      Color(0xFFF4DCC5),
+                    ],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'NOPA',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 21,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      fontFamily: 'ChochoAuraDemo',
+                    ),
+                  ),
                 ),
               ),
             ),
 
-            // Right: Notification Bell Button (Brown/Gold matching NOPA text) + Drawer Hamburger Menu
+            // Right: Notification Bell Button + Drawer Hamburger Menu
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Consumer<AppRepository>(
                   builder: (context, repository, _) {
@@ -157,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Builder(
                   builder: (ctx) => Material(
                     color: Colors.transparent,
@@ -175,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Icon(
                             Icons.menu_rounded,
                             color: Color(0xFFC7B299),
-                            size: 22,
+                            size: 24,
                           ),
                         ),
                       ),

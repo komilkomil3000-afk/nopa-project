@@ -125,11 +125,15 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       if (rawStatus == 'approved') {
         status = 'completed';
       } else if (rawStatus == 'pending') {
-        status = 'started';
+        status = 'pending';
       } else if (rawStatus == 'rejected') {
         status = 'rejected';
+      } else if (rawStatus == 'expired') {
+        status = 'expired';
+      } else if (rawStatus == 'started') {
+        status = 'started';
       } else {
-        status = 'new';
+        status = 'started';
       }
 
       // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
@@ -166,6 +170,90 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
         'durationDays': c.durationDays ?? 5,
       });
     }
+
+    // Ensure requested sample challenges exist for complete demonstration
+    final bool hasPendingIndividual = list.any((c) => c['category'] == 'individual' && c['status'] == 'pending');
+    final bool hasStartedIndividual = list.any((c) => c['category'] == 'individual' && (c['status'] == 'started' || c['status'] == 'new'));
+    final bool hasExpiredIndividual = list.any((c) => c['category'] == 'individual' && c['status'] == 'expired');
+    final bool hasGroup = list.any((c) => c['category'] == 'group');
+    final bool hasInterGroup = list.any((c) => c['category'] == 'inter_group');
+
+    if (!hasPendingIndividual) {
+      list.insert(0, {
+        'id': 'demo_indiv_pending',
+        'title': 'تحلیل و گزارش کاروان اول',
+        'desc': 'پاسخ شما برای بررسی به راهبر کاروان ارسال شده و در حال ارزیابی نهایی است.',
+        'reward': 60,
+        'type': 'text',
+        'status': 'pending',
+        'category': 'individual',
+        'myAnswerText': 'پروژه تحلیل منزلگاه با موفقیت ارسال شد.',
+        'creatorName': 'رضا جلالی (راهبر کاروان)',
+        'createdAt': DateTime.now().subtract(const Duration(days: 1)),
+        'durationDays': 4,
+      });
+    }
+
+    if (!hasStartedIndividual) {
+      list.add({
+        'id': 'demo_indiv_started',
+        'title': 'مهارت‌آموزی دیجیتال و کار با نقشه',
+        'desc': 'چالش فعال برای تمرین مهارت‌های کاروان و کسب امتیاز زریک.',
+        'reward': 50,
+        'type': 'choice',
+        'status': 'started',
+        'category': 'individual',
+        'creatorName': 'مدیر سیستم',
+        'createdAt': DateTime.now().subtract(const Duration(hours: 12)),
+        'durationDays': 5,
+      });
+    }
+
+    if (!hasExpiredIndividual) {
+      list.add({
+        'id': 'demo_indiv_expired',
+        'title': 'آزمون هفتگی پیشینه و مسیر کاروان',
+        'desc': 'مهلت شرکت و ارسال پاسخ در این چالش به پایان رسیده است.',
+        'reward': 40,
+        'type': 'text',
+        'status': 'expired',
+        'category': 'individual',
+        'creatorName': 'راهبر کاروان',
+        'createdAt': DateTime.now().subtract(const Duration(days: 7)),
+        'durationDays': 3,
+      });
+    }
+
+    if (!hasGroup) {
+      list.add({
+        'id': 'demo_group_1',
+        'title': 'پروژه همکاری تیمی کاروان',
+        'desc': 'همکاری و تعامل اعضای کاروان در تدوین و ارائه دستاورد مشترک تیمی.',
+        'reward': 120,
+        'type': 'file',
+        'status': 'started',
+        'category': 'group',
+        'creatorName': 'رضا جلالی (راهبر کاروان)',
+        'createdAt': DateTime.now().subtract(const Duration(days: 1)),
+        'durationDays': 7,
+      });
+    }
+
+    if (!hasInterGroup) {
+      list.add({
+        'id': 'demo_intergroup_1',
+        'title': 'مناظره و رقابت میان کاروان‌ها',
+        'desc': 'رقابت جذاب حل مسئله و سرعت عمل میان اعضای کاروان‌های مختلف نپا.',
+        'reward': 200,
+        'type': 'text',
+        'status': 'started',
+        'category': 'inter_group',
+        'creatorName': 'مدیر سیستم',
+        'createdAt': DateTime.now().subtract(const Duration(days: 2)),
+        'durationDays': 10,
+      });
+    }
+
     return list;
   }
 
@@ -1032,12 +1120,17 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     final String? feedback = item['mentorFeedback']?.toString();
 
     // Status label, text color & background
-    String statusLabel = 'جدید';
-    Color statusColor = const Color(0xFF22C55E);
-    Color statusBg = const Color(0xFF22C55E).withValues(alpha: 0.15);
-    Color statusBorder = const Color(0xFF22C55E).withValues(alpha: 0.4);
+    String statusLabel = 'شروع شده';
+    Color statusColor = const Color(0xFFE5A86D);
+    Color statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
+    Color statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
 
-    if (status == 'started') {
+    if (status == 'pending') {
+      statusLabel = 'در حال انجام';
+      statusColor = const Color(0xFF38BDF8);
+      statusBg = const Color(0xFF38BDF8).withValues(alpha: 0.15);
+      statusBorder = const Color(0xFF38BDF8).withValues(alpha: 0.4);
+    } else if (status == 'started' || status == 'new') {
       statusLabel = 'شروع شده';
       statusColor = const Color(0xFFE5A86D);
       statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);

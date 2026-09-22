@@ -53,6 +53,9 @@ class _MarketScreenState extends State<MarketScreen> {
   // Selected asset index for "سرمایه های شما"
   int _selectedAssetIndex = 0;
 
+  // Selected tab for "برترین ها (لیگ)" (0: برترین شرکت کننده ها, 1: برترین کاروان ها)
+  int _selectedLeaderboardTab = 0;
+
   // Exchange calculator states
   String _sourceAsset = 'زریک';
   String _targetAsset = 'نخ';
@@ -308,6 +311,10 @@ class _MarketScreenState extends State<MarketScreen> {
 
                   // 5. Section 3: مبادله (Exchange Panel)
                   _buildExchangePanel(),
+                  const SizedBox(height: 26),
+
+                  // 6. Section 4: برترین ها (لیگ / لیدربورد)
+                  _buildLeaderboardSection(user),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -813,7 +820,7 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and interactive buttons
+  /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and responsive layout
   Widget _buildExchangePanel() {
     final String resultDisplay = _calculatedResult % 1 == 0
         ? _calculatedResult.toInt().toString().toPersianDigits()
@@ -864,7 +871,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
             padding: const EdgeInsets.all(1.2),
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20.8),
                 gradient: const LinearGradient(
@@ -880,144 +887,216 @@ class _MarketScreenState extends State<MarketScreen> {
               ),
               child: Directionality(
                 textDirection: TextDirection.rtl,
-                child: Column(
-                  children: [
-                    // Upper Row: Right side = Selectors, Left side = Description
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left in RTL (Description text)
-                        Expanded(
-                          flex: 5,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 8.0, top: 4.0),
-                            child: const Text(
-                              'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
-                              textAlign: TextAlign.justify,
-                              style: TextStyle(
-                                color: Color(0xFFC7C5DD),
-                                fontSize: 11,
-                                height: 1.5,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final bool isCompact = constraints.maxWidth < 460;
+
+                    if (isCompact) {
+                      // Compact mobile layout: Inputs on top -> Description -> Action Buttons on bottom
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Inputs Section
+                          _buildExchangeInputsSection(resultDisplay),
+                          const SizedBox(height: 14),
+
+                          // 2. Description text
+                          const Text(
+                            'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
+                            textAlign: TextAlign.justify,
+                            style: TextStyle(
+                              color: Color(0xFFC7C5DD),
+                              fontSize: 11,
+                              height: 1.45,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
+                          const SizedBox(height: 14),
 
-                        // Right in RTL (Selectors & Amount inputs)
-                        Expanded(
-                          flex: 6,
-                          child: Column(
+                          // 3. Buttons Row
+                          Row(
                             children: [
-                              // Row 1: سرمایه ارائه شده
-                              Row(
-                                children: [
-                                  const SizedBox(
-                                    width: 65,
-                                    child: Text(
-                                      'سرمایه\nارائه شده',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 10.5,
-                                        height: 1.2,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: _buildAssetDropdown(
-                                      value: _sourceAsset,
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() => _sourceAsset = val);
-                                          _recalculateExchange();
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Text('مقدار', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontFamily: AppTheme.fontFamily)),
-                                  const SizedBox(width: 4),
-                                  _buildAmountInputBox(),
-                                ],
+                              Expanded(
+                                child: _buildInteractiveActionButton(
+                                  text: 'ارتباط با راهبر',
+                                  isActive: _activeActionButton == 2,
+                                  strokeBorderColor: const Color(0xFF6E688E),
+                                  onTap: _contactMentor,
+                                ),
                               ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildInteractiveActionButton(
+                                  text: 'ثبت درخواست',
+                                  isActive: _activeActionButton == 1,
+                                  strokeBorderColor: const Color(0xFFC09268),
+                                  onTap: _submitExchangeRequest,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    }
 
-                              const SizedBox(height: 12),
-
-                              // Row 2: سرمایه درخواستی
+                    // Wider screen layout: 2 balanced columns matching reference screenshot
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left in RTL (Description text on top + 2 action buttons on bottom)
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(left: 6.0, top: 2.0),
+                                child: Text(
+                                  'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
+                                  textAlign: TextAlign.justify,
+                                  style: TextStyle(
+                                    color: Color(0xFFC7C5DD),
+                                    fontSize: 11,
+                                    height: 1.45,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
                               Row(
                                 children: [
-                                  const SizedBox(
-                                    width: 65,
-                                    child: Text(
-                                      'سرمایه\nدرخواستی',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 10.5,
-                                        height: 1.2,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
                                   Expanded(
-                                    child: _buildAssetDropdown(
-                                      value: _targetAsset,
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() => _targetAsset = val);
-                                          _recalculateExchange();
-                                        }
-                                      },
+                                    child: _buildInteractiveActionButton(
+                                      text: 'ارتباط با راهبر',
+                                      isActive: _activeActionButton == 2,
+                                      strokeBorderColor: const Color(0xFF6E688E),
+                                      onTap: _contactMentor,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  const Text('مقدار', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontFamily: AppTheme.fontFamily)),
-                                  const SizedBox(width: 4),
-                                  _buildResultBox(resultDisplay),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: _buildInteractiveActionButton(
+                                      text: 'ثبت درخواست',
+                                      isActive: _activeActionButton == 1,
+                                      strokeBorderColor: const Color(0xFFC09268),
+                                      onTap: _submitExchangeRequest,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // Lower Row: Buttons (ثبت درخواست & ارتباط با راهبر)
-                    Row(
-                      children: [
-                        // Button 1: ارتباط با راهبر
-                        Expanded(
-                          child: _buildInteractiveActionButton(
-                            text: 'ارتباط با راهبر',
-                            isActive: _activeActionButton == 2,
-                            strokeBorderColor: const Color(0xFF6E688E),
-                            onTap: _contactMentor,
-                          ),
-                        ),
                         const SizedBox(width: 14),
 
-                        // Button 2: ثبت درخواست
+                        // Right in RTL (Selectors & Amount inputs)
                         Expanded(
-                          child: _buildInteractiveActionButton(
-                            text: 'ثبت درخواست',
-                            isActive: _activeActionButton == 1,
-                            strokeBorderColor: const Color(0xFFC09268),
-                            onTap: _submitExchangeRequest,
-                          ),
+                          flex: 6,
+                          child: _buildExchangeInputsSection(resultDisplay),
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  /// Right-side Inputs Section (سرمایه ارائه شده & سرمایه درخواستی)
+  Widget _buildExchangeInputsSection(String resultDisplay) {
+    return Column(
+      children: [
+        // Row 1: سرمایه ارائه شده
+        Row(
+          children: [
+            const SizedBox(
+              width: 58,
+              child: Text(
+                'سرمایه\nارائه شده',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  height: 1.2,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 5,
+              child: _buildAssetDropdown(
+                value: _sourceAsset,
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _sourceAsset = val);
+                    _recalculateExchange();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'مقدار',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10.5,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+            const SizedBox(width: 4),
+            _buildAmountInputBox(),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // Row 2: سرمایه درخواستی
+        Row(
+          children: [
+            const SizedBox(
+              width: 58,
+              child: Text(
+                'سرمایه\nدرخواستی',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  height: 1.2,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              flex: 5,
+              child: _buildAssetDropdown(
+                value: _targetAsset,
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _targetAsset = val);
+                    _recalculateExchange();
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'مقدار',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 10.5,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+            const SizedBox(width: 4),
+            _buildResultBox(resultDisplay),
+          ],
         ),
       ],
     );
@@ -1162,6 +1241,400 @@ class _MarketScreenState extends State<MarketScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Section 4: برترین ها (لیگ) - Top 3 Podium & Leaderboard Switcher
+  Widget _buildLeaderboardSection(UserModel? user) {
+    // Top 3 Data based on selected tab
+    final List<Map<String, dynamic>> topMembers = [
+      {
+        'rank': 1,
+        'name': 'حسینعلی فقیه',
+        'zarik': '5500 زریک',
+        'color': const Color(0xFFFFD580),
+        'borderColor': const Color(0xFFFFD580),
+        'size': 92.0,
+      },
+      {
+        'rank': 2,
+        'name': 'رضا شفیعی',
+        'zarik': '4100 زریک',
+        'color': const Color(0xFFCBD5E1),
+        'borderColor': const Color(0xFFCBD5E1),
+        'size': 78.0,
+      },
+      {
+        'rank': 3,
+        'name': 'مسلم عارف',
+        'zarik': '4000 زریک',
+        'color': const Color(0xFFC8824C),
+        'borderColor': const Color(0xFFC8824C),
+        'size': 72.0,
+      },
+    ];
+
+    final List<Map<String, dynamic>> topCaravans = [
+      {
+        'rank': 1,
+        'name': 'کاروان پنجم',
+        'zarik': '18,500 زریک',
+        'color': const Color(0xFFFFD580),
+        'borderColor': const Color(0xFFFFD580),
+        'size': 92.0,
+      },
+      {
+        'rank': 2,
+        'name': 'کاروان سوم',
+        'zarik': '14,200 زریک',
+        'color': const Color(0xFFCBD5E1),
+        'borderColor': const Color(0xFFCBD5E1),
+        'size': 78.0,
+      },
+      {
+        'rank': 3,
+        'name': 'کاروان هفتم',
+        'zarik': '11,800 زریک',
+        'color': const Color(0xFFC8824C),
+        'borderColor': const Color(0xFFC8824C),
+        'size': 72.0,
+      },
+    ];
+
+    final currentList = _selectedLeaderboardTab == 0 ? topMembers : topCaravans;
+    final firstPlace = currentList[0];
+    final secondPlace = currentList[1];
+    final thirdPlace = currentList[2];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Header Title: "برترین ها"
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'برترین ها',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16.5,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 2. Tab Switcher Box: "برترین شرکت کننده ها" | "برترین کاروان ها"
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B1A32),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFF453F73).withValues(alpha: 0.6),
+                width: 1.1,
+              ),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Row(
+                children: [
+                  // Tab 0: برترین شرکت کننده ها
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedLeaderboardTab = 0),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: _selectedLeaderboardTab == 0 ? AppColors.accentGradient : null,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _selectedLeaderboardTab == 0
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFC7844E).withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            'برترین شرکت کننده ها',
+                            style: TextStyle(
+                              color: _selectedLeaderboardTab == 0 ? Colors.white : const Color(0xFFB5B3C8),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Subtle divider between tabs
+                  Container(
+                    width: 1,
+                    height: 22,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    color: const Color(0xFF453F73).withValues(alpha: 0.5),
+                  ),
+
+                  // Tab 1: برترین کاروان ها
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedLeaderboardTab = 1),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        height: double.infinity,
+                        decoration: BoxDecoration(
+                          gradient: _selectedLeaderboardTab == 1 ? AppColors.accentGradient : null,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _selectedLeaderboardTab == 1
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFC7844E).withValues(alpha: 0.35),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Text(
+                            'برترین کاروان ها',
+                            style: TextStyle(
+                              color: _selectedLeaderboardTab == 1 ? Colors.white : const Color(0xFFB5B3C8),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 28),
+
+        // 3. Podium of Top 3 (RTL: Right = 2nd, Center = 1st, Left = 3rd)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Right: 2nd Place (Silver)
+                Expanded(
+                  child: _buildPodiumItem(
+                    item: secondPlace,
+                    rankNumber: '2',
+                    rankColor: const Color(0xFFCBD5E1),
+                    circleSize: 78.0,
+                    iconTint: const Color(0xFFCBD5E1),
+                  ),
+                ),
+
+                // Center: 1st Place (Gold - Largest)
+                Expanded(
+                  child: _buildPodiumItem(
+                    item: firstPlace,
+                    rankNumber: '1',
+                    rankColor: const Color(0xFFFFD580),
+                    circleSize: 94.0,
+                    iconTint: const Color(0xFFFFD580),
+                  ),
+                ),
+
+                // Left: 3rd Place (Bronze)
+                Expanded(
+                  child: _buildPodiumItem(
+                    item: thirdPlace,
+                    rankNumber: '3',
+                    rankColor: const Color(0xFFC8824C),
+                    circleSize: 72.0,
+                    iconTint: const Color(0xFFC8824C),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // 4. Bottom Footer Stats: "تعداد کل: 150" | "رتبه شما: 10"
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // تعداد کل
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13.5,
+                      color: Color(0xFFC7C5DD),
+                    ),
+                    children: [
+                      const TextSpan(text: 'تعداد کل: '),
+                      TextSpan(
+                        text: '150'.toPersianDigits(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 32),
+
+                // رتبه شما
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 13.5,
+                      color: Color(0xFFC7C5DD),
+                    ),
+                    children: [
+                      const TextSpan(text: 'رتبه شما: '),
+                      TextSpan(
+                        text: '10'.toPersianDigits(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Single Podium Item (Circle Avatar with border + Rank Number + Name + Wealth)
+  Widget _buildPodiumItem({
+    required Map<String, dynamic> item,
+    required String rankNumber,
+    required Color rankColor,
+    required double circleSize,
+    required Color iconTint,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Circle Avatar with matching border
+        Container(
+          width: circleSize,
+          height: circleSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF28274A),
+            border: Border.all(
+              color: rankColor,
+              width: rankNumber == '1' ? 2.2 : 1.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: rankColor.withValues(alpha: rankNumber == '1' ? 0.35 : 0.2),
+                blurRadius: rankNumber == '1' ? 14 : 8,
+                spreadRadius: 0.5,
+              ),
+            ],
+          ),
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/svg_icons/profile01.svg',
+              width: circleSize * 0.52,
+              height: circleSize * 0.52,
+              fit: BoxFit.contain,
+              colorFilter: ColorFilter.mode(iconTint, BlendMode.srcIn),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Name & Rank Number row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                item['name'] as String,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              rankNumber.toPersianDigits(),
+              style: TextStyle(
+                color: rankColor,
+                fontSize: rankNumber == '1' ? 18 : 16,
+                fontWeight: FontWeight.w900,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 4),
+
+        // Zarik Wealth
+        Text(
+          (item['zarik'] as String).toPersianDigits(),
+          style: const TextStyle(
+            color: Color(0xFFFFD580),
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            fontFamily: AppTheme.fontFamily,
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
+          ),
+        ),
+      ],
     );
   }
 }
