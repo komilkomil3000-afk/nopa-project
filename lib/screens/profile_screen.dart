@@ -8,11 +8,11 @@ import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/app_state_repository.dart';
 import '../utils/constants.dart';
-import '../widgets/complete_profile_dialog.dart';
 import '../widgets/contact_us_dialog.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/safe_avatar.dart';
 import 'certificate_view_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -52,6 +52,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _openEditProfile(UserModel user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: user),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
@@ -81,36 +90,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // 1. Top Bar: NOPA Logo on Left, Bell + Drawer Menu on Right
                 _buildTopBar(),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
 
                 // 2. User Info Card (Avatar with double ring & pencil badge on right, Name & Caravan on left)
                 _buildUserHeaderCard(currentUser),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
 
-                // 3. Pill Action Card: ویرایش اطلاعات (Edit Information)
-                _buildEditProfilePillButton(currentUser),
+                // 3. Edit Profile Item (Clean Row without box background)
+                _buildProfileMenuItem(
+                  title: 'ویرایش اطلاعات',
+                  svgAsset: 'assets/svg_icons/setting01.svg',
+                  fallbackIcon: Icons.settings_rounded,
+                  onTap: () => _openEditProfile(currentUser),
+                ),
 
-                const SizedBox(height: 20),
+                // 4. Section: پیام ها (Messages / Notifications with Bell Icon)
+                _buildProfileMenuItem(
+                  title: 'پیام ها',
+                  svgAsset: '',
+                  fallbackIcon: Icons.notifications_none_rounded,
+                  onTap: () => Navigator.pushNamed(context, '/notifications'),
+                ),
 
-                // 4. Section: پیام ها (Messages / Notifications)
-                _buildMessagesItem(),
-
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
                 _buildSubtleDivider(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
 
                 // 5. Group 1: کارنامه و دستاوردها, گواهی ها, تیکت های شما
                 _buildGroupOneList(currentUser),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
                 _buildSubtleDivider(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 4),
 
                 // 6. Group 2: داستان, پشتیبانی و ارتباط با ما, خروج از حساب کاربری
                 _buildGroupTwoList(currentUser),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -291,14 +308,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           // 1. Right: Circular Avatar with Double Ring and Pencil Edit Badge
           GestureDetector(
-            onTap: () => CompleteProfileDialog.show(context, user),
+            onTap: () => _openEditProfile(user),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 // Outer ring
                 Container(
-                  width: 90,
-                  height: 90,
+                  width: 86,
+                  height: 86,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -314,7 +331,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Center(
                       child: SafeAvatar(
-                        radius: 38,
+                        radius: 36,
                         imageUrl: user.avatarUrl,
                         name: displayName,
                         backgroundColor: Colors.transparent,
@@ -348,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
 
-          const SizedBox(width: 18),
+          const SizedBox(width: 16),
 
           // 2. Left: User Name and Caravan Subtitle
           Expanded(
@@ -360,18 +377,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   displayName,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 18.5,
                     fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
                   caravanText,
                   style: const TextStyle(
                     color: Color(0xFFB5B3C8),
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
@@ -380,91 +397,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Pill Action Button: ویرایش اطلاعات (Edit Information)
-  Widget _buildEditProfilePillButton(UserModel user) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => CompleteProfileDialog.show(context, user),
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-          decoration: BoxDecoration(
-            color: const Color(0xFF383562),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: const Color(0xFF504C82),
-              width: 1.0,
-            ),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              children: [
-                // Settings SVG Icon on right
-                SvgPicture.asset(
-                  'assets/svg_icons/setting01.svg',
-                  width: 22,
-                  height: 22,
-                  fit: BoxFit.contain,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF9E9CD6),
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // Label
-                const Expanded(
-                  child: Text(
-                    'ویرایش اطلاعات',
-                    style: TextStyle(
-                      color: Color(0xFFE8E6F5),
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Section Item: پیام ها
-  Widget _buildMessagesItem() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/notifications'),
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              children: const [
-                Text(
-                  'پیام ها',
-                  style: TextStyle(
-                    color: Color(0xFFE0DEF0),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -534,7 +466,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Generic Row Menu Item matching reference design
+  /// Generic Row Menu Item matching reference design with tighter padding & refined font size
   Widget _buildProfileMenuItem({
     required String title,
     required String svgAsset,
@@ -545,31 +477,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 6),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Row(
               children: [
                 // Right in RTL: SVG Icon Container
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 30,
+                  height: 30,
                   alignment: Alignment.center,
-                  child: SvgPicture.asset(
-                    svgAsset,
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      fallbackIcon ?? Icons.chevron_left_rounded,
-                      color: const Color(0xFF9E9CD6),
-                      size: 22,
-                    ),
-                  ),
+                  child: svgAsset.isNotEmpty
+                      ? SvgPicture.asset(
+                          svgAsset,
+                          width: 22,
+                          height: 22,
+                          fit: BoxFit.contain,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF9E9CD6),
+                            BlendMode.srcIn,
+                          ),
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            fallbackIcon ?? Icons.chevron_left_rounded,
+                            color: const Color(0xFF9E9CD6),
+                            size: 21,
+                          ),
+                        )
+                      : Icon(
+                          fallbackIcon ?? Icons.notifications_none_rounded,
+                          color: const Color(0xFF9E9CD6),
+                          size: 21,
+                        ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
 
                 // Left in RTL: Menu Label
                 Expanded(
@@ -577,8 +519,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     title,
                     style: const TextStyle(
                       color: Color(0xFFE2E0F2),
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
                       fontFamily: AppTheme.fontFamily,
                       fontFamilyFallback: AppTheme.fontFamilyFallback,
                     ),
@@ -592,7 +534,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Subtle horizontal divider matching screenshot
+  /// Subtle Horizontal Line Divider
   Widget _buildSubtleDivider() {
     return Container(
       height: 1,
