@@ -337,37 +337,30 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     ),
                   ),
 
-                // 4. Play Button Overlay before video initialization
+                // 4. Play Button Overlay before video initialization (Simple thin brown stroke matching lower buttons)
                 if (!_isInitialized && !_isLoading && !_hasError)
                   Center(
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => _startVideo(),
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(24),
                         child: Container(
-                          width: 58,
-                          height: 58,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFC09268), Color(0xFFF4DCC5)],
-                              begin: Alignment.bottomRight,
-                              end: Alignment.topLeft,
+                            color: const Color(0xFF1E1D34).withValues(alpha: 0.65),
+                            border: Border.all(
+                              color: const Color(0xFFC09268),
+                              width: 1.2,
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.5),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
                           child: const Center(
                             child: Icon(
                               Icons.play_arrow_rounded,
-                              color: Color(0xFF1E1D34),
-                              size: 38,
+                              color: Color(0xFFDEB58A),
+                              size: 28,
                             ),
                           ),
                         ),
@@ -572,19 +565,23 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   },
                   borderRadius: BorderRadius.circular(24),
                   child: Container(
-                    width: 46,
-                    height: 46,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFC09268).withValues(alpha: 0.9),
+                      color: const Color(0xFF1E1D34).withValues(alpha: 0.75),
+                      border: Border.all(
+                        color: const Color(0xFFC09268),
+                        width: 1.2,
+                      ),
                     ),
                     child: Center(
                       child: Icon(
                         isEnded
                             ? Icons.replay_rounded
                             : (controller.value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                        color: const Color(0xFF1E1D34),
-                        size: 28,
+                        color: const Color(0xFFDEB58A),
+                        size: 26,
                       ),
                     ),
                   ),

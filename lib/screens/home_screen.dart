@@ -657,7 +657,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             return StationCard(
                               station: station,
-                              onTap: () {
+                              onTap: () async {
                                 if (isLocked) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('این منزلگاه هنوز بازگشایی نشده است', style: TextStyle(fontFamily: 'Vazirmatn'))),
@@ -678,7 +678,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   return;
                                 }
 
-                                Navigator.pushNamed(context, '/station_detail', arguments: station);
+                                final result = await Navigator.pushNamed(context, '/station_detail', arguments: station);
+                                if (result is int && context.mounted) {
+                                  navigateToMainTab(result);
+                                }
                               },
                             );
                           },

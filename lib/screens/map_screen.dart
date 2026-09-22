@@ -12,6 +12,7 @@ import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
 import '../widgets/nopa_notification_dialog.dart';
+import 'class1/class1_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -24,6 +25,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<int> _expandedIndices = {};
   bool _isLoading = true;
   int _selectedStationIndex = 0;
+  Station? _selectedStationForClass1;
   List<Map<String, dynamic>> _stations = [];
   List<Map<String, dynamic>> _userProgress = [];
   final ScrollController _scrollController = ScrollController();
@@ -76,6 +78,20 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedStationForClass1 != null) {
+      return Class1Screen(
+        initialStation: _selectedStationForClass1,
+        isEmbeddedInMain: true,
+        onBack: () {
+          if (mounted) {
+            setState(() {
+              _selectedStationForClass1 = null;
+            });
+          }
+        },
+      );
+    }
+
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
@@ -696,7 +712,7 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () {
+                      onTap: () async {
                         if (isLocked) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -721,10 +737,8 @@ class _MapScreenState extends State<MapScreen> {
                           return;
                         }
 
-                        Navigator.pushNamed(
-                          context,
-                          '/class1',
-                          arguments: Station(
+                        setState(() {
+                          _selectedStationForClass1 = Station(
                             id: item['id'] ?? '',
                             title: stationTitle,
                             teacher: teacherName,
@@ -734,8 +748,8 @@ class _MapScreenState extends State<MapScreen> {
                             imageUrl: iconUrl,
                             classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
                             orderIndex: index,
-                          ),
-                        );
+                          );
+                        });
                       },
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,

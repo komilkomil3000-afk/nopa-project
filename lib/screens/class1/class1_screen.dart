@@ -19,7 +19,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Class 1 Screen (صفحه اطلاعات و توضیحات منزلگاه)
 class Class1Screen extends StatefulWidget {
-  const Class1Screen({super.key});
+  final Station? initialStation;
+  final VoidCallback? onBack;
+  final bool isEmbeddedInMain;
+
+  const Class1Screen({
+    super.key,
+    this.initialStation,
+    this.onBack,
+    this.isEmbeddedInMain = false,
+  });
 
   @override
   State<Class1Screen> createState() => _Class1ScreenState();
@@ -36,7 +45,27 @@ class _Class1ScreenState extends State<Class1Screen> {
   int _currentClipIndex = 0;
   bool _isDescriptionExpanded = false;
   int _currentStationIndex = 0;
-  final PageController _videoPageController = PageController(viewportFraction: 0.92);
+  final PageController _videoPageController = PageController(viewportFraction: 0.90);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialStation != null) {
+      _station = widget.initialStation;
+      _currentStationIndex = widget.initialStation!.orderIndex;
+      _loadClassCategories();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Class1Screen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStation != null && widget.initialStation != oldWidget.initialStation) {
+      _station = widget.initialStation;
+      _currentStationIndex = widget.initialStation!.orderIndex;
+      _loadClassCategories();
+    }
+  }
 
   @override
   void dispose() {
@@ -117,7 +146,7 @@ class _Class1ScreenState extends State<Class1Screen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_station == null) {
+    if (_station == null && widget.initialStation == null) {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Station) {
         _station = args;
@@ -299,14 +328,33 @@ class _Class1ScreenState extends State<Class1Screen> {
     }
   }
 
+  void _handleBackAction() {
+    if (widget.onBack != null) {
+      widget.onBack!();
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      navigateToMainTab(1);
+    }
+  }
+
   void _handleBottomNavTap(int idx) {
+    if (idx == 1) {
+      if (widget.onBack != null) {
+        widget.onBack!();
+      } else if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      return;
+    }
+
     navigateToMainTab(idx);
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-      navigateToMainTab(idx);
+    if (widget.onBack != null) {
+      widget.onBack!();
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(idx);
     } else {
       Navigator.of(context).pushReplacementNamed('/dashboard');
-      navigateToMainTab(idx);
     }
   }
 
@@ -343,6 +391,68 @@ class _Class1ScreenState extends State<Class1Screen> {
         ? (_allClips[_currentClipIndex]['title'] ?? lore['clipTitle'] ?? 'انیمیشن منزلگاه')
         : (lore['clipTitle'] ?? 'انیمیشن کاروانسرای غبارگرفته (منزلگاه ۱)');
 
+    final Widget content = SafeArea(
+      child: Column(
+        children: [
+          // 1. Top Bar with NOPA Logo & Back SVG below
+          _buildTopBar(user),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 2. Horizontal Station Selection & Progress Track Header
+                  _buildStationTrackHeader(
+                    currentStationIndex: _currentStationIndex,
+                    activeUserStationIndex: activeUserStationIndex,
+                    totalNodes: totalStationNodes,
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  if (isLocked)
+                    // Locked Station State
+                    _buildLockedStationCard()
+                  else ...[
+                    // 3. Station Header: Description on Left & Station Image Box on Right
+                    _buildStationLoreHeader(lore),
+
+                    const SizedBox(height: 18),
+
+                    // 4. Class Information & Statistics Strip
+                    _buildStatsStrip(
+                      skillText: skillText,
+                      mediaText: mediaText,
+                      animText: animText,
+                      stayText: stayText,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
+                    _buildAnimationCarouselSection(currentClipTitle),
+
+                    const SizedBox(height: 22),
+
+                    // 6. Action Buttons
+                    _buildActionButtonsRow(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (widget.isEmbeddedInMain) {
+      return content;
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       drawer: CustomDrawer(
@@ -368,63 +478,7 @@ class _Class1ScreenState extends State<Class1Screen> {
             fit: BoxFit.cover,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 1. Top Bar with NOPA Logo (vertically aligned with right circles) & Back SVG below
-              _buildTopBar(user),
-
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 2. Horizontal Station Selection & Progress Track Header
-                      _buildStationTrackHeader(
-                        currentStationIndex: _currentStationIndex,
-                        activeUserStationIndex: activeUserStationIndex,
-                        totalNodes: totalStationNodes,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      if (isLocked)
-                        // Locked Station State
-                        _buildLockedStationCard()
-                      else ...[
-                        // 3. Station Header: Description on Left & Station Image Box on Right
-                        _buildStationLoreHeader(lore),
-
-                        const SizedBox(height: 18),
-
-                        // 4. Class Information & Statistics Strip (Right-aligned, 2-line expandable on tap)
-                        _buildStatsStrip(
-                          skillText: skillText,
-                          mediaText: mediaText,
-                          animText: animText,
-                          stayText: stayText,
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 5. Animation & Video Carousel Section (Spacious PageView, Right-aligned Caption, Flipped Chevron Controls)
-                        _buildAnimationCarouselSection(currentClipTitle),
-
-                        const SizedBox(height: 20),
-
-                        // 6. Action Buttons Styled with NOPA Logo Colors & Single-Line Fit
-                        _buildActionButtonsRow(),
-
-                        const SizedBox(height: 16),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: content,
       ),
     );
   }
@@ -522,7 +576,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                 const SizedBox(height: 2),
                 // Back Button: Only the raw SVG icon without any circle or black background
                 GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: _handleBackAction,
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
                     padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
@@ -739,20 +793,25 @@ class _Class1ScreenState extends State<Class1Screen> {
     List<BoxShadow>? boxShadow;
 
     if (isCurrent) {
-      // Selected station: bright golden glow
+      // Selected station: luminous bright golden glow
       gradient = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Color(0xFFFFBF42),
-          Color(0xFFD68B18),
+          Color(0xFFFFD574),
+          Color(0xFFE59819),
         ],
       );
-      border = Border.all(color: const Color(0xFFFFE599), width: 1.8);
+      border = Border.all(color: const Color(0xFFFFF0B8), width: 2.2);
       boxShadow = [
         BoxShadow(
-          color: const Color(0xFFEAA835).withValues(alpha: 0.55),
-          blurRadius: 12,
+          color: const Color(0xFFFFB800).withValues(alpha: 0.8),
+          blurRadius: 16,
+          spreadRadius: 2.5,
+        ),
+        BoxShadow(
+          color: const Color(0xFFFFE599).withValues(alpha: 0.5),
+          blurRadius: 6,
           spreadRadius: 1,
         ),
       ];
@@ -820,10 +879,10 @@ class _Class1ScreenState extends State<Class1Screen> {
         child: Center(
           child: Text(
             '$index',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              color: isCurrent ? const Color(0xFF221503) : Colors.white,
+              fontSize: isCurrent ? 15.5 : 14,
+              fontWeight: isCurrent ? FontWeight.w900 : FontWeight.bold,
               fontFamily: AppTheme.fontFamily,
               fontFamilyFallback: AppTheme.fontFamilyFallback,
             ),
@@ -1245,35 +1304,39 @@ class _Class1ScreenState extends State<Class1Screen> {
         ),
         const SizedBox(height: 10),
 
-        // Video Preview Box with Swipeable PageView strictly 16:9 with rich inline video player
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: PageView.builder(
-            controller: _videoPageController,
-            itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
-            onPageChanged: (idx) {
-              setState(() {
-                _currentClipIndex = idx;
-              });
-            },
-            itemBuilder: (context, index) {
-              final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
-              final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
-                  ? clip['videoUrl'].toString().trim()
-                  : 'https://www.aparat.com/v/dbjk750';
-              final String title = clip?['title']?.toString() ?? clipTitle;
-              final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
+        // Video Preview Box with Full Bleed Swipeable PageView strictly 16:9 without edge clipping
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: -16),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: PageView.builder(
+              clipBehavior: Clip.none,
+              controller: _videoPageController,
+              itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
+              onPageChanged: (idx) {
+                setState(() {
+                  _currentClipIndex = idx;
+                });
+              },
+              itemBuilder: (context, index) {
+                final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
+                final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
+                    ? clip['videoUrl'].toString().trim()
+                    : 'https://www.aparat.com/v/dbjk750';
+                final String title = clip?['title']?.toString() ?? clipTitle;
+                final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                child: NopaInlineVideoPlayer(
-                  key: ValueKey('clip_${_currentStationIndex}_$index'),
-                  videoUrl: videoUrl,
-                  title: title,
-                  coverImageUrl: poster,
-                ),
-              );
-            },
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: NopaInlineVideoPlayer(
+                    key: ValueKey('clip_${_currentStationIndex}_$index'),
+                    videoUrl: videoUrl,
+                    title: title,
+                    coverImageUrl: poster,
+                  ),
+                );
+              },
+            ),
           ),
         ),
 
