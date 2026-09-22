@@ -151,7 +151,7 @@ class StationCard extends StatelessWidget {
                         children: [
                           // Station Number (Right in RTL)
                           Text(
-                            '${station.orderIndex + 1}',
+                            '${station.orderIndex}',
                             style: const TextStyle(
                               color: Color(0xFF9292E2),
                               fontSize: 17,

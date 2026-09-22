@@ -771,7 +771,7 @@ class _MapScreenState extends State<MapScreen> {
                                         ),
                                       ),
                                       child: Text(
-                                        '${index + 1}',
+                                        '$index',
                                         style: TextStyle(
                                           color: isGold ? const Color(0xFF462306) : Colors.white,
                                           fontWeight: FontWeight.bold,

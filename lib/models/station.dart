@@ -29,12 +29,28 @@ class Station {
 
   static const List<String> defaultStationTitles = [
     'منزلگاه صفر (راهنمای کاروان)',
-    'کاروانسرای غبارگرفته',
-    'معدن زیرزمینی',
-    'قلعه',
-    'دهکده ساحلی',
-    'فانوس دریایی',
+    'منزلگاه اول (کاروانسرای غبارگرفته)',
+    'منزلگاه دوم (معدن زیرزمینی)',
+    'منزلگاه سوم (قلعه)',
+    'منزلگاه چهارم (دهکده ساحلی)',
+    'منزلگاه پنجم (فانوس دریایی)',
   ];
+
+  static const List<String> ordinalNames = [
+    'منزلگاه صفر',
+    'منزلگاه اول',
+    'منزلگاه دوم',
+    'منزلگاه سوم',
+    'منزلگاه چهارم',
+    'منزلگاه پنجم',
+  ];
+
+  static String getOrdinalName(int index) {
+    if (index >= 0 && index < ordinalNames.length) {
+      return ordinalNames[index];
+    }
+    return 'منزلگاه $index';
+  }
 
   static String resolveTitle(String? originalTitle, int index) {
     if (index == 0) {
@@ -45,7 +61,7 @@ class Station {
     if (index >= 0 && index < defaultStationTitles.length) {
       return defaultStationTitles[index];
     }
-    if (originalTitle != null && originalTitle.trim().isNotEmpty && !originalTitle.contains('منزلگاه')) {
+    if (originalTitle != null && originalTitle.trim().isNotEmpty) {
       return originalTitle.trim();
     }
     return 'منزلگاه $index';
