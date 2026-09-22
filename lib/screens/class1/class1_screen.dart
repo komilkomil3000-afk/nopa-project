@@ -10,7 +10,6 @@ import '../../core/theme/app_theme.dart';
 import '../../core/constants/api_constants.dart';
 import '../../services/api_service.dart';
 import '../../widgets/pending_challenges_dialog.dart';
-import '../../widgets/nopa_notification_dialog.dart';
 import '../../widgets/custom_drawer.dart';
 import '../../widgets/bottom_nav_bar.dart';
 import '../../widgets/nopa_inline_video_player.dart';
@@ -1362,50 +1361,12 @@ class _Class1ScreenState extends State<Class1Screen> {
                 ),
               ),
 
-              // Left in RTL: Thin Brown-Stroked Next & Prev Video Buttons (Matching Calendar Month Switcher)
+              // Left in RTL: Thin Brown-Stroked Prev & Next Video Buttons
               if (hasMultipleClips)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 1. Next Button (Chevron Left points forward in RTL)
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _currentClipIndex < _allClips.length - 1
-                            ? () {
-                                _videoPageController.nextPage(
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                );
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(15),
-                        child: Container(
-                          width: 26,
-                          height: 26,
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _currentClipIndex < _allClips.length - 1
-                                  ? const Color(0xFFC09268)
-                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.chevron_left_rounded,
-                            color: _currentClipIndex < _allClips.length - 1
-                                ? const Color(0xFFDEB58A)
-                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
-                            size: 19,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-
-                    // 2. Previous Button (Chevron Right points backward in RTL)
+                    // 1. Previous Button (On right in RTL: Chevron Right points to previous)
                     Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -1434,6 +1395,44 @@ class _Class1ScreenState extends State<Class1Screen> {
                           child: Icon(
                             Icons.chevron_right_rounded,
                             color: _currentClipIndex > 0
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+
+                    // 2. Next Button (On left in RTL: Chevron Left points to next)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _currentClipIndex < _allClips.length - 1
+                            ? () {
+                                _videoPageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: _currentClipIndex < _allClips.length - 1
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: _currentClipIndex < _allClips.length - 1
                                 ? const Color(0xFFDEB58A)
                                 : const Color(0xFFDEB58A).withValues(alpha: 0.3),
                             size: 19,

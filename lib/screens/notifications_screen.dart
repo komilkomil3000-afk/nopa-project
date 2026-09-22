@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/user_model.dart';
@@ -20,7 +21,7 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  // Selected filter tab: 0: همه, 1: خوانده‌نشده, 2: چالش‌ها, 3: اطلاعیه‌ها
+  // 0: همه, 1: خوانده‌نشده
   int _selectedFilterIndex = 0;
   final Set<String> _expandedItemIds = {};
 
@@ -55,12 +56,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _expandedItemIds.remove(id);
       } else {
         _expandedItemIds.add(id);
-        // Automatically mark as read when expanded
+        // Mark as read automatically when opened
         if (notify['isRead'] != true && id.isNotEmpty) {
           repository.markNotificationAsRead(id);
         }
       }
     });
+  }
+
+  String _formatDate(dynamic createdAt, dynamic timeStr) {
+    if (createdAt != null) {
+      try {
+        final dt = createdAt is DateTime ? createdAt : DateTime.tryParse(createdAt.toString());
+        if (dt != null) {
+          final j = Jalali.fromDateTime(dt);
+          final y = j.year.toString().padLeft(4, '0');
+          final m = j.month.toString().padLeft(2, '0');
+          final d = j.day.toString().padLeft(2, '0');
+          return '$y/$m/$d'.toPersianDigits();
+        }
+      } catch (_) {}
+    }
+    if (timeStr != null && timeStr.toString().trim().isNotEmpty) {
+      final s = timeStr.toString().trim();
+      if (s.contains('/') || s.contains('-')) {
+        return s.toPersianDigits();
+      }
+    }
+    final nowJ = Jalali.now();
+    final y = nowJ.year.toString().padLeft(4, '0');
+    final m = nowJ.month.toString().padLeft(2, '0');
+    final d = nowJ.day.toString().padLeft(2, '0');
+    return '$y/$m/$d'.toPersianDigits();
+  }
+
+  String _resolveActionLabel(Map<String, dynamic> notify) {
+    final String title = notify['title'] ?? '';
+    final String body = notify['body'] ?? '';
+    final String type = notify['type'] ?? '';
+
+    if (title.contains('تکمیل پروفایل') || body.contains('تکمیل پروفایل') || title.contains('پروفایل')) {
+      return 'تکمیل';
+    }
+    if (type == 'challenge' || title.contains('چالش') || body.contains('چالش')) {
+      return 'مشاهده';
+    }
+    if (title.contains('کلاس') || title.contains('منزلگاه') || body.contains('کلاس') || body.contains('منزلگاه')) {
+      return 'ورود';
+    }
+    if (title.contains('بازارچه') || title.contains('فروشگاه') || title.contains('سکه')) {
+      return 'مشاهده';
+    }
+    return 'مشاهده';
   }
 
   Future<void> _handleActionClick(Map<String, dynamic> notify, AppRepository repository) async {
@@ -103,10 +150,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           imageUrl =
               '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${matched!['imageUrl']}';
         }
-        final date = DateTime.tryParse(matched?['createdAt'] ?? '');
-        final dateStr = date != null
-            ? '${date.year}/${date.month}/${date.day}'.toPersianDigits()
-            : (notify['time']?.toString().toPersianDigits() ?? 'الان');
+        final dateStr = _formatDate(matched?['createdAt'], notify['time']);
 
         if (mounted) {
           JarchiItem.showNewsDialog(
@@ -123,7 +167,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           JarchiItem.showNewsDialog(
             context,
             title: title,
-            date: notify['time']?.toString().toPersianDigits() ?? 'الان',
+            date: _formatDate(null, notify['time']),
             imageUrl:
                 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400',
             content: body,
@@ -151,7 +195,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body.contains('پاسخ') ||
         title.contains('تایید شد') ||
         title.contains('رد شد')) {
-      if (Navigator.of(context).canPop()) {
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       if (isMentor) {
@@ -177,7 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body.contains('فروشگاه') ||
         title.contains('سکه') ||
         body.contains('زریک')) {
-      if (Navigator.of(context).canPop()) {
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       if (!isMentor) {
@@ -193,7 +237,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         body.contains('منزلگاه') ||
         body.contains('کلاس') ||
         title.contains('نقشه')) {
-      if (Navigator.of(context).canPop()) {
+      if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
       if (!isMentor) {
@@ -216,7 +260,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('پیام با موفقیت بررسی و خوانده شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          content: Text('پیام با موفقیت بررسی و باز شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
           backgroundColor: Color(0xFF28274A),
           duration: Duration(seconds: 2),
         ),
@@ -230,32 +274,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final user = repository.currentUser;
     final isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
 
-    // Filter list based on mentor role and selected tab
+    // Filter list based on mentor role
     final allList = repository.notifications
         .where((n) => n['isForMentor'] == isMentor)
         .toList();
 
     List<Map<String, dynamic>> filteredList;
-    switch (_selectedFilterIndex) {
-      case 1: // خوانده‌نشده
-        filteredList = allList.where((n) => n['isRead'] != true).toList();
-        break;
-      case 2: // چالش‌ها
-        filteredList = allList.where((n) {
-          final t = (n['title'] ?? '') + ' ' + (n['body'] ?? '') + ' ' + (n['type'] ?? '');
-          return t.contains('چالش') || t.contains('پاسخ') || t.contains('challenge');
-        }).toList();
-        break;
-      case 3: // اطلاعیه‌ها و خبرها
-        filteredList = allList.where((n) {
-          final t = (n['title'] ?? '') + ' ' + (n['body'] ?? '') + ' ' + (n['type'] ?? '');
-          return t.contains('خبر') || t.contains('جارچی') || t.contains('news') || t.contains('📢');
-        }).toList();
-        break;
-      case 0:
-      default:
-        filteredList = allList;
-        break;
+    if (_selectedFilterIndex == 1) {
+      filteredList = allList.where((n) => n['isRead'] != true).toList();
+    } else {
+      filteredList = allList;
     }
 
     final int unreadCount = repository.unreadNotificationsCount;
@@ -288,14 +316,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // 1. Top Bar identical to Class 1 screen (Without Bell Icon)
+              // 1. Top Bar: Gradient NOPA + Back SVG on Left, Hamburger Menu on Right (NO Bell)
               _buildTopBar(),
 
               // 2. Main Notification Feed
               Expanded(
                 child: RefreshIndicator(
-                  color: const Color(0xFFC09268),
-                  backgroundColor: const Color(0xFF1E1435),
+                  color: const Color(0xFFCD8449),
+                  backgroundColor: const Color(0xFF231C38),
                   onRefresh: () async {
                     await repository.fetchNotifications();
                   },
@@ -305,12 +333,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Page Header Title & Mark-All-Read Button
+                        // Header Title & Mark All Read
                         _buildSectionHeader(repository, unreadCount),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
 
-                        // Filter Pills Bar
+                        // Filter Pills Bar (Styled identically to Calendar day pill cards)
                         _buildFilterPills(allList, unreadCount),
 
                         const SizedBox(height: 16),
@@ -319,10 +347,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         if (filteredList.isEmpty)
                           _buildEmptyState()
                         else
-                          ListView.builder(
+                          ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: filteredList.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final notify = filteredList[index];
                               final String id = notify['id']?.toString() ?? 'notif_$index';
@@ -350,7 +379,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// 1. Top Bar matching Class 1 screen: Left = Gradient NOPA + Back SVG, Right = Drawer Hamburger Menu (NO Bell)
+  /// Top Bar matching Class 1 screen: Left = Gradient NOPA + Back SVG, Right = Drawer Hamburger Menu (NO Bell)
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
@@ -518,98 +547,122 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  /// Filter Pills Bar
+  /// Filter Pills Bar (Exact calendar day selection styling)
   Widget _buildFilterPills(List<Map<String, dynamic>> allList, int unreadCount) {
     final filters = [
       {'title': 'همه', 'count': allList.length},
       {'title': 'خوانده‌نشده', 'count': unreadCount},
-      {'title': 'چالش‌ها', 'count': allList.where((n) => (n['title'] ?? '').contains('چالش') || (n['body'] ?? '').contains('چالش')).length},
-      {'title': 'اطلاعیه‌ها', 'count': allList.where((n) => (n['type'] == 'news') || (n['title'] ?? '').contains('خبر') || (n['title'] ?? '').contains('📢')).length},
     ];
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(filters.length, (idx) {
-            final isSelected = _selectedFilterIndex == idx;
-            final item = filters[idx];
-            final int count = item['count'] as int;
+      child: Row(
+        children: List.generate(filters.length, (idx) {
+          final isSelected = _selectedFilterIndex == idx;
+          final item = filters[idx];
+          final int count = item['count'] as int;
 
-            return Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => setState(() => _selectedFilterIndex = idx),
-                  borderRadius: BorderRadius.circular(18),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [Color(0xFFC09268), Color(0xFFA57C46)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: isSelected ? null : const Color(0xFF23223D),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isSelected
-                            ? const Color(0xFFF4DCC5).withValues(alpha: 0.6)
-                            : const Color(0xFF453F73).withValues(alpha: 0.4),
-                        width: 1,
-                      ),
+          return Padding(
+            padding: const EdgeInsets.only(left: 10.0),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilterIndex = idx),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFFE5A86D),
+                            Color(0xFFA86C38),
+                          ],
+                        )
+                      : const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFF6C6BC2),
+                            Color(0xFF3B396E),
+                          ],
+                        ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          item['title'] as String,
-                          style: TextStyle(
-                            color: isSelected ? const Color(0xFF1E1435) : const Color(0xFFD3D0E3),
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
+                  ],
+                ),
+                padding: const EdgeInsets.all(1.2), // Gradient border matching Calendar
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12.8),
+                    gradient: isSelected
+                        ? const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFFDE9959),
+                              Color(0xFFB87239),
+                            ],
+                          )
+                        : const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFF383768),
+                              Color(0xFF2C2B54),
+                            ],
+                          ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item['title'] as String,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                      if (count > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withValues(alpha: 0.22)
+                                : const Color(0xFF23223D),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            count.toPersian(),
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFFB8B7DF),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
                           ),
                         ),
-                        if (count > 0) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF1E1435).withValues(alpha: 0.25)
-                                  : const Color(0xFF38355F),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              count.toPersian(),
-                              style: TextStyle(
-                                color: isSelected ? const Color(0xFF1E1435) : const Color(0xFF9D99B8),
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
 
-  /// Expandable Notification Card
+  /// Compact Notification Card matching user screenshot & Calendar pill styling
   Widget _buildNotificationCard({
     required Map<String, dynamic> notify,
     required String id,
@@ -618,278 +671,169 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }) {
     final String title = notify['title'] ?? 'اعلان جدید کاروان';
     final String body = notify['body'] ?? '';
-    final String type = notify['type'] ?? '';
-    final bool isRead = notify['isRead'] == true;
-    final String time = notify['time']?.toString().toPersianDigits() ?? 'الان';
+    final String dateStr = _formatDate(notify['createdAt'], notify['time']);
+    final String actionLabel = _resolveActionLabel(notify);
 
-    // Type detection & Color Coding
-    final bool isReject = title.contains('رد شد') || title.contains('❌');
-    final bool isApprove = title.contains('تایید شد') || title.contains('✅');
-    final bool isNews = type == 'news' || title.contains('📢') || title.contains('خبر') || body.contains('خبر');
-    final bool isProfile = title.contains('تکمیل پروفایل') || body.contains('تکمیل پروفایل') || title.contains('پروفایل');
-    final bool isChallenge = type == 'challenge' || title.contains('چالش') || body.contains('چالش') || title.contains('پاسخ');
-    final bool isClass = title.contains('کلاس') || title.contains('منزلگاه') || body.contains('کلاس') || body.contains('منزلگاه');
-    final bool isMarket = title.contains('فروشگاه') || title.contains('بازارچه') || title.contains('سکه') || title.contains('زریک');
-
-    // Dynamic Styling Elements
-    Color accentColor = const Color(0xFFC09268);
-    Color cardBg = const Color(0xFF1D1A35);
-    Color borderColor = const Color(0xFF3B3666).withValues(alpha: 0.5);
-    IconData leadingIcon = Icons.notifications_active_rounded;
-    String actionBtnLabel = 'مشاهده جزییات';
-    IconData actionBtnIcon = Icons.arrow_forward_rounded;
-
-    if (isReject) {
-      accentColor = const Color(0xFFF87171);
-      cardBg = const Color(0xFF281822);
-      borderColor = const Color(0xFFEF4444).withValues(alpha: 0.35);
-      leadingIcon = Icons.cancel_rounded;
-      actionBtnLabel = 'مشاهده و ویرایش چالش';
-      actionBtnIcon = Icons.edit_note_rounded;
-    } else if (isApprove) {
-      accentColor = const Color(0xFF34D399);
-      cardBg = const Color(0xFF162525);
-      borderColor = const Color(0xFF10B981).withValues(alpha: 0.35);
-      leadingIcon = Icons.check_circle_rounded;
-      actionBtnLabel = 'مشاهده پاداش و چالش';
-      actionBtnIcon = Icons.emoji_events_rounded;
-    } else if (isNews) {
-      accentColor = const Color(0xFF38BDF8);
-      cardBg = const Color(0xFF16223B);
-      borderColor = const Color(0xFF0284C7).withValues(alpha: 0.35);
-      leadingIcon = Icons.campaign_rounded;
-      actionBtnLabel = 'مشاهده متن کامل خبر';
-      actionBtnIcon = Icons.article_rounded;
-    } else if (isProfile) {
-      accentColor = const Color(0xFFFFD54F);
-      cardBg = const Color(0xFF27211E);
-      borderColor = const Color(0xFFF59E0B).withValues(alpha: 0.35);
-      leadingIcon = Icons.stars_rounded;
-      actionBtnLabel = 'تکمیل پروفایل (دریافت ۱۰۰ سکه)';
-      actionBtnIcon = Icons.badge_rounded;
-    } else if (isChallenge) {
-      accentColor = const Color(0xFFDEB58A);
-      leadingIcon = Icons.emoji_events_outlined;
-      actionBtnLabel = 'ورود به صفحه چالش‌ها';
-      actionBtnIcon = Icons.flag_rounded;
-    } else if (isClass) {
-      accentColor = const Color(0xFFA78BFA);
-      leadingIcon = Icons.auto_stories_rounded;
-      actionBtnLabel = 'ورود به آموزگاه و منزلگاه';
-      actionBtnIcon = Icons.school_rounded;
-    } else if (isMarket) {
-      accentColor = const Color(0xFFFB923C);
-      leadingIcon = Icons.storefront_rounded;
-      actionBtnLabel = 'ورود به بازارچه کاروان';
-      actionBtnIcon = Icons.shopping_bag_rounded;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: !isRead ? accentColor.withValues(alpha: 0.6) : borderColor,
-          width: !isRead ? 1.2 : 0.9,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _toggleExpanded(id, notify, repository),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Row: Leading Category Icon + Title + Unread Badge + Time + Chevron
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Leading Category Icon
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Icon(
-                          leadingIcon,
-                          color: accentColor,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      // Title & Unread Indicator
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    title,
-                                    maxLines: isExpanded ? 2 : 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13.5,
-                                      fontWeight: !isRead ? FontWeight.bold : FontWeight.w600,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                    ),
-                                  ),
-                                ),
-                                if (!isRead) ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: accentColor,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: accentColor.withValues(alpha: 0.6),
-                                          blurRadius: 4,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              time,
-                              style: const TextStyle(
-                                color: Color(0xFF9D99B8),
-                                fontSize: 10,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Expand/Collapse Chevron Indicator
-                      AnimatedRotation(
-                        turns: isExpanded ? 0.5 : 0.0,
-                        duration: const Duration(milliseconds: 250),
-                        child: Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: accentColor.withValues(alpha: 0.8),
-                          size: 22,
-                        ),
-                      ),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Top Header Box: Title on Right, Date in Center/Left, Action Button on Left
+          GestureDetector(
+            onTap: () => _toggleExpanded(id, notify, repository),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: isExpanded
+                    ? const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                      )
+                    : BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF6C6BC2),
+                    Color(0xFF3B396E),
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(1.2), // Gradient border matching Calendar
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: isExpanded
+                      ? const BorderRadius.only(
+                          topLeft: Radius.circular(14.8),
+                          topRight: Radius.circular(14.8),
+                        )
+                      : BorderRadius.circular(14.8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF383768),
+                      Color(0xFF2C2B54),
                     ],
                   ),
+                ),
+                child: Row(
+                  children: [
+                    // Action Button on the far left in RTL
+                    GestureDetector(
+                      onTap: () => _handleActionClick(notify, repository),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF231E3D).withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFE5A86D).withValues(alpha: 0.85),
+                            width: 1.1,
+                          ),
+                        ),
+                        child: Text(
+                          actionLabel,
+                          style: const TextStyle(
+                            color: Color(0xFFF4DCC5),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                    ),
 
-                  // Collapsed Preview / Teaser (Only if not expanded)
-                  if (!isExpanded && body.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 10),
+
+                    // Date
                     Text(
-                      body,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      dateStr,
                       style: const TextStyle(
-                        color: Color(0xFFB5B3C8),
-                        fontSize: 11.5,
-                        height: 1.4,
+                        color: Color(0xFF9897D2),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                         fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // Title on the right in RTL
+                    Expanded(
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+          ),
 
-                  // Expanded Detailed Content & Action Buttons
-                  AnimatedCrossFade(
-                    firstChild: const SizedBox.shrink(),
-                    secondChild: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                accentColor.withValues(alpha: 0.3),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Full Message Body Text
-                        Text(
-                          body.isNotEmpty ? body : 'پیام با جزییات کامل در دسترس است.',
-                          style: const TextStyle(
-                            color: Color(0xFFEDE8F5),
-                            fontSize: 12,
-                            height: 1.65,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // Interactive Action Button
-                        ElevatedButton.icon(
-                          onPressed: () => _handleActionClick(notify, repository),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: accentColor,
-                            foregroundColor: (accentColor.computeLuminance() > 0.4)
-                                ? const Color(0xFF1E1435)
-                                : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
-                            elevation: 0,
-                          ),
-                          icon: Icon(actionBtnIcon, size: 16),
-                          label: Text(
-                            actionBtnLabel,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ],
+          // 2. Expanded Description Area directly below header
+          if (isExpanded)
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF19172B).withValues(alpha: 0.95),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                border: Border(
+                  left: BorderSide(color: const Color(0xFF6C6BC2).withValues(alpha: 0.5), width: 1.2),
+                  right: BorderSide(color: const Color(0xFF6C6BC2).withValues(alpha: 0.5), width: 1.2),
+                  bottom: BorderSide(color: const Color(0xFF3B396E).withValues(alpha: 0.8), width: 1.2),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'توضیحات:',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Color(0xFFDEB58A),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
                     ),
-                    crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                    duration: const Duration(milliseconds: 220),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    body.isNotEmpty ? body : 'توضیحات تکمیلی برای این پیام ثبت نشده است.',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Color(0xFFD3D0E3),
+                      fontSize: 11.5,
+                      height: 1.6,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -909,12 +853,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: const [
           Icon(
             Icons.notifications_none_rounded,
-            size: 52,
+            size: 48,
             color: Color(0xFF676296),
           ),
           SizedBox(height: 14),
           Text(
-            'پیام یا اعلانی در این دسته وجود ندارد',
+            'پیامی در این بخش وجود ندارد',
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -924,7 +868,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           SizedBox(height: 6),
           Text(
-            'اعلان‌ها و رویدادهای کاروان نپا پس از انتشار در اینجا نمایش داده می‌شوند.',
+            'اعلان‌ها و رویدادهای جدید کاروان نپا در این بخش نمایش داده می‌شوند.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF9D99B8),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
@@ -430,27 +431,27 @@ class _MarketScreenState extends State<MarketScreen> {
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
-                                  fontFamily: 'Vazirmatn',
+                                  fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
                               Text(
-                                '${item['zarik']} زریک',
+                                '${item['zarik'].toString().toPersianDigits()} زریک',
                                 style: TextStyle(
                                   color: color,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 11,
-                                  fontFamily: 'Vazirmatn',
+                                  fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            item['equivalent'] as String,
+                            (item['equivalent'] as String).toPersianDigits(),
                             style: const TextStyle(
                               color: Colors.white38,
                               fontSize: 9.5,
-                              fontFamily: 'Vazirmatn',
+                              fontFamily: AppTheme.fontFamily,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -493,7 +494,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      fontFamily: 'Vazirmatn',
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
                 ],
@@ -503,7 +504,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 style: TextStyle(
                   color: Color(0xFF8B5CF6),
                   fontSize: 11,
-                  fontFamily: 'Vazirmatn',
+                  fontFamily: AppTheme.fontFamily,
                 ),
               ),
             ],
@@ -516,7 +517,7 @@ class _MarketScreenState extends State<MarketScreen> {
             children: [
               const Text(
                 'سرمایه ارائه‌شده (فروش):',
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn'),
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: AppTheme.fontFamily),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -529,9 +530,9 @@ class _MarketScreenState extends State<MarketScreen> {
                   child: DropdownButton<String>(
                     value: _sourceAsset,
                     dropdownColor: const Color(0xFF1E1435),
-                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: 'Vazirmatn'),
+                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
                     items: _assets.map((asset) {
-                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: 'Vazirmatn')));
+                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: AppTheme.fontFamily)));
                     }).toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -552,11 +553,11 @@ class _MarketScreenState extends State<MarketScreen> {
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn'),
+            style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
             textAlign: TextAlign.center,
             decoration: InputDecoration(
               hintText: 'تعداد یا مقدار را وارد کنید',
-              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12, fontFamily: 'Vazirmatn'),
+              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12, fontFamily: AppTheme.fontFamily),
               filled: true,
               fillColor: const Color(0xFF160E2A),
               contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
@@ -574,7 +575,7 @@ class _MarketScreenState extends State<MarketScreen> {
             children: [
               const Text(
                 'سرمایه درخواستی (خرید):',
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: 'Vazirmatn'),
+                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: AppTheme.fontFamily),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -587,9 +588,9 @@ class _MarketScreenState extends State<MarketScreen> {
                   child: DropdownButton<String>(
                     value: _targetAsset,
                     dropdownColor: const Color(0xFF1E1435),
-                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: 'Vazirmatn'),
+                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
                     items: _assets.map((asset) {
-                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: 'Vazirmatn')));
+                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: AppTheme.fontFamily)));
                     }).toList(),
                     onChanged: (val) {
                       if (val != null) {
@@ -619,15 +620,15 @@ class _MarketScreenState extends State<MarketScreen> {
               children: [
                 const Text(
                   'مقدار دریافتی برآورد شده:',
-                  style: TextStyle(color: Colors.white70, fontSize: 11.5, fontFamily: 'Vazirmatn'),
+                  style: TextStyle(color: Colors.white70, fontSize: 11.5, fontFamily: AppTheme.fontFamily),
                 ),
                 Text(
-                  '${_calculatedResult.toInt()} $_targetAsset',
+                  '${_calculatedResult.toInt().toPersian()} $_targetAsset',
                   style: const TextStyle(
                     color: Color(0xFFFFD54F),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    fontFamily: 'Vazirmatn',
+                    fontFamily: AppTheme.fontFamily,
                   ),
                 ),
               ],
@@ -659,7 +660,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 13.5,
-                  fontFamily: 'Vazirmatn',
+                  fontFamily: AppTheme.fontFamily,
                 ),
               ),
             ),

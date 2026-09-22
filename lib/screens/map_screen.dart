@@ -11,7 +11,6 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 import '../widgets/pending_challenges_dialog.dart';
-import '../widgets/nopa_notification_dialog.dart';
 import '../main.dart';
 
 class MapScreen extends StatefulWidget {

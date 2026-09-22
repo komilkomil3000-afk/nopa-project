@@ -12,7 +12,6 @@ import '../models/station.dart';
 import '../widgets/education_calendar.dart';
 import '../widgets/home_challenges_section.dart';
 import '../widgets/station_card.dart';
-import '../widgets/nopa_notification_dialog.dart';
 import '../widgets/pending_challenges_dialog.dart';
 import '../main.dart'; // For MainScreenState
 

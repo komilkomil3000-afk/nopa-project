@@ -73,30 +73,46 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
-    _notificationPollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_apiService.isAuthenticated) {
-        fetchNotifications();
+    _notificationPollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      try {
+        if (_apiService.isAuthenticated) {
+          await fetchNotifications();
+        }
+      } catch (e) {
+        debugPrint('Periodic notification sync caught: $e');
       }
     });
 
     _inactivityCheckTimer?.cancel();
-    _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_apiService.isAuthenticated) {
-        checkInactivityTimeout();
+    _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      try {
+        if (_apiService.isAuthenticated) {
+          await checkInactivityTimeout();
+        }
+      } catch (e) {
+        debugPrint('Periodic inactivity check caught: $e');
       }
     });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      checkInactivityTimeout().then((_) {
-        if (_apiService.isAuthenticated) {
-          refreshUser();
-        }
-      });
-    } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
-      recordActivity();
+    try {
+      if (state == AppLifecycleState.resumed) {
+        checkInactivityTimeout().then((_) {
+          if (_apiService.isAuthenticated) {
+            refreshUser().catchError((e) {
+              debugPrint('Resumed refreshUser error: $e');
+            });
+          }
+        }).catchError((e) {
+          debugPrint('Resumed checkInactivityTimeout error: $e');
+        });
+      } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
+        recordActivity();
+      }
+    } catch (e) {
+      debugPrint('Lifecycle state change caught: $e');
     }
   }
 
