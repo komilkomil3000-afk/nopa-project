@@ -215,7 +215,8 @@ class ContactUsDialog extends StatelessWidget {
     );
   }
 
-  /// Reusable Contact Row matching exact visual specification
+  /// Reusable Contact Row matching exact visual specification:
+  /// In RTL Directionality: First child is on the RIGHT (Label Pill), Second child is on the LEFT (Value).
   Widget _buildContactRow(
     BuildContext context, {
     required String label,
@@ -229,23 +230,7 @@ class ContactUsDialog extends StatelessWidget {
       child: Row(
         crossAxisAlignment: isAddress ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          // Value on left (in RTL: occupies expanded space on the right side of the row visually)
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFE5A855),
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-
-          // Label Pill on right (in RTL: anchored on the right)
+          // 1. Label Pill on RIGHT (First child in RTL)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6.5),
             decoration: BoxDecoration(
@@ -267,53 +252,33 @@ class ContactUsDialog extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
+          const SizedBox(width: 12),
+
+          // 2. Value on LEFT (Second child in RTL)
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.left,
+              style: const TextStyle(
+                color: Color(0xFFE1BC96),
+                fontSize: 13.5,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Location Row with Label on Right and Map/Pin Container on Left
+  /// Location Row: Label Pill on RIGHT (First child in RTL) and Map/Pin Button on LEFT (Second child in RTL)
   Widget _buildLocationRow(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Location placeholder / interactive box on left
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _launch(context, 'https://maps.google.com/?q=34.6416,50.8746'),
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color(0xFF221E3A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: const Color(0xFF7A709E).withValues(alpha: 0.6),
-                  width: 1.0,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.location_on_rounded, color: Color(0xFFE5A855), size: 20),
-                  SizedBox(width: 6),
-                  Text(
-                    'مشاهده روی نقشه',
-                    style: TextStyle(
-                      color: Color(0xFFE5A855),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-
-        // Label Pill
+        // 1. Label Pill on RIGHT (First child in RTL)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6.5),
           decoration: BoxDecoration(
@@ -333,6 +298,42 @@ class ContactUsDialog extends StatelessWidget {
               fontFamily: AppTheme.fontFamily,
             ),
             textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // 2. Location button on LEFT (Second child in RTL)
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _launch(context, 'https://maps.google.com/?q=34.6416,50.8746'),
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFF221E3A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                  width: 1.0,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.location_on_rounded, color: Color(0xFFE1BC96), size: 18),
+                  SizedBox(width: 6),
+                  Text(
+                    'مشاهده روی نقشه',
+                    style: TextStyle(
+                      color: Color(0xFFE1BC96),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],

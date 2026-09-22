@@ -781,7 +781,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
 
-              // Embedded Change Request Button (matching OTP dispatch button in Login)
+              // Embedded Change Request Button (matching ثبت تغییرات style)
               GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
@@ -790,14 +790,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     color: const Color(0xFF2A2835),
                     borderRadius: BorderRadius.circular(7),
                     border: Border.all(
-                      color: const Color(0xFFCD8449).withValues(alpha: 0.7),
-                      width: 0.9,
+                      color: const Color(0xFFC09268),
+                      width: 1.0,
                     ),
                   ),
                   child: Text(
                     buttonLabel,
                     style: const TextStyle(
-                      color: Color(0xFFCD8449),
+                      color: Color(0xFFE1BC96),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       fontFamily: AppTheme.fontFamily,

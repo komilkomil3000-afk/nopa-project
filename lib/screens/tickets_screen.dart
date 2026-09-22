@@ -398,7 +398,7 @@ class _TicketsScreenState extends State<TicketsScreen> {
           ],
         ),
 
-        // Create New Request Button (matching OTP dispatch button in Login)
+        // Create New Request Button (matching ثبت تغییرات style)
         GestureDetector(
           onTap: _openNewRequestDialog,
           child: Container(
@@ -407,25 +407,18 @@ class _TicketsScreenState extends State<TicketsScreen> {
               color: const Color(0xFF2A2835),
               borderRadius: BorderRadius.circular(7),
               border: Border.all(
-                color: const Color(0xFFCD8449).withValues(alpha: 0.7),
-                width: 0.9,
+                color: const Color(0xFFC09268),
+                width: 1.0,
               ),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_rounded, color: Color(0xFFCD8449), size: 15),
-                SizedBox(width: 4),
-                Text(
-                  'ایجاد درخواست',
-                  style: TextStyle(
-                    color: Color(0xFFCD8449),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ],
+            child: const Text(
+              'ایجاد درخواست',
+              style: TextStyle(
+                color: Color(0xFFE1BC96),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
           ),
         ),
@@ -635,16 +628,38 @@ class _TicketsScreenState extends State<TicketsScreen> {
                     ),
                   ),
 
-                                color: isAnswered ? const Color(0xFF10B981) : const Color(0xFFC7B299),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ],
+                  const SizedBox(width: 8),
+
+                  // Small Green Approved (تایید) Badge for answered tickets
+                  if (isAnswered) ...[
+                    const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          color: Color(0xFF10B981),
+                          size: 13,
                         ),
-                      ),
+                        SizedBox(width: 3),
+                        Text(
+                          'تایید',
+                          style: TextStyle(
+                            color: Color(0xFF10B981),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // Small down arrow icon (toggle to up arrow when expanded)
+                  Icon(
+                    isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                    color: const Color(0xFFC7B299),
+                    size: 18,
                   ),
                 ],
               ),

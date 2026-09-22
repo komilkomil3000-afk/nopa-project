@@ -1256,7 +1256,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 color: isTimerActive
                     ? const Color(0xFF6C6C63).withValues(alpha: 0.35)
                     : (isEnabled
-                        ? const Color(0xFFCD8449).withValues(alpha: 0.6)
+                        ? const Color(0xFFC09268)
                         : const Color(0xFF6C6C63).withValues(alpha: 0.2)),
                 width: 0.8,
               ),
@@ -1265,7 +1265,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 ? const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE1BC96)),
                   )
                 : Text(
                     buttonLabel,
@@ -1273,7 +1273,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       color: isTimerActive
                           ? const Color(0xFFC7B299)
                           : (isEnabled
-                              ? const Color(0xFFCD8449)
+                              ? const Color(0xFFE1BC96)
                               : const Color(0xFF8E889D).withValues(alpha: 0.45)),
                       fontWeight: isEnabled ? FontWeight.bold : FontWeight.w500,
                       fontFamily: AppTheme.fontFamily,

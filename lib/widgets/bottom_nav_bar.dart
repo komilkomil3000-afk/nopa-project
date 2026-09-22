@@ -17,7 +17,8 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMentor = role == UserRole.mentor || role == UserRole.superMentor;
+    final bool isMentor =
+        role == UserRole.mentor || role == UserRole.superMentor;
 
     final List<_NavItemData> items = isMentor
         ? [
@@ -77,10 +78,7 @@ class CustomBottomNavBar extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF282548),
-            Color(0xFF1B1834),
-          ],
+          colors: [Color(0xFF282548), Color(0xFF1B1834)],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border(
@@ -123,7 +121,9 @@ class CustomBottomNavBar extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'YekanBakh',
                         fontSize: 11.5,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         color: isSelected
                             ? const Color(0xFFEDE9F6)
                             : const Color(0xFF8B88A8),
@@ -149,11 +149,8 @@ class CustomBottomNavBar extends StatelessWidget {
       width: 25,
       height: 25,
       colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-      placeholderBuilder: (context) => Icon(
-        item.fallbackIcon,
-        size: 25,
-        color: iconColor,
-      ),
+      placeholderBuilder: (context) =>
+          Icon(item.fallbackIcon, size: 25, color: iconColor),
     );
   }
 }

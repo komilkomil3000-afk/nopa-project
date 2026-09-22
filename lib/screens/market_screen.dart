@@ -316,24 +316,10 @@ class _MarketScreenState extends State<MarketScreen> {
 
                   const SizedBox(height: 22),
 
-                  // Bottom Action Buttons: ارسال (Gold/Orange text) & لغو (Purple text)
+                  // Bottom Action Buttons: ارسال (Right in RTL) & لغو (Left in RTL)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // لغو on Left in RTL
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
-                          'لغو',
-                          style: TextStyle(
-                            color: Color(0xFF9E9CD6),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ),
-
                       // ارسال on Right in RTL
                       TextButton(
                         onPressed: () {
@@ -350,6 +336,20 @@ class _MarketScreenState extends State<MarketScreen> {
                           'ارسال',
                           style: TextStyle(
                             color: Color(0xFFE5A855),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+
+                      // لغو on Left in RTL
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text(
+                          'لغو',
+                          style: TextStyle(
+                            color: Color(0xFF9E9CD6),
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,

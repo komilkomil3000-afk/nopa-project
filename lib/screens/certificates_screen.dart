@@ -619,14 +619,14 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                       child: Text(
                         tab['title'] as String,
                         style: TextStyle(
-                          color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
+                          color: isSelected ? const Color(0xFFE1BC96) : const Color(0xFF9D99B8),
                           fontSize: isSelected ? 15.5 : 14,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
                           shadows: isSelected
                               ? [
                                   Shadow(
-                                    color: const Color(0xFFDE9959).withValues(alpha: 0.4),
+                                    color: const Color(0xFFC09268).withValues(alpha: 0.45),
                                     blurRadius: 8,
                                   ),
                                 ]
@@ -727,14 +727,13 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
     final teacher = course['teacher'] as String;
     final desc = course['description'] as String;
     final sessionsCount = course['sessionsCount'] as String;
-    final date = course['date']?.toString() ?? '';
     final double progress = (course['progress'] as num?)?.toDouble() ?? 1.0;
 
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isCompleted ? const Color(0xFFFFD580).withValues(alpha: 0.4) : const Color(0xFF453F73),
+          color: const Color(0xFF453F73),
           width: 1.2,
         ),
         gradient: const LinearGradient(
@@ -765,7 +764,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: isCompleted ? const Color(0xFFFFD580) : const Color(0xFF9292E2),
+                      color: const Color(0xFF9292E2),
                       width: 1.5,
                     ),
                   ),
@@ -778,8 +777,8 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                         'assets/svg_icons/digree .svg',
                         width: 32,
                         height: 32,
-                        colorFilter: ColorFilter.mode(
-                          isCompleted ? const Color(0xFFFFD580) : const Color(0xFF9E9CD6),
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF9E9CD6),
                           BlendMode.srcIn,
                         ),
                       ),
@@ -802,14 +801,14 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 4),
 
-                      // Topic & Sessions Count
+                      // Topic
                       Text(
                         'موضوع: $desc',
                         textAlign: TextAlign.right,
@@ -821,11 +820,11 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
 
-                      // Sessions & Instructor info
+                      // Sessions Count & Instructor
                       Text(
-                        'تعداد جلسات: $sessionsCount • استاد: $teacher ${date.isNotEmpty ? "• $date" : ""}',
+                        'تعداد جلسات: $sessionsCount • استاد: $teacher',
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -838,76 +837,92 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
 
                       const SizedBox(height: 8),
 
-                      // Action Buttons for completed courses / Progress for ongoing
+                      // Action Buttons for completed courses: Side by side in a Row
                       if (isCompleted)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            // 1. دانلود گواهی Button
-                            GestureDetector(
-                              onTap: () => _handleVirtualCertificate(course),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2A2835),
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: const Color(0xFFCD8449).withValues(alpha: 0.7),
-                                    width: 0.9,
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.download_rounded, color: Color(0xFFCD8449), size: 14),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'دانلود گواهی',
-                                      style: TextStyle(
-                                        color: Color(0xFFCD8449),
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppTheme.fontFamily,
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              // 1. دانلود گواهی Button (Matching ثبت تغییرات style)
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _handleVirtualCertificate(course),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2A2835),
+                                      borderRadius: BorderRadius.circular(7),
+                                      border: Border.all(
+                                        color: const Color(0xFFC09268),
+                                        width: 1.0,
                                       ),
                                     ),
-                                  ],
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.download_rounded, color: Color(0xFFE1BC96), size: 13),
+                                        SizedBox(width: 3),
+                                        Flexible(
+                                          child: Text(
+                                            'دانلود گواهی',
+                                            style: TextStyle(
+                                              color: Color(0xFFE1BC96),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: AppTheme.fontFamily,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
 
-                            // 2. درخواست گواهی فیزیکی Button
-                            GestureDetector(
-                              onTap: () => _openPhysicalRequestDialog(course),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2A2835),
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: const Color(0xFF7A6B9E).withValues(alpha: 0.8),
-                                    width: 0.9,
-                                  ),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.local_shipping_outlined, color: Color(0xFFDDD9EE), size: 14),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'درخواست گواهی فیزیکی',
-                                      style: TextStyle(
-                                        color: Color(0xFFDDD9EE),
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppTheme.fontFamily,
+                              // 2. درخواست گواهی فیزیکی Button (Matching ثبت تغییرات style)
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => _openPhysicalRequestDialog(course),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2A2835),
+                                      borderRadius: BorderRadius.circular(7),
+                                      border: Border.all(
+                                        color: const Color(0xFFC09268),
+                                        width: 1.0,
                                       ),
                                     ),
-                                  ],
+                                    child: const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.local_shipping_outlined, color: Color(0xFFE1BC96), size: 13),
+                                        SizedBox(width: 3),
+                                        Flexible(
+                                          child: Text(
+                                            'درخواست گواهی فیزیکی',
+                                            style: TextStyle(
+                                              color: Color(0xFFE1BC96),
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: AppTheme.fontFamily,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         )
                       else
                         Column(
@@ -1046,18 +1061,15 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 440),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: const Color(0xFF5A4D80),
-              width: 1.0,
-            ),
+            color: const Color(0xFF2C2849),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 20,
+                blurRadius: 24,
+                spreadRadius: 2,
                 offset: const Offset(0, 8),
               ),
             ],
@@ -1067,44 +1079,34 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header: Title & Icon
-                Row(
+                // Header: Icon on right (in RTL) and Centered Title
+                const Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFC09268),
-                          width: 1.2,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Icon(
                         Icons.card_membership_rounded,
-                        color: Color(0xFFC09268),
-                        size: 20,
+                        color: Color(0xFF9E9CD6),
+                        size: 32,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'درخواست نسخه فیزیکی گواهی',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                    Text(
+                      'درخواست نسخه فیزیکی گواهی',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 // Field 1: موضوع
-                _buildInfoRow(label: 'موضوع:', text: 'صدور و ارسال نسخه فیزیکی گواهی'),
+                _buildInfoRow(label: 'موضوع:', text: 'صدور و ارسال نسخه فیزیکی'),
                 const SizedBox(height: 10),
 
                 // Field 2: دوره
@@ -1113,11 +1115,11 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
 
                 // Field 3: تاریخ
                 _buildInfoRow(label: 'تاریخ:', text: widget.currentDate),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-                // Field 4: نام تحویل گیرنده
+                // Field 4: تحویل‌گیرنده
                 _buildInputField(
-                  label: 'نام تحویل‌گیرنده:',
+                  label: 'تحویل‌گیرنده:',
                   controller: _nameCtrl,
                   hintText: 'نام و نام خانوادگی',
                 ),
@@ -1125,16 +1127,16 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
 
                 // Field 5: شماره تماس
                 _buildInputField(
-                  label: 'شماره تماس:',
+                  label: 'تلفن همراه:',
                   controller: _phoneCtrl,
-                  hintText: '09120000000',
+                  hintText: '09380346668',
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 10),
 
                 // Field 6: آدرس پستی
                 _buildInputField(
-                  label: 'آدرس تحویل:',
+                  label: 'آدرس:',
                   controller: _addressCtrl,
                   hintText: 'استان، شهر، خیابان، پلاک...',
                   maxLines: 2,
@@ -1148,140 +1150,47 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
                   hintText: 'کد پستی ۱۰ رقمی',
                   keyboardType: TextInputType.number,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
 
-                // Payment & Cost Box
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.strokeGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.darkSurfaceGradient,
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(color: const Color(0xFFC09268), width: 1.0),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.receipt_long_rounded, color: Color(0xFFE1BC96), size: 18),
-                            SizedBox(width: 8),
-                            Text(
-                              'هزینه چاپ و ارسال پستی:',
-                              style: TextStyle(
-                                color: Color(0xFFDDD9EE),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          _costFormatted,
-                          style: const TextStyle(
-                            color: Color(0xFFE1BC96),
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                // Field 8: هزینه ارسال
+                _buildInfoRow(label: 'هزینه ارسال:', text: _costFormatted),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 22),
 
-                // Bottom Buttons: پرداخت آنلاین و ثبت نهایی & انصراف
+                // Bottom Buttons: پرداخت و ثبت نهایی (Right) & انصراف (Left)
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // انصراف
-                    Expanded(
-                      flex: 2,
-                      child: InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.strokeGradient,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.darkSurfaceGradient,
-                              borderRadius: BorderRadius.circular(9),
-                              border: Border.all(color: const Color(0xFF5A4D80), width: 1.0),
-                            ),
-                            child: const Text(
-                              'انصراف',
+                    // پرداخت و ثبت نهایی (Right in RTL)
+                    TextButton(
+                      onPressed: _isProcessingPayment ? null : _submitPhysicalOrder,
+                      child: _isProcessingPayment
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE1BC96)),
+                            )
+                          : const Text(
+                              'پرداخت و ثبت نهایی',
                               style: TextStyle(
-                                color: Color(0xFFB5B0D8),
-                                fontSize: 13,
+                                color: Color(0xFFE1BC96),
+                                fontSize: 14.5,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
                               ),
                             ),
-                          ),
-                        ),
-                      ),
                     ),
-                    const SizedBox(width: 10),
 
-                    // پرداخت آنلاین و ثبت نهایی
-                    Expanded(
-                      flex: 3,
-                      child: InkWell(
-                        onTap: _isProcessingPayment ? null : _submitPhysicalOrder,
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.strokeGradient,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.darkSurfaceGradient,
-                              borderRadius: BorderRadius.circular(9),
-                              border: Border.all(color: const Color(0xFFC09268), width: 1.1),
-                            ),
-                            child: _isProcessingPayment
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFFCD8449),
-                                    ),
-                                  )
-                                : const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.payment_rounded, color: Color(0xFFE1BC96), size: 16),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'پرداخت و ثبت نهایی',
-                                        style: TextStyle(
-                                          color: Color(0xFFE1BC96),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: AppTheme.fontFamily,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
+                    // انصراف (Left in RTL)
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'انصراف',
+                        style: TextStyle(
+                          color: Color(0xFF9E9CD6),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),
@@ -1295,54 +1204,55 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
     );
   }
 
+  /// Info Row matching Contact Us Dialog structure
   Widget _buildInfoRow({required String label, required String text}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 60,
+        // 1. Label Pill on RIGHT (First child in RTL)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7A709E),
+              width: 1.1,
+            ),
+          ),
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 11.5,
+              color: Color(0xFFDDD9EE),
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               fontFamily: AppTheme.fontFamily,
             ),
+            textAlign: TextAlign.center,
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 10),
+
+        // 2. Value on LEFT (Second child in RTL)
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(8),
+          child: Text(
+            text,
+            textAlign: TextAlign.left,
+            style: const TextStyle(
+              color: Color(0xFFE1BC96),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
             ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(7),
-              ),
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: Color(0xFFE2E0F0),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
   }
 
+  /// Input Field matching Contact Us Dialog structure
   Widget _buildInputField({
     required String label,
     required TextEditingController controller,
@@ -1353,55 +1263,61 @@ class _PhysicalCertificateOrderDialogState extends State<_PhysicalCertificateOrd
     return Row(
       crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
-        SizedBox(
-          width: 85,
-          child: Padding(
-            padding: EdgeInsets.only(top: maxLines > 1 ? 6 : 0),
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFFB5B0D8),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w500,
-                fontFamily: AppTheme.fontFamily,
-              ),
+        // 1. Label Pill on RIGHT (First child in RTL)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7A709E),
+              width: 1.1,
             ),
           ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFDDD9EE),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 10),
+
+        // 2. Text Input on LEFT (Second child in RTL)
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(7),
+              color: const Color(0xFF221E3A),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                width: 1.0,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-              child: TextField(
-                controller: controller,
-                keyboardType: keyboardType,
-                maxLines: maxLines,
-                style: const TextStyle(
-                  color: Color(0xFFEAE8F8),
-                  fontSize: 12.5,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+            child: TextField(
+              controller: controller,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              style: const TextStyle(
+                color: Color(0xFFE1BC96),
+                fontSize: 12.5,
+                fontFamily: AppTheme.fontFamily,
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hintText,
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  fontSize: 11.5,
                   fontFamily: AppTheme.fontFamily,
                 ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  hintText: hintText,
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    fontSize: 11.5,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 5),
               ),
             ),
           ),
