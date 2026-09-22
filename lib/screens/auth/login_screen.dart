@@ -6,13 +6,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../models/user_model.dart';
-import '../../../../services/api_service.dart';
-import '../../../../services/app_state_repository.dart';
-import '../../../../services/auth_service.dart';
-import '../../../../utils/asset_precache_helper.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../../models/user_model.dart';
+import '../../services/api_service.dart';
+import '../../services/app_state_repository.dart';
+import '../../services/auth_service.dart';
+import '../../utils/asset_precache_helper.dart';
 
 enum AuthLoginMode { otp, password, testBypass }
 
