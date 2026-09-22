@@ -11,7 +11,7 @@ import '../utils/constants.dart';
 import '../widgets/contact_us_dialog.dart';
 import '../widgets/logout_dialog.dart';
 import '../widgets/safe_avatar.dart';
-import 'certificate_view_screen.dart';
+import 'certificates_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -428,7 +428,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => _CertificatesListScreen(user: user),
+                builder: (context) => CertificatesScreen(user: user),
               ),
             );
           },
@@ -763,160 +763,7 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
   }
 }
 
-// -----------------------------------------------------------------------------
-// NESTED SUB-SCREEN 2: گواهی‌ها (Certificates List)
-// -----------------------------------------------------------------------------
-class _CertificatesListScreen extends StatelessWidget {
-  final UserModel user;
 
-  const _CertificatesListScreen({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> certificates = [
-      {
-        'id': 'cert_station_1',
-        'title': 'گواهی گذر از منزلگاه صفر (راهنمای کاروان)',
-        'caravan': user.caravanName ?? 'کاروان شماره پنجم',
-        'date': '۱۴۰۳/۰۶/۱۵',
-        'isUnlocked': true,
-      },
-      {
-        'id': 'cert_station_2',
-        'title': 'گواهی گذر از منزلگاه اول (کاروانسرای غبارگرفته)',
-        'caravan': user.caravanName ?? 'کاروان شماره پنجم',
-        'date': '۱۴۰۳/۰۷/۰۱',
-        'isUnlocked': user.levelFrame >= 2,
-      },
-      {
-        'id': 'cert_station_3',
-        'title': 'گواهی دوره جامع مهارت‌های رسانه‌ای نپا',
-        'caravan': user.caravanName ?? 'کاروان شماره پنجم',
-        'date': '۱۴۰۳/۰۸/۰۱',
-        'isUnlocked': user.levelFrame >= 4,
-      },
-    ];
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: SafeArea(
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'گواهی‌های شما',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    itemCount: certificates.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final item = certificates[index];
-                      final bool isUnlocked = item['isUnlocked'] == true;
-
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF28274A),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isUnlocked ? const Color(0xFFFFD580).withValues(alpha: 0.5) : const Color(0xFF453F73),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              'assets/svg_icons/digree .svg',
-                              width: 36,
-                              height: 36,
-                              colorFilter: ColorFilter.mode(
-                                isUnlocked ? const Color(0xFFFFD580) : Colors.white30,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item['title'] as String,
-                                    style: TextStyle(
-                                      color: isUnlocked ? Colors.white : Colors.white54,
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'صادر شده برای: ${user.name} • ${item['date']}',
-                                    style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: AppTheme.fontFamily),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isUnlocked)
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CertificateViewScreen(
-                                        certificate: item,
-                                        userName: user.name,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.remove_red_eye_rounded, color: Color(0xFFFFD580)),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // -----------------------------------------------------------------------------
 // DIALOG: داستان کاروان (Caravan Lore / Story)
