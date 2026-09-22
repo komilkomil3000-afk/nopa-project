@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
-import '../services/api_service.dart';
-import 'package:provider/provider.dart';
+import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
+import '../utils/constants.dart';
+import '../main.dart';
 
 class MarketScreen extends StatefulWidget {
   const MarketScreen({super.key});
@@ -14,70 +16,59 @@ class MarketScreen extends StatefulWidget {
 }
 
 class _MarketScreenState extends State<MarketScreen> {
-  // Fixed standard rates for buying and selling assets across all caravans
-  final List<Map<String, dynamic>> _caravanAssetRates = const [
+  // 5 Standard Market Rate Items matching screenshot
+  final List<Map<String, dynamic>> _rateItems = const [
     {
       'title': 'نخ',
-      'unit': 'هر کلاف نخ',
-      'zarik': 500,
-      'equivalent': 'واحد پایه کاروان',
-      'icon': Icons.grain_rounded,
-      'color': Color(0xFF38BDF8),
+      'priceText': '500 زریک',
+      'assetKey': 'نخ',
+      'zarikCost': 500,
     },
     {
       'title': 'فرش',
-      'unit': 'هر تخته فرش',
-      'zarik': 2500,
-      'equivalent': 'معادل ۵ کلاف نخ',
-      'icon': Icons.crop_square_rounded,
-      'color': Color(0xFF10B981),
+      'priceText': '5 نخ',
+      'assetKey': 'فرش',
+      'zarikCost': 2500,
     },
     {
       'title': 'بیرق مسی',
-      'unit': 'هر بیرق مسی',
-      'zarik': 2500,
-      'equivalent': 'معادل ۵ کلاف نخ',
-      'icon': Icons.flag_rounded,
-      'color': Color(0xFFFB923C),
+      'priceText': '5 نخ',
+      'assetKey': 'بیرق مسی',
+      'zarikCost': 2500,
     },
     {
-      'title': 'بیرق نقره‌ای',
-      'unit': 'هر بیرق نقره‌ای',
-      'zarik': 7500,
-      'equivalent': '۳ فرش (۱۵ نخ)',
-      'icon': Icons.flag_circle_rounded,
-      'color': Color(0xFFE2E8F0),
+      'title': 'بیرق نقره ای',
+      'priceText': '3 فرش',
+      'assetKey': 'بیرق نقره ای',
+      'zarikCost': 7500,
     },
     {
       'title': 'بیرق طلایی',
-      'unit': 'هر بیرق طلایی',
-      'zarik': 22500,
-      'equivalent': '۳ نقره (۴۵ نخ)',
-      'icon': Icons.workspace_premium_rounded,
-      'color': Color(0xFFFFD54F),
+      'priceText': 'غیر قابل خرید',
+      'assetKey': 'بیرق طلایی',
+      'zarikCost': 22500,
     },
   ];
+
+  // Selected asset index for "سرمایه های شما"
+  int _selectedAssetIndex = 0;
 
   // Exchange calculator states
   String _sourceAsset = 'زریک';
   String _targetAsset = 'نخ';
   final TextEditingController _amountController = TextEditingController(text: '500');
-  double _calculatedResult = 1.0; // default: 500 Zarik = 1 Nakh
+  double _calculatedResult = 1.0;
 
-  final List<String> _assets = ['زریک', 'نخ', 'فرش', 'بیرق مسی', 'بیرق نقره‌ای', 'بیرق طلایی'];
+  // Interactive button selection states (0: none, 1: submit active, 2: mentor active)
+  int _activeActionButton = 1; // Default: 'ثبت درخواست' is active/colored
+
+  final List<String> _availableAssets = ['زریک', 'نخ', 'فرش', 'بیرق مسی', 'بیرق نقره ای', 'بیرق طلایی'];
 
   @override
   void initState() {
     super.initState();
     _amountController.addListener(_recalculateExchange);
-    final double amount = double.tryParse(_amountController.text) ?? 0.0;
-    final double sourceVal = _getAssetValueInZarik(_sourceAsset);
-    final double targetVal = _getAssetValueInZarik(_targetAsset);
-    if (targetVal > 0 && amount > 0) {
-      _calculatedResult = ((amount * sourceVal) / targetVal).floorToDouble();
-    } else {
-      _calculatedResult = 0.0;
-    }
+    _recalculateExchange();
   }
 
   @override
@@ -86,12 +77,6 @@ class _MarketScreenState extends State<MarketScreen> {
     super.dispose();
   }
 
-  // Conversion logic based on caravan rules:
-  // 1 Gold flag = 3 Silver = 9 Carpet = 45 Nakh/Kalaf
-  // 1 Silver flag = 3 Carpet = 15 Nakh
-  // 1 Carpet = 5 Nakh
-  // 1 Copper flag = 5 Nakh
-  // 1 Nakh = 500 Zarik
   double _getAssetValueInZarik(String asset) {
     switch (asset) {
       case 'زریک':
@@ -99,13 +84,13 @@ class _MarketScreenState extends State<MarketScreen> {
       case 'نخ':
         return 500.0;
       case 'فرش':
-        return 2500.0; // 5 Nakh * 500
       case 'بیرق مسی':
         return 2500.0; // 5 Nakh * 500
+      case 'بیرق نقره ای':
       case 'بیرق نقره‌ای':
-        return 7500.0; // 3 Carpet * 2500 = 7500
+        return 7500.0; // 3 Carpet * 2500
       case 'بیرق طلایی':
-        return 22500.0; // 3 Silver * 7500 = 22500
+        return 22500.0; // 3 Silver * 7500
       default:
         return 1.0;
     }
@@ -118,75 +103,148 @@ class _MarketScreenState extends State<MarketScreen> {
 
     setState(() {
       if (targetVal > 0 && amount > 0) {
-        _calculatedResult = ((amount * sourceVal) / targetVal).floorToDouble();
+        _calculatedResult = ((amount * sourceVal) / targetVal);
       } else {
         _calculatedResult = 0.0;
       }
     });
   }
 
-  void _triggerExchange() {
+  void _handleBackAction() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      navigateToMainTab(0); // Return to Home
+    }
+  }
+
+  void _submitExchangeRequest() {
+    setState(() => _activeActionButton = 1);
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
-    final int receivedCount = _calculatedResult.toInt();
-    if (amount <= 0 || receivedCount <= 0) {
+    if (amount <= 0 || _calculatedResult <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'مقدار سرمایه وارد شده برای دریافت حداقل ۱ واحد کافی نیست',
-            style: TextStyle(fontFamily: 'Vazirmatn'),
-          ),
-          backgroundColor: Colors.redAccent,
+          content: Text('لطفاً مقدار معتبری برای مبادله وارد کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
 
     final String amountStr = amount % 1 == 0 ? amount.toInt().toString() : amount.toString();
+    final String resultStr = _calculatedResult % 1 == 0 ? _calculatedResult.toInt().toString() : _calculatedResult.toStringAsFixed(1);
 
-    // Show confirmation dialog with mentor review note
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: const Color(0xFF1E1435),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'ثبت درخواست مبادله 🎉',
-                  style: TextStyle(
-                    color: Color(0xFFFFD54F),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Vazirmatn',
+      builder: (BuildContext ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: const Color(0xFF28274A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(22),
+              side: BorderSide(
+                color: const Color(0xFF5A588B).withValues(alpha: 0.5),
+                width: 1.2,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(
+                    child: Text(
+                      'تایید درخواست مبادله',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'تبدیل $amountStr $_sourceAsset به $receivedCount $_targetAsset',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'درخواست معامله و مبادله شما به راهبر کاروان ارسال شد. پس از تایید راهبر، دارایی‌ها در کاروان شما به‌روزرسانی خواهند شد.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white60, fontSize: 12, height: 1.6, fontFamily: 'Vazirmatn'),
-                ),
-                const SizedBox(height: 22),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    minimumSize: const Size(130, 42),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1D36),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF3D3B66), width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ارائه: ${amountStr.toPersianDigits()} $_sourceAsset',
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'دریافت: ${resultStr.toPersianDigits()} $_targetAsset',
+                          style: const TextStyle(
+                            color: Color(0xFFFFD580),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Text('متوجه شدم', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn')),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  const Text(
+                    'درخواست شما پس از ثبت برای راهبر ارسال شده و در صورت تایید، سرمایه‌ها جابه‌جا می‌شوند.',
+                    style: TextStyle(color: Colors.white60, fontSize: 11, height: 1.4, fontFamily: AppTheme.fontFamily),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('انصراف', style: TextStyle(color: Color(0xFF9D99B8), fontFamily: AppTheme.fontFamily)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                backgroundColor: Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.accentGradient,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'ثبت نهایی',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -194,122 +252,63 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  Widget _buildMarketBannerCarousel() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: HttpApiService().getBanners(position: 'bazaar_top'),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 110,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final banners = snapshot.data ?? [];
-        if (banners.isEmpty) {
-          return const SizedBox(height: 0);
-        }
-
-        return SizedBox(
-          height: 110,
-          child: PageView.builder(
-            itemCount: banners.length,
-            controller: PageController(viewportFraction: 0.95),
-            itemBuilder: (context, index) {
-              final banner = banners[index];
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 5),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  image: DecorationImage(
-                    image: CachedNetworkImageProvider(
-                      HttpApiService().resolveMediaUrl(banner['imageUrl']),
-                      maxHeight: 250,
-                      maxWidth: 600,
-                    ),
-                    onError: (e, s) => debugPrint('Image failed to load'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.8),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        banner['title'] ?? '',
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
+  void _contactMentor() {
+    setState(() => _activeActionButton = 2);
+    Navigator.pushNamed(context, '/tickets');
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text(
-                  'بازارچه و مبادلات',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Vazirmatn'),
-                ),
-                SizedBox(width: 8),
-                Text('🛒', style: TextStyle(fontSize: 18)),
-              ],
+        final user = repository.currentUser;
+
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
             ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            centerTitle: true,
           ),
-          body: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.screenBackgroundGradient,
-              image: DecorationImage(
-                image: AssetImage('assets/images/login_bg.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
+          child: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _buildMarketBannerCarousel(),
-                  const SizedBox(height: 16),
+                  // 1. Top Bar: NOPA Logo + Back SVG Icon on Left, Bell + Drawer Menu on Right
+                  _buildTopBar(),
 
-                  // Section 1: Compact & Summarized Market Rates for Caravan Assets
-                  _buildMarketRatesGrid(),
+                  // 2. Centered Page Title: "بازارچه"
+                  const SizedBox(height: 6),
+                  const Center(
+                    child: Text(
+                      'بازارچه',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 18),
 
-                  // Section 2: Caravan Exchange (Interactive panel)
-                  _buildCaravanExchangePanel(),
-                  const SizedBox(height: 30),
+                  // 3. Section 1: نرخنامه (Rate Sheet Cards)
+                  _buildRateSheetSection(),
+                  const SizedBox(height: 24),
+
+                  // 4. Section 2: سرمایه های شما (Your Capital)
+                  _buildAssetsSection(user),
+                  const SizedBox(height: 24),
+
+                  // 5. Section 3: مبادله (Exchange Panel)
+                  _buildExchangePanel(),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -319,353 +318,849 @@ class _MarketScreenState extends State<MarketScreen> {
     );
   }
 
-  // --- COMPACT & SUMMARIZED MARKET RATES (مظنه ارزش خرید و فروش در کل کاروان‌ها) ---
-  Widget _buildMarketRatesGrid() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text('⚖️', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 6),
-                  Text(
-                    'مظنه رسمی سرمایه‌ها در کل کاروان‌ها',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13.5,
-                      fontFamily: 'Vazirmatn',
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
-                ),
-                child: const Text(
-                  'نرخ ثابت مصوب',
-                  style: TextStyle(
-                    color: Color(0xFF10B981),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Vazirmatn',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'نرخ مصوب خرید، فروش و معادل‌سازی هر واحد سرمایه بر اساس زریک در تمامی کاروان‌ها:',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 10.5,
-              fontFamily: 'Vazirmatn',
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Compact Grid for the 5 assets
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 2.25,
-            ),
-            itemCount: _caravanAssetRates.length,
-            itemBuilder: (context, index) {
-              final item = _caravanAssetRates[index];
-              final Color color = item['color'] as Color;
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF160E2A),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: color.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  children: [
-                    // Asset Icon badge
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(item['icon'] as IconData, size: 16, color: color),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Title and Rate info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                item['title'] as String,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                              Text(
-                                '${item['zarik'].toString().toPersianDigits()} زریک',
-                                style: TextStyle(
-                                  color: color,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            (item['equivalent'] as String).toPersianDigits(),
-                            style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 9.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- CARAVAN EXCHANGE PANEL ---
-  Widget _buildCaravanExchangePanel() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1435),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('🔄', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 6),
-                  Text(
-                    'صرافی و مبادله سرمایه‌ها در کاروان',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                'محاسبه دقیق',
-                style: TextStyle(
-                  color: Color(0xFF8B5CF6),
-                  fontSize: 11,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Source Asset Selection Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'سرمایه ارائه‌شده (فروش):',
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: AppTheme.fontFamily),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF160E2A),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _sourceAsset,
-                    dropdownColor: const Color(0xFF1E1435),
-                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
-                    items: _assets.map((asset) {
-                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: AppTheme.fontFamily)));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _sourceAsset = val;
-                          _recalculateExchange();
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Amount Input
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              hintText: 'تعداد یا مقدار را وارد کنید',
-              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12, fontFamily: AppTheme.fontFamily),
-              filled: true,
-              fillColor: const Color(0xFF160E2A),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Target Asset Selection Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'سرمایه درخواستی (خرید):',
-                style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: AppTheme.fontFamily),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF160E2A),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.4)),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _targetAsset,
-                    dropdownColor: const Color(0xFF1E1435),
-                    style: const TextStyle(color: Colors.white, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
-                    items: _assets.map((asset) {
-                      return DropdownMenuItem(value: asset, child: Text(asset, style: const TextStyle(fontFamily: AppTheme.fontFamily)));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _targetAsset = val;
-                          _recalculateExchange();
-                        });
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Output Result calculation indicator
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF160E2A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  /// Top Bar matching Challenges & Map screens
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left: NOPA Logo + Back SVG Icon
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'مقدار دریافتی برآورد شده:',
-                  style: TextStyle(color: Colors.white70, fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                SizedBox(
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontFamily: 'ChochoAuraDemo',
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                Text(
-                  '${_calculatedResult.toInt().toPersian()} $_targetAsset',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD54F),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    fontFamily: AppTheme.fontFamily,
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: _handleBackAction,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 20,
+                      height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFFC7B299),
+                        BlendMode.srcIn,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
 
-          // Swap Submit Button
-          Container(
-            width: double.infinity,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)],
-              ),
-              borderRadius: BorderRadius.circular(12),
+            // Right: Notification Bell Button + Drawer Hamburger Menu
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Consumer<AppRepository>(
+                  builder: (context, repository, _) {
+                    final count = repository.unreadNotificationsCount;
+                    final bool hasUnread = count > 0;
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          repository.fetchNotifications();
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF23223D),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFFC7B299),
+                                  size: 23,
+                                ),
+                              ),
+                            ),
+                            if (hasUnread)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: const Color(0xFF23223D), width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      count > 9 ? '+۹' : count.toPersian(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 10),
+                Builder(
+                  builder: (ctx) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => Scaffold.of(ctx).openDrawer(),
+                      borderRadius: BorderRadius.circular(22),
+                      child: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF23223D),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.menu_rounded,
+                            color: Color(0xFFC7B299),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: ElevatedButton.icon(
-              onPressed: _triggerExchange,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Section 1: نرخنامه - Cards based on Home Station Cards with gallery SVG and footer price
+  Widget _buildRateSheetSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'نرخنامه',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
               ),
-              icon: const Icon(Icons.send_rounded, size: 16, color: Colors.white),
-              label: const Text(
-                'ارسال برای راهبر',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13.5,
-                  fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 145,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              itemCount: _rateItems.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final item = _rateItems[index];
+                return _buildRateCard(item);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Single Rate Sheet Card matching Station Card design
+  Widget _buildRateCard(Map<String, dynamic> item) {
+    return Container(
+      width: 106,
+      height: 145,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: [0.0, 0.5, 1.0],
+          colors: [
+            Color(0xFF3A3A6A),
+            Color(0xFF9292E2),
+            Color(0xFF3A3A6A),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(1.2), // Gradient border width
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18.8),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.53, 1.0],
+            colors: [
+              Color(0xFF3D3C67),
+              Color(0xFF36345C),
+              Color(0xFF333359),
+            ],
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18.8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Upper Content: Gallery SVG Icon + Item Title
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/svg_icons/imagenot01.svg',
+                      width: 32,
+                      height: 32,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Text(
+                        item['title'] as String,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 2. Bottom Footer Pill: Price Tag (e.g. 500 زریک, 5 نخ, غیر قابل خرید)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 5.5, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF23223D).withValues(alpha: 0.75),
+                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18.8)),
+                  border: const Border(
+                    top: BorderSide(color: Color(0xFF43416A), width: 0.8),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    (item['priceText'] as String).toPersianDigits(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFD6D3E6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: AppTheme.fontFamily,
+                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Section 2: سرمایه های شما - Exact clone from Home Screen
+  Widget _buildAssetsSection(UserModel? user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'سرمایه های شما',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 44,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              children: [
+                _buildAssetPill(
+                  badgeNumber: '۱',
+                  label: 'زریک',
+                  value: (user?.zarik ?? 0).toPersian(),
+                  isGold: _selectedAssetIndex == 0,
+                  onTap: () => setState(() => _selectedAssetIndex = 0),
+                ),
+                const SizedBox(width: 10),
+                _buildAssetPill(
+                  badgeNumber: '۲',
+                  label: 'درفش',
+                  value: (user?.beyragh ?? 0).toPersian(),
+                  isGold: _selectedAssetIndex == 1,
+                  onTap: () => setState(() => _selectedAssetIndex = 1),
+                ),
+                const SizedBox(width: 10),
+                _buildAssetPill(
+                  badgeNumber: '۳',
+                  label: 'نخ',
+                  value: (user?.nakh ?? 0).toPersian(),
+                  isGold: _selectedAssetIndex == 2,
+                  onTap: () => setState(() => _selectedAssetIndex = 2),
+                ),
+                const SizedBox(width: 10),
+                _buildAssetPill(
+                  badgeNumber: '۴',
+                  label: 'فرش',
+                  value: (user?.farsh ?? 0).toPersian(),
+                  isGold: _selectedAssetIndex == 3,
+                  onTap: () => setState(() => _selectedAssetIndex = 3),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssetPill({
+    required String badgeNumber,
+    required String label,
+    required String value,
+    required bool isGold,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 130),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: isGold
+              ? const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF8D5B2C),
+                    Color(0xFFFFD580),
+                    Color(0xFF8D5B2C),
+                  ],
+                )
+              : const LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: [0.0, 0.5, 1.0],
+                  colors: [
+                    Color(0xFF3A3A6A),
+                    Color(0xFF9292E2),
+                    Color(0xFF3A3A6A),
+                  ],
+                ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(1.2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.8),
+            gradient: isGold
+                ? const LinearGradient(
+                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+            color: isGold ? null : const Color(0xFF28274A),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Right: Circular Badge with Number
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: isGold ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      badgeNumber,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                        fontFamilyFallback: AppTheme.fontFamilyFallback,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Middle: Label
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Left: Value
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+                const SizedBox(width: 2),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and interactive buttons
+  Widget _buildExchangePanel() {
+    final String resultDisplay = _calculatedResult % 1 == 0
+        ? _calculatedResult.toInt().toString().toPersianDigits()
+        : _calculatedResult.toStringAsFixed(1).toPersianDigits();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'مبادله',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18.0),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                stops: [0.0, 0.5, 1.0],
+                colors: [
+                  Color(0xFF3A3A6A),
+                  Color(0xFF9292E2),
+                  Color(0xFF3A3A6A),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(1.2),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20.8),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.53, 1.0],
+                  colors: [
+                    Color(0xFF3D3C67),
+                    Color(0xFF36345C),
+                    Color(0xFF333359),
+                  ],
+                ),
+              ),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Column(
+                  children: [
+                    // Upper Row: Right side = Selectors, Left side = Description
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left in RTL (Description text)
+                        Expanded(
+                          flex: 5,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 8.0, top: 4.0),
+                            child: const Text(
+                              'پس از تعیین مقدار مبادله، ثبت درخواست را بزنید تا درخواست شما برای مربی ارسال شود. درصورت تایید مربی مبادله شما نهایی خواهد شد.',
+                              textAlign: TextAlign.justify,
+                              style: TextStyle(
+                                color: Color(0xFFC7C5DD),
+                                fontSize: 11,
+                                height: 1.5,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Right in RTL (Selectors & Amount inputs)
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            children: [
+                              // Row 1: سرمایه ارائه شده
+                              Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 65,
+                                    child: Text(
+                                      'سرمایه\nارائه شده',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10.5,
+                                        height: 1.2,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: _buildAssetDropdown(
+                                      value: _sourceAsset,
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() => _sourceAsset = val);
+                                          _recalculateExchange();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text('مقدار', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontFamily: AppTheme.fontFamily)),
+                                  const SizedBox(width: 4),
+                                  _buildAmountInputBox(),
+                                ],
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // Row 2: سرمایه درخواستی
+                              Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 65,
+                                    child: Text(
+                                      'سرمایه\nدرخواستی',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10.5,
+                                        height: 1.2,
+                                        fontFamily: AppTheme.fontFamily,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: _buildAssetDropdown(
+                                      value: _targetAsset,
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() => _targetAsset = val);
+                                          _recalculateExchange();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  const Text('مقدار', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontFamily: AppTheme.fontFamily)),
+                                  const SizedBox(width: 4),
+                                  _buildResultBox(resultDisplay),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Lower Row: Buttons (ثبت درخواست & ارتباط با راهبر)
+                    Row(
+                      children: [
+                        // Button 1: ارتباط با راهبر
+                        Expanded(
+                          child: _buildInteractiveActionButton(
+                            text: 'ارتباط با راهبر',
+                            isActive: _activeActionButton == 2,
+                            strokeBorderColor: const Color(0xFF6E688E),
+                            onTap: _contactMentor,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+
+                        // Button 2: ثبت درخواست
+                        Expanded(
+                          child: _buildInteractiveActionButton(
+                            text: 'ثبت درخواست',
+                            isActive: _activeActionButton == 1,
+                            strokeBorderColor: const Color(0xFFC09268),
+                            onTap: _submitExchangeRequest,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  /// Dark Asset Selector Dropdown Box matching challenge CTA box
+  Widget _buildAssetDropdown({
+    required String value,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1D36),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: const Color(0xFF28274A),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 18),
+          isDense: true,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.fontFamily,
+          ),
+          items: _availableAssets.map((asset) {
+            return DropdownMenuItem<String>(
+              value: asset,
+              child: Text(asset, style: const TextStyle(fontSize: 12, color: Colors.white)),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  /// Dark Amount Input Box
+  Widget _buildAmountInputBox() {
+    return Container(
+      width: 54,
+      height: 38,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1D36),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
+      ),
+      alignment: Alignment.center,
+      child: TextField(
+        controller: _amountController,
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.fontFamily,
+        ),
+        decoration: const InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
+  /// Dark Result Box
+  Widget _buildResultBox(String resultText) {
+    return Container(
+      width: 54,
+      height: 38,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1D36),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF4A4778), width: 1.0),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        resultText,
+        style: const TextStyle(
+          color: Color(0xFFFFD580),
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.fontFamily,
+        ),
+      ),
+    );
+  }
+
+  /// Interactive Action Button: Stroke border initially, becomes filled/colored when active/pressed
+  Widget _buildInteractiveActionButton({
+    required String text,
+    required bool isActive,
+    required Color strokeBorderColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 42,
+          decoration: BoxDecoration(
+            gradient: isActive ? AppColors.accentGradient : null,
+            color: isActive ? null : const Color(0xFF282842),
+            borderRadius: BorderRadius.circular(10),
+            border: isActive
+                ? null
+                : Border.all(
+                    color: strokeBorderColor,
+                    width: 1.2,
+                  ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFC7844E).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isActive ? Colors.white : const Color(0xFFD6D7E5),
+                fontSize: 13.5,
+                fontWeight: FontWeight.bold,
+                fontFamily: AppTheme.fontFamily,
+                fontFamilyFallback: AppTheme.fontFamilyFallback,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

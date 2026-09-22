@@ -81,32 +81,29 @@ class _MapScreenState extends State<MapScreen> {
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
     final int activeUserStationIndex = (userLevelFrame - 1).clamp(0, totalStationNodes - 1);
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_bg.png'),
+          fit: BoxFit.cover,
         ),
-        child: SafeArea(
-          child: RefreshIndicator(
-            onRefresh: _fetchStationsData,
-            color: const Color(0xFFCD8449),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. Top Bar with NOPA Logo, Notifications & Drawer Menu
-                  _buildTopBar(user),
+      ),
+      child: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchStationsData,
+          color: const Color(0xFFCD8449),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                // 1. Top Bar: NOPA Logo & Notification Bell + Menu Button
+                _buildTopBar(user),
 
-                // 2. Horizontal Station Selection & Progress Track Header (Starts at 0)
+                // 2. Horizontal Station Progress Track Header with Nodes
                 _buildStationTrackHeader(
                   selectedStationIndex: _selectedStationIndex,
                   activeUserStationIndex: activeUserStationIndex,
@@ -114,27 +111,28 @@ class _MapScreenState extends State<MapScreen> {
                   completedStationsCount: user.completedStationsCount,
                   totalNodes: totalStationNodes,
                 ),
-                const SizedBox(height: 16),
 
-                // 3. Map list of stations
-                _isLoading
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD54F))),
-                      )
-                    : (_stations.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Center(
-                              child: Text(
-                                'هنوز منزلگاهی ثبت نشده است',
-                                style: TextStyle(color: Colors.white60, fontFamily: AppTheme.fontFamily),
+                // 3. Station Road List
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: _isLoading
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(color: Color(0xFFC7B299)),
+                          ),
+                        )
+                      : (_stations.isEmpty
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24.0),
+                                child: Text(
+                                  'هنوز منزلگاهی بارگذاری نشده است',
+                                  style: TextStyle(color: Colors.white60, fontFamily: AppTheme.fontFamily),
+                                ),
                               ),
-                            ),
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                            child: ListView.separated(
+                            )
+                          : ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _stations.length,
@@ -155,11 +153,10 @@ class _MapScreenState extends State<MapScreen> {
                                   child: _buildMapStationCard(context, index, item),
                                 );
                               },
-                            ),
-                          )),
-                  const SizedBox(height: 40),
-                ],
-              ),
+                            )),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ),
@@ -167,36 +164,69 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// Top Bar matching Home Page: NOPA Logo (Left) + Notification Bell & Drawer Menu (Right)
+  void _handleBackAction() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      navigateToMainTab(0); // Return to Home
+    }
+  }
+
+  /// Top Bar matching Challenges screen: Left = NOPA + raw back01.svg, Right = Notification Bell & Drawer Menu
   Widget _buildTopBar(UserModel? user) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left: NOPA Text Logo with Gradient (Darker at bottom, lighter at top)
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [
-                  Color(0xFFC09268),
-                  Color(0xFFF4DCC5),
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ).createShader(bounds),
-              child: const Text(
-                'NOPA',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+            // Left: NOPA Logo + Back SVG Icon (matching challenges screen)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFC09268),
+                          Color(0xFFF4DCC5),
+                        ],
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'NOPA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          fontFamily: 'ChochoAuraDemo',
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                GestureDetector(
+                  onTap: _handleBackAction,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, bottom: 4, right: 8),
+                    child: SvgPicture.asset(
+                      'assets/svg_icons/back01.svg',
+                      width: 22,
+                      height: 22,
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             // Right: Notification Bell Button + Drawer Hamburger Menu
@@ -265,7 +295,7 @@ class _MapScreenState extends State<MapScreen> {
                     );
                   },
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Builder(
                   builder: (ctx) => Material(
                     color: Colors.transparent,
@@ -653,7 +683,7 @@ class _MapScreenState extends State<MapScreen> {
         item['teacher']?.toString() ??
         'استاد کاروان نپا';
 
-    final String stationTitle = Station.resolveTitle(item['title']?.toString(), index);
+    final String stationTitle = Station.getPureName(index, item['title']?.toString());
     final String stationDesc = (item['subtitle'] != null && item['subtitle'].toString().trim().isNotEmpty)
         ? item['subtitle'].toString()
         : ((item['description'] != null && item['description'].toString().trim().isNotEmpty)
@@ -664,7 +694,10 @@ class _MapScreenState extends State<MapScreen> {
         ? item['iconUrl'].toString()
         : ((item['imageUrl'] != null && item['imageUrl'].toString().startsWith('http'))
             ? item['imageUrl'].toString()
-            : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=200');
+            : '');
+
+    final String resolvedImg = ApiConstants.resolveImageUrl(iconUrl);
+    final bool hasValidImg = resolvedImg.isNotEmpty && resolvedImg.startsWith('http') && !resolvedImg.contains('placeholder');
 
     final bool isExpanded = _expandedIndices.contains(index);
     final bool isGold = isCurrent;
@@ -743,7 +776,7 @@ class _MapScreenState extends State<MapScreen> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // 1. Right in RTL: Rectangular Station Image (Proportional to A4 aspect ratio 1:1.414)
+                          // 1. Right in RTL: Rectangular Station Image (Proportional to A4 aspect ratio 1:1.414) with gallery SVG
                           Container(
                             width: 56,
                             height: 79,
@@ -756,75 +789,68 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8.5),
-                              child: CachedNetworkImage(
-                                imageUrl: ApiConstants.resolveImageUrl(iconUrl),
-                                fit: BoxFit.cover,
-                                memCacheWidth: 200,
-                                memCacheHeight: 280,
-                                color: isLocked ? Colors.black54 : null,
-                                colorBlendMode: isLocked ? BlendMode.saturation : null,
-                                placeholder: (context, url) => Container(
-                                  color: const Color(0xFF28274A),
-                                  alignment: Alignment.center,
-                                  child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF9292E2)),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: const Color(0xFF28274A),
-                                  child: const Icon(Icons.school, color: Colors.white30, size: 20),
-                                ),
+                              child: Container(
+                                color: const Color(0xFF2E2E50),
+                                child: hasValidImg
+                                    ? CachedNetworkImage(
+                                        imageUrl: resolvedImg,
+                                        fit: BoxFit.cover,
+                                        memCacheWidth: 200,
+                                        memCacheHeight: 280,
+                                        color: isLocked ? Colors.black54 : null,
+                                        colorBlendMode: isLocked ? BlendMode.saturation : null,
+                                        placeholder: (context, url) => Container(
+                                          color: const Color(0xFF2E2E50),
+                                          alignment: Alignment.center,
+                                          child: SvgPicture.asset(
+                                            'assets/svg_icons/imagenot01.svg',
+                                            width: 28,
+                                            height: 28,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                        errorWidget: (context, url, error) => Container(
+                                          color: const Color(0xFF2E2E50),
+                                          alignment: Alignment.center,
+                                          child: SvgPicture.asset(
+                                            'assets/svg_icons/imagenot01.svg',
+                                            width: 28,
+                                            height: 28,
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: SvgPicture.asset(
+                                          'assets/svg_icons/imagenot01.svg',
+                                          width: 28,
+                                          height: 28,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
                               ),
                             ),
                           ),
 
                           const SizedBox(width: 14),
 
-                          // 2. Middle: Station Details & Number directly beside Title (Right-aligned in RTL)
+                          // 2. Middle: Pure Station Title & Description (Right-aligned in RTL, no number badge)
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isGold
-                                            ? const Color(0xFFFFD580)
-                                            : const Color(0xFF9292E2).withValues(alpha: 0.25),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: isGold ? const Color(0xFFFFD580) : const Color(0xFF9292E2),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        '$index'.toPersianDigits(),
-                                        style: TextStyle(
-                                          color: isGold ? const Color(0xFF462306) : Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        stationTitle,
-                                        textAlign: TextAlign.right,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: isLocked ? Colors.white54 : Colors.white,
-                                          fontSize: 15.5,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  stationTitle,
+                                  textAlign: TextAlign.right,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isLocked ? Colors.white54 : Colors.white,
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
@@ -858,69 +884,98 @@ class _MapScreenState extends State<MapScreen> {
 
                           const SizedBox(width: 12),
 
-                          // 3. Left in RTL: Clean SVG Lock/Unlock Icon (No Circle Background behind it)
-                          if (isCompleted)
-                            SvgPicture.asset(
-                              'assets/svg_icons/lock01.svg',
-                              width: 24,
-                              height: 24,
-                              fit: BoxFit.contain,
-                            )
-                          else if (isCurrent)
-                            SvgPicture.asset(
-                              'assets/svg_icons/lock01.svg',
-                              width: 24,
-                              height: 24,
-                              fit: BoxFit.contain,
-                              colorFilter: const ColorFilter.mode(Color(0xFFFFD580), BlendMode.srcIn),
-                            )
-                          else
-                            SvgPicture.asset(
-                              'assets/svg_icons/lock02.svg',
-                              width: 24,
-                              height: 24,
-                              fit: BoxFit.contain,
-                            ),
+                          // 3. Left in RTL: SVG Lock + Small Info Toggle Icon Underneath
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (isCompleted)
+                                SvgPicture.asset(
+                                  'assets/svg_icons/lock01.svg',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                )
+                              else if (isCurrent)
+                                SvgPicture.asset(
+                                  'assets/svg_icons/lock01.svg',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                  colorFilter: const ColorFilter.mode(Color(0xFFFFD580), BlendMode.srcIn),
+                                )
+                              else
+                                SvgPicture.asset(
+                                  'assets/svg_icons/lock02.svg',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                ),
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () {
+                                  setState(() {
+                                    if (isExpanded) {
+                                      _expandedIndices.remove(index);
+                                    } else {
+                                      _expandedIndices.add(index);
+                                    }
+                                  });
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Icon(
+                                    isExpanded ? Icons.info_rounded : Icons.info_outline_rounded,
+                                    color: isExpanded ? const Color(0xFFFFD580) : Colors.white54,
+                                    size: 19,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
 
-                    // Expandable Panel with summary info (Right-aligned in RTL)
+                    // Expandable Panel with summary info (Right-aligned in RTL, No dark background box, clean small text, no emojis)
                     AnimatedCrossFade(
                       firstChild: const SizedBox(width: double.infinity),
-                      secondChild: Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(top: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF28274A),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFF3A3A6A), width: 1.0),
-                        ),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 10, right: 4, left: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const SizedBox(height: 4),
                             Text(
-                              '👤 استاد راهنما: $teacherName',
+                              'استاد راهنما: $teacherName',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
-                              '📚 جلسات و سرفصل‌ها: ${totalSessions > 0 ? "${totalSessions.toPersian()} جلسه آموزشی" : "${categoriesList.length.toPersian()} سرفصل"}',
+                              'جلسات و سرفصل‌ها: ${totalSessions > 0 ? "${totalSessions.toPersian()} جلسه آموزشی" : "${categoriesList.length.toPersian()} سرفصل"}',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(color: Colors.white70, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 11,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Text(
-                              '📊 وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده ✅' : (isCurrent ? 'در حال یادگیری ⚡' : 'قفل شده 🔒')}',
+                              'وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'قفل شده')}',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 color: isCurrent
                                     ? const Color(0xFFFFD580)
                                     : (isCompleted ? const Color(0xFF10B981) : Colors.white54),
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
                                 fontFamily: AppTheme.fontFamily,
                               ),
                             ),
@@ -929,44 +984,6 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                       crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
                       duration: const Duration(milliseconds: 250),
-                    ),
-
-                    // Small Expand/Collapse Button
-                    const SizedBox(height: 8),
-                    Center(
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (isExpanded) {
-                              _expandedIndices.remove(index);
-                            } else {
-                              _expandedIndices.add(index);
-                            }
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                                color: Colors.white54,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isExpanded ? 'بستن جزئیات' : 'نمایش جزئیات',
-                                style: const TextStyle(color: Colors.white54, fontSize: 11, fontFamily: AppTheme.fontFamily),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),

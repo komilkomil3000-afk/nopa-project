@@ -44,6 +44,7 @@ class _Class1ScreenState extends State<Class1Screen> {
   int _currentClipIndex = 0;
   bool _isDescriptionExpanded = false;
   int _currentStationIndex = 0;
+  final Set<String> _expandedStatKeys = {};
   final PageController _videoPageController = PageController();
 
   @override
@@ -565,8 +566,7 @@ class _Class1ScreenState extends State<Class1Screen> {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          fontFamily: 'ChochoAuraDemo',
                         ),
                       ),
                     ),
@@ -1213,61 +1213,54 @@ class _Class1ScreenState extends State<Class1Screen> {
   }
 
   Widget _buildStatItem(String title, String subtitle) {
+    final bool isExpanded = _expandedStatKeys.contains(title);
+
     return Expanded(
-      child: Tooltip(
-        message: '$title: $subtitle',
-        child: InkWell(
-          onTap: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '$title: $subtitle',
-                  style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.right,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (_expandedStatKeys.contains(title)) {
+              _expandedStatKeys.remove(title);
+            } else {
+              _expandedStatKeys.add(title);
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
-                backgroundColor: const Color(0xFF2D2E4B),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
               ),
-            );
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                textAlign: TextAlign.right,
+                maxLines: isExpanded ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFB3B0C7),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.normal,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.right,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB3B0C7),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

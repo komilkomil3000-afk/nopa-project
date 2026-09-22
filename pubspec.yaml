@@ -82,3 +82,6 @@ flutter:
           weight: 700
         - asset: assets/fonts/YekanBakh-ExtraBold.ttf
           weight: 800
+    - family: ChochoAuraDemo
+      fonts:
+        - asset: assets/fonts/ChochoAuraDemo.ttf

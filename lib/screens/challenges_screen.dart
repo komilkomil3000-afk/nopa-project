@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../services/app_state_repository.dart';
@@ -233,40 +234,38 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // 1. Top Header: Flame/Challenge Icon on Left + Title centered
-                        Stack(
-                          alignment: Alignment.center,
+                        Row(
                           children: [
-                            // Center Title
-                            const Text(
-                              'شرکت در چالش',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF7E72B8).withValues(alpha: 0.35),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.local_fire_department_rounded,
+                                  color: Color(0xFF9E92E8),
+                                  size: 22,
+                                ),
                               ),
                             ),
-
-                            // Top-Left Glowing Flame Icon (LTR alignment = Left)
-                            Positioned(
-                              left: 0,
-                              child: Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF7E72B8).withValues(alpha: 0.35),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.local_fire_department_rounded,
-                                    color: Color(0xFF9E92E8),
-                                    size: 22,
+                            const Expanded(
+                              child: Center(
+                                child: Text(
+                                  'شرکت در چالش',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
                                   ),
                                 ),
                               ),
                             ),
+                            const SizedBox(width: 36), // Symmetrical balance for center title
                           ],
                         ),
 
@@ -439,10 +438,20 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () {
-                                    setDialogState(() {
-                                      attachedFileName = 'فایل_تکلیف_${challenge['id'].toString().substring(0, 4)}.pdf';
-                                    });
+                                  onTap: () async {
+                                    try {
+                                      final result = await FilePicker.platform.pickFiles(
+                                        type: FileType.any,
+                                        allowMultiple: false,
+                                      );
+                                      if (result != null && result.files.isNotEmpty) {
+                                        setDialogState(() {
+                                          attachedFileName = result.files.first.name;
+                                        });
+                                      }
+                                    } catch (e) {
+                                      debugPrint('FilePicker error: $e');
+                                    }
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -454,15 +463,19 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          attachedFileName ?? 'انتخاب',
-                                          style: TextStyle(
-                                            color: attachedFileName == null
-                                                ? const Color(0xFF7E789F)
-                                                : const Color(0xFF22C55E),
-                                            fontSize: 11.5,
-                                            fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
+                                        Expanded(
+                                          child: Text(
+                                            attachedFileName ?? 'انتخاب فایل از دستگاه',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: attachedFileName == null
+                                                  ? const Color(0xFF7E789F)
+                                                  : const Color(0xFF22C55E),
+                                              fontSize: 11.5,
+                                              fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
+                                              fontFamily: AppTheme.fontFamily,
+                                            ),
                                           ),
                                         ),
                                         Icon(
@@ -570,14 +583,13 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                                   }
 
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
+                                    const SnackBar(
                                       content: Text(
-                                        isMultipleChoice
-                                            ? 'پاسخ شما با موفقیت ثبت شد و جایزه تعلق گرفت.'
-                                            : 'پاسخ شما با موفقیت برای راهبر کاروان ارسال شد.',
-                                        style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                        'با موفقیت ارسال شد',
+                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
+                                        textAlign: TextAlign.right,
                                       ),
-                                      backgroundColor: const Color(0xFF10B981),
+                                      backgroundColor: Color(0xFF10B981),
                                       behavior: SnackBarBehavior.floating,
                                     ),
                                   );
@@ -642,78 +654,75 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       }
     }).toList();
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
-          ),
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_bg.png'),
+          fit: BoxFit.cover,
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // 1. Top Bar: Gradient NOPA + Back SVG icon on Left, Hamburger Menu on Right
-              _buildTopBar(),
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // 1. Top Bar: Gradient NOPA + Back SVG icon on Left, Hamburger Menu on Right
+            _buildTopBar(),
 
-              // 2. Main Scrollable Content: Clean Banner + Category Tabs + Challenge Cards
-              Expanded(
-                child: RefreshIndicator(
-                  color: const Color(0xFFCD8449),
-                  backgroundColor: const Color(0xFF231C38),
-                  onRefresh: () async {
-                    await repository.refreshChallenges();
-                  },
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 2.1 Clean Station Banner Carousel with 3 indicator dots (No text overlay)
-                        _buildStationBannerSlider(),
+            // 2. Main Scrollable Content: Clean Banner + Category Tabs + Challenge Cards
+            Expanded(
+              child: RefreshIndicator(
+                color: const Color(0xFFCD8449),
+                backgroundColor: const Color(0xFF231C38),
+                onRefresh: () async {
+                  await repository.refreshChallenges();
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 2.1 Clean Station Banner Carousel with 3 indicator dots (No text overlay)
+                      _buildStationBannerSlider(),
 
-                        const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-                        // 2.2 Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
-                        _buildCategoryTabsBar(),
+                      // 2.2 Category Tabs: فردی / گروهی / میان گروهی (گروهی strictly centered)
+                      _buildCategoryTabsBar(),
 
-                        const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-                        // 2.3 Challenge Cards List or Empty State
-                        if (filtered.isEmpty)
-                          _buildEmptyState()
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: filtered.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final item = filtered[index];
-                              final String id = item['id']?.toString() ?? 'ch_$index';
-                              final bool isExpanded = _expandedChallengeIds.contains(id);
+                      // 2.3 Challenge Cards List or Empty State
+                      if (filtered.isEmpty)
+                        _buildEmptyState()
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filtered.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = filtered[index];
+                            final String id = item['id']?.toString() ?? 'ch_$index';
+                            final bool isExpanded = _expandedChallengeIds.contains(id);
 
-                              return _buildChallengeCard(
-                                item: item,
-                                id: id,
-                                isExpanded: isExpanded,
-                              );
-                            },
-                          ),
+                            return _buildChallengeCard(
+                              item: item,
+                              id: id,
+                              isExpanded: isExpanded,
+                            );
+                          },
+                        ),
 
-                        const SizedBox(height: 30),
-                      ],
-                    ),
+                      const SizedBox(height: 30),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -754,8 +763,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          fontFamily: 'ChochoAuraDemo',
                         ),
                       ),
                     ),
@@ -1156,37 +1164,30 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
 
                     const SizedBox(width: 8),
 
-                    // Next: Reward Prize Badge (No text emoji)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF231E3D).withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFDE9959).withValues(alpha: 0.5),
-                          width: 0.9,
+                    // Next: Reward Amount with Purple Color and Purple SVG (No box)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '+${reward.toString().toPersianDigits()}',
+                          style: const TextStyle(
+                            color: Color(0xFF9292E2),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '+${reward.toString().toPersianDigits()}',
-                            style: const TextStyle(
-                              color: Color(0xFFF4DCC5),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                        const SizedBox(width: 4),
+                        SvgPicture.asset(
+                          'assets/svg_icons/challeng01.svg',
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF9292E2),
+                            BlendMode.srcIn,
                           ),
-                          const SizedBox(width: 3),
-                          const Icon(
-                            Icons.monetization_on_rounded,
-                            size: 13,
-                            color: Color(0xFFFFD54F),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
                     const Spacer(),

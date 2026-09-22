@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/aparat_service.dart';
@@ -404,14 +403,6 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
             Color(0xFF36345C),
             Color(0xFF333359),
           ],
-        ),
-      ),
-      child: Center(
-        child: SvgPicture.asset(
-          'assets/svg_icons/vedionot01.svg',
-          width: 48,
-          height: 48,
-          fit: BoxFit.contain,
         ),
       ),
     );
