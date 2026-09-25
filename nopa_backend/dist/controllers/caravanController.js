@@ -5,6 +5,8 @@ exports.bulkTransferMembers = bulkTransferMembers;
 exports.convertAssets = convertAssets;
 exports.approveAssetConversion = approveAssetConversion;
 exports.getAssetConversionsAdmin = getAssetConversionsAdmin;
+exports.getCaravanAssetConversions = getCaravanAssetConversions;
+exports.submitStudentAssetConversion = submitStudentAssetConversion;
 exports.createCaravan = createCaravan;
 exports.getCaravanDetails = getCaravanDetails;
 exports.addMemberToCaravan = addMemberToCaravan;
@@ -127,11 +129,72 @@ async function getAssetConversionsAdmin(req, res) {
         const requests = await prisma.assetConversionRequest.findMany({
             include: {
                 caravan: { select: { name: true } },
-                user: { select: { name: true } }
+                user: { select: { id: true, name: true, phoneNumber: true, avatarUrl: true } }
             },
             orderBy: { createdAt: 'desc' }
         });
         res.json(requests);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getCaravanAssetConversions(req, res) {
+    try {
+        const userId = req.user.id;
+        const userRole = req.user.role?.toLowerCase();
+        const mentorCaravan = await prisma.caravan.findFirst({
+            where: {
+                OR: [
+                    { mentorId: userId },
+                    { members: { some: { id: userId } } }
+                ]
+            }
+        });
+        const whereClause = {};
+        if (mentorCaravan) {
+            whereClause.caravanId = mentorCaravan.id;
+        }
+        else if (userRole !== 'admin') {
+            whereClause.requestedBy = userId;
+        }
+        const requests = await prisma.assetConversionRequest.findMany({
+            where: whereClause,
+            include: {
+                caravan: { select: { name: true } },
+                user: { select: { id: true, name: true, phoneNumber: true, avatarUrl: true } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(requests);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function submitStudentAssetConversion(req, res) {
+    try {
+        const userId = req.user.id;
+        const { sourceAsset, targetAsset, sourceAmount, targetAmount } = req.body;
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user)
+            return res.status(404).json({ error: 'کاربر یافت نشد' });
+        let finalCaravanId = user.caravanId;
+        if (!finalCaravanId) {
+            const firstCaravan = await prisma.caravan.findFirst();
+            finalCaravanId = firstCaravan ? firstCaravan.id : '';
+        }
+        if (!finalCaravanId) {
+            return res.status(400).json({ error: 'شما عضو کاروانی نیستید' });
+        }
+        const reqRecord = await prisma.assetConversionRequest.create({
+            data: {
+                caravanId: finalCaravanId,
+                requestedBy: user.id,
+                note: `تبدیل ${sourceAmount} ${sourceAsset} ➔ ${targetAmount} ${targetAsset}`
+            }
+        });
+        res.json({ success: true, request: reqRecord });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

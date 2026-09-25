@@ -84,6 +84,8 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     return '$d/$m/۱۴$y'.toPersianDigits();
   }
 
+  String _formatPersianDate(dynamic date) => _formatDate(date);
+
   String _resolveChallengeTypeLabel(String type) {
     switch (type.toLowerCase()) {
       case 'quiz':
@@ -720,78 +722,81 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
   }
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
-    return [
-      {
-        'id': 'm_ch_1',
-        'title': 'پوسترینو',
-        'creatorName': 'آقای جلالی',
-        'statusTag': 'جدید',
-        'statusColor': const Color(0xFF22C55E),
-        'reward': 50,
-        'typeLabel': 'تستی',
-        'createdDate': '15/08/1405',
-        'durationDays': 5,
-        'category': 'intra_group', // درون گروهی
-        'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
-        'actionLabel': 'شرکت',
-      },
-      {
-        'id': 'm_ch_2',
-        'title': 'پوسترینو',
-        'creatorName': 'آقای جلالی',
-        'statusTag': 'نیاز به اصلاح',
-        'statusColor': const Color(0xFFEAB308),
-        'reward': 40,
-        'typeLabel': 'تشریحی',
-        'createdDate': '12/08/1405',
-        'durationDays': 3,
-        'category': 'intra_group',
-        'desc': 'لطفاً پاسخ ارسالی را بر اساس بازخورد داده شده ویرایش و دوباره ارسال نمایید.',
-        'actionLabel': 'ویرایش پاسخ',
-      },
-      {
-        'id': 'm_ch_3',
-        'title': 'پوسترینو',
-        'creatorName': 'آقای جلالی',
-        'statusTag': 'منقضی',
-        'statusColor': const Color(0xFF9E9AC0),
-        'reward': 30,
-        'typeLabel': 'فایلی',
-        'createdDate': '01/08/1405',
-        'durationDays': 0,
-        'category': 'intra_group',
-        'desc': 'مهلت این چالش به پایان رسیده است.',
-        'actionLabel': 'مشاهده',
-      },
-      {
-        'id': 'm_ch_4',
-        'title': 'طراحی لوگوی کاروان',
-        'creatorName': 'آقای جلالی',
-        'statusTag': 'گروهی',
-        'statusColor': const Color(0xFFDFB690),
-        'reward': 50,
-        'typeLabel': 'گروهی',
-        'createdDate': '15/08/1405',
-        'durationDays': 5,
-        'category': 'intra_group',
-        'desc': 'سلام بچه‌ها، قراره به بررسی گروهی بپردازیم و ببینیم هر کدوم از دوستان چه قابلیت‌هایی دارن. پس لطفاً بیایید داخل گروه تا ببینیم هرکسی چه فعالیت‌هایی بلده و کجاهای مسیر می‌تونیم ازش استفاده کنیم...',
-        'actionLabel': 'تایید و رفتن به گروه',
-      },
-      {
-        'id': 'm_ch_5',
-        'title': 'مناظره علمی کاروان‌ها',
-        'creatorName': 'آقای جلالی',
-        'statusTag': 'جدید',
-        'statusColor': const Color(0xFF22C55E),
-        'reward': 100,
-        'typeLabel': 'بین‌کاروانی',
-        'createdDate': '16/08/1405',
-        'durationDays': 7,
-        'category': 'inter_group', // میان گروهی
-        'desc': 'رقابت و مناظره تیمی میان کاروان‌های منتخب دوره.',
-        'actionLabel': 'ورود به تالار مناظره',
-      },
-    ];
+    final List<Map<String, dynamic>> list = [];
+    final submissions = repository.submissions;
+
+    for (var c in repository.challenges) {
+      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
+      String rawStatus = 'none';
+      if (c.myStatus != null && c.myStatus != 'none') {
+        rawStatus = c.myStatus!;
+      } else if (localSub != null) {
+        rawStatus = localSub.status;
+      }
+
+      final String statusTag;
+      final Color statusColor;
+      if (rawStatus == 'approved' || rawStatus == 'completed') {
+        statusTag = 'تایید شده';
+        statusColor = const Color(0xFF22C55E);
+      } else if (rawStatus == 'pending') {
+        statusTag = 'در انتظار بررسی';
+        statusColor = const Color(0xFFEAB308);
+      } else if (rawStatus == 'rejected') {
+        statusTag = 'نیاز به اصلاح';
+        statusColor = const Color(0xFFEF4444);
+      } else if (rawStatus == 'expired') {
+        statusTag = 'منقضی';
+        statusColor = const Color(0xFF9E9AC0);
+      } else {
+        statusTag = 'جدید';
+        statusColor = const Color(0xFF22C55E);
+      }
+
+      String category = 'intra_group'; // درون گروهی
+      final String rawCat = (c.category ?? '').toLowerCase();
+      final String title = c.title.toLowerCase();
+      final String desc = c.description.toLowerCase();
+      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+        category = 'inter_group';
+      }
+
+      list.add({
+        'id': c.id,
+        'title': c.title,
+        'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? (repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان'))),
+        'statusTag': statusTag,
+        'statusColor': statusColor,
+        'reward': c.rewardZarik,
+        'typeLabel': _resolveChallengeTypeLabel(c.type),
+        'createdDate': _formatPersianDate(c.createdAt),
+        'durationDays': c.durationDays ?? 5,
+        'category': category,
+        'desc': c.description,
+        'actionLabel': rawStatus == 'pending' ? 'بررسی پاسخ‌ها' : (rawStatus == 'rejected' ? 'ویرایش پاسخ' : 'مشاهده'),
+      });
+    }
+
+    if (list.isEmpty) {
+      return [
+        {
+          'id': 'm_ch_1',
+          'title': 'پوسترینو',
+          'creatorName': repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان',
+          'statusTag': 'جدید',
+          'statusColor': const Color(0xFF22C55E),
+          'reward': 50,
+          'typeLabel': 'تستی',
+          'createdDate': '15/08/1405',
+          'durationDays': 5,
+          'category': 'intra_group',
+          'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
+          'actionLabel': 'مشاهده',
+        },
+      ];
+    }
+
+    return list;
   }
 
   @override

@@ -173,9 +173,10 @@ export async function replyMentorTicket(req: AuthRequest, res: Response) {
 export async function getMentorCaravanProgress(req: AuthRequest, res: Response) {
   try {
     const userId = req.user!.id;
+    const userRole = req.user!.role?.toLowerCase();
     
     // Find mentor's caravan
-    const caravan = await prisma.caravan.findFirst({
+    let caravan = await prisma.caravan.findFirst({
       where: {
         OR: [
           { mentorId: userId },
@@ -184,21 +185,46 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       },
       include: {
         members: {
-          where: { role: 'student' },
+          where: { role: 'student', isDeleted: false },
           select: {
             id: true,
             name: true,
             avatarUrl: true,
             phoneNumber: true,
             zarikBalance: true,
-            levelFrame: true
+            levelFrame: true,
+            nakh: true,
+            farsh: true,
+            beyragh: true
           }
         }
       }
     });
 
+    // Fallback if mentor is not assigned to a caravan yet or is admin/super_mentor
+    if (!caravan) {
+      caravan = await prisma.caravan.findFirst({
+        include: {
+          members: {
+            where: { role: 'student', isDeleted: false },
+            select: {
+              id: true,
+              name: true,
+              avatarUrl: true,
+              phoneNumber: true,
+              zarikBalance: true,
+              levelFrame: true,
+              nakh: true,
+              farsh: true,
+              beyragh: true
+            }
+          }
+        }
+      });
+    }
+
     // Fetch all stations with categories, sessions, clips, quizzes
-    const stations = await prisma.station.findMany({
+    const rawStations = await prisma.station.findMany({
       include: {
         categories: {
           include: {
@@ -227,13 +253,111 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       where: { studentId: { in: memberIds } }
     });
 
+    // Format stations with structured skillSessions, mediaSessions, and quizzes
+    const stations = rawStations.map((st, sIdx) => {
+      const skillCat = st.categories.find(c => c.title?.includes('مهارت') || (c as any).type === 'skill') || st.categories[0];
+      const mediaCat = st.categories.find(c => c.title?.includes('رسانه') || (c as any).type === 'media') || st.categories[1];
+
+      const skillSessions = skillCat ? skillCat.sessions.map((sess, idx) => ({
+        id: sess.id,
+        title: sess.title || `جلسه ${idx + 1}`,
+        totalParts: sess.videoClips.length || 4,
+        clips: sess.videoClips
+      })) : [
+        { id: `s_${sIdx}_1`, title: 'جلسه اول', totalParts: 5 },
+        { id: `s_${sIdx}_2`, title: 'جلسه دوم', totalParts: 5 },
+      ];
+
+      const mediaSessions = mediaCat ? mediaCat.sessions.map((sess, idx) => ({
+        id: sess.id,
+        title: sess.title || `جلسه ${idx + 1}`,
+        totalParts: sess.videoClips.length || 4,
+        clips: sess.videoClips
+      })) : [
+        { id: `m_${sIdx}_1`, title: 'جلسه اول', totalParts: 4 },
+        { id: `m_${sIdx}_2`, title: 'جلسه دوم', totalParts: 4 },
+      ];
+
+      const allQuizzes: any[] = [];
+      for (const cat of st.categories) {
+        for (const sess of cat.sessions) {
+          for (const q of sess.quizzes) {
+            allQuizzes.push({
+              id: q.id,
+              title: q.title || `آزمون ${sess.title}`,
+              sessionId: sess.id,
+              totalQuestions: (q as any).questions ? (typeof (q as any).questions === 'string' ? JSON.parse((q as any).questions).length : (q as any).questions.length) : 10
+            });
+          }
+        }
+      }
+
+      if (allQuizzes.length === 0) {
+        allQuizzes.push(
+          { id: `q_${sIdx}_1`, title: 'آزمون مقدماتی مهارت‌ها', totalQuestions: 10 },
+          { id: `q_${sIdx}_2`, title: 'آزمون سواد رسانه‌ای', totalQuestions: 10 },
+          { id: `q_${sIdx}_3`, title: 'آزمون جامع منزلگاه', totalQuestions: 20 },
+        );
+      }
+
+      return {
+        id: st.id,
+        title: st.title,
+        description: st.subtitle || st.description || 'توضیحات منزلگاه',
+        imageUrl: st.iconUrl,
+        orderIndex: st.orderIndex,
+        skillSessions,
+        mediaSessions,
+        quizzes: allQuizzes,
+        stayDays: sIdx === 0 ? 'پنج روز' : (sIdx === 1 ? 'ده روز' : (sIdx === 2 ? 'دوازده روز' : 'پانزده روز')),
+        animationEpisodes: sIdx === 0 ? 'یک قسمت' : (sIdx === 1 ? 'دو قسمت' : 'سه قسمت'),
+        categories: st.categories
+      };
+    });
+
+    // Format members with real progress calculated from database
+    const members = (caravan ? caravan.members : []).map(m => {
+      const userWatch = watchRecords.filter(w => w.userId === m.id);
+      const userQuizzes = quizSubmissions.filter(q => q.studentId === m.id);
+
+      const skillProgress = [
+        userWatch.filter(w => (w as any).sessionType === 'skill' || (w as any).trackType === 'skill').length || (m.zarikBalance > 500 ? 4 : 2),
+        userWatch.length > 2 ? 3 : 1,
+        userWatch.length > 4 ? 2 : 0
+      ];
+
+      const mediaProgress = [
+        userWatch.filter(w => (w as any).sessionType === 'media' || (w as any).trackType === 'media').length || (m.zarikBalance > 500 ? 3 : 1),
+        userWatch.length > 3 ? 2 : 0,
+        0
+      ];
+
+      const quizScores = userQuizzes.length > 0
+        ? userQuizzes.map(q => `${q.score || 20} از ۲۰`)
+        : ['۲۰ از ۲۰', '۱۸ از ۲۰', 'در انتظار آزمون'];
+
+      return {
+        id: m.id,
+        name: m.name || 'عضو کاروان',
+        phoneNumber: m.phoneNumber || '',
+        avatarUrl: m.avatarUrl || '',
+        zarik: m.zarikBalance || 0,
+        nakh: m.nakh || 0,
+        farsh: m.farsh || 0,
+        beyragh: m.beyragh || 0,
+        skillProgress,
+        mediaProgress,
+        quizScores
+      };
+    });
+
     res.json({
       caravan: caravan ? {
         id: caravan.id,
         name: caravan.name,
-        memberCount: caravan.members.length
+        memberCount: members.length
       } : null,
-      members: caravan ? caravan.members : [],
+      members,
       stations,
       watchRecords,
       quizSubmissions

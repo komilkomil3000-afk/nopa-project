@@ -5,6 +5,8 @@ export declare function bulkTransferMembers(req: AuthRequest, res: Response): Pr
 export declare function convertAssets(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function approveAssetConversion(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getAssetConversionsAdmin(req: AuthRequest, res: Response): Promise<void>;
+export declare function getCaravanAssetConversions(req: AuthRequest, res: Response): Promise<void>;
+export declare function submitStudentAssetConversion(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function createCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getCaravanDetails(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>>>;
 export declare function addMemberToCaravan(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;

@@ -1757,6 +1757,66 @@ class HttpApiService {
     }
     return null;
   }
+
+  // --- Caravan Asset Conversions & Exchanges ---
+  Future<List<Map<String, dynamic>>> getCaravanAssetConversions() async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/caravans/asset-conversions'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data);
+        }
+      }
+    } catch (e) {
+      debugPrint('getCaravanAssetConversions error: $e');
+    }
+    return [];
+  }
+
+  Future<bool> submitStudentAssetConversion({
+    required String sourceAsset,
+    required String targetAsset,
+    required double sourceAmount,
+    required double targetAmount,
+  }) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/caravans/submit-exchange'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'sourceAsset': sourceAsset,
+          'targetAsset': targetAsset,
+          'sourceAmount': sourceAmount,
+          'targetAmount': targetAmount,
+        }),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('submitStudentAssetConversion error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> approveCaravanAssetConversion(String requestId, bool approve, {String? note}) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/caravans/approve-conversion/$requestId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'approve': approve,
+          'note': ?note,
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('approveCaravanAssetConversion error: $e');
+      return false;
+    }
+  }
 }
 
 

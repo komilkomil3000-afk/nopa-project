@@ -17,7 +17,7 @@ import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
 import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
-import { convertAssets } from '../controllers/caravanController';
+import { convertAssets, getCaravanAssetConversions, submitStudentAssetConversion, approveAssetConversion } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
 import { 
@@ -113,6 +113,9 @@ router.patch('/support/tickets/:id/resolve', authenticateJWT as any, resolveTick
 
 // L. Caravans & Assets
 router.post('/caravans/convert-assets', authenticateJWT as any, convertAssets as any);
+router.get('/caravans/asset-conversions', authenticateJWT as any, getCaravanAssetConversions as any);
+router.post('/caravans/submit-exchange', authenticateJWT as any, submitStudentAssetConversion as any);
+router.post('/caravans/approve-conversion/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, approveAssetConversion as any);
 
 
 // Mentor Workspace Routes

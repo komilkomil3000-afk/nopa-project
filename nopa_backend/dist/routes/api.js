@@ -95,6 +95,9 @@ router.post('/support/tickets/:id/reply', auth_1.authenticateJWT, supportControl
 router.patch('/support/tickets/:id/resolve', auth_1.authenticateJWT, supportController_1.resolveTicket);
 // L. Caravans & Assets
 router.post('/caravans/convert-assets', auth_1.authenticateJWT, caravanController_1.convertAssets);
+router.get('/caravans/asset-conversions', auth_1.authenticateJWT, caravanController_1.getCaravanAssetConversions);
+router.post('/caravans/submit-exchange', auth_1.authenticateJWT, caravanController_1.submitStudentAssetConversion);
+router.post('/caravans/approve-conversion/:id', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), caravanController_1.approveAssetConversion);
 // Mentor Workspace Routes
 router.post('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.createMentorChallenge);
 router.get('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.getMentorChallenges);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
+import '../services/api_service.dart';
 import '../utils/constants.dart';
 
 class MarketScreen extends StatefulWidget {
@@ -71,65 +73,68 @@ class _MarketScreenState extends State<MarketScreen> {
   final Set<String> _expandedMemberAssetIds = {'mem_1'};
   final Set<String> _expandedExchangeIds = {'ex_1'};
 
-  final List<Map<String, dynamic>> _mentorMembersAssets = [
-    {
-      'id': 'mem_1',
-      'name': 'محمد حسینی',
-      'zarik': 5000,
-      'beyragh': 3,
-      'nakh': 15,
-      'farsh': 3,
-    },
-    {
-      'id': 'mem_2',
-      'name': 'علی رضایی',
-      'zarik': 4200,
-      'beyragh': 2,
-      'nakh': 10,
-      'farsh': 2,
-    },
-    {
-      'id': 'mem_3',
-      'name': 'حسین موسوی',
-      'zarik': 3800,
-      'beyragh': 1,
-      'nakh': 8,
-      'farsh': 1,
-    },
-  ];
+  List<Map<String, dynamic>> _mentorMembersAssets = [];
+  List<Map<String, dynamic>> _mentorExchangeRequests = [];
 
-  late final List<Map<String, dynamic>> _mentorExchangeRequests = [
-    {
-      'id': 'ex_1',
-      'studentName': 'محمد حسینی',
-      'studentId': 'mem_1',
-      'title': 'تبدیل 60 زریک ➔ 3 نخ',
-      'date': '1399/02/25',
-      'sourceAmount': 60,
-      'sourceAsset': 'زریک',
-      'targetAmount': 3,
-      'targetAsset': 'نخ',
-      'status': 'pending',
-    },
-    {
-      'id': 'ex_2',
-      'studentName': 'علی رضایی',
-      'studentId': 'mem_2',
-      'title': 'تبدیل 5 نخ ➔ 1 فرش',
-      'date': '1405/05/04',
-      'sourceAmount': 5,
-      'sourceAsset': 'نخ',
-      'targetAmount': 1,
-      'targetAsset': 'فرش',
-      'status': 'pending',
-    },
-  ];
+  String _formatPersianDate(dynamic date) {
+    if (date == null) {
+      final nowJ = Jalali.now();
+      return '${nowJ.year}/${nowJ.month.toString().padLeft(2, '0')}/${nowJ.day.toString().padLeft(2, '0')}'.toPersianDigits();
+    }
+    try {
+      final dt = date is DateTime ? date : DateTime.tryParse(date.toString());
+      if (dt != null) {
+        final j = Jalali.fromDateTime(dt);
+        return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'.toPersianDigits();
+      }
+    } catch (_) {}
+    return date.toString().toPersianDigits();
+  }
+
+  Future<void> _loadMarketData() async {
+    try {
+      final progressData = await HttpApiService().getMentorCaravanProgress();
+      final exchangeData = await HttpApiService().getCaravanAssetConversions();
+
+      if (mounted) {
+        setState(() {
+          if (progressData != null && progressData['members'] != null) {
+            final list = List<Map<String, dynamic>>.from(progressData['members'] ?? []);
+            if (list.isNotEmpty) {
+              _mentorMembersAssets = list;
+              if (_expandedMemberAssetIds.isEmpty) {
+                _expandedMemberAssetIds.add(list.first['id']?.toString() ?? '1');
+              }
+            }
+          }
+          if (exchangeData.isNotEmpty) {
+            _mentorExchangeRequests = exchangeData.map((req) {
+              final student = req['user'] as Map<String, dynamic>?;
+              final String title = req['note']?.toString() ?? 'درخواست تبدیل دارایی';
+              final date = _formatPersianDate(req['createdAt']);
+              return {
+                'id': req['id']?.toString() ?? '',
+                'studentName': student?['name']?.toString() ?? 'دانش‌آموز',
+                'studentId': req['requestedBy']?.toString() ?? '',
+                'title': title,
+                'date': date,
+                'status': req['status']?.toString() ?? 'pending',
+              };
+            }).toList();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading market data: $e');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _amountController.addListener(_recalculateExchange);
     _recalculateExchange();
+    _loadMarketData();
   }
 
   @override
@@ -372,15 +377,34 @@ class _MarketScreenState extends State<MarketScreen> {
                     children: [
                       // ارسال on Right in RTL
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                              backgroundColor: Color(0xFF10B981),
-                              behavior: SnackBarBehavior.floating,
-                            ),
+                          final success = await HttpApiService().submitStudentAssetConversion(
+                            sourceAsset: _sourceAsset,
+                            targetAsset: _targetAsset,
+                            sourceAmount: amount,
+                            targetAmount: _calculatedResult,
                           );
+                          if (mounted) {
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                  backgroundColor: Color(0xFF10B981),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              _loadMarketData();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                  backgroundColor: Color(0xFFEF4444),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
                         },
                         child: const Text(
                           'ارسال',
@@ -658,10 +682,23 @@ class _MarketScreenState extends State<MarketScreen> {
   /// Section 2: سرمایه های شما / مجموع سرمایه های کاروان
   Widget _buildAssetsSection(UserModel? user, {bool isMentor = false}) {
     final title = isMentor ? 'مجموع سرمایه های کاروان' : 'سرمایه های شما';
-    final zarikVal = isMentor ? '1200' : (user?.zarik ?? 0).toPersian();
-    final beyrahVal = isMentor ? '5' : (user?.beyragh ?? 0).toPersian();
-    final nakhVal = isMentor ? '15' : (user?.nakh ?? 0).toPersian();
-    final farshVal = isMentor ? '3' : (user?.farsh ?? 0).toPersian();
+
+    int totalZarik = user?.zarik ?? 0;
+    int totalBeyragh = user?.beyragh ?? 0;
+    int totalNakh = user?.nakh ?? 0;
+    int totalFarsh = user?.farsh ?? 0;
+
+    if (isMentor && _mentorMembersAssets.isNotEmpty) {
+      totalZarik = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['zarik'] as num?)?.toInt() ?? (m['zarikBalance'] as num?)?.toInt() ?? 0));
+      totalBeyragh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['beyragh'] as num?)?.toInt() ?? 0));
+      totalNakh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['nakh'] as num?)?.toInt() ?? 0));
+      totalFarsh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['farsh'] as num?)?.toInt() ?? 0));
+    }
+
+    final zarikVal = totalZarik.toPersian();
+    final beyrahVal = totalBeyragh.toPersian();
+    final nakhVal = totalNakh.toPersian();
+    final farshVal = totalFarsh.toPersian();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1281,20 +1318,26 @@ class _MarketScreenState extends State<MarketScreen> {
                         children: [
                           // تایید (Approve)
                           GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                              });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'درخواست مبادله برای $studentName تایید شد ✅',
-                                    style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                            onTap: () async {
+                              final success = await HttpApiService().approveCaravanAssetConversion(reqId, true);
+                              if (mounted) {
+                                setState(() {
+                                  _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'درخواست مبادله برای $studentName تایید شد ✅'
+                                          : 'خطا در ثبت تایید در سرور',
+                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                    ),
+                                    backgroundColor: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    behavior: SnackBarBehavior.floating,
                                   ),
-                                  backgroundColor: const Color(0xFF10B981),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                                );
+                                _loadMarketData();
+                              }
                             },
                             child: Container(
                               decoration: BoxDecoration(
@@ -1330,10 +1373,14 @@ class _MarketScreenState extends State<MarketScreen> {
                                 memberName: studentName,
                                 requestDate: date,
                                 requestSubject: 'رد درخواست مبادله',
-                                onConfirmReject: () {
-                                  setState(() {
-                                    _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                                  });
+                                onConfirmReject: () async {
+                                  await HttpApiService().approveCaravanAssetConversion(reqId, false);
+                                  if (mounted) {
+                                    setState(() {
+                                      _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                                    });
+                                    _loadMarketData();
+                                  }
                                 },
                               );
                             },
