@@ -641,7 +641,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     );
   }
 
-  /// Bottom 3-Column Class Details Card matching exact login box stroke and color styling
+  /// Bottom 2-Column Class Details Card: Right is Skill Classes, Left is Media Classes (Overdue removed)
   Widget _buildClassesSummaryCard() {
     final dayEvents = _events.where((e) =>
         e.year == _selectedYear &&
@@ -650,11 +650,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     final mediaEvents = dayEvents.where((e) => e.type == EventType.mediaClass).toList();
     final skillEvents = dayEvents.where((e) => e.type == EventType.skillClass).toList();
-    final overdueEvents = dayEvents.where((e) => e.type == EventType.overdue).toList();
 
     final String mediaText = mediaEvents.isNotEmpty ? mediaEvents.map((e) => e.title).join('، ') : '-';
     final String skillText = skillEvents.isNotEmpty ? skillEvents.map((e) => e.title).join('، ') : '-';
-    final String overdueText = overdueEvents.isNotEmpty ? overdueEvents.map((e) => e.title).join('، ') : '-';
 
     return Container(
       decoration: BoxDecoration(
@@ -670,77 +668,42 @@ class _EducationCalendarState extends State<EducationCalendar> {
       ),
       padding: const EdgeInsets.all(AppColors.borderWidth),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           gradient: AppColors.darkSurfaceGradient,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
           children: [
-            // 3 Column Headers (Right: کلاس‌های رسانه‌ای • | Middle: کلاس‌های مهارتی • | Left: معوقه •)
+            // 2 Column Headers (Right: کلاس‌های مهارتی • | Left: کلاس‌های رسانه‌ای •)
             Directionality(
               textDirection: TextDirection.rtl,
               child: Row(
                 children: [
-                  // Right Column Header: کلاس‌های رسانه‌ای (Cyan)
+                  // Right Column Header: مهارتی (Yellow)
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF4DE2EC),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'رسانه‌ای',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF4DE2EC),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Middle Column Header: مهارتی (Yellow)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
+                          width: 6,
+                          height: 6,
                           decoration: const BoxDecoration(
                             color: Color(0xFFF9E872),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         const Flexible(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'مهارتی',
+                              'کلاس مهارتی',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color(0xFFF9E872),
-                                fontSize: 11.5,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
                                 fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -752,30 +715,37 @@ class _EducationCalendarState extends State<EducationCalendar> {
                     ),
                   ),
 
-                  // Left Column Header: معوقه (Coral Red)
+                  // Divider between columns
+                  Container(
+                    width: 1,
+                    height: 16,
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+
+                  // Left Column Header: رسانه‌ای (Cyan)
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 5,
-                          height: 5,
+                          width: 6,
+                          height: 6,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFF67575),
+                            color: Color(0xFF4DE2EC),
                             shape: BoxShape.circle,
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         const Flexible(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              'معوقه',
+                              'کلاس رسانه‌ای',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFFF67575),
-                                fontSize: 11.5,
+                                color: Color(0xFF4DE2EC),
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: AppTheme.fontFamily,
                                 fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -798,37 +768,16 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
             const SizedBox(height: 10),
 
-            // 3 Column Values Row
+            // 2 Column Values Row
             Directionality(
               textDirection: TextDirection.rtl,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Right Column Value
+                  // Right Column Value: Skill Classes
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                      child: Text(
-                        mediaText,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Middle Column Value
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Text(
                         skillText,
                         textAlign: TextAlign.center,
@@ -846,17 +795,19 @@ class _EducationCalendarState extends State<EducationCalendar> {
                     ),
                   ),
 
-                  // Left Column Value
+                  const SizedBox(width: 8),
+
+                  // Left Column Value: Media Classes
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Text(
-                        overdueText,
+                        mediaText,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: overdueText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
+                          color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
                           fontSize: 11.5,
                           height: 1.3,
                           fontWeight: FontWeight.w400,

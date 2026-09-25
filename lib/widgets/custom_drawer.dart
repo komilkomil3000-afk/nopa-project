@@ -274,13 +274,13 @@ class CustomDrawer extends StatelessWidget {
                   children: [
                     // Group 1: Main Tabs
                     _buildMenuItem(
-                      title: 'پروفایل',
-                      svgPath: 'assets/svg_icons/profile01.svg',
-                      isSelected: currentIndex == (isMentor ? 3 : 4),
+                      title: 'خانه',
+                      svgPath: 'assets/svg_icons/home01.svg',
+                      isSelected: currentIndex == 0,
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        onTabSelected(isMentor ? 3 : 4);
+                        onTabSelected(0);
                       },
                     ),
                     _buildMenuItem(
@@ -311,6 +311,16 @@ class CustomDrawer extends StatelessWidget {
                       onTap: () {
                         Navigator.pop(context);
                         onTabSelected(3);
+                      },
+                    ),
+                    _buildMenuItem(
+                      title: 'پروفایل',
+                      svgPath: 'assets/svg_icons/profile01.svg',
+                      isSelected: currentIndex == 4,
+                      iconSize: 22,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onTabSelected(4);
                       },
                     ),
                     _buildMenuItem(

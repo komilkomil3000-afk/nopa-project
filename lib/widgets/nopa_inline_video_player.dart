@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/aparat_service.dart';
 import '../services/audio_exclusivity_service.dart';
+import '../services/app_state_repository.dart';
 import '../core/theme/app_theme.dart';
 
 class NopaInlineVideoPlayer extends StatefulWidget {
@@ -79,6 +80,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
         c.dispose();
       } catch (_) {}
     }
+    AppRepository().setMediaPlaying(false);
   }
 
   void _videoListener() {
@@ -88,12 +90,17 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
       setState(() {
         _isPlaying = value.isPlaying;
       });
+      AppRepository().setMediaPlaying(value.isPlaying);
+    }
+    if (value.isPlaying) {
+      AppRepository().recordActivity();
     }
     if (value.hasError) {
       setState(() {
         _hasError = true;
         _isLoading = false;
       });
+      AppRepository().setMediaPlaying(false);
     }
   }
 

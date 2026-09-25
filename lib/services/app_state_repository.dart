@@ -36,11 +36,25 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   static VoidCallback? onSessionTimeout;
-  static const int inactivityTimeoutMinutes = 15;
+  static const int inactivityTimeoutMinutes = 8;
   static const String prefKeyLastActive = 'last_app_exit_timestamp';
   DateTime? _lastActiveTimestamp;
   DateTime? _lastDiskPersistTimestamp;
   Timer? _inactivityCheckTimer;
+  int _activeMediaPlayingCount = 0;
+
+  bool get isMediaPlaying => _activeMediaPlayingCount > 0;
+
+  void setMediaPlaying(bool playing) {
+    if (playing) {
+      _activeMediaPlayingCount++;
+      recordActivity();
+    } else {
+      if (_activeMediaPlayingCount > 0) {
+        _activeMediaPlayingCount--;
+      }
+    }
+  }
 
   void recordActivity() {
     final now = DateTime.now();
@@ -55,11 +69,20 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> checkInactivityTimeout() async {
-    if (!_apiService.isAuthenticated) return;
+    if (!_apiService.isAuthenticated || currentUser.id == 'guest' || currentUser.id == 'loading') {
+      return;
+    }
+
+    // Video, class, and part playback is strictly exempt from timeout
+    if (isMediaPlaying) {
+      _lastActiveTimestamp = DateTime.now();
+      return;
+    }
 
     final now = DateTime.now();
     _lastActiveTimestamp ??= now;
     final diff = now.difference(_lastActiveTimestamp!);
+    // Must strictly be at least 8 minutes of complete inactivity
     if (diff.inMinutes >= inactivityTimeoutMinutes) {
       debugPrint('⏱️ Inactivity timeout exceeded: ${diff.inMinutes} min (limit: $inactivityTimeoutMinutes min). Logging out...');
       _lastActiveTimestamp = now;
@@ -172,6 +195,18 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     currentUser = user;
     notifyListeners();
   }
+
+  void setActiveCaravan({required String name, required String id}) {
+    _selectedCaravanId = id;
+    currentUser = currentUser.copyWith(
+      caravanName: name,
+      caravanId: id,
+    );
+    notifyListeners();
+  }
+
+  String? get activeCaravanName => currentUser.caravanName;
+  String? get activeCaravanId => currentUser.caravanId ?? _selectedCaravanId;
 
   Future<void> logout() async {
     try {
