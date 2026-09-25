@@ -830,7 +830,7 @@ class _Class2ScreenState extends State<Class2Screen> {
                             textDirection: TextDirection.rtl,
                             child: Row(
                               children: [
-                                // 1. Far Right in RTL: آیکون پاز برای در حال پخش و پلی برای بقیه
+                                // 1. Far Right in RTL: وضعیت پارت (تایید برای دیده شده، پاز برای در حال دیدن، پلی برای دیده نشده)
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
@@ -839,16 +839,36 @@ class _Class2ScreenState extends State<Class2Screen> {
                                     _initializeVideoForCurrentSession();
                                   },
                                   child: isPlaying
-                                      ? const Icon(
-                                          Icons.pause_rounded,
-                                          color: Color(0xFFE1BC96),
-                                          size: 20,
+                                      ? Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: const Color(0xFFDFB690).withValues(alpha: 0.18),
+                                            border: Border.all(color: const Color(0xFFDFB690), width: 1.2),
+                                          ),
+                                          child: const Icon(Icons.pause_rounded, color: Color(0xFFDFB690), size: 13),
                                         )
-                                      : const Icon(
-                                          Icons.play_arrow_rounded,
-                                          color: Color(0xFF9D99B8),
-                                          size: 20,
-                                        ),
+                                      : (isQuizUnlocked
+                                          ? Container(
+                                              width: 20,
+                                              height: 20,
+                                              decoration: const BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Color(0xFF22C55E),
+                                              ),
+                                              child: const Icon(Icons.check_rounded, color: Colors.white, size: 13),
+                                            )
+                                          : Container(
+                                              width: 20,
+                                              height: 20,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white.withValues(alpha: 0.08),
+                                                border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.0),
+                                              ),
+                                              child: const Icon(Icons.play_arrow_rounded, color: Colors.white70, size: 13),
+                                            )),
                                 ),
                                 const SizedBox(width: 8),
 

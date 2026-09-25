@@ -735,27 +735,30 @@ class _MarketScreenState extends State<MarketScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Pill Tabs: [گزارش اعضا] | [مبادلات]
+        // Mode Switcher Pill Tabs matching Mentor Station Screen
         Center(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xFF221E3E).withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: const Color(0xFF4A4476).withValues(alpha: 0.6),
-                width: 1,
-              ),
+              gradient: AppColors.strokeGradient,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Directionality(
-              textDirection: TextDirection.rtl,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildMentorTabButton('گزارش اعضا', 0),
-                  _buildMentorTabButton('مبادلات', 1),
-                ],
+            padding: const EdgeInsets.all(AppColors.borderWidth),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.darkSurfaceGradient,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              padding: const EdgeInsets.all(3),
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildMentorTabButton('گزارش اعضا', 0),
+                    const SizedBox(width: 4),
+                    _buildMentorTabButton('مبادلات', 1),
+                  ],
+                ),
               ),
             ),
           ),
@@ -783,36 +786,21 @@ class _MarketScreenState extends State<MarketScreen> {
           _selectedMentorMarketTab = tabIndex;
         });
       },
-      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [Color(0xFFE5A133), Color(0xFFC07F1C)],
-                )
-              : null,
-          color: isSelected ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFFE5A133).withValues(alpha: 0.45),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          gradient: isSelected ? AppColors.accentGradient : null,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           title,
           style: TextStyle(
+            color: isSelected ? Colors.white : const Color(0xFF8E889D),
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             fontFamily: AppTheme.fontFamily,
-            fontSize: 13.5,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
-            color: isSelected ? Colors.white : const Color(0xFF9E9AC0),
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
         ),
       ),
@@ -845,145 +833,180 @@ class _MarketScreenState extends State<MarketScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF221E3F).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isExpanded
-              ? const Color(0xFF6B659F).withValues(alpha: 0.7)
-              : const Color(0xFF3B3564).withValues(alpha: 0.6),
-          width: 1.2,
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: [0.0, 0.5, 1.0],
+          colors: [
+            Color(0xFF3A3A6A),
+            Color(0xFF9292E2),
+            Color(0xFF3A3A6A),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row (Avatar, Name, "ارتباط", Chevron)
-          InkWell(
-            onTap: () {
-              setState(() {
-                if (isExpanded) {
-                  _expandedMemberAssetIds.remove(memberId);
-                } else {
-                  _expandedMemberAssetIds.add(memberId);
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  // Left side: Chevron Arrow + "ارتباط" Button
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.all(1.2), // Gradient border matching Mentor Station
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14.8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Member Header (Capsule gradient surface matching Mentor Station)
+            InkWell(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedMemberAssetIds.remove(memberId);
+                  } else {
+                    _expandedMemberAssetIds.add(memberId);
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: isExpanded
+                      ? const BorderRadius.vertical(top: Radius.circular(14.8))
+                      : BorderRadius.circular(14.8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
+                    colors: [
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
+                    ],
+                  ),
+                  border: isExpanded
+                      ? const Border(
+                          bottom: BorderSide(
+                            color: Color(0xFF282542),
+                            width: 1.0,
+                          ),
+                        )
+                      : null,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
                     children: [
-                      Icon(
-                        isExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: const Color(0xFFB5B0DF),
-                        size: 26,
-                      ),
-                      const SizedBox(width: 8),
-                      // "ارتباط" Button
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/tickets');
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFF7B75AF).withValues(alpha: 0.7),
-                              width: 1,
+                      // 1. Right side in RTL: Avatar + Name
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF534C82),
+                              border: Border.all(
+                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.person_rounded,
+                              color: Color(0xFFEDE9F6),
+                              size: 17,
                             ),
                           ),
-                          child: const Text(
-                            'ارتباط',
-                            style: TextStyle(
+                          const SizedBox(width: 8),
+                          Text(
+                            name,
+                            style: const TextStyle(
                               fontFamily: AppTheme.fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFDCD7F5),
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
 
-                  const Spacer(),
+                      const Spacer(),
 
-                  // Right side: Member Name + Avatar (RTL)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF534C82),
-                          border: Border.all(
-                            color: const Color(0xFF837CB7).withValues(alpha: 0.5),
-                            width: 1,
+                      // 2. Left side in RTL: "ارتباط" Button + Chevron
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/tickets');
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.strokeGradient,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.all(AppColors.borderWidth),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.darkSurfaceGradient,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: const Text(
+                                  'ارتباط',
+                                  style: TextStyle(
+                                    color: Color(0xFFC7B299),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.person_rounded,
-                          color: Color(0xFFEDE9F6),
-                          size: 20,
-                        ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: const Color(0xFFDDD9EE),
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Expanded Asset Values Row (Matching screenshot)
-          if (isExpanded) ...[
-            Container(
-              height: 1,
-              color: const Color(0xFF3C3664).withValues(alpha: 0.6),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildMemberAssetChip('زریک', zarik),
-                    _buildMemberAssetChip('درفش', derafsh),
-                    _buildMemberAssetChip('نخ', nakh),
-                    _buildMemberAssetChip('فرش', farsh),
-                  ],
                 ),
               ),
             ),
+
+            // Expanded Asset Values Row (Matching Dark Body style)
+            if (isExpanded)
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1B192A),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(14.8)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildMemberAssetChip('زریک', zarik),
+                      _buildMemberAssetChip('درفش', derafsh),
+                      _buildMemberAssetChip('نخ', nakh),
+                      _buildMemberAssetChip('فرش', farsh),
+                    ],
+                  ),
+                ),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -993,27 +1016,28 @@ class _MarketScreenState extends State<MarketScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 8,
-          height: 8,
+          width: 7,
+          height: 7,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Color(0xFFC7B299),
+            color: Color(0xFFDFB690),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         Text(
           '$label: ',
           style: TextStyle(
             fontFamily: AppTheme.fontFamily,
-            fontSize: 12,
-            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 11,
+            fontWeight: FontWeight.normal,
+            color: Colors.white.withValues(alpha: 0.6),
           ),
         ),
         Text(
           value,
           style: const TextStyle(
             fontFamily: AppTheme.fontFamily,
-            fontSize: 12.5,
+            fontSize: 11.5,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
@@ -1061,237 +1085,288 @@ class _MarketScreenState extends State<MarketScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF221E3F).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isExpanded
-              ? const Color(0xFF6B659F).withValues(alpha: 0.7)
-              : const Color(0xFF3B3564).withValues(alpha: 0.6),
-          width: 1.2,
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: [0.0, 0.5, 1.0],
+          colors: [
+            Color(0xFF3A3A6A),
+            Color(0xFF9292E2),
+            Color(0xFF3A3A6A),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header Row: Chevron + Student + Title + Swap Icon
-          InkWell(
-            onTap: () {
-              setState(() {
-                if (isExpanded) {
-                  _expandedExchangeIds.remove(reqId);
-                } else {
-                  _expandedExchangeIds.add(reqId);
-                }
-              });
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  // Left: Chevron
-                  Icon(
-                    isExpanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: const Color(0xFFB5B0DF),
-                    size: 26,
+      padding: const EdgeInsets.all(1.2), // Gradient border matching Mentor Station
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14.8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header Row (مبادله سمت راست، نام فرد سمت چپ)
+            InkWell(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedExchangeIds.remove(reqId);
+                  } else {
+                    _expandedExchangeIds.add(reqId);
+                  }
+                });
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: isExpanded
+                      ? const BorderRadius.vertical(top: Radius.circular(14.8))
+                      : BorderRadius.circular(14.8),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
+                    colors: [
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
+                    ],
                   ),
-
-                  const Spacer(),
-
-                  // Right in RTL: Student Name + Title + Swap Icon
-                  Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4A382A),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFFC09268).withValues(alpha: 0.5),
-                              width: 1,
-                            ),
+                  border: isExpanded
+                      ? const Border(
+                          bottom: BorderSide(
+                            color: Color(0xFF282542),
+                            width: 1.0,
                           ),
-                          child: const Icon(
-                            Icons.swap_horiz_rounded,
-                            color: Color(0xFFDFB690),
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFF534C82),
-                          ),
-                          child: const Icon(Icons.person, color: Colors.white70, size: 14),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          studentName,
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Expanded Actions Row (Date on Right, "تایید" and "رد و توضیح" on Left)
-          if (isExpanded) ...[
-            Container(
-              height: 1,
-              color: const Color(0xFF3C3664).withValues(alpha: 0.6),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
-                children: [
-                  // Left: Action Buttons: [تایید] [رد و توضیح]
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                        )
+                      : null,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
                     children: [
-                      // تایید (Approve)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'درخواست مبادله برای $studentName تایید شد ✅',
-                                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                      // 1. Right side in RTL: مبادله (آیکون مبادله + عنوان مبادله)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4A382A),
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                                width: 1,
                               ),
-                              backgroundColor: const Color(0xFF10B981),
-                              behavior: SnackBarBehavior.floating,
                             ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFC09268),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Text(
-                            'تایید',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                            child: const Icon(
+                              Icons.swap_horiz_rounded,
                               color: Color(0xFFDFB690),
+                              size: 16,
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
 
-                      // رد و توضیح (Reject & Explain)
-                      GestureDetector(
-                        onTap: () {
-                          _showRejectExplanationDialog(
-                            memberName: studentName,
-                            requestDate: date,
-                            requestSubject: 'رد درخواست مبادله',
-                            onConfirmReject: () {
-                              setState(() {
-                                _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                              });
-                            },
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
-                              width: 1,
+                      const Spacer(),
+
+                      // 2. Left side in RTL: نام فرد + آیکون + فلش آکاردئونی
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF534C82),
+                              border: Border.all(
+                                color: const Color(0xFF837CB7).withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.person_rounded,
+                              color: Color(0xFFEDE9F6),
+                              size: 14,
                             ),
                           ),
-                          child: const Text(
-                            'رد و توضیح',
+                          const SizedBox(width: 6),
+                          Text(
+                            studentName,
                             style: TextStyle(
                               fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFDCD7F5),
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: const Color(0xFFDDD9EE),
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ),
-
-                  const Spacer(),
-
-                  // Right in RTL: Date of request
-                  Directionality(
-                    textDirection: TextDirection.rtl,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xFFC7B299),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'تاریخ درخواست: $date',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 12,
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
+
+            // Expanded Body: تاریخ سمت راست، تایید و رد و توضیح سمت چپ
+            if (isExpanded)
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1B192A),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(14.8)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: Row(
+                    children: [
+                      // 1. Right side in RTL: تاریخ
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFDFB690),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'تاریخ: $date',
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                              fontSize: 11,
+                              fontWeight: FontWeight.normal,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const Spacer(),
+
+                      // 2. Left side in RTL: قسمت تایید و رد و توضیح
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // تایید (Approve)
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'درخواست مبادله برای $studentName تایید شد ✅',
+                                    style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                  ),
+                                  backgroundColor: const Color(0xFF10B981),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.strokeGradient,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.all(AppColors.borderWidth),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.darkSurfaceGradient,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: const Text(
+                                  'تایید',
+                                  style: TextStyle(
+                                    color: Color(0xFFC7B299),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // رد و توضیح (Reject & Explain)
+                          GestureDetector(
+                            onTap: () {
+                              _showRejectExplanationDialog(
+                                memberName: studentName,
+                                requestDate: date,
+                                requestSubject: 'رد درخواست مبادله',
+                                onConfirmReject: () {
+                                  setState(() {
+                                    _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                                  });
+                                },
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Text(
+                                'رد و توضیح',
+                                style: TextStyle(
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDCD7F5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
-        ],
+        ),
       ),
     );
   }

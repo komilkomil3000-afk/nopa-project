@@ -1077,156 +1077,142 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     required String id,
   }) {
     final title = item['title'] ?? '';
-    final creator = item['creatorName'] ?? 'آقای جلالی';
     final statusTag = item['statusTag'] ?? '';
-    final statusColor = item['statusColor'] as Color? ?? const Color(0xFF22C55E);
+    final statusColor = item['statusColor'] as Color? ?? const Color(0xFFE5A86D);
     final reward = item['reward'] ?? 50;
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF221E3F).withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF3B3564).withValues(alpha: 0.7),
-            width: 1.2,
+          gradient: const LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            stops: [0.0, 0.5, 1.0],
+            colors: [
+              Color(0xFF3A3A6A),
+              Color(0xFF9292E2),
+              Color(0xFF3A3A6A),
+            ],
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 12,
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MentorChallengeDetailsScreen(
-                    challenge: item,
-                    user: user,
+        padding: const EdgeInsets.all(1.2), // Gradient border matching student challenges
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14.8),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MentorChallengeDetailsScreen(
+                      challenge: item,
+                      user: user,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.53, 1.0],
+                    colors: [
+                      Color(0xFF3D3C67),
+                      Color(0xFF36345C),
+                      Color(0xFF333359),
+                    ],
                   ),
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              child: Row(
-                children: [
-                  // 1. Right Side in RTL: Title & Creator (تیتر در سمت راست)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                child: Row(
+                  children: [
+                    // Right: Challenge Title (Matching student challenges: concise, bold, white, fontSize: 12)
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Left Group: Status Tag -> Reward Amount (ایکن سمت چپ حذف شد)
+                    // 1. Status Tag
+                    if (statusTag.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: statusColor.withValues(alpha: 0.4), width: 0.9),
+                        ),
+                        child: Text(
+                          statusTag,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+
+                    // 2. Reward Amount
+                    Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          '+${reward.toString().toPersianDigits()}',
                           style: const TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 14,
+                            color: Color(0xFF9292E2),
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            fontFamily: AppTheme.fontFamily,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'ایجاد شده توسط $creator',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.55),
+                        const SizedBox(width: 4),
+                        SvgPicture.asset(
+                          'assets/svg_icons/challeng01.svg',
+                          width: 12,
+                          height: 12,
+                          colorFilter: const ColorFilter.mode(
+                            Color(0xFF9292E2),
+                            BlendMode.srcIn,
+                          ),
+                          errorBuilder: (ctx, err, stack) => Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF9292E2),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  // 2. Left Side in RTL: Status Tag -> Reward Amount -> Arrow (تگ و سرمایه هدیه در سمت چپ)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Status Tag (تگ در سمت چپ)
-                      if (statusTag.isNotEmpty) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: statusColor.withValues(alpha: 0.45),
-                              width: 0.9,
-                            ),
-                          ),
-                          child: Text(
-                            statusTag,
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: statusColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-
-                      // Reward (میزان سرمایه هدیه در سمت چپ)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '+${reward.toString().toPersianDigits()}',
-                            style: const TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFDFB690),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          SvgPicture.asset(
-                            'assets/svg_icons/challeng01.svg',
-                            width: 13,
-                            height: 13,
-                            colorFilter: const ColorFilter.mode(
-                              Color(0xFFDFB690),
-                              BlendMode.srcIn,
-                            ),
-                            errorBuilder: (ctx, err, stack) => Container(
-                              width: 10,
-                              height: 10,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xFFDFB690),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // Chevron Left
-                      const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Color(0xFF9E9CD6),
-                        size: 15,
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

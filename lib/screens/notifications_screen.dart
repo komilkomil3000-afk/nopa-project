@@ -7,7 +7,6 @@ import '../models/user_model.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/app_colors.dart';
 import '../widgets/app_scaffold.dart';
-import '../widgets/complete_profile_dialog.dart';
 import '../widgets/jarchi_item.dart';
 import '../main.dart';
 
@@ -110,8 +109,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final String title = notify['title'] ?? '';
     final String body = notify['body'] ?? '';
     final String type = notify['type'] ?? '';
-    final bool isMentor = repository.currentUser.role == UserRole.mentor ||
-        repository.currentUser.role == UserRole.superMentor;
 
     // 1. News / جارچی اطلاعیه‌ها
     if (type == 'news' ||
@@ -168,20 +165,29 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
-    // 2. Complete Profile / تکمیل پروفایل
+    // 2. Complete Profile / تکمیل پروفایل و مشخصات
     if (title.contains('تکمیل پروفایل') ||
         body.contains('تکمیل پروفایل') ||
-        title.contains('پروفایل')) {
-      if (mounted) {
-        CompleteProfileDialog.show(context, repository.currentUser);
+        title.contains('تکمیل مشخصات') ||
+        body.contains('تکمیل مشخصات') ||
+        title.contains('پروفایل') ||
+        body.contains('پروفایل') ||
+        title.contains('مشخصات') ||
+        body.contains('مشخصات')) {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
       }
+      navigateToMainTab(4); // Profile tab for both student & mentor
       return;
     }
 
-    // 3. Challenge / چالش و پاسخ‌ها
+    // 3. Challenge / Message / چالش و پیام‌ها و پاسخ‌ها
     if (type == 'challenge' ||
+        type == 'message' ||
         title.contains('چالش') ||
         body.contains('چالش') ||
+        title.contains('پیام') ||
+        body.contains('پیام') ||
         title.contains('پاسخ') ||
         body.contains('پاسخ') ||
         title.contains('تایید شد') ||
@@ -189,11 +195,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
-      if (isMentor) {
-        navigateToMainTab(2); // Mentor Tasks
-      } else {
-        navigateToMainTab(2); // Student Challenges
-      }
+      navigateToMainTab(2); // Challenges / Messages tab for both student & mentor
       return;
     }
 
@@ -207,33 +209,37 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
 
-    // 5. Market / فروشگاه / زریک / سکه
+    // 5. Market / فروشگاه / زریک / سکه / مبادلات
     if (title.contains('فروشگاه') ||
         body.contains('فروشگاه') ||
         title.contains('سکه') ||
-        body.contains('زریک')) {
+        body.contains('زریک') ||
+        title.contains('بازار') ||
+        body.contains('بازار') ||
+        title.contains('مبادله') ||
+        body.contains('مبادله') ||
+        title.contains('نرخ') ||
+        body.contains('نرخ')) {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
-      if (!isMentor) {
-        navigateToMainTab(3); // Market
-      }
+      navigateToMainTab(3); // Market tab for both student & mentor
       return;
     }
 
-    // 6. Map / Stations / کلاس و منزلگاه
+    // 6. Map / Stations / کلاس و منزلگاه / آموزگاه
     if (title.contains('منزلگاه') ||
         title.contains('کلاس') ||
         title.contains('ایستگاه') ||
+        title.contains('آموزگاه') ||
         body.contains('منزلگاه') ||
         body.contains('کلاس') ||
+        body.contains('آموزگاه') ||
         title.contains('نقشه')) {
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
-      if (!isMentor) {
-        navigateToMainTab(1); // Map / Stations
-      }
+      navigateToMainTab(1); // Stations / Classes / MentorStation tab for both
       return;
     }
 
@@ -674,6 +680,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       height: 1.6,
                       fontFamily: AppTheme.fontFamily,
                       fontFamilyFallback: AppTheme.fontFamilyFallback,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: () => _handleActionClick(notify, repository),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.strokeGradient,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.all(AppColors.borderWidth),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.darkSurfaceGradient,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                actionLabel,
+                                style: const TextStyle(
+                                  color: Color(0xFFDFB690),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Color(0xFFDFB690),
+                                size: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
