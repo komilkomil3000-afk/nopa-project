@@ -1419,25 +1419,39 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             padding: const EdgeInsets.symmetric(vertical: 4.5),
             child: Row(
               children: [
-                // Icon (Only check for completed and pause for pending)
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isPending
-                        ? const Color(0xFFDFB690).withValues(alpha: 0.18)
-                        : const Color(0xFF22C55E),
-                    border: isPending
-                        ? Border.all(color: const Color(0xFFDFB690), width: 1.2)
-                        : null,
+                // Icon: Check for completed, Pause for current in-progress, Play for not seen yet
+                if (!isPending)
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF22C55E),
+                    ),
+                    child: const Icon(Icons.check_rounded, color: Colors.white, size: 13),
+                  )
+                else if (idx == 0)
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFDFB690).withValues(alpha: 0.18),
+                      border: Border.all(color: const Color(0xFFDFB690), width: 1.2),
+                    ),
+                    child: const Icon(Icons.pause_rounded, color: Color(0xFFDFB690), size: 13),
+                  )
+                else
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.08),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.0),
+                    ),
+                    child: const Icon(Icons.play_arrow_rounded, color: Colors.white70, size: 13),
                   ),
-                  child: Icon(
-                    isPending ? Icons.pause_rounded : Icons.check_rounded,
-                    color: isPending ? const Color(0xFFDFB690) : Colors.white,
-                    size: 13,
-                  ),
-                ),
                 const SizedBox(width: 8),
 
                 // Quiz Title

@@ -689,6 +689,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                   children: List.generate(sessions.length, (sIdx) {
                     final session = sessions[sIdx];
                     final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
+                    final bool isSessionCurrent = isCurrentStation && sIdx == 1;
                     final isLastSession = sIdx == sessions.length - 1;
 
                     return Row(
@@ -704,18 +705,26 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                                 shape: BoxShape.circle,
                                 color: isSessionCompleted
                                     ? const Color(0xFF10B981)
-                                    : const Color(0xFF352F5A),
+                                    : (isSessionCurrent
+                                        ? const Color(0xFFDFB690).withValues(alpha: 0.2)
+                                        : const Color(0xFF352F5A)),
                                 border: Border.all(
                                   color: isSessionCompleted
                                       ? const Color(0xFF10B981)
-                                      : const Color(0xFF8B88E8).withValues(alpha: 0.6),
+                                      : (isSessionCurrent
+                                          ? const Color(0xFFDFB690)
+                                          : const Color(0xFF8B88E8).withValues(alpha: 0.6)),
                                   width: 1.2,
                                 ),
                               ),
                               child: Center(
                                 child: Icon(
-                                  isSessionCompleted ? Icons.check_rounded : Icons.play_arrow_rounded,
-                                  color: isSessionCompleted ? Colors.white : const Color(0xFFFFD580),
+                                  isSessionCompleted
+                                      ? Icons.check_rounded
+                                      : (isSessionCurrent ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                                  color: isSessionCompleted
+                                      ? Colors.white
+                                      : (isSessionCurrent ? const Color(0xFFDFB690) : const Color(0xFFFFD580)),
                                   size: 13,
                                 ),
                               ),

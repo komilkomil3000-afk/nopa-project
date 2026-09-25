@@ -330,7 +330,7 @@ class CustomDrawer extends StatelessWidget {
                       iconSize: 23,
                       onTap: () {
                         Navigator.pop(context);
-                        Navigator.pushNamed(context, '/mentor_league');
+                        onTabSelected(3);
                       },
                     ),
 

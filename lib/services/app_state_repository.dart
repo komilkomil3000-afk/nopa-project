@@ -205,6 +205,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  void setSelectedCaravan(String id, String name) {
+    setActiveCaravan(name: name, id: id);
+  }
+
   String? get activeCaravanName => currentUser.caravanName;
   String? get activeCaravanId => currentUser.caravanId ?? _selectedCaravanId;
 
@@ -263,13 +267,20 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   String _selectedCaravanId = 'c1'; // Default: یاوران علاءالملک
   String get selectedCaravanId => _selectedCaravanId;
   String get selectedCaravanName {
+    if (caravans.isEmpty) {
+      return currentUser.caravanName ?? 'کاروان یاوران علاءالملک';
+    }
     final c = caravans.firstWhere((element) => element.id == _selectedCaravanId,
         orElse: () => caravans.first);
     return c.name;
   }
 
   // Reactive Collections
-  final List<CaravanModel> caravans = [];
+  final List<CaravanModel> caravans = [
+    CaravanModel(id: 'c1', name: 'کاروان یاوران علاءالملک', memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
+    CaravanModel(id: 'c2', name: 'کاروان عمار', memberCount: 20, overallProgress: 0.65, activeStation: 'منزلگاه دوم'),
+    CaravanModel(id: 'c3', name: 'کاروان مالک اشتر', memberCount: 18, overallProgress: 0.50, activeStation: 'منزلگاه سوم'),
+  ];
   final List<ChallengeModel> challenges = [];
   final List<SubmissionModel> submissions = [];
   final List<MentorRatingModel> mentorRatings = [];
@@ -296,8 +307,19 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   // Caravan dynamic stats helper
   Map<String, dynamic> get activeCaravanStats {
-    final caravan = caravans.firstWhere((element) => element.id == _selectedCaravanId,
-        orElse: () => caravans.first);
+    CaravanModel caravan;
+    if (caravans.isEmpty) {
+      caravan = CaravanModel(
+        id: 'c1',
+        name: currentUser.caravanName ?? 'کاروان یاوران علاءالملک',
+        memberCount: 24,
+        overallProgress: 0.78,
+        activeStation: 'منزلگاه اول',
+      );
+    } else {
+      caravan = caravans.firstWhere((element) => element.id == _selectedCaravanId,
+          orElse: () => caravans.first);
+    }
 
     // Calculate dynamic tickets and submission values from repository
     final activeCaravanSubmissions = submissions.where((s) => 

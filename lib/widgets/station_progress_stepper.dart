@@ -25,8 +25,8 @@ class StationProgressStepper extends StatelessWidget {
     this.completedStationsCount,
   });
 
-  static const double nodeSize = 40.0;
-  static const double trophySize = 52.0;
+  static const double nodeSize = 28.0;
+  static const double trophySize = 36.0;
 
   @override
   Widget build(BuildContext context) {
@@ -40,21 +40,21 @@ class StationProgressStepper extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // Stepper Header Title
         Text(
           title ?? 'منزلگاه را انتخاب کنید',
           style: const TextStyle(
             color: Color(0xFFEDE8F5),
-            fontSize: 14.5,
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
             fontFamily: AppTheme.fontFamily,
             fontFamilyFallback: AppTheme.fontFamilyFallback,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // Horizontal Nodes Track (Left to Right: 0 -> 1 -> 2 -> 3 -> 4 -> 5 -> Trophy)
         SingleChildScrollView(
@@ -64,7 +64,7 @@ class StationProgressStepper extends StatelessWidget {
           child: Directionality(
             textDirection: TextDirection.ltr,
             child: SizedBox(
-              height: 68,
+              height: 48,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -84,7 +84,7 @@ class StationProgressStepper extends StatelessWidget {
                       index: i,
                       currentStationIndex: currentStationIndex,
                       userLevelFrame: effectiveLevelFrame,
-                      width: 22.0,
+                      width: 12.0,
                     ),
                   ],
 
@@ -224,7 +224,7 @@ class StationProgressStepper extends StatelessWidget {
             '$index'.toPersianDigits(),
             style: TextStyle(
               color: isCurrent ? const Color(0xFF221503) : Colors.white,
-              fontSize: isCurrent ? 15.5 : 14,
+              fontSize: isCurrent ? 12.5 : 11.5,
               fontWeight: isCurrent ? FontWeight.w900 : FontWeight.bold,
               fontFamily: AppTheme.fontFamily,
               fontFamilyFallback: AppTheme.fontFamilyFallback,

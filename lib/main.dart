@@ -16,6 +16,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/student/academy/student_class1_screen.dart';
 import 'screens/student/academy/student_class2_screen.dart';
 import 'package:nopa_app/screens/student/messages/student_notifications_screen.dart';
+import 'models/station.dart';
 import 'screens/mentor/profile/mentor_achievements_screen.dart';
 import 'screens/mentor/profile/mentor_caravans_roster_screen.dart';
 
@@ -110,7 +111,10 @@ class NepaApp extends StatelessWidget {
           '/auth': (context) => const LoginScreen(),
           '/main': (context) => const AppShell(),
           '/dashboard': (context) => const AppShell(),
-          '/class1': (context) => const StudentClass1Screen(),
+          '/class1': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            return StudentClass1Screen(initialStation: args is Station ? args : null);
+          },
           '/class2': (context) => const StudentClass2Screen(),
           '/mentor_league': (context) => const MentorAchievementsScreen(),
           '/mentor_members': (context) => const MentorCaravansRosterScreen(),
