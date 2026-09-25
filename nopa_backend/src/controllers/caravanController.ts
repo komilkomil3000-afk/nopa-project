@@ -248,6 +248,79 @@ export async function createCaravan(req: AuthRequest, res: Response) {
   }
 }
 
+export async function getCaravans(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user?.id;
+    const userRole = req.user?.role?.toLowerCase();
+
+    let whereClause: any = { isDeleted: false };
+    if (userRole === 'mentor' && userId) {
+      whereClause = {
+        isDeleted: false,
+        OR: [
+          { mentorId: userId },
+          { members: { some: { id: userId } } }
+        ]
+      };
+    }
+
+    let caravans = await prisma.caravan.findMany({
+      where: whereClause,
+      include: {
+        mentor: { select: { id: true, name: true, phoneNumber: true } },
+        members: {
+          where: { isDeleted: false, role: 'student' },
+          select: {
+            id: true,
+            name: true,
+            phoneNumber: true,
+            userCode: true,
+            zarikBalance: true,
+            role: true,
+            levelFrame: true,
+            nakh: true,
+            farsh: true,
+            beyragh: true,
+            avatarUrl: true
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    // If mentor has no assigned caravans in filter, return all non-deleted caravans as fallback
+    if (caravans.length === 0) {
+      caravans = await prisma.caravan.findMany({
+        where: { isDeleted: false },
+        include: {
+          mentor: { select: { id: true, name: true, phoneNumber: true } },
+          members: {
+            where: { isDeleted: false, role: 'student' },
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+              userCode: true,
+              zarikBalance: true,
+              role: true,
+              levelFrame: true,
+              nakh: true,
+              farsh: true,
+              beyragh: true,
+              avatarUrl: true
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+    }
+
+    res.json(caravans);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 export async function getCaravanDetails(req: AuthRequest, res: Response) {
   const { id } = req.params;
   try {

@@ -28,6 +28,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nationalIdCtrl;
   late TextEditingController _addressCtrl;
 
+  // Mentor profile fields
+  late TextEditingController _educationCtrl;
+  late TextEditingController _jobCtrl;
+  late TextEditingController _resumeCtrl;
+
   // Password fields
   late TextEditingController _newPasswordCtrl;
   late TextEditingController _confirmPasswordCtrl;
@@ -56,6 +61,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _nationalIdCtrl = TextEditingController(text: widget.user.nationalId ?? '');
     _addressCtrl = TextEditingController(text: widget.user.city ?? '');
 
+    _educationCtrl = TextEditingController(text: 'کارشناسی ارشد مدیریت آموزشی');
+    _jobCtrl = TextEditingController(text: 'مدرس و راهبر کاروان');
+    _resumeCtrl = TextEditingController(text: 'دارای سابقه فعالیت و راهبری در حوزه‌های آموزشی و مهارتی');
+
     _newPasswordCtrl = TextEditingController();
     _confirmPasswordCtrl = TextEditingController();
   }
@@ -69,6 +78,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _dobCtrl.dispose();
     _nationalIdCtrl.dispose();
     _addressCtrl.dispose();
+    _educationCtrl.dispose();
+    _jobCtrl.dispose();
+    _resumeCtrl.dispose();
     _newPasswordCtrl.dispose();
     _confirmPasswordCtrl.dispose();
     super.dispose();
@@ -89,6 +101,103 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (ctx) => _ChangeRequestSupportDialog(
         requestType: requestType,
         currentDate: _getPersianDate(),
+      ),
+    );
+  }
+
+  void _openFileUploadDialog({required String title}) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Dialog(
+          backgroundColor: const Color(0xFF28274A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'ارسال فایل $title',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1D36),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFC09268).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Column(
+                    children: const [
+                      Icon(Icons.cloud_upload_outlined, color: Color(0xFFC09268), size: 34),
+                      SizedBox(height: 8),
+                      Text(
+                        'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFFC7C5DD),
+                          fontSize: 11.5,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF6B68A8)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('فایل $title با موفقیت ضمیمه شد 📎', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                              backgroundColor: const Color(0xFF10B981),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFC09268),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -179,6 +288,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final mentorName = (widget.user.caravanMentor != null && widget.user.caravanMentor!.isNotEmpty)
         ? widget.user.caravanMentor!
         : 'راهبر کاروان';
+    final isMentor = widget.user.role == UserRole.mentor || widget.user.role == UserRole.superMentor;
 
     return AppScaffold(
       showBackButton: true,
@@ -266,30 +376,70 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Form Row 4 (Full-width): نام کاروان + دکمه درخواست تغییر کاروان
-                        _buildSpecialRequestField(
-                          label: 'نام کاروان',
-                          valueText: caravanName,
-                          buttonLabel: 'درخواست تغییر کاروان',
-                          onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر کاروان'),
-                        ),
-                        const SizedBox(height: 16),
+                        if (isMentor) ...[
+                          // Form Row 4 (Mentor): آدرس (زیر تاریخ تولد)
+                          _buildFormField(
+                            label: 'آدرس',
+                            controller: _addressCtrl,
+                            hintText: 'تهران، خیابان ولیعصر...',
+                          ),
+                          const SizedBox(height: 16),
 
-                        // Form Row 5 (Full-width): نام راهبر + دکمه درخواست تغییر راهبر
-                        _buildSpecialRequestField(
-                          label: 'نام راهبر',
-                          valueText: mentorName,
-                          buttonLabel: 'درخواست تغییر راهبر',
-                          onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر راهبر'),
-                        ),
-                        const SizedBox(height: 16),
+                          // Form Row 5 (Mentor): تحصیلات + دکمه ارسال فایل
+                          _buildFieldWithActionButton(
+                            label: 'تحصیلات',
+                            controller: _educationCtrl,
+                            hintText: 'کارشناسی ارشد مدیریت آموزشی',
+                            buttonLabel: 'ارسال فایل',
+                            onButtonPressed: () => _openFileUploadDialog(title: 'مدرک تحصیلی'),
+                          ),
+                          const SizedBox(height: 16),
 
-                        // Form Row 6 (Full-width): آدرس
-                        _buildFormField(
-                          label: 'آدرس',
-                          controller: _addressCtrl,
-                          hintText: 'تهران، خیابان ولیعصر...',
-                        ),
+                          // Form Row 6 (Mentor): شغل + دکمه ارسال فایل
+                          _buildFieldWithActionButton(
+                            label: 'شغل',
+                            controller: _jobCtrl,
+                            hintText: 'مدرس و راهبر کاروان',
+                            buttonLabel: 'ارسال فایل',
+                            onButtonPressed: () => _openFileUploadDialog(title: 'مستندات شغلی'),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Form Row 7 (Mentor): رزومه + دکمه ارسال فایل
+                          _buildFieldWithActionButton(
+                            label: 'رزومه',
+                            controller: _resumeCtrl,
+                            hintText: 'شرح سوابق و فعالیت‌های علمی و مهارتی...',
+                            buttonLabel: 'ارسال فایل',
+                            maxLines: 3,
+                            onButtonPressed: () => _openFileUploadDialog(title: 'رزومه کاری'),
+                          ),
+                        ] else ...[
+                          // Form Row 4 (Student): نام کاروان + دکمه درخواست تغییر کاروان
+                          _buildSpecialRequestField(
+                            label: 'نام کاروان',
+                            valueText: caravanName,
+                            buttonLabel: 'درخواست تغییر کاروان',
+                            onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر کاروان'),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Form Row 5 (Student): نام راهبر + دکمه درخواست تغییر راهبر
+                          _buildSpecialRequestField(
+                            label: 'نام راهبر',
+                            valueText: mentorName,
+                            buttonLabel: 'درخواست تغییر راهبر',
+                            onButtonPressed: () => _openChangeRequestDialog(requestType: 'درخواست تغییر راهبر'),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Form Row 6 (Student): آدرس
+                          _buildFormField(
+                            label: 'آدرس',
+                            controller: _addressCtrl,
+                            hintText: 'تهران، خیابان ولیعصر...',
+                          ),
+                        ],
                         const SizedBox(height: 22),
 
                         // Section: ایجاد / تغییر رمز عبور ثابت
@@ -598,6 +748,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A2835),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                      color: const Color(0xFFC09268),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      color: Color(0xFFE1BC96),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Field with Action Button (e.g. ارسال فایل for Education, Job, Resume)
+  Widget _buildFieldWithActionButton({
+    required String label,
+    required TextEditingController controller,
+    required String hintText,
+    required String buttonLabel,
+    required VoidCallback onButtonPressed,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6, right: 4),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF9E9BB8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+        ),
+
+        // Decorated Input Box with embedded action button
+        _buildDecoratedInputBox(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Row(
+            crossAxisAlignment: maxLines > 1 ? CrossAxisAlignment.end : CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  maxLines: maxLines,
+                  style: const TextStyle(
+                    color: Color(0xFFEAE8F8),
+                    fontSize: 13,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    hintText: hintText,
+                    hintStyle: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      fontSize: 12.5,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onButtonPressed,
+                child: Container(
+                  margin: EdgeInsets.only(bottom: maxLines > 1 ? 4 : 0),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
                   decoration: BoxDecoration(
                     color: const Color(0xFF2A2835),

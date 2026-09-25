@@ -1229,7 +1229,13 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
   void _showCreateChallengeDialog(BuildContext context, UserModel user) {
     final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
     final questionCtrl = TextEditingController(text: 'وقتی استاد سر کلاس نمیاد چکار میکنید شما؟');
-    final option1Ctrl = TextEditingController(text: '۱. سوال نداره میریم خونه');
+    final List<TextEditingController> optionControllers = [
+      TextEditingController(text: '۱. سوال نداره میریم خونه'),
+      TextEditingController(text: '۲. تکالیف جلسه بعد رو انجام میدیم'),
+      TextEditingController(text: '۳. با بچه‌ها تمرین مباحث قبلی رو انجام میدیم'),
+      TextEditingController(text: '۴. منتظر اعلام نماینده کلاس می‌مونیم'),
+    ];
+    int selectedCorrectOptionIndex = 0;
     final rewardCtrl = TextEditingController(text: '100');
     String selectedAsset = 'زریک';
     String selectedType = 'چند گزینه ای';
@@ -1507,81 +1513,138 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Field 9: گزینه ها
-                        _buildContactDialogFieldRow(
-                          label: 'گزینه‌ها:',
-                          isTopAligned: true,
-                          child: Column(
-                            children: [
-                              Container(
-                                height: 36,
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: const Color(0xFF7A709E),
-                                    width: 1.1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: option1Ctrl,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontFamily: AppTheme.fontFamily,
-                                          fontSize: 12.5,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          border: InputBorder.none,
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.zero,
-                                        ),
+                        // Field 9: گزینه ها (فقط در صورت انتخاب نوع چند گزینه‌ای)
+                        if (selectedType == 'چند گزینه ای') ...[
+                          _buildContactDialogFieldRow(
+                            label: 'گزینه‌ها:',
+                            isTopAligned: true,
+                            child: Column(
+                              children: [
+                                for (int i = 0; i < optionControllers.length; i++) ...[
+                                  Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: selectedCorrectOptionIndex == i
+                                            ? const Color(0xFFC09268)
+                                            : const Color(0xFF7A709E),
+                                        width: 1.1,
                                       ),
                                     ),
-                                    Container(
-                                      width: 14,
-                                      height: 14,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: const Color(0xFF9E9CD6),
-                                          width: 1.5,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: optionControllers[i],
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: AppTheme.fontFamily,
+                                              fontSize: 12.5,
+                                            ),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(vertical: 7),
+                                            ),
+                                          ),
                                         ),
+                                        if (optionControllers.length > 2) ...[
+                                          InkWell(
+                                            onTap: () {
+                                              setDialogState(() {
+                                                optionControllers.removeAt(i);
+                                                if (selectedCorrectOptionIndex >= optionControllers.length) {
+                                                  selectedCorrectOptionIndex = optionControllers.length - 1;
+                                                }
+                                              });
+                                            },
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                              child: Icon(
+                                                Icons.close_rounded,
+                                                color: const Color(0xFFE57373).withValues(alpha: 0.85),
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        // Radio Button to mark correct answer
+                                        GestureDetector(
+                                          onTap: () {
+                                            setDialogState(() {
+                                              selectedCorrectOptionIndex = i;
+                                            });
+                                          },
+                                          child: Container(
+                                            width: 22,
+                                            height: 22,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: selectedCorrectOptionIndex == i
+                                                  ? const Color(0xFFC09268).withValues(alpha: 0.2)
+                                                  : Colors.transparent,
+                                              border: Border.all(
+                                                color: selectedCorrectOptionIndex == i
+                                                    ? const Color(0xFFC09268)
+                                                    : const Color(0xFF9E9CD6),
+                                                width: selectedCorrectOptionIndex == i ? 2.0 : 1.4,
+                                              ),
+                                            ),
+                                            child: selectedCorrectOptionIndex == i
+                                                ? Center(
+                                                    child: Container(
+                                                      width: 10,
+                                                      height: 10,
+                                                      decoration: const BoxDecoration(
+                                                        shape: BoxShape.circle,
+                                                        color: Color(0xFFC09268),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 2),
+                                // + Add button
+                                GestureDetector(
+                                  onTap: () {
+                                    setDialogState(() {
+                                      final nextNumber = (optionControllers.length + 1).toString().toPersian();
+                                      optionControllers.add(TextEditingController(text: '$nextNumber. '));
+                                    });
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: Colors.transparent,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: const Color(0xFFC09268).withValues(alpha: 0.6),
+                                        width: 1.0,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              // + Add button
-                              GestureDetector(
-                                onTap: () {},
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF7A709E).withValues(alpha: 0.6),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.add,
-                                      color: Color(0xFF9E9CD6),
-                                      size: 20,
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.add,
+                                        color: Color(0xFFC09268),
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
 
                         const SizedBox(height: 24),
 
@@ -1868,6 +1931,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     required String label,
     required Widget child,
     bool isTopAligned = false,
+    Color labelBorderColor = const Color(0xFFC09268),
   }) {
     return Row(
       crossAxisAlignment: isTopAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
@@ -1879,7 +1943,7 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
             color: Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFF7A709E),
+              color: labelBorderColor,
               width: 1.1,
             ),
           ),

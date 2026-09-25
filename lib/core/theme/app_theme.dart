@@ -85,6 +85,9 @@ extension PersianNumberExtension on String {
     }
     return result;
   }
+
+  /// Short alias for toPersianDigits()
+  String toPersian() => toPersianDigits();
 }
 
 extension PersianNumExtension on num {

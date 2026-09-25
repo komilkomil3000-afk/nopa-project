@@ -10,7 +10,9 @@ import '../widgets/logout_dialog.dart';
 import '../widgets/safe_avatar.dart';
 import 'certificates_screen.dart';
 import 'edit_profile_screen.dart';
+import 'mentor_members_screen.dart';
 import '../widgets/app_scaffold.dart';
+import '../widgets/station_progress_stepper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -55,6 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final currentUser = repository.currentUser;
+    final bool isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
 
     return RefreshIndicator(
       onRefresh: () => Provider.of<AppRepository>(context, listen: false).refreshUser(),
@@ -68,39 +71,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             const SizedBox(height: 10),
 
-            // 1. User Info Card (Avatar with double ring & pencil badge on right, Name & Caravan on left)
-            _buildUserHeaderCard(currentUser),
+            // 1. User Info Card (Avatar with double ring & pencil badge on right, Name & Role/Caravan on left)
+            _buildUserHeaderCard(currentUser, isMentor: isMentor),
 
             const SizedBox(height: 16),
 
-            // 2. Edit Profile Item (Clean Row without box background)
-            _buildProfileMenuItem(
-              title: 'ویرایش اطلاعات',
-              svgAsset: 'assets/svg_icons/setting01.svg',
-              fallbackIcon: Icons.settings_rounded,
-              onTap: () => _openEditProfile(currentUser),
-            ),
-
-            // 3. Section: پیام ها (Messages / Notifications with Bell Icon)
-            _buildProfileMenuItem(
-              title: 'پیام ها',
-              svgAsset: '',
-              fallbackIcon: Icons.notifications_none_rounded,
-              onTap: () => Navigator.pushNamed(context, '/notifications'),
-            ),
+            // 2. Group 1:
+            // For Mentor: ویرایش اطلاعات + کاروان ها و اعضا
+            // For Student: ویرایش اطلاعات + پیام ها
+            if (isMentor) ...[
+              _buildProfileMenuItem(
+                title: 'ویرایش اطلاعات',
+                svgAsset: 'assets/svg_icons/setting01.svg',
+                fallbackIcon: Icons.settings_rounded,
+                onTap: () => _openEditProfile(currentUser),
+              ),
+              _buildProfileMenuItem(
+                title: 'کاروان ها و اعضا',
+                svgAsset: 'assets/svg_icons/widow01.svg',
+                fallbackIcon: Icons.grid_view_rounded,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MentorMembersScreen()),
+                ),
+              ),
+            ] else ...[
+              _buildProfileMenuItem(
+                title: 'ویرایش اطلاعات',
+                svgAsset: 'assets/svg_icons/setting01.svg',
+                fallbackIcon: Icons.settings_rounded,
+                onTap: () => _openEditProfile(currentUser),
+              ),
+              _buildProfileMenuItem(
+                title: 'پیام ها',
+                svgAsset: '',
+                fallbackIcon: Icons.notifications_none_rounded,
+                onTap: () => Navigator.pushNamed(context, '/notifications'),
+              ),
+            ],
 
             const SizedBox(height: 4),
             _buildSubtleDivider(),
             const SizedBox(height: 4),
 
-            // 4. Group 1: کارنامه و دستاوردها, گواهی ها, تیکت های شما
-            _buildGroupOneList(currentUser),
+            // 3. Group 2:
+            // For Mentor: کارنامه و دستاوردها + تیکت های شما
+            // For Student: کارنامه و دستاوردها + گواهی ها + تیکت های شما
+            _buildGroupOneList(currentUser, isMentor: isMentor),
 
             const SizedBox(height: 4),
             _buildSubtleDivider(),
             const SizedBox(height: 4),
 
-            // 5. Group 2: داستان, پشتیبانی و ارتباط با ما, خروج از حساب کاربری
+            // 4. Group 3: داستان + پشتیبانی و ارتباط با ما + خروج از حساب کاربری
             _buildGroupTwoList(currentUser),
 
             const SizedBox(height: 30),
@@ -111,11 +134,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// User Info Card: Avatar with edit pencil badge on right, Name & Subtitle on left
-  Widget _buildUserHeaderCard(UserModel user) {
-    final String displayName = user.name.isNotEmpty ? user.name : 'کمیل عباس';
-    final String caravanText = (user.caravanName != null && user.caravanName!.trim().isNotEmpty)
-        ? 'عضو کاروان ${user.caravanName}'
-        : 'عضو کاروان شماره پنجم';
+  Widget _buildUserHeaderCard(UserModel user, {bool isMentor = false}) {
+    final String displayName = user.name.isNotEmpty ? user.name : (isMentor ? 'رضا جلالی' : 'کمیل عباس');
+    final String subtitle = isMentor
+        ? (user.role == UserRole.superMentor ? 'سرراهبر' : 'مربی')
+        : ((user.caravanName != null && user.caravanName!.trim().isNotEmpty)
+            ? 'عضو کاروان ${user.caravanName}'
+            : 'عضو کاروان شماره پنجم');
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -201,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  caravanText,
+                  subtitle,
                   style: const TextStyle(
                     color: Color(0xFFB5B3C8),
                     fontSize: 12,
@@ -217,8 +242,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  /// Group 1: کارنامه و دستاوردها, گواهی ها, تیکت های شما
-  Widget _buildGroupOneList(UserModel user) {
+  /// Group 1: کارنامه و دستاوردها, گواهی ها (برای دانش‌آموز), تیکت های شما
+  Widget _buildGroupOneList(UserModel user, {bool isMentor = false}) {
     return Column(
       children: [
         _buildProfileMenuItem(
@@ -237,18 +262,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
-        _buildProfileMenuItem(
-          title: 'گواهی ها',
-          svgAsset: 'assets/svg_icons/digree .svg',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CertificatesScreen(user: user),
-              ),
-            );
-          },
-        ),
+        if (!isMentor)
+          _buildProfileMenuItem(
+            title: 'گواهی ها',
+            svgAsset: 'assets/svg_icons/digree .svg',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CertificatesScreen(user: user),
+                ),
+              );
+            },
+          ),
         _buildProfileMenuItem(
           title: 'تیکت های شما',
           svgAsset: 'assets/svg_icons/ticket01.svg',
@@ -370,7 +396,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // -----------------------------------------------------------------------------
 // NESTED SUB-SCREEN 1: کارنامه و دستاوردها (Report Card & Achievements)
 // -----------------------------------------------------------------------------
-class _ReportCardAndAchievementsScreen extends StatelessWidget {
+// -----------------------------------------------------------------------------
+// NESTED SUB-SCREEN 1: کارنامه و دستاوردها (Report Card & Achievements)
+// -----------------------------------------------------------------------------
+class _ReportCardAndAchievementsScreen extends StatefulWidget {
   final UserModel user;
   final List<Map<String, dynamic>> stations;
   final List<Map<String, dynamic>> progressList;
@@ -382,9 +411,58 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
   });
 
   @override
+  State<_ReportCardAndAchievementsScreen> createState() => _ReportCardAndAchievementsScreenState();
+}
+
+class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievementsScreen> {
+  final Set<int> _expandedStationIndices = {0};
+
+  List<Map<String, dynamic>> _getStationSessions(int stationIndex, Map<String, dynamic>? stationData) {
+    if (stationData != null && stationData['categories'] != null) {
+      final categories = stationData['categories'] as List? ?? [];
+      final List<Map<String, dynamic>> sessions = [];
+      for (final cat in categories) {
+        if (cat is Map && cat['sessions'] is List) {
+          sessions.addAll((cat['sessions'] as List).whereType<Map<String, dynamic>>());
+        }
+      }
+      if (sessions.isNotEmpty) return sessions;
+    }
+
+    // Default structured mock sessions per station
+    return [
+      {
+        'title': 'جلسه اول: شناخت مبانی و مهارت‌های فردی',
+        'subtitle': 'ویدیو آموزشی و بررسی مفاهیم',
+        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
+      },
+      {
+        'title': 'جلسه دوم: تحلیل چالش‌ها و کار تیمی کاروان',
+        'subtitle': 'تمرین عملی و سناریوهای حل مسئله',
+        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
+      },
+      {
+        'title': 'جلسه سوم: مهارت‌های رسانه‌ای و ارتباط موثر',
+        'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
+        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
+      },
+      {
+        'title': 'جلسه چهارم: آزمون پایانی و ارزیابی منزلگاه',
+        'subtitle': 'آزمون جامع و دریافت پاداش زریک',
+        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
+      },
+    ];
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final user = widget.user;
+    final stations = widget.stations;
+    final progressList = widget.progressList;
+
     int watchedClipsCount = progressList.where((p) => p['isWatched'] == true).length;
     int passedQuizzesCount = progressList.where((p) => p['quizPassed'] == true).length;
+    int certificatesCount = user.levelFrame > 1 ? (user.levelFrame - 1) : 0;
 
     return AppScaffold(
       showBackButton: true,
@@ -400,14 +478,18 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 1. Overall Progress Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF28274A),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                ),
+              // 1. Station Progress Stepper (استپر بالای منزلگاه)
+              StationProgressStepper(
+                currentStationIndex: (user.levelFrame - 1).clamp(0, 5),
+                userLevelFrame: user.levelFrame,
+                completedStationsCount: user.completedStationsCount,
+                title: 'منزلگاه‌های آموزشی مسافر',
+              ),
+
+              const SizedBox(height: 18),
+
+              // 2. Overall Progress Card (باکس وضعیت کلی با استایل مبادله)
+              _buildExchangeCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -425,24 +507,19 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
-                        _buildStatBox('ویدیوهای دیده‌شده', watchedClipsCount.toPersian()),
-                        _buildStatBox('آزمون‌های قبول‌شده', passedQuizzesCount.toPersian()),
+                        _buildStatBox('ویدیوها', watchedClipsCount.toPersian()),
+                        _buildStatBox('آزمون‌ها', passedQuizzesCount.toPersian()),
+                        _buildStatBox('گواهی‌نامه‌ها', certificatesCount.toPersian()),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // 2. Wealth & Assets Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF28274A),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                ),
+              // 3. Wealth & Assets Card (باکس دارایی‌ها با استایل مبادله)
+              _buildExchangeCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -469,16 +546,10 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // 3. Station Road Map Summary
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF28274A),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: const Color(0xFF453F73), width: 1.2),
-                ),
+              // 4. Station Road Map & Sessions Stepper (پیشرفت در منزلگاه‌ها با استایل مبادله)
+              _buildExchangeCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -491,49 +562,21 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
                         fontFamily: AppTheme.fontFamily,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 24,
-                              height: 24,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: (i + 1) <= user.levelFrame
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF383562),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  (i + 1) <= user.levelFrame
-                                      ? Icons.check_rounded
-                                      : Icons.lock_outline_rounded,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'منزلگاه ${i.toPersian()}: ${i < stations.length ? (stations[i]['title'] ?? '') : 'آموزش کاروان'}',
-                                style: TextStyle(
-                                  color: (i + 1) <= user.levelFrame ? Colors.white : Colors.white54,
-                                  fontSize: 12.5,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                    const SizedBox(height: 14),
+                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++) ...[
+                      _buildStationAccordionItem(
+                        index: i,
+                        stationData: i < stations.length ? stations[i] : null,
+                        userLevelFrame: user.levelFrame,
                       ),
+                      if (i < (stations.isNotEmpty ? stations.length : 6) - 1)
+                        const SizedBox(height: 10),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -541,12 +584,248 @@ class _ReportCardAndAchievementsScreen extends StatelessWidget {
     );
   }
 
+  /// Station Accordion Item with nested Stepper of sessions
+  Widget _buildStationAccordionItem({
+    required int index,
+    required Map<String, dynamic>? stationData,
+    required int userLevelFrame,
+  }) {
+    final bool isCompletedStation = (index + 1) < userLevelFrame;
+    final bool isCurrentStation = (index + 1) == userLevelFrame;
+    final bool isLocked = (index + 1) > userLevelFrame;
+    final bool isExpanded = _expandedStationIndices.contains(index);
+
+    final String stationTitle = stationData != null && stationData['title'] != null
+        ? stationData['title'].toString()
+        : 'منزلگاه ${index + 1}';
+
+    final sessions = _getStationSessions(index, stationData);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1D36),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isCurrentStation
+              ? const Color(0xFFDE9959).withValues(alpha: 0.6)
+              : const Color(0xFF453F73).withValues(alpha: 0.5),
+          width: 1.1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(13),
+        child: Column(
+          children: [
+            // Station Header Row (Tap to expand/collapse)
+            InkWell(
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedStationIndices.remove(index);
+                  } else {
+                    _expandedStationIndices.add(index);
+                  }
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    // Status Badge Icon
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCompletedStation
+                            ? const Color(0xFF10B981)
+                            : (isCurrentStation ? const Color(0xFFDE9959) : const Color(0xFF383562)),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          isCompletedStation
+                              ? Icons.check_rounded
+                              : (isCurrentStation ? Icons.play_arrow_rounded : Icons.lock_outline_rounded),
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Station Title
+                    Expanded(
+                      child: Text(
+                        'منزلگاه ${(index + 1).toPersian()}: $stationTitle',
+                        style: TextStyle(
+                          color: isLocked ? Colors.white54 : Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ),
+
+                    // Chevron Arrow
+                    Icon(
+                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: const Color(0xFF9E9CD6),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Expanded Sessions Stepper List
+            if (isExpanded) ...[
+              Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF161528),
+                  border: Border(top: BorderSide(color: Color(0xFF282542), width: 1.0)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  children: List.generate(sessions.length, (sIdx) {
+                    final session = sessions[sIdx];
+                    final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
+                    final isLastSession = sIdx == sessions.length - 1;
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stepper Node & Line on Right in RTL
+                        Column(
+                          children: [
+                            Container(
+                              width: 22,
+                              height: 22,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSessionCompleted
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF352F5A),
+                                border: Border.all(
+                                  color: isSessionCompleted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF8B88E8).withValues(alpha: 0.6),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isSessionCompleted ? Icons.check_rounded : Icons.play_arrow_rounded,
+                                  color: isSessionCompleted ? Colors.white : const Color(0xFFFFD580),
+                                  size: 13,
+                                ),
+                              ),
+                            ),
+                            if (!isLastSession)
+                              Container(
+                                width: 2,
+                                height: 32,
+                                color: isSessionCompleted
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                                    : const Color(0xFF383562),
+                              ),
+                          ],
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Session Title and Subtitle
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
+                                  style: TextStyle(
+                                    color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE),
+                                    fontSize: 12,
+                                    fontWeight: isSessionCompleted ? FontWeight.bold : FontWeight.w500,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  isSessionCompleted
+                                      ? 'مشاهده‌شده و تایید شده ✓'
+                                      : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
+                                  style: TextStyle(
+                                    color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
+                                    fontSize: 10.5,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Exchange Box Decoration (باکس قالب مبادله)
+  static Widget _buildExchangeCard({required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          stops: [0.0, 0.5, 1.0],
+          colors: [
+            Color(0xFF3A3A6A),
+            Color(0xFF9292E2),
+            Color(0xFF3A3A6A),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(1.2),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20.8),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.53, 1.0],
+            colors: [
+              Color(0xFF3D3C67),
+              Color(0xFF36345C),
+              Color(0xFF333359),
+            ],
+          ),
+        ),
+        child: child,
+      ),
+    );
+  }
+
   static Widget _buildStatBox(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+        Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
       ],
     );
   }

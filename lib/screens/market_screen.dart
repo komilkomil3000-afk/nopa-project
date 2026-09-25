@@ -494,9 +494,11 @@ class _MarketScreenState extends State<MarketScreen> {
               _buildRateSheetSection(),
               const SizedBox(height: 24),
 
-              // 3. Section 2: سرمایه های شما (Your Capital) or مجموع سرمایه های کاروان (for mentor)
-              _buildAssetsSection(user, isMentor: isMentor),
-              const SizedBox(height: 24),
+              // 3. Section 2: سرمایه های شما (Your Capital - only for student)
+              if (!isMentor) ...[
+                _buildAssetsSection(user, isMentor: isMentor),
+                const SizedBox(height: 24),
+              ],
 
               // 4. Section 3: مبادله (for students) or گزارش اعضا و مبادلات (for mentor)
               if (isMentor)
@@ -846,18 +848,103 @@ class _MarketScreenState extends State<MarketScreen> {
 
   /// List of Member Assets for Mentor
   Widget _buildMentorMembersReportList() {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _mentorMembersAssets.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final member = _mentorMembersAssets[index];
-        final memberId = member['id'] as String;
-        final isExpanded = _expandedMemberAssetIds.contains(memberId);
+    int totalZarik = 0;
+    int totalNakh = 0;
+    int totalFarsh = 0;
+    int totalBeyragh = 0;
+    for (final m in _mentorMembersAssets) {
+      totalZarik += (m['zarik'] as int? ?? 0);
+      totalNakh += (m['nakh'] as int? ?? 0);
+      totalFarsh += (m['farsh'] as int? ?? 0);
+      totalBeyragh += (m['beyragh'] as int? ?? 0);
+    }
 
-        return _buildMentorMemberAssetCard(member, memberId, isExpanded);
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _mentorMembersAssets.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final member = _mentorMembersAssets[index];
+            final memberId = member['id'] as String;
+            final isExpanded = _expandedMemberAssetIds.contains(memberId);
+
+            return _buildMentorMemberAssetCard(member, memberId, isExpanded);
+          },
+        ),
+        const SizedBox(height: 14),
+        // Compact textual summary of total assets under member reports box
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: const Color(0xFF282548).withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF6C649B).withValues(alpha: 0.28),
+                width: 0.9,
+              ),
+            ),
+            child: Wrap(
+              alignment: WrapAlignment.spaceAround,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 10,
+              runSpacing: 6,
+              children: [
+                Text(
+                  'مجموع سرمایه‌ها:',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFC5BEEB),
+                  ),
+                ),
+                Text(
+                  'زریک: ${totalZarik.toString().toPersian()}',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFFFD54F),
+                  ),
+                ),
+                Text(
+                  'نخ: ${totalNakh.toString().toPersian()}',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF81D4FA),
+                  ),
+                ),
+                Text(
+                  'فرش: ${totalFarsh.toString().toPersian()}',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFA5D6A7),
+                  ),
+                ),
+                Text(
+                  'درفش: ${totalBeyragh.toString().toPersian()}',
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFFFAB91),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

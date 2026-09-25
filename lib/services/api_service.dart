@@ -1289,6 +1289,22 @@ class HttpApiService {
   }
 
   // --- CARAVAN API ---
+  Future<List<Map<String, dynamic>>> getCaravans() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/caravans'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data.whereType<Map<String, dynamic>>());
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('HTTP getCaravans error: $e');
+      return [];
+    }
+  }
+
   Future<Map<String, dynamic>?> getCaravanDetails(String caravanId) async {
     try {
       final response = await _get(Uri.parse('$baseUrl/caravans/$caravanId'), headers: _getHeaders());
@@ -1299,6 +1315,32 @@ class HttpApiService {
     } catch (e) {
       debugPrint('HTTP getCaravanDetails error: $e');
       return null;
+    }
+  }
+
+  Future<bool> removeMemberFromCaravan(String caravanId, String studentId) async {
+    try {
+      final response = await _delete(
+        Uri.parse('$baseUrl/caravans/$caravanId/members/$studentId'),
+        headers: _getHeaders(),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('HTTP removeMemberFromCaravan error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> addMemberToCaravan(String caravanId, String studentId) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/caravans/$caravanId/members/$studentId'),
+        headers: _getHeaders(),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('HTTP addMemberToCaravan error: $e');
+      return false;
     }
   }
 
@@ -1709,6 +1751,20 @@ class HttpApiService {
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('resolveTicket error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> savePrivateNote(String studentId, String noteText) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/mentors/notes'),
+        headers: _getHeaders(),
+        body: jsonEncode({'studentId': studentId, 'noteText': noteText}),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('savePrivateNote error: $e');
       return false;
     }
   }

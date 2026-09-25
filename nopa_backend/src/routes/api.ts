@@ -17,7 +17,7 @@ import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
 import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
-import { convertAssets, getCaravanAssetConversions, submitStudentAssetConversion, approveAssetConversion } from '../controllers/caravanController';
+import { convertAssets, getCaravanAssetConversions, submitStudentAssetConversion, approveAssetConversion, getCaravans, getCaravanDetails, removeMemberFromCaravan, addMemberToCaravan } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
 import { 
@@ -112,6 +112,10 @@ router.post('/support/tickets/:id/reply', authenticateJWT as any, replyTicket as
 router.patch('/support/tickets/:id/resolve', authenticateJWT as any, resolveTicket as any);
 
 // L. Caravans & Assets
+router.get('/caravans', authenticateJWT as any, getCaravans as any);
+router.get('/caravans/:id', authenticateJWT as any, getCaravanDetails as any);
+router.delete('/caravans/:id/members/:studentId', authenticateJWT as any, authorizeRoles('mentor', 'admin', 'SUPER_MENTOR') as any, removeMemberFromCaravan as any);
+router.post('/caravans/:id/members/:studentId', authenticateJWT as any, authorizeRoles('mentor', 'admin', 'SUPER_MENTOR') as any, addMemberToCaravan as any);
 router.post('/caravans/convert-assets', authenticateJWT as any, convertAssets as any);
 router.get('/caravans/asset-conversions', authenticateJWT as any, getCaravanAssetConversions as any);
 router.post('/caravans/submit-exchange', authenticateJWT as any, submitStudentAssetConversion as any);
