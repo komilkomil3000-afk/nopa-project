@@ -96,10 +96,11 @@ router.patch('/support/tickets/:id/resolve', auth_1.authenticateJWT, supportCont
 // L. Caravans & Assets
 router.post('/caravans/convert-assets', auth_1.authenticateJWT, caravanController_1.convertAssets);
 // Mentor Workspace Routes
-router.post('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.createMentorChallenge);
-router.get('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.getMentorChallenges);
-router.get('/mentor/challenges/:id/submissions', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.getChallengeSubmissions);
-router.post('/mentor/submissions/:id/review', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.reviewChallengeSubmission);
-router.get('/mentor/tickets/:id', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.getMentorTicketDetails);
-router.post('/mentor/tickets/:id/messages', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor'), mentorWorkspaceController_1.replyMentorTicket);
+router.post('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.createMentorChallenge);
+router.get('/mentor/challenges', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.getMentorChallenges);
+router.get('/mentor/challenges/:id/submissions', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.getChallengeSubmissions);
+router.post('/mentor/submissions/:id/review', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.reviewChallengeSubmission);
+router.get('/mentor/tickets/:id', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.getMentorTicketDetails);
+router.post('/mentor/tickets/:id/messages', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin'), mentorWorkspaceController_1.replyMentorTicket);
+router.get('/mentor/caravan-progress', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'SUPER_MENTOR', 'admin'), mentorWorkspaceController_1.getMentorCaravanProgress);
 exports.default = router;

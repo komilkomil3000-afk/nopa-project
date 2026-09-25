@@ -15,9 +15,7 @@ import 'screens/market_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/class1/class1_screen.dart';
 import 'screens/class2/class2_screen.dart';
-import 'screens/mentor_dashboard_screen.dart';
-import 'screens/mentor_members_screen.dart';
-import 'screens/mentor_tasks_screen.dart';
+import 'screens/mentor_station_screen.dart';
 import 'screens/mentor_ratings_detail_screen.dart';
 import 'screens/mentor_league_screen.dart';
 import 'screens/mentor_workbench_screen.dart';
@@ -196,9 +194,10 @@ class MainScreenState extends State<MainScreen> {
 
     final List<Widget> screens = userRole == UserRole.mentor || userRole == UserRole.superMentor
         ? [
-            const MentorDashboardScreen(),
-            const MentorMembersScreen(),
-            const MentorTasksScreen(),
+            const HomeScreen(),
+            const MentorStationScreen(),
+            const ChallengesScreen(),
+            const MarketScreen(),
             const ProfileScreen(),
           ]
         : [

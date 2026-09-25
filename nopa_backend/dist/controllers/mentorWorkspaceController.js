@@ -9,6 +9,7 @@ exports.getChallengeSubmissions = getChallengeSubmissions;
 exports.reviewChallengeSubmission = reviewChallengeSubmission;
 exports.getMentorTicketDetails = getMentorTicketDetails;
 exports.replyMentorTicket = replyMentorTicket;
+exports.getMentorCaravanProgress = getMentorCaravanProgress;
 const db_1 = __importDefault(require("../config/db"));
 async function createMentorChallenge(req, res) {
     try {
@@ -163,6 +164,73 @@ async function replyMentorTicket(req, res) {
             data: { status: 'answered', updatedAt: new Date() }
         });
         res.json(reply);
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getMentorCaravanProgress(req, res) {
+    try {
+        const userId = req.user.id;
+        // Find mentor's caravan
+        const caravan = await db_1.default.caravan.findFirst({
+            where: {
+                OR: [
+                    { mentorId: userId },
+                    { members: { some: { id: userId } } }
+                ]
+            },
+            include: {
+                members: {
+                    where: { role: 'student' },
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarUrl: true,
+                        phoneNumber: true,
+                        zarikBalance: true,
+                        levelFrame: true
+                    }
+                }
+            }
+        });
+        // Fetch all stations with categories, sessions, clips, quizzes
+        const stations = await db_1.default.station.findMany({
+            include: {
+                categories: {
+                    include: {
+                        sessions: {
+                            include: {
+                                videoClips: { orderBy: { clipOrder: 'asc' } },
+                                quizzes: true
+                            },
+                            orderBy: { orderIndex: 'asc' }
+                        }
+                    },
+                    orderBy: { orderIndex: 'asc' }
+                }
+            },
+            orderBy: { orderIndex: 'asc' }
+        });
+        // Get watch records & quiz submissions for all caravan members
+        const memberIds = caravan ? caravan.members.map(m => m.id) : [];
+        const watchRecords = await db_1.default.sessionWatchRecord.findMany({
+            where: { userId: { in: memberIds } }
+        });
+        const quizSubmissions = await db_1.default.quizSubmission.findMany({
+            where: { studentId: { in: memberIds } }
+        });
+        res.json({
+            caravan: caravan ? {
+                id: caravan.id,
+                name: caravan.name,
+                memberCount: caravan.members.length
+            } : null,
+            members: caravan ? caravan.members : [],
+            stations,
+            watchRecords,
+            quizSubmissions
+        });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

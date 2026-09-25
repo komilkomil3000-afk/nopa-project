@@ -169,3 +169,77 @@ export async function replyMentorTicket(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+
+export async function getMentorCaravanProgress(req: AuthRequest, res: Response) {
+  try {
+    const userId = req.user!.id;
+    
+    // Find mentor's caravan
+    const caravan = await prisma.caravan.findFirst({
+      where: {
+        OR: [
+          { mentorId: userId },
+          { members: { some: { id: userId } } }
+        ]
+      },
+      include: {
+        members: {
+          where: { role: 'student' },
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+            phoneNumber: true,
+            zarikBalance: true,
+            levelFrame: true
+          }
+        }
+      }
+    });
+
+    // Fetch all stations with categories, sessions, clips, quizzes
+    const stations = await prisma.station.findMany({
+      include: {
+        categories: {
+          include: {
+            sessions: {
+              include: {
+                videoClips: { orderBy: { clipOrder: 'asc' } },
+                quizzes: true
+              },
+              orderBy: { orderIndex: 'asc' }
+            }
+          },
+          orderBy: { orderIndex: 'asc' }
+        }
+      },
+      orderBy: { orderIndex: 'asc' }
+    });
+
+    // Get watch records & quiz submissions for all caravan members
+    const memberIds = caravan ? caravan.members.map(m => m.id) : [];
+    
+    const watchRecords = await prisma.sessionWatchRecord.findMany({
+      where: { userId: { in: memberIds } }
+    });
+
+    const quizSubmissions = await prisma.quizSubmission.findMany({
+      where: { studentId: { in: memberIds } }
+    });
+
+    res.json({
+      caravan: caravan ? {
+        id: caravan.id,
+        name: caravan.name,
+        memberCount: caravan.members.length
+      } : null,
+      members: caravan ? caravan.members : [],
+      stations,
+      watchRecords,
+      quizSubmissions
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+

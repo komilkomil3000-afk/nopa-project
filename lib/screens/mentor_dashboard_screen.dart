@@ -83,7 +83,7 @@ class _MentorDashboardScreenState extends State<MentorDashboardScreen> {
                         const Color(0xFF3B82F6),
                         currentUser.managedMembersCount / 25.0, // assuming 25 capacity
                         onTap: () {
-                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(1); // MentorMembersScreen
+                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(3); // MentorMembersScreen
                         },
                       ),
                       _buildStatCard(

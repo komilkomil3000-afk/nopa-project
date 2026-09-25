@@ -8,6 +8,7 @@ import '../services/app_state_repository.dart';
 import '../services/api_service.dart';
 import '../models/models.dart';
 import '../core/theme/app_theme.dart';
+import 'mentor_challenge_details_screen.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -19,6 +20,8 @@ class ChallengesScreen extends StatefulWidget {
 class _ChallengesScreenState extends State<ChallengesScreen> {
   // 0: فردی, 1: گروهی, 2: میان گروهی
   int _selectedCategoryIndex = 0;
+  // 0: درون گروهی, 1: میان گروهی (ویژه راهبر)
+  int _mentorSelectedCategoryIndex = 0;
   final Set<String> _expandedChallengeIds = {};
 
   late final PageController _bannerPageCtrl;
@@ -716,9 +719,91 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
     );
   }
 
+  List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
+    return [
+      {
+        'id': 'm_ch_1',
+        'title': 'پوسترینو',
+        'creatorName': 'آقای جلالی',
+        'statusTag': 'جدید',
+        'statusColor': const Color(0xFF22C55E),
+        'reward': 50,
+        'typeLabel': 'تستی',
+        'createdDate': '15/08/1405',
+        'durationDays': 5,
+        'category': 'intra_group', // درون گروهی
+        'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
+        'actionLabel': 'شرکت',
+      },
+      {
+        'id': 'm_ch_2',
+        'title': 'پوسترینو',
+        'creatorName': 'آقای جلالی',
+        'statusTag': 'نیاز به اصلاح',
+        'statusColor': const Color(0xFFEAB308),
+        'reward': 40,
+        'typeLabel': 'تشریحی',
+        'createdDate': '12/08/1405',
+        'durationDays': 3,
+        'category': 'intra_group',
+        'desc': 'لطفاً پاسخ ارسالی را بر اساس بازخورد داده شده ویرایش و دوباره ارسال نمایید.',
+        'actionLabel': 'ویرایش پاسخ',
+      },
+      {
+        'id': 'm_ch_3',
+        'title': 'پوسترینو',
+        'creatorName': 'آقای جلالی',
+        'statusTag': 'منقضی',
+        'statusColor': const Color(0xFF9E9AC0),
+        'reward': 30,
+        'typeLabel': 'فایلی',
+        'createdDate': '01/08/1405',
+        'durationDays': 0,
+        'category': 'intra_group',
+        'desc': 'مهلت این چالش به پایان رسیده است.',
+        'actionLabel': 'مشاهده',
+      },
+      {
+        'id': 'm_ch_4',
+        'title': 'طراحی لوگوی کاروان',
+        'creatorName': 'آقای جلالی',
+        'statusTag': 'گروهی',
+        'statusColor': const Color(0xFFDFB690),
+        'reward': 50,
+        'typeLabel': 'گروهی',
+        'createdDate': '15/08/1405',
+        'durationDays': 5,
+        'category': 'intra_group',
+        'desc': 'سلام بچه‌ها، قراره به بررسی گروهی بپردازیم و ببینیم هر کدوم از دوستان چه قابلیت‌هایی دارن. پس لطفاً بیایید داخل گروه تا ببینیم هرکسی چه فعالیت‌هایی بلده و کجاهای مسیر می‌تونیم ازش استفاده کنیم...',
+        'actionLabel': 'تایید و رفتن به گروه',
+      },
+      {
+        'id': 'm_ch_5',
+        'title': 'مناظره علمی کاروان‌ها',
+        'creatorName': 'آقای جلالی',
+        'statusTag': 'جدید',
+        'statusColor': const Color(0xFF22C55E),
+        'reward': 100,
+        'typeLabel': 'بین‌کاروانی',
+        'createdDate': '16/08/1405',
+        'durationDays': 7,
+        'category': 'inter_group', // میان گروهی
+        'desc': 'رقابت و مناظره تیمی میان کاروان‌های منتخب دوره.',
+        'actionLabel': 'ورود به تالار مناظره',
+      },
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
+    final user = repository.currentUser;
+    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+
+    if (isMentor) {
+      return _buildMentorChallengesView(context, repository, user);
+    }
+
     final allChallenges = _getChallenges(repository);
 
     // Filter by selected category (0: فردی, 1: گروهی, 2: میان گروهی)
@@ -782,6 +867,1063 @@ class _ChallengesScreenState extends State<ChallengesScreen> {
       ),
     );
   }
+
+  Widget _buildMentorChallengesView(
+    BuildContext context,
+    AppRepository repository,
+    UserModel user,
+  ) {
+    final mentorChallenges = _getMentorChallenges(repository);
+    final filtered = mentorChallenges.where((c) {
+      if (_mentorSelectedCategoryIndex == 0) {
+        return c['category'] == 'intra_group';
+      } else {
+        return c['category'] == 'inter_group';
+      }
+    }).toList();
+
+    final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
+
+    return RefreshIndicator(
+      color: const Color(0xFFCD8449),
+      backgroundColor: const Color(0xFF231C38),
+      onRefresh: () async {
+        await repository.refreshChallenges();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Caravan Name Subtitle on right
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
+                child: Text(
+                  caravanName,
+                  style: TextStyle(
+                    fontFamily: AppTheme.fontFamily,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF9E9AC0).withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
+            ),
+
+            // Top Action Buttons: [ + ایجاد چالش جدید ] [ + ایجاد پیام ]
+            Row(
+              children: [
+                Expanded(
+                  child: _buildMentorHeaderButton(
+                    title: 'ایجاد پیام',
+                    onTap: () => _showCreateMessageDialog(context, user),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildMentorHeaderButton(
+                    title: 'ایجاد چالش جدید',
+                    onTap: () => _showCreateChallengeDialog(context, user),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Mentor Category Tabs: [درون گروهی] [میان گروهی]
+            _buildMentorCategoryTabsBar(),
+
+            const SizedBox(height: 18),
+
+            // Challenge Cards List
+            if (filtered.isEmpty)
+              _buildEmptyState()
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filtered.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final item = filtered[index];
+                  final String id = item['id']?.toString() ?? 'm_ch_$index';
+                  return _buildMentorChallengeCard(
+                    context: context,
+                    user: user,
+                    item: item,
+                    id: id,
+                  );
+                },
+              ),
+
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMentorHeaderButton({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2835),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: const Color(0xFFC09268),
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add, color: Color(0xFFE1BC96), size: 18),
+            const SizedBox(width: 6),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFE1BC96),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMentorCategoryTabsBar() {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              // درون گروهی
+              GestureDetector(
+                onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    'درون گروهی',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _mentorSelectedCategoryIndex == 0
+                          ? const Color(0xFFDFB690)
+                          : const Color(0xFF8E88B0),
+                    ),
+                  ),
+                ),
+              ),
+              // میان گروهی
+              GestureDetector(
+                onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Text(
+                    'میان گروهی',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _mentorSelectedCategoryIndex == 1
+                          ? const Color(0xFFDFB690)
+                          : const Color(0xFF8E88B0),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Subtle gradient divider line
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.0),
+                  Colors.white.withValues(alpha: 0.15),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMentorChallengeCard({
+    required BuildContext context,
+    required UserModel user,
+    required Map<String, dynamic> item,
+    required String id,
+  }) {
+    final title = item['title'] ?? '';
+    final creator = item['creatorName'] ?? 'آقای جلالی';
+    final statusTag = item['statusTag'] ?? '';
+    final statusColor = item['statusColor'] as Color? ?? const Color(0xFF22C55E);
+    final reward = item['reward'] ?? 50;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF221E3F).withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF3B3564).withValues(alpha: 0.7),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MentorChallengeDetailsScreen(
+                    challenge: item,
+                    user: user,
+                  ),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(
+                children: [
+                  // 1. Right Side in RTL: Title & Creator (تیتر در سمت راست)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'ایجاد شده توسط $creator',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // 2. Left Side in RTL: Status Tag -> Reward Amount -> Arrow (تگ و سرمایه هدیه در سمت چپ)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Status Tag (تگ در سمت چپ)
+                      if (statusTag.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: statusColor.withValues(alpha: 0.45),
+                              width: 0.9,
+                            ),
+                          ),
+                          child: Text(
+                            statusTag,
+                            style: TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+
+                      // Reward (میزان سرمایه هدیه در سمت چپ)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '+${reward.toString().toPersianDigits()}',
+                            style: const TextStyle(
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFDFB690),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          SvgPicture.asset(
+                            'assets/svg_icons/challeng01.svg',
+                            width: 13,
+                            height: 13,
+                            colorFilter: const ColorFilter.mode(
+                              Color(0xFFDFB690),
+                              BlendMode.srcIn,
+                            ),
+                            errorBuilder: (ctx, err, stack) => Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Color(0xFFDFB690),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Chevron Left
+                      const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: Color(0xFF9E9CD6),
+                        size: 15,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCreateChallengeDialog(BuildContext context, UserModel user) {
+    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
+    final questionCtrl = TextEditingController(text: 'وقتی استاد سر کلاس نمیاد چکار میکنید شما؟');
+    final option1Ctrl = TextEditingController(text: '۱. سوال نداره میریم خونه');
+    final rewardCtrl = TextEditingController(text: '100');
+    String selectedAsset = 'زریک';
+    String selectedType = 'چند گزینه ای';
+    String selectedAudience = 'همه اعضا';
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return Directionality(
+              textDirection: TextDirection.rtl,
+              child: Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2849),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header: Fire icon on right and Centered Title (Matching ContactUsDialog)
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Align(
+                              alignment: Alignment.centerRight,
+                              child: Icon(
+                                Icons.local_fire_department_rounded,
+                                color: Color(0xFF9E9CD6),
+                                size: 34,
+                              ),
+                            ),
+                            const Text(
+                              'ایجاد چالش',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        // Field 1: ایجاد کننده
+                        _buildContactDialogFieldRow(
+                          label: 'ایجاد کننده:',
+                          child: _buildContactDialogValueText(user.name),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 2: نام کاروان
+                        _buildContactDialogFieldRow(
+                          label: 'نام کاروان:',
+                          child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 3: دریافت کننده
+                        _buildContactDialogFieldRow(
+                          label: 'دریافت کننده:',
+                          child: _buildContactDialogValueText(selectedAudience),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 4: تاریخ
+                        _buildContactDialogFieldRow(
+                          label: 'تاریخ:',
+                          child: _buildContactDialogValueText('1405/05/05'),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 5: جایزه (Amount + Asset)
+                        _buildContactDialogFieldRow(
+                          label: 'جایزه:',
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Container(
+                                  height: 36,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFF7A709E),
+                                      width: 1.1,
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: rewardCtrl,
+                                    textAlign: TextAlign.center,
+                                    keyboardType: TextInputType.number,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: AppTheme.fontFamily,
+                                      fontSize: 13,
+                                    ),
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 2,
+                                child: Container(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFF7A709E),
+                                      width: 1.1,
+                                    ),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: selectedAsset,
+                                      dropdownColor: const Color(0xFF2C2849),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: AppTheme.fontFamily,
+                                        fontSize: 12,
+                                      ),
+                                      icon: const Icon(
+                                        Icons.keyboard_arrow_down,
+                                        color: Color(0xFF9E9CD6),
+                                        size: 18,
+                                      ),
+                                      isExpanded: true,
+                                      items: ['زریک', 'نخ', 'فرش']
+                                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                          .toList(),
+                                      onChanged: (v) {
+                                        if (v != null) setDialogState(() => selectedAsset = v);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 6: نوع
+                        _buildContactDialogFieldRow(
+                          label: 'نوع:',
+                          child: Container(
+                            height: 36,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF7A709E),
+                                width: 1.1,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: selectedType,
+                                dropdownColor: const Color(0xFF2C2849),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 12.5,
+                                ),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Color(0xFF9E9CD6),
+                                  size: 18,
+                                ),
+                                isExpanded: true,
+                                items: ['چند گزینه ای', 'تشریحی', 'فایلی']
+                                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                    .toList(),
+                                onChanged: (v) {
+                                  if (v != null) setDialogState(() => selectedType = v);
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 7: تیتر:
+                        _buildContactDialogFieldRow(
+                          label: 'تیتر:',
+                          child: Container(
+                            height: 38,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF7A709E),
+                                width: 1.1,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: TextField(
+                              controller: titleCtrl,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 13,
+                              ),
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 8: متن سوال اول
+                        _buildContactDialogFieldRow(
+                          label: 'متن سوال:',
+                          isTopAligned: true,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF7A709E),
+                                width: 1.1,
+                              ),
+                            ),
+                            child: TextField(
+                              controller: questionCtrl,
+                              maxLines: 2,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: AppTheme.fontFamily,
+                                fontSize: 12.5,
+                              ),
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Field 9: گزینه ها
+                        _buildContactDialogFieldRow(
+                          label: 'گزینه‌ها:',
+                          isTopAligned: true,
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 36,
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFF7A709E),
+                                    width: 1.1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: option1Ctrl,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 12.5,
+                                        ),
+                                        decoration: const InputDecoration(
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: const Color(0xFF9E9CD6),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // + Add button
+                              GestureDetector(
+                                onTap: () {},
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: const Color(0xFF7A709E).withValues(alpha: 0.6),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.add,
+                                      color: Color(0xFF9E9CD6),
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Bottom Actions: ارسال & لغو (Matching ContactUsDialog)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // ارسال (Right in RTL)
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆',
+                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                    ),
+                                    backgroundColor: const Color(0xFF10B981),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              child: const Text(
+                                'ارسال',
+                                style: TextStyle(
+                                  color: Color(0xFF9E9CD6),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                            ),
+
+                            // لغو (Left in RTL)
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              child: const Text(
+                                'لغو',
+                                style: TextStyle(
+                                  color: Color(0xFF9E9CD6),
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showCreateMessageDialog(BuildContext context, UserModel user) {
+    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
+    final messageCtrl = TextEditingController(text: 'بچه بیاید توی گروه کلی صحبت باهاتون دارم گلای من');
+    String selectedAudience = 'همه اعضا';
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2849),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header: Message Icon on right and Centered Title (Matching ContactUsDialog)
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            color: Color(0xFF9E9CD6),
+                            size: 32,
+                          ),
+                        ),
+                        const Text(
+                          'ایجاد پیام',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // Field 1: ایجاد کننده
+                    _buildContactDialogFieldRow(
+                      label: 'ایجاد کننده:',
+                      child: _buildContactDialogValueText(user.name),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Field 2: نام کاروان
+                    _buildContactDialogFieldRow(
+                      label: 'نام کاروان:',
+                      child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Field 3: دریافت کننده
+                    _buildContactDialogFieldRow(
+                      label: 'دریافت کننده:',
+                      child: _buildContactDialogValueText(selectedAudience),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Field 4: تاریخ
+                    _buildContactDialogFieldRow(
+                      label: 'تاریخ:',
+                      child: _buildContactDialogValueText('1405/05/05'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Field 5: تیتر:
+                    _buildContactDialogFieldRow(
+                      label: 'تیتر:',
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF7A709E),
+                            width: 1.1,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: TextField(
+                          controller: titleCtrl,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 13,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Field 6: متن پیام
+                    _buildContactDialogFieldRow(
+                      label: 'متن پیام:',
+                      isTopAligned: true,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF7A709E),
+                            width: 1.1,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: messageCtrl,
+                          maxLines: 3,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 12.5,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Bottom Actions: ارسال & لغو (Matching ContactUsDialog)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // ارسال (Right in RTL)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️',
+                                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                ),
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text(
+                            'ارسال',
+                            style: TextStyle(
+                              color: Color(0xFF9E9CD6),
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                        ),
+
+                        // لغو (Left in RTL)
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          child: const Text(
+                            'لغو',
+                            style: TextStyle(
+                              color: Color(0xFF9E9CD6),
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Reusable Field Row matching ContactUsDialog specification
+  Widget _buildContactDialogFieldRow({
+    required String label,
+    required Widget child,
+    bool isTopAligned = false,
+  }) {
+    return Row(
+      crossAxisAlignment: isTopAligned ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
+        // Label Pill on Right (First child in RTL)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6.5),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF7A709E),
+              width: 1.1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFDDD9EE),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // Value / Input on Left (Second child in RTL)
+        Expanded(child: child),
+      ],
+    );
+  }
+
+  /// Reusable Text Value for ContactUsDialog style fields
+  Widget _buildContactDialogValueText(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        fontFamily: AppTheme.fontFamily,
+      ),
+    );
+  }
+
 
   /// Clean Banner Slider (No text overlay) with 3 animated indicator dots
   Widget _buildStationBannerSlider() {

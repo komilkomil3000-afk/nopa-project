@@ -10,7 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class HttpApiService {
   static const String _cachedHostKey = 'cached_backend_host';
-  static const String _defaultHost = '192.168.100.51';
+  static const String _defaultHost = ApiConstants.hostIp;
   static final String _envHost = const String.fromEnvironment('NOPA_BACKEND_HOST');
 
   static final HttpApiService _instance = HttpApiService._internal();
@@ -23,7 +23,7 @@ class HttpApiService {
 
   String _activeHost = _defaultHost;
   String get activeHost => _activeHost;
-  late String _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
+  late String _activeBaseUrl = ApiConstants.baseUrl;
   String get baseUrl => _activeBaseUrl;
 
   String? _token;
@@ -161,11 +161,12 @@ class HttpApiService {
 
     try {
       final refreshUrl = Uri.parse('$baseUrl/auth/refresh');
+      debugPrint('🔄 [HttpApiService] Silent refresh requesting: POST $refreshUrl');
       final res = await http.post(
         refreshUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refreshToken': _refreshToken}),
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(const Duration(seconds: 20));
 
       if (res.statusCode == 200) {
         final dynamic parsed = await parseJsonAsync(res.body);
@@ -217,6 +218,8 @@ class HttpApiService {
     Object? body,
     bool checkAuth = true,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    debugPrint('🌐 [HttpApiService] ➡️ $method $url');
     try {
       if (checkAuth) {
         onActivity?.call();
@@ -226,44 +229,46 @@ class HttpApiService {
 
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 20));
           break;
         case 'POST':
-          response = await http.post(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          response = await http.post(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
           break;
         case 'PATCH':
-          response = await http.patch(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          response = await http.patch(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
           break;
         case 'DELETE':
-          response = await http.delete(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          response = await http.delete(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
           break;
         case 'PUT':
-          response = await http.put(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
+          response = await http.put(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
           break;
         default:
-          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 20));
       }
+
+      debugPrint('📡 [HttpApiService] ⬅️ $method $url -> Status: ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)');
 
       // If 401 occurs on an authenticated route, attempt silent refresh and replay once seamlessly
       if (checkAuth && response.statusCode == 401) {
         debugPrint('🔄 [HttpApiService] 401 encountered for $url. Initiating silent refresh...');
         final bool refreshed = await silentRefreshToken();
         if (refreshed && _token != null) {
-          debugPrint('🔁 [HttpApiService] Replaying original $method request after silent refresh...');
+          debugPrint('🔁 [HttpApiService] Replaying original $method request after silent refresh: $url');
           final replayedHeaders = Map<String, String>.from(headers ?? _getHeaders());
           replayedHeaders['Authorization'] = 'Bearer $_token';
 
           switch (method.toUpperCase()) {
             case 'GET':
-              return await http.get(url, headers: replayedHeaders).timeout(const Duration(seconds: 15));
+              return await http.get(url, headers: replayedHeaders).timeout(const Duration(seconds: 20));
             case 'POST':
-              return await http.post(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+              return await http.post(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
             case 'PATCH':
-              return await http.patch(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+              return await http.patch(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
             case 'DELETE':
-              return await http.delete(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+              return await http.delete(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
             case 'PUT':
-              return await http.put(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
+              return await http.put(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
           }
         } else {
           handleUnauthorized();
@@ -272,13 +277,13 @@ class HttpApiService {
 
       return response;
     } on SocketException catch (e) {
-      debugPrint('⚠️ [HttpApiService] Network drop / SocketException for $url: $e');
+      debugPrint('⚠️ [HttpApiService] ❌ Network drop / SocketException for $url (${stopwatch.elapsedMilliseconds}ms): $e');
       return http.Response('{"error":"Network connection lost. Please check your internet.","offline":true}', 503);
     } on TimeoutException catch (e) {
-      debugPrint('⚠️ [HttpApiService] Request timeout for $url: $e');
+      debugPrint('⚠️ [HttpApiService] ⏱️ TIMEOUT ($method $url) after ${stopwatch.elapsedMilliseconds}ms: $e');
       return http.Response('{"error":"Request timed out. Please try again.","timeout":true}', 504);
     } catch (e) {
-      debugPrint('⚠️ [HttpApiService] Network exception for $url: $e');
+      debugPrint('⚠️ [HttpApiService] ❌ Network exception for $url (${stopwatch.elapsedMilliseconds}ms): $e');
       return http.Response('{"error":"Network communication failed: $e"}', 500);
     }
   }
@@ -420,6 +425,8 @@ class HttpApiService {
 
   // Auth & Login
   Future<Map<String, dynamic>> verifyPhone(String phoneNumber, {String? websiteSource}) async {
+    final targetUrl = Uri.parse('$baseUrl/auth/verify-phone');
+    debugPrint('📱 [HttpApiService:VerifyPhone] Requesting $targetUrl for phone: $phoneNumber');
     try {
       final bodyMap = <String, dynamic>{'phoneNumber': phoneNumber};
       if (websiteSource != null) {
@@ -427,7 +434,7 @@ class HttpApiService {
       }
 
       final response = await _post(
-        Uri.parse('$baseUrl/auth/verify-phone'),
+        targetUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(bodyMap),
         checkAuth: false,
@@ -487,13 +494,15 @@ class HttpApiService {
   }
 
   Future<dynamic> login(String phoneNumber, {String? password, String? role}) async {
+    final targetUrl = Uri.parse('$baseUrl/auth/login');
+    debugPrint('🔑 [HttpApiService:Login] Requesting $targetUrl for phone: $phoneNumber');
     try {
       final bodyMap = <String, dynamic>{'phoneNumber': phoneNumber};
       if (password != null) bodyMap['password'] = password;
       if (role != null) bodyMap['role'] = role;
       
       final response = await _post(
-        Uri.parse('$baseUrl/auth/login'),
+        targetUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(bodyMap),
         checkAuth: false,
@@ -1732,5 +1741,22 @@ class HttpApiService {
       return false;
     }
   }
+
+  // --- Mentor Caravan Progress API ---
+  Future<Map<String, dynamic>?> getMentorCaravanProgress() async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/mentor/caravan-progress'),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('getMentorCaravanProgress error: $e');
+    }
+    return null;
+  }
 }
+
 

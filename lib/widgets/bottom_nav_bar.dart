@@ -17,59 +17,33 @@ class CustomBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMentor =
-        role == UserRole.mentor || role == UserRole.superMentor;
-
-    final List<_NavItemData> items = isMentor
-        ? [
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/home01.svg',
-              fallbackIcon: Icons.dashboard_rounded,
-              label: 'میز کار',
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/profile01.svg',
-              fallbackIcon: Icons.people_rounded,
-              label: 'اعضا',
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/challeng01.svg',
-              fallbackIcon: Icons.assignment_rounded,
-              label: 'تکالیف',
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/profile01.svg',
-              fallbackIcon: Icons.person_rounded,
-              label: 'پروفایل',
-            ),
-          ]
-        : [
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/home01.svg',
-              fallbackIcon: Icons.home_rounded,
-              label: AppStrings.navHome,
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/classes01.svg',
-              fallbackIcon: Icons.map_rounded,
-              label: AppStrings.navMap,
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/challeng01.svg',
-              fallbackIcon: Icons.local_fire_department_rounded,
-              label: AppStrings.navChallenges,
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/stor01.svg',
-              fallbackIcon: Icons.storefront_rounded,
-              label: AppStrings.navMarket,
-            ),
-            const _NavItemData(
-              iconPath: 'assets/svg_icons/profile01.svg',
-              fallbackIcon: Icons.person_rounded,
-              label: AppStrings.navProfile,
-            ),
-          ];
+    final List<_NavItemData> items = [
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/home01.svg',
+        fallbackIcon: Icons.home_rounded,
+        label: AppStrings.navHome,
+      ),
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/classes01.svg',
+        fallbackIcon: Icons.map_rounded,
+        label: AppStrings.navMap,
+      ),
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/challeng01.svg',
+        fallbackIcon: Icons.local_fire_department_rounded,
+        label: AppStrings.navChallenges,
+      ),
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/stor01.svg',
+        fallbackIcon: Icons.storefront_rounded,
+        label: AppStrings.navMarket,
+      ),
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/profile01.svg',
+        fallbackIcon: Icons.person_rounded,
+        label: AppStrings.navProfile,
+      ),
+    ];
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 

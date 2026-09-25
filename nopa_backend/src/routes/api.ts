@@ -26,7 +26,8 @@ import {
   getChallengeSubmissions, 
   reviewChallengeSubmission,
   getMentorTicketDetails,
-  replyMentorTicket 
+  replyMentorTicket,
+  getMentorCaravanProgress
 } from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
 
@@ -115,13 +116,15 @@ router.post('/caravans/convert-assets', authenticateJWT as any, convertAssets as
 
 
 // Mentor Workspace Routes
-router.post('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor') as any, createMentorChallenge as any);
-router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor') as any, getMentorChallenges as any);
-router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor') as any, getChallengeSubmissions as any);
-router.post('/mentor/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor') as any, reviewChallengeSubmission as any);
-router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor') as any, getMentorTicketDetails as any);
-router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor') as any, replyMentorTicket as any);
+router.post('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createMentorChallenge as any);
+router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorChallenges as any);
+router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getChallengeSubmissions as any);
+router.post('/mentor/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewChallengeSubmission as any);
+router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorTicketDetails as any);
+router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
+router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);
 
 export default router;
+
 
 

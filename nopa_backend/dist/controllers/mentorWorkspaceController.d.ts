@@ -6,3 +6,4 @@ export declare function getChallengeSubmissions(req: AuthRequest, res: Response)
 export declare function reviewChallengeSubmission(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function getMentorTicketDetails(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function replyMentorTicket(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function getMentorCaravanProgress(req: AuthRequest, res: Response): Promise<void>;
