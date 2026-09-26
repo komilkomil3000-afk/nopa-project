@@ -7,6 +7,7 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
+import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/utils/constants.dart';
 
 class StudentMarketScreen extends StatefulWidget {
@@ -202,23 +203,10 @@ class _MarketScreenState extends State<StudentMarketScreen> {
           child: Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            child: Container(
+            child: NopaDialogContainer(
+              maxWidth: 420,
+              radius: 22,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C244A),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: const Color(0xFF4C4175),
-                  width: 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -409,7 +397,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                         child: const Text(
                           'ارسال',
                           style: TextStyle(
-                            color: Color(0xFFE5A855),
+                            color: AppColors.buttonCamel,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,
@@ -423,7 +411,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                         child: const Text(
                           'لغو',
                           style: TextStyle(
-                            color: Color(0xFF9E9CD6),
+                            color: AppColors.buttonCancelPurple,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             fontFamily: AppTheme.fontFamily,

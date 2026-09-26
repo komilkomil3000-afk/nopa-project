@@ -9,6 +9,7 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 
 import 'package:nopa_app/widgets/app_scaffold.dart';
+import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 
 class MentorEditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -1095,34 +1096,36 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Container(
+        child: NopaDialogContainer(
+          constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(20),
-          decoration: AppColors.loginDialogDecoration(radius: 20),
+          radius: 20,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header Row: Shield Profile Icon on top right/left & Title in center
+              // Header Row: Profile Icon on top right in RTL & Title in center
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Profile icon on left in RTL
+                  // Profile icon on right in RTL
                   Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: Alignment.centerRight,
                     child: Container(
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
+                        color: const Color(0xFF3F3765).withValues(alpha: 0.6),
                         border: Border.all(
-                          color: const Color(0xFFC09268).withValues(alpha: 0.8),
+                          color: AppColors.buttonCamel.withValues(alpha: 0.85),
                           width: 1.2,
                         ),
                       ),
                       alignment: Alignment.center,
                       child: const Icon(
                         Icons.person_outline_rounded,
-                        color: Color(0xFFC09268),
+                        color: AppColors.buttonCamel,
                         size: 22,
                       ),
                     ),
@@ -1243,32 +1246,18 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
               ),
               const SizedBox(height: 24),
 
-              // Bottom Actions: ارسال (Gold text) & لغو (Purple text)
+              // Bottom Actions: ارسال (Right in RTL - Camel) & لغو (Left in RTL - Purple)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // لغو
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'لغو',
-                      style: TextStyle(
-                        color: Color(0xFF9E9CD6),
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-
-                  // ارسال
+                  // ارسال on Right in RTL
                   _isSubmitting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Color(0xFFCD8449),
+                            color: AppColors.buttonCamel,
                           ),
                         )
                       : TextButton(
@@ -1276,13 +1265,27 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                           child: const Text(
                             'ارسال',
                             style: TextStyle(
-                              color: Color(0xFFE1BC96),
+                              color: AppColors.buttonCamel,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               fontFamily: AppTheme.fontFamily,
                             ),
                           ),
                         ),
+
+                  // لغو on Left in RTL
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      'لغو',
+                      style: TextStyle(
+                        color: AppColors.buttonCancelPurple,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],

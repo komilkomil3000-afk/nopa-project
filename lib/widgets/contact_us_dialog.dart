@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
+import 'nopa_dialog_container.dart';
 
 class ContactUsDialog extends StatelessWidget {
   final UserModel? user;
@@ -57,10 +58,10 @@ class ContactUsDialog extends StatelessWidget {
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 420),
+        child: NopaDialogContainer(
+          maxWidth: 420,
+          radius: 24,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-          decoration: AppColors.loginDialogDecoration(radius: 24),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -171,7 +172,7 @@ class ContactUsDialog extends StatelessWidget {
                       child: const Text(
                         'ارسال تیکت',
                         style: TextStyle(
-                          color: Color(0xFF9E9CD6),
+                          color: AppColors.buttonCamel,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,
@@ -188,7 +189,7 @@ class ContactUsDialog extends StatelessWidget {
                       child: const Text(
                         'لغو',
                         style: TextStyle(
-                          color: Color(0xFF9E9CD6),
+                          color: AppColors.buttonCancelPurple,
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
                           fontFamily: AppTheme.fontFamily,

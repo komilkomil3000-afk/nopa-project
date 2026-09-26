@@ -75,6 +75,22 @@ class AppColors {
     ],
   );
 
+  /// 5. Station Card Stroke Gradient (Home screen station box border)
+  static const LinearGradient stationStrokeGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    stops: [0.0, 0.5, 1.0],
+    colors: [
+      Color(0xFF3A3A6A),
+      Color(0xFF9292E2),
+      Color(0xFF3A3A6A),
+    ],
+  );
+
+  // Dialog Button Colors
+  static const Color buttonCamel = Color(0xFFC09268);
+  static const Color buttonCancelPurple = Color(0xFF9E9CD6);
+
   // Border & Radius Constants
   static const double borderRadiusValue = 12.0;
   static final BorderRadius borderRadius = BorderRadius.circular(borderRadiusValue);
@@ -90,8 +106,8 @@ class AppColors {
       ),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
-        color: const Color(0xFF6C6C63).withValues(alpha: 0.4),
-        width: 1.2,
+        color: const Color(0xFF9292E2).withValues(alpha: 0.65),
+        width: 1.3,
       ),
       boxShadow: [
         BoxShadow(
@@ -104,4 +120,5 @@ class AppColors {
     );
   }
 }
+
 

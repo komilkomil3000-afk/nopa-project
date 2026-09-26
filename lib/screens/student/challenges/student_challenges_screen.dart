@@ -10,6 +10,7 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
+import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenge_grading_screen.dart';
 
 class StudentChallengesScreen extends StatefulWidget {
@@ -225,10 +226,10 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                child: NopaDialogContainer(
+                  maxWidth: 420,
+                  radius: 24,
                   padding: const EdgeInsets.all(22),
-                  decoration: AppColors.loginDialogDecoration(radius: 24),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -503,20 +504,6 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // لغو Button on Left in RTL
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  'لغو',
-                                  style: TextStyle(
-                                    color: Color(0xFF9D99B8),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
-                                ),
-                              ),
-
                               // ارسال Button on Right in RTL
                               TextButton(
                                 onPressed: () {
@@ -619,9 +606,23 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                 child: const Text(
                                   'ارسال',
                                   style: TextStyle(
-                                    color: Color(0xFFDE9959),
+                                    color: AppColors.buttonCamel,
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                              ),
+
+                              // لغو Button on Left in RTL
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  'لغو',
+                                  style: TextStyle(
+                                    color: AppColors.buttonCancelPurple,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                     fontFamily: AppTheme.fontFamily,
                                   ),
                                 ),

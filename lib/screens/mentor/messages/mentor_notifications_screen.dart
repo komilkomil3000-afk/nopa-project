@@ -8,6 +8,7 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/jarchi_item.dart';
+import 'package:nopa_app/widgets/support_message_dialog.dart';
 import 'package:nopa_app/main.dart';
 
 class MentorNotificationsScreen extends StatefulWidget {
@@ -307,6 +308,11 @@ class _NotificationsScreenState extends State<MentorNotificationsScreen> {
               // Header Title & Mark All Read
               _buildSectionHeader(repository, unreadCount),
 
+              const SizedBox(height: 12),
+
+              // Action Button: ارسال پیام به پشتیبانی (Styled identically to ورود به کلاس‌ها)
+              _buildSupportActionButton(),
+
               const SizedBox(height: 14),
 
               // Filter Pills Bar (Styled identically to Calendar day pill cards)
@@ -415,6 +421,61 @@ class _NotificationsScreenState extends State<MentorNotificationsScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  /// Support Message Action Button styled identically to "ورود به کلاس‌ها" button
+  Widget _buildSupportActionButton() {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => SupportMessageDialog.show(context),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2835),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFFC09268).withValues(alpha: 0.85),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(
+                  Icons.support_agent_rounded,
+                  color: Color(0xFFF4DCC5),
+                  size: 18,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'ارسال پیام به پشتیبانی',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFFF4DCC5),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

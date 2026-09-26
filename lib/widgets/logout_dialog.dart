@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
+import 'nopa_dialog_container.dart';
 
 class LogoutDialog extends StatefulWidget {
   const LogoutDialog({super.key});
@@ -67,61 +68,43 @@ class _LogoutDialogState extends State<LogoutDialog> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
+        child: NopaDialogContainer(
+          maxWidth: 400,
+          radius: 24,
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
-          decoration: AppColors.loginDialogDecoration(radius: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title Question
-              const Text(
-                'واقعا میخواهید از برنامه خارج شوید؟',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 22),
-
-              // Action Buttons Row
-              Row(
+              // Header: Icon on Right in RTL + Centered Title
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  // 1. Right Button (in RTL): نه، دستم خورد
-                  Expanded(
-                    child: InkWell(
-                      onTap: _isLoading ? null : () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        height: 44,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFF7A709E),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: const Text(
-                          'نه، دستم خورد',
-                          style: TextStyle(
-                            color: Color(0xFFDDD9EE),
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
+                  const Align(
+                    alignment: Alignment.centerRight,
+                    child: Icon(
+                      Icons.logout_rounded,
+                      color: Color(0xFF9E9CD6),
+                      size: 26,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const Text(
+                    'واقعا میخواهید از برنامه خارج شوید؟',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-                  // 2. Left Button (in RTL): آره ولی زود برمیگردم
+              // Action Buttons Row: Right (Action) | Left (Cancel)
+              Row(
+                children: [
+                  // 1. Right Button (in RTL): آره ولی زود برمیگردم (Action - Camel)
                   Expanded(
                     child: InkWell(
                       onTap: _isLoading ? null : _handleLogout,
@@ -133,8 +116,8 @@ class _LogoutDialogState extends State<LogoutDialog> {
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFFC09268),
-                            width: 1.1,
+                            color: AppColors.buttonCamel,
+                            width: 1.2,
                           ),
                         ),
                         child: _isLoading
@@ -143,19 +126,50 @@ class _LogoutDialogState extends State<LogoutDialog> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Color(0xFFE5A855),
+                                  color: AppColors.buttonCamel,
                                 ),
                               )
                             : const Text(
                                 'آره ولی زود برمیگردم',
                                 style: TextStyle(
-                                  color: Color(0xFFE5A855),
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.buttonCamel,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
                                   fontFamily: AppTheme.fontFamily,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // 2. Left Button (in RTL): نه، دستم خورد (Cancel - Purple)
+                  Expanded(
+                    child: InkWell(
+                      onTap: _isLoading ? null : () => Navigator.pop(context),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.buttonCancelPurple,
+                            width: 1.1,
+                          ),
+                        ),
+                        child: const Text(
+                          'نه، دستم خورد',
+                          style: TextStyle(
+                            color: Color(0xFFDDD9EE),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),
