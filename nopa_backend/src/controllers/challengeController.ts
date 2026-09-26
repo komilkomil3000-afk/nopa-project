@@ -8,7 +8,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
     }
 
-    const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId } = req.body;
+    const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
 
     if (!title || !description || !type) {
       return res.status(400).json({ error: 'فیلدهای عنوان، توضیحات و نوع چالش الزامی هستند' });
@@ -48,7 +48,9 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         questions: questions ? (typeof questions === 'string' ? questions : JSON.stringify(questions)) : null,
         rewardZarik: Number(rewardZarik) || 50,
         createdByMentorId: creatorId,
-        caravanId: assignedCaravanId
+        caravanId: assignedCaravanId,
+        stationId: stationId || null,
+        dueDate: dueDate ? new Date(dueDate) : null
       }
     });
 
@@ -122,7 +124,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     }
 
     const { id } = req.params;
-    const { title, description, type, questions, rewardZarik, caravanId, targetMentorId } = req.body;
+    const { title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
 
     const existing = await prisma.challenge.findUnique({ where: { id } });
     if (!existing) {
@@ -145,6 +147,8 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       updateData.questions = typeof questions === 'string' ? questions : JSON.stringify(questions);
     }
     if (rewardZarik !== undefined) updateData.rewardZarik = Number(rewardZarik);
+    if (stationId !== undefined) updateData.stationId = stationId || null;
+    if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (req.user.role === 'admin') {
       if (targetMentorId) {
         updateData.createdByMentorId = targetMentorId;
@@ -294,6 +298,10 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       }
     }
 
+    if (req.query.stationId && req.query.stationId !== 'all') {
+      whereClause.stationId = req.query.stationId as string;
+    }
+
     const { limit, page, take, skip } = req.query;
     const parsedTake = limit || take ? Math.min(Number(limit || take), 100) : undefined;
     const parsedSkip = skip ? Number(skip) : (page && parsedTake ? (Number(page) - 1) * parsedTake : undefined);
@@ -303,6 +311,9 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       take: parsedTake,
       skip: parsedSkip,
       include: {
+        station: {
+          select: { id: true, title: true }
+        },
         caravan: {
           include: {
             mentor: {

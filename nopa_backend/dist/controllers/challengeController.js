@@ -14,7 +14,7 @@ async function createChallenge(req, res) {
         if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
             return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
         }
-        const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId } = req.body;
+        const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
         if (!title || !description || !type) {
             return res.status(400).json({ error: 'فیلدهای عنوان، توضیحات و نوع چالش الزامی هستند' });
         }
@@ -50,7 +50,9 @@ async function createChallenge(req, res) {
                 questions: questions ? (typeof questions === 'string' ? questions : JSON.stringify(questions)) : null,
                 rewardZarik: Number(rewardZarik) || 50,
                 createdByMentorId: creatorId,
-                caravanId: assignedCaravanId
+                caravanId: assignedCaravanId,
+                stationId: stationId || null,
+                dueDate: dueDate ? new Date(dueDate) : null
             }
         });
         // Notify: "ایجاد و نتیجه هر چالش باید درون برنامه به فرد و راهبر اطلاع داده شود و اعلان داده شود."
@@ -120,7 +122,7 @@ async function updateChallenge(req, res) {
             return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند چالش‌ها را ویرایش کنند' });
         }
         const { id } = req.params;
-        const { title, description, type, questions, rewardZarik, caravanId, targetMentorId } = req.body;
+        const { title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
         const existing = await db_1.default.challenge.findUnique({ where: { id } });
         if (!existing) {
             return res.status(404).json({ error: 'چالش مورد نظر یافت نشد' });
@@ -144,6 +146,10 @@ async function updateChallenge(req, res) {
         }
         if (rewardZarik !== undefined)
             updateData.rewardZarik = Number(rewardZarik);
+        if (stationId !== undefined)
+            updateData.stationId = stationId || null;
+        if (dueDate !== undefined)
+            updateData.dueDate = dueDate ? new Date(dueDate) : null;
         if (req.user.role === 'admin') {
             if (targetMentorId) {
                 updateData.createdByMentorId = targetMentorId;
@@ -278,6 +284,9 @@ async function getChallenges(req, res) {
                 }
             }
         }
+        if (req.query.stationId && req.query.stationId !== 'all') {
+            whereClause.stationId = req.query.stationId;
+        }
         const { limit, page, take, skip } = req.query;
         const parsedTake = limit || take ? Math.min(Number(limit || take), 100) : undefined;
         const parsedSkip = skip ? Number(skip) : (page && parsedTake ? (Number(page) - 1) * parsedTake : undefined);
@@ -286,6 +295,9 @@ async function getChallenges(req, res) {
             take: parsedTake,
             skip: parsedSkip,
             include: {
+                station: {
+                    select: { id: true, title: true }
+                },
                 caravan: {
                     include: {
                         mentor: {

@@ -4,6 +4,10 @@ class Station {
   final String id;
   final String title;
   final String? subtitle;
+  final String? description;
+  final String? stayDuration;
+  final String? animationTitle;
+  final String? animationUrl;
   final String teacher;
   final double progress;
   final bool isLocked;
@@ -17,6 +21,10 @@ class Station {
     required this.id,
     required this.title,
     this.subtitle,
+    this.description,
+    this.stayDuration,
+    this.animationTitle,
+    this.animationUrl,
     required this.teacher,
     required this.progress,
     required this.isLocked,
@@ -98,6 +106,10 @@ class Station {
       id: json['id'] ?? '',
       title: resolveTitle(json['title']?.toString(), idx),
       subtitle: json['subtitle']?.toString(),
+      description: json['description']?.toString(),
+      stayDuration: json['stayDuration']?.toString(),
+      animationTitle: json['animationTitle']?.toString(),
+      animationUrl: json['animationUrl']?.toString(),
       teacher: json['teacher'] ?? json['instructors'] ?? 'اساتید منزلگاه',
       progress: (json['progress'] ?? 0).toDouble(),
       isLocked: json['isLocked'] ?? false,

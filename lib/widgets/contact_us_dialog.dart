@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
 
@@ -59,18 +60,7 @@ class ContactUsDialog extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2849),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 24,
-                spreadRadius: 2,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+          decoration: AppColors.loginDialogDecoration(radius: 24),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,

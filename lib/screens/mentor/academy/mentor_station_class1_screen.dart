@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
+import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
@@ -33,70 +34,6 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   List<Map<String, dynamic>> _stations = [];
   List<Map<String, dynamic>> _members = [];
 
-  static const Map<int, Map<String, String>> _stationLore = {
-    0: {
-      'ordinalTitle': 'منزلگاه ۰',
-      'fullTitle': 'منزلگاه صفر (راهنمای کاروان)',
-      'desc':
-          'اینجا منزلگاه صفر، نقطه آغازین سفر کاروان نپا است. کاروانسرایی برای آشنایی، دریافت توشه‌ی راه و شناخت قوانین پیمایش. در این ایستگاه مقدماتی، راهبران مسیر و همراهان کاروان خود را خواهید شناخت و آماده ورود به صحرای ماجراجویی می‌شوید.',
-      'skillSessions': '۱ جلسه',
-      'mediaSessions': '۲ جلسه',
-      'animationCount': '۱ قسمت',
-      'stayDuration': '۵ روز',
-    },
-    1: {
-      'ordinalTitle': 'منزلگاه ۱',
-      'fullTitle': 'منزلگاه اول (کاروانسرای غبارگرفته)',
-      'desc':
-          'اینجا منزلگاه اول، جایی در مناطق حاشیه‌ای صحرای فراموشی است. کاروانسرای غبارگرفته‌ای که اکنون در آن اقامت گزیده‌ایم، همیشه مسافران تازه‌کار را غافلگیر می‌کند. دیوارهای اینجا همه از آیینه هایی ساخته شده‌اند که می‌توانند چیزی فراتر از ظاهر را نشان دهند. عمق فکر و علایق و آرزوهای ما. پیر آیینه گر، مرشد و استادی است که در این منزلگاه سکونت دارد. همه‌ی این آیینه های خارق‌العاده، به دست او ساخته شده‌اند...',
-      'skillSessions': '۲ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۰ روز',
-    },
-    2: {
-      'ordinalTitle': 'منزلگاه ۲',
-      'fullTitle': 'منزلگاه دوم (معدن زیرزمینی)',
-      'desc':
-          'اینجا منزلگاه دوم، در اعماق کوهستان‌های پر رمز و راز و معدن‌های باستانی است. جایی که سنگ‌های درخشان و ارزشمند در دل تاریکی نهفته‌اند. در این منزلگاه، مسافران یاد می‌گیرند که چگونه با تلاش و مهارت، گوهر استعدادها و توانمندی‌های خود را کشف و صیقل دهند.',
-      'skillSessions': '۳ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۲ روز',
-    },
-    3: {
-      'ordinalTitle': 'منزلگاه ۳',
-      'fullTitle': 'منزلگاه سوم (قلعه)',
-      'desc':
-          'اینجا منزلگاه سوم، قلعه‌ای با شکوه و استوار بر فراز صخره‌های کهن است. در این سنگر مستحکم، اعضای کاروان یاد می‌گیرند که چگونه در کنار یکدیگر به عنوان یک تیم متحد عمل کنند و در برابر چالش‌ها و بادهای سخت مقاومت ورزند.',
-      'skillSessions': '۳ جلسه',
-      'mediaSessions': '۵ جلسه',
-      'animationCount': '۳ قسمت',
-      'stayDuration': '۱۵ روز',
-    },
-    4: {
-      'ordinalTitle': 'منزلگاه ۴',
-      'fullTitle': 'منزلگاه چهارم (دهکده ساحلی)',
-      'desc':
-          'اینجا منزلگاه چهارم، دهکده‌ای آرام و پرامید در کنار ساحل دریای بیکران است. در این منزلگاه، اعضای کاروان مهارت‌های برقراری ارتباط، داستان‌پردازی و خلق آثار مشترک را تمرین می‌کنند تا یادگاری ماندگار از خود بر جای گذارند.',
-      'skillSessions': '۴ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۰ روز',
-    },
-    5: {
-      'ordinalTitle': 'منزلگاه ۵',
-      'fullTitle': 'منزلگاه پنجم (فانوس دریایی)',
-      'desc':
-          'اینجا منزلگاه پنجم، فانوس دریایی فروزان و نقطه اوج سفر کاروان نپا است. نوری درخشان که افق‌های آینده را روشن می‌سازد. در این مقصد، مسافران ثمره تلاش‌ها و تجربیات خود را جشن گرفته و آماده رهبری مسیرهای آینده می‌شوند.',
-      'skillSessions': '۴ جلسه',
-      'mediaSessions': '۶ جلسه',
-      'animationCount': '۴ قسمت',
-      'stayDuration': '۲۰ روز',
-      'clipTitle': 'انیمیشن روشنایی فانوس دریایی (منزلگاه ۵)',
-    },
-  };
-
   @override
   void initState() {
     super.initState();
@@ -123,13 +60,18 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           }
         }
       }
+      if (clips.isEmpty && station['animationUrl'] != null && station['animationUrl'].toString().isNotEmpty) {
+        clips.add({
+          'id': 'clip_${station['id']}',
+          'title': station['animationTitle'] ?? 'انیمیشن معرفی منزلگاه',
+          'videoUrl': station['animationUrl'],
+        });
+      }
     }
     if (clips.isEmpty) {
-      final safeIndex = _selectedStationIndex.clamp(0, 5);
-      final lore = _stationLore[safeIndex] ?? _stationLore[0]!;
       clips.add({
-        'id': 'clip_$safeIndex',
-        'title': lore['clipTitle'] ?? 'انیمیشن منزلگاه',
+        'id': 'clip_default',
+        'title': 'انیمیشن منزلگاه',
         'videoUrl': 'https://www.aparat.com/v/dbjk750',
       });
     }
@@ -292,8 +234,6 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final int completedCount = user.completedStationsCount;
 
     final totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
-    final int safeIndex = _selectedStationIndex.clamp(0, 5);
-    final lore = _stationLore[safeIndex] ?? _stationLore[0]!;
     final currentStationData = _stations.isNotEmpty && _selectedStationIndex < _stations.length
         ? _stations[_selectedStationIndex]
         : (_stations.isNotEmpty ? _stations.first : _defaultStations().first);
@@ -316,7 +256,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 totalNodes: totalStationNodes,
                 userLevelFrame: userLevelFrame,
                 completedStationsCount: completedCount,
-                title: lore['fullTitle'] ?? currentStationData['title'] ?? 'منزلگاه اول',
+                title: currentStationData['title'] ?? 'منزلگاه اول',
                 onStationSelected: (index) {
                   setState(() {
                     _selectedStationIndex = index;
@@ -332,7 +272,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               const SizedBox(height: 14),
 
               // 2. Station Lore Header: Description on Left & Station Image Box on Right
-              _buildStationLoreHeader(lore, currentStationData),
+              _buildStationLoreHeader(currentStationData),
 
               const SizedBox(height: 18),
 
@@ -340,12 +280,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               _buildStatsStrip(
                 skillText: currentStationData['skillSessions'] != null
                     ? '${(currentStationData['skillSessions'] as List).length} جلسه'
-                    : (lore['skillSessions'] ?? '۳ جلسه'),
+                    : '۲ جلسه',
                 mediaText: currentStationData['mediaSessions'] != null
                     ? '${(currentStationData['mediaSessions'] as List).length} جلسه'
-                    : (lore['mediaSessions'] ?? '۳ جلسه'),
-                animText: currentStationData['animationEpisodes'] ?? (lore['animationCount'] ?? '۲ قسمت'),
-                stayText: currentStationData['stayDays'] ?? (lore['stayDuration'] ?? '۱۰ روز'),
+                    : '۴ جلسه',
+                animText: currentStationData['animationEpisodes'] ?? '${_currentStationClips.length} قسمت',
+                stayText: currentStationData['stayDuration'] ?? currentStationData['stayDays'] ?? '${(_selectedStationIndex * 3 + 5).toPersianDigits()} روز',
               ),
 
               const SizedBox(height: 12),
@@ -356,7 +296,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               const SizedBox(height: 20),
 
               // 4. Animation Carousel Section (Matching User Panel in Class1Screen)
-              _buildAnimationCarouselSection(lore['clipTitle'] ?? 'انیمیشن منزلگاه'),
+              _buildAnimationCarouselSection(currentStationData['animationTitle'] ?? 'انیمیشن منزلگاه'),
 
               const SizedBox(height: 28),
 
@@ -399,13 +339,13 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   }
 
   /// Station Lore Header: Text on Left & Station Image Box on Right (Matching Class1 Screen)
-  Widget _buildStationLoreHeader(Map<String, String> lore, Map<String, dynamic> station) {
+  Widget _buildStationLoreHeader(Map<String, dynamic> station) {
     const double cardWidth = 105.0;
     const double cardHeight = 138.0;
     final String stationImage = station['imageUrl']?.toString() ?? '';
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
-    final String ordinalTitle = lore['ordinalTitle'] ?? station['title'] ?? 'منزلگاه اول';
-    final String fullDescription = lore['desc'] ?? station['description'] ?? '';
+    final String ordinalTitle = station['title'] ?? Station.getOrdinalName(_selectedStationIndex);
+    final String fullDescription = station['description']?.toString() ?? 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),

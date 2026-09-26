@@ -7,6 +7,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/models/models.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenge_grading_screen.dart';
 
@@ -116,17 +117,17 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
       }
       if (rawStatus == 'PENDING_REVIEW') rawStatus = 'pending';
 
+      final bool isDueDatePassed = c.dueDate != null && DateTime.now().isAfter(c.dueDate!);
+
       final String status;
-      if (rawStatus == 'approved') {
+      if (rawStatus == 'approved' || rawStatus == 'completed') {
         status = 'completed';
       } else if (rawStatus == 'pending') {
         status = 'pending';
       } else if (rawStatus == 'rejected') {
         status = 'rejected';
-      } else if (rawStatus == 'expired') {
+      } else if (isDueDatePassed || rawStatus == 'expired') {
         status = 'expired';
-      } else if (rawStatus == 'started') {
-        status = 'started';
       } else {
         status = 'started';
       }
@@ -155,6 +156,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'category': category,
         'questions': c.questions,
         'progress': c.progress,
+        'stationId': c.stationId,
+        'dueDate': c.dueDate,
+        'stationTitle': c.stationTitle,
         'mentorName': c.mentorName,
         'caravanName': c.caravanName,
         'mentorFeedback': c.mentorFeedback ?? localSub?.scoreFeedback,
@@ -163,89 +167,6 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
         'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
         'durationDays': c.durationDays ?? 5,
-      });
-    }
-
-    // Ensure requested sample challenges exist for complete demonstration
-    final bool hasPendingIndividual = list.any((c) => c['category'] == 'individual' && c['status'] == 'pending');
-    final bool hasStartedIndividual = list.any((c) => c['category'] == 'individual' && (c['status'] == 'started' || c['status'] == 'new'));
-    final bool hasExpiredIndividual = list.any((c) => c['category'] == 'individual' && c['status'] == 'expired');
-    final bool hasGroup = list.any((c) => c['category'] == 'group');
-    final bool hasInterGroup = list.any((c) => c['category'] == 'inter_group');
-
-    if (!hasPendingIndividual) {
-      list.insert(0, {
-        'id': 'demo_indiv_pending',
-        'title': 'تحلیل و گزارش کاروان اول',
-        'desc': 'پاسخ شما برای بررسی به راهبر کاروان ارسال شده و در حال ارزیابی نهایی است.',
-        'reward': 60,
-        'type': 'text',
-        'status': 'pending',
-        'category': 'individual',
-        'myAnswerText': 'پروژه تحلیل منزلگاه با موفقیت ارسال شد.',
-        'creatorName': 'رضا جلالی (راهبر کاروان)',
-        'createdAt': DateTime.now().subtract(const Duration(days: 1)),
-        'durationDays': 4,
-      });
-    }
-
-    if (!hasStartedIndividual) {
-      list.add({
-        'id': 'demo_indiv_started',
-        'title': 'مهارت‌آموزی دیجیتال و کار با نقشه',
-        'desc': 'چالش فعال برای تمرین مهارت‌های کاروان و کسب امتیاز زریک.',
-        'reward': 50,
-        'type': 'choice',
-        'status': 'started',
-        'category': 'individual',
-        'creatorName': 'مدیر سیستم',
-        'createdAt': DateTime.now().subtract(const Duration(hours: 12)),
-        'durationDays': 5,
-      });
-    }
-
-    if (!hasExpiredIndividual) {
-      list.add({
-        'id': 'demo_indiv_expired',
-        'title': 'آزمون هفتگی پیشینه و مسیر کاروان',
-        'desc': 'مهلت شرکت و ارسال پاسخ در این چالش به پایان رسیده است.',
-        'reward': 40,
-        'type': 'text',
-        'status': 'expired',
-        'category': 'individual',
-        'creatorName': 'راهبر کاروان',
-        'createdAt': DateTime.now().subtract(const Duration(days: 7)),
-        'durationDays': 3,
-      });
-    }
-
-    if (!hasGroup) {
-      list.add({
-        'id': 'demo_group_1',
-        'title': 'پروژه همکاری تیمی کاروان',
-        'desc': 'همکاری و تعامل اعضای کاروان در تدوین و ارائه دستاورد مشترک تیمی.',
-        'reward': 120,
-        'type': 'file',
-        'status': 'started',
-        'category': 'group',
-        'creatorName': 'رضا جلالی (راهبر کاروان)',
-        'createdAt': DateTime.now().subtract(const Duration(days: 1)),
-        'durationDays': 7,
-      });
-    }
-
-    if (!hasInterGroup) {
-      list.add({
-        'id': 'demo_intergroup_1',
-        'title': 'مناظره و رقابت میان کاروان‌ها',
-        'desc': 'رقابت جذاب حل مسئله و سرعت عمل میان اعضای کاروان‌های مختلف نپا.',
-        'reward': 200,
-        'type': 'text',
-        'status': 'started',
-        'category': 'inter_group',
-        'creatorName': 'مدیر سیستم',
-        'createdAt': DateTime.now().subtract(const Duration(days: 2)),
-        'durationDays': 10,
       });
     }
 
@@ -1255,18 +1176,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2C2849),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 24,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
+                  decoration: AppColors.loginDialogDecoration(radius: 24),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1728,18 +1638,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             child: Container(
               constraints: const BoxConstraints(maxWidth: 420),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2849),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
+              decoration: AppColors.loginDialogDecoration(radius: 24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

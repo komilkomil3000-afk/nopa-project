@@ -1157,6 +1157,20 @@ window.addQuestionRow = function(mode, initialData = null) {
   container.appendChild(card);
 };
 
+window.populateStationDropdownForChallenges = function(selectId, selectedId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const stations = window.lmsStationsMasterList || [];
+  let html = '<option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>';
+  stations.forEach((st, idx) => {
+    const num = st.orderIndex || (idx + 1);
+    const title = st.title || `منزلگاه ${num}`;
+    const isSel = (selectedId && (st.id === selectedId || st.id == selectedId)) ? 'selected' : '';
+    html += `<option value="${st.id}" ${isSel}>📍 ${title} (منزلگاه ${num})</option>`;
+  });
+  sel.innerHTML = html;
+};
+
 window.openCreateChallengeModal = function() {
   console.log('[openCreateChallengeModal] Opening create challenge modal');
   const modal = document.getElementById('create-challenge-modal');
@@ -1200,6 +1214,8 @@ window.openCreateChallengeModal = function() {
     }
   }
 
+  window.populateStationDropdownForChallenges('new-chal-station-id', '');
+
   const qContainer = document.getElementById('new-chal-questions-list');
   if (qContainer) {
     qContainer.innerHTML = '';
@@ -1238,6 +1254,8 @@ window.submitCreateChallenge = async function(event) {
   }
   const type = document.getElementById('new-chal-type')?.value || 'step_by_step_quiz';
   const description = document.getElementById('new-chal-desc')?.value.trim();
+  const stationId = document.getElementById('new-chal-station-id')?.value || null;
+  const dueDate = document.getElementById('new-chal-due-date')?.value || null;
 
   if (!title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
@@ -1270,6 +1288,8 @@ window.submitCreateChallenge = async function(event) {
       description,
       type,
       rewardZarik,
+      stationId: stationId || undefined,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       caravanId: caravanId === 'all' ? undefined : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };
@@ -1320,6 +1340,12 @@ window.openEditChallengeModal = function(challengeId) {
     }
   }
 
+  window.populateStationDropdownForChallenges('edit-chal-station-id', c.stationId);
+  const editDueDate = document.getElementById('edit-chal-due-date');
+  if (editDueDate) {
+    editDueDate.value = c.dueDate ? new Date(c.dueDate).toISOString().split('T')[0] : '';
+  }
+
   // Creator badge
   const badgeEl = document.getElementById('edit-chal-creator-badge');
   if (badgeEl) {
@@ -1364,6 +1390,8 @@ window.submitEditChallenge = async function(event) {
   const type = document.getElementById('edit-chal-type')?.value || 'step_by_step_quiz';
   const description = document.getElementById('edit-chal-desc')?.value.trim();
   const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
+  const stationId = document.getElementById('edit-chal-station-id')?.value || null;
+  const dueDate = document.getElementById('edit-chal-due-date')?.value || null;
 
   if (!id || !title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
@@ -1395,6 +1423,8 @@ window.submitEditChallenge = async function(event) {
       description,
       type,
       rewardZarik,
+      stationId: stationId || null,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       caravanId: caravanId === 'all' ? null : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };
@@ -5705,49 +5735,74 @@ window.loadAssetConversions = async function() {
     const tbody = document.querySelector('#asset-conversions-table tbody');
     if (!tbody) return;
     
+    if (!Array.isArray(requests) || requests.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:16px;">هیچ درخواست تبدیل دارایی در سیستم ثبت نشده است.</td></tr>';
+      return;
+    }
+
     tbody.innerHTML = requests.map(r => `
       <tr>
-        <td>${r.user?.name || '-'}</td>
-        <td>${r.caravan?.name || '-'}</td>
-        <td>${r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش'}</td>
         <td>
-          ${r.status === 'pending' ? '<span style="color:orange">در انتظار</span>' : 
-            r.status === 'approved' ? '<span style="color:green">تایید شده</span>' : '<span style="color:red">رد شده</span>'}
+          <div style="font-weight:bold; color:white;">${r.user?.name || '-'}</div>
+          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${r.user.phoneNumber}</div>` : ''}
         </td>
-        <td>${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td>${r.caravan?.name || 'عمومی'}</td>
         <td>
+          <span style="color:#fbbf24; font-weight:bold;">${r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش'}</span>
+        </td>
+        <td>
+          ${r.status === 'pending' ? '<span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);">⏳ در انتظار بررسی</span>' : 
+            r.status === 'approved' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ تایید شده</span>' : 
+            `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">❌ رد شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${r.rejectionReason}</div>` : ''}`}
+        </td>
+        <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td style="text-align:center;">
           ${r.status === 'pending' ? `
-            <button class="btn-icon" style="color:green" onclick="approveAssetConversion('${r.id}', true)"><i class="fa-solid fa-check"></i></button>
-            <button class="btn-icon" style="color:red" onclick="approveAssetConversion('${r.id}', false)"><i class="fa-solid fa-times"></i></button>
-          ` : '-'}
+            <div style="display:inline-flex; gap:6px;">
+              <button type="button" class="btn-icon" style="color:#22c55e; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', true)" title="تایید درخواست"><i class="fa-solid fa-check"></i> تایید</button>
+              <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', false)" title="رد درخواست"><i class="fa-solid fa-xmark"></i> رد</button>
+            </div>
+          ` : '<span style="color:#64748b; font-size:11px;">بررسی شده</span>'}
         </td>
       </tr>
     `).join('');
   } catch(e) {
-    console.error(e);
+    console.error('loadAssetConversions error:', e);
   }
-}
+};
 
 window.approveAssetConversion = async function(id, approve) {
-  const note = prompt('یادداشت (اختیاری):', approve ? 'تایید شد' : 'رد شد');
-  if (note === null) return; // cancelled
+  let note = '';
+  let rejectionReason = '';
+
+  if (approve) {
+    const entered = prompt('یادداشت تایید (اختیاری):', 'درخواست شما تایید و تبدیل دارایی انجام شد.');
+    if (entered === null) return;
+    note = entered;
+  } else {
+    const enteredReason = prompt('لطفاً علت رد درخواست را وارد فرمایید:', 'عدم تطابق موجودی یا عدم احراز شرایط');
+    if (enteredReason === null) return;
+    rejectionReason = enteredReason;
+    note = enteredReason;
+  }
+
   try {
     const res = await fetch(`/api/v1/admin/asset-conversions/${id}/approve`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approve, note })
+      body: JSON.stringify({ approve, note, rejectionReason })
     });
     const d = await res.json();
     if(res.ok) {
       alert('عملیات با موفقیت انجام شد');
-      loadAssetConversions();
+      window.loadAssetConversions();
     } else {
       alert(d.error || 'خطا در عملیات');
     }
   } catch(e) {
-    console.error(e);
+    console.error('approveAssetConversion error:', e);
   }
-}
+};
 
 document.querySelector('[data-tab="caravan-league-tab"]')?.addEventListener('click', loadAssetConversions);
 
@@ -8031,7 +8086,7 @@ window.loadBannersTab = async function() {
     const totalCount = bannerList.length;
     const homeCount = bannerList.filter(b => b.position === 'home_top').length;
     const bazaarCount = bannerList.filter(b => b.position === 'bazaar_top').length;
-    const activeCount = bannerList.filter(b => b.isActive).length;
+    const activeCount = bannerList.filter(b => (b.isActive === true || b.isActive === 1 || b.isActive === 'true')).length;
 
     const elTotal = document.getElementById('banners-stat-total');
     const elHome = document.getElementById('banners-stat-home');
@@ -8052,17 +8107,19 @@ window.loadBannersTab = async function() {
     const positionLabels = {
       'home_top': '<span class="badge" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
       'bazaar_top': '<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
+      'lms_slider': '<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
       'general': '<span class="badge" style="background:rgba(168, 85, 247, 0.15); color:#c084fc; border:1px solid rgba(168, 85, 247, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-globe"></i> عمومی</span>'
     };
 
     tbody.innerHTML = bannerList.map(b => {
       const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
-      const statusBadge = b.isActive
-        ? '<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;">فعال</span>'
-        : '<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;">غیرفعال</span>';
+      const isBannerActive = (b.isActive === true || b.isActive === 1 || b.isActive === 'true');
+      const statusBadge = isBannerActive
+        ? `<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', true)" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
+        : `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', false)" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
       
       const imgMarkup = b.imageUrl
-        ? `<img src="${b.imageUrl}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
+        ? `<img src="${b.imageUrl}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
         : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color:#64748b;"><i class="fa-solid fa-image"></i></div>';
 
       const targetText = b.targetRoute ? `<code style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:#cbd5e1;" dir="ltr">${b.targetRoute}</code>` : '<span style="color:#64748b;">-</span>';
@@ -8091,6 +8148,28 @@ window.loadBannersTab = async function() {
   } catch(e) {
     console.error('Error loading banners:', e);
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">ارتباط با سرور برقرار نشد</td></tr>';
+  }
+};
+
+window.toggleBannerStatus = async function(id, currentActive) {
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const newActive = !currentActive;
+  try {
+    const formData = new FormData();
+    formData.append('isActive', newActive);
+    const res = await fetch(`/api/v1/admin/banners/${id}`, {
+      method: 'PUT',
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: formData
+    });
+    if (res.ok) {
+      if (typeof showToastSuccess === 'function') {
+        showToastSuccess(newActive ? '✅ بنر فعال شد' : 'بنر غیرفعال شد');
+      }
+      loadBannersTab();
+    }
+  } catch(e) {
+    console.error('Error toggling banner status:', e);
   }
 };
 
@@ -8846,6 +8925,43 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
   }
 });
+
+window.handleDirectFileUpload = async function(inputElement, targetInputId) {
+  if (!inputElement.files || inputElement.files.length === 0) return;
+  const file = inputElement.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const targetEl = document.getElementById(targetInputId);
+  const origPlaceholder = targetEl ? targetEl.placeholder : '';
+  if (targetEl) targetEl.placeholder = '⏳ در حال آپلود فایل...';
+
+  try {
+    const res = await fetch('/api/v1/media/upload', {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok && (data.url || data.media?.url)) {
+      const fileUrl = data.url || data.media.url;
+      if (targetEl) {
+        targetEl.value = fileUrl;
+      }
+      alert('✅ فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
+    } else {
+      alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Direct Upload Error:', err);
+    alert('خطا در ارتباط با سرور برای آپلود فایل');
+  } finally {
+    if (targetEl) targetEl.placeholder = origPlaceholder;
+  }
+};
 
 
 

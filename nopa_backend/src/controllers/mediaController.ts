@@ -39,7 +39,7 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
 
     const file = req.file;
     const url = `/uploads/${file.filename}`;
-    const { assetType, title, instructor, duration } = req.body;
+    const { assetType, title, instructor, duration, category } = req.body;
 
     const mediaAsset = await prisma.mediaAsset.create({
       data: {
@@ -66,6 +66,7 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
               filename: file.filename,
               url,
               mimeType: file.mimetype,
+              category: category || null,
             },
           });
         }
@@ -75,7 +76,9 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     }
 
     res.status(201).json({
+      success: true,
       message: 'File uploaded successfully',
+      url,
       media: mediaAsset,
     });
   } catch (error) {

@@ -6,6 +6,7 @@ export const getStations = async (req: Request, res: Response) => {
   try {
     const stations = await prisma.station.findMany({
       include: {
+        challenges: true,
         categories: {
           include: {
             sessions: {
@@ -109,7 +110,7 @@ export const getQuizzes = async (req: Request, res: Response) => {
 
 export const createOrUpdateStation = async (req: Request, res: Response) => {
   try {
-    const { id, title, subtitle, description, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
+    const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
     
     const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
 
@@ -135,7 +136,19 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
 
         station = await tx.station.update({
           where: { id },
-          data: { title: title || 'منزلگاه', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
+          data: { 
+            title: title || 'منزلگاه', 
+            subtitle: subtitleVal, 
+            description: description !== undefined ? description : '', 
+            stayDuration: stayDuration !== undefined ? stayDuration : null,
+            animationTitle: animationTitle !== undefined ? animationTitle : null,
+            animationUrl: animationUrl !== undefined ? animationUrl : null,
+            iconUrl: iconUrl || '', 
+            orderIndex: orderIndexVal, 
+            releaseDate: releaseDateVal, 
+            releaseTime: releaseTime || null, 
+            scoringCriteriaJson 
+          }
         });
       } else {
         // When creating a new station: strictly prevent duplicate number
@@ -154,7 +167,19 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
         }
 
         station = await tx.station.create({
-          data: { title: title || 'منزلگاه جدید', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
+          data: { 
+            title: title || 'منزلگاه جدید', 
+            subtitle: subtitleVal, 
+            description: description !== undefined ? description : '', 
+            stayDuration: stayDuration !== undefined ? stayDuration : null,
+            animationTitle: animationTitle !== undefined ? animationTitle : null,
+            animationUrl: animationUrl !== undefined ? animationUrl : null,
+            iconUrl: iconUrl || '', 
+            orderIndex: orderIndexVal, 
+            releaseDate: releaseDateVal, 
+            releaseTime: releaseTime || null, 
+            scoringCriteriaJson 
+          }
         });
       }
 

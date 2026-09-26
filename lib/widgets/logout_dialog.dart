@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 
@@ -69,18 +70,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2849),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 24,
-                spreadRadius: 2,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+          decoration: AppColors.loginDialogDecoration(radius: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

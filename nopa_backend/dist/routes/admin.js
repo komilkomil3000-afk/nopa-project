@@ -104,6 +104,7 @@ const newsController_1 = require("../controllers/newsController");
 const bannerController_1 = require("../controllers/bannerController");
 const mediaController_1 = require("../controllers/mediaController");
 // 5. Educational Content, Banners, News & Announcements
+router.post('/media/upload', mediaController_1.upload.single('file'), mediaController_1.uploadMedia);
 router.post('/announcements/broadcast', adminController_1.createGlobalAnnouncement);
 router.get('/news', newsController_1.getAdminNews);
 router.post('/news', mediaController_1.upload.single('image'), newsController_1.createNews);

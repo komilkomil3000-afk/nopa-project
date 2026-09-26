@@ -10,6 +10,7 @@ const getStations = async (req, res) => {
     try {
         const stations = await db_1.default.station.findMany({
             include: {
+                challenges: true,
                 categories: {
                     include: {
                         sessions: {
@@ -117,7 +118,7 @@ const getQuizzes = async (req, res) => {
 exports.getQuizzes = getQuizzes;
 const createOrUpdateStation = async (req, res) => {
     try {
-        const { id, title, subtitle, description, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
+        const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
         const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
         const result = await db_1.default.$transaction(async (tx) => {
             let station;
@@ -140,7 +141,19 @@ const createOrUpdateStation = async (req, res) => {
                 }
                 station = await tx.station.update({
                     where: { id },
-                    data: { title: title || 'منزلگاه', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
+                    data: {
+                        title: title || 'منزلگاه',
+                        subtitle: subtitleVal,
+                        description: description !== undefined ? description : '',
+                        stayDuration: stayDuration !== undefined ? stayDuration : null,
+                        animationTitle: animationTitle !== undefined ? animationTitle : null,
+                        animationUrl: animationUrl !== undefined ? animationUrl : null,
+                        iconUrl: iconUrl || '',
+                        orderIndex: orderIndexVal,
+                        releaseDate: releaseDateVal,
+                        releaseTime: releaseTime || null,
+                        scoringCriteriaJson
+                    }
                 });
             }
             else {
@@ -159,7 +172,19 @@ const createOrUpdateStation = async (req, res) => {
                     }
                 }
                 station = await tx.station.create({
-                    data: { title: title || 'منزلگاه جدید', subtitle: subtitleVal, description: description || '', iconUrl: iconUrl || '', orderIndex: orderIndexVal, releaseDate: releaseDateVal, releaseTime: releaseTime || null, scoringCriteriaJson }
+                    data: {
+                        title: title || 'منزلگاه جدید',
+                        subtitle: subtitleVal,
+                        description: description !== undefined ? description : '',
+                        stayDuration: stayDuration !== undefined ? stayDuration : null,
+                        animationTitle: animationTitle !== undefined ? animationTitle : null,
+                        animationUrl: animationUrl !== undefined ? animationUrl : null,
+                        iconUrl: iconUrl || '',
+                        orderIndex: orderIndexVal,
+                        releaseDate: releaseDateVal,
+                        releaseTime: releaseTime || null,
+                        scoringCriteriaJson
+                    }
                 });
             }
             if (categories && Array.isArray(categories)) {

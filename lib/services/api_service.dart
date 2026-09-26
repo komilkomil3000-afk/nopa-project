@@ -732,12 +732,15 @@ class HttpApiService {
             final creatorInfo = json['creatorInfo'] as Map<String, dynamic>?;
             final caravanInfo = json['caravanInfo'] as Map<String, dynamic>?;
             final targetAudience = json['targetAudience'] as Map<String, dynamic>?;
+            final String? targetLabel = targetAudience?['label']?.toString() ?? targetAudience?['name']?.toString();
+            final String? category = json['category']?.toString();
             final bool isByAdmin = creatorInfo?['isByAdmin'] == true ||
                 (json['createdByMentorId'] != null && json['createdByMentorId'].toString().toLowerCase().contains('admin'));
             final String creatorName = creatorInfo?['name'] ?? (isByAdmin ? 'مدیر سیستم' : (caravanInfo?['mentorName'] ?? 'راهبر'));
-            final String targetLabel = targetAudience?['label'] ?? (caravanInfo?['name'] != null ? 'کاروان: ${caravanInfo!['name']}' : 'عمومی (همه کاروان‌ها)');
-            final String? category = json['category'] ?? json['targetScope'] ?? json['scope'];
             final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null;
+            final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null;
+            final String? stationId = json['stationId']?.toString();
+            final String? stationTitle = json['station']?['title']?.toString();
             final int durationDays = json['durationDays'] ?? 5;
 
             return ChallengeModel(
@@ -750,6 +753,9 @@ class HttpApiService {
               createdByMentorId: json['createdByMentorId'] ?? '',
               progress: 0.0,
               caravanId: json['caravanId'],
+              stationId: stationId,
+              dueDate: dueDate,
+              stationTitle: stationTitle,
               mentorName: creatorName,
               caravanName: caravanInfo?['name'],
               myStatus: json['myStatus'] ?? json['mySubmission']?['status'],
@@ -1126,13 +1132,14 @@ class HttpApiService {
   }
 
   // Upload media file (multipart) to backend media upload endpoint
-  Future<Map<String, dynamic>?> uploadMediaFile(io.File file, {String assetType = 'submission', String? title}) async {
+  Future<Map<String, dynamic>?> uploadMediaFile(io.File file, {String assetType = 'submission', String? title, String? category}) async {
     try {
-      final uri = Uri.parse('${baseUrl.replaceAll('/api/v1', '')}/api/v1/media/upload');
+      final uri = Uri.parse('$baseUrl/media/upload');
       final request = http.MultipartRequest('POST', uri);
       if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
       request.fields['assetType'] = assetType;
       if (title != null) request.fields['title'] = title;
+      if (category != null) request.fields['category'] = category;
       final multipartFile = await http.MultipartFile.fromPath('file', file.path);
       request.files.add(multipartFile);
       final streamed = await request.send();
@@ -1147,6 +1154,11 @@ class HttpApiService {
       debugPrint('uploadMediaFile error: $e');
       return null;
     }
+  }
+
+  // Upload mentor document (EDUCATION, JOB, RESUME)
+  Future<Map<String, dynamic>?> uploadMentorDocument(io.File file, {required String category}) async {
+    return uploadMediaFile(file, assetType: 'mentor_document', category: category);
   }
 
   // Get pending submissions for mentors
@@ -1250,7 +1262,7 @@ class HttpApiService {
   }
 
   // Submit Task Assignment
-  Future<bool> submitTask(String challengeId, String answerText) async {
+  Future<bool> submitTask(String challengeId, String answerText, {String? fileUrl}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/submissions'),
@@ -1258,6 +1270,7 @@ class HttpApiService {
         body: jsonEncode({
           'challengeId': challengeId,
           'answerText': answerText,
+          if (fileUrl != null && fileUrl.isNotEmpty) 'fileUrl': fileUrl,
         }),
       );
 
@@ -1864,7 +1877,7 @@ class HttpApiService {
         headers: _getHeaders(),
         body: jsonEncode({
           'approve': approve,
-          'note': ?note,
+          'note': note,
         }),
       );
       return response.statusCode == 200;

@@ -79,4 +79,29 @@ class AppColors {
   static const double borderRadiusValue = 12.0;
   static final BorderRadius borderRadius = BorderRadius.circular(borderRadiusValue);
   static const double borderWidth = 1.0;
+
+  /// Dialog & Modal Background Decoration matching the Login Screen background
+  static BoxDecoration loginDialogDecoration({double radius = 24.0}) {
+    return BoxDecoration(
+      gradient: screenBackgroundGradient,
+      image: const DecorationImage(
+        image: AssetImage('assets/images/login_bg.png'),
+        fit: BoxFit.cover,
+      ),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: const Color(0xFF6C6C63).withValues(alpha: 0.4),
+        width: 1.2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.6),
+          blurRadius: 24,
+          spreadRadius: 2,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
 }
+

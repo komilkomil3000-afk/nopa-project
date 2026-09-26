@@ -82,7 +82,7 @@ router.get('/banners', authenticateJWT as any, getBanners as any);
 router.use('/admin', adminRouter);
 
 // H. Media Routes
-router.post('/media/upload', authenticateJWT as any, authorizeRoles('admin','mentor') as any, upload.single('file'), uploadMedia as any);
+router.post('/media/upload', authenticateJWT as any, upload.single('file'), uploadMedia as any);
 router.get('/media', authenticateJWT as any, authorizeRoles('admin') as any, getMediaAssets as any);
 
 // I. LMS and Forms

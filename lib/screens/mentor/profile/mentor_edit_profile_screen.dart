@@ -1097,21 +1097,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
         insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF5A4D80),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
+          decoration: AppColors.loginDialogDecoration(radius: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

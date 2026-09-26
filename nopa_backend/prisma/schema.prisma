@@ -139,6 +139,8 @@ model AssetConversionRequest {
   requestedBy     String
   status          String   @default("pending") // "pending" | "approved" | "rejected"
   note            String?
+  rejectionReason String?
+  reviewedAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -155,13 +157,17 @@ model Challenge {
   rewardZarik       Int          @default(0)
   createdByMentorId String
   caravanId         String?
+  stationId         String?
+  dueDate           DateTime?
   createdAt         DateTime     @default(now())
 
   // Relations
   caravan           Caravan?     @relation(fields: [caravanId], references: [id], onDelete: SetNull)
+  station           Station?     @relation(fields: [stationId], references: [id], onDelete: SetNull)
   submissions       Submission[]
 
   @@index([caravanId])
+  @@index([stationId])
   @@index([createdByMentorId])
 }
 
@@ -306,6 +312,7 @@ model MentorDocument {
   filename     String
   url          String
   mimeType     String
+  category     String?  // EDUCATION, JOB, RESUME
   status       String   @default("pending") // pending | approved | rejected
   rejectReason String?
   createdAt    DateTime @default(now())
@@ -346,6 +353,9 @@ model Station {
   title               String
   subtitle            String?
   description         String?
+  stayDuration        String?
+  animationTitle      String?
+  animationUrl        String?
   iconUrl             String?
   orderIndex          Int      @default(0)
   releaseDate         DateTime?
@@ -355,6 +365,7 @@ model Station {
   updatedAt           DateTime @updatedAt
 
   categories          ClassCategory[]
+  challenges          Challenge[]
 }
 
 model ClassCategory {

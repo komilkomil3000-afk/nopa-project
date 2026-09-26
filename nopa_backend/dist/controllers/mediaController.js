@@ -37,7 +37,7 @@ const uploadMedia = async (req, res) => {
         }
         const file = req.file;
         const url = `/uploads/${file.filename}`;
-        const { assetType, title, instructor, duration } = req.body;
+        const { assetType, title, instructor, duration, category } = req.body;
         const mediaAsset = await prisma.mediaAsset.create({
             data: {
                 filename: file.filename,
@@ -62,6 +62,7 @@ const uploadMedia = async (req, res) => {
                             filename: file.filename,
                             url,
                             mimeType: file.mimetype,
+                            category: category || null,
                         },
                     });
                 }
@@ -71,7 +72,9 @@ const uploadMedia = async (req, res) => {
             console.error('MentorDocument creation error:', mdErr);
         }
         res.status(201).json({
+            success: true,
             message: 'File uploaded successfully',
+            url,
             media: mediaAsset,
         });
     }

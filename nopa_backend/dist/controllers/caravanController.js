@@ -91,11 +91,12 @@ async function convertAssets(req, res) {
 async function approveAssetConversion(req, res) {
     try {
         const { id } = req.params;
-        const { approve, note } = req.body; // approve: boolean
+        const { approve, note, rejectionReason } = req.body; // approve: boolean
         const conversionReq = await prisma.assetConversionRequest.findUnique({ where: { id } });
         if (!conversionReq || conversionReq.status !== 'pending') {
             return res.status(404).json({ error: 'درخواست معتبر یافت نشد' });
         }
+        const now = new Date();
         if (approve) {
             // Check mentor balance again just in case
             const mentor = await prisma.user.findUnique({ where: { id: conversionReq.requestedBy } });
@@ -109,14 +110,19 @@ async function approveAssetConversion(req, res) {
                 }),
                 prisma.assetConversionRequest.update({
                     where: { id },
-                    data: { status: 'approved', note: note || 'تایید شد' }
+                    data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
                 })
             ]);
         }
         else {
             await prisma.assetConversionRequest.update({
                 where: { id },
-                data: { status: 'rejected', note: note || 'رد شد' }
+                data: {
+                    status: 'rejected',
+                    note: note || 'رد شد',
+                    rejectionReason: rejectionReason || note || 'رد شد',
+                    reviewedAt: now
+                }
             });
         }
         res.json({ success: true });

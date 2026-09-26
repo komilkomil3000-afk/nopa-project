@@ -7,6 +7,7 @@ import '../services/aparat_service.dart';
 import '../services/audio_exclusivity_service.dart';
 import '../services/app_state_repository.dart';
 import '../core/theme/app_theme.dart';
+import '../core/constants/api_constants.dart';
 
 class NopaInlineVideoPlayer extends StatefulWidget {
   final String videoUrl;
@@ -153,6 +154,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
     _disposeController();
 
     try {
+      targetStreamUrl = ApiConstants.resolveImageUrl(targetStreamUrl);
       final uri = Uri.parse(targetStreamUrl);
       final newController = VideoPlayerController.networkUrl(uri);
       _controller = newController;
@@ -386,8 +388,9 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   }
 
   Widget _buildThumbnailPoster() {
-    final poster = widget.coverImageUrl ?? _aparatInfo?.posterUrl;
-    if (poster != null && poster.isNotEmpty && poster.startsWith('http')) {
+    final rawPoster = widget.coverImageUrl ?? _aparatInfo?.posterUrl;
+    final poster = ApiConstants.resolveImageUrl(rawPoster);
+    if (poster.isNotEmpty && poster.startsWith('http')) {
       return CachedNetworkImage(
         imageUrl: poster,
         fit: BoxFit.cover,

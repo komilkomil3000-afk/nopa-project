@@ -71,76 +71,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     super.dispose();
   }
 
-  // Station lore, descriptions, and statistics
-  static const Map<int, Map<String, String>> _stationLore = {
-    0: {
-      'ordinalTitle': 'منزلگاه ۰',
-      'fullTitle': 'منزلگاه صفر (راهنمای کاروان)',
-      'desc':
-          'اینجا منزلگاه صفر، نقطه آغازین سفر کاروان نپا است. کاروانسرایی برای آشنایی، دریافت توشه‌ی راه و شناخت قوانین پیمایش. در این ایستگاه مقدماتی، راهبران مسیر و همراهان کاروان خود را خواهید شناخت و آماده ورود به صحرای ماجراجویی می‌شوید.',
-      'skillSessions': '۱ جلسه',
-      'mediaSessions': '۲ جلسه',
-      'animationCount': '۱ قسمت',
-      'stayDuration': '۵ روز',
-      'clipTitle': 'انیمیشن مقدماتی راهنمای کاروان (منزلگاه ۰)',
-    },
-    1: {
-      'ordinalTitle': 'منزلگاه ۱',
-      'fullTitle': 'منزلگاه اول (کاروانسرای غبارگرفته)',
-      'desc':
-          'اینجا منزلگاه اول، جایی در مناطق حاشیه‌ای صحرای فراموشی است. کاروانسرای غبارگرفته‌ای که اکنون در آن اقامت گزیده‌ایم، همیشه مسافران تازه‌کار را غافلگیر می‌کند. دیوارهای اینجا همه از آیینه هایی ساخته شده‌اند که می‌توانند چیزی فراتر از ظاهر را نشان دهند. عمق فکر و علایق و آرزوهای ما. پیر آیینه گر، مرشد و استادی است که در این منزلگاه سکونت دارد. همه‌ی این آیینه های خارق‌العاده، به دست او ساخته شده‌اند...',
-      'skillSessions': '۲ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۰ روز',
-      'clipTitle': 'انیمیشن کاروانسرای غبارگرفته (منزلگاه ۱)',
-    },
-    2: {
-      'ordinalTitle': 'منزلگاه ۲',
-      'fullTitle': 'منزلگاه دوم (معدن زیرزمینی)',
-      'desc':
-          'اینجا منزلگاه دوم، در اعماق کوهستان‌های پر رمز و راز و معدن‌های باستانی است. جایی که سنگ‌های درخشان و ارزشمند در دل تاریکی نهفته‌اند. در این منزلگاه، مسافران یاد می‌گیرند که چگونه با تلاش و مهارت، گوهر استعدادها و توانمندی‌های خود را کشف و صیقل دهند.',
-      'skillSessions': '۳ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۲ روز',
-      'clipTitle': 'انیمیشن اسرار معدن زیرزمینی (منزلگاه ۲)',
-    },
-    3: {
-      'ordinalTitle': 'منزلگاه ۳',
-      'fullTitle': 'منزلگاه سوم (قلعه)',
-      'desc':
-          'اینجا منزلگاه سوم، قلعه‌ای با شکوه و استوار بر فراز صخره‌های کهن است. در این سنگر مستحکم، اعضای کاروان یاد می‌گیرند که چگونه در کنار یکدیگر به عنوان یک تیم متحد عمل کنند و در برابر چالش‌ها و بادهای سخت مقاومت ورزند.',
-      'skillSessions': '۳ جلسه',
-      'mediaSessions': '۵ جلسه',
-      'animationCount': '۳ قسمت',
-      'stayDuration': '۱۵ روز',
-      'clipTitle': 'انیمیشن دفاع از قلعه کهن (منزلگاه ۳)',
-    },
-    4: {
-      'ordinalTitle': 'منزلگاه ۴',
-      'fullTitle': 'منزلگاه چهارم (دهکده ساحلی)',
-      'desc':
-          'اینجا منزلگاه چهارم، دهکده‌ای آرام و پرامید در کنار ساحل دریای بیکران است. در این منزلگاه، اعضای کاروان مهارت‌های برقراری ارتباط، داستان‌پردازی و خلق آثار مشترک را تمرین می‌کنند تا یادگاری ماندگار از خود بر جای گذارند.',
-      'skillSessions': '۴ جلسه',
-      'mediaSessions': '۴ جلسه',
-      'animationCount': '۲ قسمت',
-      'stayDuration': '۱۰ روز',
-      'clipTitle': 'انیمیشن رویاهای دهکده ساحلی (منزلگاه ۴)',
-    },
-    5: {
-      'ordinalTitle': 'منزلگاه ۵',
-      'fullTitle': 'منزلگاه پنجم (فانوس دریایی)',
-      'desc':
-          'اینجا منزلگاه پنجم، فانوس دریایی فروزان و نقطه اوج سفر کاروان نپا است. نوری درخشان که افق‌های آینده را روشن می‌سازد. در این مقصد، مسافران ثمره تلاش‌ها و تجربیات خود را جشن گرفته و آماده رهبری مسیرهای آینده می‌شوند.',
-      'skillSessions': '۴ جلسه',
-      'mediaSessions': '۶ جلسه',
-      'animationCount': '۴ قسمت',
-      'stayDuration': '۲۰ روز',
-      'clipTitle': 'انیمیشن روشنایی فانوس دریایی (منزلگاه ۵)',
-    },
-  };
-
   bool _isInitialized = false;
 
   @override
@@ -153,17 +83,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         _station = args;
         _currentStationIndex = args.orderIndex;
       } else {
-        final lore0 = _stationLore[0]!;
-        _station = Station(
-          id: '0',
-          title: lore0['fullTitle'] ?? 'منزلگاه صفر (راهنمای کاروان)',
-          teacher: 'استاد کاروان',
-          progress: 0.0,
-          isLocked: false,
-          isCurrent: true,
-          imageUrl: '',
-          orderIndex: 0,
-        );
         _currentStationIndex = 0;
       }
       _loadClassCategories();
@@ -179,8 +98,16 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       if (_allStationsData.isNotEmpty) {
         stationData = _allStationsData.firstWhere(
           (s) => (s['orderIndex'] == _currentStationIndex) || (s['id'] == _station?.id),
-          orElse: () => _allStationsData.isNotEmpty ? _allStationsData[0] : {},
+          orElse: () => _allStationsData.firstWhere(
+            (s) => (s['orderIndex'] == 1),
+            orElse: () => _allStationsData.first,
+          ),
         );
+      }
+
+      if (stationData.isNotEmpty) {
+        _station = Station.fromJson(stationData);
+        _currentStationIndex = _station?.orderIndex ?? _currentStationIndex;
       }
 
       final Map<String, List<Map<String, dynamic>>> map = {};
@@ -203,6 +130,14 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         }
       }
 
+      if (clipsList.isEmpty && _station?.animationUrl != null && _station!.animationUrl!.isNotEmpty) {
+        clipsList.add({
+          'id': 'anim_${_station!.id}',
+          'title': _station?.animationTitle ?? 'انیمیشن معرفی منزلگاه',
+          'videoUrl': _station!.animationUrl!,
+        });
+      }
+
       if (mounted) {
         setState(() {
           _classCategories = map;
@@ -223,18 +158,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     setState(() {
       _currentStationIndex = index;
       _isDescriptionExpanded = false;
-
-      final lore = _stationLore[index];
-      _station = Station(
-        id: index.toString(),
-        title: lore?['fullTitle'] ?? 'منزلگاه $index',
-        teacher: 'استاد منزلگاه',
-        progress: 0.0,
-        isLocked: false,
-        isCurrent: true,
-        imageUrl: '',
-        orderIndex: index,
-      );
+      if (_allStationsData.isNotEmpty) {
+        final matching = _allStationsData.firstWhere(
+          (s) => (s['orderIndex'] == index),
+          orElse: () => {},
+        );
+        if (matching.isNotEmpty) {
+          _station = Station.fromJson(matching);
+        }
+      }
     });
     _loadClassCategories();
   }
@@ -341,7 +273,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   @override
   Widget build(BuildContext context) {
-    final lore = _stationLore[_currentStationIndex] ?? _stationLore[1]!;
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
     final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 6;
@@ -351,7 +282,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         (_currentStationIndex + 1) > userLevelFrame &&
         _currentStationIndex > user.completedStationsCount;
 
-    // Dynamic counts from categories or fallback lore
+    // Dynamic counts from categories
     int skillSessionsCount = 0;
     int mediaSessionsCount = 0;
     for (var entry in _classCategories.entries) {
@@ -362,14 +293,16 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       }
     }
 
-    final String skillText = skillSessionsCount > 0 ? '${skillSessionsCount.toPersian()} جلسه' : (lore['skillSessions'] ?? '۲ جلسه');
-    final String mediaText = mediaSessionsCount > 0 ? '${mediaSessionsCount.toPersian()} جلسه' : (lore['mediaSessions'] ?? '۴ جلسه');
-    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : (lore['animationCount'] ?? '۲ قسمت');
-    final String stayText = lore['stayDuration'] ?? '۱۰ روز';
+    final String skillText = '${skillSessionsCount.toPersian()} جلسه';
+    final String mediaText = '${mediaSessionsCount.toPersian()} جلسه';
+    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : '۱ قسمت';
+    final String stayText = _station?.stayDuration?.isNotEmpty == true
+        ? _station!.stayDuration!
+        : '${(_currentStationIndex * 3 + 5).toPersian()} روز';
 
     final String currentClipTitle = _allClips.isNotEmpty && _currentClipIndex < _allClips.length
-        ? (_allClips[_currentClipIndex]['title'] ?? lore['clipTitle'] ?? 'انیمیشن منزلگاه')
-        : (lore['clipTitle'] ?? 'انیمیشن کاروانسرای غبارگرفته (منزلگاه ۱)');
+        ? (_allClips[_currentClipIndex]['title'] ?? _station?.animationTitle ?? 'انیمیشن منزلگاه')
+        : (_station?.animationTitle ?? 'انیمیشن معرفی منزلگاه');
 
     final Widget scrollableContent = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -382,7 +315,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             totalNodes: totalStationNodes,
             userLevelFrame: userLevelFrame,
             completedStationsCount: user.completedStationsCount,
-            title: lore['fullTitle'],
+            title: _station?.title,
             onStationSelected: _switchStation,
           ),
 
@@ -393,7 +326,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             _buildLockedStationCard()
           else ...[
             // 3. Station Header: Description on Left & Station Image Box on Right
-            _buildStationLoreHeader(lore),
+            _buildStationLoreHeader(),
 
             const SizedBox(height: 18),
 
@@ -487,13 +420,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
 
   /// 3. Station Lore Header: Text on Left & Station Image Box on Right (No shadow, no bottom text, Home gradient border)
-  Widget _buildStationLoreHeader(Map<String, String> lore) {
+  Widget _buildStationLoreHeader() {
     const double cardWidth = 105.0;
     const double cardHeight = 138.0;
     final String stationImage = _station?.imageUrl ?? '';
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
-    final String ordinalTitle = lore['ordinalTitle'] ?? 'منزلگاه اول';
-    final String fullDescription = lore['desc'] ?? '';
+    final String ordinalTitle = Station.getOrdinalName(_currentStationIndex);
+    final String fullDescription = _station?.description?.isNotEmpty == true
+        ? _station!.description!
+        : 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';
 
     return Directionality(
       textDirection: TextDirection.rtl,

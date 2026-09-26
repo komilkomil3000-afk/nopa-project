@@ -11,6 +11,7 @@ import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/auth_service.dart';
+import 'package:nopa_app/widgets/welcome_dialog.dart';
 
 enum AuthLoginMode { otp, password, testBypass }
 
@@ -150,11 +151,18 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         if (user.isDualRole || user.role == UserRole.admin) {
           _showDualRoleSelectionDialog(user);
         } else {
-          AuthService.selectedRole = user.role;
-          Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+          _navigateToDashboardWithWelcome(user.role);
         }
       }
     }
+  }
+
+  Future<void> _navigateToDashboardWithWelcome(UserRole role) async {
+    AuthService.selectedRole = role;
+    if (!mounted) return;
+    await WelcomeDialog.show(context);
+    if (!mounted) return;
+    Navigator.pushReplacementNamed(context, '/dashboard', arguments: role);
   }
 
   String _toEnglishDigits(String input) {
@@ -423,8 +431,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       if (isDualRole) {
         _showDualRoleSelectionDialog(loggedInUser);
       } else {
-        AuthService.selectedRole = resolvedRole;
-        Navigator.pushReplacementNamed(context, '/dashboard', arguments: resolvedRole);
+        _navigateToDashboardWithWelcome(resolvedRole);
       }
     }
   }
@@ -437,13 +444,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
-            backgroundColor: const Color(0xFF160E29),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
-              side: const BorderSide(color: Color(0xFF6D28D9), width: 1.5),
-            ),
-            child: Padding(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
               padding: const EdgeInsets.all(22.0),
+              decoration: AppColors.loginDialogDecoration(radius: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -490,12 +497,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     description: 'مشاهده اعضا، مدیریت تکالیف و چالش‌ها، ارزیابی‌ها و گزارش‌ها',
                     icon: Icons.supervisor_account_rounded,
                     gradientColors: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(ctx);
                       final appRepo = Provider.of<AppRepository>(context, listen: false);
                       appRepo.setActiveRole(UserRole.mentor);
-                      AuthService.selectedRole = UserRole.mentor;
-                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.mentor);
+                      await _navigateToDashboardWithWelcome(UserRole.mentor);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -504,12 +510,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     description: 'مشاهده جلسات آموزشی، ثبت تکالیف، نقشه پیشرفت و بازارچه',
                     icon: Icons.school_rounded,
                     gradientColors: const [Color(0xFFCD8449), Color(0xFFE1BC96)],
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(ctx);
                       final appRepo = Provider.of<AppRepository>(context, listen: false);
                       appRepo.setActiveRole(UserRole.member);
-                      AuthService.selectedRole = UserRole.member;
-                      Navigator.pushReplacementNamed(context, '/dashboard', arguments: UserRole.member);
+                      await _navigateToDashboardWithWelcome(UserRole.member);
                     },
                   ),
                 ],

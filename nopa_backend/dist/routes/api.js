@@ -68,7 +68,7 @@ router.get('/banners', auth_1.authenticateJWT, bannerController_1.getBanners);
 // H. Admin CRM Routes
 router.use('/admin', admin_1.default);
 // H. Media Routes
-router.post('/media/upload', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('admin', 'mentor'), mediaController_1.upload.single('file'), mediaController_1.uploadMedia);
+router.post('/media/upload', auth_1.authenticateJWT, mediaController_1.upload.single('file'), mediaController_1.uploadMedia);
 router.get('/media', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('admin'), mediaController_1.getMediaAssets);
 // I. LMS and Forms
 router.get('/lms/stations', lmsController_1.getStations);

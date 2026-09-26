@@ -288,6 +288,8 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
           <strong style="color:white; font-size:14px; display:flex; align-items:center; gap:6px;">
             <span style="color:#fbbf24;">📍</span> ${simpleStationName}
           </strong>
+          ${st.stayDuration ? `<div style="font-size:11px; color:#38bdf8; margin-top:2px;"><i class="fa-solid fa-hourglass-half"></i> اقامت: ${st.stayDuration}</div>` : ''}
+          ${st.animationTitle ? `<div style="font-size:10px; color:#a78bfa; margin-top:2px;"><i class="fa-solid fa-film"></i> ${st.animationTitle}</div>` : ''}
           <div style="font-size:11px; color:#94a3b8; margin-top:3px;">کد ترتیب: منزلگاه ${idx}</div>
         </td>
         <td>${topicsDisplayHtml}</td>
@@ -527,9 +529,30 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         </div>
       </div>
 
+      <div style="display:grid; grid-template-columns: 1fr 1.5fr 2fr; gap:12px; margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-hourglass-half" style="color:#38bdf8;"></i> مدت اقامت در منزلگاه:</label>
+          <input type="text" id="content-modal-st-duration" class="input-ctrl" value="${station.stayDuration || ''}" placeholder="مثال: ۲ هفته یا ۱۴ روز" style="background:#0f172a; border-color:#475569; color:white;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-clapperboard" style="color:#38bdf8;"></i> عنوان انیمیشن معرفی:</label>
+          <input type="text" id="content-modal-st-anim-title" class="input-ctrl" value="${station.animationTitle || ''}" placeholder="مثال: انیمیشن آغاز سفر و منزلگاه اول" style="background:#0f172a; border-color:#475569; color:white;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> آدرس / لینک ویدیو انیمیشن:</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="content-modal-st-anim-url" class="input-ctrl" value="${station.animationUrl || ''}" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background:#0f172a; border-color:#475569; color:white; direction:ltr; text-align:left; flex:1;">
+            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="آپلود مستقیم ویدیو یا انیمیشن">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
+              <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'content-modal-st-anim-url')">
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div style="margin-bottom:12px;">
-        <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> سرفصل‌ها، اهداف و محتوای کلی منزلگاه:</label>
-        <textarea id="content-modal-st-desc" class="input-ctrl" rows="2" placeholder="توضیحات و سرفصل‌های آموزشی این منزلگاه..." style="background:#0f172a; border-color:#475569;">${station.description || ''}</textarea>
+        <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
+        <textarea id="content-modal-st-desc" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های آموزشی این منزلگاه..." style="background:#0f172a; border-color:#475569;">${station.description || ''}</textarea>
       </div>
 
       <div style="display:flex; justify-content:flex-end;">
@@ -859,13 +882,16 @@ window.saveStationBasicInfoFromContentModal = async function(stationId) {
   const title = document.getElementById('content-modal-st-title')?.value;
   const description = document.getElementById('content-modal-st-desc')?.value;
   const releaseDate = document.getElementById('content-modal-st-date')?.value;
+  const stayDuration = document.getElementById('content-modal-st-duration')?.value;
+  const animationTitle = document.getElementById('content-modal-st-anim-title')?.value;
+  const animationUrl = document.getElementById('content-modal-st-anim-url')?.value;
 
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(`/api/v1/admin/lms/stations/${stationId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ id: stationId, title, description, releaseDate })
+      body: JSON.stringify({ id: stationId, title, description, releaseDate, stayDuration, animationTitle, animationUrl })
     });
     if (res.ok) {
       alert('مشخصات و محتوای کلی منزلگاه با موفقیت ذخیره شد');
@@ -2151,6 +2177,9 @@ window.editStationModal = function(stationId) {
     try { releaseDateStr = new Date(station.releaseDate).toISOString().split('T')[0]; } catch(e) {}
   }
   document.getElementById('modal-st-release-date').value = releaseDateStr;
+  document.getElementById('modal-st-duration').value = station.stayDuration || '';
+  document.getElementById('modal-st-anim-title').value = station.animationTitle || '';
+  document.getElementById('modal-st-anim-url').value = station.animationUrl || '';
   document.getElementById('modal-st-details').value = station.description || '';
 
   // Populate categories dynamically
@@ -2176,6 +2205,9 @@ window.saveCompleteStation = async function(e) {
   const orderIndex = parseInt(document.getElementById('modal-st-index')?.value) || 1;
   const title = document.getElementById('modal-st-title')?.value || 'منزلگاه';
   const releaseDate = document.getElementById('modal-st-release-date')?.value;
+  const stayDuration = document.getElementById('modal-st-duration')?.value;
+  const animationTitle = document.getElementById('modal-st-anim-title')?.value;
+  const animationUrl = document.getElementById('modal-st-anim-url')?.value;
   const description = document.getElementById('modal-st-details')?.value || '';
 
   // Gather dynamic categories
@@ -2214,6 +2246,9 @@ window.saveCompleteStation = async function(e) {
     orderIndex,
     title,
     releaseDate: releaseDate || undefined,
+    stayDuration,
+    animationTitle,
+    animationUrl,
     description,
     categories
   };
@@ -2240,6 +2275,43 @@ window.saveCompleteStation = async function(e) {
   } catch (err) {
     console.error('Save station error:', err);
     alert('ارتباط با سرور برقرار نشد: ' + err.message);
+  }
+};
+
+window.handleDirectFileUpload = async function(inputElement, targetInputId) {
+  if (!inputElement.files || inputElement.files.length === 0) return;
+  const file = inputElement.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const targetEl = document.getElementById(targetInputId);
+  const origPlaceholder = targetEl ? targetEl.placeholder : '';
+  if (targetEl) targetEl.placeholder = '⏳ در حال آپلود فایل...';
+
+  try {
+    const res = await fetch('/api/v1/media/upload', {
+      method: 'POST',
+      headers: {
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok && (data.url || data.media?.url)) {
+      const fileUrl = data.url || data.media.url;
+      if (targetEl) {
+        targetEl.value = fileUrl;
+      }
+      alert('✅ فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
+    } else {
+      alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('Direct Upload Error:', err);
+    alert('خطا در ارتباط با سرور برای آپلود فایل');
+  } finally {
+    if (targetEl) targetEl.placeholder = origPlaceholder;
   }
 };
 

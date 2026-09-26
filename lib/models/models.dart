@@ -10,6 +10,9 @@ class ChallengeModel {
   final String createdByMentorId;
   final double progress;
   final String? caravanId;
+  final String? stationId;
+  final DateTime? dueDate;
+  final String? stationTitle;
   final String? mentorName;
   final String? caravanName;
   final String? myStatus;
@@ -32,6 +35,9 @@ class ChallengeModel {
     required this.createdByMentorId,
     this.progress = 0.0,
     this.caravanId,
+    this.stationId,
+    this.dueDate,
+    this.stationTitle,
     this.mentorName,
     this.caravanName,
     this.myStatus,

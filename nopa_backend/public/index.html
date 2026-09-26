@@ -1557,9 +1557,29 @@
                     <input type="date" id="modal-st-release-date" class="input-ctrl" style="color:white; background:#1e293b; border-color: #475569;" required>
                   </div>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr 2fr; gap: 12px; margin-bottom: 12px;">
+                  <div class="form-group">
+                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-hourglass-half" style="color:#38bdf8;"></i> مدت اقامت در منزلگاه:</label>
+                    <input type="text" id="modal-st-duration" class="input-ctrl" placeholder="مثال: ۲ هفته" style="background: #1e293b; border-color: #475569;">
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-clapperboard" style="color:#38bdf8;"></i> عنوان انیمیشن معرفی:</label>
+                    <input type="text" id="modal-st-anim-title" class="input-ctrl" placeholder="مثال: انیمیشن آغاز سفر" style="background: #1e293b; border-color: #475569;">
+                  </div>
+                  <div class="form-group">
+                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> لینک ویدیو انیمیشن:</label>
+                    <div style="display:flex; gap:6px;">
+                      <input type="text" id="modal-st-anim-url" class="input-ctrl" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background: #1e293b; border-color: #475569; direction:ltr; text-align:left; flex:1;">
+                      <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="آپلود مستقیم ویدیو">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
+                        <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'modal-st-anim-url')">
+                      </label>
+                    </div>
+                  </div>
+                </div>
                 <div class="form-group">
-                  <label style="font-size: 12px; color: #cbd5e1;">توضیحات و سرفصل‌های کلی منزلگاه:</label>
-                  <textarea id="modal-st-details" class="input-ctrl" rows="2" placeholder="توضیحات و سرفصل‌های کلی این منزلگاه را وارد نمایید..." style="background: #1e293b; border-color: #475569;"></textarea>
+                  <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
+                  <textarea id="modal-st-details" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های کلی این منزلگاه را وارد نمایید..." style="background: #1e293b; border-color: #475569;"></textarea>
                 </div>
               </div>
 
@@ -3320,6 +3340,19 @@
               </div>
             </div>
 
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📍 منزلگاه مرتبط (اختیاری):</label>
+                <select id="new-chal-station-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
+                <input type="date" id="new-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+              </div>
+            </div>
+
             <div style="margin-bottom: 16px;">
               <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">توضیحات / صورت تکلیف *</label>
               <textarea id="new-chal-desc" rows="3" required placeholder="توضیحات و دستورالعمل اجرای چالش برای دانش‌آموزان..." style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px; line-height: 1.6; resize: vertical;"></textarea>
@@ -3393,6 +3426,19 @@
                   <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
                   <option value="file">📁 ارسال فایل / پروژه</option>
                 </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📍 منزلگاه مرتبط (اختیاری):</label>
+                <select id="edit-chal-station-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
+                <input type="date" id="edit-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
               </div>
             </div>
 
