@@ -94,6 +94,10 @@ router.get('/support/tickets', auth_1.authenticateJWT, supportController_1.getTi
 router.post('/support/tickets/:id/reply', auth_1.authenticateJWT, supportController_1.replyTicket);
 router.patch('/support/tickets/:id/resolve', auth_1.authenticateJWT, supportController_1.resolveTicket);
 // L. Caravans & Assets
+router.get('/caravans', auth_1.authenticateJWT, caravanController_1.getCaravans);
+router.get('/caravans/:id', auth_1.authenticateJWT, caravanController_1.getCaravanDetails);
+router.delete('/caravans/:id/members/:studentId', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin', 'SUPER_MENTOR'), caravanController_1.removeMemberFromCaravan);
+router.post('/caravans/:id/members/:studentId', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('mentor', 'admin', 'SUPER_MENTOR'), caravanController_1.addMemberToCaravan);
 router.post('/caravans/convert-assets', auth_1.authenticateJWT, caravanController_1.convertAssets);
 router.get('/caravans/asset-conversions', auth_1.authenticateJWT, caravanController_1.getCaravanAssetConversions);
 router.post('/caravans/submit-exchange', auth_1.authenticateJWT, caravanController_1.submitStudentAssetConversion);

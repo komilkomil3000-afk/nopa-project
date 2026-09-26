@@ -8,6 +8,7 @@ exports.getAssetConversionsAdmin = getAssetConversionsAdmin;
 exports.getCaravanAssetConversions = getCaravanAssetConversions;
 exports.submitStudentAssetConversion = submitStudentAssetConversion;
 exports.createCaravan = createCaravan;
+exports.getCaravans = getCaravans;
 exports.getCaravanDetails = getCaravanDetails;
 exports.addMemberToCaravan = addMemberToCaravan;
 exports.removeMemberFromCaravan = removeMemberFromCaravan;
@@ -236,6 +237,75 @@ async function createCaravan(req, res) {
         }
         await (0, adminController_1.logAdminAction)(req.user.id, 'Admin', 'CREATE_CARAVAN', 'Caravan', caravan.id, `Created caravan ${name}`, req.ip || '');
         res.json({ success: true, caravan });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function getCaravans(req, res) {
+    try {
+        const userId = req.user?.id;
+        const userRole = req.user?.role?.toLowerCase();
+        let whereClause = { isDeleted: false };
+        if (userRole === 'mentor' && userId) {
+            whereClause = {
+                isDeleted: false,
+                OR: [
+                    { mentorId: userId },
+                    { members: { some: { id: userId } } }
+                ]
+            };
+        }
+        let caravans = await prisma.caravan.findMany({
+            where: whereClause,
+            include: {
+                mentor: { select: { id: true, name: true, phoneNumber: true } },
+                members: {
+                    where: { isDeleted: false, role: 'student' },
+                    select: {
+                        id: true,
+                        name: true,
+                        phoneNumber: true,
+                        userCode: true,
+                        zarikBalance: true,
+                        role: true,
+                        levelFrame: true,
+                        nakh: true,
+                        farsh: true,
+                        beyragh: true,
+                        avatarUrl: true
+                    }
+                }
+            },
+            orderBy: { name: 'asc' }
+        });
+        // If mentor has no assigned caravans in filter, return all non-deleted caravans as fallback
+        if (caravans.length === 0) {
+            caravans = await prisma.caravan.findMany({
+                where: { isDeleted: false },
+                include: {
+                    mentor: { select: { id: true, name: true, phoneNumber: true } },
+                    members: {
+                        where: { isDeleted: false, role: 'student' },
+                        select: {
+                            id: true,
+                            name: true,
+                            phoneNumber: true,
+                            userCode: true,
+                            zarikBalance: true,
+                            role: true,
+                            levelFrame: true,
+                            nakh: true,
+                            farsh: true,
+                            beyragh: true,
+                            avatarUrl: true
+                        }
+                    }
+                },
+                orderBy: { name: 'asc' }
+            });
+        }
+        res.json(caravans);
     }
     catch (error) {
         res.status(500).json({ error: error.message });
