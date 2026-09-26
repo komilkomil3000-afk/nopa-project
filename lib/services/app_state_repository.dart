@@ -156,6 +156,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       challenges.clear();
       challenges.addAll(apiChallenges);
       await fetchNotifications();
+      await fetchCaravans();
       notifyListeners();
       await _syncOfflineData();
     }
@@ -276,11 +277,42 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // Reactive Collections
-  final List<CaravanModel> caravans = [
+  List<CaravanModel> caravans = [
     CaravanModel(id: 'c1', name: 'کاروان یاوران علاءالملک', memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
     CaravanModel(id: 'c2', name: 'کاروان عمار', memberCount: 20, overallProgress: 0.65, activeStation: 'منزلگاه دوم'),
     CaravanModel(id: 'c3', name: 'کاروان مالک اشتر', memberCount: 18, overallProgress: 0.50, activeStation: 'منزلگاه سوم'),
   ];
+
+  Future<void> fetchCaravans() async {
+    try {
+      final data = await _apiService.getCaravans();
+      if (data.isNotEmpty) {
+        final List<CaravanModel> loaded = [];
+        for (final item in data) {
+          final members = (item['members'] is List) ? (item['members'] as List) : ((item['membersList'] is List) ? item['membersList'] as List : []);
+          final memberCount = (item['memberCount'] is int) ? (item['memberCount'] as int) : members.length;
+          final overallProgress = (item['overallProgress'] is num) ? (item['overallProgress'] as num).toDouble() : 0.75;
+          final activeStation = item['activeStation']?.toString() ?? 'منزلگاه اول';
+          loaded.add(CaravanModel(
+            id: item['id']?.toString() ?? '',
+            name: item['name']?.toString() ?? 'کاروان',
+            memberCount: memberCount,
+            overallProgress: overallProgress,
+            activeStation: activeStation,
+          ));
+        }
+        if (loaded.isNotEmpty) {
+          caravans = loaded;
+          if (!caravans.any((c) => c.id == _selectedCaravanId)) {
+            _selectedCaravanId = caravans.first.id;
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('fetchCaravans error: $e');
+    }
+  }
   final List<ChallengeModel> challenges = [];
   final List<SubmissionModel> submissions = [];
   final List<MentorRatingModel> mentorRatings = [];

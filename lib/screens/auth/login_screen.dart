@@ -690,45 +690,60 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           height: double.infinity,
           decoration: const BoxDecoration(
             gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
           ),
           child: SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 34.0, vertical: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(height: 38),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                      maxWidth: 420,
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 28),
 
-                        // 1. Top Header: SVG Logo (nopa_logo.svg) above Persian Poetry
-                        _buildTopHeader(),
+                                // 1. Top Header: SVG Logo (nopa_logo.svg) above Persian Poetry
+                                _buildTopHeader(),
 
-                        const SizedBox(height: 26),
+                                const SizedBox(height: 24),
 
-                        // 2. Segmented Mode Switcher: OTP vs Password + Test badge
-                        _buildSegmentedModeSwitcher(),
+                                // 2. Segmented Mode Switcher: OTP vs Password + Test badge
+                                _buildSegmentedModeSwitcher(),
 
-                        const SizedBox(height: 24),
+                                const SizedBox(height: 24),
 
-                        // 3. Login Form
-                        _buildLoginForm(),
+                                // 3. Login Form
+                                _buildLoginForm(),
+                              ],
+                            ),
 
-                        const SizedBox(height: 28),
-
-                        // 4. Bottom Footer: Campaign & Version
-                        _buildBottomFooter(),
-
-                        const SizedBox(height: 16),
-                      ],
+                            // 4. Bottom Footer: Campaign & Version pinned to bottom
+                            Padding(
+                              padding: const EdgeInsets.only(top: 24.0, bottom: 12.0),
+                              child: _buildBottomFooter(),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -795,97 +810,102 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   /// Segmented Mode Switcher matching screenshot proportions
   Widget _buildSegmentedModeSwitcher() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Mode Switcher Pill Container (Right in RTL)
-        Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.strokeGradient,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.all(AppColors.borderWidth),
-          child: Container(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mode Switcher Pill Container (Right in RTL)
+          Container(
             decoration: BoxDecoration(
-              gradient: AppColors.darkSurfaceGradient,
-              borderRadius: BorderRadius.circular(9),
-            ),
-            padding: const EdgeInsets.all(3),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 1. OTP Mode Button
-                _buildModeItem(
-                  title: 'ورود با رمز یکبارمصرف',
-                  isSelected: _loginMode == AuthLoginMode.otp,
-                  onTap: () {
-                    setState(() {
-                      _loginMode = AuthLoginMode.otp;
-                      _secretCtrl.clear();
-                    });
-                  },
-                ),
-
-                const SizedBox(width: 4),
-
-                // 2. Fixed Password Mode Button
-                _buildModeItem(
-                  title: 'ورود با رمز عبور ثابت',
-                  isSelected: _loginMode == AuthLoginMode.password,
-                  onTap: () {
-                    setState(() {
-                      _loginMode = AuthLoginMode.password;
-                      _secretCtrl.clear();
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // "آزمایشی" Test Bypass Pill Badge (Left in RTL)
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _loginMode = AuthLoginMode.testBypass;
-              _secretCtrl.clear();
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('حالت آزمایشی (بدون نیاز به دریافت پیامک) فعال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                duration: Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(8),
+              gradient: AppColors.strokeGradient,
+              borderRadius: BorderRadius.circular(10),
             ),
             padding: const EdgeInsets.all(AppColors.borderWidth),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(7),
+                gradient: AppColors.darkSurfaceGradient,
+                borderRadius: BorderRadius.circular(9),
               ),
-              child: Text(
-                'آزمایشی',
-                style: TextStyle(
-                  color: _loginMode == AuthLoginMode.testBypass ? Colors.white : const Color(0xFFC7B299),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: AppTheme.fontFamily,
+              padding: const EdgeInsets.all(3),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 1. OTP Mode Button
+                  _buildModeItem(
+                    title: 'ورود با رمز یکبارمصرف',
+                    isSelected: _loginMode == AuthLoginMode.otp,
+                    onTap: () {
+                      setState(() {
+                        _loginMode = AuthLoginMode.otp;
+                        _secretCtrl.clear();
+                      });
+                    },
+                  ),
+
+                  const SizedBox(width: 4),
+
+                  // 2. Fixed Password Mode Button
+                  _buildModeItem(
+                    title: 'ورود با رمز عبور ثابت',
+                    isSelected: _loginMode == AuthLoginMode.password,
+                    onTap: () {
+                      setState(() {
+                        _loginMode = AuthLoginMode.password;
+                        _secretCtrl.clear();
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // "آزمایشی" Test Bypass Pill Badge (Left in RTL)
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _loginMode = AuthLoginMode.testBypass;
+                _secretCtrl.clear();
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('حالت آزمایشی (بدون نیاز به دریافت پیامک) فعال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                  duration: Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.strokeGradient,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(AppColors.borderWidth),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(
+                  'آزمایشی',
+                  style: TextStyle(
+                    color: _loginMode == AuthLoginMode.testBypass ? Colors.white : const Color(0xFFC7B299),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1019,7 +1039,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  /// Inline OTP Dispatch Button inside Phone Input
+  /// Inline OTP Dispatch Button inside Phone Input (Camel color and stroke matching Create Message)
   Widget _buildOtpDispatchInlineButton() {
     final bool isTimerActive = _cooldownRemainingSeconds > 0;
     final String buttonLabel = isTimerActive
@@ -1029,26 +1049,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     return GestureDetector(
       onTap: (_isSendingCode || isTimerActive) ? null : _handleSendVerificationCode,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: BoxDecoration(
           color: const Color(0xFF2A2835),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF6C6C63).withValues(alpha: 0.5),
-            width: 0.8,
+            color: const Color(0xFFC09268),
+            width: 1.0,
           ),
         ),
         child: _isSendingCode
             ? const SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC09268)),
               )
             : Text(
                 buttonLabel,
                 style: TextStyle(
-                  color: isTimerActive ? const Color(0xFFC7B299) : Colors.white,
-                  fontWeight: FontWeight.w500,
+                  color: isTimerActive ? const Color(0xFFC7B299) : const Color(0xFFE1BC96),
+                  fontWeight: FontWeight.w600,
                   fontFamily: AppTheme.fontFamily,
                   fontSize: 11.5,
                 ),

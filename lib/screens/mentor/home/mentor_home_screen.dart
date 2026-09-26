@@ -6,8 +6,8 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
-import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/models/station.dart';
+import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/widgets/education_calendar.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/main.dart';
@@ -37,6 +37,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
       final results = await Future.wait([
         HttpApiService().getStations(),
         HttpApiService().getBanners(position: 'home_top'),
+        Provider.of<AppRepository>(context, listen: false).fetchCaravans(),
       ]);
       if (mounted) {
         setState(() {
@@ -70,6 +71,12 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     final String caravanName = (user?.caravanName != null && user!.caravanName!.isNotEmpty)
         ? user.caravanName!
         : appState.selectedCaravanName;
+    final activeCaravan = appState.caravans.firstWhere(
+      (c) => c.id == appState.selectedCaravanId,
+      orElse: () => appState.caravans.isNotEmpty
+          ? appState.caravans.first
+          : CaravanModel(id: 'c1', name: caravanName, memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
+    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -100,7 +107,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               Expanded(
                 child: _buildInfoColumn(
                   title: 'تعداد اعضا',
-                  value: '۲۴ نفر',
+                  value: '${activeCaravan.memberCount} نفر',
                 ),
               ),
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),

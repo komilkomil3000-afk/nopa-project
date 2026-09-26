@@ -87,7 +87,6 @@ class MentorCaravansRosterScreen extends StatefulWidget {
 
 class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   List<CaravanModel> _caravans = [];
-  int _selectedCaravanIndex = 0;
   bool _isLoading = true;
 
   @override
@@ -108,7 +107,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         if (mounted) {
           setState(() {
             _caravans = parsed;
-            _selectedCaravanIndex = 0;
             _isLoading = false;
           });
         }
@@ -122,7 +120,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
           final c = CaravanModel.fromJson(details);
           setState(() {
             _caravans = [c];
-            _selectedCaravanIndex = 0;
             _isLoading = false;
           });
           return;
@@ -210,7 +207,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
               ],
             ),
           ];
-          _selectedCaravanIndex = 0;
           _isLoading = false;
         });
       }
@@ -536,6 +532,8 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppRepository>(context);
+
     if (_isLoading) {
       return const AppScaffold(
         showBackButton: true,
@@ -547,11 +545,14 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
       );
     }
 
-    final currentCaravan = _caravans.isNotEmpty && _selectedCaravanIndex < _caravans.length
-        ? _caravans[_selectedCaravanIndex]
-        : null;
+    final selectedCaravan = _caravans.firstWhere(
+      (c) => c.id == appState.selectedCaravanId || c.name == appState.selectedCaravanName,
+      orElse: () => _caravans.isNotEmpty
+          ? _caravans.first
+          : CaravanModel(id: 'c1', name: appState.selectedCaravanName, mentorName: appState.currentUser.name, memberCount: 0, members: []),
+    );
 
-    final membersList = currentCaravan?.members ?? [];
+    final membersList = selectedCaravan.members;
 
     return AppScaffold(
       showBackButton: true,
@@ -560,7 +561,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
       showBottomNavBar: true,
       currentBottomNavIndex: 4,
       body: RefreshIndicator(
-        onRefresh: _loadCaravansAndMembers,
+        onRefresh: () async {
+          await appState.fetchCaravans();
+          await _loadCaravansAndMembers();
+        },
         color: const Color(0xFFCD8449),
         backgroundColor: const Color(0xFF231C38),
         child: SingleChildScrollView(
@@ -573,52 +577,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
               children: [
                 const SizedBox(height: 8),
 
-                // 1. Caravan Selector Header Guide
-                const Center(
-                  child: Text(
-                    'کاروان خود انتخاب کنید',
-                    style: TextStyle(
-                      color: Color(0xFFB5B3C8),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
+                // 1. Caravan Selector Card (Exact same as MentorHomeScreen)
+                _buildCaravanSelectorCard(appState),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // 2. Caravan Carousel / Pills Row (Matching Assets pills in HomeScreen)
-                SizedBox(
-                  height: 44,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _caravans.length,
-                    separatorBuilder: (ctx, idx) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) {
-                      final caravan = _caravans[index];
-                      final isSelected = _selectedCaravanIndex == index;
-                      final badgeNumber = (index + 1).toPersian();
-
-                      return _buildCaravanPill(
-                        badgeNumber: badgeNumber,
-                        name: caravan.name,
-                        isSelected: isSelected,
-                        onTap: () {
-                          setState(() {
-                            _selectedCaravanIndex = index;
-                          });
-                        },
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                // 3. Add User Request Button (Outlined pill button matching reference)
+                // 2. Add User Request Button (Outlined pill button matching reference)
                 Align(
                   alignment: Alignment.centerRight,
                   child: OutlinedButton(
@@ -645,7 +609,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
                 const SizedBox(height: 16),
 
-                // 4. Members List (Styled as Class Box Container)
+                // 3. Members List (Styled as Class Box Container)
                 if (membersList.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(32),
@@ -667,7 +631,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     separatorBuilder: (ctx, idx) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final member = membersList[index];
-                      return _buildMemberCard(member, currentCaravan!);
+                      return _buildMemberCard(member, selectedCaravan);
                     },
                   ),
 
@@ -680,102 +644,251 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
     );
   }
 
-  /// Caravan Pill matching Asset Pill in HomeScreen
-  Widget _buildCaravanPill({
-    required String badgeNumber,
-    required String name,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 150),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: isSelected
-              ? const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
-                  colors: [
-                    Color(0xFF8D5B2C),
-                    Color(0xFFFFD580),
-                    Color(0xFF8D5B2C),
-                  ],
-                )
-              : const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
-                  colors: [
-                    Color(0xFF3A3A6A),
-                    Color(0xFF9292E2),
-                    Color(0xFF3A3A6A),
-                  ],
-                ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(1.2),
+  /// Active Caravan Selector Card matching HomeScreen
+  Widget _buildCaravanSelectorCard(AppRepository appState) {
+    final String activeCaravanName = appState.selectedCaravanName;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showCaravanSelectionBottomSheet(context, appState),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20.8),
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  )
-                : null,
-            color: isSelected ? null : const Color(0xFF28274A),
+            borderRadius: BorderRadius.circular(14.8),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.53, 1.0],
+              colors: [
+                Color(0xFF3D3C67),
+                Color(0xFF36345C),
+                Color(0xFF333359),
+              ],
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Badge circle with number
-              Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF653A18) : const Color(0xFF8B88E8),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    badgeNumber,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFC7844E).withValues(alpha: 0.4),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.groups_rounded,
+                      color: Color(0xFF2C1605),
+                      size: 22,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              // Caravan Name
-              Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'انتخاب کاروان',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'کاروان فعال: $activeCaravanName',
+                        style: const TextStyle(
+                          color: Color(0xFFDFB690),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF28274A),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'تغییر',
+                        style: TextStyle(
+                          color: Color(0xFFDEB58A),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFFDEB58A),
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  void _showCaravanSelectionBottomSheet(BuildContext context, AppRepository appState) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1D34),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final caravans = appState.caravans;
+        final selectedId = appState.selectedCaravanId;
+
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'انتخاب کاروان تحت مدیریت',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'لطفاً کاروانی که می‌خواهید اطلاعات و اعضای آن مدیریت شود را انتخاب کنید:',
+                  style: TextStyle(
+                    color: Color(0xFFDDD9EE),
+                    fontSize: 12,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                ...caravans.map((c) {
+                  final isSelected = c.id == selectedId || c.name == appState.selectedCaravanName;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: InkWell(
+                      onTap: () {
+                        appState.setSelectedCaravan(c.id, c.name);
+                        Navigator.pop(ctx);
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF383568) : const Color(0xFF28274A),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF454270),
+                            width: isSelected ? 1.4 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF3F3D6B),
+                              ),
+                              child: Icon(
+                                Icons.flag_rounded,
+                                color: isSelected ? const Color(0xFF2C1605) : Colors.white70,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    c.name,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : const Color(0xFFDDD9EE),
+                                      fontSize: 13.5,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                      fontFamily: AppTheme.fontFamily,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${c.memberCount} عضو • ${c.activeStation}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF9D99B8),
+                                      fontSize: 11,
+                                      fontFamily: AppTheme.fontFamily,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: Color(0xFF22C55E),
+                                size: 22,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -935,9 +1048,6 @@ class StudentReportCardAndEvaluationScreen extends StatefulWidget {
 }
 
 class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCardAndEvaluationScreen> {
-  final TextEditingController _noteController = TextEditingController();
-  int _selectedRating = 5;
-  bool _isSavingNote = false;
   List<Map<String, dynamic>> _stations = [];
 
   @override
@@ -955,33 +1065,6 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         });
       }
     } catch (_) {}
-  }
-
-  Future<void> _saveNote() async {
-    final text = _noteController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() => _isSavingNote = true);
-    try {
-      await HttpApiService().savePrivateNote(widget.member.id, text);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('یادداشت ارزیابی با موفقیت ذخیره شد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            backgroundColor: Color(0xFF10B981),
-          ),
-        );
-        _noteController.clear();
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('خطا در ذخیره یادداشت', style: TextStyle(fontFamily: AppTheme.fontFamily))),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSavingNote = false);
-    }
   }
 
   final Set<int> _expandedStationIndices = {0};
@@ -1196,78 +1279,6 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                       if (i < (_stations.isNotEmpty ? _stations.length : 6) - 1)
                         const SizedBox(height: 10),
                     ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              // 6. Mentor Evaluation & Private Notes (باکس ارزیابی با استایل مبادله)
-              _buildExchangeCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ارزیابی و یادداشت راهبر',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text('امتیاز عملکرد: ', style: TextStyle(color: Colors.white70, fontSize: 12, fontFamily: AppTheme.fontFamily)),
-                        Row(
-                          children: List.generate(5, (index) {
-                            return IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                              icon: Icon(
-                                index < _selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
-                                color: const Color(0xFFFFD580),
-                                size: 22,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _selectedRating = index + 1;
-                                });
-                              },
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _noteController,
-                      maxLines: 3,
-                      style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
-                      decoration: InputDecoration(
-                        hintText: 'ثبت یادداشت خصوصی در خصوص عملکرد، نقاط قوت و نیازهای آموزشی کاربر...',
-                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 12, fontFamily: AppTheme.fontFamily),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1D36),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: ElevatedButton(
-                        onPressed: _isSavingNote ? null : _saveNote,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDE9959),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: _isSavingNote
-                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('ثبت یادداشت', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                      ),
-                    ),
                   ],
                 ),
               ),
