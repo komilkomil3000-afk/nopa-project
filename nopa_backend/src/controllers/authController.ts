@@ -97,7 +97,7 @@ export async function login(req: Request, res: Response) {
       return res.status(403).json({ error: 'دسترسی شما به سامانه موقتاً محدود شده است.' });
     }
 
-    // Hourly login limit check: max 12 logins per hour per individual
+    // Hourly login limit check: max 200 logins per hour per individual
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const hourlyLogins = await prisma.auditLog.count({
       where: {
@@ -107,9 +107,9 @@ export async function login(req: Request, res: Response) {
       }
     });
 
-    if (hourlyLogins >= 12) {
+    if (hourlyLogins >= 200) {
       return res.status(429).json({
-        error: 'شما به سقف مجاز ورود (۱۲ بار در هر ساعت) رسیده‌اید. لطفاً پس از گذشت یک ساعت مجدداً تلاش کنید.'
+        error: 'شما به سقف مجاز ورود رسیده‌اید. لطفاً پس از گذشت مدتی مجدداً تلاش کنید.'
       });
     }
 
@@ -163,7 +163,7 @@ export async function login(req: Request, res: Response) {
         action: 'USER_LOGIN',
         targetEntity: 'User',
         targetEntityId: user.id,
-        details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} از ۱۲ در این ساعت)`,
+        details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} در این ساعت)`,
         ipAddress: clientIp
       }
     });
@@ -197,13 +197,13 @@ export async function login(req: Request, res: Response) {
       { expiresIn: '90d' }
     );
 
-    // Multi-Device Session Management (Item 10)
+    // Multi-Device Session Management
     const activeSessions = await prisma.userSession.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'asc' }
     });
 
-    if (activeSessions.length >= 3) {
+    if (activeSessions.length >= 15) {
       await prisma.userSession.delete({
         where: { id: activeSessions[0].id }
       });
@@ -348,7 +348,7 @@ export async function register(req: Request, res: Response) {
       orderBy: { createdAt: 'asc' }
     });
 
-    if (activeSessions.length >= 3) {
+    if (activeSessions.length >= 15) {
       await prisma.userSession.delete({
         where: { id: activeSessions[0].id }
       });

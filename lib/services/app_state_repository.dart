@@ -24,23 +24,31 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     HttpApiService.onActivity = recordActivity;
     _initializeMockData();
     WidgetsBinding.instance.addObserver(this);
-    _startPeriodicNotificationSync();
-    if (kDebugMode && useMockBackend) {
-      EmbeddedServer().start().then((_) {
-        _apiService.checkBackendHealth();
-        refreshUser();
-      });
-    } else {
-      refreshUser();
-    }
+    
+    // Defer network operations, user refresh and timers until after the initial UI frame renders
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startPeriodicNotificationSync();
+      if (kDebugMode && useMockBackend) {
+        EmbeddedServer().start().then((_) {
+          _apiService.checkBackendHealth();
+          refreshUser();
+        }).catchError((e) {
+          debugPrint('EmbeddedServer start error: $e');
+        });
+      } else {
+        refreshUser().catchError((e) {
+          debugPrint('Startup refreshUser error: $e');
+        });
+      }
+    });
   }
 
   static VoidCallback? onSessionTimeout;
-  static const int inactivityTimeoutMinutes = 8;
+  static const int inactivityTimeoutMinutes = 60 * 24 * 30; // 30-day persistent session
   static const String prefKeyLastActive = 'last_app_exit_timestamp';
   DateTime? _lastActiveTimestamp;
+  DateTime? get lastActiveTimestamp => _lastActiveTimestamp;
   DateTime? _lastDiskPersistTimestamp;
-  Timer? _inactivityCheckTimer;
   int _activeMediaPlayingCount = 0;
 
   bool get isMediaPlaying => _activeMediaPlayingCount > 0;
@@ -69,35 +77,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> checkInactivityTimeout() async {
-    if (!_apiService.isAuthenticated || currentUser.id == 'guest' || currentUser.id == 'loading') {
-      return;
-    }
-
-    // Video, class, and part playback is strictly exempt from timeout
-    if (isMediaPlaying) {
-      _lastActiveTimestamp = DateTime.now();
-      return;
-    }
-
-    final now = DateTime.now();
-    _lastActiveTimestamp ??= now;
-    final diff = now.difference(_lastActiveTimestamp!);
-    // Must strictly be at least 8 minutes of complete inactivity
-    if (diff.inMinutes >= inactivityTimeoutMinutes) {
-      debugPrint('⏱️ Inactivity timeout exceeded: ${diff.inMinutes} min (limit: $inactivityTimeoutMinutes min). Logging out...');
-      _lastActiveTimestamp = now;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(prefKeyLastActive);
-      await _apiService.setToken(null);
-      handleUnauthorized();
-      onSessionTimeout?.call();
-      return;
-    }
+    // Session is persisted for 30 days; do not randomly kick the user out while active
+    recordActivity();
   }
 
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
-    _notificationPollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+    _notificationPollTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
       try {
         if (_apiService.isAuthenticated) {
           await fetchNotifications();
@@ -106,32 +92,18 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         debugPrint('Periodic notification sync caught: $e');
       }
     });
-
-    _inactivityCheckTimer?.cancel();
-    _inactivityCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      try {
-        if (_apiService.isAuthenticated) {
-          await checkInactivityTimeout();
-        }
-      } catch (e) {
-        debugPrint('Periodic inactivity check caught: $e');
-      }
-    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     try {
       if (state == AppLifecycleState.resumed) {
-        checkInactivityTimeout().then((_) {
-          if (_apiService.isAuthenticated) {
-            refreshUser().catchError((e) {
-              debugPrint('Resumed refreshUser error: $e');
-            });
-          }
-        }).catchError((e) {
-          debugPrint('Resumed checkInactivityTimeout error: $e');
-        });
+        recordActivity();
+        if (_apiService.isAuthenticated) {
+          refreshUser().catchError((e) {
+            debugPrint('Resumed refreshUser error: $e');
+          });
+        }
       } else if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.detached) {
         recordActivity();
       }

@@ -64,7 +64,7 @@ class HttpApiService {
   void handleUnauthorized() {
     if (_isHandling401) return;
     _isHandling401 = true;
-    debugPrint('🚨 [HttpApiService] 401 Unauthorized unrecoverable! Clearing tokens and routing to /auth...');
+    debugPrint('🚨 [HttpApiService] 401 Unauthorized unrecoverable! Clearing tokens and notifying...');
 
     clearTokens().catchError((e) {
       debugPrint('Failed to clear tokens on unauthorized: $e');
@@ -74,7 +74,7 @@ class HttpApiService {
       onUnauthorized?.call();
     });
 
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 3), () {
       _isHandling401 = false;
     });
   }
@@ -166,7 +166,7 @@ class HttpApiService {
         refreshUrl,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refreshToken': _refreshToken}),
-      ).timeout(const Duration(seconds: 20));
+      ).timeout(const Duration(seconds: 15));
 
       if (res.statusCode == 200) {
         final dynamic parsed = await parseJsonAsync(res.body);
@@ -210,13 +210,14 @@ class HttpApiService {
     }
   }
 
-  /// Network Interceptor: handles token injection, silent 401 refresh interception, and request replay
+  /// Network Interceptor: handles token injection, silent 401 refresh interception, retry on network drops
   Future<http.Response> _sendWithAuthRetry(
     String method,
     Uri url, {
     Map<String, String>? headers,
     Object? body,
     bool checkAuth = true,
+    int retryCount = 0,
   }) async {
     final stopwatch = Stopwatch()..start();
     debugPrint('🌐 [HttpApiService] ➡️ $method $url');
@@ -229,22 +230,22 @@ class HttpApiService {
 
       switch (method.toUpperCase()) {
         case 'GET':
-          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 20));
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
           break;
         case 'POST':
-          response = await http.post(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
+          response = await http.post(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
           break;
         case 'PATCH':
-          response = await http.patch(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
+          response = await http.patch(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
           break;
         case 'DELETE':
-          response = await http.delete(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
+          response = await http.delete(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
           break;
         case 'PUT':
-          response = await http.put(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 20));
+          response = await http.put(url, headers: reqHeaders, body: body).timeout(const Duration(seconds: 15));
           break;
         default:
-          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 20));
+          response = await http.get(url, headers: reqHeaders).timeout(const Duration(seconds: 15));
       }
 
       debugPrint('📡 [HttpApiService] ⬅️ $method $url -> Status: ${response.statusCode} (${stopwatch.elapsedMilliseconds}ms)');
@@ -260,27 +261,33 @@ class HttpApiService {
 
           switch (method.toUpperCase()) {
             case 'GET':
-              return await http.get(url, headers: replayedHeaders).timeout(const Duration(seconds: 20));
+              return await http.get(url, headers: replayedHeaders).timeout(const Duration(seconds: 15));
             case 'POST':
-              return await http.post(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
+              return await http.post(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
             case 'PATCH':
-              return await http.patch(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
+              return await http.patch(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
             case 'DELETE':
-              return await http.delete(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
+              return await http.delete(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
             case 'PUT':
-              return await http.put(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 20));
+              return await http.put(url, headers: replayedHeaders, body: body).timeout(const Duration(seconds: 15));
           }
-        } else {
-          handleUnauthorized();
         }
       }
 
       return response;
     } on SocketException catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network drop / SocketException for $url (${stopwatch.elapsedMilliseconds}ms): $e');
+      if (retryCount < 1) {
+        await Future.delayed(const Duration(milliseconds: 600));
+        return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
+      }
       return http.Response('{"error":"Network connection lost. Please check your internet.","offline":true}', 503);
     } on TimeoutException catch (e) {
       debugPrint('⚠️ [HttpApiService] ⏱️ TIMEOUT ($method $url) after ${stopwatch.elapsedMilliseconds}ms: $e');
+      if (retryCount < 1) {
+        await Future.delayed(const Duration(milliseconds: 600));
+        return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
+      }
       return http.Response('{"error":"Request timed out. Please try again.","timeout":true}', 504);
     } catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network exception for $url (${stopwatch.elapsedMilliseconds}ms): $e');
@@ -338,7 +345,7 @@ class HttpApiService {
     return candidates;
   }
 
-  Future<bool> _pingHost(String host, {int timeoutMs = 500}) async {
+  Future<bool> _pingHost(String host, {int timeoutMs = 2500}) async {
     try {
       final res = await http.get(Uri.parse('http://$host:5000/health')).timeout(Duration(milliseconds: timeoutMs));
       return res.statusCode == 200;
@@ -377,10 +384,10 @@ class HttpApiService {
     _activeHost = targetHost;
     _activeBaseUrl = 'http://$targetHost:5000/api/v1';
 
-    // 1. Fast ping target host (<= 500ms)
-    final isHealthy = await _pingHost(targetHost, timeoutMs: 500);
+    // 1. Fast ping target host (<= 2500ms)
+    final isHealthy = await _pingHost(targetHost, timeoutMs: 2500);
     if (isHealthy) {
-      debugPrint('⚡ Fast-path verified: Connected to backend on http://$targetHost:5000 (0ms probe delay)');
+      debugPrint('⚡ Fast-path verified: Connected to backend on http://$targetHost:5000');
       if (cachedHost != targetHost) {
         await _secureStorage.write(key: _cachedHostKey, value: targetHost);
       }
@@ -397,7 +404,7 @@ class HttpApiService {
     debugPrint('🔗 Concurrent candidate probing: $candidates');
 
     final probeFutures = candidates.map((host) async {
-      final ok = await _pingHost(host, timeoutMs: 700);
+      final ok = await _pingHost(host, timeoutMs: 2000);
       if (ok) return host;
       return null;
     }).toList();

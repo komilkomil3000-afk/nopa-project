@@ -129,18 +129,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Future<void> _checkAutoLogin() async {
     if (_apiService.isAuthenticated) {
       final prefs = await SharedPreferences.getInstance();
-      final lastActiveMs = prefs.getInt('last_app_exit_timestamp');
-      if (lastActiveMs != null) {
-        final lastActive = DateTime.fromMillisecondsSinceEpoch(lastActiveMs);
-        final diff = DateTime.now().difference(lastActive);
-        if (diff.inMinutes >= 10) {
-          debugPrint('⏱️ Inactivity timeout on launch: away for ${diff.inMinutes} minutes. Auto-login blocked.');
-          await _apiService.setToken(null);
-          await prefs.remove('last_app_exit_timestamp');
-          return;
-        }
-      }
-
       await prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
       AppRepository().recordActivity();
 
@@ -151,7 +139,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         if (user.isDualRole || user.role == UserRole.admin) {
           _showDualRoleSelectionDialog(user);
         } else {
-          _navigateToDashboardWithWelcome(user.role);
+          AuthService.selectedRole = user.role;
+          Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
         }
       }
     }

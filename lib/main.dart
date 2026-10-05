@@ -28,31 +28,15 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB ceiling
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  // Setup automatic 401 unauthorized token invalidation & login redirect
+  // Setup automatic 401 unauthorized token invalidation & safe login redirect
   HttpApiService.onUnauthorized = () {
-    debugPrint('🚨 [Auth] Routing to /auth due to 401 Unauthorized session expiry');
+    debugPrint('🚨 [Auth] Routing to /auth due to unauthorized session');
     AppRepository().handleUnauthorized();
-    navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (route) => false);
-  };
-
-  // Setup automatic 8-minute inactivity session timeout
-  AppRepository.onSessionTimeout = () {
-    debugPrint('⏱️ [Auth] Routing to /auth due to 8-minute inactivity timeout');
-    AppRepository().handleUnauthorized();
-    navigatorKey.currentState?.pushNamedAndRemoveUntil('/auth', (route) => false);
-    final ctx = navigatorKey.currentContext;
-    if (ctx != null) {
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(
-          content: Text('به دلیل عدم فعالیت بیش از ۸ دقیقه، لطفاً مجدداً وارد شوید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFFE11D48),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+    final navState = navigatorKey.currentState;
+    if (navState != null && navState.mounted) {
+      navState.pushNamedAndRemoveUntil('/auth', (route) => false);
     }
   };
-
-  await HttpApiService().checkBackendHealth();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
@@ -73,6 +57,11 @@ void main() async {
       child: const NepaApp(),
     ),
   );
+
+  // Defer background health check after first frame so SurfaceView attaches immediately
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    HttpApiService().checkBackendHealth();
+  });
 }
 
 class NepaApp extends StatelessWidget {

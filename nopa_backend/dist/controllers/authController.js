@@ -94,7 +94,7 @@ async function login(req, res) {
         if (user.accountStatus === 'RESTRICTED') {
             return res.status(403).json({ error: 'دسترسی شما به سامانه موقتاً محدود شده است.' });
         }
-        // Hourly login limit check: max 12 logins per hour per individual
+        // Hourly login limit check: max 200 logins per hour per individual
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const hourlyLogins = await db_1.default.auditLog.count({
             where: {
@@ -103,9 +103,9 @@ async function login(req, res) {
                 createdAt: { gte: oneHourAgo }
             }
         });
-        if (hourlyLogins >= 12) {
+        if (hourlyLogins >= 200) {
             return res.status(429).json({
-                error: 'شما به سقف مجاز ورود (۱۲ بار در هر ساعت) رسیده‌اید. لطفاً پس از گذشت یک ساعت مجدداً تلاش کنید.'
+                error: 'شما به سقف مجاز ورود رسیده‌اید. لطفاً پس از گذشت مدتی مجدداً تلاش کنید.'
             });
         }
         // Password verification (Bcrypt check or universal passcode)
@@ -157,7 +157,7 @@ async function login(req, res) {
                 action: 'USER_LOGIN',
                 targetEntity: 'User',
                 targetEntityId: user.id,
-                details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} از ۱۲ در این ساعت)`,
+                details: `ورود موفق کاربر به سامانه (لاگین ${hourlyLogins + 1} در این ساعت)`,
                 ipAddress: clientIp
             }
         });
@@ -179,12 +179,12 @@ async function login(req, res) {
             tokenVersion: user.tokenVersion,
             type: 'refresh'
         }, refreshSecret, { expiresIn: '90d' });
-        // Multi-Device Session Management (Item 10)
+        // Multi-Device Session Management
         const activeSessions = await db_1.default.userSession.findMany({
             where: { userId: user.id },
             orderBy: { createdAt: 'asc' }
         });
-        if (activeSessions.length >= 3) {
+        if (activeSessions.length >= 15) {
             await db_1.default.userSession.delete({
                 where: { id: activeSessions[0].id }
             });
@@ -308,7 +308,7 @@ async function register(req, res) {
             where: { userId: activeUser.id },
             orderBy: { createdAt: 'asc' }
         });
-        if (activeSessions.length >= 3) {
+        if (activeSessions.length >= 15) {
             await db_1.default.userSession.delete({
                 where: { id: activeSessions[0].id }
             });
