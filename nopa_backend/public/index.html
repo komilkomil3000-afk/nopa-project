@@ -279,14 +279,13 @@
                 <th>نقش</th>
                 <th>کاروان</th>
                 <th>موجودی زریک</th>
-                <th>سطح</th>
                 <th>تاریخ عضویت</th>
                 <th>پیشرفت</th>
                 <th>عملیات</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 20px;">در حال بارگذاری کاربران...</td></tr>
+              <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">در حال بارگذاری کاربران...</td></tr>
             </tbody>
           </table>
         </div>
@@ -802,7 +801,6 @@
                 <th style="background: #0f172a;">اعضا / ظرفیت</th>
                 <th style="background: #0f172a;">مجموع ثروت (زریک)</th>
                 <th style="background: #0f172a;">درصد پیشرفت مسیر</th>
-                <th style="background: #0f172a;">آخرین فعالیت</th>
                 <th style="background: #0f172a;">عملیات</th>
               </tr>
             </thead>
@@ -1122,24 +1120,12 @@
           </div>
 
           <!-- فیلتر و جستجوی چندگانه راهبران -->
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 12px; align-items: flex-end;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; align-items: flex-end;">
             <div class="form-group" style="margin: 0;">
               <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-magnifying-glass" style="color: #38bdf8;"></i> جستجوی هوشمند راهبر:
               </label>
               <input type="text" id="mentor-filter-search" class="input-ctrl" placeholder="نام، موبایل، کد ملی، شهر یا تخصص..." oninput="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 12px; font-size: 12.5px;">
-            </div>
-
-            <div class="form-group" style="margin: 0;">
-              <label style="font-size: 11.5px; color: #94a3b8; margin-bottom: 4px; display: block;">
-                <i class="fa-solid fa-award" style="color: #a78bfa;"></i> سطح راهبری:
-              </label>
-              <select id="mentor-filter-level" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
-                <option value="all">همه سطوح راهبری</option>
-                <option value="1">سطح ۱: یاور (مقدماتی)</option>
-                <option value="2">سطح ۲: استاد (پیشرفته)</option>
-                <option value="3">سطح ۳: راهنمای کل (ارشد)</option>
-              </select>
             </div>
 
             <div class="form-group" style="margin: 0;">
@@ -1170,8 +1156,6 @@
                 <i class="fa-solid fa-arrow-down-wide-short" style="color: #38bdf8;"></i> مرتب‌سازی:
               </label>
               <select id="mentor-filter-sort" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
-                <option value="rating_desc">⭐ بالاترین امتیاز ستاره</option>
-                <option value="level_desc">🏆 بالاترین سطح راهبری</option>
                 <option value="caravans_desc">👥 بیشترین تعداد کاروان</option>
                 <option value="name_asc">🔤 الفبایی نام راهبر</option>
               </select>
@@ -1186,10 +1170,7 @@
                 <th>نام و نام خانوادگی</th>
                 <th>موبایل</th>
                 <th>کد ملی</th>
-                <th>مدرک تحصیلی</th>
                 <th>کاروان‌های تحت هدایت</th>
-                <th style="text-align: center;">سطح</th>
-                <th style="text-align: center;">امتیاز و ستاره</th>
                 <th style="width: 140px; text-align: center;">عملیات</th>
               </tr>
             </thead>
@@ -1211,7 +1192,7 @@
                   <h3 id="dossier-mentor-name" style="margin: 0; color: #38bdf8; font-size: 18px; display: flex; align-items: center; gap: 8px;">
                     شناسنامه تفصیلی راهبر
                   </h3>
-                  <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dossier-mentor-subtitle">اطلاعات هویتی، کاروان‌ها، عملکرد، ستاره‌ها و دارایی‌ها</div>
+                  <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;" id="dossier-mentor-subtitle">اطلاعات هویتی، کاروان‌ها و افراد تحت نظارت</div>
                 </div>
               </div>
               <button type="button" class="modal-close" onclick="document.getElementById('mentor-dossier-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
@@ -1226,6 +1207,58 @@
                 <!-- Action buttons -->
               </div>
               <button type="button" class="btn-action" onclick="document.getElementById('mentor-dossier-modal').style.display='none'" style="padding: 8px 20px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">بستن پرونده</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1.1 STUDENT TICKETS MODAL (تیکت‌های دانش‌آموز با راهبر) -->
+        <div id="student-tickets-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000000; backdrop-filter: blur(12px);">
+          <div class="modal-content glass" style="max-width: 850px; width: 95%; max-height: 88vh; overflow-y: auto; box-sizing: border-box; border-radius: 18px; background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); padding: 24px; color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 20px;">
+                  <i class="fa-solid fa-headset"></i>
+                </div>
+                <div>
+                  <h3 id="student-tickets-title" style="margin: 0; color: #fbbf24; font-size: 17px; font-weight: bold;">تیکت‌ها و مکالمات دانش‌آموز و راهبر</h3>
+                  <div id="student-tickets-subtitle" style="font-size: 12px; color: #94a3b8; margin-top: 4px;">تاریخچه پیام‌ها، فایل‌های ارسالی و پاسخ‌های راهبر</div>
+                </div>
+              </div>
+              <button type="button" class="modal-close" onclick="document.getElementById('student-tickets-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+            
+            <div id="student-tickets-content-body" style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Dynamic tickets content -->
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 20px;">
+              <button type="button" onclick="document.getElementById('student-tickets-modal').style.display='none'" style="padding: 8px 22px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer; font-size: 13px;">بستن</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1.2 STUDENT CHALLENGES MODAL (رفت و برگشت چالش‌ها و تکالیف دانش‌آموز با راهبر) -->
+        <div id="student-challenges-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000000; backdrop-filter: blur(12px);">
+          <div class="modal-content glass" style="max-width: 900px; width: 95%; max-height: 88vh; overflow-y: auto; box-sizing: border-box; border-radius: 18px; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); padding: 24px; color: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); display: flex; align-items: center; justify-content: center; color: #38bdf8; font-size: 20px;">
+                  <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                  <h3 id="student-challenges-title" style="margin: 0; color: #38bdf8; font-size: 17px; font-weight: bold;">رفت و برگشت چالش‌ها و تکالیف</h3>
+                  <div id="student-challenges-subtitle" style="font-size: 12px; color: #94a3b8; margin-top: 4px;">تکالیف ارسالی دانش‌آموز، فایل‌های پیوست، امتیازدهی و بازخوردهای راهبر</div>
+                </div>
+              </div>
+              <button type="button" class="modal-close" onclick="document.getElementById('student-challenges-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+            
+            <div id="student-challenges-content-body" style="display: flex; flex-direction: column; gap: 16px;">
+              <!-- Dynamic challenges content -->
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 20px;">
+              <button type="button" onclick="document.getElementById('student-challenges-modal').style.display='none'" style="padding: 8px 22px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer; font-size: 13px;">بستن</button>
             </div>
           </div>
         </div>
@@ -2859,8 +2892,8 @@
     }
   </style>
 
-    <!-- MENTOR DOSSIER MODAL (360 Degree View) -->
-    <div class="modal-overlay" id="mentor-dossier-modal">
+    <!-- MENTOR DOSSIER MODAL (Legacy 360 Degree View) -->
+    <div class="modal-overlay" id="legacy-mentor-dossier-modal">
       <div class="modal-content glass" style="max-width: 900px; width: 90%; background: rgba(30, 41, 59, 0.95); display: flex; flex-direction: column;">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
           <h3><i class="fa-solid fa-id-card-clip"></i> پرونده تفصیلی و شناسنامه راهبر (Dossier)</h3>
@@ -2876,12 +2909,7 @@
               <div><span style="color: #aaa;">موبایل:</span> <strong id="dossier-phone"></strong></div>
               <div><span style="color: #aaa;">کد ملی:</span> <strong id="dossier-national-id"></strong></div>
               <div><span style="color: #aaa;">تاریخ تولد:</span> <strong id="dossier-dob"></strong></div>
-              <div><span style="color: #aaa;">مدرک تحصیلی:</span> <strong id="dossier-degree"></strong></div>
               <div><span style="color: #aaa;">وضعیت اکانت:</span> <strong id="dossier-status"></strong></div>
-            </div>
-            <div style="margin-top: 10px; font-size: 14px;">
-              <span style="color: #aaa;">گواهینامه‌های آپلود شده:</span>
-              <a href="#" id="dossier-cert-link" target="_blank" style="color: #10b981; text-decoration: none;">مشاهده فایل مدرک</a>
             </div>
           </div>
 
@@ -2901,18 +2929,6 @@
                   <!-- Populated via JS -->
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          <!-- Ratings Section -->
-          <div class="panel-card glass">
-            <h4 style="margin-bottom: 15px; color: #f59e0b;"><i class="fa-solid fa-star"></i> تفکیک ستاره و امتیازات رضایت</h4>
-            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px;">
-              <div style="font-size: 2rem; font-weight: bold; color: #fbbf24;" id="dossier-avg-rating">5.0</div>
-              <div>میانگین کلی از <span id="dossier-total-ratings">0</span> نظر ثبت شده</div>
-            </div>
-            <div class="accordion" id="dossier-ratings-accordion">
-              <!-- Ratings grouped by caravan / student will be populated via JS -->
             </div>
           </div>
 
@@ -3096,6 +3112,32 @@
       </div>
     </div>
   </div>
+
+  <!-- Rename Caravan Modal (تغییر نام کاروان) -->
+  <div id="rename-caravan-modal" class="modal-overlay" style="display:none; z-index:100000; align-items:center; justify-content:center; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);">
+    <div class="modal-content glass" style="max-width:440px; width:90%; padding:24px; border-radius:16px; background:#1e293b; border:1px solid rgba(16,185,129,0.35); box-shadow:0 20px 40px rgba(0,0,0,0.6);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+        <h3 style="color:white; font-size:16px; font-weight:bold; margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-pen-to-square" style="color:#10b981;"></i> ویرایش و تغییر نام کاروان
+        </h3>
+        <button type="button" class="modal-close" onclick="window.closeRenameCaravanModal()" style="background:none; border:none; color:#94a3b8; font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <input type="hidden" id="rename-caravan-id" value="">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="display:block; color:#94a3b8; font-size:12.5px; margin-bottom:8px;">نام جدید کاروان:</label>
+        <input type="text" id="rename-caravan-name-input" class="input-ctrl" placeholder="نام کاروان را وارد کنید..." style="width:100%; box-sizing:border-box; padding:10px 14px; background:#0f172a; border:1px solid #334155; border-radius:8px; color:white; font-size:14px; font-weight:bold; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.saveNewCaravanName();}">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button type="button" onclick="window.closeRenameCaravanModal()" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer; background:rgba(255,255,255,0.08); border:none; color:#cbd5e1;">
+          انصراف
+        </button>
+        <button type="button" id="btn-save-caravan-name" onclick="window.saveNewCaravanName()" class="btn-primary" style="background:linear-gradient(135deg, #10b981, #059669); color:white; padding:8px 18px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-check"></i> ذخیره نام جدید
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="change-caravan-mentor-modal" class="modal-overlay" style="display:none; z-index:100000;">
     <div class="modal-content glass" style="max-width:420px; width:90%; padding:24px; border-radius:16px; background:#1e293b; border:1px solid rgba(255,255,255,0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">

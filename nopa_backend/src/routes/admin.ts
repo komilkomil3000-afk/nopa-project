@@ -31,6 +31,8 @@ import {
   updateMentor,
   moderateMentor,
   getLevelsAndCertificates,
+  replyTicketAdmin,
+  resolveTicketAdmin,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent } from '../controllers/lmsController';
@@ -114,6 +116,7 @@ router.post('/caravans/transfer', transferMember as any);
 router.post('/caravans/:id/members/bulk-add', bulkAddMembersToCaravan as any);
 router.post('/caravans/:id/members/:studentId', addMemberToCaravan as any);
 router.delete('/caravans/:id/members/:studentId', removeMemberFromCaravan as any);
+router.put('/caravans/:id', updateCaravan as any);
 router.patch('/caravans/:id', updateCaravan as any);
 router.post('/caravans/:id/broadcast', broadcastToCaravan as any);
 router.delete('/caravans/:id', deleteCaravan as any);
@@ -123,6 +126,8 @@ router.get('/caravans/requests', getCaravanRequests as any);
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
 router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
 router.get('/tickets', getTickets as any);
+router.post('/tickets/:id/reply', replyTicketAdmin as any);
+router.post('/tickets/:id/resolve', resolveTicketAdmin as any);
 router.get('/challenges', getChallenges as any);
 router.post('/challenges', createChallenge as any);
 router.put('/challenges/:id', updateChallenge as any);

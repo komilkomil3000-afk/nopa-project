@@ -2119,7 +2119,7 @@ async function loadUsers() {
     tbody.innerHTML = '';
 
     if (data.users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 20px;">هیچ کاربری یافت نشد</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">هیچ کاربری یافت نشد</td></tr>';
       return;
     }
 
@@ -2141,7 +2141,6 @@ async function loadUsers() {
         <td>${roleBadge}</td>
         <td>${u.caravanName || '-'}</td>
         <td><strong style="color: var(--color-neon-blue);">${u.zarikBalance.toLocaleString()}</strong></td>
-        <td>${u.levelFrame}</td>
         <td style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${regDate}</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -3860,7 +3859,7 @@ window.renderCaravansTable = function() {
   if (!tbody) return;
 
   if (!window.caravansData || window.caravansData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">هیچ کاروانی یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">هیچ کاروانی یافت نشد.</td></tr>';
     return;
   }
 
@@ -3889,7 +3888,7 @@ window.renderCaravansTable = function() {
 
   tbody.innerHTML = '';
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">کاروانی با این مشخصات یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">کاروانی با این مشخصات یافت نشد.</td></tr>';
     return;
   }
 
@@ -3916,11 +3915,13 @@ window.renderCaravansTable = function() {
           <div class="progress-bar-fill" style="width: ${progress}%"></div>
         </div>
       </td>
-      <td style="color:#94a3b8; font-size:12px;">لحظاتی پیش</td>
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:#0284c7; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.selectCaravanForManagement('${c.id}')" title="مشاهده کاروان">
             <i class="fa-solid fa-eye"></i> مشاهده
+          </button>
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#10b981; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" title="تغییر نام کاروان">
+            <i class="fa-solid fa-pen-to-square"></i> تغییر نام
           </button>
           <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openChangeCaravanMentorModalForCaravan('${c.id}')" title="تغییر راهبر">
             <i class="fa-solid fa-user-gear"></i> تغییر راهبر
@@ -3933,6 +3934,112 @@ window.renderCaravansTable = function() {
     `;
     tbody.appendChild(tr);
   });
+};
+
+window.openRenameCaravanModal = function(id, currentName) {
+  const modal = document.getElementById('rename-caravan-modal');
+  const idInput = document.getElementById('rename-caravan-id');
+  const nameInput = document.getElementById('rename-caravan-name-input');
+  
+  const caravan = window.caravansData?.find(c => c.id === id);
+  const nameToUse = currentName || caravan?.name || caravan?.title || '';
+
+  if (idInput) idInput.value = id;
+  if (nameInput) {
+    nameInput.value = nameToUse;
+    setTimeout(() => {
+      nameInput.focus();
+      nameInput.select();
+    }, 100);
+  }
+
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.style.zIndex = '100000';
+  } else {
+    const promptName = prompt('لطفاً نام جدید کاروان را وارد کنید:', nameToUse);
+    if (promptName && promptName.trim() && promptName.trim() !== nameToUse) {
+      window.executeRenameCaravan(id, promptName.trim());
+    }
+  }
+};
+
+window.closeRenameCaravanModal = function() {
+  const modal = document.getElementById('rename-caravan-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.saveNewCaravanName = async function() {
+  const id = document.getElementById('rename-caravan-id')?.value;
+  const nameInput = document.getElementById('rename-caravan-name-input');
+  const saveBtn = document.getElementById('btn-save-caravan-name');
+  if (!id || !nameInput) return;
+
+  const newName = nameInput.value.trim();
+  if (!newName) {
+    alert('نام کاروان نمی‌تواند خالی باشد.');
+    nameInput.focus();
+    return;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> در حال ذخیره...';
+  }
+
+  await window.executeRenameCaravan(id, newName);
+
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> ذخیره نام جدید';
+  }
+};
+
+window.executeRenameCaravan = async function(id, newName) {
+  const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/caravans/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ name: newName })
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      window.closeRenameCaravanModal();
+      
+      // Update in local memory
+      if (window.caravansData) {
+        const c = window.caravansData.find(item => item.id === id);
+        if (c) {
+          c.name = newName;
+          c.title = newName;
+        }
+      }
+
+      // Re-render table
+      if (typeof window.renderCaravansTable === 'function') {
+        window.renderCaravansTable();
+      }
+
+      // Update picker dropdown if present
+      const picker = document.getElementById('target-caravan-picker');
+      if (picker) {
+        const opt = picker.querySelector(`option[value="${id}"]`);
+        if (opt) opt.textContent = newName;
+      }
+
+      alert('نام کاروان با موفقیت به «' + newName + '» تغییر یافت.');
+    } else {
+      alert('خطا در تغییر نام کاروان: ' + (result.error || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('executeRenameCaravan error:', err);
+    alert('خطا در برقراری ارتباط با سرور: ' + err.message);
+  }
 };
 
 window.selectCaravanForManagement = function(id) {
@@ -4808,7 +4915,7 @@ window.loadMentors = async function() {
   const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
 
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
@@ -4827,7 +4934,7 @@ window.loadMentors = async function() {
     window.filterMentorsList();
   } catch (err) {
     console.error('Error loading mentors:', err);
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
   }
 };
 
@@ -4836,7 +4943,7 @@ window.filterMentorsList = function() {
   if (!tbody) return;
 
   if (!window.mentorsMasterList || window.mentorsMasterList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:#94a3b8;">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
     return;
   }
 
@@ -4844,7 +4951,7 @@ window.filterMentorsList = function() {
   const levelFilter = document.getElementById('mentor-filter-level')?.value || 'all';
   const caravanFilter = document.getElementById('mentor-filter-caravan')?.value || 'all';
   const statusFilter = document.getElementById('mentor-filter-status')?.value || 'all';
-  const sortFilter = document.getElementById('mentor-filter-sort')?.value || 'rating_desc';
+  const sortFilter = document.getElementById('mentor-filter-sort')?.value || 'caravans_desc';
 
   let filtered = [...window.mentorsMasterList];
 
@@ -4855,10 +4962,9 @@ window.filterMentorsList = function() {
       const phone = (m.phoneNumber || '').toLowerCase();
       const natId = (m.nationalId || '').toLowerCase();
       const city = (m.city || '').toLowerCase();
-      const degree = (m.academicDegree || m.education || '').toLowerCase();
       const caravanNames = (m.mentoredCaravans || []).map(c => (c.name || '').toLowerCase()).join(' ');
 
-      return name.includes(query) || phone.includes(query) || natId.includes(query) || city.includes(query) || degree.includes(query) || caravanNames.includes(query);
+      return name.includes(query) || phone.includes(query) || natId.includes(query) || city.includes(query) || caravanNames.includes(query);
     });
   }
 
@@ -4882,18 +4988,10 @@ window.filterMentorsList = function() {
 
   // 5. Sorting
   filtered.sort((a, b) => {
-    const starsA = window.calculateMentorStars(a.ratingsReceived, a.evaluationsReceived).avgNumeric;
-    const starsB = window.calculateMentorStars(b.ratingsReceived, b.evaluationsReceived).avgNumeric;
-    const levelA = parseInt(a.mentorLevel) || 1;
-    const levelB = parseInt(b.mentorLevel) || 1;
     const caravansCountA = (a.mentoredCaravans?.length || 0);
     const caravansCountB = (b.mentoredCaravans?.length || 0);
 
-    if (sortFilter === 'rating_desc') {
-      return starsB - starsA;
-    } else if (sortFilter === 'level_desc') {
-      return levelB - levelA;
-    } else if (sortFilter === 'caravans_desc') {
+    if (sortFilter === 'caravans_desc') {
       return caravansCountB - caravansCountA;
     } else if (sortFilter === 'name_asc') {
       return (a.name || '').localeCompare(b.name || '', 'fa');
@@ -4913,7 +5011,7 @@ window.filterMentorsList = function() {
 
   // Render rows
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:#64748b; margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:#64748b; margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
     return;
   }
 
@@ -4931,7 +5029,7 @@ window.resetMentorFilters = function() {
   if (levelSelect) levelSelect.value = 'all';
   if (caravanSelect) caravanSelect.value = 'all';
   if (statusSelect) statusSelect.value = 'all';
-  if (sortSelect) sortSelect.value = 'rating_desc';
+  if (sortSelect) sortSelect.value = 'caravans_desc';
 
   window.filterMentorsList();
 };
@@ -4939,18 +5037,6 @@ window.resetMentorFilters = function() {
 window.renderMentorsRows = function(mentorsList, tbody) {
   tbody.innerHTML = mentorsList.map(m => {
     const avatarInitials = (m.name ? m.name.trim().split(' ').map(n => n[0]).join('') : 'را').substring(0, 2);
-    
-    // Calculate accurate stars rating based ONLY on real DB records
-    const starsInfo = window.calculateMentorStars(m.ratingsReceived, m.evaluationsReceived);
-
-    const ratingCellHtml = starsInfo.score !== null
-      ? `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.35); padding:4px 8px; border-radius:8px;">
-           <span style="color:#fbbf24; font-weight:bold; font-size:12.5px;">⭐ ${starsInfo.score}</span>
-           <span style="font-size:10.5px; color:#cbd5e1;">(${starsInfo.count} ارزیابی)</span>
-         </div>`
-      : `<div style="display:inline-flex; align-items:center; gap:4px; background:rgba(100, 116, 139, 0.15); border:1px solid rgba(100, 116, 139, 0.25); padding:3px 8px; border-radius:6px; font-size:11px; color:#94a3b8;">
-           <i class="fa-regular fa-star"></i> فاقد ارزیابی (۰ نظر)
-         </div>`;
 
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
@@ -4958,23 +5044,11 @@ window.renderMentorsRows = function(mentorsList, tbody) {
       ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${c.name}</span>`).join(' ')
       : '<span style="color:#64748b; font-size:12px;">فاقد کاروان</span>';
 
-    // Mentor level badge (Exact database field: 1: یاور, 2: استاد, 3: راهنمای کل)
-    let levelBadge = '';
-    const lvl = Number(m.mentorLevel) || 1;
-    if (lvl >= 3) {
-      levelBadge = `<span class="badge" style="background:linear-gradient(135deg, rgba(245,158,11,0.25), rgba(217,119,6,0.35)); color:#fbbf24; border:1px solid rgba(245,158,11,0.5); font-weight:bold; padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۳: راهنمای کل"><i class="fa-solid fa-crown"></i> سطح ۳ (راهنمای کل)</span>`;
-    } else if (lvl === 2) {
-      levelBadge = `<span class="badge" style="background:linear-gradient(135deg, rgba(139,92,246,0.25), rgba(109,40,217,0.35)); color:#c084fc; border:1px solid rgba(139,92,246,0.5); font-weight:bold; padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۲: استاد"><i class="fa-solid fa-graduation-cap"></i> سطح ۲ (استاد)</span>`;
-    } else {
-      levelBadge = `<span class="badge" style="background:rgba(100, 116, 139, 0.25); color:#94a3b8; border:1px solid rgba(100,116,139,0.4); padding:4px 9px; border-radius:6px; font-size:11.5px;" title="سطح ۱: یاور"><i class="fa-solid fa-hand-holding-hand"></i> سطح ۱ (یاور)</span>`;
-    }
-
     // Status indicator
     const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
     const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="color:#ef4444;">🔴</span>' : '<span title="فعال" style="color:#10b981;">🟢</span>';
 
-    // Degree and National ID (only real data)
-    const degreeText = m.academicDegree || m.education || 'عمومی';
+    // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
       ? `<span style="font-family:monospace; color:#cbd5e1;">${m.nationalId}</span>`
       : '<span style="color:#64748b; font-size:11px;">وارد نشده است</span>';
@@ -4995,12 +5069,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
         </td>
         <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${m.phoneNumber || '-'}</td>
         <td style="text-align:center;">${nationalIdText}</td>
-        <td style="color:#cbd5e1; font-size:12.5px;">${degreeText}</td>
         <td>${caravansHtml}</td>
-        <td style="text-align:center;">${levelBadge}</td>
-        <td style="text-align:center;">
-          ${ratingCellHtml}
-        </td>
         <td style="text-align:center; white-space:nowrap;">
           <div style="display:inline-flex; gap:6px; align-items:center;">
             <button class="btn-action" onclick="window.viewMentorDossier('${m.id}')" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
@@ -5045,12 +5114,16 @@ window.quickUpdateMentorLevel = async function(mentorId, newLevel) {
   }
 };
 
+window.currentDossierData = null;
+window.currentMentorId = null;
+
 window.viewMentorDossier = async function(mentorId) {
   const modal = document.getElementById('mentor-dossier-modal');
   const body = document.getElementById('dossier-content-body');
   const footerActions = document.getElementById('dossier-footer-actions');
   if (!modal || !body) return;
 
+  window.currentMentorId = mentorId;
   modal.style.display = 'flex';
   modal.style.zIndex = '999999';
   body.innerHTML = '<div style="text-align:center; padding:30px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
@@ -5066,6 +5139,7 @@ window.viewMentorDossier = async function(mentorId) {
     if (res.ok) {
       dossier = await res.json();
     }
+    window.currentDossierData = dossier;
 
     if (!mentor && dossier?.identity) {
       mentor = dossier.identity;
@@ -5082,36 +5156,37 @@ window.viewMentorDossier = async function(mentorId) {
 
     // Build rich dossier content with pure real ratings
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
+    const students = dossier?.supervisedStudents || [];
     const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
     const scoreTitle = starsInfo.score !== null ? `⭐ ${starsInfo.score} <span style="font-size:12px; color:#94a3b8;">/ ۵</span>` : `<span style="font-size:15px; color:#94a3b8;">فاقد ارزیابی</span>`;
     const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
       <!-- TOP STATS CARDS -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(245, 158, 11, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-star" style="color:#fbbf24;"></i> امتیاز رضایت و عملکرد</div>
-          <div style="font-size:20px; font-weight:bold; color:#fbbf24;">${scoreTitle}</div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">${scoreSub}</div>
-        </div>
-
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:18px;">
         <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
           <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
           <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
           <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
         </div>
 
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-users" style="color:#34d399;"></i> دانش‌آموزان تحت نظارت</div>
+          <div style="font-size:22px; font-weight:bold; color:#34d399;">${students.length} <span style="font-size:12px; color:#94a3b8;">دانش‌آموز</span></div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">افراد تحت سرپرستی این راهبر</div>
+        </div>
+
         <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-award" style="color:#a78bfa;"></i> رتبه و سطح کاربری</div>
-          <div style="font-size:18px; font-weight:bold; color:#a78bfa; margin-top:2px;">سطح ${mentor?.mentorLevel || 1}</div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">وضعیت: <span style="color:#10b981;">${mentor?.accountStatus || 'ACTIVE'}</span></div>
+          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-shield-halved" style="color:#a78bfa;"></i> وضعیت حساب کاربری</div>
+          <div style="font-size:18px; font-weight:bold; color:#10b981; margin-top:4px;">${mentor?.accountStatus || 'ACTIVE'}</div>
+          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">دسترسی به پنل راهبر</div>
         </div>
       </div>
 
-      <!-- PERSONAL & ACADEMIC DOSSIER -->
+      <!-- PERSONAL & IDENTITY DOSSIER -->
       <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
         <div style="font-weight:bold; color:#38bdf8; font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-user-check"></i> مشخصات هویتی و آکادمیک راهبر
+          <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
           <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${mentorName}</span></div>
@@ -5119,7 +5194,6 @@ window.viewMentorDossier = async function(mentorId) {
           <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? mentor.nationalId : 'وارد نشده است'}</span></div>
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${mentor?.dateOfBirth || 'ثبت نشده'}</span></div>
           <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${mentor?.city || 'ثبت نشده'}</span></div>
-          <div><strong style="color:#94a3b8;">مدرک و رشته تحصیلی:</strong> <span style="color:white;">${mentor?.academicDegree || 'عمومی'}</span></div>
           <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${mentor?.socialPlatform || 'ثبت نشده'} (${mentor?.socialMessengerHandle || '-'})</span></div>
           <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? '✅ تایید شده' : '🟡 در انتظار بررسی'}</span></div>
         </div>
@@ -5147,7 +5221,34 @@ window.viewMentorDossier = async function(mentorId) {
           </div>
         ` : '<div style="color:#94a3b8; font-size:12px;">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
       </div>
+
+      <!-- SUPERVISED STUDENTS SECTION (افراد تحت سرپرستی این راهبر) -->
+      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(56, 189, 248, 0.3); border-radius:14px; padding:18px; margin-bottom:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.3); display:flex; align-items:center; justify-content:center; color:#38bdf8; font-size:17px;">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+              <div style="font-weight:bold; color:#38bdf8; font-size:14.5px;">دانش‌آموزان تحت سرپرستی این راهبر</div>
+              <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.3); color:#38bdf8; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
+              ${students.length} دانش‌آموز تحت نظارت
+            </span>
+            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." oninput="window.filterDossierStudents(this.value)" style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.15); color:white; padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
+          </div>
+        </div>
+
+        <div id="dossier-students-container">
+          <!-- Populated by window.renderDossierStudents -->
+        </div>
+      </div>
     `;
+
+    window.renderDossierStudents(students, mentorId);
 
     footerActions.innerHTML = `
       <button type="button" class="btn-primary" onclick="document.getElementById('mentor-dossier-modal').style.display='none'; window.editMentor('${mentorId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
@@ -5157,6 +5258,424 @@ window.viewMentorDossier = async function(mentorId) {
   } catch (err) {
     console.error('viewMentorDossier error:', err);
     body.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${err.message}</div>`;
+  }
+};
+
+window.renderDossierStudents = function(students, mentorId) {
+  const container = document.getElementById('dossier-students-container');
+  if (!container) return;
+
+  if (!students || students.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:35px 20px; background:rgba(0,0,0,0.2); border-radius:12px; color:#94a3b8; border:1px dashed rgba(255,255,255,0.08);">
+        <i class="fa-solid fa-user-graduate fa-2x" style="color:#64748b; margin-bottom:8px;"></i>
+        <div style="font-size:13.5px; font-weight:bold; color:#cbd5e1;">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
+        <div style="font-size:11.5px; margin-top:4px;">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      ${students.map(s => {
+        const initials = (s.name || 'دا').trim().split(' ').map(n => n[0]).join('').substring(0, 2);
+        const openTicketsBadge = s.stats.openTickets > 0 ? 
+          `<span style="background:rgba(239, 68, 68, 0.2); color:#f87171; border:1px solid rgba(239, 68, 68, 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.openTickets} تیکت باز</span>` : 
+          `<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 7px; border-radius:6px; font-size:10.5px;">تیکت بازی ندارد</span>`;
+        
+        const pendingSubmissionsBadge = s.stats.pendingSubmissions > 0 ?
+          `<span style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
+          `<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 7px; border-radius:6px; font-size:10.5px;">تکالیف بررسی‌شده</span>`;
+
+        return `
+          <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(56, 189, 248, 0.45)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <!-- Student Bio & Info -->
+            <div style="display:flex; align-items:center; gap:12px; min-width:240px;">
+              <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #10b981, #0284c7); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; color:white; border:2px solid rgba(255,255,255,0.2); flex-shrink:0;">
+                ${initials}
+              </div>
+              <div>
+                <div style="font-weight:bold; color:#f8fafc; font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span>${s.name}</span>
+                  <span style="background:rgba(139, 92, 246, 0.15); color:#c084fc; border:1px solid rgba(139, 92, 246, 0.3); padding:1px 7px; border-radius:5px; font-size:11px; font-weight:normal;">
+                    <i class="fa-solid fa-campground"></i> ${s.caravanName}
+                  </span>
+                </div>
+                <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; gap:12px; font-family:monospace;">
+                  <span>موبایل: ${s.phoneNumber || '-'}</span>
+                  <span>کد: ${s.userCode || '-'}</span>
+                  <span style="color:#fbbf24;">🪙 ${s.zarikBalance || 0} زریک</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats Indicators -->
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-headset" style="color:#fbbf24;"></i>
+                <span style="color:#cbd5e1;">کل تیکت‌ها: ${s.stats.totalTickets}</span>
+                ${openTicketsBadge}
+              </div>
+
+              <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-trophy" style="color:#38bdf8;"></i>
+                <span style="color:#cbd5e1;">ارسال‌ها: ${s.stats.totalSubmissions}</span>
+                ${pendingSubmissionsBadge}
+              </div>
+            </div>
+
+            <!-- Action Buttons for Tickets & Challenges -->
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <button type="button" onclick="window.openStudentTicketsModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28)); border:1px solid rgba(245, 158, 11, 0.5); color:#fbbf24; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background='rgba(245, 158, 11, 0.35)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28))'">
+                <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
+              </button>
+
+              <button type="button" onclick="window.openStudentChallengesModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(2, 132, 199, 0.28)); border:1px solid rgba(56, 189, 248, 0.5); color:#38bdf8; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background='rgba(56, 189, 248, 0.35)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(2, 132, 199, 0.28))'">
+                <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+};
+
+window.filterDossierStudents = function(query) {
+  if (!window.currentDossierData?.supervisedStudents) return;
+  const q = (query || '').trim().toLowerCase();
+  const filtered = window.currentDossierData.supervisedStudents.filter(s => {
+    return (s.name && s.name.toLowerCase().includes(q)) ||
+           (s.phoneNumber && s.phoneNumber.includes(q)) ||
+           (s.caravanName && s.caravanName.toLowerCase().includes(q));
+  });
+  window.renderDossierStudents(filtered, window.currentMentorId);
+};
+
+window.openStudentTicketsModal = function(mentorId, studentId) {
+  const modal = document.getElementById('student-tickets-modal');
+  const body = document.getElementById('student-tickets-content-body');
+  if (!modal || !body) return;
+
+  const student = window.currentDossierData?.supervisedStudents?.find(s => s.id === studentId);
+  if (!student) {
+    alert('اطلاعات دانش‌آموز یافت نشد.');
+    return;
+  }
+
+  const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
+  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:#fbbf24;"></i> تیکت‌ها و مکالمات: <span style="color:#fff;">${student.name}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
+  document.getElementById('student-tickets-subtitle').textContent = `کاروان: ${student.caravanName} | موبایل: ${student.phoneNumber || '-'} | کد دانش‌آموزی: ${student.userCode || '-'}`;
+
+  const tickets = student.tickets || [];
+  if (tickets.length === 0) {
+    body.innerHTML = `
+      <div style="text-align:center; padding:35px 20px; color:#94a3b8; background:rgba(0,0,0,0.25); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
+        <i class="fa-solid fa-inbox fa-3x" style="color:#64748b; margin-bottom:12px;"></i>
+        <div style="font-size:14px; font-weight:bold; color:#cbd5e1;">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
+        <div style="font-size:12px; margin-top:6px; color:#94a3b8;">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
+      </div>
+    `;
+  } else {
+    body.innerHTML = tickets.map(t => {
+      let statusBadge = '';
+      if (t.status === 'resolved') {
+        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🟢 حل‌شده</span>';
+      } else if (t.status === 'answered') {
+        statusBadge = '<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🔵 پاسخ داده شده</span>';
+      } else {
+        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🟡 در انتظار پاسخ</span>';
+      }
+
+      const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : '';
+      const replies = t.replies || [];
+
+      return `
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+          <!-- Ticket Header -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+                ${t.category || 'پشتیبانی'}
+              </span>
+              <span style="font-weight:bold; color:#f8fafc; font-size:13.5px;">${t.subject || 'بدون موضوع'}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${tDate}</span>
+              ${statusBadge}
+            </div>
+          </div>
+
+          <!-- Initial Message from Student -->
+          <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
+            <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${student.name}):
+            </div>
+            <div style="font-size:13px; color:#e2e8f0; line-height:1.6;">${t.subject || ''}</div>
+            ${t.voiceUrl ? `<div style="margin-top:8px;"><audio controls src="${t.voiceUrl}" style="height:34px; width:100%; max-width:320px;"></audio></div>` : ''}
+            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${t.attachmentUrl}" target="_blank" style="color:#38bdf8; font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+          </div>
+
+          <!-- Conversation Replies History -->
+          ${replies.length > 0 ? `
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-right:12px; border-right:2px dashed rgba(255,255,255,0.1);">
+              ${replies.map(r => {
+                const rDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('fa-IR') : '';
+                return `
+                  <div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11.5px;">
+                      <span style="font-weight:bold; color:#10b981; display:flex; align-items:center; gap:6px;">
+                        <i class="fa-solid fa-reply"></i> پاسخ راهبر (${r.mentor?.name || mentorName}):
+                      </span>
+                      <span style="color:#94a3b8; font-family:monospace;">${rDate}</span>
+                    </div>
+                    <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${r.message}</div>
+                    ${r.voiceUrl ? `<div style="margin-top:6px;"><audio controls src="${r.voiceUrl}" style="height:30px; width:100%; max-width:300px;"></audio></div>` : ''}
+                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${r.attachmentUrl}" target="_blank" style="color:#38bdf8; font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : '<div style="font-size:11.5px; color:#94a3b8; margin-bottom:12px; padding:6px 0;">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
+
+          <!-- Quick Reply & Action Form -->
+          <div style="background:rgba(15, 23, 42, 0.5); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." style="flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:white; padding:8px 12px; border-radius:8px; font-size:12.5px; outline:none;">
+              <button type="button" onclick="window.sendTicketReply('${t.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-paper-plane"></i> ارسال پاسخ
+              </button>
+              ${t.status !== 'resolved' ? `
+                <button type="button" onclick="window.resolveStudentTicket('${t.id}', '${mentorId}', '${studentId}')" style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); color:#34d399; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
+                  <i class="fa-solid fa-check"></i> حل‌شد
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.sendTicketReply = async function(ticketId, mentorId, studentId) {
+  const input = document.getElementById(`ticket-reply-input-${ticketId}`);
+  if (!input || !input.value.trim()) {
+    alert('لطفاً متن پاسخ را وارد نمایید.');
+    return;
+  }
+  const message = input.value.trim();
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+
+  try {
+    const res = await fetch(`/api/v1/admin/tickets/${ticketId}/reply`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ message, mentorId })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      alert('پاسخ با موفقیت ثبت و برای دانش‌آموز ارسال شد.');
+      await window.refreshDossierData(mentorId);
+      window.openStudentTicketsModal(mentorId, studentId);
+    } else {
+      alert('خطا در ارسال پاسخ: ' + (result.error || 'خطای سرور'));
+    }
+  } catch (e) {
+    console.error('sendTicketReply error:', e);
+    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+  }
+};
+
+window.resolveStudentTicket = async function(ticketId, mentorId, studentId) {
+  if (!confirm('آیا از تغییر وضعیت این تیکت به «حل‌شده» اطمینان دارید؟')) return;
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/tickets/${ticketId}/resolve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
+    if (res.ok) {
+      alert('وضعیت تیکت با موفقیت به «حل‌شده» تغییر یافت.');
+      await window.refreshDossierData(mentorId);
+      window.openStudentTicketsModal(mentorId, studentId);
+    } else {
+      const err = await res.json();
+      alert('خطا: ' + (err.error || 'عملیات ناموفق'));
+    }
+  } catch (e) {
+    alert('خطا در ارتباط با سرور: ' + e.message);
+  }
+};
+
+window.openStudentChallengesModal = function(mentorId, studentId) {
+  const modal = document.getElementById('student-challenges-modal');
+  const body = document.getElementById('student-challenges-content-body');
+  if (!modal || !body) return;
+
+  const student = window.currentDossierData?.supervisedStudents?.find(s => s.id === studentId);
+  if (!student) {
+    alert('اطلاعات دانش‌آموز یافت نشد.');
+    return;
+  }
+
+  const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
+  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:#38bdf8;"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:#fff;">${student.name}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(راهبر: ${mentorName})</span>`;
+  document.getElementById('student-challenges-subtitle').textContent = `کاروان: ${student.caravanName} | تکالیف، فایل‌های ارسالی، نمرات و بازخوردهای اصلاحی راهبر`;
+
+  const submissions = student.submissions || [];
+  const quizSubs = student.quizSubmissions || [];
+
+  if (submissions.length === 0 && quizSubs.length === 0) {
+    body.innerHTML = `
+      <div style="text-align:center; padding:35px 20px; color:#94a3b8; background:rgba(0,0,0,0.25); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
+        <i class="fa-solid fa-file-circle-xmark fa-3x" style="color:#64748b; margin-bottom:12px;"></i>
+        <div style="font-size:14px; font-weight:bold; color:#cbd5e1;">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
+        <div style="font-size:12px; margin-top:6px; color:#94a3b8;">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
+      </div>
+    `;
+  } else {
+    body.innerHTML = submissions.map(sub => {
+      let statusBadge = '';
+      if (sub.status === 'approved' || sub.status === 'APPROVED') {
+        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">✅ تایید شده</span>';
+      } else if (sub.status === 'rejected' || sub.status === 'REJECTED') {
+        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">❌ نیاز به اصلاح / رد شده</span>';
+      } else {
+        statusBadge = '<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">🟡 در انتظار بررسی راهبر</span>';
+      }
+
+      const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('fa-IR') : '';
+      const defaultScore = sub.score !== undefined && sub.score !== null ? sub.score : (sub.challenge?.rewardZarik || 200);
+
+      return `
+        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+          <!-- Challenge Header -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+                چالش کاروان
+              </span>
+              <span style="font-weight:bold; color:#f8fafc; font-size:14px;"><i class="fa-solid fa-award" style="color:#fbbf24;"></i> ${sub.challenge?.title || 'عنوان چالش'}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${subDate}</span>
+              ${statusBadge}
+            </div>
+          </div>
+
+          <!-- Student Submission Box -->
+          <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
+            <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${student.name}):
+            </div>
+            <div style="font-size:13px; color:#e2e8f0; line-height:1.7;">${sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)'}</div>
+            ${sub.fileUrl ? `
+              <div style="margin-top:8px;">
+                <a href="${sub.fileUrl}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> مشاهده فایل / تصویر پیوست دانش‌آموز
+                </a>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Mentor Feedback History (if any) -->
+          ${sub.mentorFeedback ? `
+            <div style="background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.2); border-radius:10px; padding:12px; margin-bottom:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;">
+                <span style="font-weight:bold; color:#10b981; display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-comments"></i> بازخورد ثبت‌شده توسط راهبر:
+                </span>
+                <span style="background:rgba(16, 185, 129, 0.2); color:#34d399; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">
+                  امتیاز اعطایی: ${sub.score || 0} زریک
+                </span>
+              </div>
+              <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${sub.mentorFeedback}</div>
+            </div>
+          ` : ''}
+
+          <!-- Mentor Review / Correction Form -->
+          <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(56, 189, 248, 0.2); border-radius:10px; padding:12px;">
+            <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-pen-to-square"></i> ثبت / بازنویسی نمره و بازخورد راهبر:
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto; gap:10px; align-items:center;">
+              <select id="review-status-${sub.id}" style="background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
+                <option value="approved" ${sub.status === 'approved' || sub.status === 'APPROVED' ? 'selected' : ''}>تایید تکلیف (قبول)</option>
+                <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>
+              </select>
+              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
+              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${sub.mentorFeedback ? sub.mentorFeedback.replace(/"/g, '&quot;') : ''}" style="grid-column: span 2; background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
+              <button type="button" onclick="window.submitSubmissionReview('${sub.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.submitSubmissionReview = async function(submissionId, mentorId, studentId) {
+  const statusEl = document.getElementById(`review-status-${submissionId}`);
+  const scoreEl = document.getElementById(`review-score-${submissionId}`);
+  const feedbackEl = document.getElementById(`review-feedback-${submissionId}`);
+
+  const status = statusEl ? statusEl.value : 'approved';
+  const score = scoreEl ? parseInt(scoreEl.value, 10) || 0 : 0;
+  const mentorFeedback = feedbackEl ? feedbackEl.value.trim() : '';
+
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/submissions/${submissionId}/review`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ status, score, mentorFeedback })
+    });
+    const result = await res.json();
+    if (res.ok) {
+      alert('بازخورد و نمره راهبر با موفقیت ثبت شد و در پرونده ذخیره گردید.');
+      await window.refreshDossierData(mentorId);
+      window.openStudentChallengesModal(mentorId, studentId);
+    } else {
+      alert('خطا در ثبت بازخورد: ' + (result.error || 'خطای سرور'));
+    }
+  } catch (e) {
+    console.error('submitSubmissionReview error:', e);
+    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+  }
+};
+
+window.refreshDossierData = async function(mentorId) {
+  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  try {
+    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
+      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    });
+    if (res.ok) {
+      const dossier = await res.json();
+      window.currentDossierData = dossier;
+      if (dossier.supervisedStudents) {
+        window.renderDossierStudents(dossier.supervisedStudents, mentorId);
+      }
+    }
+  } catch (e) {
+    console.error('refreshDossierData error:', e);
   }
 };
 

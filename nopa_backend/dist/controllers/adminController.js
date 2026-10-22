@@ -27,6 +27,8 @@ exports.updateRolePermissions = updateRolePermissions;
 exports.getCaravansAdmin = getCaravansAdmin;
 exports.getMentorScorecards = getMentorScorecards;
 exports.getMentorDossier = getMentorDossier;
+exports.replyTicketAdmin = replyTicketAdmin;
+exports.resolveTicketAdmin = resolveTicketAdmin;
 exports.moderateMentor = moderateMentor;
 exports.updateMentor = updateMentor;
 exports.createGlobalAnnouncement = createGlobalAnnouncement;
@@ -942,7 +944,25 @@ async function getMentorDossier(req, res) {
         const mentor = await prisma.user.findUnique({
             where: { id },
             include: {
-                mentoredCaravans: true,
+                mentoredCaravans: {
+                    include: {
+                        members: {
+                            where: { role: 'student', isDeleted: false },
+                            select: {
+                                id: true,
+                                name: true,
+                                phoneNumber: true,
+                                avatarUrl: true,
+                                zarikBalance: true,
+                                levelFrame: true,
+                                userCode: true,
+                                createdAt: true,
+                                caravanId: true,
+                                city: true
+                            }
+                        }
+                    }
+                },
                 ratingsReceived: true,
                 evaluationsReceived: true,
             }
@@ -950,9 +970,16 @@ async function getMentorDossier(req, res) {
         if (!mentor) {
             return res.status(404).json({ error: 'راهبر مورد نظر یافت نشد' });
         }
-        // Get challenges created by mentor
+        const caravanIds = mentor.mentoredCaravans.map((c) => c.id);
+        const studentIds = mentor.mentoredCaravans.flatMap((c) => c.members.map((m) => m.id));
+        // Get challenges created by mentor or for their caravans
         const challenges = await prisma.challenge.findMany({
-            where: { createdByMentorId: id },
+            where: {
+                OR: [
+                    { createdByMentorId: id },
+                    ...(caravanIds.length > 0 ? [{ caravanId: { in: caravanIds } }] : [])
+                ]
+            },
             include: {
                 submissions: { select: { status: true } }
             }
@@ -976,8 +1003,8 @@ async function getMentorDossier(req, res) {
         });
         const avgRating = ratingCount > 0 ? (totalScore / ratingCount).toFixed(1) : null;
         const challengeOperations = challenges.map((ch) => {
-            const reviewed = ch.submissions.filter((s) => s.status !== 'pending').length;
-            const pending = ch.submissions.filter((s) => s.status === 'pending').length;
+            const reviewed = ch.submissions.filter((s) => s.status !== 'pending' && s.status !== 'PENDING_REVIEW').length;
+            const pending = ch.submissions.filter((s) => s.status === 'pending' || s.status === 'PENDING_REVIEW').length;
             return {
                 id: ch.id,
                 title: ch.title,
@@ -987,9 +1014,89 @@ async function getMentorDossier(req, res) {
                 stats: { reviewed, pending, total: ch.submissions.length }
             };
         });
-        // Group ratings by caravan if any logic required, here we just return all ratings
+        // 1. Fetch tickets strictly between these students and this mentor
+        const studentTickets = studentIds.length > 0 ? await prisma.supportTicket.findMany({
+            where: { studentId: { in: studentIds } },
+            include: {
+                replies: {
+                    orderBy: { createdAt: 'asc' },
+                    include: {
+                        mentor: { select: { id: true, name: true, avatarUrl: true } }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        }) : [];
+        // 2. Fetch challenge submissions strictly for these students
+        const studentSubmissions = studentIds.length > 0 ? await prisma.submission.findMany({
+            where: {
+                studentId: { in: studentIds },
+                challenge: {
+                    OR: [
+                        { createdByMentorId: id },
+                        ...(caravanIds.length > 0 ? [{ caravanId: { in: caravanIds } }] : []),
+                        { caravanId: null }
+                    ]
+                }
+            },
+            include: {
+                challenge: {
+                    select: { id: true, title: true, type: true, rewardZarik: true, description: true }
+                }
+            },
+            orderBy: { submittedAt: 'desc' }
+        }) : [];
+        // 3. Fetch LMS quiz submissions
+        const studentQuizSubmissions = studentIds.length > 0 ? await prisma.quizSubmission.findMany({
+            where: { studentId: { in: studentIds } },
+            include: {
+                quiz: {
+                    select: {
+                        id: true,
+                        title: true,
+                        type: true,
+                        rewardZarik: true,
+                        session: { select: { id: true, title: true } }
+                    }
+                },
+                feedbacks: {
+                    orderBy: { createdAt: 'asc' },
+                    include: {
+                        mentor: { select: { id: true, name: true, avatarUrl: true } }
+                    }
+                }
+            },
+            orderBy: { submittedAt: 'desc' }
+        }) : [];
+        // Build supervised students list with their full interaction logs
+        const supervisedStudents = [];
+        for (const caravan of mentor.mentoredCaravans) {
+            for (const s of caravan.members) {
+                const sTickets = studentTickets.filter((t) => t.studentId === s.id);
+                const sSubmissions = studentSubmissions.filter((sub) => sub.studentId === s.id);
+                const sQuizSubs = studentQuizSubmissions.filter((qs) => qs.studentId === s.id);
+                supervisedStudents.push({
+                    ...s,
+                    caravanName: caravan.name,
+                    caravanId: caravan.id,
+                    tickets: sTickets,
+                    submissions: sSubmissions,
+                    quizSubmissions: sQuizSubs,
+                    stats: {
+                        totalTickets: sTickets.length,
+                        openTickets: sTickets.filter((t) => t.status !== 'resolved' && t.status !== 'closed').length,
+                        totalSubmissions: sSubmissions.length + sQuizSubs.length,
+                        pendingSubmissions: sSubmissions.filter((sub) => sub.status === 'pending' || sub.status === 'PENDING_REVIEW').length +
+                            sQuizSubs.filter((qs) => qs.status === 'PENDING').length,
+                        approvedSubmissions: sSubmissions.filter((sub) => sub.status === 'approved' || sub.status === 'APPROVED').length +
+                            sQuizSubs.filter((qs) => qs.status === 'APPROVED').length,
+                    }
+                });
+            }
+        }
         res.json({
             identity: {
+                id: mentor.id,
                 name: mentor.name,
                 phoneNumber: mentor.phoneNumber,
                 nationalId: mentor.nationalId,
@@ -998,7 +1105,12 @@ async function getMentorDossier(req, res) {
                 academicCertificates: mentor.academicCertificates,
                 accountStatus: mentor.accountStatus,
                 isDeleted: mentor.isDeleted,
-                suspendedUntil: mentor.suspendedUntil
+                suspendedUntil: mentor.suspendedUntil,
+                city: mentor.city,
+                socialMessengerHandle: mentor.socialMessengerHandle,
+                socialPlatform: mentor.socialPlatform,
+                identityVerified: mentor.identityVerified,
+                mentorLevel: mentor.mentorLevel
             },
             caravans: mentor.mentoredCaravans.map((c) => ({
                 id: c.id,
@@ -1011,8 +1123,59 @@ async function getMentorDossier(req, res) {
                 totalRatings: ratingCount,
                 breakdown: [...mentor.ratingsReceived, ...mentor.evaluationsReceived]
             },
-            challenges: challengeOperations
+            challenges: challengeOperations,
+            supervisedStudents
         });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function replyTicketAdmin(req, res) {
+    try {
+        const { id } = req.params;
+        const { message, mentorId, voiceUrl, attachmentUrl } = req.body;
+        if (!message || !message.trim()) {
+            return res.status(400).json({ error: 'متن پاسخ الزامی است' });
+        }
+        const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+        if (!ticket) {
+            return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
+        }
+        const reply = await prisma.supportTicketReply.create({
+            data: {
+                ticketId: id,
+                message: message.trim(),
+                mentorId: mentorId || req.user?.id || null,
+                voiceUrl: voiceUrl || null,
+                attachmentUrl: attachmentUrl || null
+            },
+            include: {
+                mentor: { select: { id: true, name: true, avatarUrl: true } }
+            }
+        });
+        await prisma.supportTicket.update({
+            where: { id },
+            data: { status: 'answered', updatedAt: new Date() }
+        });
+        res.json({ success: true, reply });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+async function resolveTicketAdmin(req, res) {
+    try {
+        const { id } = req.params;
+        const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+        if (!ticket) {
+            return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
+        }
+        await prisma.supportTicket.update({
+            where: { id },
+            data: { status: 'resolved', updatedAt: new Date() }
+        });
+        res.json({ success: true, message: 'تیکت با موفقیت به وضعیت حل‌شده تغییر یافت' });
     }
     catch (error) {
         res.status(500).json({ error: error.message });

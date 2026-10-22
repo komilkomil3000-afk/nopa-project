@@ -23,6 +23,8 @@ export declare function updateRolePermissions(req: AuthRequest, res: Response): 
 export declare function getCaravansAdmin(req: AuthRequest, res: Response): Promise<void>;
 export declare function getMentorScorecards(req: AuthRequest, res: Response): Promise<void>;
 export declare function getMentorDossier(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function replyTicketAdmin(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+export declare function resolveTicketAdmin(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function moderateMentor(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function updateMentor(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
 export declare function createGlobalAnnouncement(req: AuthRequest, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
