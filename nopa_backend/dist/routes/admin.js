@@ -20,6 +20,7 @@ const analyticsController_1 = require("../controllers/analyticsController");
 const mentorController_1 = require("../controllers/mentorController");
 const mentorController_2 = require("../controllers/mentorController");
 const studentController_1 = require("../controllers/studentController");
+const instructorController_1 = require("../controllers/instructorController");
 const settingController_1 = require("../controllers/settingController");
 const caravanController_2 = require("../controllers/caravanController");
 const leagueController_1 = require("../controllers/leagueController");
@@ -200,4 +201,10 @@ router.delete('/rewards/mentor-rules/:id', rewardController_1.deleteMentorReward
 // 11. Chat Oversight
 router.get('/chat', chatController_1.getAllChatsAdmin);
 router.delete('/chat/:id', chatController_1.deleteMessage);
+// 12. Instructors Management (بانک اساتید)
+router.get('/instructors', instructorController_1.getInstructors);
+router.get('/instructors/:id', instructorController_1.getInstructorById);
+router.post('/instructors', instructorController_1.createOrUpdateInstructor);
+router.put('/instructors/:id', instructorController_1.createOrUpdateInstructor);
+router.delete('/instructors/:id', instructorController_1.deleteInstructor);
 exports.default = router;

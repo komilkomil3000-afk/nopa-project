@@ -52,6 +52,25 @@ const getStations = async (req, res) => {
             // Check scheduled unlock time
             const isTimeLocked = st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
             const isLocked = Boolean(st.isLocked || st.status === 'locked' || isTimeLocked);
+            // Parse multiple animations
+            let animations = [];
+            if (st.animationsJson) {
+                try {
+                    const parsed = JSON.parse(st.animationsJson);
+                    if (Array.isArray(parsed))
+                        animations = parsed;
+                }
+                catch (_) { }
+            }
+            if (animations.length === 0 && st.animationUrl) {
+                animations.push({
+                    id: `anim-${st.id}`,
+                    title: st.animationTitle || 'انیمیشن معرفی منزلگاه',
+                    url: st.animationUrl,
+                    videoUrl: st.animationUrl,
+                    description: st.description || ''
+                });
+            }
             return {
                 ...st,
                 isLocked,
@@ -61,6 +80,7 @@ const getStations = async (req, res) => {
                 scheduledUnlockTime: st.scheduledUnlockTime,
                 requirePreviousComplete: Boolean(st.requirePreviousComplete),
                 targetCaravansJson: st.targetCaravansJson,
+                animations,
                 instructors,
                 schedule,
                 category,
@@ -129,8 +149,43 @@ const getQuizzes = async (req, res) => {
 exports.getQuizzes = getQuizzes;
 const createOrUpdateStation = async (req, res) => {
     try {
-        const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
+        const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, animations, animationsJson, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
         const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
+        // Prepare animations JSON and fallback single animationTitle/animationUrl
+        let parsedAnimationsJson = null;
+        let effectiveAnimTitle = animationTitle;
+        let effectiveAnimUrl = animationUrl;
+        if (animations && Array.isArray(animations)) {
+            parsedAnimationsJson = JSON.stringify(animations);
+            if (animations.length > 0) {
+                if (!effectiveAnimTitle)
+                    effectiveAnimTitle = animations[0].title || 'انیمیشن منزلگاه';
+                if (!effectiveAnimUrl)
+                    effectiveAnimUrl = animations[0].url || animations[0].videoUrl || '';
+            }
+        }
+        else if (animationsJson && typeof animationsJson === 'string') {
+            parsedAnimationsJson = animationsJson;
+            try {
+                const arr = JSON.parse(animationsJson);
+                if (Array.isArray(arr) && arr.length > 0) {
+                    if (!effectiveAnimTitle)
+                        effectiveAnimTitle = arr[0].title || 'انیمیشن منزلگاه';
+                    if (!effectiveAnimUrl)
+                        effectiveAnimUrl = arr[0].url || arr[0].videoUrl || '';
+                }
+            }
+            catch (_) { }
+        }
+        else if (animationUrl) {
+            parsedAnimationsJson = JSON.stringify([{
+                    id: 'anim_1',
+                    title: animationTitle || 'انیمیشن منزلگاه',
+                    url: animationUrl,
+                    videoUrl: animationUrl,
+                    description: ''
+                }]);
+        }
         const result = await db_1.default.$transaction(async (tx) => {
             let station;
             const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
@@ -157,8 +212,9 @@ const createOrUpdateStation = async (req, res) => {
                     subtitle: subtitleVal,
                     description: description !== undefined ? description : '',
                     stayDuration: stayDuration !== undefined ? stayDuration : null,
-                    animationTitle: animationTitle !== undefined ? animationTitle : null,
-                    animationUrl: animationUrl !== undefined ? animationUrl : null,
+                    animationTitle: effectiveAnimTitle !== undefined ? effectiveAnimTitle : null,
+                    animationUrl: effectiveAnimUrl !== undefined ? effectiveAnimUrl : null,
+                    animationsJson: parsedAnimationsJson,
                     iconUrl: iconUrl || '',
                     orderIndex: orderIndexVal,
                     releaseDate: releaseDateVal,
@@ -201,8 +257,9 @@ const createOrUpdateStation = async (req, res) => {
                         subtitle: subtitleVal,
                         description: description !== undefined ? description : '',
                         stayDuration: stayDuration !== undefined ? stayDuration : null,
-                        animationTitle: animationTitle !== undefined ? animationTitle : null,
-                        animationUrl: animationUrl !== undefined ? animationUrl : null,
+                        animationTitle: effectiveAnimTitle !== undefined ? effectiveAnimTitle : null,
+                        animationUrl: effectiveAnimUrl !== undefined ? effectiveAnimUrl : null,
+                        animationsJson: parsedAnimationsJson,
                         iconUrl: iconUrl || '',
                         orderIndex: orderIndexVal,
                         releaseDate: releaseDateVal,

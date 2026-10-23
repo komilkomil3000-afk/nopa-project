@@ -7,6 +7,7 @@ import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes }
 import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
 import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess } from '../controllers/lmsController';
+import { getInstructors } from '../controllers/instructorController';
 import { getForms, submitForm } from '../controllers/formController';
 import { getCalendarEvents } from '../controllers/calendarController';
 import { getCaravanLeague, getWealthiestLeague, getMentorLeague } from '../controllers/leagueController';
@@ -100,6 +101,8 @@ router.post('/lms/sessions/:id/submit-quiz', authenticateJWT as any, submitSessi
 router.get('/forms', authenticateJWT as any, getForms as any);
 router.post('/forms/submit', authenticateJWT as any, submitForm as any);
 router.get('/calendar/events', authenticateJWT as any, getCalendarEvents as any);
+router.get('/instructors', getInstructors as any);
+
 
 // J. Chat & Messaging Routes
 router.get('/chat/direct/:mentorId', authenticateJWT as any, getDirectMessages as any);

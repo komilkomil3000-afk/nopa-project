@@ -662,8 +662,11 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
-            <label style="font-size:11px; color:#cbd5e1;">نام استاد جدید:</label>
-            <input type="text" id="batch-instructor-cat-${cat.id}" class="input-ctrl" placeholder="نام استاد..." value="${(sessions[0] && sessions[0].instructor) || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" style="width:160px; padding:5px 10px; background:#0f172a; border-color:#38bdf8; color:white; font-size:12px; font-weight:bold;">
+            <label style="font-size:11px; color:#cbd5e1;">انتخاب از بانک اساتید:</label>
+            <select id="batch-instructor-cat-${cat.id}" class="input-ctrl" style="width:170px; padding:5px 8px; background:#0f172a; border-color:#38bdf8; color:white; font-size:12px; font-weight:bold;">
+              ${(window.globalInstructorsList || []).map(i => `<option value="${i.name}">${i.name} (${i.degree || 'مدرس'})</option>`).join('')}
+              ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="علیرضا خوش‌منظر">علیرضا خوش‌منظر</option><option value="پیراینه‌گر">پیراینه‌گر</option>` : ''}
+            </select>
             <button type="button" onclick="window.applyBatchInstructorToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
               <i class="fa-solid fa-user-pen"></i> اعمال روی کل جلسات
             </button>
@@ -746,7 +749,10 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                 <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:4px; font-weight:bold;">
                   <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس:
                 </label>
-                <input type="text" id="sess-instructor-${sess.id}" class="input-ctrl" value="${sess.instructor || (isSkill ? 'استاد مهارتی' : 'علیرضا خوش‌منظر')}" placeholder="نام مدرس..." style="font-size:12px; color:#38bdf8; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
+                <select id="sess-instructor-${sess.id}" class="input-ctrl" style="font-size:12px; color:#38bdf8; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
+                  ${(window.globalInstructorsList || []).map(i => `<option value="${i.name}" ${(sess.instructor && sess.instructor.includes(i.name)) ? 'selected' : ''}>${i.name}</option>`).join('')}
+                  ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}">${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}</option>` : ''}
+                </select>
               </div>
 
               <div>
@@ -1595,150 +1601,8 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
     alert('ارتباط با سرور برقرار نشد');
   }
 };
+// Note: Station creator and edit modal functions are defined in the dynamic section below.
 
-window.openCreateStationModal = function() {
-  const modal = document.getElementById('lms-station-creator-modal');
-  if (!modal) return;
-  document.getElementById('lms-creator-form').reset();
-  document.getElementById('modal-st-id').value = '';
-
-  // Calculate highest existing order index and assign next unique number
-  let nextIndex = 1;
-  if (Array.isArray(window.lmsStationsMasterList) && window.lmsStationsMasterList.length > 0) {
-    const maxOrder = window.lmsStationsMasterList.reduce((max, s) => {
-      const ord = parseInt(s.orderIndex ?? s.index) || 0;
-      return Math.max(max, ord);
-    }, 0);
-    nextIndex = maxOrder + 1;
-  }
-
-  document.getElementById('modal-st-index').value = nextIndex;
-  document.getElementById('modal-st-release-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('modal-st-skill-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('modal-st-media-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('modal-st-skill-parts').value = 2;
-  document.getElementById('modal-st-media-parts').value = 2;
-  document.getElementById('modal-st-skill-sessions').value = 2;
-  document.getElementById('modal-st-media-sessions').value = 2;
-  document.getElementById('modal-st-skill-instructor').value = 'پیراینه‌گر';
-  document.getElementById('modal-st-media-instructor').value = 'علیرضا خوش‌منظر';
-  document.getElementById('station-modal-title').innerHTML = `<i class="fa-solid fa-graduation-cap"></i> ایجاد منزلگاه آموزشی جدید (شماره خودکار: منزلگاه ${nextIndex})`;
-  modal.style.display = 'flex';
-  modal.style.zIndex = '99999';
-};
-
-window.editStationModal = function(id) {
-  const st = window.lmsStationsMasterList.find(s => (s.id === id || ('MZ' + (s.orderIndex || s.index)) === id || s.orderIndex == id)) || window.lmsStationsMasterList[0];
-  if (!st) return;
-  const modal = document.getElementById('lms-station-creator-modal');
-  if (!modal) return;
-
-  const categories = st.categories || [];
-  const skillCategory = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || {};
-  const mediaCategory = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || {};
-
-  let formattedReleaseDate = new Date().toISOString().split('T')[0];
-  if (st.releaseDate) {
-    try {
-      formattedReleaseDate = new Date(st.releaseDate).toISOString().split('T')[0];
-    } catch (e) {}
-  }
-
-  document.getElementById('modal-st-id').value = st.id || '';
-  document.getElementById('modal-st-index').value = st.orderIndex || st.index || 1;
-  document.getElementById('modal-st-title').value = st.title || st.name || '';
-  document.getElementById('modal-st-release-date').value = formattedReleaseDate;
-
-  // Skill category values
-  const skillSessions = skillCategory.sessions || [];
-  let maxSkillClips = 2;
-  skillSessions.forEach(s => {
-    if ((s.videoClips || []).length > maxSkillClips) maxSkillClips = s.videoClips.length;
-  });
-
-  document.getElementById('modal-st-skill-title').value = skillCategory.title || 'کلاس‌های مهارتی (مهارت فردی و گروهی)';
-  document.getElementById('modal-st-skill-instructor').value = (skillSessions[0] && skillSessions[0].instructor) || 'پیراینه‌گر';
-  document.getElementById('modal-st-skill-sessions').value = skillSessions.length || 2;
-  document.getElementById('modal-st-skill-parts').value = maxSkillClips;
-  document.getElementById('modal-st-skill-date').value = formattedReleaseDate;
-
-  // Media category values
-  const mediaSessions = mediaCategory.sessions || [];
-  let maxMediaClips = 2;
-  mediaSessions.forEach(s => {
-    if ((s.videoClips || []).length > maxMediaClips) maxMediaClips = s.videoClips.length;
-  });
-
-  document.getElementById('modal-st-media-title').value = mediaCategory.title || 'کلاس‌های رسانه‌ای (سواد رسانه و تولید محتوا)';
-  document.getElementById('modal-st-media-instructor').value = (mediaSessions[0] && mediaSessions[0].instructor) || 'علیرضا خوش‌منظر';
-  document.getElementById('modal-st-media-sessions').value = mediaSessions.length || 2;
-  document.getElementById('modal-st-media-parts').value = maxMediaClips;
-  document.getElementById('modal-st-media-date').value = formattedReleaseDate;
-
-  document.getElementById('modal-st-details').value = st.description || '';
-  document.getElementById('station-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ویرایش منزلگاه ${st.orderIndex || st.index || ''}: ${st.title || st.name}`;
-  modal.style.display = 'flex';
-  modal.style.zIndex = '99999';
-};
-
-window.saveCompleteStation = async function(e) {
-  e.preventDefault();
-  const id = document.getElementById('modal-st-id')?.value;
-  const releaseDate = document.getElementById('modal-st-release-date')?.value || new Date().toISOString().split('T')[0];
-
-  const skillTitle = document.getElementById('modal-st-skill-title')?.value || 'کلاس‌های مهارتی (شنبه و دوشنبه)';
-  const skillInstructor = document.getElementById('modal-st-skill-instructor')?.value || 'پیراینه‌گر';
-  const skillSessionsCount = parseInt(document.getElementById('modal-st-skill-sessions')?.value) || 2;
-  const skillPartsCount = parseInt(document.getElementById('modal-st-skill-parts')?.value) || 2;
-
-  const mediaTitle = document.getElementById('modal-st-media-title')?.value || 'کلاس‌های رسانه‌ای (پنجشنبه و جمعه)';
-  const mediaInstructor = document.getElementById('modal-st-media-instructor')?.value || 'علیرضا خوش‌منظر';
-  const mediaSessionsCount = parseInt(document.getElementById('modal-st-media-sessions')?.value) || 2;
-  const mediaPartsCount = parseInt(document.getElementById('modal-st-media-parts')?.value) || 2;
-
-  const payload = {
-    id: id || undefined,
-    orderIndex: parseInt(document.getElementById('modal-st-index')?.value) || undefined,
-    title: document.getElementById('modal-st-title')?.value,
-    releaseDate: releaseDate,
-    description: document.getElementById('modal-st-details')?.value,
-    categories: [
-      {
-        title: skillTitle,
-        orderIndex: 1,
-        instructor: skillInstructor,
-        sessionsCount: skillSessionsCount,
-        partsPerSession: skillPartsCount
-      },
-      {
-        title: mediaTitle,
-        orderIndex: 2,
-        instructor: mediaInstructor,
-        sessionsCount: mediaSessionsCount,
-        partsPerSession: mediaPartsCount
-      }
-    ]
-  };
-
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-  try {
-    const url = id ? `/api/v1/admin/lms/stations/${id}` : '/api/v1/admin/lms/stations';
-    const method = id ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      alert('منزلگاه آموزشی با موفقیت ذخیره شد');
-    }
-  } catch (err) {
-    console.error('Save Station Error:', err);
-  }
-
-  document.getElementById('lms-station-creator-modal').style.display = 'none';
-  window.fetchLiveLmsStations();
-};
 
 window.deleteStationRecord = async function(id) {
   if (!confirm('آیا از حذف این منزلگاه اطمینان دارید؟')) return;
@@ -2062,7 +1926,86 @@ window.exportLmsToExcel = function() {
   }, 300);
 };
 
-// ==================== STATION CREATOR & EDIT MODAL (DYNAMIC CATEGORIES) ====================
+// ==================== STATION CREATOR & EDIT MODAL (DYNAMIC ANIMATIONS & CATEGORIES) ====================
+
+window.modalAnimationBlockCounter = 0;
+
+window.addAnimationBlockToCreatorModal = function(animData = null) {
+  const container = document.getElementById('lms-modal-animations-container');
+  if (!container) return;
+
+  window.modalAnimationBlockCounter++;
+  const blockId = 'modal-anim-block-' + window.modalAnimationBlockCounter;
+  const inputUniqueId = 'modal-anim-url-input-' + window.modalAnimationBlockCounter;
+
+  const existingCards = container.querySelectorAll('.modal-animation-card');
+  const animIndex = existingCards.length + 1;
+
+  const defaultTitle = animData?.title || (animIndex === 1 ? 'انیمیشن آغاز سفر' : `انیمیشن قسمت ${animIndex}`);
+  const defaultUrl = animData?.url || animData?.videoUrl || '';
+  const defaultDesc = animData?.description || '';
+  const animId = animData?.id || `anim_${window.modalAnimationBlockCounter}`;
+
+  const cardHtml = `
+    <div id="${blockId}" class="modal-animation-card" data-anim-id="${animId}" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+        <div style="margin: 0; color: #38bdf8; font-size: 13px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+          <span class="anim-badge" style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;">قسمت ${animIndex}</span>
+          <i class="fa-solid fa-clapperboard"></i> <span class="anim-label-display">${defaultTitle}</span>
+        </div>
+        <button type="button" onclick="window.removeAnimationBlockFromCreatorModal('${blockId}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این انیمیشن">
+          <i class="fa-solid fa-trash"></i> حذف این قسمت
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 10px; margin-bottom: 8px;">
+        <div class="form-group">
+          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-heading" style="color:#38bdf8;"></i> عنوان یا نام قسمت انیمیشن:</label>
+          <input type="text" class="modal-anim-title input-ctrl" value="${defaultTitle}" placeholder="مثال: قسمت اول - شروع ماجرا" style="background: #1e293b;" oninput="this.closest('.modal-animation-card').querySelector('.anim-label-display').textContent = this.value">
+        </div>
+        <div class="form-group">
+          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> لینک ویدیو انیمیشن:</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="${inputUniqueId}" class="modal-anim-url input-ctrl" value="${defaultUrl}" placeholder="https://... یا /uploads/..." style="background: #1e293b; direction:ltr; text-align:left; flex:1;">
+            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود مستقیم ویدیو">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
+              <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputUniqueId}')">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> توضیحات و داستان این قسمت از انیمیشن:</label>
+        <textarea class="modal-anim-desc input-ctrl" rows="2" placeholder="توضیحات و داستان این قسمت از انیمیشن..." style="background: #1e293b;">${defaultDesc}</textarea>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', cardHtml);
+  window.reindexModalAnimationCards();
+};
+
+window.removeAnimationBlockFromCreatorModal = function(blockId) {
+  const card = document.getElementById(blockId);
+  if (!card) return;
+
+  if (confirm('آیا از حذف این قسمت انیمیشن اطمینان دارید؟')) {
+    card.remove();
+    window.reindexModalAnimationCards();
+  }
+};
+
+window.reindexModalAnimationCards = function() {
+  const container = document.getElementById('lms-modal-animations-container');
+  if (!container) return;
+
+  const cards = container.querySelectorAll('.modal-animation-card');
+  cards.forEach((card, idx) => {
+    const badge = card.querySelector('.anim-badge');
+    if (badge) badge.textContent = `قسمت ${idx + 1}`;
+  });
+};
 
 window.modalCategoryBlockCounter = 0;
 
@@ -2106,14 +2049,23 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
         </button>
       </div>
 
-      <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <div style="display: grid; grid-template-columns: 2fr 1.8fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <div class="form-group">
           <label style="font-size:11.5px; color:#cbd5e1;">عنوان دسته کلاس:</label>
           <input type="text" class="modal-cat-title input-ctrl" value="${defaultTitle}" placeholder="مثال: کلاس‌های مهارتی، کارگاه پادکست..." style="background: #1e293b;" oninput="this.closest('.modal-category-card').querySelector('.cat-label-display').textContent = this.value">
         </div>
-        <div class="form-group">
-          <label style="font-size:11.5px; color:#cbd5e1;">استاد و مدرس:</label>
-          <input type="text" class="modal-cat-instructor input-ctrl" value="${defaultInstructor}" placeholder="نام مدرس..." style="background: #1e293b;">
+        <div class="form-group inst-picker-wrapper" style="position:relative;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-chalkboard-user" style="color:#38bdf8;"></i> استاد / اساتید دوره:</label>
+            <a href="javascript:void(0)" onclick="window.openInstructorModalQuick('${blockId}')" style="font-size:10px; color:#38bdf8; text-decoration:none; display:flex; align-items:center; gap:3px;" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
+          </div>
+          <input type="text" class="modal-cat-instructor input-ctrl" value="${defaultInstructor}" readonly onclick="window.toggleInstructorDropdown('${blockId}', event)" style="display:none;">
+          <div id="inst-picker-box-${blockId}" class="inst-picker-box" style="background: #1e293b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 6px 10px; min-height: 38px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;" onclick="window.toggleInstructorDropdown('${blockId}', event)">
+            <!-- Selected badges rendered here -->
+          </div>
+          <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; left: 0; z-index: 10000; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); padding: 8px; max-height: 220px; overflow-y: auto; margin-top: 4px;">
+            <!-- Checklist from globalInstructorsList -->
+          </div>
         </div>
         <div class="form-group">
           <label style="font-size:11.5px; color:#cbd5e1;">تعداد جلسات:</label>
@@ -2139,21 +2091,15 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
   `;
 
   container.insertAdjacentHTML('beforeend', cardHtml);
+  if (typeof window.renderSelectedInstructorBadges === 'function') {
+    window.renderSelectedInstructorBadges(blockId);
+  }
   window.reindexModalCategoryCards();
 };
 
 window.removeCategoryBlockFromCreatorModal = function(blockId) {
-  const container = document.getElementById('lms-modal-categories-container');
-  if (!container) return;
-
   const card = document.getElementById(blockId);
   if (!card) return;
-
-  const allCards = container.querySelectorAll('.modal-category-card');
-  if (allCards.length <= 1) {
-    alert('حداقل یک دسته کلاس برای این منزلگاه الزامی است.');
-    return;
-  }
 
   if (confirm('آیا از حذف این دسته کلاس اطمینان دارید؟ جلسات مربوط به آن نیز حذف خواهند شد.')) {
     card.remove();
@@ -2185,17 +2131,23 @@ window.openCreateStationModal = function() {
   document.getElementById('modal-st-index').value = nextIdx;
   document.getElementById('modal-st-title').value = nextPersianName;
   document.getElementById('modal-st-release-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-st-duration').value = '۲ هفته';
   document.getElementById('modal-st-details').value = `سرفصل‌ها و اهداف آموزشی ${nextPersianName}`;
 
-  // Populate dynamic category container
-  const container = document.getElementById('lms-modal-categories-container');
-  if (container) container.innerHTML = '';
-  window.addCategoryBlockToCreatorModal({ title: 'کلاس‌های مهارتی', instructor: 'پیراینه‌گر', schedule: 'شنبه و دوشنبه' });
-  window.addCategoryBlockToCreatorModal({ title: 'کلاس‌های رسانه‌ای', instructor: 'علیرضا خوش‌منظر', schedule: 'پنجشنبه و جمعه' });
+  // Reset animations container with 1 default block
+  const animContainer = document.getElementById('lms-modal-animations-container');
+  if (animContainer) animContainer.innerHTML = '';
+  window.addAnimationBlockToCreatorModal({ title: 'انیمیشن آغاز سفر', url: '', description: '' });
+
+  // Reset categories container (empty by default, optional!)
+  const catContainer = document.getElementById('lms-modal-categories-container');
+  if (catContainer) catContainer.innerHTML = '';
 
   modal.style.display = 'flex';
   modal.style.zIndex = '99999';
 };
+
+window.openStationCreatorModal = window.openCreateStationModal;
 
 window.editStationModal = function(stationId) {
   if (!window.lmsStationsMasterList || window.lmsStationsMasterList.length === 0) return;
@@ -2219,7 +2171,7 @@ window.editStationModal = function(stationId) {
   document.getElementById('station-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ویرایش مشخصات ${simpleStationName}`;
   document.getElementById('modal-st-id').value = station.id;
   document.getElementById('modal-st-index').value = stIdx;
-  document.getElementById('modal-st-title').value = simpleStationName;
+  document.getElementById('modal-st-title').value = station.title || simpleStationName;
   
   let releaseDateStr = '';
   if (station.releaseDate) {
@@ -2227,20 +2179,43 @@ window.editStationModal = function(stationId) {
   }
   document.getElementById('modal-st-release-date').value = releaseDateStr;
   document.getElementById('modal-st-duration').value = station.stayDuration || '';
-  document.getElementById('modal-st-anim-title').value = station.animationTitle || '';
-  document.getElementById('modal-st-anim-url').value = station.animationUrl || '';
   document.getElementById('modal-st-details').value = station.description || '';
 
-  // Populate categories dynamically
+  // Populate dynamic animations container
+  const animContainer = document.getElementById('lms-modal-animations-container');
+  if (animContainer) animContainer.innerHTML = '';
+
+  let animList = [];
+  if (Array.isArray(station.animations) && station.animations.length > 0) {
+    animList = station.animations;
+  } else if (station.animationsJson) {
+    try {
+      const parsed = typeof station.animationsJson === 'string' ? JSON.parse(station.animationsJson) : station.animationsJson;
+      if (Array.isArray(parsed) && parsed.length > 0) animList = parsed;
+    } catch (_) {}
+  }
+
+  if (animList.length === 0 && (station.animationUrl || station.animationTitle)) {
+    animList.push({
+      title: station.animationTitle || 'انیمیشن معرفی',
+      url: station.animationUrl || '',
+      description: ''
+    });
+  }
+
+  if (animList.length > 0) {
+    animList.forEach(anim => window.addAnimationBlockToCreatorModal(anim));
+  } else {
+    window.addAnimationBlockToCreatorModal({ title: 'انیمیشن آغاز سفر', url: '', description: '' });
+  }
+
+  // Populate categories dynamically (leave empty if none)
   const container = document.getElementById('lms-modal-categories-container');
   if (container) container.innerHTML = '';
 
   const categories = station.categories || [];
   if (categories.length > 0) {
     categories.forEach(cat => window.addCategoryBlockToCreatorModal(cat));
-  } else {
-    window.addCategoryBlockToCreatorModal({ title: 'کلاس‌های مهارتی', instructor: 'پیراینه‌گر', schedule: 'شنبه و دوشنبه' });
-    window.addCategoryBlockToCreatorModal({ title: 'کلاس‌های رسانه‌ای', instructor: 'علیرضا خوش‌منظر', schedule: 'پنجشنبه و جمعه' });
   }
 
   modal.style.display = 'flex';
@@ -2255,27 +2230,45 @@ window.saveCompleteStation = async function(e) {
   const title = document.getElementById('modal-st-title')?.value || 'منزلگاه';
   const releaseDate = document.getElementById('modal-st-release-date')?.value;
   const stayDuration = document.getElementById('modal-st-duration')?.value;
-  const animationTitle = document.getElementById('modal-st-anim-title')?.value;
-  const animationUrl = document.getElementById('modal-st-anim-url')?.value;
   const description = document.getElementById('modal-st-details')?.value || '';
 
-  // Gather dynamic categories
+  // Gather dynamic animations
+  const animCards = document.querySelectorAll('#lms-modal-animations-container .modal-animation-card');
+  const animations = [];
+  animCards.forEach((card, idx) => {
+    const animId = card.getAttribute('data-anim-id') || `anim_${idx + 1}`;
+    const animTitle = card.querySelector('.modal-anim-title')?.value?.trim() || `قسمت ${idx + 1}`;
+    const animUrl = card.querySelector('.modal-anim-url')?.value?.trim() || '';
+    const animDesc = card.querySelector('.modal-anim-desc')?.value?.trim() || '';
+
+    if (animTitle || animUrl || animDesc) {
+      animations.push({
+        id: animId,
+        title: animTitle,
+        url: animUrl,
+        videoUrl: animUrl,
+        description: animDesc,
+        orderIndex: idx + 1
+      });
+    }
+  });
+
+  const primaryAnim = animations.length > 0 ? animations[0] : null;
+  const animationTitle = primaryAnim ? primaryAnim.title : '';
+  const animationUrl = primaryAnim ? primaryAnim.url : '';
+
+  // Gather dynamic categories (optional!)
   const container = document.getElementById('lms-modal-categories-container');
   const categoryCards = container ? container.querySelectorAll('.modal-category-card') : [];
-  
-  if (categoryCards.length === 0) {
-    alert('حداقل یک دسته کلاس برای منزلگاه باید تعریف شود.');
-    return;
-  }
 
   const categories = [];
   categoryCards.forEach((card, idx) => {
     const catId = card.getAttribute('data-cat-id') || undefined;
-    const catTitle = card.querySelector('.modal-cat-title')?.value || `دسته ${idx + 1}`;
-    const instructor = card.querySelector('.modal-cat-instructor')?.value || 'استاد نپا';
+    const catTitle = card.querySelector('.modal-cat-title')?.value?.trim() || `دسته ${idx + 1}`;
+    const instructor = card.querySelector('.modal-cat-instructor')?.value?.trim() || 'استاد نپا';
     const sessionsCount = parseInt(card.querySelector('.modal-cat-sessions')?.value) || 2;
     const partsPerSession = parseInt(card.querySelector('.modal-cat-parts')?.value) || 2;
-    const schedule = card.querySelector('.modal-cat-schedule')?.value || '';
+    const schedule = card.querySelector('.modal-cat-schedule')?.value?.trim() || '';
     const catDate = card.querySelector('.modal-cat-date')?.value || undefined;
 
     categories.push({
@@ -2298,6 +2291,8 @@ window.saveCompleteStation = async function(e) {
     stayDuration,
     animationTitle,
     animationUrl,
+    animations,
+    animationsJson: JSON.stringify(animations),
     description,
     categories
   };
@@ -2314,7 +2309,7 @@ window.saveCompleteStation = async function(e) {
     });
 
     if (res.ok) {
-      alert('✅ مشخصات منزلگاه و ساختار کلیه دسته‌ها با موفقیت ذخیره شد.');
+      alert('✅ مشخصات منزلگاه، انیمیشن‌ها و دسته‌ها با موفقیت ذخیره شد.');
       document.getElementById('lms-station-creator-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
     } else {

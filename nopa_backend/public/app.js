@@ -648,6 +648,8 @@ const HASH_TAB_MAP = {
   '#mentors-docs-tab': 'mentors-docs-tab',
   '#mentors-league': 'mentors-league-tab',
   '#mentors-league-tab': 'mentors-league-tab',
+  '#instructors': 'instructors-tab',
+  '#instructors-tab': 'instructors-tab',
 
   '#caravans': 'caravans-tab',
   '#caravans-tab': 'caravans-tab',
@@ -683,6 +685,7 @@ const TAB_REVERSE_HASH_MAP = {
   'mentors-tickets-tab': 'mentors-tickets',
   'mentors-docs-tab': 'mentors-docs',
   'mentors-league-tab': 'mentors-league',
+  'instructors-tab': 'instructors',
   'caravans-tab': 'caravans',
   'caravan-league-tab': 'caravan-league',
   'lms-tab': 'lms',
@@ -751,6 +754,7 @@ function switchTab(tabId, updateUrl = true) {
     'mentors-tickets-tab': { title: 'میزکار و تیکت‌ها', desc: 'مدیریت تیکت‌ها و درخواست‌های مربیان' },
     'mentors-docs-tab': { title: 'تایید مدارک و گواهینامه‌ها', desc: 'صف انتظار بررسی و تایید مدارک مربیان' },
     'mentors-league-tab': { title: 'لیگ و ارزیابی مربیان', desc: 'ارزیابی عملکرد و رتبه‌بندی راهبران' },
+    'instructors-tab': { title: 'بانک و مدیریت اساتید', desc: 'مشخصات، سوابق، مدرک، رزومه و کلاس‌های اساتید دوره' },
     'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
     'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
     'form-builder-tab': { title: 'فرم‌ساز داینامیک', desc: 'طراحی و مدیریت فرم‌ها و پرسشنامه‌های اختصاصی' },
@@ -779,6 +783,8 @@ function switchTab(tabId, updateUrl = true) {
   } else if (tabId === 'mentors-profile-tab') {
     if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
     else loadMentorsTab();
+  } else if (tabId === 'instructors-tab') {
+    if (typeof window.fetchInstructorsList === 'function') window.fetchInstructorsList();
   } else if (tabId === 'caravans-tab') {
     if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
     else loadCaravansTab();

@@ -356,6 +356,7 @@ model Station {
   stayDuration        String?
   animationTitle      String?
   animationUrl        String?
+  animationsJson      String?  // JSON array of multiple animation slides [{id, title, url, description}]
   iconUrl             String?
   orderIndex          Int      @default(0)
   releaseDate         DateTime?
@@ -742,3 +743,20 @@ model Banner {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+model Instructor {
+  id          String   @id @default(uuid())
+  name        String
+  nationalId  String?
+  phoneNumber String?
+  degree      String?  // مدرک تحصیلی
+  resume      String?  // سوابق و رزومه
+  description String?  // توضیحات و بیوگرافی
+  classes     String?  // کلاس‌ها و دوره‌هایی که تدریس می‌کند
+  avatarUrl   String?  // تصویر / عکس استاد
+  isActive    Boolean  @default(true)
+  orderIndex  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

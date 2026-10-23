@@ -60,12 +60,32 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           }
         }
       }
-      if (clips.isEmpty && station['animationUrl'] != null && station['animationUrl'].toString().isNotEmpty) {
-        clips.add({
+      final List<Map<String, dynamic>> animClips = [];
+      if (station['animations'] is List) {
+        for (final anim in (station['animations'] as List)) {
+          if (anim is Map && (anim['videoUrl'] != null || anim['url'] != null)) {
+            animClips.add({
+              'id': anim['id'] ?? 'anim_${station['id']}',
+              'title': anim['title'] ?? 'انیمیشن منزلگاه',
+              'videoUrl': anim['videoUrl'] ?? anim['url'],
+              'description': anim['description'],
+            });
+          }
+        }
+      } else if (station['animationUrl'] != null && station['animationUrl'].toString().isNotEmpty) {
+        animClips.add({
           'id': 'clip_${station['id']}',
           'title': station['animationTitle'] ?? 'انیمیشن معرفی منزلگاه',
           'videoUrl': station['animationUrl'],
         });
+      }
+
+      if (animClips.isNotEmpty) {
+        if (clips.isEmpty) {
+          clips.addAll(animClips);
+        } else {
+          clips.insertAll(0, animClips);
+        }
       }
     }
     if (clips.isEmpty) {

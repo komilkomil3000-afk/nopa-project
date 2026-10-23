@@ -35,6 +35,7 @@
             <li class="menu-item" data-tab="mentors-profile-tab"><i class="fa-solid fa-id-card"></i><span class="menu-text">پروفایل و شناسنامه</span></li>
             <li class="menu-item" data-tab="mentors-tickets-tab"><i class="fa-solid fa-inbox"></i><span class="menu-text">میزکار و تیکت‌ها</span></li>
             <li class="menu-item" data-tab="mentors-docs-tab"><i class="fa-solid fa-file-check"></i><span class="menu-text">تایید مدارک و گواهینامه‌ها</span></li>
+            <li class="menu-item" data-tab="instructors-tab"><i class="fa-solid fa-chalkboard-user"></i><span class="menu-text">بانک اساتید</span></li>
           </ul>
         </li>
 
@@ -324,6 +325,64 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- TAB: INSTRUCTORS (بانک اساتید) -->
+      <section id="instructors-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="panel-title" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-chalkboard-user" style="color: #38bdf8;"></i> بانک و دایرکتوری اساتید دوره
+              </div>
+              <span id="instructors-count-badge" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: bold;">
+                ۰ استاد
+              </span>
+            </div>
+            <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn-action" onclick="window.fetchInstructorsList()"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              <button type="button" class="btn-primary" onclick="window.openInstructorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+                <i class="fa-solid fa-plus"></i> ثبت استاد جدید
+              </button>
+            </div>
+          </div>
+
+          <!-- فیلتر و جستجوی اساتید -->
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="form-group" style="margin: 0; flex: 1;">
+              <div style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px;"></i>
+                <input type="text" id="instructor-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام استاد، کد ملی، شماره تماس، مدرک یا کلاس‌های تدریس..." oninput="window.filterInstructorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 8px 36px 8px 12px; font-size: 12.5px; width: 100%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- وضعیت خالی بودن -->
+          <div id="instructors-empty-state" style="display: none; padding: 40px; text-align: center; color: #94a3b8;">
+            <i class="fa-solid fa-chalkboard-user" style="font-size: 40px; color: #475569; margin-bottom: 12px;"></i>
+            <div style="font-size: 14px; font-weight: bold;">هیچ استادی یافت نشد</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">با کلیک بر روی دکمه «ثبت استاد جدید» مشخصات اساتید را به بانک اضافه فرمایید.</div>
+          </div>
+
+          <!-- جدول نمایش اساتید -->
+          <div id="instructors-table-wrapper" class="table-container" style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 12px;">
+                  <th style="padding: 10px; width: 40px; text-align: center;">#</th>
+                  <th style="padding: 10px; text-align: right;">استاد و مدرک تحصیلی</th>
+                  <th style="padding: 10px; text-align: right;">اطلاعات تماس و هویت</th>
+                  <th style="padding: 10px; text-align: right;">کلاس‌های تدریس</th>
+                  <th style="padding: 10px; text-align: right;">رزومه و سوابق</th>
+                  <th style="padding: 10px; text-align: center; width: 140px;">عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="instructors-table-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -1605,40 +1664,52 @@
                     <input type="date" id="modal-st-release-date" class="input-ctrl" style="color:white; background:#1e293b; border-color: #475569;" required>
                   </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1.5fr 2fr; gap: 12px; margin-bottom: 12px;">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group">
                     <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-hourglass-half" style="color:#38bdf8;"></i> مدت اقامت در منزلگاه:</label>
-                    <input type="text" id="modal-st-duration" class="input-ctrl" placeholder="مثال: ۲ هفته" style="background: #1e293b; border-color: #475569;">
+                    <input type="text" id="modal-st-duration" class="input-ctrl" placeholder="مثال: ۲ هفته یا ۱۴ روز" style="background: #1e293b; border-color: #475569;">
                   </div>
                   <div class="form-group">
-                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-clapperboard" style="color:#38bdf8;"></i> عنوان انیمیشن معرفی:</label>
-                    <input type="text" id="modal-st-anim-title" class="input-ctrl" placeholder="مثال: انیمیشن آغاز سفر" style="background: #1e293b; border-color: #475569;">
-                  </div>
-                  <div class="form-group">
-                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> لینک ویدیو انیمیشن:</label>
-                    <div style="display:flex; gap:6px;">
-                      <input type="text" id="modal-st-anim-url" class="input-ctrl" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background: #1e293b; border-color: #475569; direction:ltr; text-align:left; flex:1;">
-                      <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="آپلود مستقیم ویدیو">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
-                        <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'modal-st-anim-url')">
-                      </label>
-                    </div>
+                    <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
+                    <textarea id="modal-st-details" class="input-ctrl" rows="2" placeholder="توضیحات، داستان، اهداف و سرفصل‌های کلی این منزلگاه را وارد نمایید..." style="background: #1e293b; border-color: #475569;"></textarea>
                   </div>
                 </div>
-                <div class="form-group">
-                  <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
-                  <textarea id="modal-st-details" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های کلی این منزلگاه را وارد نمایید..." style="background: #1e293b; border-color: #475569;"></textarea>
+
+                <!-- فیلدهای پنهان برای سازگاری عقب‌رو -->
+                <input type="hidden" id="modal-st-anim-title" value="">
+                <input type="hidden" id="modal-st-anim-url" value="">
+
+                <!-- بخش انیمیشن‌های چندگانه و اسلایدر اپلیکیشن -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 14px; margin-top: 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 8px;">
+                    <div>
+                      <div style="font-size: 13px; font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-film"></i> انیمیشن و قسمت‌های آن (نمایش اسلایدی در اپلیکیشن)
+                      </div>
+                      <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+                        می‌توانید یک یا چند قسمت انیمیشن به همراه لینک، توضیحات اختصاصی اضافه کنید که در اپلیکیشن به صورت اسلاید نمایش داده می‌شوند.
+                      </div>
+                    </div>
+                    <button type="button" onclick="window.addAnimationBlockToCreatorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 6px 14px; border-radius: 7px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(2,132,199,0.3);">
+                      <i class="fa-solid fa-plus"></i> + افزودن انیمیشن جدید
+                    </button>
+                  </div>
+
+                  <div id="lms-modal-animations-container" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Dynamically populated with animation cards -->
+                  </div>
                 </div>
               </div>
 
-              <!-- بخش دسته‌بندی‌های کلاس (پویا: با قابلیت افزودن و حذف نامحدود دسته‌ها) -->
+              <!-- بخش دسته‌بندی‌های کلاس (اختیاری: با قابلیت افزودن و حذف نامحدود دسته‌ها) -->
               <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 10px;">
                   <div>
                     <h4 style="margin: 0; color: #38bdf8; font-size: 15px; display: flex; align-items: center; gap: 8px;">
                       <i class="fa-solid fa-layer-group"></i> دسته‌بندی‌های کلاس این منزلگاه
+                      <span style="font-size: 11px; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); padding: 2px 8px; border-radius: 12px; font-weight: normal;">(اختیاری)</span>
                     </h4>
-                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">می‌توانید دسته‌های جدید (مانند مهارتی، رسانه‌ای، کارگاهی، سناریو و...) اضافه نموده یا دسته‌ها را حذف و اصلاح فرمایید.</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">تعریف دسته‌بندی کلاس اختیاری است. می‌توانید بدون تعریف کلاس و صرفاً با انیمیشن و توضیحات، منزلگاه را ثبت فرمایید.</div>
                   </div>
                   <button type="button" onclick="window.addCategoryBlockToCreatorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(2,132,199,0.3);">
                     <i class="fa-solid fa-plus"></i> + افزودن دسته جدید
@@ -3726,7 +3797,85 @@
       </div>
     </div>
 
+    <!-- MODAL: ADD / EDIT INSTRUCTOR -->
+    <div id="instructor-form-modal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999999; backdrop-filter: blur(8px);">
+      <div class="modal-box glass" style="width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto; background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 16px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; margin-bottom: 18px;">
+          <div>
+            <h3 id="instructor-modal-title" style="margin: 0; color: #38bdf8; font-size: 17px; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-chalkboard-user"></i> ثبت استاد جدید در بانک اساتید
+            </h3>
+            <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px;">مشخصات هویتی، علمی، رزومه و کلاس‌های آموزشی استاد</div>
+          </div>
+          <button type="button" class="modal-close" onclick="document.getElementById('instructor-form-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+
+        <form id="instructor-creator-form" onsubmit="window.saveInstructorForm(event)">
+          <input type="hidden" id="inst-id">
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group">
+              <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-user" style="color: #38bdf8;"></i> نام و نام خانوادگی استاد: <span style="color:#ef4444;">*</span></label>
+              <input type="text" id="inst-name" class="input-ctrl" placeholder="مثال: علیرضا خوش‌منظر" required style="background: #1e293b; border-color: #475569;">
+            </div>
+            <div class="form-group">
+              <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-graduation-cap" style="color: #38bdf8;"></i> مدرک تحصیلی و تخصص:</label>
+              <input type="text" id="inst-degree" class="input-ctrl" placeholder="مثال: کارشناسی ارشد رسانه، دکترای علوم تربیتی" style="background: #1e293b; border-color: #475569;">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div class="form-group">
+              <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-phone" style="color: #38bdf8;"></i> شماره تماس / موبایل:</label>
+              <input type="text" id="inst-phone" class="input-ctrl" placeholder="0912..." style="background: #1e293b; border-color: #475569; direction: ltr; text-align: left;">
+            </div>
+            <div class="form-group">
+              <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-id-card" style="color: #38bdf8;"></i> کد ملی:</label>
+              <input type="text" id="inst-national-id" class="input-ctrl" placeholder="کد ملی ۱۰ رقمی" style="background: #1e293b; border-color: #475569; direction: ltr; text-align: left;">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-book-open-reader" style="color: #38bdf8;"></i> کلاس‌ها و سرفصل‌هایی که تدریس می‌کند:</label>
+            <input type="text" id="inst-classes" class="input-ctrl" placeholder="مثال: کلاس‌های مهارتی، سواد رسانه، فتوشاپ و تولید محتوا" style="background: #1e293b; border-color: #475569;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-image" style="color: #38bdf8;"></i> عکس / تصویر استاد:</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="inst-avatar" class="input-ctrl" placeholder="https://... یا /uploads/..." style="background: #1e293b; border-color: #475569; direction: ltr; text-align: left; flex: 1;">
+              <label style="background: rgba(56,189,248,0.18); border: 1px solid #38bdf8; color: #38bdf8; padding: 7px 14px; border-radius: 7px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <i class="fa-solid fa-cloud-arrow-up"></i> آپلود عکس
+                <input type="file" accept="image/*" style="display: none;" onchange="window.handleDirectFileUpload(this, 'inst-avatar')">
+              </label>
+            </div>
+            <div id="inst-avatar-preview-container" style="display: none; margin-top: 8px;">
+              <img id="inst-avatar-preview" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #38bdf8;">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-file-lines" style="color: #38bdf8;"></i> سوابق علمی و رزومه:</label>
+            <textarea id="inst-resume" class="input-ctrl" rows="2" placeholder="سوابق تدریس، تالیفات، تجربیات و مدارک تخصصی استاد..." style="background: #1e293b; border-color: #475569;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 18px;">
+            <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-align-right" style="color: #38bdf8;"></i> توضیحات و بیوگرافی استاد:</label>
+            <textarea id="inst-desc" class="input-ctrl" rows="2" placeholder="توضیحات تکمیلی، معرفی کوتاه جهت نمایش به دانش‌آموزان..." style="background: #1e293b; border-color: #475569;"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+            <button type="button" class="btn-action" onclick="document.getElementById('instructor-form-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #cbd5e1; border: none; cursor: pointer;">انصراف</button>
+            <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-check"></i> ذخیره مشخصات استاد
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script src="app.js"></script>
-  <script src="lms.js"></script>
+    <script src="instructors.js"></script>
+    <script src="lms.js"></script>
 </body>
 </html>

@@ -12,6 +12,7 @@ const mentorController_1 = require("../controllers/mentorController");
 const challengeController_1 = require("../controllers/challengeController");
 const submissionController_1 = require("../controllers/submissionController");
 const lmsController_1 = require("../controllers/lmsController");
+const instructorController_1 = require("../controllers/instructorController");
 const formController_1 = require("../controllers/formController");
 const calendarController_1 = require("../controllers/calendarController");
 const leagueController_1 = require("../controllers/leagueController");
@@ -85,6 +86,7 @@ router.post('/lms/sessions/:id/submit-quiz', auth_1.authenticateJWT, lmsControll
 router.get('/forms', auth_1.authenticateJWT, formController_1.getForms);
 router.post('/forms/submit', auth_1.authenticateJWT, formController_1.submitForm);
 router.get('/calendar/events', auth_1.authenticateJWT, calendarController_1.getCalendarEvents);
+router.get('/instructors', instructorController_1.getInstructors);
 // J. Chat & Messaging Routes
 router.get('/chat/direct/:mentorId', auth_1.authenticateJWT, chatController_1.getDirectMessages);
 router.get('/chat/caravan/:caravanId', auth_1.authenticateJWT, chatController_1.getCaravanMessages);

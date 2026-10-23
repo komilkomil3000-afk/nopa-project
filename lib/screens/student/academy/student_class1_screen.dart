@@ -130,12 +130,32 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         }
       }
 
-      if (clipsList.isEmpty && _station?.animationUrl != null && _station!.animationUrl!.isNotEmpty) {
-        clipsList.add({
+      final List<Map<String, dynamic>> animClips = [];
+      if (_station != null && _station!.animations.isNotEmpty) {
+        for (final anim in _station!.animations) {
+          if (anim.videoUrl.isNotEmpty) {
+            animClips.add({
+              'id': anim.id,
+              'title': anim.title,
+              'videoUrl': anim.videoUrl,
+              'description': anim.description,
+            });
+          }
+        }
+      } else if (_station?.animationUrl != null && _station!.animationUrl!.isNotEmpty) {
+        animClips.add({
           'id': 'anim_${_station!.id}',
           'title': _station?.animationTitle ?? 'انیمیشن معرفی منزلگاه',
           'videoUrl': _station!.animationUrl!,
         });
+      }
+
+      if (animClips.isNotEmpty) {
+        if (clipsList.isEmpty) {
+          clipsList.addAll(animClips);
+        } else {
+          clipsList.insertAll(0, animClips);
+        }
       }
 
       if (mounted) {

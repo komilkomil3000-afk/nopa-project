@@ -58,6 +58,8 @@ import { getDashboardAnalytics } from '../controllers/analyticsController';
 import { getMentors, createOrUpdateMentor, grantFiveStars } from '../controllers/mentorController';
 import { getPendingDocuments, approveDocument, rejectDocument, getMentorHistory, assignCaravans } from '../controllers/mentorController';
 import { createOrUpdateStudent, adjustBalance, adjustLevelFrame } from '../controllers/studentController';
+import { getInstructors, getInstructorById, createOrUpdateInstructor, deleteInstructor } from '../controllers/instructorController';
+
 import { getSystemSetting, setSystemSetting } from '../controllers/settingController';
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
@@ -269,4 +271,12 @@ router.delete('/rewards/mentor-rules/:id', deleteMentorRewardRule as any);
 router.get('/chat', getAllChatsAdmin as any);
 router.delete('/chat/:id', deleteMessage as any);
 
+// 12. Instructors Management (بانک اساتید)
+router.get('/instructors', getInstructors as any);
+router.get('/instructors/:id', getInstructorById as any);
+router.post('/instructors', createOrUpdateInstructor as any);
+router.put('/instructors/:id', createOrUpdateInstructor as any);
+router.delete('/instructors/:id', deleteInstructor as any);
+
 export default router;
+
