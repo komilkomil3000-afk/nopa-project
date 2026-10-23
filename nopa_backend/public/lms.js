@@ -301,8 +301,57 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
           </div>
         </td>
         <td style="text-align:center;">${sessionsDisplayHtml}</td>
-        <td style="text-align:center;">
-          <span class="badge badge-active" style="font-size:11px; padding:3px 8px;">فعال</span>
+        <td style="text-align:center; vertical-align:middle; cursor:pointer;" onclick="window.openStationAccessModal('${stationIdentifier}')" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+          ${(() => {
+            const isStationTimeLocked = Boolean(st.isTimeLocked || (st.scheduledUnlockTime && new Date() < new Date(st.scheduledUnlockTime)));
+            const effectiveIsLocked = Boolean(st.isLocked || st.status === 'locked' || isStationTimeLocked);
+
+            let statusBadge = '';
+            if (effectiveIsLocked) {
+              statusBadge = `
+                <span class="badge badge-locked" style="font-size:11.5px; padding:4px 10px; border-radius:7px; background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.4); display:inline-flex; align-items:center; gap:5px; font-weight:bold; cursor:pointer; transition:all 0.2s;" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+                  <i class="fa-solid fa-lock"></i> قفل شده
+                </span>
+              `;
+            } else {
+              statusBadge = `
+                <span class="badge badge-active" style="font-size:11.5px; padding:4px 10px; border-radius:7px; background:rgba(16,185,129,0.18); color:#34d399; border:1px solid rgba(16,185,129,0.4); display:inline-flex; align-items:center; gap:5px; font-weight:bold; cursor:pointer; transition:all 0.2s;" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+                  <i class="fa-solid fa-lock-open"></i> فعال
+                </span>
+              `;
+            }
+
+            let schedTag = '';
+            if (st.scheduledUnlockTime) {
+              try {
+                const d = new Date(st.scheduledUnlockTime);
+                const timePart = d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+                const datePart = d.toLocaleDateString('fa-IR');
+                schedTag = `
+                  <div style="font-size:10px; color:#38bdf8; margin-top:4px; display:inline-flex; align-items:center; gap:3px;" title="زمان بازگشایی خودکار: ${datePart} ساعت ${timePart}">
+                    <i class="fa-regular fa-clock"></i> بازگشایی: ${datePart}
+                  </div>
+                `;
+              } catch (_) {}
+            }
+
+            let condTag = '';
+            if (st.requirePreviousComplete && idx > 1) {
+              condTag = `
+                <div style="font-size:10px; color:#c084fc; margin-top:2px; display:inline-flex; align-items:center; gap:3px;" title="مشروط به اتمام مراحل منزلگاه قبل">
+                  <i class="fa-solid fa-link"></i> مشروط به منزلگاه ${idx - 1}
+                </div>
+              `;
+            }
+
+            return `
+              <div style="display:inline-flex; flex-direction:column; align-items:center; cursor:pointer;">
+                ${statusBadge}
+                ${schedTag}
+                ${condTag}
+              </div>
+            `;
+          })()}
         </td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
@@ -2320,3 +2369,285 @@ window.loadLmsStationsData = window.fetchLiveLmsStations;
 document.addEventListener('DOMContentLoaded', () => {
   if (window.fetchLiveLmsStations) window.fetchLiveLmsStations();
 });
+
+// ==========================================
+// STATION ACCESS & LOCK CONTROL MODAL LOGIC
+// ==========================================
+window.openStationAccessModal = function(stationId) {
+  // Find station by id, orderIndex or identifier
+  const station = window.lmsStationsMasterList.find(s => s.id === stationId || String(s.orderIndex) === String(stationId) || ('MZ' + s.orderIndex) === String(stationId));
+  if (!station) {
+    alert('منزلگاه مورد نظر یافت نشد.');
+    return;
+  }
+
+  const modal = document.getElementById('station-access-modal');
+  if (!modal) return;
+
+  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const idx = station.orderIndex ?? 1;
+  const stationTitleName = PERSIAN_NUMS[idx - 1] ? `منزلگاه ${PERSIAN_NUMS[idx - 1]}` : `منزلگاه ${idx}`;
+
+  document.getElementById('sam-station-id').value = station.id;
+  document.getElementById('sam-station-title').textContent = `تنظیمات دسترسی ${stationTitleName}: ${station.title || ''}`;
+  document.getElementById('sam-station-subtitle').textContent = `کد: MZ${idx} | تنظیم قفل/فعال، زمان بازگشایی و شرط پیش‌نیاز`;
+
+  // Status (active vs locked)
+  const isTimeLocked = station.isTimeLocked || (station.scheduledUnlockTime && new Date() < new Date(station.scheduledUnlockTime));
+  const isLocked = Boolean(station.isLocked || station.status === 'locked' || isTimeLocked);
+
+  const activeRadio = document.getElementById('sam-status-active');
+  const lockedRadio = document.getElementById('sam-status-locked');
+  if (isLocked) {
+    if (lockedRadio) lockedRadio.checked = true;
+  } else {
+    if (activeRadio) activeRadio.checked = true;
+  }
+  if (typeof window.handleSamStatusChange === 'function') window.handleSamStatusChange();
+
+  // Caravan scope
+  const scopeSelect = document.getElementById('sam-caravan-scope');
+  const customBox = document.getElementById('sam-caravans-custom-box');
+  let targetCaravans = [];
+  try {
+    if (station.targetCaravansJson) {
+      targetCaravans = JSON.parse(station.targetCaravansJson);
+      if (!Array.isArray(targetCaravans)) targetCaravans = [];
+    }
+  } catch (_) {}
+
+  // Populate custom caravan list
+  const caravans = window.caravansData || [];
+  if (customBox) {
+    if (caravans.length === 0) {
+      customBox.innerHTML = '<div style="color:#94a3b8; font-size:12px; padding:6px;">کاروانی در حافظه بارگذاری نشده است.</div>';
+    } else {
+      customBox.innerHTML = caravans.map(c => `
+        <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; color:#cbd5e1; cursor:pointer;">
+          <input type="checkbox" class="sam-caravan-check" value="${c.id}" ${targetCaravans.includes(c.id) ? 'checked' : ''} style="accent-color:#38bdf8;">
+          <span>${c.name} (${c.mentorName || c.mentor?.name || 'بدون راهبر'})</span>
+        </label>
+      `).join('');
+    }
+  }
+
+  if (scopeSelect) {
+    if (targetCaravans.length > 0) {
+      scopeSelect.value = 'custom';
+    } else {
+      scopeSelect.value = 'all';
+    }
+  }
+  if (typeof window.handleSamScopeChange === 'function') window.handleSamScopeChange();
+
+  // Scheduled unlock
+  const schedCheckbox = document.getElementById('sam-schedule-enable');
+  const schedDate = document.getElementById('sam-schedule-date');
+  const schedTime = document.getElementById('sam-schedule-time');
+
+  if (station.scheduledUnlockTime) {
+    try {
+      const d = new Date(station.scheduledUnlockTime);
+      if (schedCheckbox) schedCheckbox.checked = true;
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      if (schedDate) schedDate.value = `${yyyy}-${mm}-${dd}`;
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      if (schedTime) schedTime.value = `${hh}:${min}`;
+    } catch (_) {
+      if (schedCheckbox) schedCheckbox.checked = false;
+      if (schedDate) schedDate.value = '';
+      if (schedTime) schedTime.value = '';
+    }
+  } else {
+    if (schedCheckbox) schedCheckbox.checked = false;
+    if (schedDate) schedDate.value = '';
+    if (schedTime) schedTime.value = '';
+  }
+  if (typeof window.handleSamScheduleToggle === 'function') window.handleSamScheduleToggle();
+
+  // Conditional unlock on previous station
+  const condCheckbox = document.getElementById('sam-condition-enable');
+  const condDesc = document.getElementById('sam-condition-desc');
+  if (condCheckbox && condDesc) {
+    if (idx <= 1) {
+      condCheckbox.checked = false;
+      condCheckbox.disabled = true;
+      condDesc.innerHTML = `<span style="color:#eab308;"><i class="fa-solid fa-circle-info"></i> این منزلگاه، منزلگاه اول (نقطه آغاز مسابقه) است و نیازی به پیش‌نیاز قبلی ندارد.</span>`;
+    } else {
+      condCheckbox.disabled = false;
+      condCheckbox.checked = Boolean(station.requirePreviousComplete);
+      const prevStationName = PERSIAN_NUMS[idx - 2] ? `منزلگاه ${PERSIAN_NUMS[idx - 2]}` : `منزلگاه ${idx - 1}`;
+      condDesc.innerHTML = `در صورت فعال بودن، کاروان‌ها و اعضا تنها در صورتی مجاز به ورود و شروع این منزلگاه خواهند بود که تمام مراحل و جلسات <strong>«${prevStationName}»</strong> را به اتمام رسانده باشند.`;
+    }
+  }
+
+  modal.style.display = 'flex';
+};
+
+window.closeStationAccessModal = function() {
+  const modal = document.getElementById('station-access-modal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.handleSamStatusChange = function() {
+  const activeRadio = document.getElementById('sam-status-active');
+  const activeLabel = document.getElementById('sam-status-active-label');
+  const lockedLabel = document.getElementById('sam-status-locked-label');
+
+  if (activeRadio && activeRadio.checked) {
+    if (activeLabel) {
+      activeLabel.style.border = '2px solid #10b981';
+      activeLabel.style.background = 'rgba(16,185,129,0.14)';
+    }
+    if (lockedLabel) {
+      lockedLabel.style.border = '1px solid rgba(239,68,68,0.3)';
+      lockedLabel.style.background = 'rgba(239,68,68,0.05)';
+    }
+  } else {
+    if (activeLabel) {
+      activeLabel.style.border = '1px solid rgba(16,185,129,0.3)';
+      activeLabel.style.background = 'rgba(16,185,129,0.05)';
+    }
+    if (lockedLabel) {
+      lockedLabel.style.border = '2px solid #ef4444';
+      lockedLabel.style.background = 'rgba(239,68,68,0.14)';
+    }
+  }
+};
+
+window.handleSamScopeChange = function() {
+  const scopeSelect = document.getElementById('sam-caravan-scope');
+  const customBox = document.getElementById('sam-caravans-custom-box');
+  if (customBox) {
+    customBox.style.display = (scopeSelect && scopeSelect.value === 'custom') ? 'block' : 'none';
+  }
+};
+
+window.handleSamScheduleToggle = function() {
+  const schedCheckbox = document.getElementById('sam-schedule-enable');
+  const inputsBox = document.getElementById('sam-schedule-inputs-box');
+  const previewBox = document.getElementById('sam-schedule-status-preview');
+
+  const isEnabled = Boolean(schedCheckbox && schedCheckbox.checked);
+  if (inputsBox) inputsBox.style.display = isEnabled ? 'grid' : 'none';
+  if (previewBox) previewBox.style.display = isEnabled ? 'block' : 'none';
+  if (isEnabled && typeof window.updateSamSchedulePreview === 'function') {
+    window.updateSamSchedulePreview();
+  }
+};
+
+window.updateSamSchedulePreview = function() {
+  const schedDate = document.getElementById('sam-schedule-date')?.value;
+  const schedTime = document.getElementById('sam-schedule-time')?.value || '00:00';
+  const previewBox = document.getElementById('sam-schedule-status-preview');
+  if (!previewBox) return;
+
+  if (!schedDate) {
+    previewBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#fbbf24;"></i> لطفاً تاریخ بازگشایی را مشخص کنید.';
+    return;
+  }
+
+  try {
+    const target = new Date(`${schedDate}T${schedTime}`);
+    const now = new Date();
+    const diffMs = target.getTime() - now.getTime();
+
+    if (diffMs > 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      const remainingHours = diffHours % 24;
+      previewBox.innerHTML = `
+        <div style="font-weight:bold;"><i class="fa-solid fa-lock" style="color:#ef4444;"></i> منزلگاه تا زمان بازگشایی به صورت خودکار قفل خواهد ماند.</div>
+        <div style="font-size:11px; color:#cbd5e1; margin-top:3px;">
+          زمان مقرر: ${target.toLocaleDateString('fa-IR')} ساعت ${target.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
+          (حدود ${diffDays > 0 ? diffDays + ' روز و ' : ''}${remainingHours} ساعت باقی‌مانده)
+        </div>
+      `;
+    } else {
+      previewBox.innerHTML = `
+        <div style="font-weight:bold; color:#34d399;"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده است (منزلگاه فعال و در دسترس).</div>
+      `;
+    }
+  } catch (_) {
+    previewBox.textContent = 'فرمت تاریخ و ساعت صحیح نیست.';
+  }
+};
+
+window.saveStationAccessSettings = async function() {
+  const stationId = document.getElementById('sam-station-id')?.value;
+  if (!stationId) return;
+
+  const btn = document.getElementById('btn-save-station-access');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> در حال ذخیره...';
+  }
+
+  try {
+    const activeRadio = document.getElementById('sam-status-active');
+    const isLocked = !activeRadio.checked;
+    const status = isLocked ? 'locked' : 'active';
+
+    // Scope
+    const scopeSelect = document.getElementById('sam-caravan-scope')?.value;
+    let targetCaravansJson = null;
+    if (scopeSelect === 'custom') {
+      const checkedBoxes = Array.from(document.querySelectorAll('.sam-caravan-check:checked')).map(cb => cb.value);
+      targetCaravansJson = JSON.stringify(checkedBoxes);
+    }
+
+    // Schedule
+    const schedCheckbox = document.getElementById('sam-schedule-enable');
+    let scheduledUnlockTime = null;
+    if (schedCheckbox && schedCheckbox.checked) {
+      const sDate = document.getElementById('sam-schedule-date')?.value;
+      const sTime = document.getElementById('sam-schedule-time')?.value || '00:00';
+      if (sDate) {
+        scheduledUnlockTime = new Date(`${sDate}T${sTime}`).toISOString();
+      }
+    }
+
+    // Conditional unlock
+    const condCheckbox = document.getElementById('sam-condition-enable');
+    const requirePreviousComplete = Boolean(condCheckbox && condCheckbox.checked && !condCheckbox.disabled);
+
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const res = await fetch(`/api/v1/lms/stations/${stationId}/access`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      },
+      body: JSON.stringify({
+        isLocked,
+        status,
+        scheduledUnlockTime,
+        requirePreviousComplete,
+        targetCaravansJson
+      })
+    });
+
+    if (res.ok) {
+      alert('تنظیمات وضعیت و دسترسی منزلگاه با موفقیت ذخیره شد.');
+      window.closeStationAccessModal();
+      if (typeof window.fetchLiveLmsStations === 'function') {
+        await window.fetchLiveLmsStations();
+      }
+    } else {
+      const err = await res.json();
+      alert('خطا در ذخیره تنظیمات: ' + (err.error || err.message || 'خطای سرور'));
+    }
+  } catch (err) {
+    console.error('saveStationAccessSettings error:', err);
+    alert('خطا در برقراری ارتباط با سرور: ' + err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+};

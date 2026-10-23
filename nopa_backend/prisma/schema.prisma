@@ -360,9 +360,14 @@ model Station {
   orderIndex          Int      @default(0)
   releaseDate         DateTime?
   releaseTime         String?
-  scoringCriteriaJson String?  // e.g. JSON storing rules for rewards
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  isLocked                Boolean  @default(false)
+  status                  String   @default("active") // "active" | "locked"
+  scheduledUnlockTime     DateTime?
+  requirePreviousComplete Boolean  @default(false)
+  targetCaravansJson      String?  // JSON array of caravan IDs, or null for all caravans
+  scoringCriteriaJson     String?  // e.g. JSON storing rules for rewards
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   categories          ClassCategory[]
   challenges          Challenge[]

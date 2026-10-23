@@ -72,6 +72,7 @@ router.post('/media/upload', auth_1.authenticateJWT, mediaController_1.upload.si
 router.get('/media', auth_1.authenticateJWT, (0, auth_1.authorizeRoles)('admin'), mediaController_1.getMediaAssets);
 // I. LMS and Forms
 router.get('/lms/stations', lmsController_1.getStations);
+router.put('/lms/stations/:id/access', lmsController_1.updateStationAccess);
 router.get('/courses', lmsController_1.getStations);
 router.get('/courses/hierarchy', lmsController_1.getStations);
 router.get('/lms/bookmarks/:sessionId', auth_1.authenticateJWT, lmsController_1.getBookmarks);

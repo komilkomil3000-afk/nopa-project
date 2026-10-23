@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryInstructor = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.batchSaveStationContent = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
+exports.updateQuestion = exports.createQuestion = exports.updatePart = exports.createPart = exports.updateSession = exports.createSession = exports.updateClass = exports.createClass = exports.updateStation = exports.createStation = exports.updateStationAccess = exports.reorderStations = exports.deleteQuiz = exports.deleteClip = exports.deleteSession = exports.deleteCategory = exports.markClipWatched = exports.getUserProgress = exports.deleteStation = exports.submitSessionQuiz = exports.getSessionWatchProgress = exports.heartbeatSessionWatch = exports.addBookmark = exports.getBookmarks = exports.seedStations = exports.setBatchCategoryInstructor = exports.setBatchCategoryZarik = exports.createOrUpdateQuiz = exports.reorderClips = exports.batchSaveStationContent = exports.createOrUpdateClip = exports.createOrUpdateSession = exports.createOrUpdateCategory = exports.createOrUpdateStation = exports.getQuizzes = exports.getClips = exports.getSessions = exports.getClasses = exports.getStations = void 0;
 const db_1 = __importDefault(require("../config/db"));
 const certificateController_1 = require("./certificateController");
 const getStations = async (req, res) => {
@@ -29,6 +29,7 @@ const getStations = async (req, res) => {
             },
             orderBy: { orderIndex: 'asc' }
         });
+        const now = new Date();
         const mapped = stations.map(st => {
             let instructors = null;
             let schedule = null;
@@ -48,8 +49,18 @@ const getStations = async (req, res) => {
                     instructors = st.subtitle;
                 }
             }
+            // Check scheduled unlock time
+            const isTimeLocked = st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
+            const isLocked = Boolean(st.isLocked || st.status === 'locked' || isTimeLocked);
             return {
                 ...st,
+                isLocked,
+                status: isLocked ? 'locked' : (st.status || 'active'),
+                rawIsLocked: Boolean(st.isLocked),
+                isTimeLocked,
+                scheduledUnlockTime: st.scheduledUnlockTime,
+                requirePreviousComplete: Boolean(st.requirePreviousComplete),
+                targetCaravansJson: st.targetCaravansJson,
                 instructors,
                 schedule,
                 category,
@@ -118,12 +129,14 @@ const getQuizzes = async (req, res) => {
 exports.getQuizzes = getQuizzes;
 const createOrUpdateStation = async (req, res) => {
     try {
-        const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount } = req.body;
+        const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
         const subtitleVal = subtitle || (instructors || schedule || category || sessionsCount ? JSON.stringify({ instructors, schedule, category, sessionsCount }) : null);
         const result = await db_1.default.$transaction(async (tx) => {
             let station;
             const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
             let orderIndexVal = parseInt(orderIndex) || 0;
+            const parsedUnlockTime = (scheduledUnlockTime && String(scheduledUnlockTime).trim() !== '') ? new Date(scheduledUnlockTime) : undefined;
+            const lockedVal = typeof isLocked === 'boolean' ? isLocked : (status === 'locked' ? true : (status === 'active' ? false : undefined));
             if (id && !id.startsWith('new_')) {
                 // When updating, ensure orderIndex is not duplicated with another station
                 if (orderIndexVal > 0) {
@@ -139,21 +152,32 @@ const createOrUpdateStation = async (req, res) => {
                     const current = await tx.station.findUnique({ where: { id } });
                     orderIndexVal = current ? current.orderIndex : 1;
                 }
+                const updateData = {
+                    title: title || 'منزلگاه',
+                    subtitle: subtitleVal,
+                    description: description !== undefined ? description : '',
+                    stayDuration: stayDuration !== undefined ? stayDuration : null,
+                    animationTitle: animationTitle !== undefined ? animationTitle : null,
+                    animationUrl: animationUrl !== undefined ? animationUrl : null,
+                    iconUrl: iconUrl || '',
+                    orderIndex: orderIndexVal,
+                    releaseDate: releaseDateVal,
+                    releaseTime: releaseTime || null,
+                    scoringCriteriaJson
+                };
+                if (lockedVal !== undefined)
+                    updateData.isLocked = lockedVal;
+                if (status !== undefined)
+                    updateData.status = status;
+                if (parsedUnlockTime !== undefined)
+                    updateData.scheduledUnlockTime = parsedUnlockTime;
+                if (requirePreviousComplete !== undefined)
+                    updateData.requirePreviousComplete = Boolean(requirePreviousComplete);
+                if (targetCaravansJson !== undefined)
+                    updateData.targetCaravansJson = typeof targetCaravansJson === 'string' ? targetCaravansJson : JSON.stringify(targetCaravansJson);
                 station = await tx.station.update({
                     where: { id },
-                    data: {
-                        title: title || 'منزلگاه',
-                        subtitle: subtitleVal,
-                        description: description !== undefined ? description : '',
-                        stayDuration: stayDuration !== undefined ? stayDuration : null,
-                        animationTitle: animationTitle !== undefined ? animationTitle : null,
-                        animationUrl: animationUrl !== undefined ? animationUrl : null,
-                        iconUrl: iconUrl || '',
-                        orderIndex: orderIndexVal,
-                        releaseDate: releaseDateVal,
-                        releaseTime: releaseTime || null,
-                        scoringCriteriaJson
-                    }
+                    data: updateData
                 });
             }
             else {
@@ -183,7 +207,12 @@ const createOrUpdateStation = async (req, res) => {
                         orderIndex: orderIndexVal,
                         releaseDate: releaseDateVal,
                         releaseTime: releaseTime || null,
-                        scoringCriteriaJson
+                        scoringCriteriaJson,
+                        isLocked: lockedVal || false,
+                        status: status || (lockedVal ? 'locked' : 'active'),
+                        scheduledUnlockTime: parsedUnlockTime || null,
+                        requirePreviousComplete: Boolean(requirePreviousComplete),
+                        targetCaravansJson: typeof targetCaravansJson === 'string' ? targetCaravansJson : (targetCaravansJson ? JSON.stringify(targetCaravansJson) : null)
                     }
                 });
             }
@@ -1168,6 +1197,45 @@ const reorderStations = async (req, res) => {
     }
 };
 exports.reorderStations = reorderStations;
+const updateStationAccess = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
+        const station = await db_1.default.station.findUnique({ where: { id } });
+        if (!station) {
+            return res.status(404).json({ error: 'منزلگاه یافت نشد' });
+        }
+        const lockedBool = typeof isLocked === 'boolean' ? isLocked : (status === 'locked');
+        const statusVal = status || (lockedBool ? 'locked' : 'active');
+        let parsedUnlockTime = null;
+        if (scheduledUnlockTime && String(scheduledUnlockTime).trim() !== '') {
+            const d = new Date(scheduledUnlockTime);
+            if (!isNaN(d.getTime())) {
+                parsedUnlockTime = d;
+            }
+        }
+        const updated = await db_1.default.station.update({
+            where: { id },
+            data: {
+                isLocked: lockedBool,
+                status: statusVal,
+                scheduledUnlockTime: parsedUnlockTime,
+                requirePreviousComplete: Boolean(requirePreviousComplete),
+                targetCaravansJson: typeof targetCaravansJson === 'string' ? targetCaravansJson : (targetCaravansJson ? JSON.stringify(targetCaravansJson) : null)
+            }
+        });
+        res.json({
+            success: true,
+            message: 'تنظیمات وضعیت دسترسی منزلگاه با موفقیت بروزرسانی شد',
+            station: updated
+        });
+    }
+    catch (error) {
+        console.error('updateStationAccess error:', error);
+        res.status(500).json({ error: error.message || 'خطای سرور' });
+    }
+};
+exports.updateStationAccess = updateStationAccess;
 exports.createStation = exports.createOrUpdateStation;
 exports.updateStation = exports.createOrUpdateStation;
 exports.createClass = exports.createOrUpdateCategory;

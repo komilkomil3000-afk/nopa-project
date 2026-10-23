@@ -146,6 +146,8 @@ router.post('/lms/stations', lmsController_1.createStation);
 router.post('/lms/stations/:id/batch-content', lmsController_1.batchSaveStationContent);
 router.put('/lms/stations/:id/batch-content', lmsController_1.batchSaveStationContent);
 router.put('/lms/stations/:id', lmsController_1.updateStation);
+router.put('/lms/stations/:id/access', lmsController_1.updateStationAccess);
+router.patch('/lms/stations/:id/access', lmsController_1.updateStationAccess);
 router.delete('/lms/stations/:id', lmsController_1.deleteStation);
 router.post('/lms/classes', lmsController_1.createClass);
 router.put('/lms/classes/:id', lmsController_1.updateClass);

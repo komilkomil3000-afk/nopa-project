@@ -6,7 +6,7 @@ import { getMe, getMentorById, completeProfile } from '../controllers/userContro
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
 import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
-import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched } from '../controllers/lmsController';
+import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess } from '../controllers/lmsController';
 import { getForms, submitForm } from '../controllers/formController';
 import { getCalendarEvents } from '../controllers/calendarController';
 import { getCaravanLeague, getWealthiestLeague, getMentorLeague } from '../controllers/leagueController';
@@ -87,6 +87,7 @@ router.get('/media', authenticateJWT as any, authorizeRoles('admin') as any, get
 
 // I. LMS and Forms
 router.get('/lms/stations', getStations as any);
+router.put('/lms/stations/:id/access', updateStationAccess as any);
 router.get('/courses', getStations as any);
 router.get('/courses/hierarchy', getStations as any);
 router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as any);

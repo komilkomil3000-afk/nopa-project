@@ -4408,6 +4408,9 @@ window.loadSelectedCaravanDetails = async function() {
   
   const mentorEl = document.getElementById('cw-mentor-name');
   const zarikEl = document.getElementById('caravan-detail-zarik');
+  const derafshEl = document.getElementById('caravan-detail-derafsh');
+  const nokhEl = document.getElementById('caravan-detail-nokh');
+  const farshEl = document.getElementById('caravan-detail-farsh');
   const milestonesEl = document.getElementById('caravan-detail-milestones');
   const rosterBody = document.getElementById('caravan-roster-body');
 
@@ -4416,44 +4419,84 @@ window.loadSelectedCaravanDetails = async function() {
   if (!cId) {
     if (mentorEl) mentorEl.innerText = '-';
     zarikEl.innerHTML = '0 <i class="fa-solid fa-coins"></i>';
-    milestonesEl.innerText = '0';
-    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
+    if (derafshEl) derafshEl.innerHTML = '0 <i class="fa-solid fa-flag"></i>';
+    if (nokhEl) nokhEl.innerHTML = '0 <i class="fa-solid fa-layer-group"></i>';
+    if (farshEl) farshEl.innerHTML = '0 <i class="fa-solid fa-rug"></i>';
+    milestonesEl.innerText = '0%';
+    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
     return;
   }
 
-  const caravan = window.caravansData?.find(c => c.id === cId);
+  let caravan = window.caravansData?.find(c => c.id === cId);
+  if (!caravan) {
+    try {
+      const res = await request(`/api/v1/admin/caravans/${cId}`);
+      if (res.ok) caravan = await res.json();
+    } catch (_) {}
+  }
   if (!caravan) return;
 
   if (mentorEl) {
     mentorEl.innerText = caravan.mentorName || caravan.mentor?.name || 'فاقد راهبر';
   }
 
-  const zarikVal = (caravan.assets?.zarik ?? caravan.totalWealth ?? caravan.wealth?.zarik ?? 0).toLocaleString();
-  zarikEl.innerHTML = `${zarikVal} <i class="fa-solid fa-coins"></i>`;
+  const members = caravan.membersList || caravan.members || [];
+
+  // Calculate sum of each asset across ALL members of the caravan
+  let sumZarik = 0;
+  let sumBeyragh = 0; // درفش
+  let sumNokh = 0;   // نخ
+  let sumFarsh = 0;  // فرش
+
+  if (members.length > 0) {
+    members.forEach(m => {
+      sumZarik += Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0);
+      sumBeyragh += Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0);
+      sumNokh += Number(m.nakh ?? m.nokh ?? m.assets?.nakh ?? 0);
+      sumFarsh += Number(m.farsh ?? m.assets?.farsh ?? 0);
+    });
+  } else if (caravan.wealth || caravan.assets) {
+    const w = caravan.wealth || caravan.assets || {};
+    sumZarik = Number(w.zarik ?? caravan.totalWealth ?? 0);
+    sumBeyragh = Number(w.beyragh ?? 0);
+    sumNokh = Number(w.nakh ?? w.nokh ?? 0);
+    sumFarsh = Number(w.farsh ?? 0);
+  }
+
+  zarikEl.innerHTML = `${sumZarik.toLocaleString()} <i class="fa-solid fa-coins"></i>`;
+  if (derafshEl) derafshEl.innerHTML = `${sumBeyragh.toLocaleString()} <i class="fa-solid fa-flag"></i>`;
+  if (nokhEl) nokhEl.innerHTML = `${sumNokh.toLocaleString()} <i class="fa-solid fa-layer-group"></i>`;
+  if (farshEl) farshEl.innerHTML = `${sumFarsh.toLocaleString()} <i class="fa-solid fa-rug"></i>`;
+
   milestonesEl.innerText = caravan.overallProgress ? `${caravan.overallProgress}%` : '0%';
 
   rosterBody.innerHTML = '';
-  const members = caravan.membersList || caravan.members || [];
   if (members.length === 0) {
-    rosterBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
+    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
   } else {
     members.forEach(m => {
       const name = m.name || m.user?.name || '-';
       const phone = m.phoneNumber || m.user?.phoneNumber || '-';
-      const zarik = (m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0).toLocaleString();
+      const zarik = Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0).toLocaleString();
+      const beyragh = Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0).toLocaleString();
+      const nokh = Number(m.nakh ?? m.nokh ?? m.assets?.nakh ?? 0).toLocaleString();
+      const farsh = Number(m.farsh ?? m.assets?.farsh ?? 0).toLocaleString();
       const displayId = m.userCode ? `NP-${m.userCode}` : (m.user?.userCode ? `NP-${m.user?.userCode}` : (m.id || '-'));
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-family: monospace; color: #38bdf8;">${displayId}</td>
+        <td style="font-family: monospace; color: #38bdf8; font-weight:bold;">${displayId}</td>
         <td><strong>${name}</strong></td>
         <td style="font-family: monospace;" dir="ltr">${phone}</td>
-        <td style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+        <td style="color:#fbbf24; font-weight:bold;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+        <td style="color:#38bdf8; font-weight:bold;"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
+        <td style="color:#34d399; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
+        <td style="color:#c084fc; font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
         <td style="white-space:nowrap; display:flex; gap:5px;">
-          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">نمایش جزئیات</button>
+          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">جزئیات</button>
           <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${name}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
-          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق موقت</button>
-          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${name.replace(/'/g, "\\'")}')">حذف فرد</button>
+          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${name.replace(/'/g, "\\'")}')">حذف</button>
         </td>
       `;
       rosterBody.appendChild(tr);
@@ -7083,10 +7126,33 @@ window.loadCaravanDetails = async function(caravanId) {
     // Update header fields
     const mentorEl = document.getElementById('cw-mentor-name');
     const zarikEl = document.getElementById('caravan-detail-zarik');
+    const derafshEl = document.getElementById('caravan-detail-derafsh');
+    const nokhEl = document.getElementById('caravan-detail-nokh');
+    const farshEl = document.getElementById('caravan-detail-farsh');
     const milestonesEl = document.getElementById('caravan-detail-milestones');
     
+    const members = caravan.membersList || caravan.members || [];
+    let sumZarik = 0, sumBeyragh = 0, sumNokh = 0, sumFarsh = 0;
+    if (members.length > 0) {
+      members.forEach(m => {
+        sumZarik += Number(m.zarikBalance ?? m.zarik ?? m.assets?.zarik ?? 0);
+        sumBeyragh += Number(m.beyragh ?? m.derafsh ?? m.assets?.beyragh ?? 0);
+        sumNokh += Number(m.nakh ?? m.nokh ?? m.assets?.nakh ?? 0);
+        sumFarsh += Number(m.farsh ?? m.assets?.farsh ?? 0);
+      });
+    } else if (caravan.wealth || caravan.assets) {
+      const w = caravan.wealth || caravan.assets || {};
+      sumZarik = Number(w.zarik ?? caravan.totalWealth ?? 0);
+      sumBeyragh = Number(w.beyragh ?? 0);
+      sumNokh = Number(w.nakh ?? w.nokh ?? 0);
+      sumFarsh = Number(w.farsh ?? 0);
+    }
+
     if (mentorEl) mentorEl.innerText = caravan.mentor?.name || caravan.mentorName || 'فاقد راهبر';
-    if (zarikEl) zarikEl.innerHTML = `${caravan.assets?.zarik || caravan.totalWealth || 0} <i class="fa-solid fa-coins"></i>`;
+    if (zarikEl) zarikEl.innerHTML = `${sumZarik.toLocaleString()} <i class="fa-solid fa-coins"></i>`;
+    if (derafshEl) derafshEl.innerHTML = `${sumBeyragh.toLocaleString()} <i class="fa-solid fa-flag"></i>`;
+    if (nokhEl) nokhEl.innerHTML = `${sumNokh.toLocaleString()} <i class="fa-solid fa-layer-group"></i>`;
+    if (farshEl) farshEl.innerHTML = `${sumFarsh.toLocaleString()} <i class="fa-solid fa-rug"></i>`;
     if (milestonesEl) milestonesEl.innerText = `${caravan.overallProgress || caravan.completedStations || 0}%`;
 
     // Populate roster

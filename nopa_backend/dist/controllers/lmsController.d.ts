@@ -27,6 +27,7 @@ export declare const deleteSession: (req: Request, res: Response) => Promise<voi
 export declare const deleteClip: (req: Request, res: Response) => Promise<void>;
 export declare const deleteQuiz: (req: Request, res: Response) => Promise<void>;
 export declare const reorderStations: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
+export declare const updateStationAccess: (req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const createStation: (req: Request, res: Response) => Promise<void>;
 export declare const updateStation: (req: Request, res: Response) => Promise<void>;
 export declare const createClass: (req: Request, res: Response) => Promise<void>;
