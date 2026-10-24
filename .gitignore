@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+ 
+#md_files
+/code_review.md
+
+.env*
+**/. env*
+

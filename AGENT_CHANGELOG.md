@@ -1,6 +1,14 @@
 # Agent Change Log (AGENT_CHANGELOG.md)
 
-This document is the mandatory audit log for all automated and autonomous agents working on the Nopa project. 
+This document is the mandatory audit log for all automated and autonomous agents working on the Nopa project.
+
+> [!NOTE]
+> **User Identity Detection:**
+> Each log entry **MUST** include a `Triggered By` field identifying the user who initiated the change.
+> - **Step 1:** Run `git config user.name` and `git config user.email` — use these if they are set and not default/placeholder values.
+> - **Step 2:** Extract GitHub username from `git remote get-url origin` (e.g., `komilkomil3000-afk` from `https://github.com/komilkomil3000-afk/nopa-project.git`).
+> - **Step 3 (Fallback):** Use the OS system username via `$env:USERNAME` (Windows) or `whoami` (Linux/macOS).
+> - Report format: `GitHub: <username>` or `System: <username>` depending on the source.
 
 > [!IMPORTANT]
 > **Mandatory Rule for All Agents:**
@@ -14,6 +22,7 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 
 ```markdown
 ### [YYYY-MM-DD HH:mm] - <Agent Name / Role>
+- **Triggered By:** <GitHub: username | System: username>
 - **Target Component(s):** <e.g., nopa_app | nopa_backend | crm | database | docs>
 - **Files Modified / Created / Deleted:**
   - `path/to/file1.ext` (Created / Modified / Deleted)
@@ -30,6 +39,7 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 ## Change Entries
 
 ### [2026-10-24 21:15] - Master Orchestrator / Lead Architect
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
 - **Target Component(s):** Root / Orchestration Documentation
 - **Files Modified / Created / Deleted:**
   - `AGENT_CHANGELOG.md` (Created)

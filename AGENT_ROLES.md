@@ -107,8 +107,8 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
 > All agents (Agent 1, Agent 2, Agent 3, Agent 4, and any external/AI agents) **MUST** document their modifications in [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_CHANGELOG.md).
 > - **When to log:** Whenever files are created, edited, renamed, or deleted, or when DB schemas/configurations are changed.
 > - **Location:** Append an entry to the end of [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_CHANGELOG.md) adhering to the standard template.
-> - **Required Details:** Timestamp, agent identity/role, affected component, list of modified files, concise explanation of changes, verification checks executed (e.g. `flutter analyze`, `tsc --noEmit`), and completion status.
-> - **Enforcement:** No agent task or iteration is considered complete without logging its footprint in `AGENT_CHANGELOG.md`.
+> - **Required Details:** Timestamp, agent identity/role, **triggered-by user** (detect via `git config user.name`/`git config user.email`, extract GitHub username from `git remote get-url origin`, or fallback to OS `$env:USERNAME`/`whoami`), affected component, list of modified files, concise explanation of changes, verification checks executed (e.g. `flutter analyze`, `tsc --noEmit`), and completion status.
+> - **Enforcement:** No agent task or iteration is considered complete without logging its footprint (including user identity) in `AGENT_CHANGELOG.md`.
 
 ## Reporting
 - Every agent must record all file modifications in [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_CHANGELOG.md) before finishing its turn.
