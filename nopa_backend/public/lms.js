@@ -797,6 +797,16 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             const isFirstClip = cIdx === 0;
             const isLastClip = cIdx === clips.length - 1;
 
+            let clipUnlockDate = clip.unlockDate || '';
+            let clipUnlockTime = clip.unlockTime || '';
+            if (!clipUnlockDate && clip.scheduledUnlockTime) {
+              try {
+                const dt = new Date(clip.scheduledUnlockTime);
+                clipUnlockDate = dt.toISOString().split('T')[0];
+                clipUnlockTime = dt.toTimeString().substring(0, 5);
+              } catch (_) {}
+            }
+
             html += `
               <div style="background:rgba(30, 41, 59, 0.9); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:12px; margin-bottom:10px;">
                 <div style="display:grid; grid-template-columns: 85px 1.4fr 2fr auto; gap:10px; align-items:center; margin-bottom:8px;">
@@ -831,6 +841,52 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <button type="button" style="background:rgba(239, 68, 68, 0.2); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.4); border-radius:6px; padding:7px 10px; font-size:11px; cursor:pointer;" onclick="window.deleteClipRecord('${clip.id}', '${sess.id}')" title="حذف این پارت">
                       <i class="fa-solid fa-trash"></i>
                     </button>
+                  </div>
+                </div>
+
+                <!-- Section: Part Unlock / Schedule Settings (تنظیمات باز شدن پارت) -->
+                <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(56, 189, 248, 0.25); border-radius:8px; padding:10px 14px; margin-top:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:34px; height:34px; border-radius:8px; background:rgba(56,189,248,0.15); display:flex; align-items:center; justify-content:center; color:#38bdf8; font-size:15px; border:1px solid rgba(56,189,248,0.3);">
+                      <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                      <div style="font-size:12px; font-weight:bold; color:#38bdf8; display:flex; align-items:center; gap:8px;">
+                        <span>تنظیمات باز شدن پارت ${clip.clipOrder || (cIdx + 1)}:</span>
+                        <span id="clip-status-badge-${clip.id}" class="badge"></span>
+                      </div>
+                      <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+                        تعیین تاریخ و ساعت بازگشایی و در دسترس قرار گرفتن این پارت
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <!-- Date input -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <label style="font-size:11px; color:#fbbf24; white-space:nowrap; font-weight:bold;">
+                        <i class="fa-solid fa-calendar-day"></i> تاریخ باز شدن:
+                      </label>
+                      <input type="date" id="clip-unlock-date-${clip.id}" class="input-ctrl" value="${clipUnlockDate}" style="font-size:12px; padding:6px 10px; background:#0f172a; color:#fbbf24; border-color:rgba(245, 158, 11, 0.45); border-radius:6px; width:135px;" onchange="window.updateClipScheduleBadge('${clip.id}')" title="تاریخ باز شدن پارت">
+                    </div>
+
+                    <!-- Time input -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <label style="font-size:11px; color:#c4b5fd; white-space:nowrap; font-weight:bold;">
+                        <i class="fa-regular fa-clock"></i> ساعت باز شدن:
+                      </label>
+                      <input type="time" id="clip-unlock-time-${clip.id}" class="input-ctrl" value="${clipUnlockTime || '00:00'}" style="font-size:12px; padding:6px 10px; background:#0f172a; color:#c4b5fd; border-color:rgba(167, 139, 250, 0.45); border-radius:6px; width:100px;" onchange="window.updateClipScheduleBadge('${clip.id}')" title="ساعت باز شدن پارت">
+                    </div>
+
+                    <!-- Quick buttons -->
+                    <div style="display:flex; gap:5px;">
+                      <button type="button" onclick="window.setClipScheduleFromSession('${clip.id}', '${sess.id}')" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.4); color:#38bdf8; border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;" title="تنظیم خودکار تاریخ بر اساس تقویم جلسه">
+                        <i class="fa-solid fa-calendar-check"></i> تاریخ جلسه
+                      </button>
+                      <button type="button" onclick="window.clearClipSchedule('${clip.id}')" style="background:rgba(255, 255, 255, 0.05); border:1px solid rgba(255, 255, 255, 0.15); color:#cbd5e1; border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer;" title="بدون محدودیت زمان‌بندی (همیشه باز)">
+                        <i class="fa-solid fa-unlock"></i> همیشه باز
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -931,6 +987,16 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   container.innerHTML = html;
   modal.style.display = 'flex';
   modal.style.zIndex = '999999';
+
+  // Initialize schedule status badges for all clips
+  setTimeout(() => {
+    document.querySelectorAll('[id^="clip-unlock-date-"]').forEach(inp => {
+      const cId = inp.id.replace('clip-unlock-date-', '');
+      if (typeof window.updateClipScheduleBadge === 'function') {
+        window.updateClipScheduleBadge(cId);
+      }
+    });
+  }, 40);
 };
 
 window.saveStationBasicInfoFromContentModal = async function(stationId) {
@@ -1049,17 +1115,87 @@ window.deleteClipRecord = async function(clipId, sessionId) {
   }
 };
 
+window.updateClipScheduleBadge = function(clipId) {
+  const dateInp = document.getElementById(`clip-unlock-date-${clipId}`);
+  const timeInp = document.getElementById(`clip-unlock-time-${clipId}`);
+  const badgeEl = document.getElementById(`clip-status-badge-${clipId}`);
+  if (!badgeEl) return;
+
+  const dateVal = dateInp ? dateInp.value.trim() : '';
+  const timeVal = (timeInp && timeInp.value.trim()) ? timeInp.value.trim() : '00:00';
+
+  if (!dateVal) {
+    badgeEl.innerHTML = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.35); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock-open"></i> همیشه باز (دسترسی آزاد)</span>';
+    return;
+  }
+
+  try {
+    const target = new Date(`${dateVal}T${timeVal}`);
+    const now = new Date();
+    const diffMs = target.getTime() - now.getTime();
+
+    if (diffMs > 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      const remHours = diffHours % 24;
+      let remainText = diffDays > 0 ? `${diffDays} روز و ${remHours} ساعت` : `${diffHours} ساعت`;
+      if (diffHours === 0) {
+        const remMins = Math.floor(diffMs / (1000 * 60));
+        remainText = `${remMins} دقیقه`;
+      }
+      
+      const faDate = target.toLocaleDateString('fa-IR');
+      badgeEl.innerHTML = `<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.4); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;" title="تا تاریخ ${faDate} ساعت ${timeVal} قفل است"><i class="fa-solid fa-lock"></i> قفل تا: ${faDate} ساعت ${timeVal} (${remainText} مانده)</span>`;
+    } else {
+      const faDate = target.toLocaleDateString('fa-IR');
+      badgeEl.innerHTML = `<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.35); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده (${faDate})</span>`;
+    }
+  } catch (e) {
+    badgeEl.innerHTML = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.4); padding:2px 8px; border-radius:5px; font-size:10.5px;">فرمت تاریخ/ساعت نامعتبر</span>';
+  }
+};
+
+window.clearClipSchedule = function(clipId) {
+  const dateInp = document.getElementById(`clip-unlock-date-${clipId}`);
+  const timeInp = document.getElementById(`clip-unlock-time-${clipId}`);
+  if (dateInp) dateInp.value = '';
+  if (timeInp) timeInp.value = '';
+  window.updateClipScheduleBadge(clipId);
+};
+
+window.setClipScheduleFromSession = function(clipId, sessId) {
+  const stDate = document.getElementById('content-modal-st-date')?.value;
+  const dateInp = document.getElementById(`clip-unlock-date-${clipId}`);
+  const timeInp = document.getElementById(`clip-unlock-time-${clipId}`);
+  
+  if (dateInp) {
+    if (stDate) {
+      dateInp.value = stDate;
+    } else {
+      dateInp.value = new Date().toISOString().split('T')[0];
+    }
+  }
+  if (timeInp && !timeInp.value) {
+    timeInp.value = '18:00';
+  }
+  window.updateClipScheduleBadge(clipId);
+};
+
 window.saveClipVideoUrl = async function(sessionId, clipId) {
   const title = document.getElementById(`clip-title-${clipId}`)?.value;
   const videoUrl = document.getElementById(`clip-url-${clipId}`)?.value;
   const clipOrder = parseInt(document.getElementById(`clip-order-${clipId}`)?.value) || undefined;
+  const unlockDate = document.getElementById(`clip-unlock-date-${clipId}`)?.value || '';
+  const unlockTime = document.getElementById(`clip-unlock-time-${clipId}`)?.value || '';
 
   const payload = {
     clipId: clipId,
     sessionId: sessionId,
     title: title || 'پارت ویدیو',
     videoUrl: videoUrl || '',
-    clipOrder: clipOrder
+    clipOrder: clipOrder,
+    unlockDate: unlockDate,
+    unlockTime: unlockTime
   };
 
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
@@ -1070,7 +1206,7 @@ window.saveClipVideoUrl = async function(sessionId, clipId) {
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      alert('ترتیب، عنوان و مشخصات پارت با موفقیت ذخیره شد');
+      alert('ترتیب، عنوان، زمان‌بندی باز شدن و مشخصات پارت با موفقیت ذخیره شد');
       await window.fetchLiveLmsStations();
       const st = window.lmsStationsMasterList.find(s => 
         (s.categories || []).some(c => (c.sessions || []).some(sess => sess.id === sessionId))
@@ -1208,11 +1344,15 @@ window.executeFinalLmsSave = async function() {
       const clipOrder = parseInt(input.value) || 1;
       const title = document.getElementById(`clip-title-${clipId}`)?.value || '';
       const videoUrl = document.getElementById(`clip-url-${clipId}`)?.value || '';
+      const unlockDate = document.getElementById(`clip-unlock-date-${clipId}`)?.value || '';
+      const unlockTime = document.getElementById(`clip-unlock-time-${clipId}`)?.value || '';
       clipsPayload.push({
         id: clipId,
         title,
         videoUrl,
-        clipOrder
+        clipOrder,
+        unlockDate,
+        unlockTime
       });
     });
 

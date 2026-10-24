@@ -89,6 +89,10 @@ class VideoClipModel {
   final String videoUrl;
   final int clipOrder;
   final int? duration;
+  final String? unlockDate;
+  final String? unlockTime;
+  final DateTime? scheduledUnlockTime;
+  final bool isLocked;
   final List<PartQuizModel> quizzes;
 
   VideoClipModel({
@@ -98,11 +102,21 @@ class VideoClipModel {
     required this.videoUrl,
     required this.clipOrder,
     this.duration,
+    this.unlockDate,
+    this.unlockTime,
+    this.scheduledUnlockTime,
+    this.isLocked = false,
     required this.quizzes,
   });
 
   factory VideoClipModel.fromJson(Map<String, dynamic> json) {
     var rawQuizzes = json['quizzes'] as List? ?? [];
+    DateTime? unlockDt;
+    if (json['scheduledUnlockTime'] != null) {
+      try {
+        unlockDt = DateTime.parse(json['scheduledUnlockTime']);
+      } catch (_) {}
+    }
     return VideoClipModel(
       id: json['id'] ?? '',
       sessionId: json['sessionId'] ?? '',
@@ -110,6 +124,10 @@ class VideoClipModel {
       videoUrl: json['videoUrl'] ?? '',
       clipOrder: json['clipOrder'] ?? 0,
       duration: json['duration'],
+      unlockDate: json['unlockDate'],
+      unlockTime: json['unlockTime'],
+      scheduledUnlockTime: unlockDt,
+      isLocked: json['isLocked'] ?? false,
       quizzes: rawQuizzes.map((q) => PartQuizModel.fromJson(q)).toList(),
     );
   }

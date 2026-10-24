@@ -526,10 +526,28 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
 export const createOrUpdateClip = async (req: Request, res: Response) => {
   try {
     const { id: paramId } = req.params;
-    const { id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, duration } = req.body;
+    const {
+      id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, duration,
+      unlockDate, unlockTime, scheduledUnlockTime, isLocked
+    } = req.body;
     const finalSessionId = sessionId || paramId;
     const targetClipId = clipId || (bodyId && !String(bodyId).startsWith('new_') ? bodyId : (paramId && !sessionId ? paramId : undefined));
     
+    // Parse scheduled unlock time if date is given
+    let calculatedScheduledUnlockTime: Date | null | undefined = undefined;
+    if (scheduledUnlockTime !== undefined) {
+      calculatedScheduledUnlockTime = scheduledUnlockTime ? new Date(scheduledUnlockTime) : null;
+    } else if (unlockDate !== undefined) {
+      if (unlockDate && unlockDate.trim() !== '') {
+        try {
+          const dt = new Date(`${unlockDate.trim()}T${(unlockTime && unlockTime.trim()) ? unlockTime.trim() : '00:00'}`);
+          if (!isNaN(dt.getTime())) calculatedScheduledUnlockTime = dt;
+        } catch (_) {}
+      } else {
+        calculatedScheduledUnlockTime = null;
+      }
+    }
+
     let clip;
     if (targetClipId) {
       clip = await prisma.videoClip.update({
@@ -538,7 +556,11 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
           ...(title ? { title } : {}),
           ...(videoUrl !== undefined ? { videoUrl } : {}),
           ...(clipOrder !== undefined ? { clipOrder: Number(clipOrder) } : {}),
-          ...(duration !== undefined ? { duration: Number(duration) } : {})
+          ...(duration !== undefined ? { duration: Number(duration) } : {}),
+          ...(unlockDate !== undefined ? { unlockDate: unlockDate || null } : {}),
+          ...(unlockTime !== undefined ? { unlockTime: unlockTime || null } : {}),
+          ...(calculatedScheduledUnlockTime !== undefined ? { scheduledUnlockTime: calculatedScheduledUnlockTime } : {}),
+          ...(isLocked !== undefined ? { isLocked: Boolean(isLocked) } : {})
         }
       });
     } else {
@@ -548,7 +570,11 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
           title: title || 'پارت جدید',
           videoUrl: videoUrl || '',
           clipOrder: Number(clipOrder || 1),
-          duration: Number(duration || 0)
+          duration: Number(duration || 0),
+          unlockDate: unlockDate || null,
+          unlockTime: unlockTime || null,
+          scheduledUnlockTime: calculatedScheduledUnlockTime || null,
+          isLocked: Boolean(isLocked)
         }
       });
     }
@@ -584,13 +610,30 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
       if (Array.isArray(clips)) {
         for (const clip of clips) {
           if (clip.id) {
+            const clipUpdate: any = {};
+            if (clip.title) clipUpdate.title = clip.title;
+            if (clip.videoUrl !== undefined) clipUpdate.videoUrl = clip.videoUrl;
+            if (clip.clipOrder !== undefined) clipUpdate.clipOrder = Number(clip.clipOrder);
+            if (clip.unlockDate !== undefined) clipUpdate.unlockDate = clip.unlockDate || null;
+            if (clip.unlockTime !== undefined) clipUpdate.unlockTime = clip.unlockTime || null;
+            if (clip.isLocked !== undefined) clipUpdate.isLocked = Boolean(clip.isLocked);
+            
+            if (clip.scheduledUnlockTime !== undefined) {
+              clipUpdate.scheduledUnlockTime = clip.scheduledUnlockTime ? new Date(clip.scheduledUnlockTime) : null;
+            } else if (clip.unlockDate !== undefined) {
+              if (clip.unlockDate && clip.unlockDate.trim() !== '') {
+                try {
+                  const dt = new Date(`${clip.unlockDate.trim()}T${(clip.unlockTime && clip.unlockTime.trim()) ? clip.unlockTime.trim() : '00:00'}`);
+                  if (!isNaN(dt.getTime())) clipUpdate.scheduledUnlockTime = dt;
+                } catch (_) {}
+              } else {
+                clipUpdate.scheduledUnlockTime = null;
+              }
+            }
+
             await tx.videoClip.update({
               where: { id: clip.id },
-              data: {
-                ...(clip.title ? { title: clip.title } : {}),
-                ...(clip.videoUrl !== undefined ? { videoUrl: clip.videoUrl } : {}),
-                ...(clip.clipOrder !== undefined ? { clipOrder: Number(clip.clipOrder) } : {})
-              }
+              data: clipUpdate
             });
           }
         }
