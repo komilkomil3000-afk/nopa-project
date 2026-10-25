@@ -930,23 +930,11 @@ class HttpApiService {
         }
       }
 
-      // Ensure Station 0 is always at index 0
-      final bool hasStation0 = list.any((s) =>
-          s['id'] == 'station_0' ||
-          s['orderIndex'] == 0 ||
-          s['title'].toString().contains('صفر'));
-      if (!hasStation0) {
-        list.insert(0, Map<String, dynamic>.from(stationZeroData));
-      }
-
       _cachedStations = list;
       return _cachedStations!;
     } catch (e) {
       debugPrint('HTTP getStations error: $e');
-      if (_cachedStations == null || _cachedStations!.isEmpty) {
-        _cachedStations = [Map<String, dynamic>.from(stationZeroData)];
-      }
-      return _cachedStations!;
+      return _cachedStations ?? [];
     }
   }
 

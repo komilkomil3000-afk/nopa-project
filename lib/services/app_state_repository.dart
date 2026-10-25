@@ -136,17 +136,36 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _syncOfflineData() async {
     final prefs = await SharedPreferences.getInstance();
+
     final offlineSubmissions = prefs.getStringList('offline_submissions') ?? [];
     if (offlineSubmissions.isNotEmpty) {
-      // Logic to push offline submissions to backend would go here
-      // For now we just clear it upon successful sync
-      await prefs.remove('offline_submissions');
+      // TODO(sync): ارسال هر submission به API قبل از حذف.
+      // مثال:
+      //   for (final raw in offlineSubmissions) {
+      //     try {
+      //       final data = jsonDecode(raw) as Map<String, dynamic>;
+      //       await _apiService.submitChallenge(data['challengeId'], data['answerText']);
+      //     } catch (e) {
+      //       failedList.add(raw); // موارد ناموفق را نگه دار
+      //     }
+      //   }
+      //   await prefs.setStringList('offline_submissions', failedList);
+      //
+      // تا زمانی که API پیاده‌سازی نشده، داده‌ها را حذف نمی‌کنیم.
+      debugPrint(
+        '[SyncOffline] ${offlineSubmissions.length} submission(s) pending — '
+        'API not yet implemented; data preserved, skipping delete.',
+      );
     }
-    
+
     final offlineWatchProgress = prefs.getStringList('offline_watch_progress') ?? [];
     if (offlineWatchProgress.isNotEmpty) {
-      // Logic to push watch progress to backend
-      await prefs.remove('offline_watch_progress');
+      // TODO(sync): ارسال پیشرفت تماشای ویدیو به API قبل از حذف.
+      // تا زمانی که API پیاده‌سازی نشده، داده‌ها را حذف نمی‌کنیم.
+      debugPrint(
+        '[SyncOffline] ${offlineWatchProgress.length} watch-progress record(s) pending — '
+        'API not yet implemented; data preserved, skipping delete.',
+      );
     }
   }
 

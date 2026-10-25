@@ -5,8 +5,9 @@ import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 
 /// Standalone, reusable Station Progress Stepper Header
-/// Used in Academy/MapScreen and Class1Screen to display station nodes (0..5),
+/// Used in Academy/MapScreen and Class1Screen to display station nodes (1..5),
 /// connecting glow rails, and the end-of-track Champion Victory Trophy.
+/// Node labels are 1-based (matching admin panel's levelFrame field: 1-5).
 class StationProgressStepper extends StatelessWidget {
   final int currentStationIndex;
   final ValueChanged<int>? onStationSelected;
@@ -20,7 +21,7 @@ class StationProgressStepper extends StatelessWidget {
     required this.currentStationIndex,
     this.onStationSelected,
     this.title,
-    this.totalNodes = 6,
+    this.totalNodes = 5,
     this.userLevelFrame,
     this.completedStationsCount,
   });
@@ -221,7 +222,7 @@ class StationProgressStepper extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            '$index'.toPersianDigits(),
+            '${index + 1}'.toPersianDigits(),
             style: TextStyle(
               color: isCurrent ? const Color(0xFF221503) : Colors.white,
               fontSize: isCurrent ? 12.5 : 11.5,

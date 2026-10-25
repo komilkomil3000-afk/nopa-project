@@ -67,7 +67,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   /// 4-Column Summary Strip (راهبر, کاروان, اعضا, منزلگاه کنونی)
   Widget _buildUserInfoStrip(UserModel? user, AppRepository appState) {
-    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 0)}';
+    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
     final String caravanName = (user?.caravanName != null && user!.caravanName!.isNotEmpty)
         ? user.caravanName!
         : appState.selectedCaravanName;

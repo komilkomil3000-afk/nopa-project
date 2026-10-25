@@ -68,7 +68,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
 
   /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned & Tap-to-expand
   Widget _buildUserInfoStrip(UserModel? user) {
-    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 0)}';
+    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -479,16 +479,17 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                                     ? stationMap['imageUrl'].toString()
                                     : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400');
 
+                            final int stationOrder = (stationMap['orderIndex'] as num?)?.toInt() ?? (index + 1);
                             final station = Station(
                               id: stationMap['id'] ?? index.toString(),
-                              title: Station.resolveTitle(stationMap['title']?.toString(), index),
+                              title: Station.resolveTitle(stationMap['title']?.toString(), stationOrder),
                               subtitle: stationMap['subtitle']?.toString(),
                               teacher: teacherName,
                               progress: isCompleted ? 1.0 : (isCurrent ? 0.3 : 0.0),
                               isLocked: isLocked,
                               isCurrent: isCurrent,
                               imageUrl: iconUrl,
-                              orderIndex: index,
+                              orderIndex: stationOrder,
                             );
 
                             return StationCard(

@@ -27,10 +27,10 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
 
     return [
       {
-        'id': 'cert_station_0',
-        'title': 'گواهی گذر از منزلگاه صفر (راهنمای کاروان)',
-        'description': 'آموزش‌های پایه و آشنایی با ساختار و اهداف کاروان نپا',
-        'teacher': 'راهنمای کاروان',
+        'id': 'cert_station_1',
+        'title': 'گواهی گذر از منزلگاه اول (کاروانسرای غبارگرفته)',
+        'description': 'شناخت مهارت‌های ارتباطی و فعالیت‌های جمعی در مسیر سفر',
+        'teacher': 'استاد محمد حسینی',
         'sessionsCount': '۴ جلسه',
         'date': '۱۴۰۳/۰۶/۱۵',
         'isCompleted': true,

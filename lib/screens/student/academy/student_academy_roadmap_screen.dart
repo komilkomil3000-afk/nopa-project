@@ -206,7 +206,8 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
         item['teacher']?.toString() ??
         'استاد کاروان نپا';
 
-    final String stationTitle = Station.getPureName(index, item['title']?.toString());
+    final int stationOrder = (item['orderIndex'] as num?)?.toInt() ?? (index + 1);
+    final String stationTitle = Station.getPureName(stationOrder, item['title']?.toString());
     final String stationDesc = (item['subtitle'] != null && item['subtitle'].toString().trim().isNotEmpty)
         ? item['subtitle'].toString()
         : ((item['description'] != null && item['description'].toString().trim().isNotEmpty)
@@ -289,7 +290,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             isCurrent: isCurrent,
                             imageUrl: iconUrl,
                             classesCount: totalSessions > 0 ? '$totalSessions جلسه' : '${categoriesList.length} سرفصل',
-                            orderIndex: index,
+                            orderIndex: stationOrder,
                           ),
                         );
                         if (result is int && context.mounted) {
