@@ -1,0 +1,13 @@
+# Agent Instructions
+
+## MANDATORY: Agent Change Logging
+Whenever you create, edit, or delete any files in this project:
+1. You MUST log the changes in `AGENT_CHANGELOG.md` before completing your turn.
+2. The log entry must follow the format in `AGENT_CHANGELOG.md` and include:
+   - Timestamp
+   - Role (e.g. Agent 1 — CRM Specialist, Agent 2 — Flutter Specialist, etc.)
+   - Triggered By: `GitHub: komilkomil3000-afk | System: komeil`
+   - Files modified/created/deleted
+   - Detailed description of changes
+   - Verification checks executed
+3. You can execute: `node scripts/append_agent_changelog.js` to automatically append your changes.

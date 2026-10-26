@@ -50,7 +50,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     super.initState();
     if (widget.initialStation != null) {
       _station = widget.initialStation;
-      _currentStationIndex = widget.initialStation!.orderIndex;
+      _currentStationIndex = widget.initialStation!.orderIndex > 0
+          ? widget.initialStation!.orderIndex - 1
+          : 0;
       _loadClassCategories();
     }
   }
@@ -60,7 +62,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     super.didUpdateWidget(oldWidget);
     if (widget.initialStation != null && widget.initialStation != oldWidget.initialStation) {
       _station = widget.initialStation;
-      _currentStationIndex = widget.initialStation!.orderIndex;
+      _currentStationIndex = widget.initialStation!.orderIndex > 0
+          ? widget.initialStation!.orderIndex - 1
+          : 0;
       _loadClassCategories();
     }
   }
@@ -81,7 +85,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Station) {
         _station = args;
-        _currentStationIndex = args.orderIndex;
+        _currentStationIndex = args.orderIndex > 0 ? args.orderIndex - 1 : 0;
       } else {
         _currentStationIndex = 0;
       }
@@ -95,19 +99,25 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       _allStationsData = List<Map<String, dynamic>>.from(stations);
 
       Map<String, dynamic> stationData = {};
+      final int targetOrder = _currentStationIndex + 1;
       if (_allStationsData.isNotEmpty) {
         stationData = _allStationsData.firstWhere(
-          (s) => (s['orderIndex'] == _currentStationIndex) || (s['id'] == _station?.id),
-          orElse: () => _allStationsData.firstWhere(
-            (s) => (s['orderIndex'] == 1),
-            orElse: () => _allStationsData.first,
-          ),
+          (s) => (s['orderIndex'] == targetOrder),
+          orElse: () => (_station?.id != null && _station!.id.isNotEmpty)
+              ? _allStationsData.firstWhere(
+                  (s) => s['id'] == _station!.id,
+                  orElse: () => (_currentStationIndex >= 0 && _currentStationIndex < _allStationsData.length)
+                      ? _allStationsData[_currentStationIndex]
+                      : _allStationsData.first,
+                )
+              : ((_currentStationIndex >= 0 && _currentStationIndex < _allStationsData.length)
+                  ? _allStationsData[_currentStationIndex]
+                  : _allStationsData.first),
         );
       }
 
       if (stationData.isNotEmpty) {
         _station = Station.fromJson(stationData);
-        _currentStationIndex = _station?.orderIndex ?? _currentStationIndex;
       }
 
       final Map<String, List<Map<String, dynamic>>> map = {};
@@ -174,14 +184,17 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   }
 
   void _switchStation(int index) {
-    if (index == _currentStationIndex) return;
+    if (index == _currentStationIndex && _station != null) return;
+    final int targetOrder = index + 1;
     setState(() {
       _currentStationIndex = index;
       _isDescriptionExpanded = false;
       if (_allStationsData.isNotEmpty) {
         final matching = _allStationsData.firstWhere(
-          (s) => (s['orderIndex'] == index),
-          orElse: () => {},
+          (s) => (s['orderIndex'] == targetOrder),
+          orElse: () => (index >= 0 && index < _allStationsData.length)
+              ? _allStationsData[index]
+              : <String, dynamic>{},
         );
         if (matching.isNotEmpty) {
           _station = Station.fromJson(matching);
@@ -295,7 +308,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 6;
+    final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 5;
 
     // Check if selected station is locked
     final bool isLocked = _currentStationIndex > 0 &&
@@ -318,7 +331,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : '۱ قسمت';
     final String stayText = _station?.stayDuration?.isNotEmpty == true
         ? _station!.stayDuration!
-        : '${(_currentStationIndex * 3 + 5).toPersian()} روز';
+        : '${((_currentStationIndex + 1) * 3 + 5).toPersian()} روز';
 
     final String currentClipTitle = _allClips.isNotEmpty && _currentClipIndex < _allClips.length
         ? (_allClips[_currentClipIndex]['title'] ?? _station?.animationTitle ?? 'انیمیشن منزلگاه')
@@ -445,7 +458,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     const double cardHeight = 138.0;
     final String stationImage = _station?.imageUrl ?? '';
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
-    final String ordinalTitle = Station.getOrdinalName(_currentStationIndex);
+    final String ordinalTitle = (_station?.title != null && _station!.title.trim().isNotEmpty)
+        ? _station!.title
+        : Station.getOrdinalName(_currentStationIndex);
     final String fullDescription = _station?.description?.isNotEmpty == true
         ? _station!.description!
         : 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';

@@ -11,7 +11,6 @@ import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/widgets/education_calendar.dart';
 import 'package:nopa_app/widgets/home_challenges_section.dart';
 import 'package:nopa_app/widgets/station_card.dart';
-import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
 import 'package:nopa_app/main.dart'; // For MainScreenState
 
 class StudentHomeScreen extends StatefulWidget {
@@ -105,9 +104,27 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
               const SizedBox(width: 6),
               Expanded(
-                child: _buildInfoColumn(
-                  title: 'منزلگاه کنونی',
-                  value: currentStationTitle,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    final currentStationMap = _stations.isNotEmpty ? _stations.first : null;
+                    final stationOrder = (currentStationMap?['orderIndex'] as num?)?.toInt() ?? 1;
+                    final station = Station(
+                      id: currentStationMap?['id'] ?? '1',
+                      title: Station.resolveTitle(currentStationMap?['title']?.toString(), stationOrder),
+                      teacher: currentStationMap?['instructors']?.toString() ?? 'اساتید کاروان',
+                      progress: 0.0,
+                      isLocked: false,
+                      isCurrent: true,
+                      imageUrl: currentStationMap?['imageUrl'] ?? '',
+                      orderIndex: stationOrder,
+                    );
+                    Navigator.pushNamed(context, '/class1', arguments: station);
+                  },
+                  child: _buildInfoColumn(
+                    title: 'منزلگاه کنونی',
+                    value: currentStationTitle,
+                  ),
                 ),
               ),
             ],
@@ -495,27 +512,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                             return StationCard(
                               station: station,
                               onTap: () async {
-                                if (isLocked) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('این منزلگاه هنوز بازگشایی نشده است', style: TextStyle(fontFamily: 'Vazirmatn'))),
-                                  );
-                                  return;
-                                }
-
-                                final isNewStation = index > 0 && !isCompleted;
-                                if (isNewStation && appState.hasPendingChallenges) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold)),
-                                      backgroundColor: Colors.redAccent,
-                                      duration: Duration(seconds: 3),
-                                    ),
-                                  );
-                                  PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
-                                  return;
-                                }
-
-                                final result = await Navigator.pushNamed(context, '/station_detail', arguments: station);
+                                final result = await Navigator.pushNamed(context, '/class1', arguments: station);
                                 if (result is int && context.mounted) {
                                   navigateToMainTab(result);
                                 }

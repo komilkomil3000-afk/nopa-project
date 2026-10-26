@@ -43,6 +43,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   Timer? _heartbeatTimer;
 
   bool _argumentsLoaded = false;
+  String? _targetSessionTitle;
+  String? _targetInstructor;
 
   @override
   void didChangeDependencies() {
@@ -59,6 +61,23 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (args['stationIndex'] is int) {
         _currentStationIndex = args['stationIndex'];
       }
+
+      if (args['initialTab'] is int) {
+        _selectedTab = args['initialTab'];
+      } else if (args['tab'] is int) {
+        _selectedTab = args['tab'];
+      } else if (args['type'] == 'media' || args['type'] == 'mediaClass') {
+        _selectedTab = 1;
+      } else if (args['type'] == 'skill' || args['type'] == 'skillClass') {
+        _selectedTab = 0;
+      }
+
+      if (args['initialIndex'] is int) {
+        _expandedSessionIndex = args['initialIndex'];
+      }
+
+      _targetSessionTitle = args['sessionTitle'] as String? ?? args['title'] as String?;
+      _targetInstructor = args['instructor'] as String?;
 
       final passedCategories = args['categories'] as Map<String, List<Map<String, dynamic>>>?;
       final passedClasses = args['classes'] as List?;
@@ -157,6 +176,47 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       }
       if (_mediaSessions.isEmpty) {
         _mediaSessions = _createDefaultMockSessions('رسانه‌ای');
+      }
+
+      // If a specific session was requested, select and expand it
+      if (_targetSessionTitle != null && _targetSessionTitle!.trim().isNotEmpty) {
+        final cleanTarget = _targetSessionTitle!.replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
+        int foundInSkill = -1;
+        int foundInMedia = -1;
+
+        for (int i = 0; i < _skillSessions.length; i++) {
+          final t = (_skillSessions[i]['title']?.toString() ?? '').replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
+          if (t.isNotEmpty && cleanTarget.isNotEmpty && (t.contains(cleanTarget) || cleanTarget.contains(t))) {
+            foundInSkill = i;
+            break;
+          }
+        }
+
+        for (int i = 0; i < _mediaSessions.length; i++) {
+          final t = (_mediaSessions[i]['title']?.toString() ?? '').replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
+          if (t.isNotEmpty && cleanTarget.isNotEmpty && (t.contains(cleanTarget) || cleanTarget.contains(t))) {
+            foundInMedia = i;
+            break;
+          }
+        }
+
+        if (foundInSkill != -1 && (_selectedTab == 0 || foundInMedia == -1)) {
+          _selectedTab = 0;
+          _expandedSessionIndex = foundInSkill;
+        } else if (foundInMedia != -1) {
+          _selectedTab = 1;
+          _expandedSessionIndex = foundInMedia;
+        } else {
+          // Fallback: update active tab's first session title to match requested session
+          final targetList = _selectedTab == 1 ? _mediaSessions : _skillSessions;
+          if (targetList.isNotEmpty) {
+            targetList[0]['title'] = _targetSessionTitle;
+            if (_targetInstructor != null) {
+              targetList[0]['instructor'] = _targetInstructor;
+            }
+            _expandedSessionIndex = 0;
+          }
+        }
       }
 
       if (mounted) {

@@ -102,7 +102,23 @@ class NepaApp extends StatelessWidget {
           '/dashboard': (context) => const AppShell(),
           '/class1': (context) {
             final args = ModalRoute.of(context)?.settings.arguments;
-            return StudentClass1Screen(initialStation: args is Station ? args : null);
+            Station? initStation;
+            if (args is Station) {
+              initStation = args;
+            } else if (args is Map<String, dynamic>) {
+              initStation = Station.fromJson(args);
+            }
+            return StudentClass1Screen(initialStation: initStation);
+          },
+          '/station_detail': (context) {
+            final args = ModalRoute.of(context)?.settings.arguments;
+            Station? initStation;
+            if (args is Station) {
+              initStation = args;
+            } else if (args is Map<String, dynamic>) {
+              initStation = Station.fromJson(args);
+            }
+            return StudentClass1Screen(initialStation: initStation);
           },
           '/class2': (context) => const StudentClass2Screen(),
           '/mentor_league': (context) => const MentorAchievementsScreen(),

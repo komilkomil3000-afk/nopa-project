@@ -1,0 +1,19 @@
+#!/bin/sh
+# Git pre-commit hook to verify AGENT_CHANGELOG.md update
+
+# Check if any staged files exist other than git internal
+CHANGES=$(git diff --cached --name-only | grep -v 'AGENT_CHANGELOG.md')
+
+if [ -n "$CHANGES" ]; then
+    # Check if AGENT_CHANGELOG.md is also staged
+    CHANGELOG_STAGED=$(git diff --cached --name-only | grep 'AGENT_CHANGELOG.md')
+    if [ -z "$CHANGELOG_STAGED" ]; then
+        echo "======================================================================"
+        echo "[WARNING] You have staged changes without modifying AGENT_CHANGELOG.md!"
+        echo "Remember to document agent/developer changes in AGENT_CHANGELOG.md."
+        echo "Tip: run 'node scripts/append_agent_changelog.js' or update manually."
+        echo "======================================================================"
+    fi
+fi
+
+exit 0

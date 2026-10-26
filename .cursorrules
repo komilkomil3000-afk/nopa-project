@@ -1,0 +1,7 @@
+# Cursor Agent Instructions
+
+## MANDATORY: Agent Change Logging
+Whenever files are edited, created, or removed:
+You MUST log every modification in `AGENT_CHANGELOG.md` following the template therein.
+Triggered By must include `GitHub: komilkomil3000-afk | System: komeil`.
+Or run: `node scripts/append_agent_changelog.js`.

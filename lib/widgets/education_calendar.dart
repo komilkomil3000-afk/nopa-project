@@ -642,6 +642,121 @@ class _EducationCalendarState extends State<EducationCalendar> {
   }
 
   /// Bottom 2-Column Class Details Card: Right is Skill Classes, Left is Media Classes (Overdue removed)
+  void _navigateToClass(CalendarEvent event) {
+    final int tab = event.type == EventType.mediaClass ? 1 : 0;
+    int stationIndex = 0;
+    if (event.month == 7) {
+      if (event.day >= 9) {
+        stationIndex = 1; // Station 2
+      } else {
+        stationIndex = 0; // Station 1
+      }
+    } else if (event.month == 8) {
+      stationIndex = 2; // Station 3
+    } else if (event.month == 9) {
+      if (event.day >= 15) {
+        stationIndex = 4; // Station 5
+      } else {
+        stationIndex = 3; // Station 4
+      }
+    }
+
+    Navigator.pushNamed(
+      context,
+      '/class2',
+      arguments: {
+        'stationIndex': stationIndex,
+        'initialTab': tab,
+        'tab': tab,
+        'type': event.type == EventType.mediaClass ? 'media' : 'skill',
+        'sessionTitle': event.title,
+        'title': event.title,
+        'instructor': event.instructor,
+      },
+    );
+  }
+
+  Widget _buildEventColumnList({
+    required List<CalendarEvent> events,
+    required bool isSkill,
+  }) {
+    if (events.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+        child: Text(
+          '-',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF6E6C88),
+            fontSize: 12,
+            fontFamily: AppTheme.fontFamily,
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
+          ),
+        ),
+      );
+    }
+
+    final accentColor = isSkill ? const Color(0xFFF9E872) : const Color(0xFF4DE2EC);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: events.map((event) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3.0),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _navigateToClass(event),
+              borderRadius: BorderRadius.circular(8),
+              splashColor: accentColor.withValues(alpha: 0.15),
+              highlightColor: accentColor.withValues(alpha: 0.08),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 5.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: accentColor.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        event.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFE5E2F8),
+                          fontSize: 11.5,
+                          height: 1.3,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: AppTheme.fontFamily,
+                          fontFamilyFallback: AppTheme.fontFamilyFallback,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.play_circle_outline_rounded,
+                      size: 13,
+                      color: accentColor.withValues(alpha: 0.9),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildClassesSummaryCard() {
     final dayEvents = _events.where((e) =>
         e.year == _selectedYear &&
@@ -650,9 +765,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     final mediaEvents = dayEvents.where((e) => e.type == EventType.mediaClass).toList();
     final skillEvents = dayEvents.where((e) => e.type == EventType.skillClass).toList();
-
-    final String mediaText = mediaEvents.isNotEmpty ? mediaEvents.map((e) => e.title).join('، ') : '-';
-    final String skillText = skillEvents.isNotEmpty ? skillEvents.map((e) => e.title).join('، ') : '-';
 
     return Container(
       decoration: BoxDecoration(
@@ -776,22 +888,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 children: [
                   // Right Column Value: Skill Classes
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Text(
-                        skillText,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: skillText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                      ),
+                    child: _buildEventColumnList(
+                      events: skillEvents,
+                      isSkill: true,
                     ),
                   ),
 
@@ -799,22 +898,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
                   // Left Column Value: Media Classes
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Text(
-                        mediaText,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: mediaText == '-' ? const Color(0xFF6E6C88) : const Color(0xFFA5A3BE),
-                          fontSize: 11.5,
-                          height: 1.3,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                      ),
+                    child: _buildEventColumnList(
+                      events: mediaEvents,
+                      isSkill: false,
                     ),
                   ),
                 ],

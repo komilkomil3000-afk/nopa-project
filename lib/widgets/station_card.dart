@@ -23,6 +23,7 @@ class StationCard extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 0.65,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
           margin: const EdgeInsets.only(left: 14),
