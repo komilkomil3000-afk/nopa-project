@@ -22,6 +22,104 @@ let velocityChart = null;
 let analyticsEconomyChart = null;
 let analyticsEngagementChart = null;
 
+// Global UI Utilities (Toasts, Modals, RTL Localization)
+function showToastSuccess(message) {
+  let toast = document.getElementById('nopa-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'nopa-toast';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '20px';
+    toast.style.backgroundColor = '#10b981';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = '8px';
+    toast.style.zIndex = '1000000';
+    toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
+    toast.style.fontWeight = 'bold';
+    toast.style.fontSize = '13px';
+    toast.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${message}`;
+  toast.style.opacity = '1';
+  toast.style.display = 'block';
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.style.display = 'none', 300);
+  }, 3500);
+}
+window.showToastSuccess = showToastSuccess;
+
+function showToastError(message) {
+  let toast = document.getElementById('nopa-toast-error');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'nopa-toast-error';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '20px';
+    toast.style.backgroundColor = '#ef4444';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = '8px';
+    toast.style.zIndex = '1000000';
+    toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
+    toast.style.fontWeight = 'bold';
+    toast.style.fontSize = '13px';
+    toast.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+  toast.style.opacity = '1';
+  toast.style.display = 'block';
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.style.display = 'none', 300);
+  }, 4000);
+}
+window.showToastError = showToastError;
+
+function showConfirmDialog({ title = 'تأیید عملیات', message = 'آیا از انجام این عملیات اطمینان دارید؟', isDanger = true } = {}) {
+  return new Promise((resolve) => {
+    let overlay = document.getElementById('nopa-confirm-modal');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'nopa-confirm-modal';
+      document.body.appendChild(overlay);
+    }
+    overlay.className = 'modal active';
+    overlay.style.zIndex = '999999';
+    overlay.innerHTML = `
+      <div class="modal-content glass" style="max-width: 420px; text-align: center; padding: 24px; direction: rtl;">
+        <h3 style="color: ${isDanger ? '#ef4444' : '#38bdf8'}; margin-bottom: 12px; font-size: 16px;">
+          <i class="fa-solid ${isDanger ? 'fa-triangle-exclamation' : 'fa-circle-question'}"></i> ${title}
+        </h3>
+        <p style="color: #cbd5e1; font-size: 13px; line-height: 1.6; margin-bottom: 20px;">${message}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="nopa-confirm-cancel" class="page-btn" style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">انصراف</button>
+          <button id="nopa-confirm-ok" class="page-btn" style="background: ${isDanger ? '#dc2626' : '#2563eb'}; color: #fff; padding: 8px 24px; border-radius: 8px; border: none; font-weight: bold;">تأیید</button>
+        </div>
+      </div>
+    `;
+    const cleanup = (res) => {
+      overlay.classList.remove('active');
+      resolve(res);
+    };
+    document.getElementById('nopa-confirm-cancel').onclick = () => cleanup(false);
+    document.getElementById('nopa-confirm-ok').onclick = () => cleanup(true);
+  });
+}
+window.showConfirmDialog = showConfirmDialog;
+
+function toPersianDigits(str) {
+  if (str === null || str === undefined) return '';
+  const p = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  return String(str).replace(/[0-9]/g, (w) => p[+w]);
+}
+window.toPersianDigits = toPersianDigits;
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
@@ -3387,40 +3485,97 @@ async function loadLevels() {
 
 // Delete User
 async function deleteUser(userId) {
-  if (!confirm('آیا از حذف دائم این کاربر اطمینان دارید؟ این عملیات غیرقابل بازگشت است.')) return;
+  const confirmed = await showConfirmDialog({
+    title: 'حذف دائم کاربر',
+    message: 'آیا از حذف دائم این کاربر اطمینان دارید؟ این عملیات غیرقابل بازگشت است.',
+    isDanger: true
+  });
+  if (!confirmed) return;
   try {
     const res = await request(`/api/v1/admin/users/${userId}`, {
       method: 'DELETE'
     });
     const data = await res.json();
     if (res.ok) {
-      alert(data.message);
+      showToastSuccess(data.message || 'کاربر با موفقیت حذف گردید');
       loadUsers();
     } else {
-      alert(data.error || 'خطا در حذف کاربر');
+      showToastError(data.error || 'خطا در حذف کاربر');
     }
   } catch (err) {
     console.error(err);
+    showToastError('خطا در برقراری ارتباط با سرور');
   }
 }
 
 // Open Password Override Dialog
 function openPasswordOverride(userId) {
-  const newPass = prompt('گذرواژه جدید کاربر را وارد کنید:');
-  if (!newPass) return;
-  
-  request(`/api/v1/admin/users/${userId}/override-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: newPass })
-  }).then(async res => {
-    const data = await res.json();
-    if (res.ok) {
-      alert('گذرواژه با موفقیت تغییر کرد');
+  let modal = document.getElementById('password-override-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'password-override-modal';
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+  }
+  modal.className = 'modal active';
+  modal.style.zIndex = '999999';
+  modal.innerHTML = `
+    <div class="modal-content glass" style="max-width: 400px; padding: 24px; direction: rtl; text-align: right;">
+      <h3 style="color: #6366f1; margin-bottom: 14px; font-size: 16px;">
+        <i class="fa-solid fa-key"></i> بازنشانی گذرواژه کاربر
+      </h3>
+      <p style="color: #94a3b8; font-size: 12.5px; margin-bottom: 16px;">
+        گذرواژه جدید کاربر را وارد نمایید:
+      </p>
+      <div style="position: relative; margin-bottom: 18px;">
+        <input type="password" id="override-pass-input" placeholder="حداقل ۶ کاراکتر" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 13px;" />
+        <i id="override-pass-toggle" class="fa-solid fa-eye" style="position: absolute; left: 12px; top: 12px; color: #94a3b8; cursor: pointer;"></i>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button id="override-pass-cancel" class="page-btn" style="background: rgba(255,255,255,0.1); color: #fff; padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">انصراف</button>
+        <button id="override-pass-submit" class="page-btn" style="background: #4f46e5; color: #fff; padding: 8px 20px; border-radius: 8px; border: none; font-weight: bold;">ثبت گذرواژه</button>
+      </div>
+    </div>
+  `;
+
+  const input = document.getElementById('override-pass-input');
+  const toggle = document.getElementById('override-pass-toggle');
+  toggle.onclick = () => {
+    if (input.type === 'password') {
+      input.type = 'text';
+      toggle.className = 'fa-solid fa-eye-slash';
     } else {
-      alert(data.error);
+      input.type = 'password';
+      toggle.className = 'fa-solid fa-eye';
     }
-  });
+  };
+
+  const close = () => modal.classList.remove('active');
+  document.getElementById('override-pass-cancel').onclick = close;
+
+  document.getElementById('override-pass-submit').onclick = async () => {
+    const newPass = input.value.trim();
+    if (!newPass || newPass.length < 6) {
+      showToastError('گذرواژه باید حداقل ۶ کاراکتر باشد');
+      return;
+    }
+    close();
+    try {
+      const res = await request(`/api/v1/admin/users/${userId}/override-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPass })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToastSuccess('✅ گذرواژه با موفقیت تغییر کرد');
+      } else {
+        showToastError(data.error || 'خطا در تغییر گذرواژه');
+      }
+    } catch (err) {
+      showToastError('خطا در اتصال به سرور');
+    }
+  };
 }
 
 // Add/Edit User Modal

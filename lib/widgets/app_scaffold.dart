@@ -37,54 +37,62 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      drawer: drawer ??
-          (showDrawerButton
-              ? CustomDrawer(
-                  role: userRole,
-                  currentIndex: currentBottomNavIndex,
-                  onTabSelected: (idx) {
-                    Navigator.pop(context);
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          onBackTap?.call();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        drawer: drawer ??
+            (showDrawerButton
+                ? CustomDrawer(
+                    role: userRole,
+                    currentIndex: currentBottomNavIndex,
+                    onTabSelected: (idx) {
+                      Navigator.pop(context);
+                      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
+                      navigateToMainTab(idx);
+                    },
+                  )
+                : null),
+        bottomNavigationBar: showBottomNavBar
+            ? CustomBottomNavBar(
+                currentIndex: currentBottomNavIndex,
+                role: userRole,
+                onTap: (idx) {
+                  if (Navigator.of(context).canPop()) {
                     Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-                    navigateToMainTab(idx);
-                  },
-                )
-              : null),
-      bottomNavigationBar: showBottomNavBar
-          ? CustomBottomNavBar(
-              currentIndex: currentBottomNavIndex,
-              role: userRole,
-              onTap: (idx) {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/dashboard');
-                }
-                navigateToMainTab(idx);
-              },
-            )
-          : null,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(
-            image: AssetImage('assets/images/login_bg.png'),
-            fit: BoxFit.cover,
+                  }
+                  navigateToMainTab(idx);
+                },
+              )
+            : null,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              if (showTopBar)
-                AppTopBar(
-                  showBackButton: showBackButton,
-                  showNotificationIcon: showNotificationIcon,
-                  showDrawerButton: showDrawerButton,
-                  onBackTap: onBackTap,
-                ),
-              Expanded(child: body),
-            ],
+          child: SafeArea(
+            child: Column(
+              children: [
+                if (showTopBar)
+                  AppTopBar(
+                    showBackButton: showBackButton,
+                    showNotificationIcon: showNotificationIcon,
+                    showDrawerButton: showDrawerButton,
+                    onBackTap: onBackTap,
+                  ),
+                Expanded(child: body),
+              ],
+            ),
           ),
         ),
       ),

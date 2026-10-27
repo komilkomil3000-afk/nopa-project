@@ -728,7 +728,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: 'درفش',
+                  label: 'بیرق',
                   value: beyrahVal,
                   isGold: _selectedAssetIndex == 1,
                   onTap: () => setState(() => _selectedAssetIndex = 1),

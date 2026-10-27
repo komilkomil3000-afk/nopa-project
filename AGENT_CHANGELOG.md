@@ -139,3 +139,78 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (No issues found!)
 - **Status:** Completed
+
+### [2026-10-26 16:05] - Antigravity Assistant / UX & Architecture Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_app | crm | docs
+- **Files Modified / Created / Deleted:**
+  - `ui_ux_audit.md` (Created)
+  - `AGENT_CHANGELOG.md` (Modified)
+- **Description of Changes:**
+  - Performed a strict, end-to-end UI/UX audit across Flutter Mobile App (`nopa_app`) and Admin CRM Panel (`nopa_backend/public`).
+  - Audited visual consistency, design tokens, YekanBakh typography hierarchy, modal ergonomics, and dark surface readability.
+  - Audited information architecture, TopBar LTR directionality inversion, Station Stepper fluidity, and deep-linking back-stack popping.
+  - Flagged critical LMS quiz validation bypass (answers submitted without correctness check or server sync in `student_class2_screen.dart`).
+  - Flagged dummy mock file upload button in `student_edit_profile_screen.dart`.
+  - Audited Admin CRM table density, uncompiled Tailwind classes in `caravanWorkspace.js`, blocking `window.confirm`/`window.alert` calls, and lack of Persian numerals in data tables.
+  - Formulated a prioritized, actionable matrix (P0 to P2) mapped to exact source files.
+- **Verification / Checkpoints Executed:**
+  - Audited live Dart and JavaScript source trees across both components.
+  - Generated and verified persistent documentation in [`ui_ux_audit.md`](file:///c:/Users/komeil/Projects/nopa_app/ui_ux_audit.md).
+- **Status:** Completed
+
+### [2026-10-26 19:48] - Agent 2 — Flutter App & Integration Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_app / Android Build
+- **Files Modified / Created / Deleted:**
+  - `lib/core/constants/api_constants.dart` (Modified)
+  - `lib/services/api_service.dart` (Modified)
+  - `android/app/src/main/AndroidManifest.xml` (Modified)
+  - `android/app/src/main/res/xml/network_security_config.xml` (Modified)
+  - `AGENT_CHANGELOG.md` (Modified)
+- **Description of Changes:**
+  - Switched default API host and media base URL from local IP/localhost:5000 to production domain `http://nopa-app.ir`.
+  - Added legacy media URL sanitizer in `ApiConstants.resolveImageUrl` to automatically remap stale `localhost:5000` and `127.0.0.1:5000` URLs to `http://nopa-app.ir`.
+  - Updated `HttpApiService` host probing and health-check routine (`_formatBaseUrl`, `_pingHost`, `checkBackendHealth`) to support standard HTTP domains without appending `:5000`, while preserving developer candidate fallback.
+  - Enabled cleartext HTTP network traffic in Android (`android:usesCleartextTraffic="true"` and explicit domain whitelist in `network_security_config.xml` for `nopa-app.ir`) to prevent Android OS cleartext blocking.
+  - Built production release APK (`flutter build apk`).
+- **Verification / Checkpoints Executed:**
+  - Tested live endpoint connectivity to `http://nopa-app.ir/health` and `http://nopa-app.ir/api/v1/auth/verify-phone`.
+  - `flutter analyze` executed (No issues found!).
+  - `flutter build apk` executed successfully (`build/app/outputs/flutter-apk/app-release.apk` - 59.4MB).
+- **Status:** Completed
+
+
+### [2026-10-27 13:19] - Antigravity UI/UX Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_app & nopa_backend
+- **Files Modified / Created / Deleted:**
+  - `gitignore` (Modified)
+  - `AGENT_CHANGELOG.md` (Modified)
+  - `android/app/src/main/AndroidManifest.xml` (Modified)
+  - `android/app/src/main/res/xml/network_security_config.xml` (Modified)
+  - `lib/core/constants/api_constants.dart` (Modified)
+  - `lib/main.dart` (Modified)
+  - `lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `lib/services/api_service.dart` (Modified)
+  - `lib/widgets/app_scaffold.dart` (Modified)
+  - `lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `nopa_backend/public/app.js` (Modified)
+  - `nopa_backend/public/caravanWorkspace.js` (Modified)
+  - `nopa_backend/public/instructors.js` (Modified)
+- **Description of Changes:**
+  - Implemented audit points from ui_ux_audit.md
+  - Added quiz answer correctness validation & HttpApiService.submitClassSessionQuiz sync with AnimatedSwitcher transitions in student_class2_screen.dart
+  - Integrated real FilePicker & HttpApiService.uploadMediaFile in student_edit_profile_screen.dart
+  - Wrapped AppScaffold in PopScope for safe pop handling
+  - Unified font tokens to AppTheme.fontFamily and added keyboard avoidance AnimatedPadding in complete_profile_dialog.dart
+  - Renamed pill label to بیرق in student_market_screen.dart
+  - Added onGenerateRoute and onUnknownRoute in main.dart
+  - Replaced uncompiled Tailwind classes in caravanWorkspace.js with glassmorphism style.css tokens
+  - Replaced browser alert/confirm/prompt with unified showConfirmDialog, toasts, and secure masked password override modal in app.js and instructors.js
+  - Localized table numbers with toPersianDigits
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (0 issues found); node -c syntax checks on app.js, instructors.js, and caravanWorkspace.js
+- **Status:** Completed

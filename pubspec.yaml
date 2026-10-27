@@ -80,3 +80,15 @@ flutter:
           weight: 700
         - asset: assets/fonts/YekanBakh-ExtraBold.ttf
           weight: 800
+- family: c
+      fonts:
+        - asset: assets/fonts/YekanBakh-Light.ttf
+          weight: 300
+        - asset: assets/fonts/YekanBakh-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/YekanBakh-Regular.ttf
+          weight: 500
+        - asset: assets/fonts/YekanBakh-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/YekanBakh-ExtraBold.ttf
+          weight: 800

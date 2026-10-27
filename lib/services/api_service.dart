@@ -318,10 +318,10 @@ class HttpApiService {
 
   Future<List<String>> _buildHostCandidates() async {
     final candidates = <String>[];
-    if (_envHost.isNotEmpty) {
+    candidates.add(_defaultHost);
+    if (_envHost.isNotEmpty && !candidates.contains(_envHost)) {
       candidates.add(_envHost);
     }
-    candidates.add(_defaultHost);
     candidates.add('10.0.2.2'); // Android Emulator
     candidates.add('localhost');
     candidates.add('127.0.0.1');
@@ -345,9 +345,23 @@ class HttpApiService {
     return candidates;
   }
 
+  static String _formatBaseUrl(String host) {
+    if (host.startsWith('http://') || host.startsWith('https://')) {
+      return host.endsWith('/') ? host.substring(0, host.length - 1) : host;
+    }
+    if (host == 'nopa-app.ir' || (!host.contains(':') && !RegExp(r'^\d+\.\d+\.\d+\.\d+$').hasMatch(host))) {
+      return 'http://$host';
+    }
+    if (host.contains(':')) {
+      return 'http://$host';
+    }
+    return 'http://$host:5000';
+  }
+
   Future<bool> _pingHost(String host, {int timeoutMs = 2500}) async {
     try {
-      final res = await http.get(Uri.parse('http://$host:5000/health')).timeout(Duration(milliseconds: timeoutMs));
+      final base = _formatBaseUrl(host);
+      final res = await http.get(Uri.parse('$base/health')).timeout(Duration(milliseconds: timeoutMs));
       return res.statusCode == 200;
     } catch (_) {
       return false;
@@ -380,21 +394,23 @@ class HttpApiService {
       debugPrint('Failed to read cached_backend_host: $e');
     }
 
-    final targetHost = cachedHost ?? (_envHost.isNotEmpty ? _envHost : _defaultHost);
+    // Always prefer the production domain (nopa-app.ir) if reachable,
+    // avoiding being trapped on stale LAN IPs cached during development.
+    final targetHost = (_defaultHost == 'nopa-app.ir')
+        ? _defaultHost
+        : (cachedHost ?? (_envHost.isNotEmpty ? _envHost : _defaultHost));
     _activeHost = targetHost;
-    _activeBaseUrl = 'http://$targetHost:5000/api/v1';
+    _activeBaseUrl = '${_formatBaseUrl(targetHost)}/api/v1';
 
     // 1. Fast ping target host (<= 2500ms)
     final isHealthy = await _pingHost(targetHost, timeoutMs: 2500);
     if (isHealthy) {
-      debugPrint('⚡ Fast-path verified: Connected to backend on http://$targetHost:5000');
-      if (cachedHost != targetHost) {
-        await _secureStorage.write(key: _cachedHostKey, value: targetHost);
-      }
+      debugPrint('⚡ Fast-path verified: Connected to backend on ${_formatBaseUrl(targetHost)}');
+      await _secureStorage.write(key: _cachedHostKey, value: targetHost);
       return;
     }
 
-    debugPrint('⚠️ Preferred host $targetHost:5000 unresponsive; running concurrent candidate discovery...');
+    debugPrint('⚠️ Preferred host $targetHost unresponsive; running concurrent candidate discovery...');
     // 2. Concurrently probe candidates if cached host is unreachable
     await _probeCandidatesConcurrently();
   }
@@ -414,11 +430,11 @@ class HttpApiService {
 
     if (workingHost != null) {
       _activeHost = workingHost;
-      _activeBaseUrl = 'http://$workingHost:5000/api/v1';
+      _activeBaseUrl = '${_formatBaseUrl(workingHost)}/api/v1';
       await _secureStorage.write(key: _cachedHostKey, value: workingHost);
-      debugPrint('🔗 Resolved & cached working backend: http://$workingHost:5000');
+      debugPrint('🔗 Resolved & cached working backend: ${_formatBaseUrl(workingHost)}');
     } else {
-      _activeBaseUrl = 'http://$_defaultHost:5000/api/v1';
+      _activeBaseUrl = '${_formatBaseUrl(_defaultHost)}/api/v1';
       debugPrint('🔗 Fallback to default backend: $_activeBaseUrl');
     }
   }

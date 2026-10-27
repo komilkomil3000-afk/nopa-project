@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
 import '../services/app_state_repository.dart';
@@ -116,7 +117,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
           color: Colors.white70,
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          fontFamily: 'Vazirmatn',
+          fontFamily: AppTheme.fontFamily,
         ),
       ),
     );
@@ -128,7 +129,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
       hintStyle: const TextStyle(
         color: Colors.white30,
         fontSize: 12,
-        fontFamily: 'Vazirmatn',
+        fontFamily: AppTheme.fontFamily,
       ),
       filled: true,
       fillColor: const Color(0xFF150D27),
@@ -157,7 +158,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
         const SnackBar(
           content: Text(
             'لطفاً نام و کد ملی را وارد نمایید',
-            style: TextStyle(fontFamily: 'Vazirmatn'),
+            style: TextStyle(fontFamily: AppTheme.fontFamily),
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -170,7 +171,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
         const SnackBar(
           content: Text(
             'کد ملی باید ۱۰ رقم باشد',
-            style: TextStyle(fontFamily: 'Vazirmatn'),
+            style: TextStyle(fontFamily: AppTheme.fontFamily),
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -208,7 +209,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
               Expanded(
                 child: Text(
                   '🎉 پروفایل شما با موفقیت تکمیل شد و ۱۰۰ زریک به حساب شما افزوده گردید!',
-                  style: TextStyle(fontFamily: 'Vazirmatn', fontWeight: FontWeight.bold),
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -224,7 +225,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
         SnackBar(
           content: Text(
             'خطا در ذخیره مشخصات: $e',
-            style: const TextStyle(fontFamily: 'Vazirmatn'),
+            style: const TextStyle(fontFamily: AppTheme.fontFamily),
           ),
           backgroundColor: Colors.redAccent,
         ),
@@ -239,226 +240,231 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
       _selectedCity = currentCities.first;
     }
 
-    return Dialog(
-      backgroundColor: const Color(0xFF1E1435),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Row(
-                  children: [
-                    Text(
-                      'تکمیل پروفایل و دریافت سکه',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Vazirmatn',
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD54F), size: 22),
-                  ],
-                ),
-              ],
-            ),
-            const Divider(color: Colors.white12),
-            const SizedBox(height: 10),
-
-            // Reward callout banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF3B1E6D), Color(0xFF1F1138)],
-                  begin: Alignment.centerRight,
-                  end: Alignment.centerLeft,
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4)),
-              ),
-              child: const Row(
+    return AnimatedPadding(
+      padding: MediaQuery.of(context).viewInsets,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      child: Dialog(
+        backgroundColor: const Color(0xFF1E1435),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD54F), size: 24),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'با تکمیل مشخصات هویتی، ۱۰۰ سکه زریک بلافاصله به کیف پول شما واریز می‌شود! 🪙',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontFamily: 'Vazirmatn',
-                        height: 1.4,
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Row(
+                    children: [
+                      Text(
+                        'تکمیل پروفایل و دریافت سکه',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
-                    ),
+                      SizedBox(width: 6),
+                      Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD54F), size: 22),
+                    ],
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
+              const Divider(color: Colors.white12),
+              const SizedBox(height: 10),
 
-            // Name
-            _buildLabel('نام و نام خانوادگی:'),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _nameCtrl,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn'),
-              decoration: _inputDecoration('مثال: علی رضایی'),
-            ),
-            const SizedBox(height: 12),
-
-            // National ID
-            _buildLabel('کد ملی (۱۰ رقم):'),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _nationalIdCtrl,
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.right,
-              maxLength: 10,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn'),
-              decoration: _inputDecoration('مثال: 0012345678').copyWith(counterText: ''),
-            ),
-            const SizedBox(height: 12),
-
-            // Date of birth
-            _buildLabel('تاریخ تولد:'),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _dobCtrl,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn'),
-              decoration: _inputDecoration('مثال: ۱۳۸۸/۰۵/۲۲'),
-            ),
-            const SizedBox(height: 14),
-
-            // Province
-            _buildLabel('استان:'),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF150D27),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedProvince,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF1E1435),
-                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF38BDF8)),
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn', fontSize: 13),
-                  items: _iranProvincesAndCities.keys.map((prov) {
-                    return DropdownMenuItem<String>(
-                      value: prov,
-                      alignment: Alignment.centerRight,
-                      child: Text(prov, style: const TextStyle(fontFamily: 'Vazirmatn')),
-                    );
-                  }).toList(),
-                  onChanged: (newProv) {
-                    if (newProv != null) {
-                      setState(() {
-                        _selectedProvince = newProv;
-                        _selectedCity = _iranProvincesAndCities[newProv]!.first;
-                      });
-                    }
-                  },
+              // Reward callout banner
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3B1E6D), Color(0xFF1F1138)],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4)),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // City
-            _buildLabel('شهر:'),
-            const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF150D27),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCity,
-                  isExpanded: true,
-                  dropdownColor: const Color(0xFF1E1435),
-                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF38BDF8)),
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn', fontSize: 13),
-                  items: currentCities.map((c) {
-                    return DropdownMenuItem<String>(
-                      value: c,
-                      alignment: Alignment.centerRight,
-                      child: Text(c, style: const TextStyle(fontFamily: 'Vazirmatn')),
-                    );
-                  }).toList(),
-                  onChanged: (newCity) {
-                    if (newCity != null) {
-                      setState(() => _selectedCity = newCity);
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Address
-            _buildLabel('آدرس دقیق پستی:'),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _addressCtrl,
-              maxLines: 2,
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Vazirmatn', fontSize: 12.5),
-              decoration: _inputDecoration('خیابان، کوچه، پلاک، واحد'),
-            ),
-            const SizedBox(height: 22),
-
-            // Save & Get 100 coins Button
-            ElevatedButton(
-              onPressed: _isSaving ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B5CF6),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 4,
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.card_giftcard_rounded, color: Color(0xFFFFD54F), size: 19),
-                        SizedBox(width: 8),
-                        Text(
-                          'تکمیل پروفایل و دریافت ۱۰۰ سکه',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Vazirmatn',
-                          ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD54F), size: 24),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'با تکمیل مشخصات هویتی، ۱۰۰ سکه زریک بلافاصله به کیف پول شما واریز می‌شود! 🪙',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontFamily: AppTheme.fontFamily,
+                          height: 1.4,
                         ),
-                      ],
+                      ),
                     ),
-            ),
-          ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Name
+              _buildLabel('نام و نام خانوادگی:'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nameCtrl,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                decoration: _inputDecoration('مثال: علی رضایی'),
+              ),
+              const SizedBox(height: 12),
+
+              // National ID
+              _buildLabel('کد ملی (۱۰ رقم):'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nationalIdCtrl,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.right,
+                maxLength: 10,
+                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                decoration: _inputDecoration('مثال: 0012345678').copyWith(counterText: ''),
+              ),
+              const SizedBox(height: 12),
+
+              // Date of birth
+              _buildLabel('تاریخ تولد:'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _dobCtrl,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                decoration: _inputDecoration('مثال: ۱۳۸۸/۰۵/۲۲'),
+              ),
+              const SizedBox(height: 14),
+
+              // Province
+              _buildLabel('استان:'),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF150D27),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedProvince,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF1E1435),
+                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF38BDF8)),
+                    style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
+                    items: _iranProvincesAndCities.keys.map((prov) {
+                      return DropdownMenuItem<String>(
+                        value: prov,
+                        alignment: Alignment.centerRight,
+                        child: Text(prov, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      );
+                    }).toList(),
+                    onChanged: (newProv) {
+                      if (newProv != null) {
+                        setState(() {
+                          _selectedProvince = newProv;
+                          _selectedCity = _iranProvincesAndCities[newProv]!.first;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // City
+              _buildLabel('شهر:'),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF150D27),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedCity,
+                    isExpanded: true,
+                    dropdownColor: const Color(0xFF1E1435),
+                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF38BDF8)),
+                    style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
+                    items: currentCities.map((c) {
+                      return DropdownMenuItem<String>(
+                        value: c,
+                        alignment: Alignment.centerRight,
+                        child: Text(c, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                      );
+                    }).toList(),
+                    onChanged: (newCity) {
+                      if (newCity != null) {
+                        setState(() => _selectedCity = newCity);
+                      }
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Address
+              _buildLabel('آدرس دقیق پستی:'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _addressCtrl,
+                maxLines: 2,
+                textAlign: TextAlign.right,
+                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 12.5),
+                decoration: _inputDecoration('خیابان، کوچه، پلاک، واحد'),
+              ),
+              const SizedBox(height: 22),
+
+              // Save & Get 100 coins Button
+              ElevatedButton(
+                onPressed: _isSaving ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8B5CF6),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 4,
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.card_giftcard_rounded, color: Color(0xFFFFD54F), size: 19),
+                          SizedBox(width: 8),
+                          Text(
+                            'تکمیل پروفایل و دریافت ۱۰۰ سکه',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

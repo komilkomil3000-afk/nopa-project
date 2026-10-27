@@ -1344,14 +1344,18 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     final session = _activeSession;
     final quizzes = session?['quizzes'] as List? ?? [];
 
+    String? currentQuizId;
     List<dynamic> quizQuestions = [];
     if (quizzes.isNotEmpty) {
       for (var q in quizzes) {
-        if (q['orderIndex'] == partIndex + 1 && q['questionsJson'] != null) {
-          try {
-            final parsed = jsonDecode(q['questionsJson'].toString());
-            if (parsed is List) quizQuestions = parsed;
-          } catch (_) {}
+        if (q['orderIndex'] == partIndex + 1) {
+          currentQuizId = q['id']?.toString();
+          if (q['questionsJson'] != null) {
+            try {
+              final parsed = jsonDecode(q['questionsJson'].toString());
+              if (parsed is List) quizQuestions = parsed;
+            } catch (_) {}
+          }
           break;
         }
       }
@@ -1374,6 +1378,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
     int currentQuestionIndex = 0;
     final List<int> userAnswers = List.filled(quizQuestions.length, -1);
+    String? feedbackMessage;
+    bool isErrorFeedback = false;
 
     showDialog(
       context: context,
@@ -1424,93 +1430,192 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       ),
                       const SizedBox(height: 10),
                       Container(height: 1, color: const Color(0xFF473E67)),
-                      const SizedBox(height: 10),
-                      Text(
-                        question['question'] ?? question['q'] ?? 'سوال',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                      ),
                       const SizedBox(height: 12),
-                      ...List.generate((question['options'] as List).length, (idx) {
-                        bool isSel = selectedAns == idx;
-                        return GestureDetector(
-                          onTap: () => setDialogState(() => userAnswers[currentQuestionIndex] = idx),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                            decoration: BoxDecoration(
-                              color: isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isSel ? const Color(0xFFC09268) : const Color(0xFF473E67),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(opacity: animation, child: child);
+                        },
+                        child: Column(
+                          key: ValueKey<int>(currentQuestionIndex),
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              question['question'] ?? question['q'] ?? 'سوال',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isSel ? Icons.radio_button_checked : Icons.radio_button_off,
-                                  color: isSel ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    question['options'][idx]?.toString() ?? '',
-                                    style: TextStyle(
-                                      color: isSel ? const Color(0xFFFBE4C8) : const Color(0xFFDDD9EE),
-                                      fontSize: 11.5,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            const SizedBox(height: 12),
+                            ...List.generate((question['options'] as List).length, (idx) {
+                              bool isSel = selectedAns == idx;
+                              return GestureDetector(
+                                onTap: () => setDialogState(() {
+                                  userAnswers[currentQuestionIndex] = idx;
+                                  feedbackMessage = null;
+                                }),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                                  decoration: BoxDecoration(
+                                    color: isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: isSel ? const Color(0xFFC09268) : const Color(0xFF473E67),
                                     ),
                                   ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSel ? Icons.radio_button_checked : Icons.radio_button_off,
+                                        color: isSel ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          question['options'][idx]?.toString() ?? '',
+                                          style: TextStyle(
+                                            color: isSel ? const Color(0xFFFBE4C8) : const Color(0xFFDDD9EE),
+                                            fontSize: 11.5,
+                                            fontFamily: AppTheme.fontFamily,
+                                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                      if (feedbackMessage != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isErrorFeedback ? Colors.redAccent.withValues(alpha: 0.15) : const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isErrorFeedback ? Colors.redAccent.withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.4),
                             ),
                           ),
-                        );
-                      }),
+                          child: Text(
+                            feedbackMessage!,
+                            style: TextStyle(
+                              color: isErrorFeedback ? const Color(0xFFFF8A80) : const Color(0xFF6EE7B7),
+                              fontSize: 11,
+                              fontFamily: AppTheme.fontFamily,
+                              fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 14),
-                      ElevatedButton(
-                        onPressed: selectedAns == -1
-                            ? null
-                            : () {
-                                if (currentQuestionIndex < quizQuestions.length - 1) {
+                      Row(
+                        children: [
+                          if (currentQuestionIndex > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: OutlinedButton(
+                                onPressed: () {
                                   setDialogState(() {
-                                    currentQuestionIndex++;
+                                    currentQuestionIndex--;
+                                    feedbackMessage = null;
                                   });
-                                } else {
-                                  Navigator.pop(context);
-                                  RewardPopup.show(
-                                    context,
-                                    message: 'شما آزمون این پارت را با موفقیت گذراندید!',
-                                    zarikAmount: 10,
-                                  );
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC09268),
-                          foregroundColor: const Color(0xFF1E1A33),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFF6B68A8)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: const Text(
+                                  'قبلی',
+                                  style: TextStyle(color: Color(0xFFDDD9EE), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: selectedAns == -1
+                                  ? null
+                                  : () async {
+                                      if (currentQuestionIndex < quizQuestions.length - 1) {
+                                        setDialogState(() {
+                                          currentQuestionIndex++;
+                                          feedbackMessage = null;
+                                        });
+                                      } else {
+                                        // Evaluate all answers against correctIndex
+                                        int correctCount = 0;
+                                        for (int i = 0; i < quizQuestions.length; i++) {
+                                          final q = quizQuestions[i];
+                                          final cIdx = q['correctIndex'] is int
+                                              ? q['correctIndex']
+                                              : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
+                                          if (userAnswers[i] == cIdx) {
+                                            correctCount++;
+                                          }
+                                        }
+
+                                        final bool passed = correctCount == quizQuestions.length ||
+                                            (quizQuestions.length > 1 && correctCount >= (quizQuestions.length * 0.6).ceil());
+
+                                        if (passed) {
+                                          final sessionId = session?['id']?.toString() ?? '';
+                                          if (sessionId.isNotEmpty) {
+                                            try {
+                                              await HttpApiService().submitClassSessionQuiz(sessionId, userAnswers, quizId: currentQuizId);
+                                            } catch (e) {
+                                              debugPrint('Submit quiz error: $e');
+                                            }
+                                          }
+
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                            RewardPopup.show(
+                                              context,
+                                              message: 'تبریک! آزمون این پارت را با نمره ${_toFarsiDigit(correctCount)} از ${_toFarsiDigit(quizQuestions.length)} گذراندید!',
+                                              zarikAmount: 10,
+                                            );
+                                          }
+                                        } else {
+                                          setDialogState(() {
+                                            isErrorFeedback = true;
+                                            feedbackMessage = 'نمره قبولی کسب نشد (${_toFarsiDigit(correctCount)} از ${_toFarsiDigit(quizQuestions.length)} درست بود). گزینه‌ها را مجدداً مرور فرمایید.';
+                                          });
+                                        }
+                                      }
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFC09268),
+                                foregroundColor: const Color(0xFF1E1A33),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: Text(
+                                currentQuestionIndex < quizQuestions.length - 1
+                                    ? 'سوال بعدی'
+                                    : 'ثبت و مشاهده نتیجه',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          currentQuestionIndex < quizQuestions.length - 1
-                              ? 'سوال بعدی'
-                              : 'ثبت و مشاهده نتیجه',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
-                        ),
+                        ],
                       ),
                     ],
                   ),

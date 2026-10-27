@@ -126,6 +126,35 @@ class NepaApp extends StatelessWidget {
           '/tickets': (context) => const StudentNotificationsScreen(),
           '/notifications': (context) => const StudentNotificationsScreen(),
         },
+        onGenerateRoute: (settings) {
+          final uri = Uri.tryParse(settings.name ?? '');
+          if (uri != null && uri.path == '/class1') {
+            return MaterialPageRoute(
+              settings: settings,
+              builder: (context) {
+                final args = settings.arguments;
+                Station? initStation;
+                if (args is Station) {
+                  initStation = args;
+                } else if (args is Map<String, dynamic>) {
+                  initStation = Station.fromJson(args);
+                }
+                return StudentClass1Screen(initialStation: initStation);
+              },
+            );
+          }
+          if (uri != null && uri.path == '/class2') {
+            return MaterialPageRoute(
+              settings: settings,
+              builder: (context) => const StudentClass2Screen(),
+            );
+          }
+          return null;
+        },
+        onUnknownRoute: (settings) => MaterialPageRoute(
+          settings: settings,
+          builder: (context) => const AppShell(),
+        ),
       ),
     );
   }

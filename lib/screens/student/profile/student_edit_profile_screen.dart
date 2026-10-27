@@ -1,4 +1,6 @@
+import 'dart:io' as io;
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -107,95 +109,169 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
   }
 
   void _openFileUploadDialog({required String title}) {
+    io.File? pickedFile;
+    String? pickedFileName;
+    bool isUploading = false;
+
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'ارسال فایل $title',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1D36),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFC09268).withValues(alpha: 0.5),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: Dialog(
+            backgroundColor: const Color(0xFF28274A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'ارسال فایل $title',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
-                  child: Column(
-                    children: const [
-                      Icon(Icons.cloud_upload_outlined, color: Color(0xFFC09268), size: 34),
-                      SizedBox(height: 8),
-                      Text(
-                        'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFC7C5DD),
-                          fontSize: 11.5,
-                          fontFamily: AppTheme.fontFamily,
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: isUploading
+                        ? null
+                        : () async {
+                            try {
+                              final result = await FilePicker.platform.pickFiles(
+                                type: FileType.any,
+                                allowMultiple: false,
+                              );
+                              if (result != null && result.files.isNotEmpty) {
+                                final firstFile = result.files.first;
+                                if (firstFile.path != null) {
+                                  setDialogState(() {
+                                    pickedFileName = firstFile.name;
+                                    pickedFile = io.File(firstFile.path!);
+                                  });
+                                }
+                              }
+                            } catch (e) {
+                              debugPrint('Profile file pick error: $e');
+                            }
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1D36),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: pickedFileName != null
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFFC09268).withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            pickedFileName != null ? Icons.check_circle_outline : Icons.cloud_upload_outlined,
+                            color: pickedFileName != null ? const Color(0xFF10B981) : const Color(0xFFC09268),
+                            size: 34,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            pickedFileName ?? 'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: pickedFileName != null ? Colors.white : const Color(0xFFC7C5DD),
+                              fontSize: 11.5,
+                              fontWeight: pickedFileName != null ? FontWeight.bold : FontWeight.normal,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isUploading ? null : () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF6B68A8)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: (pickedFile == null || isUploading)
+                              ? null
+                              : () async {
+                                  setDialogState(() => isUploading = true);
+                                  try {
+                                    final res = await HttpApiService().uploadMediaFile(
+                                      pickedFile!,
+                                      assetType: 'user_document',
+                                      title: title,
+                                    );
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
+                                    }
+                                    if (context.mounted) {
+                                      final isSuccess = res != null;
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            isSuccess
+                                                ? 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎'
+                                                : 'خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.',
+                                            style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                          ),
+                                          backgroundColor: isSuccess ? const Color(0xFF10B981) : Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setDialogState(() => isUploading = false);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('خطا در ارتباط با سرور: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFC09268),
+                            disabledBackgroundColor: const Color(0xFF454270),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: isUploading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('فایل $title با موفقیت ضمیمه شد 📎', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                              backgroundColor: const Color(0xFF10B981),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC09268),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

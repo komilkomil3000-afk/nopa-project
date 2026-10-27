@@ -258,7 +258,14 @@ window.deleteInstructorRecord = async function(id) {
   const inst = window.globalInstructorsList.find(i => i.id === id);
   const instName = inst ? inst.name : 'این استاد';
 
-  if (!confirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`)) return;
+  const confirmed = typeof window.showConfirmDialog === 'function'
+    ? await window.showConfirmDialog({
+        title: 'حذف استاد',
+        message: `آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`,
+        isDanger: true
+      })
+    : confirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`);
+  if (!confirmed) return;
 
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
 
@@ -272,15 +279,28 @@ window.deleteInstructorRecord = async function(id) {
     });
 
     if (res.ok) {
-      alert('✅ استاد با موفقیت حذف شد.');
+      if (typeof window.showToastSuccess === 'function') {
+        window.showToastSuccess('✅ استاد با موفقیت حذف شد.');
+      } else {
+        alert('✅ استاد با موفقیت حذف شد.');
+      }
       await window.fetchInstructorsList();
     } else {
       const d = await res.json();
-      alert('خطا در حذف استاد: ' + (d.error || 'خطای سرور'));
+      const errMsg = 'خطا در حذف استاد: ' + (d.error || 'خطای سرور');
+      if (typeof window.showToastError === 'function') {
+        window.showToastError(errMsg);
+      } else {
+        alert(errMsg);
+      }
     }
   } catch (err) {
     console.error('Delete instructor error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    if (typeof window.showToastError === 'function') {
+      window.showToastError('ارتباط با سرور برقرار نشد: ' + err.message);
+    } else {
+      alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    }
   }
 };
 
