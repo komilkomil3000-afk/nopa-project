@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>پنل مدیریت اختصاصی نپا | Nopa Custom CRM</title>
+  <!-- PWA -->
+  <link rel="manifest" href="/admin/manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" sizes="192x192" href="/admin/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/admin/icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="مدیریت نپا">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <!-- Fonts & Icons (Local) -->
   <link rel="stylesheet" href="/admin/libs/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="/admin/style.css">
@@ -3895,6 +3904,15 @@
       </div>
     </div>
 
+    <script>
+      // PWA: register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' })
+            .catch(function (err) { console.error('SW registration failed:', err); });
+        });
+      }
+    </script>
     <script src="app.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>
