@@ -453,3 +453,54 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze on bottom_nav_bar.dart
 - **Status:** Completed
+
+### [2026-10-28 19:54] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: carousel 'انیمیشن هایی که باید ببینید' now shows only the station's animations
+  - session videoClips are no longer merged into it (they remain in their own class/session sections)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/student/academy/student_class1_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:02] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: removed hardcoded aparat fallback video
+  - animation section is hidden when the station has no animations (data comes from Station animationUrl/animationsJson, editable in admin panel)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze student_class1_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 20:06] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - mentor_station_class1_screen.dart: animation carousel shows only station animations (no session videoClips), removed hardcoded aparat fallback, section hidden when no animations
+- **Verification / Checkpoints Executed:**
+  - flutter analyze mentor_station_class1_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 20:07] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - mentor_station_class1_screen.dart: empty 'animations' list now falls back to animationUrl, matching the student screen
+- **Verification / Checkpoints Executed:**
+  - flutter analyze mentor_station_class1_screen.dart
+- **Status:** Completed

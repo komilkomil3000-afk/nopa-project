@@ -131,11 +131,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             final catTitle = cat['title']?.toString() ?? 'کلاس‌ها';
             final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
             map[catTitle] = sessions;
-
-            for (final sess in sessions) {
-              final clips = (sess['videoClips'] as List?)?.map((c) => c as Map<String, dynamic>).toList() ?? [];
-              clipsList.addAll(clips);
-            }
           }
         }
       }
@@ -160,13 +155,8 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         });
       }
 
-      if (animClips.isNotEmpty) {
-        if (clipsList.isEmpty) {
-          clipsList.addAll(animClips);
-        } else {
-          clipsList.insertAll(0, animClips);
-        }
-      }
+      // Only the station's animations belong here; class/session videos are shown in their own screens.
+      clipsList.addAll(animClips);
 
       if (mounted) {
         setState(() {
@@ -328,7 +318,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
     final String skillText = '${skillSessionsCount.toPersian()} جلسه';
     final String mediaText = '${mediaSessionsCount.toPersian()} جلسه';
-    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : '۱ قسمت';
+    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : '۰ قسمت';
     final String stayText = _station?.stayDuration?.isNotEmpty == true
         ? _station!.stayDuration!
         : '${((_currentStationIndex + 1) * 3 + 5).toPersian()} روز';
@@ -374,9 +364,10 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             const SizedBox(height: 20),
 
             // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
-            _buildAnimationCarouselSection(currentClipTitle),
-
-            const SizedBox(height: 22),
+            if (_allClips.isNotEmpty) ...[
+              _buildAnimationCarouselSection(currentClipTitle),
+              const SizedBox(height: 22),
+            ],
 
             // 6. Action Buttons
             _buildActionButtonsRow(),
@@ -782,19 +773,17 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
           child: PageView.builder(
             clipBehavior: Clip.none,
             controller: _videoPageController,
-            itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
+            itemCount: _allClips.length,
             onPageChanged: (idx) {
               setState(() {
                 _currentClipIndex = idx;
               });
             },
             itemBuilder: (context, index) {
-              final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
-              final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
-                  ? clip['videoUrl'].toString().trim()
-                  : 'https://www.aparat.com/v/dbjk750';
-              final String title = clip?['title']?.toString() ?? clipTitle;
-              final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
+              final clip = _allClips[index];
+              final String videoUrl = clip['videoUrl'].toString().trim();
+              final String title = clip['title']?.toString() ?? clipTitle;
+              final String? poster = clip['thumbnail']?.toString() ?? clip['coverImageUrl']?.toString();
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),

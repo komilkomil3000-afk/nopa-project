@@ -50,18 +50,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final List<Map<String, dynamic>> clips = [];
     if (_stations.isNotEmpty && _selectedStationIndex < _stations.length) {
       final station = _stations[_selectedStationIndex];
-      final categories = station['categories'] as List? ?? [];
-      for (final cat in categories) {
-        if (cat is Map) {
-          final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
-          for (final sess in sessions) {
-            final sClips = (sess['videoClips'] as List?)?.map((c) => c as Map<String, dynamic>).toList() ?? [];
-            clips.addAll(sClips);
-          }
-        }
-      }
+      // Only the station's animations; class/session videos live in their own screens.
       final List<Map<String, dynamic>> animClips = [];
-      if (station['animations'] is List) {
+      if (station['animations'] is List && (station['animations'] as List).isNotEmpty) {
         for (final anim in (station['animations'] as List)) {
           if (anim is Map && (anim['videoUrl'] != null || anim['url'] != null)) {
             animClips.add({
@@ -80,20 +71,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         });
       }
 
-      if (animClips.isNotEmpty) {
-        if (clips.isEmpty) {
-          clips.addAll(animClips);
-        } else {
-          clips.insertAll(0, animClips);
-        }
-      }
-    }
-    if (clips.isEmpty) {
-      clips.add({
-        'id': 'clip_default',
-        'title': 'انیمیشن منزلگاه',
-        'videoUrl': 'https://www.aparat.com/v/dbjk750',
-      });
+      clips.addAll(animClips);
     }
     return clips;
   }
@@ -316,9 +294,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               const SizedBox(height: 20),
 
               // 4. Animation Carousel Section (Matching User Panel in Class1Screen)
-              _buildAnimationCarouselSection(currentStationData['animationTitle'] ?? 'انیمیشن منزلگاه'),
-
-              const SizedBox(height: 28),
+              if (_currentStationClips.isNotEmpty) ...[
+                _buildAnimationCarouselSection(currentStationData['animationTitle'] ?? 'انیمیشن منزلگاه'),
+                const SizedBox(height: 28),
+              ],
 
               // 5. Educational Report Header ("گزارش آموزشی اعضا")
               _buildEducationalReportSectionHeader(),
@@ -759,19 +738,17 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             child: PageView.builder(
               clipBehavior: Clip.none,
               controller: _videoPageController,
-              itemCount: clips.isNotEmpty ? clips.length : 1,
+              itemCount: clips.length,
               onPageChanged: (idx) {
                 setState(() {
                   _currentClipIndex = idx;
                 });
               },
               itemBuilder: (context, index) {
-                final clip = clips.isNotEmpty && index < clips.length ? clips[index] : null;
-                final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
-                    ? clip['videoUrl'].toString().trim()
-                    : 'https://www.aparat.com/v/dbjk750';
-                final String title = clip?['title']?.toString() ?? clipTitle;
-                final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
+                final clip = clips[index];
+                final String videoUrl = clip['videoUrl'].toString().trim();
+                final String title = clip['title']?.toString() ?? clipTitle;
+                final String? poster = clip['thumbnail']?.toString() ?? clip['coverImageUrl']?.toString();
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
