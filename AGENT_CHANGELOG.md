@@ -278,3 +278,53 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - DNS lookup of db.nopa-app.ir; `prisma migrate status` to be run by the user
 - **Status:** Completed
+
+### [2026-10-28 11:00] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_app, crm, docs
+- **Files Modified / Created / Deleted:**
+  - `android/`, `ios/`, `lib/`, `assets/`, `test/`, `pubspec.yaml`, `pubspec.lock`, `analysis_options.yaml`, `.metadata`, `devtools_options.yaml` -> moved under `app/` (Renamed, no content changes)
+  - `admin_panel/` (Created: copy of `nopa_backend/public`)
+  - `.gitignore` (Modified: Flutter-specific root paths prefixed with `app/`)
+- **Description of Changes:**
+  - Restructured repo into `app/` (Flutter app) and `admin_panel/` (CRM static files) as the backend moves to another machine
+  - `nopa_backend/` intentionally left in place until the user confirms it has been copied; to be removed afterwards
+- **Verification / Checkpoints Executed:**
+  - `flutter pub get` and `flutter analyze` run from `app/` (No issues found)
+- **Status:** In Progress (pending removal of nopa_backend)
+
+### [2026-10-28 12:00] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs, app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `nopa_backend/` (Deleted: whole folder, backup and .env/dist were copied by the user to the other machine first)
+  - `AGENTS.md` (Modified: added repository layout section, updated component names and check commands)
+  - `AGENT_ROLES.md` (Modified: paths now `app/` and `admin_panel/`, backend marked external)
+  - `scripts/append_agent_changelog.js` (Modified: default components `app | admin_panel`)
+  - `GEMINI.md` (Modified: example component name)
+- **Description of Changes:**
+  - Backend removed from this repository; it now lives on a separate machine/repo
+  - Agent guidance updated for the `app/` + `admin_panel/` layout; `flutter` commands must run from `app/`
+- **Verification / Checkpoints Executed:**
+  - `node --check scripts/append_agent_changelog.js`; grep for leftover `nopa_backend` references in agent docs
+- **Status:** Completed (changes not committed yet, per user request)
+
+### [2026-10-28 13:00] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, database, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/` (Replaced: now a copy of `Desktop/nopa`, i.e. backend + CRM project incl. `src/`, `prisma/`, `public/`, `patches/`)
+  - `admin_panel/prisma/schema.prisma`, `prisma/migrations/0_init/`, `prisma/migrations/migration_lock.toml`, `supabase/001_init.sql` (Created/Modified: PostgreSQL / Supabase)
+  - `admin_panel/prisma/dev.db*`, `prisma/migrations/20260908115319_init/` (Deleted: SQLite)
+  - `admin_panel/src/config/db.ts`, `src/scripts/cleanupDuplicates.ts`, `src/controllers/{admin,export,instructor,league,submission,user}Controller.ts` (Modified)
+  - `admin_panel/Dockerfile`, `liara.json`, `package.json`, `.dockerignore`, `.env.example`, `.gitignore` (Modified)
+  - `admin_panel/.env` (Modified locally, git-ignored: Postgres URLs on `db.nopa-app.ir`, password placeholder)
+  - `admin_panel/deploy/post-receive`, `admin_panel/docs/SUPABASE_SELF_HOST.md` (Created)
+  - `.gitignore` (Modified: allow `*.md` inside `admin_panel/`)
+  - `AGENTS.md`, `AGENT_ROLES.md` (Modified: admin_panel = backend + panel)
+- **Description of Changes:**
+  - Replaced admin_panel with the newer Desktop copy, then re-applied the earlier SQLite -> PostgreSQL (Supabase) migration changes on top (patch from commit ffc6fb9, whitespace-insensitive)
+  - Recreated the self-host guide (it had been lost because `*.md` is git-ignored at repo root) and added a deploy hook template that keeps `.env` outside the deploy folder
+- **Verification / Checkpoints Executed:**
+  - Scratch copy: `npm ci`, `prisma validate` (dummy env), `prisma generate`, `npx tsc --noEmit` all pass; not run against the live database
+- **Status:** Completed (not committed, per user request)

@@ -8,6 +8,18 @@
 
 ---
 
+## 0. Repository Layout
+
+| Folder | Contents |
+|---|---|
+| `app/` | Flutter mobile app (`lib/`, `android/`, `ios/`, `assets/`, `test/`, `pubspec.yaml`). **Run all `flutter` commands from inside `app/`** (e.g. `cd app && flutter analyze`). |
+| `admin_panel/` | Backend + admin panel project (Express + Prisma/PostgreSQL on self-hosted Supabase): `src/`, `prisma/`, `supabase/`, `public/` (the CRM static panel), `deploy/`, `docs/`. It is developed and deployed from another machine; the whole folder is copied here in bulk, so avoid large edits here unless asked. Never commit its `.env`. |
+| `scripts/`, `AGENTS.md`, `AGENT_CHANGELOG.md`, ... | Shared tooling and agent rules at the repo root. |
+
+The deployed API lives at `/api/v1` on `nopa-app.ir`; the Flutter app reaches it only through `app/lib/core/constants/api_constants.dart`. Database host is `db.nopa-app.ir` (DNS only, ports 6543/5432).
+
+---
+
 ## 1. How to Log Changes in `AGENT_CHANGELOG.md`
 
 ### User Identity Detection Protocol
@@ -23,14 +35,14 @@ Append to the end of [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nop
 ```markdown
 ### [YYYY-MM-DD HH:mm] - <Agent Name / Role>
 - **Triggered By:** GitHub: <user> | System: <user>
-- **Target Component(s):** <nopa_app | nopa_backend | crm | database | docs>
+- **Target Component(s):** <app | admin_panel | docs>  
 - **Files Modified / Created / Deleted:**
   - `path/to/file1.ext` (Created / Modified / Deleted)
   - `path/to/file2.ext` (Modified)
 - **Description of Changes:**
   - Bullet points explaining the rationale and technical modifications made.
 - **Verification / Checkpoints Executed:**
-  - e.g., `flutter analyze`, `npx tsc --noEmit`, test endpoints, etc.
+  - e.g., `flutter analyze` (run from `app/`), `npx tsc --noEmit` in `admin_panel/`, etc.
 - **Status:** [Completed | In Progress | Blocked]
 ```
 
@@ -47,4 +59,4 @@ Refer to [`AGENT_ROLES.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_ROLE
 - **Agent 1 (CRM & Analytics Specialist):** Admin UI, mentor queues, CSV/Excel export.
 - **Agent 2 (Flutter App & LMS Specialist):** Mobile app, station video locks, homework submissions.
 - **Agent 3 (Integration & Sync Auditor):** Prisma syncing, notifications, bidirectional linking.
-- **Agent 4 (Self-Debugging Engine):** Compiler checks (`flutter analyze`, `tsc --noEmit`), server health.
+- **Agent 4 (Self-Debugging Engine):** Compiler checks (`flutter analyze` from `app/`); backend checks (`npx tsc --noEmit`, server health) run in `admin_panel/`.

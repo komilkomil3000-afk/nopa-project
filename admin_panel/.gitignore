@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build Output
+dist/
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Local SQLite Database
+prisma/dev.db
+prisma/dev.db-shm
+prisma/dev.db-wal
+
+# Uploads (ignore uploaded content, preserve folder)
+uploads/*
+!uploads/.gitkeep
+
+# Temporary & Helper files
+del.txt
+*.log

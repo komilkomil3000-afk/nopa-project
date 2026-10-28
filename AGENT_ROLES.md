@@ -4,7 +4,7 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
 
 ## Overview
 - Orchestrator: Master Lead Architect & Orchestrator (this document and execution pipeline)
-- Purpose: Split implementation, verification, and integration across dedicated sub-agents to deliver full-stack features across `nopa_app`, `nopa_backend`, and `nopa_admin`.
+- Purpose: Split implementation, verification, and integration across dedicated sub-agents to deliver full-stack features across `app/` (Flutter), `admin_panel/` (backend + CRM static files, developed on another machine).
 
 ## Agent Definitions
 
@@ -15,9 +15,8 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
   - Implement Mentor Document Verification Queue (list, approve, reject with reason).
   - Add client-export capabilities (CSV, Excel, PDF) for CRM tables.
 - Artifacts:
-  - `nopa_backend/src/controllers/mentorController.ts` endpoints for documents & caravan assignment.
-  - `nopa_backend/public/app.js` UI enhancements (drawer charts, lists, export hooks).
-  - Admin routes in `nopa_backend/src/routes/admin.ts` for document management.
+  - `admin_panel/public/app.js` UI enhancements (drawer charts, lists, export hooks).
+  - Backend endpoints in `admin_panel/src/controllers/mentorController.ts` and `admin_panel/src/routes/admin.ts`.
 - Acceptance:
   - Drawer modal shows charts and lists populated from `/api/v1/admin/users/:id/analytics`.
   - Admin can approve/reject mentor documents; decisions persisted in `MentorDocument` records.
@@ -31,7 +30,7 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
   - Multi-format homework submission (text, 4-choice quiz, file upload).
   - Mentor workbench: review submissions, reply, approve, grant Zarik.
 - Artifacts:
-  - `lib/screens/*` additions and `lib/services/api_service.dart` endpoints for uploads/submissions.
+  - `app/lib/screens/*` additions and `app/lib/services/api_service.dart` endpoints for uploads/submissions.
 - Acceptance:
   - Sessions enforce lock/unlock rules locally and via backend flags.
   - Mentor review actions call admin endpoints and update records.
@@ -48,17 +47,16 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
   - Actions performed in Flutter appear in CRM within seconds and vice versa.
 
 ### Agent 4 — Self-Debugging & Verification Engine (Compiler Mode)
-- Primary Mandate: Run continuous static analysis, fix type issues, ensure server runs persistently at `0.0.0.0:5000`.
+- Primary Mandate: Run continuous static analysis, fix type issues, confirm the deployed server is healthy.
 - Responsibilities:
-  - Run `npx tsc --noEmit` and fix type errors.
-  - Run `flutter analyze` and fix null-safety/warnings.
-  - Verify backend runs and DB schema pushed (`npx prisma db push`).
+  - Run `npx tsc --noEmit` in `admin_panel/` and fix type errors.
+  - Run `flutter analyze` from `app/` and fix null-safety/warnings.
+  - Verify the deployed backend answers `/health` (PostgreSQL on self-hosted Supabase; schema changes via `prisma migrate`).
 - Artifacts:
   - CI-like checks executed locally; patches for type mismatches.
 - Acceptance:
-  - `npx tsc --noEmit` returns no errors.
   - `flutter analyze` returns no critical issues.
-  - Backend process runs on `0.0.0.0:5000` and `/health` returns 200.
+  - Deployed backend `/health` returns 200.
 
 ## Execution Phases
 - Phase 1 — Database & Backend
@@ -73,27 +71,14 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
   - Run verification scenarios across stack; fix any missing linkages.
 
 ## Checkpoints & Verification Commands
-- Seed DB:
+- Flutter analyze (always from `app/`):
   ```bash
-  cd nopa_backend
-  npm run db:seed
-  ```
-- Run backend (dev):
-  ```bash
-  cd nopa_backend
-  npm run dev
-  # server should bind to 0.0.0.0:5000
-  curl http://0.0.0.0:5000/health
-  ```
-- TypeScript check:
-  ```bash
-  cd nopa_backend
-  npx tsc --noEmit
-  ```
-- Flutter analyze:
-  ```bash
-  cd nopa_app
+  cd app
   flutter analyze
+  ```
+- Backend health (deployed):
+  ```bash
+  curl http://nopa-app.ir/health
   ```
 - Test login (PowerShell example):
   ```powershell
@@ -107,7 +92,7 @@ This document defines the Multi-Agent Autonomous Development Loop orchestration 
 > All agents (Agent 1, Agent 2, Agent 3, Agent 4, and any external/AI agents) **MUST** document their modifications in [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_CHANGELOG.md).
 > - **When to log:** Whenever files are created, edited, renamed, or deleted, or when DB schemas/configurations are changed.
 > - **Location:** Append an entry to the end of [`AGENT_CHANGELOG.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_CHANGELOG.md) adhering to the standard template.
-> - **Required Details:** Timestamp, agent identity/role, **triggered-by user** (detect via `git config user.name`/`git config user.email`, extract GitHub username from `git remote get-url origin`, or fallback to OS `$env:USERNAME`/`whoami`), affected component, list of modified files, concise explanation of changes, verification checks executed (e.g. `flutter analyze`, `tsc --noEmit`), and completion status.
+> - **Required Details:** Timestamp, agent identity/role, **triggered-by user** (detect via `git config user.name`/`git config user.email`, extract GitHub username from `git remote get-url origin`, or fallback to OS `$env:USERNAME`/`whoami`), affected component, list of modified files, concise explanation of changes, verification checks executed (e.g. `flutter analyze` from `app/`), and completion status.
 > - **Enforcement:** No agent task or iteration is considered complete without logging its footprint (including user identity) in `AGENT_CHANGELOG.md`.
 
 ## Reporting

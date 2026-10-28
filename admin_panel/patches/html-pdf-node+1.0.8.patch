@@ -1,0 +1,20 @@
+diff --git a/node_modules/html-pdf-node/index.js b/node_modules/html-pdf-node/index.js
+index 0f6f56b..39fffc1 100644
+--- a/node_modules/html-pdf-node/index.js
++++ b/node_modules/html-pdf-node/index.js
+@@ -15,6 +15,7 @@ async function generatePdf(file, options, callback) {
+   }
+ 
+   const browser = await puppeteer.launch({
++    executablePath: '/usr/bin/google-chrome-stable',
+     args: args
+   });
+   const page = await browser.newPage();
+@@ -56,6 +57,7 @@ async function generatePdfs(files, options, callback) {
+     delete options.args;
+   }
+   const browser = await puppeteer.launch({
++    executablePath: '/usr/bin/google-chrome-stable',
+     args: args
+   });
+   let pdfs = [];

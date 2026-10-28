@@ -51,7 +51,7 @@ function getNowFormatted() {
 
 function appendChangelog({
   agentRole = 'Autonomous AI Agent',
-  components = 'nopa_app | nopa_backend',
+  components = 'app | admin_panel',
   files = [],
   description = [],
   verification = 'Checks completed',
@@ -102,7 +102,7 @@ if (require.main === module) {
   };
 
   const agentRole = getArg('--role') || getArg('-r') || 'Autonomous AI Agent';
-  const components = getArg('--component') || getArg('-c') || 'nopa_app';
+  const components = getArg('--component') || getArg('-c') || 'app';
   const descRaw = getArg('--desc') || getArg('-d');
   const status = getArg('--status') || getArg('-s') || 'Completed';
   const verification = getArg('--verify') || getArg('-v') || 'Automated verification';

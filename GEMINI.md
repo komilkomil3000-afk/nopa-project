@@ -10,6 +10,6 @@
 > 4. Summarize all files modified and verification checkpoints passed.
 >
 > You can also run:
-> `node scripts/append_agent_changelog.js --role "Antigravity Assistant" --component "nopa_app" --desc "..." --verify "..." --status "Completed"`
+> `node scripts/append_agent_changelog.js --role "Antigravity Assistant" --component "app" --desc "..." --verify "..." --status "Completed"`
 >
 > Do not finish any turn with unlogged file edits!

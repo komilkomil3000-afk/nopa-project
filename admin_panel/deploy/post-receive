@@ -1,0 +1,32 @@
+#!/bin/bash
+# Server-side git hook: install as /home/ubuntu/repos/nopa.git/hooks/post-receive (chmod +x).
+# Real environment file lives OUTSIDE the deploy folder at /home/ubuntu/nopa.env,
+# because "checkout -f" would otherwise wipe it.
+set -Eeuo pipefail
+
+REPO="/home/ubuntu/repos/nopa.git"
+APP="/home/ubuntu/nopa"
+ENV_FILE="/home/ubuntu/nopa.env"
+BRANCH="main"
+
+while read -r oldrev newrev refname; do
+    [ "$refname" = "refs/heads/$BRANCH" ] || continue
+
+    echo "Deploying $BRANCH..."
+
+    mkdir -p "$APP"
+    git --git-dir="$REPO" --work-tree="$APP" checkout -f "$BRANCH"
+
+    cd "$APP"
+    cp "$ENV_FILE" "$APP/.env"
+
+    npm ci
+    npx prisma generate
+    npx prisma migrate deploy
+    npm run build
+
+    pm2 restart nopa || pm2 start ecosystem.config.js --name nopa
+    pm2 save
+
+    echo "Deployment completed."
+done
