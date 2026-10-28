@@ -448,8 +448,8 @@ export async function getMentorLeague(req: Request, res: Response) {
     
     if (search) {
       whereClause.OR = [
-        { name: { contains: search } },
-        { phoneNumber: { contains: search } }
+        { name: { contains: search, mode: 'insensitive' } },
+        { phoneNumber: { contains: search, mode: 'insensitive' } }
       ];
     }
 

@@ -3,3 +3,4 @@ dist
 .git
 .env
 *.log
+prisma/dev.db*

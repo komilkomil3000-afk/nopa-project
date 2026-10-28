@@ -214,3 +214,67 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (0 issues found); node -c syntax checks on app.js, instructors.js, and caravanWorkspace.js
 - **Status:** Completed
+
+### [2026-10-27 14:05] - Antigravity Assistant
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_app
+- **Files Modified / Created / Deleted:**
+  - `ib/services/api_service.dart` (Modified)
+  - `lib/services/app_state_repository.dart` (Modified)
+  - `pubspec.yaml` (Modified)
+- **Description of Changes:**
+  - Resolved offline data sync TODOs in app_state_repository.dart by implementing _syncOfflineData
+  - Integrated HttpApiService.submitTask for offline challenge submissions retry
+  - Integrated HttpApiService.heartbeatSessionWatch for offline video watch progress retry
+  - Fixed corrupted accidental duplicate font block in pubspec.yaml
+  - Ensured flutter analyze has 0 issues
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (0 issues found, exited 0)
+- **Status:** Completed
+
+### [2026-10-27 19:46] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_backend, database, docs
+- **Files Modified / Created / Deleted:**
+  - `nopa_backend/prisma/schema.prisma` (Modified)
+  - `nopa_backend/prisma/migrations/20260908115319_init/` (Deleted)
+  - `nopa_backend/prisma/migrations/0_init/migration.sql` (Created)
+  - `nopa_backend/prisma/migrations/migration_lock.toml` (Modified)
+  - `nopa_backend/prisma/dev.db`, `dev.db-shm`, `dev.db-wal` (Deleted)
+  - `nopa_backend/supabase/001_init.sql` (Created)
+  - `nopa_backend/docs/SUPABASE_SELF_HOST.md` (Created)
+  - `nopa_backend/src/config/db.ts` (Modified)
+  - `nopa_backend/src/scripts/cleanupDuplicates.ts` (Modified)
+  - `nopa_backend/src/controllers/{admin,export,instructor,league,submission,user}Controller.ts` (Modified)
+  - `nopa_backend/Dockerfile`, `liara.json`, `package.json`, `.env.example`, `.dockerignore`, `.gitignore` (Modified)
+- **Description of Changes:**
+  - Migrated database from SQLite to PostgreSQL for self-hosted Supabase (concurrent writes); sample data only, no data migration
+  - Generated Postgres baseline SQL (44 tables) with RLS enabled on all tables to block Supabase anon REST access
+  - Removed SQLite WAL pragma; rewrote cleanup raw SQL with quoted identifiers; added case-insensitive search mode
+  - Deploy now uses `prisma migrate deploy` instead of `db push`; added DIRECT_URL for migrations
+  - Fixed hard-coded localhost default avatar URL
+- **Verification / Checkpoints Executed:**
+  - `npx prisma validate`, `npx prisma generate`, `npx tsc --noEmit` (all pass); not yet run against a live Supabase instance
+- **Status:** In Progress (awaiting Supabase server setup)
+
+### [2026-10-27 20:10] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs
+- **Files Modified / Created / Deleted:**
+  - `nopa_backend/docs/SUPABASE_SELF_HOST.md` (Modified)
+- **Description of Changes:**
+  - Added docker group step (`usermod -aG docker`) to fix "permission denied ... docker.sock" during Supabase setup
+- **Verification / Checkpoints Executed:**
+  - Documentation only
+- **Status:** Completed
+
+### [2026-10-27 21:00] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** nopa_backend, database
+- **Files Modified / Created / Deleted:**
+  - `nopa_backend/.env` (Modified, local only, not committed secrets in log)
+- **Description of Changes:**
+  - Pointed DATABASE_URL / DIRECT_URL host from raw IP to `db.nopa-app.ir` so the DB server IP can change without code or app rebuilds
+- **Verification / Checkpoints Executed:**
+  - DNS lookup of db.nopa-app.ir; `prisma migrate status` to be run by the user
+- **Status:** Completed

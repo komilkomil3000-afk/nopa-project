@@ -134,10 +134,10 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
     if (search && typeof search === 'string' && search.trim().length > 0) {
       const q = search.trim();
       const searchConditions = [
-        { student: { name: { contains: q } } },
-        { student: { phoneNumber: { contains: q } } },
-        { challenge: { title: { contains: q } } },
-        { answerText: { contains: q } }
+        { student: { name: { contains: q, mode: 'insensitive' } } },
+        { student: { phoneNumber: { contains: q, mode: 'insensitive' } } },
+        { challenge: { title: { contains: q, mode: 'insensitive' } } },
+        { answerText: { contains: q, mode: 'insensitive' } }
       ];
       if (whereClause.OR) {
         whereClause.AND = [

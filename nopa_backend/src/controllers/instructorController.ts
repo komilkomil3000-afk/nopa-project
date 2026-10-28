@@ -11,12 +11,12 @@ export const getInstructors = async (req: Request, res: Response) => {
     if (search && search.trim() !== '') {
       const q = search.trim();
       where.OR = [
-        { name: { contains: q } },
-        { phoneNumber: { contains: q } },
-        { nationalId: { contains: q } },
-        { classes: { contains: q } },
-        { degree: { contains: q } },
-        { description: { contains: q } }
+        { name: { contains: q, mode: 'insensitive' } },
+        { phoneNumber: { contains: q, mode: 'insensitive' } },
+        { nationalId: { contains: q, mode: 'insensitive' } },
+        { classes: { contains: q, mode: 'insensitive' } },
+        { degree: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } }
       ];
     }
 

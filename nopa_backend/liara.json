@@ -6,6 +6,6 @@
     "version": "20"
   },
   "build": {
-    "command": "npm run build && npx prisma db push"
+    "command": "npm run build && npx prisma migrate deploy"
   }
 }

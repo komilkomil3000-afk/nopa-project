@@ -2,11 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Enable WAL journal mode for SQLite to prevent database locks
-prisma.$queryRawUnsafe('PRAGMA journal_mode=WAL;')
-  .then(() => console.log('SQLite WAL mode enabled'))
-  .catch(err => console.error('Failed to enable WAL mode', err));
-
 // Soft delete global middleware
 prisma.$use(async (params, next) => {
   const softDeleteModels = ['User', 'Caravan', 'ClassSession'];

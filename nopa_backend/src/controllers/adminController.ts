@@ -59,8 +59,8 @@ export async function getUsers(req: AuthRequest, res: Response) {
 
     if (search) {
       whereClause.OR = [
-        { name: { contains: search } },
-        { phoneNumber: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { phoneNumber: { contains: search, mode: 'insensitive' } },
       ];
       
       const parsedSearch = parseInt(search.replace(/^NP-/i, ''));
@@ -1536,8 +1536,8 @@ export async function getAuditLogs(req: AuthRequest, res: Response) {
     }
     if (search) {
       whereClause.OR = [
-        { actorName: { contains: search } },
-        { details: { contains: search } }
+        { actorName: { contains: search, mode: 'insensitive' } },
+        { details: { contains: search, mode: 'insensitive' } }
       ];
     }
 

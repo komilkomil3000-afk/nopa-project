@@ -145,8 +145,8 @@ export const exportData = async (req: Request, res: Response) => {
       const whereClause: any = { role: 'mentor' };
       if (search) {
         whereClause.OR = [
-          { name: { contains: search } },
-          { phoneNumber: { contains: search } }
+          { name: { contains: search, mode: 'insensitive' } },
+          { phoneNumber: { contains: search, mode: 'insensitive' } }
         ];
       }
       const mentors = await prisma.user.findMany({

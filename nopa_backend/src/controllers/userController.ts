@@ -247,7 +247,7 @@ export async function getMentorById(req: AuthRequest, res: Response) {
     res.json({
       id: mentor.id,
       name: mentor.name,
-      avatarUrl: mentor.avatarUrl || 'http://127.0.0.1:5000/uploads/avatars/default.png',
+      avatarUrl: mentor.avatarUrl || '/uploads/avatars/default.png',
       rating: parseFloat(avgRating.toFixed(1)),
       caravansCount,
       membersCount,
