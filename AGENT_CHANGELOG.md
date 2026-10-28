@@ -504,3 +504,53 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze mentor_station_class1_screen.dart
 - **Status:** Completed
+
+### [2026-10-28 20:14] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/android/app/src/main/res/mipmap-hdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png` (Modified)
+  - `app/ios/Runner.xcodeproj/project.pbxproj` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png` (Modified)
+  - `app/pubspec.lock` (Modified)
+  - `app/pubspec.yaml` (Modified)
+  - `app/android/app/src/main/res/drawable-hdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-mdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xhdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xxhdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xxxhdpi/` (Created)
+  - `app/android/app/src/main/res/mipmap-anydpi-v26/` (Created)
+  - `app/android/app/src/main/res/values/colors.xml` (Created)
+  - `app/assets/icon/` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@2x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@2x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png` (Created)
+- **Description of Changes:**
+  - Replaced default app icon with Nopa logo using flutter_launcher_icons
+  - added assets/icon/app_icon.jpg, dev dependency and config in pubspec.yaml
+  - regenerated Android (legacy+adaptive) and iOS icons
+- **Verification / Checkpoints Executed:**
+  - dart run flutter_launcher_icons
+- **Status:** Completed
