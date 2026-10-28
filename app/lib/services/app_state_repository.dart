@@ -1,17 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
 
-import '../backend_server/embedded_server.dart';
 
 class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Config Toggle
-  bool useMockBackend = false;
   final HttpApiService _apiService = HttpApiService();
   HttpApiService get apiService => _apiService;
   Timer? _notificationPollTimer;
@@ -28,18 +25,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     // Defer network operations, user refresh and timers until after the initial UI frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startPeriodicNotificationSync();
-      if (kDebugMode && useMockBackend) {
-        EmbeddedServer().start().then((_) {
-          _apiService.checkBackendHealth();
-          refreshUser();
-        }).catchError((e) {
-          debugPrint('EmbeddedServer start error: $e');
-        });
-      } else {
-        refreshUser().catchError((e) {
-          debugPrint('Startup refreshUser error: $e');
-        });
-      }
+      refreshUser().catchError((e) {
+        debugPrint('Startup refreshUser error: $e');
+      });
     });
   }
 

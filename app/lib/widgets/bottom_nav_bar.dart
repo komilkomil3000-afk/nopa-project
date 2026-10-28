@@ -77,7 +77,9 @@ class CustomBottomNavBar extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(items.length, (index) {
+          // Visual order (right to left): profile, market, home, academy, challenges.
+          // Tab indices stay unchanged; only the display order differs.
+          children: const [4, 3, 0, 1, 2].map((index) {
             final isSelected = currentIndex == index;
             final item = items[index];
 
@@ -107,7 +109,7 @@ class CustomBottomNavBar extends StatelessWidget {
                 ),
               ),
             );
-          }),
+          }).toList(),
         ),
       ),
     );

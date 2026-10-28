@@ -328,3 +328,128 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - Scratch copy: `npm ci`, `prisma validate` (dummy env), `prisma generate`, `npx tsc --noEmit` all pass; not run against the live database
 - **Status:** Completed (not committed, per user request)
+
+### [2026-10-28 13:57] - Claude Code (Dead-file cleanup)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/assets/fonts/ChochoAuraDemo.ttf` (Deleted)
+  - `app/assets/svg_icons/backgrand.svg` (Deleted)
+  - `app/assets/svg_icons/massage01.svg` (Deleted)
+  - `app/assets/svg_icons/ok01.svg` (Deleted)
+  - `app/assets/svg_icons/vedionot01.svg` (Deleted)
+  - `app/lib/models/challenge_model.dart` (Deleted)
+  - `app/lib/screens/mentor/academy/mentor_class2_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/messages/mentor_notifications_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_messages_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_student_report_card_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_messages_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_report_card_screen.dart` (Deleted)
+  - `app/lib/utils/date_utils.dart` (Deleted)
+  - `app/lib/utils/global_state.dart` (Deleted)
+  - `app/lib/utils/rating_manager.dart` (Deleted)
+  - `app/lib/utils/tasks_repository.dart` (Deleted)
+  - `app/lib/widgets/challenge_card.dart` (Deleted)
+  - `app/lib/widgets/create_challenge_dialog.dart` (Deleted)
+  - `app/lib/widgets/floating_assets_card.dart` (Deleted)
+  - `app/lib/widgets/homework_widget.dart` (Deleted)
+  - `app/lib/widgets/nopa_notification_dialog.dart` (Deleted)
+  - `app/lib/widgets/notification_bell_button.dart` (Deleted)
+  - `app/lib/widgets/widgets.dart` (Deleted)
+- **Description of Changes:**
+  - Removed 18 unreachable Dart files (challenge_model, mentor_class2/notifications/messages/student_report_card screens, student_messages/report_card screens, utils date_utils/global_state/rating_manager/tasks_repository, widgets challenge_card/create_challenge_dialog/floating_assets_card/homework_widget/nopa_notification_dialog/notification_bell_button/widgets.dart barrel)
+  - Removed unused assets ChochoAuraDemo.ttf, backgrand.svg, massage01.svg, ok01.svg, vedionot01.svg
+  - Deleted android/hs_err_pid*.log crash logs (untracked)
+- **Verification / Checkpoints Executed:**
+  - Import graph from main.dart; flutter analyze (app/) - no issues
+- **Status:** Completed
+
+### [2026-10-28 14:15] - Claude Code (Dead-code & font cleanup)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/assets/svg_icons/backgrand.svg` (Deleted)
+  - `app/assets/svg_icons/massage01.svg` (Deleted)
+  - `app/assets/svg_icons/ok01.svg` (Deleted)
+  - `app/assets/svg_icons/vedionot01.svg` (Deleted)
+  - `app/lib/backend_server/embedded_server.dart` (Deleted)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/challenge_model.dart` (Deleted)
+  - `app/lib/screens/mentor/academy/mentor_class2_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/messages/mentor_notifications_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_messages_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_student_report_card_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_messages_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_report_card_screen.dart` (Deleted)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/date_utils.dart` (Deleted)
+  - `app/lib/utils/global_state.dart` (Deleted)
+  - `app/lib/utils/rating_manager.dart` (Deleted)
+  - `app/lib/utils/tasks_repository.dart` (Deleted)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_card.dart` (Deleted)
+  - `app/lib/widgets/create_challenge_dialog.dart` (Deleted)
+  - `app/lib/widgets/floating_assets_card.dart` (Deleted)
+  - `app/lib/widgets/homework_widget.dart` (Deleted)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_notification_dialog.dart` (Deleted)
+  - `app/lib/widgets/notification_bell_button.dart` (Deleted)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/reward_popup.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/widgets.dart` (Deleted)
+  - `app/pubspec.yaml` (Modified)
+- **Description of Changes:**
+  - Restored ChochoAuraDemo.ttf (wrongly removed earlier) and registered it in pubspec.yaml as family ChochoAura
+  - used for NOPA logo in app_top_bar via AppTheme.logoFontFamily
+  - Removed fake Vazirmatn/IranYekan font families (all pointed to YekanBakh) and replaced usages with YekanBakh
+  - Removed dead embedded_server.dart and the useMockBackend branch in app_state_repository.dart
+  - Deleted untracked duplicate font CHOCHOAURADEMOREGULAR-R9LGO.TTF
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) - no issues
+- **Status:** Completed
+
+### [2026-10-28 14:21] - Flutter App Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/assets/svg_icons/backgrand.svg` (Deleted)
+  - `app/assets/svg_icons/massage01.svg` (Deleted)
+  - `app/assets/svg_icons/ok01.svg` (Deleted)
+  - `app/assets/svg_icons/vedionot01.svg` (Deleted)
+  - `app/lib/backend_server/embedded_server.dart` (Deleted)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/challenge_model.dart` (Deleted)
+  - `app/lib/screens/mentor/academy/mentor_class2_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/messages/mentor_notifications_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_messages_screen.dart` (Deleted)
+  - `app/lib/screens/mentor/profile/mentor_student_report_card_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_messages_screen.dart` (Deleted)
+  - `app/lib/screens/student/profile/student_report_card_screen.dart` (Deleted)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/date_utils.dart` (Deleted)
+  - `app/lib/utils/global_state.dart` (Deleted)
+  - `app/lib/utils/rating_manager.dart` (Deleted)
+  - `app/lib/utils/tasks_repository.dart` (Deleted)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_card.dart` (Deleted)
+  - `app/lib/widgets/create_challenge_dialog.dart` (Deleted)
+  - `app/lib/widgets/floating_assets_card.dart` (Deleted)
+  - `app/lib/widgets/homework_widget.dart` (Deleted)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_notification_dialog.dart` (Deleted)
+  - `app/lib/widgets/notification_bell_button.dart` (Deleted)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/reward_popup.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/widgets.dart` (Deleted)
+  - `app/pubspec.yaml` (Modified)
+- **Description of Changes:**
+  - Reordered bottom nav bar display (right to left: profile, market, home, academy, challenges) in app/lib/widgets/bottom_nav_bar.dart
+  - tab indices unchanged
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on bottom_nav_bar.dart
+- **Status:** Completed

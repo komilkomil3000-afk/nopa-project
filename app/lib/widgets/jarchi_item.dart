@@ -46,7 +46,7 @@ class JarchiItem extends StatelessWidget {
                       children: [
                         const Text(
                           'جزئیات اطلاعیه نپا',
-                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close, color: Colors.white70),
@@ -83,17 +83,17 @@ class JarchiItem extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       title, 
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Vazirmatn'),
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       date, 
-                      style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'Vazirmatn'),
+                      style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'YekanBakh'),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       content,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6, fontFamily: 'Vazirmatn'),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6, fontFamily: 'YekanBakh'),
                     ),
                     if (link != null) ...[
                       const SizedBox(height: 16),
@@ -102,7 +102,7 @@ class JarchiItem extends StatelessWidget {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('در حال باز کردن لینک: $link 🔗', style: const TextStyle(fontFamily: 'Vazirmatn')),
+                              content: Text('در حال باز کردن لینک: $link 🔗', style: const TextStyle(fontFamily: 'YekanBakh')),
                               backgroundColor: const Color(0xFF8B5CF6),
                             ),
                           );
@@ -110,7 +110,7 @@ class JarchiItem extends StatelessWidget {
                         icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
                         label: const Text(
                           'مشاهده منبع خبر',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Vazirmatn'),
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'YekanBakh'),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFEC4899),
@@ -187,7 +187,7 @@ class JarchiItem extends StatelessWidget {
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        fontFamily: 'Vazirmatn',
+                        fontFamily: 'YekanBakh',
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -202,7 +202,7 @@ class JarchiItem extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white38,
                   fontSize: 10,
-                  fontFamily: 'Vazirmatn',
+                  fontFamily: 'YekanBakh',
                 ),
               ),
             ],

@@ -57,7 +57,7 @@ class AppTopBar extends StatelessWidget {
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.2,
-                          fontFamily: AppTheme.fontFamily,
+                          fontFamily: AppTheme.logoFontFamily,
                         ),
                       ),
                     ),

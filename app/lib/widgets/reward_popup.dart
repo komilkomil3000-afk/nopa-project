@@ -82,7 +82,7 @@ class _RewardPopupState extends State<RewardPopup> {
                 Text(
                   widget.title,
                   style: const TextStyle(
-                    fontFamily: 'Vazirmatn',
+                    fontFamily: 'YekanBakh',
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
@@ -92,7 +92,7 @@ class _RewardPopupState extends State<RewardPopup> {
                 Text(
                   'شما ${widget.zarikAmount} زریک پاداش گرفتید!',
                   style: const TextStyle(
-                    fontFamily: 'Vazirmatn',
+                    fontFamily: 'YekanBakh',
                     fontSize: 16,
                     color: Color(0xFFFFD54F),
                   ),
@@ -112,7 +112,7 @@ class _RewardPopupState extends State<RewardPopup> {
                   child: const Text(
                     'عالیه!',
                     style: TextStyle(
-                      fontFamily: 'Vazirmatn',
+                      fontFamily: 'YekanBakh',
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),

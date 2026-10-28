@@ -45,7 +45,7 @@ class PendingChallengesDialog extends StatelessWidget {
                         color: Color(0xFFF87171),
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'Vazirmatn',
+                        fontFamily: 'YekanBakh',
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -79,7 +79,7 @@ class PendingChallengesDialog extends StatelessWidget {
                       color: Color(0xFFF87171),
                       fontSize: 15.5,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Vazirmatn',
+                      fontFamily: 'YekanBakh',
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -89,7 +89,7 @@ class PendingChallengesDialog extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,
-                      fontFamily: 'Vazirmatn',
+                      fontFamily: 'YekanBakh',
                       height: 1.5,
                     ),
                   ),
@@ -118,7 +118,7 @@ class PendingChallengesDialog extends StatelessWidget {
                   Text(
                     'مشاهده و انجام چالش‌ها',
                     style: TextStyle(
-                      fontFamily: 'Vazirmatn',
+                      fontFamily: 'YekanBakh',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -133,7 +133,7 @@ class PendingChallengesDialog extends StatelessWidget {
                 'متوجه شدم',
                 style: TextStyle(
                   color: Colors.white54,
-                  fontFamily: 'Vazirmatn',
+                  fontFamily: 'YekanBakh',
                   fontSize: 12,
                 ),
               ),

@@ -54,7 +54,7 @@ class SafeAvatar extends StatelessWidget {
           color: Colors.white,
           fontSize: radius * 0.9,
           fontWeight: FontWeight.bold,
-          fontFamily: 'Vazirmatn',
+          fontFamily: 'YekanBakh',
         ),
       ),
     );

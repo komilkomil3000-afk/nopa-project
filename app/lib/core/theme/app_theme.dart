@@ -4,7 +4,8 @@ export 'app_typography.dart';
 
 class AppTheme {
   static const String fontFamily = 'YekanBakh';
-  static const List<String> fontFamilyFallback = ['YekanBakh', 'IranYekan', 'Tahoma', 'sans-serif'];
+  static const List<String> fontFamilyFallback = ['YekanBakh', 'Tahoma', 'sans-serif'];
+  static const String logoFontFamily = 'ChochoAura';
 
   static TextTheme buildTextTheme(TextTheme base, [double scale = 1.0]) {
     return base.copyWith(
