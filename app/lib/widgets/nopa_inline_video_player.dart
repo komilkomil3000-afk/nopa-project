@@ -15,12 +15,20 @@ class NopaInlineVideoPlayer extends StatefulWidget {
   final String? coverImageUrl;
   final bool autoPlay;
 
+  /// Called on every controller tick with the current position and duration.
+  final void Function(Duration position, Duration duration)? onProgress;
+
+  /// Called once when playback reaches the end of the video.
+  final VoidCallback? onEnded;
+
   const NopaInlineVideoPlayer({
     super.key,
     required this.videoUrl,
     this.title,
     this.coverImageUrl,
     this.autoPlay = false,
+    this.onProgress,
+    this.onEnded,
   });
 
   @override
@@ -35,6 +43,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   bool _isPlaying = false;
   bool _showControls = true;
   Timer? _controlsTimer;
+  bool _endedNotified = false;
 
   AparatVideoInfo? _aparatInfo;
   String? _selectedQuality;
@@ -87,6 +96,16 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   void _videoListener() {
     if (!mounted || _controller == null) return;
     final value = _controller!.value;
+    if (value.isInitialized && value.duration > Duration.zero) {
+      widget.onProgress?.call(value.position, value.duration);
+      final atEnd = value.position >= value.duration;
+      if (atEnd && !_endedNotified) {
+        _endedNotified = true;
+        widget.onEnded?.call();
+      } else if (!atEnd) {
+        _endedNotified = false;
+      }
+    }
     if (value.isPlaying != _isPlaying) {
       setState(() {
         _isPlaying = value.isPlaying;

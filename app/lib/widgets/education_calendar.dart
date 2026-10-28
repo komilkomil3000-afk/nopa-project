@@ -362,9 +362,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Left Side: Next Month (< آبان)
+                  // Left Side: Previous Month (< شهریور)
                   GestureDetector(
-                    onTap: _goToNextMonth,
+                    onTap: _goToPreviousMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -376,7 +376,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          _getNextMonthName(),
+                          _getPreviousMonthName(),
                           style: const TextStyle(
                             color: Color(0xFF9E9CEB),
                             fontSize: 15.5,
@@ -401,15 +401,15 @@ class _EducationCalendarState extends State<EducationCalendar> {
                     ),
                   ),
 
-                  // Right Side: Previous Month (شهریور >)
+                  // Right Side: Next Month (آبان >)
                   GestureDetector(
-                    onTap: _goToPreviousMonth,
+                    onTap: _goToNextMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _getPreviousMonthName(),
+                          _getNextMonthName(),
                           style: const TextStyle(
                             color: Color(0xFF9E9CEB),
                             fontSize: 15.5,

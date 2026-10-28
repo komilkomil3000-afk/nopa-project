@@ -13,7 +13,7 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/auth_service.dart';
 import 'package:nopa_app/widgets/welcome_dialog.dart';
 
-enum AuthLoginMode { otp, password, testBypass }
+enum AuthLoginMode { otp, password }
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,7 +51,7 @@ const List<_CountryOption> _availableCountries = [
 ];
 
 class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
-  AuthLoginMode _loginMode = AuthLoginMode.otp;
+  AuthLoginMode _loginMode = AuthLoginMode.password;
 
   // Animation controller for smooth logo entrance & float
   late final AnimationController _logoAnimCtrl;
@@ -348,7 +348,176 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
   }
 
-  void _processLoginResponse(dynamic response) {
+  /// Blocking step shown right after an SMS-code login: the user must choose a
+  /// new fixed password before entering the app.
+  Future<void> _requireNewPassword() async {
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    String? errorText;
+    bool saving = false;
+    bool obscure = true;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return PopScope(
+          canPop: false,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: StatefulBuilder(
+              builder: (ctx, setDialogState) {
+                InputDecoration deco(String label) => InputDecoration(
+                      labelText: label,
+                      labelStyle: const TextStyle(color: Color(0xFF8E889D), fontFamily: AppTheme.fontFamily),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.white24),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFFE1BC96)),
+                      ),
+                    );
+
+                Future<void> submit() async {
+                  final pass = newCtrl.text.trim();
+                  if (pass.length < 4) {
+                    setDialogState(() => errorText = 'رمز عبور باید حداقل ۴ کاراکتر باشد');
+                    return;
+                  }
+                  if (pass != confirmCtrl.text.trim()) {
+                    setDialogState(() => errorText = 'رمز عبور و تکرار آن یکسان نیستند');
+                    return;
+                  }
+                  setDialogState(() {
+                    errorText = null;
+                    saving = true;
+                  });
+                  final ok = await _apiService.changePassword(null, pass);
+                  if (!ctx.mounted) return;
+                  if (ok) {
+                    Navigator.pop(ctx);
+                  } else {
+                    setDialogState(() {
+                      saving = false;
+                      errorText = 'ذخیره رمز عبور ناموفق بود. دوباره تلاش کنید';
+                    });
+                  }
+                }
+
+                return Dialog(
+                  backgroundColor: Colors.transparent,
+                  insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    padding: const EdgeInsets.all(22),
+                    decoration: AppColors.loginDialogDecoration(radius: 24),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'تعیین رمز عبور جدید',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'برای ورود به برنامه ابتدا یک رمز عبور ثابت جدید تعیین کنید. دفعات بعد می‌توانید با همین رمز وارد شوید.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                              height: 1.5,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          TextField(
+                            controller: newCtrl,
+                            obscureText: obscure,
+                            style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                            decoration: deco('رمز عبور جدید').copyWith(
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: const Color(0xFF8E889D),
+                                  size: 20,
+                                ),
+                                onPressed: () => setDialogState(() => obscure = !obscure),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: confirmCtrl,
+                            obscureText: obscure,
+                            style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                            decoration: deco('تکرار رمز عبور'),
+                          ),
+                          if (errorText != null) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              errorText!,
+                              style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontSize: 12,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 18),
+                          GestureDetector(
+                            onTap: saving ? null : submit,
+                            child: Container(
+                              height: 44,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.accentGradient,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: saving
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : const Text(
+                                        'ثبت رمز و ورود',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: AppTheme.fontFamily,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+
+    newCtrl.dispose();
+    confirmCtrl.dispose();
+  }
+
+  Future<void> _processLoginResponse(dynamic response) async {
     if (response == null) {
       _showError('ارتباط با سرور برقرار نشد');
       return;
@@ -416,6 +585,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
       final appRepo = Provider.of<AppRepository>(context, listen: false);
       appRepo.updateUser(loggedInUser);
+
+      // Logged in via SMS code (forgot password): force a new fixed password first.
+      if (_loginMode == AuthLoginMode.otp) {
+        await _requireNewPassword();
+        if (!mounted) return;
+      }
 
       if (isDualRole) {
         _showDualRoleSelectionDialog(loggedInUser);
@@ -617,7 +792,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Future<void> _handleLoginForRole(String role) async {
     String phone = _toEnglishDigits(_phoneCtrl.text.trim());
-    String password = _loginMode == AuthLoginMode.testBypass ? '123456' : _secretCtrl.text;
+    String password = _secretCtrl.text.trim();
     final response = await _apiService.login(phone, password: password, role: role);
     _processLoginResponse(response);
   }
@@ -650,9 +825,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }
 
     String password;
-    if (_loginMode == AuthLoginMode.testBypass) {
-      password = '123456';
-    } else if (_loginMode == AuthLoginMode.otp) {
+    if (_loginMode == AuthLoginMode.otp) {
       password = _secretCtrl.text.trim();
       if (password.isEmpty) {
         _showError('لطفاً کد تأیید پیامک‌شده را وارد کنید');
@@ -713,11 +886,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
                                 // 1. Top Header: SVG Logo (nopa_logo.svg) above Persian Poetry
                                 _buildTopHeader(),
-
-                                const SizedBox(height: 24),
-
-                                // 2. Segmented Mode Switcher: OTP vs Password + Test badge
-                                _buildSegmentedModeSwitcher(),
 
                                 const SizedBox(height: 24),
 
@@ -799,135 +967,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ),
         );
       },
-    );
-  }
-
-  /// Segmented Mode Switcher matching screenshot proportions
-  Widget _buildSegmentedModeSwitcher() {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Mode Switcher Pill Container (Right in RTL)
-          Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 1. OTP Mode Button
-                  _buildModeItem(
-                    title: 'ورود با رمز یکبارمصرف',
-                    isSelected: _loginMode == AuthLoginMode.otp,
-                    onTap: () {
-                      setState(() {
-                        _loginMode = AuthLoginMode.otp;
-                        _secretCtrl.clear();
-                      });
-                    },
-                  ),
-
-                  const SizedBox(width: 4),
-
-                  // 2. Fixed Password Mode Button
-                  _buildModeItem(
-                    title: 'ورود با رمز عبور ثابت',
-                    isSelected: _loginMode == AuthLoginMode.password,
-                    onTap: () {
-                      setState(() {
-                        _loginMode = AuthLoginMode.password;
-                        _secretCtrl.clear();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // "آزمایشی" Test Bypass Pill Badge (Left in RTL)
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _loginMode = AuthLoginMode.testBypass;
-                _secretCtrl.clear();
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('حالت آزمایشی (بدون نیاز به دریافت پیامک) فعال شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                  duration: Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.strokeGradient,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(AppColors.borderWidth),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  gradient: _loginMode == AuthLoginMode.testBypass ? AppColors.accentGradient : AppColors.darkSurfaceGradient,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Text(
-                  'آزمایشی',
-                  style: TextStyle(
-                    color: _loginMode == AuthLoginMode.testBypass ? Colors.white : const Color(0xFFC7B299),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Individual Segment Item (Clean flat gradient, no glowing shadow)
-  Widget _buildModeItem({
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: isSelected ? AppColors.accentGradient : null,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF8E889D),
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontFamily: AppTheme.fontFamily,
-          ),
-        ),
-      ),
     );
   }
 
@@ -1164,7 +1203,30 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 8),
         _buildSecretInput(),
 
-        const SizedBox(height: 28),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _loginMode = isOtp ? AuthLoginMode.password : AuthLoginMode.otp;
+                _secretCtrl.clear();
+                _isPasswordVisible = false;
+              });
+            },
+            child: Text(
+              isOtp ? 'بازگشت به ورود با رمز عبور' : 'رمز عبور را فراموش کرده‌ام (ورود با کد پیامکی)',
+              style: const TextStyle(
+                color: Color(0xFFE1BC96),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 18),
 
         // 3. Centered Golden Submit CTA: "تایید و ورود"
         Center(

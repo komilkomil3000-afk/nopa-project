@@ -554,3 +554,79 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - dart run flutter_launcher_icons
 - **Status:** Completed
+
+### [2026-10-28 20:41] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Added onProgress/onEnded callbacks to NopaInlineVideoPlayer
+  - student_class2_screen (parts/lessons) now uses NopaInlineVideoPlayer instead of its bare VideoPlayer, so fullscreen, speed, quality and seek controls are identical everywhere
+  - 70% quiz unlock and end-of-video mini quiz kept via callbacks
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on the two changed files (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:45] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Quiz unlock threshold raised from 70% to 90% watched, applied to lesson 1 too (removed default-unlocked first quiz)
+  - lessons 2+ are locked until all part quizzes of the previous lesson are passed (passes loaded from /lms/user-progress and recorded on quiz pass)
+  - lock icon and snackbar on locked lesson headers
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on student_class2_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:51] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Part quiz pass/fail in student_class2_screen now comes from the server response (passed, score, rewardZarik) instead of the client 60% rule
+  - failed submit shows a retry error and does not unlock the next lesson
+  - client rule kept only as fallback when the session has no id
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on student_class2_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:57] - Agent 2 (Flutter App)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Removed the test bypass login mode and mode switcher from login_screen.dart
+  - fixed-password login is now the default
+  - added forgot-password link that switches to SMS code login
+  - after SMS login a mandatory new-password dialog (changePassword) runs before entering the app
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/auth/login_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 21:07] - Flutter App Agent
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Swapped previous/next month sides in education_calendar.dart month selector (left=previous, right=next)
+- **Verification / Checkpoints Executed:**
+  - Manual code review
+- **Status:** Completed
