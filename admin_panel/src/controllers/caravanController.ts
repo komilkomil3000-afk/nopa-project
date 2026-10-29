@@ -110,16 +110,26 @@ export async function approveAssetConversion(req: AuthRequest, res: Response) {
         return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
       }
 
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: mentor.id },
-          data: { nakh: { decrement: 5 }, farsh: { increment: 1 } }
-        }),
-        prisma.assetConversionRequest.update({
-          where: { id },
-          data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
-        })
-      ]);
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Claim the request first: a concurrent second approval sees count 0 and aborts
+          const claimed = await tx.assetConversionRequest.updateMany({
+            where: { id, status: 'pending' },
+            data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
+          });
+          if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
+          // Guarded decrement: never lets the balance go below 5 -> 0 under concurrency
+          const debited = await tx.user.updateMany({
+            where: { id: mentor.id, nakh: { gte: 5 } },
+            data: { nakh: { decrement: 5 }, farsh: { increment: 1 } }
+          });
+          if (debited.count !== 1) throw new Error('INSUFFICIENT_NAKH');
+        });
+      } catch (e: any) {
+        if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'درخواست معتبر یافت نشد' });
+        if (e?.message === 'INSUFFICIENT_NAKH') return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
+        throw e;
+      }
     } else {
       await prisma.assetConversionRequest.update({
         where: { id },

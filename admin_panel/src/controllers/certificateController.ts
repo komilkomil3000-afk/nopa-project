@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/db';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 
 export const evaluateStudentProgress = async (userId: string) => {
@@ -80,7 +80,7 @@ export const evaluateStudentProgress = async (userId: string) => {
             data: {
               userId,
               title: certificateTitle,
-              verifyId: `NOPA-${uuidv4().substring(0, 8).toUpperCase()}`,
+              verifyId: `NOPA-${randomUUID().substring(0, 8).toUpperCase()}`,
             }
           });
 
