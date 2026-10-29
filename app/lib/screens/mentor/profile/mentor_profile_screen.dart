@@ -429,29 +429,16 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       if (sessions.isNotEmpty) return sessions;
     }
 
-    // Default structured mock sessions per station
-    return [
-      {
-        'title': 'جلسه اول: شناخت مبانی و مهارت‌های فردی',
-        'subtitle': 'ویدیو آموزشی و بررسی مفاهیم',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه دوم: تحلیل چالش‌ها و کار تیمی کاروان',
-        'subtitle': 'تمرین عملی و سناریوهای حل مسئله',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه سوم: مهارت‌های رسانه‌ای و ارتباط موثر',
-        'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه چهارم: آزمون پایانی و ارزیابی منزلگاه',
-        'subtitle': 'آزمون جامع و دریافت پاداش زریک',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-    ];
+    return [];
+  }
+
+  /// A session is done once every one of its clips was watched or its quiz passed (from the database).
+  bool _isSessionDone(Map<String, dynamic> session) {
+    final clips = (session['videoClips'] as List?) ?? [];
+    if (clips.isEmpty) return false;
+    return clips.every((clip) => clip is Map &&
+        widget.progressList.any((p) => p['clipId'] == clip['id'] &&
+            (p['isWatched'] == true || p['quizPassed'] == true)));
   }
 
   @override
@@ -688,8 +675,8 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   children: List.generate(sessions.length, (sIdx) {
                     final session = sessions[sIdx];
-                    final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
-                    final bool isSessionCurrent = isCurrentStation && sIdx == 1;
+                    final bool isSessionCompleted = _isSessionDone(session);
+                    final bool isSessionCurrent = !isSessionCompleted && (sIdx == 0 || _isSessionDone(sessions[sIdx - 1]));
                     final isLastSession = sIdx == sessions.length - 1;
 
                     return Row(

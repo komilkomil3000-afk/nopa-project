@@ -34,6 +34,8 @@ class UserModel {
   final String? caravanName;
   final String? caravanMentor;
   final String? mentorPhone;
+  final String? mentorSocialPlatform;
+  final String? mentorSocialHandle;
   final int completedStationsCount;
   final int completedSessionsCount;
   final List<dynamic>? certificates;
@@ -69,6 +71,8 @@ class UserModel {
     this.caravanName,
     this.caravanMentor,
     this.mentorPhone,
+    this.mentorSocialPlatform,
+    this.mentorSocialHandle,
     this.completedStationsCount = 0,
     this.completedSessionsCount = 0,
     this.certificates,
@@ -107,6 +111,8 @@ class UserModel {
     String? caravanName,
     String? caravanMentor,
     String? mentorPhone,
+    String? mentorSocialPlatform,
+    String? mentorSocialHandle,
     int? completedStationsCount,
     int? completedSessionsCount,
     List<dynamic>? certificates,
@@ -142,6 +148,8 @@ class UserModel {
       caravanName: caravanName ?? this.caravanName,
       caravanMentor: caravanMentor ?? this.caravanMentor,
       mentorPhone: mentorPhone ?? this.mentorPhone,
+      mentorSocialPlatform: mentorSocialPlatform ?? this.mentorSocialPlatform,
+      mentorSocialHandle: mentorSocialHandle ?? this.mentorSocialHandle,
       completedStationsCount: completedStationsCount ?? this.completedStationsCount,
       completedSessionsCount: completedSessionsCount ?? this.completedSessionsCount,
       certificates: certificates ?? this.certificates,
@@ -189,6 +197,8 @@ class UserModel {
       caravanName: json['caravanName'] ?? json['caravan']?['name'] ?? 'فاقد کاروان',
       caravanMentor: json['caravanMentor'] ?? json['caravan']?['mentor']?['name'] ?? 'تعیین نشده',
       mentorPhone: json['mentorPhone'] ?? json['caravan']?['mentor']?['phoneNumber'],
+      mentorSocialPlatform: json['mentorSocialPlatform'],
+      mentorSocialHandle: json['mentorSocialHandle'],
       completedStationsCount: json['completedStationsCount'] ?? 0,
       completedSessionsCount: json['completedSessionsCount'] ?? 0,
       certificates: json['certificates'] ?? [],

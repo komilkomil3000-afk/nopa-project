@@ -9,6 +9,7 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/utils/constants.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
 
 class StudentMarketScreen extends StatefulWidget {
   const StudentMarketScreen({super.key});
@@ -57,6 +58,12 @@ class _MarketScreenState extends State<StudentMarketScreen> {
 
   // Selected tab for "برترین ها (لیگ)" (0: برترین شرکت کننده ها, 1: برترین کاروان ها)
   int _selectedLeaderboardTab = 0;
+
+  // Leaderboard data (from /leagues/*)
+  List<Map<String, String>> _topMembers = [];
+  List<Map<String, String>> _topCaravans = [];
+  List<String> _memberIds = [];
+  List<String> _caravanIds = [];
 
   // Exchange calculator states
   String _sourceAsset = 'زریک';
@@ -136,6 +143,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     _amountController.addListener(_recalculateExchange);
     _recalculateExchange();
     _loadMarketData();
+    _loadLeaderboards();
   }
 
   @override
@@ -429,9 +437,37 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     );
   }
 
+  String _formatScore(dynamic value) {
+    final n = (value is num) ? value.round() : (int.tryParse(value?.toString() ?? '') ?? 0);
+    return n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  }
+
+  Future<void> _loadLeaderboards() async {
+    try {
+      final api = HttpApiService();
+      final members = await api.getWealthiestLeague();
+      final caravans = await api.getCaravanLeague(sortBy: 'wealth');
+      if (!mounted) return;
+      setState(() {
+        _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
+        _topMembers = members.take(3).map((m) => {
+              'name': m['name']?.toString() ?? '-',
+              'zarik': '${_formatScore(m['zarikBalance'])} زریک',
+            }).toList();
+        _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
+        _topCaravans = caravans.take(3).map((c) => {
+              'name': c['name']?.toString() ?? '-',
+              'zarik': '${_formatScore(c['totalWealth'])} زریک',
+            }).toList();
+      });
+    } catch (e) {
+      debugPrint('Error loading leaderboards: $e');
+    }
+  }
+
   void _contactMentor() {
     setState(() => _activeActionButton = 2);
-    Navigator.pushNamed(context, '/tickets');
+    contactMentor(context, Provider.of<AppRepository>(context, listen: false).currentUser);
   }
 
   @override
@@ -2301,65 +2337,31 @@ class _MarketScreenState extends State<StudentMarketScreen> {
 
   /// Section 4: برترین ها (لیگ) - Top 3 Podium & Leaderboard Switcher
   Widget _buildLeaderboardSection(UserModel? user) {
-    // Top 3 Data based on selected tab
-    final List<Map<String, dynamic>> topMembers = [
-      {
-        'rank': 1,
-        'name': 'حسینعلی فقیه',
-        'zarik': '5500 زریک',
-        'color': const Color(0xFFFFD580),
-        'borderColor': const Color(0xFFFFD580),
-        'size': 92.0,
-      },
-      {
-        'rank': 2,
-        'name': 'رضا شفیعی',
-        'zarik': '4100 زریک',
-        'color': const Color(0xFFCBD5E1),
-        'borderColor': const Color(0xFFCBD5E1),
-        'size': 78.0,
-      },
-      {
-        'rank': 3,
-        'name': 'مسلم عارف',
-        'zarik': '4000 زریک',
-        'color': const Color(0xFFC8824C),
-        'borderColor': const Color(0xFFC8824C),
-        'size': 72.0,
-      },
-    ];
-
-    final List<Map<String, dynamic>> topCaravans = [
-      {
-        'rank': 1,
-        'name': 'کاروان پنجم',
-        'zarik': '18,500 زریک',
-        'color': const Color(0xFFFFD580),
-        'borderColor': const Color(0xFFFFD580),
-        'size': 92.0,
-      },
-      {
-        'rank': 2,
-        'name': 'کاروان سوم',
-        'zarik': '14,200 زریک',
-        'color': const Color(0xFFCBD5E1),
-        'borderColor': const Color(0xFFCBD5E1),
-        'size': 78.0,
-      },
-      {
-        'rank': 3,
-        'name': 'کاروان هفتم',
-        'zarik': '11,800 زریک',
-        'color': const Color(0xFFC8824C),
-        'borderColor': const Color(0xFFC8824C),
-        'size': 72.0,
-      },
-    ];
-
-    final currentList = _selectedLeaderboardTab == 0 ? topMembers : topCaravans;
+    // Top 3 of the selected tab, read from the leaderboard API (padded when fewer than 3 exist)
+    const podiumColors = [Color(0xFFFFD580), Color(0xFFCBD5E1), Color(0xFFC8824C)];
+    const podiumSizes = [92.0, 78.0, 72.0];
+    final bool isMembersTab = _selectedLeaderboardTab == 0;
+    final source = isMembersTab ? _topMembers : _topCaravans;
+    final currentList = List<Map<String, dynamic>>.generate(3, (i) {
+      final bool hasItem = i < source.length;
+      return {
+        'rank': i + 1,
+        'name': hasItem ? source[i]['name'] : '-',
+        'zarik': hasItem ? source[i]['zarik'] : '',
+        'color': podiumColors[i],
+        'borderColor': podiumColors[i],
+        'size': podiumSizes[i],
+      };
+    });
     final firstPlace = currentList[0];
     final secondPlace = currentList[1];
     final thirdPlace = currentList[2];
+
+    final List<String> rankedIds = isMembersTab ? _memberIds : _caravanIds;
+    final String? myId = isMembersTab ? user?.id : user?.caravanId;
+    final int myIndex = myId == null ? -1 : rankedIds.indexOf(myId);
+    final String totalText = rankedIds.length.toString();
+    final String myRankText = myIndex >= 0 ? (myIndex + 1).toString() : '-';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2535,7 +2537,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                     children: [
                       const TextSpan(text: 'تعداد کل: '),
                       TextSpan(
-                        text: '150'.toPersianDigits(),
+                        text: totalText.toPersianDigits(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -2559,7 +2561,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                     children: [
                       const TextSpan(text: 'رتبه شما: '),
                       TextSpan(
-                        text: '10'.toPersianDigits(),
+                        text: myRankText.toPersianDigits(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

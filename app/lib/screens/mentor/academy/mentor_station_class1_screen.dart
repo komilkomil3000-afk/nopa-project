@@ -1212,20 +1212,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
     final isSkill = _selectedTab == _ReportTab.skillClass;
     final sessionList = isSkill
-        ? (station['skillSessions'] as List? ?? [
-            {'title': 'جلسه اول', 'totalParts': 5},
-            {'title': 'جلسه دوم', 'totalParts': 5},
-            {'title': 'جلسه سوم', 'totalParts': 5},
-          ])
-        : (station['mediaSessions'] as List? ?? [
-            {'title': 'جلسه اول', 'totalParts': 4},
-            {'title': 'جلسه دوم', 'totalParts': 4},
-            {'title': 'جلسه سوم', 'totalParts': 4},
-          ]);
+        ? (station['skillSessions'] as List? ?? [])
+        : (station['mediaSessions'] as List? ?? []);
 
-    final List<dynamic> memberWatched = isSkill
-        ? (member['skillProgress'] as List? ?? [5, 2, 0])
-        : (member['mediaProgress'] as List? ?? [4, 1, 0]);
+    final clipProgress = (member['clipProgress'] as Map?) ?? const {};
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -1233,8 +1223,8 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         children: List.generate(sessionList.length, (idx) {
           final session = sessionList[idx];
           final title = session['title'] ?? 'جلسه ${idx + 1}';
-          final totalParts = session['totalParts'] ?? 5;
-          final watchedParts = idx < memberWatched.length ? (memberWatched[idx] as int? ?? 0) : 0;
+          final totalParts = (session['totalParts'] as num?)?.toInt() ?? 0;
+          final watchedParts = (clipProgress[session['id']] as num?)?.toInt() ?? 0;
 
           // Status icon: Green check if completed, camel pause if in-progress, play if 0
           Widget statusIcon;

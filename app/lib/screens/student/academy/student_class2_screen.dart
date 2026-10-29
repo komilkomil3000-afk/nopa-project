@@ -5,7 +5,9 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
-import 'package:nopa_app/widgets/contact_us_dialog.dart';
+import 'package:provider/provider.dart';
+import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
 import 'package:nopa_app/widgets/reward_popup.dart';
 
 /// Class 2 Screen (صفحه کلاس‌ها، مجموعه‌ها، پارت‌ها، پخش‌کننده ویدیو و آزمون‌ها)
@@ -31,7 +33,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   int _currentClipIndex = 0;
   bool _isLoadingClasses = true;
 
-  // Track unlocked quizzes (key: 'sessionIndex_clipIndex')
+  String _stationId = '';
+
+  // Clips watched past the threshold (key: '<sessionId>|<clipId>', see _passedKey)
   final Set<String> _unlockedQuizzes = {};
 
   // Quizzes the student has passed (key: '<sessionId>|<clipId>', see _passedKey)
@@ -89,15 +93,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           final sessions = entry.value.map((s) {
             final map = Map<String, dynamic>.from(s);
             var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-            if (clips.isEmpty) {
-              clips = [
-                {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-              ];
-            }
             map['videoClips'] = clips;
             return map;
           }).toList();
@@ -114,15 +109,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _skillSessions = passedClasses.map((c) {
           final map = Map<String, dynamic>.from(c as Map);
           var clips = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
-          if (clips.isEmpty) {
-            clips = [
-              {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-            ];
-          }
           map['videoClips'] = clips;
           return map;
         }).toList();
@@ -142,6 +128,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         if (stations.isNotEmpty) {
           final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
           final currentStationData = stations[sIndex];
+          _stationId = currentStationData['id']?.toString() ?? '';
 
           final categories = currentStationData['categories'] as List? ?? [];
           for (final cat in categories) {
@@ -150,15 +137,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               final sessions = (cat['sessions'] as List?)?.map((s) {
                 final map = Map<String, dynamic>.from(s as Map);
                 var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-                if (clips.isEmpty) {
-                  clips = [
-                    {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-                  ];
-                }
                 map['videoClips'] = clips;
                 return map;
               }).toList() ?? [];
@@ -171,14 +149,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             }
           }
         }
-      }
-
-      // Default mock sessions if empty so the UI always looks full
-      if (_skillSessions.isEmpty) {
-        _skillSessions = _createDefaultMockSessions('مهارتی');
-      }
-      if (_mediaSessions.isEmpty) {
-        _mediaSessions = _createDefaultMockSessions('رسانه‌ای');
       }
 
       // If a specific session was requested, select and expand it
@@ -230,12 +200,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       }
     } catch (e) {
       debugPrint('Error fetching class data: $e');
-      if (_skillSessions.isEmpty) {
-        _skillSessions = _createDefaultMockSessions('مهارتی');
-      }
-      if (_mediaSessions.isEmpty) {
-        _mediaSessions = _createDefaultMockSessions('رسانه‌ای');
-      }
       if (mounted) {
         setState(() {
           _isLoadingClasses = false;
@@ -243,81 +207,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _initializeVideoForCurrentSession();
       }
     }
-  }
-
-  List<Map<String, dynamic>> _createDefaultMockSessions(String type) {
-    return [
-      {
-        'id': 'sess_1',
-        'title': 'جلسه اول. خودشناسی دوپس دوپس',
-        'instructor': 'استاد حسینی',
-        'description': 'شناخت ابعاد شخصیتی، تقویت مهارت‌های فردی و برنامه‌ریزی هدفمند در کاروان نپا.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_1_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_2',
-        'title': 'جلسه دوم. هنوز پول استادو ندادن نیومده',
-        'instructor': 'استاد حسینی',
-        'description': 'بررسی چالش‌های پیش‌رو و تحلیل روش‌های حل مسئله.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_2_1', 'title': 'پارت اول', 'duration': 780, 'videoUrl': ''},
-          {'id': 'clip_2_2', 'title': 'پارت دوم', 'duration': 820, 'videoUrl': ''},
-          {'id': 'clip_2_3', 'title': 'پارت سوم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_2_4', 'title': 'پارت چهارم', 'duration': 800, 'videoUrl': ''},
-          {'id': 'clip_2_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_3',
-        'title': 'جلسه سوم. حاجی چقدر پیگیری ول کن دیگه',
-        'instructor': 'استاد حسینی',
-        'description': 'تمرین‌های عملی و سناریوهای کاروانی.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_3_1', 'title': 'پارت اول', 'duration': 650, 'videoUrl': ''},
-          {'id': 'clip_3_2', 'title': 'پارت دوم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_3_3', 'title': 'پارت سوم', 'duration': 700, 'videoUrl': ''},
-          {'id': 'clip_3_4', 'title': 'پارت چهارم', 'duration': 850, 'videoUrl': ''},
-          {'id': 'clip_3_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_4',
-        'title': 'جلسه چهارم. من خودم نبودم تو اومدی دنبال جلسه؟',
-        'instructor': 'استاد حسینی',
-        'description': 'راهکارهای پیشرفته موفقیت در چالش‌های تیمی.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_4_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_4_2', 'title': 'پارت دوم', 'duration': 850, 'videoUrl': ''},
-          {'id': 'clip_4_3', 'title': 'پارت سوم', 'duration': 800, 'videoUrl': ''},
-          {'id': 'clip_4_4', 'title': 'پارت چهارم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_4_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_5',
-        'title': 'جلسه پنجم. از پیگیریت خوشم اومد',
-        'instructor': 'استاد حسینی',
-        'description': 'جمع‌بندی پایانی و آمادگی برای آزمون سراسری.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_5_1', 'title': 'پارت اول', 'duration': 1200, 'videoUrl': ''},
-          {'id': 'clip_5_2', 'title': 'پارت دوم', 'duration': 1100, 'videoUrl': ''},
-          {'id': 'clip_5_3', 'title': 'پارت سوم', 'duration': 950, 'videoUrl': ''},
-          {'id': 'clip_5_4', 'title': 'پارت چهارم', 'duration': 1000, 'videoUrl': ''},
-          {'id': 'clip_5_5', 'title': 'پارت پنجم', 'duration': 1050, 'videoUrl': ''},
-        ],
-      },
-    ];
   }
 
   List<Map<String, dynamic>> get _currentSessions {
@@ -368,13 +257,32 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     final pos = position.inMilliseconds;
     final dur = duration.inMilliseconds;
     if (dur > 0 && pos >= dur * _quizUnlockThreshold) {
-      final key = '${_expandedSessionIndex}_$_currentClipIndex';
+      final session = _activeSession;
+      if (session == null) return;
+      // Keyed by session + clip id so the skill and media tabs never share a tick
+      final key = _passedKey(session, _currentClipIndex);
       if (!_unlockedQuizzes.contains(key)) {
         setState(() {
           _unlockedQuizzes.add(key);
         });
+        _recordClipWatched(session, _currentClipIndex);
       }
     }
+  }
+
+  /// Saves the watched clip to the database under its own track (skill / media).
+  void _recordClipWatched(Map<String, dynamic> session, int clipIndex) {
+    final clips = session['videoClips'] as List? ?? [];
+    if (clipIndex >= clips.length) return;
+    final clipId = clips[clipIndex]['id']?.toString();
+    if (clipId == null || clipId.isEmpty) return;
+    final bool isMedia = _mediaSessions.any((s) => s['id'] == session['id']);
+    HttpApiService().markClipWatched(
+      clipId,
+      trackType: isMedia ? 'media' : 'skill',
+      stationId: _stationId,
+      sessionId: session['id']?.toString(),
+    );
   }
 
   String _passedKey(Map<String, dynamic> session, int clipIndex) {
@@ -401,9 +309,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (!mounted) return;
       setState(() {
         for (final p in progress) {
-          if (p is Map && p['quizPassed'] == true) {
-            _passedQuizzes.add('${p['sessionId']}|${p['clipId']}');
-          }
+          if (p is! Map) continue;
+          final key = '${p['sessionId']}|${p['clipId']}';
+          if (p['quizPassed'] == true) _passedQuizzes.add(key);
+          if (p['isWatched'] == true) _unlockedQuizzes.add(key);
         }
       });
     } catch (e) {
@@ -726,8 +635,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       children: List.generate(clips.length, (cIndex) {
                         final clip = clips[cIndex];
                         final isPlaying = isExpanded && _currentClipIndex == cIndex;
-                        final quizKey = '${sIndex}_$cIndex';
-                        final bool isQuizUnlocked = _unlockedQuizzes.contains(quizKey);
+                        final bool isQuizUnlocked = _unlockedQuizzes.contains(_passedKey(session, cIndex)) ||
+                            _passedQuizzes.contains(_passedKey(session, cIndex));
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5.5),
@@ -1094,7 +1003,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
           // 2. Middle Left: ارتباط با راهبر
           ElevatedButton(
-            onPressed: () => ContactUsDialog.show(context),
+            onPressed: () => contactMentor(
+              context,
+              Provider.of<AppRepository>(context, listen: false).currentUser,
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF241F3B),
               foregroundColor: const Color(0xFFDDD9EE),

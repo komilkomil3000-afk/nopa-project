@@ -13,7 +13,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       include: {
         caravan: {
           include: { 
-            mentor: { select: { id: true, name: true, phoneNumber: true } },
+            mentor: { select: { id: true, name: true, phoneNumber: true, socialMessengerHandle: true, socialPlatform: true } },
             members: { select: { id: true, name: true } }
           }
         },
@@ -51,7 +51,7 @@ export async function getMe(req: AuthRequest, res: Response) {
           where: { isDeleted: false },
           include: { 
             members: { select: { id: true, name: true } },
-            mentor: { select: { id: true, name: true, phoneNumber: true } }
+            mentor: { select: { id: true, name: true, phoneNumber: true, socialMessengerHandle: true, socialPlatform: true } }
           }
         });
       }
@@ -71,6 +71,11 @@ export async function getMe(req: AuthRequest, res: Response) {
       ? (assignedCaravan.members?.map((m: any) => ({ id: m.id, name: m.name })) || [])
       : (user.caravan?.members?.map((m: any) => ({ id: m.id, name: m.name })) || []);
 
+    // The mentor a user reaches out to: the caravan's mentor for students, themselves for mentors
+    const contactMentor: any = assignedCaravan
+      ? ((assignedCaravan as any).mentor || user)
+      : user.caravan?.mentor;
+
     res.json({
       id: user.id,
       name: user.name,
@@ -82,6 +87,8 @@ export async function getMe(req: AuthRequest, res: Response) {
       caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
       caravanMentor: assignedCaravan ? ((assignedCaravan as any).mentor?.name || user.name) : (user.caravan?.mentor?.name || 'تعیین نشده'),
       mentorPhone: assignedCaravan ? ((assignedCaravan as any).mentor?.phoneNumber || user.phoneNumber) : (user.caravan?.mentor?.phoneNumber || ''),
+      mentorSocialPlatform: contactMentor?.socialPlatform || '',
+      mentorSocialHandle: contactMentor?.socialMessengerHandle || '',
       socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
       managedMembersCount,
       satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),

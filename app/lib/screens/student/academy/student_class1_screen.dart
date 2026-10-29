@@ -12,7 +12,7 @@ import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/main.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
 
 /// Class 1 Screen (صفحه اطلاعات و توضیحات منزلگاه)
 class StudentClass1Screen extends StatefulWidget {
@@ -249,39 +249,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   Future<void> _contactMentor() async {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    String targetUrl = (user.socialGroupLink != null && user.socialGroupLink!.trim().isNotEmpty)
-        ? user.socialGroupLink!.trim()
-        : 'https://eitaa.com/komeilgraph';
-
-    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-      if (targetUrl.startsWith('@')) {
-        targetUrl = 'https://eitaa.com/${targetUrl.substring(1)}';
-      } else if (targetUrl.contains('eitaa.com') || targetUrl.contains('t.me') || targetUrl.contains('rubika.ir') || targetUrl.contains('bale.ai')) {
-        targetUrl = 'https://$targetUrl';
-      } else {
-        targetUrl = 'https://eitaa.com/$targetUrl';
-      }
-    }
-
-    try {
-      final uri = Uri.parse(targetUrl);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched && mounted) {
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'خطا در باز کردن لینک راهبر: $targetUrl',
-              style: const TextStyle(fontFamily: AppTheme.fontFamily),
-            ),
-            backgroundColor: const Color(0xFFE11D48),
-          ),
-        );
-      }
-    }
+    await contactMentor(context, user);
   }
 
   void _handleBackAction() {

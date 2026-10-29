@@ -1112,7 +1112,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
           where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
-          const trackType = session.category?.title?.includes('مهارتی') ? 'skill' : 'media';
+          const trackType = session.category?.title?.includes('مهارت') ? 'skill' : 'media';
           const stationId = session.category?.stationId || 'unknown';
           let progress = await tx.userProgress.findUnique({
              where: { userId_clipId: { userId, clipId: clip.id } }

@@ -253,30 +253,29 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       where: { studentId: { in: memberIds } }
     });
 
+    // Real per-clip progress (skill and media clips are separate rows, keyed by clip id)
+    const progressRecords = await prisma.userProgress.findMany({
+      where: { userId: { in: memberIds }, OR: [{ isWatched: true }, { quizPassed: true }] }
+    });
+
     // Format stations with structured skillSessions, mediaSessions, and quizzes
     const stations = rawStations.map((st, sIdx) => {
-      const skillCat = st.categories.find(c => c.title?.includes('مهارت') || (c as any).type === 'skill') || st.categories[0];
-      const mediaCat = st.categories.find(c => c.title?.includes('رسانه') || (c as any).type === 'media') || st.categories[1];
+      const skillCat = st.categories.find(c => c.title?.includes('مهارت') || (c as any).type === 'skill');
+      const mediaCat = st.categories.find(c => c.title?.includes('رسانه') || (c as any).type === 'media');
 
       const skillSessions = skillCat ? skillCat.sessions.map((sess, idx) => ({
         id: sess.id,
         title: sess.title || `جلسه ${idx + 1}`,
-        totalParts: sess.videoClips.length || 4,
+        totalParts: sess.videoClips.length,
         clips: sess.videoClips
-      })) : [
-        { id: `s_${sIdx}_1`, title: 'جلسه اول', totalParts: 5 },
-        { id: `s_${sIdx}_2`, title: 'جلسه دوم', totalParts: 5 },
-      ];
+      })) : [];
 
       const mediaSessions = mediaCat ? mediaCat.sessions.map((sess, idx) => ({
         id: sess.id,
         title: sess.title || `جلسه ${idx + 1}`,
-        totalParts: sess.videoClips.length || 4,
+        totalParts: sess.videoClips.length,
         clips: sess.videoClips
-      })) : [
-        { id: `m_${sIdx}_1`, title: 'جلسه اول', totalParts: 4 },
-        { id: `m_${sIdx}_2`, title: 'جلسه دوم', totalParts: 4 },
-      ];
+      })) : [];
 
       const allQuizzes: any[] = [];
       for (const cat of st.categories) {
@@ -320,17 +319,11 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       const userWatch = watchRecords.filter(w => w.userId === m.id);
       const userQuizzes = quizSubmissions.filter(q => q.studentId === m.id);
 
-      const skillProgress = [
-        userWatch.filter(w => (w as any).sessionType === 'skill' || (w as any).trackType === 'skill').length || (m.zarikBalance > 500 ? 4 : 2),
-        userWatch.length > 2 ? 3 : 1,
-        userWatch.length > 4 ? 2 : 0
-      ];
-
-      const mediaProgress = [
-        userWatch.filter(w => (w as any).sessionType === 'media' || (w as any).trackType === 'media').length || (m.zarikBalance > 500 ? 3 : 1),
-        userWatch.length > 3 ? 2 : 0,
-        0
-      ];
+      // Number of watched clips per session id (a session belongs to exactly one track)
+      const clipProgress: Record<string, number> = {};
+      progressRecords
+        .filter(p => p.userId === m.id)
+        .forEach(p => { clipProgress[p.sessionId] = (clipProgress[p.sessionId] || 0) + 1; });
 
       const quizScores = userQuizzes.length > 0
         ? userQuizzes.map(q => `${q.score || 20} از ۲۰`)
@@ -345,8 +338,7 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         nakh: m.nakh || 0,
         farsh: m.farsh || 0,
         beyragh: m.beyragh || 0,
-        skillProgress,
-        mediaProgress,
+        clipProgress,
         quizScores
       };
     });

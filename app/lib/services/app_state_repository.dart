@@ -282,11 +282,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   );
 
   // Active Caravan Selector
-  String _selectedCaravanId = 'c1'; // Default: یاوران علاءالملک
+  String _selectedCaravanId = '';
   String get selectedCaravanId => _selectedCaravanId;
   String get selectedCaravanName {
     if (caravans.isEmpty) {
-      return currentUser.caravanName ?? 'کاروان یاوران علاءالملک';
+      return currentUser.caravanName ?? 'بدون کاروان';
     }
     final c = caravans.firstWhere((element) => element.id == _selectedCaravanId,
         orElse: () => caravans.first);
@@ -294,11 +294,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // Reactive Collections
-  List<CaravanModel> caravans = [
-    CaravanModel(id: 'c1', name: 'کاروان یاوران علاءالملک', memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
-    CaravanModel(id: 'c2', name: 'کاروان عمار', memberCount: 20, overallProgress: 0.65, activeStation: 'منزلگاه دوم'),
-    CaravanModel(id: 'c3', name: 'کاروان مالک اشتر', memberCount: 18, overallProgress: 0.50, activeStation: 'منزلگاه سوم'),
-  ];
+  List<CaravanModel> caravans = [];
 
   Future<void> fetchCaravans() async {
     try {
@@ -353,89 +349,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   // Mentor Satisfaction Data Cache
   final Map<String, Map<String, dynamic>> mentorData = {};
-
-  // Caravan dynamic stats helper
-  Map<String, dynamic> get activeCaravanStats {
-    CaravanModel caravan;
-    if (caravans.isEmpty) {
-      caravan = CaravanModel(
-        id: 'c1',
-        name: currentUser.caravanName ?? 'کاروان یاوران علاءالملک',
-        memberCount: 24,
-        overallProgress: 0.78,
-        activeStation: 'منزلگاه اول',
-      );
-    } else {
-      caravan = caravans.firstWhere((element) => element.id == _selectedCaravanId,
-          orElse: () => caravans.first);
-    }
-
-    // Calculate dynamic tickets and submission values from repository
-    final activeCaravanSubmissions = submissions.where((s) => 
-      s.status == 'pending' && 
-      (s.studentName.contains('رضایی') || s.studentName.contains('حسینی') || s.studentName.contains('احمدی'))
-    ).length;
-
-    // Base values that get returned
-    if (caravan.id == 'c1') {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۴۵/۵۰',
-        'tasksVal': 0.90,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۳,۵۰۰',
-        'scoreVal': 0.95,
-        'progressLabel': 'پیشرفت عالی کلاس‌های مهارتی و رسانه‌ای کاروان علاءالملک',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.85,
-        'progressM2': 0.75,
-        'progressM3': 0.80,
-        'progressM4': 0.60,
-        'progressM5': 0.40,
-      };
-    } else if (caravan.id == 'c2') {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۳۴/۴۰',
-        'tasksVal': 0.85,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۲,۴۵۰',
-        'scoreVal': 0.70,
-        'progressLabel': 'روند مناسب کلاس‌های جاری کاروان عمار',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.70,
-        'progressM2': 0.60,
-        'progressM3': 0.55,
-        'progressM4': 0.45,
-        'progressM5': 0.35,
-      };
-    } else {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۲۰/۴۸',
-        'tasksVal': 0.41,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۱,۸۰۰',
-        'scoreVal': 0.50,
-        'progressLabel': 'نیاز به تمرکز بیشتر بر سرفصل‌های کاروان مالک',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.50,
-        'progressM2': 0.40,
-        'progressM3': 0.45,
-        'progressM4': 0.30,
-        'progressM5': 0.10,
-      };
-    }
-  }
 
   // Notifications collections
   final List<Map<String, dynamic>> notifications = [];

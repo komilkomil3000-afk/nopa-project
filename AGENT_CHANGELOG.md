@@ -630,3 +630,57 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - Manual code review
 - **Status:** Completed
+
+### [2026-10-28 22:37] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Created)
+- **Description of Changes:**
+  - Leaderboard (top 3, total count, user rank) on student/mentor market screens now reads /leagues/wealthiest and /leagues/caravans instead of hard-coded names
+  - 'ارتباط با راهبر' in market, class1 and class2 now opens the mentor's registered messenger ID (platform + handle from DB) via new utils/mentor_contact.dart, with a message when no ID is registered
+  - getMe now returns mentorSocialPlatform/mentorSocialHandle
+  - UserModel parses them
+  - removed mock sessions and placeholder part clips from student_class2_screen
+  - removed unused fake stationZeroData and activeCaravanStats
+  - removed placeholder default caravans in AppRepository
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): no issues. tsc not runnable (typescript not installed in admin_panel).
+- **Status:** Completed
+
+### [2026-10-28 22:54] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Created)
+- **Description of Changes:**
+  - Fix skill-class watching ticking media sessions: student_class2_screen keyed watched ticks by sessionIndex_clipIndex (shared between skill and media tabs) -> now keyed by sessionId|clipId, loaded from UserProgress.isWatched and saved via markClipWatched with trackType skill/media
+  - lmsController trackType check fixed ('مهارتی' -> 'مهارت')
+  - student/mentor profile report card ticks now computed from real UserProgress instead of station level, mock sessions removed
+  - mentorWorkspaceController caravan-progress replaces fabricated skillProgress/mediaProgress and fake fallback sessions with per-session clipProgress from UserProgress
+  - mentor_station_class1_screen reads clipProgress
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): no issues. tsc not runnable (typescript not installed in admin_panel).
+- **Status:** Completed
