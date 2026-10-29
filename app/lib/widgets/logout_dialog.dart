@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
@@ -47,15 +48,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'خطا در خروج از حساب: $e',
-              style: const TextStyle(fontFamily: AppTheme.fontFamily),
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        AppToast.error(context, 'خطایی رخ داده است. خطا در خروج از حساب');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:file_picker/file_picker.dart';
@@ -504,12 +505,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 onPressed: () {
                                   if (isMultipleChoice) {
                                     if (selectedOptionIndex == -1) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً یکی از گزینه‌ها را انتخاب کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
+                                      AppToast.error(context, 'لطفاً یکی از گزینه‌ها را انتخاب کنید.');
                                       return;
                                     }
                                   } else {
@@ -517,12 +513,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     final bool hasText = textValue.isNotEmpty;
                                     final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
                                     if (!hasText && !hasFile) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً متن پاسخ یا فایل را وارد نمایید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
+                                      AppToast.error(context, 'لطفاً متن پاسخ یا فایل را وارد نمایید.');
                                       return;
                                     }
                                   }
@@ -569,17 +560,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     ));
                                   }
 
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'با موفقیت ارسال شد',
-                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                      backgroundColor: Color(0xFF10B981),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                  AppToast.info(context, 'با موفقیت ارسال شد');
                                 },
                                 child: const Text(
                                   'ارسال',
@@ -1563,16 +1544,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆',
-                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                    ),
-                                    backgroundColor: const Color(0xFF10B981),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆');
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1769,16 +1741,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️',
-                                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                ),
-                                backgroundColor: const Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

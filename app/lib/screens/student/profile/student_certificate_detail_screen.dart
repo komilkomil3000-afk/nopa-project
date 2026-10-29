@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/services/api_service.dart';
@@ -31,16 +32,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
         setState(() {
           _isDownloading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد 📥',
-              style: const TextStyle(fontFamily: AppTheme.fontFamily),
-            ),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppToast.info(context, 'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد 📥');
       }
     });
   }
@@ -135,15 +127,9 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ? null
                                 : () async {
                                     if (nameCtrl.text.isEmpty || addressCtrl.text.isEmpty) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً همه فیلدهای آدرس را تکمیل فرمایید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Colors.redAccent,
-                                        ),
-                                      );
+                                      AppToast.error(context, 'لطفاً همه فیلدهای آدرس را تکمیل فرمایید');
                                       return;
                                     }
-                                    final messenger = ScaffoldMessenger.of(context);
                                     setModalState(() => isProcessing = true);
                                     try {
                                       final api = HttpApiService();
@@ -152,12 +138,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         subject: 'درخواست نسخه چاپی ${widget.certificate['title']} - گیرنده: ${nameCtrl.text} - آدرس: ${addressCtrl.text}',
                                       );
                                       if (ctx.mounted) Navigator.pop(ctx);
-                                      messenger.showSnackBar(
-                                        const SnackBar(
-                                          content: Text('درخواست نسخه چاپی با موفقیت ثبت شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFF10B981),
-                                        ),
-                                      );
+                                      if (context.mounted) AppToast.success(context, 'درخواست نسخه چاپی با موفقیت ثبت شد ✅');
                                     } catch (_) {
                                       setModalState(() => isProcessing = false);
                                     }

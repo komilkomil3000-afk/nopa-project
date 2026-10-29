@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -255,25 +256,14 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (isLocked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('این منزلگاه هنوز باز نشده است و قفل می‌باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                              backgroundColor: Colors.grey,
-                            ),
-                          );
+                          AppToast.info(context, 'این منزلگاه هنوز باز نشده است و قفل می‌باشد');
                           return;
                         }
 
                         final isNewStation = index > 0 && !isCompleted;
                         final appState = Provider.of<AppRepository>(context, listen: false);
                         if (isNewStation && appState.hasPendingChallenges) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                              backgroundColor: Colors.redAccent,
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
+                          AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
                           PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
                           return;
                         }

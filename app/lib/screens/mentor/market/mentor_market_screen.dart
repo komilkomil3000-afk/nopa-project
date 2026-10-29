@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -189,13 +190,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     setState(() => _activeActionButton = 1);
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0 || _calculatedResult <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفاً مقدار معتبری برای مبادله وارد کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFFEF4444),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.error(context, 'لطفاً مقدار معتبری برای مبادله وارد کنید.');
       return;
     }
 
@@ -383,22 +378,10 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                           );
                           if (mounted) {
                             if (success) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                  backgroundColor: Color(0xFF10B981),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.info(context, 'درخواست مبادله با موفقیت برای راهبر ارسال شد ✅');
                               _loadMarketData();
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                  backgroundColor: Color(0xFFEF4444),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
                             }
                           }
                         },
@@ -1435,18 +1418,11 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 setState(() {
                                   _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
                                 });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? 'درخواست مبادله برای $studentName تایید شد ✅'
-                                          : 'خطا در ثبت تایید در سرور',
-                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                    ),
-                                    backgroundColor: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                if (success) {
+      AppToast.success(context, 'درخواست مبادله برای $studentName تایید شد ✅');
+    } else {
+      AppToast.error(context, 'خطایی رخ داده است. خطا در ثبت تایید در سرور');
+    }
                                 _loadMarketData();
                               }
                             },
@@ -1690,16 +1666,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                         onPressed: () {
                           Navigator.pop(ctx);
                           onConfirmReject();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'درخواست رد شد و پیام توضیح برای دانش‌آموز ارسال گردید.',
-                                style: TextStyle(fontFamily: AppTheme.fontFamily),
-                              ),
-                              backgroundColor: Color(0xFFEF4444),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          AppToast.info(context, 'درخواست رد شد و پیام توضیح برای دانش‌آموز ارسال گردید.');
                         },
                         child: const Text(
                           'ارسال',

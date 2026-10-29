@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -239,13 +240,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final appState = Provider.of<AppRepository>(context, listen: false);
     final isNewStation = _currentStationIndex > 0 && !_station!.isCompleted;
     if (isNewStation && appState.hasPendingChallenges) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.redAccent,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
       PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
       return false;
     }
@@ -268,12 +263,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     }
 
     if (targetSessions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('جلسات $categoryKeyword برای این منزلگاه به زودی منتشر می‌شود.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: const Color(0xFF28274A),
-        ),
-      );
+      AppToast.info(context, 'جلسات $categoryKeyword برای این منزلگاه به زودی منتشر می‌شود.');
       return;
     }
 
@@ -935,15 +925,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               animatedStroke: true,
               onTap: _animationsWatched
                   ? () => _navigateToClass('مهارت')
-                  : () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'برای ورود به کلاس‌ها ابتدا انیمیشن‌های منزلگاه را (حداقل ۹۰٪) ببینید',
-                            style: TextStyle(fontFamily: AppTheme.fontFamily),
-                          ),
-                          backgroundColor: Color(0xFF28274A),
-                        ),
-                      ),
+                  : () => AppToast.info(context, 'برای ورود به کلاس‌ها ابتدا انیمیشن‌های منزلگاه را (حداقل ۹۰٪) ببینید'),
             ),
           ),
           const SizedBox(width: 10),

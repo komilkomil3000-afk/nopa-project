@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -6,9 +7,9 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
-import 'package:nopa_app/widgets/reward_popup.dart';
 
 /// Class 2 Screen (صفحه کلاس‌ها، مجموعه‌ها، پارت‌ها، پخش‌کننده ویدیو و آزمون‌ها)
 class StudentClass2Screen extends StatefulWidget {
@@ -40,6 +41,68 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   // Quizzes the student has passed (key: '<sessionId>|<clipId>', see _passedKey)
   final Set<String> _passedQuizzes = {};
+
+  // Quizzes the student has fully answered and submitted, right or wrong.
+  // Answering (not passing) is what opens the next part.
+  final Set<String> _answeredQuizzes = {};
+
+  String get _answeredPrefsKey =>
+      'answered_quizzes_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
+
+  bool _isAnswered(Map<String, dynamic> session, int clipIndex) {
+    final key = _passedKey(session, clipIndex);
+    return _answeredQuizzes.contains(key) || _passedQuizzes.contains(key);
+  }
+
+  // The student's own answers per quiz, shown when the quiz is reviewed later.
+  final Map<String, List<int>> _quizAnswers = {};
+
+  String get _answersPrefsKey =>
+      'quiz_answers_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
+
+  void _markAnswered(Map<String, dynamic>? session, int clipIndex, List<int> answers) {
+    if (session == null) return;
+    final key = _passedKey(session, clipIndex);
+    if (_answeredQuizzes.contains(key)) return;
+    if (mounted) {
+      setState(() {
+        _answeredQuizzes.add(key);
+        _quizAnswers[key] = List<int>.from(answers);
+      });
+    }
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setStringList(_answeredPrefsKey, _answeredQuizzes.toList());
+      prefs.setString(_answersPrefsKey, jsonEncode(_quizAnswers));
+    }).catchError((e) {
+      debugPrint('Save answered quizzes error: $e');
+    });
+  }
+
+  Future<void> _loadAnsweredQuizzes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_answeredPrefsKey) ?? [];
+      final rawAnswers = prefs.getString(_answersPrefsKey);
+      final loaded = <String, List<int>>{};
+      if (rawAnswers != null) {
+        (jsonDecode(rawAnswers) as Map).forEach((k, v) {
+          loaded[k.toString()] = (v as List).map((e) => (e as num).toInt()).toList();
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _answeredQuizzes.addAll(saved);
+          _quizAnswers.addAll(loaded);
+        });
+      }
+    } catch (e) {
+      debugPrint('Load answered quizzes error: $e');
+    }
+  }
+
+  /// A part (after the first) opens only after the previous part's quiz is answered.
+  bool _isPartLocked(Map<String, dynamic> session, int clipIndex) =>
+      clipIndex > 0 && !_isAnswered(session, clipIndex - 1);
 
   /// Fraction of a video that must be watched before its quiz unlocks.
   static const double _quizUnlockThreshold = 0.90;
@@ -117,6 +180,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
     _fetchData();
     _loadPassedQuizzes();
+    _loadAnsweredQuizzes();
   }
 
   Future<void> _fetchData() async {
@@ -292,13 +356,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   }
 
   /// A lesson (after the first) is open only once every part quiz of the
-  /// previous lesson has been passed.
+  /// previous lesson has been answered.
   bool _isSessionLocked(List<Map<String, dynamic>> sessions, int sIndex) {
     if (sIndex <= 0 || sIndex >= sessions.length) return false;
     final prev = sessions[sIndex - 1];
     final prevClips = prev['videoClips'] as List? ?? [];
     for (int i = 0; i < prevClips.length; i++) {
-      if (!_passedQuizzes.contains(_passedKey(prev, i))) return true;
+      if (!_isAnswered(prev, i)) return true;
     }
     return false;
   }
@@ -322,6 +386,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   void _onVideoEnded() {
     if (_isMiniQuizShowing) return;
+    // The quiz can be taken only once; after that it is review-only on demand
+    final session = _activeSession;
+    if (session != null && _isAnswered(session, _currentClipIndex)) return;
     setState(() {
       _isMiniQuizShowing = true;
     });
@@ -538,19 +605,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 InkWell(
                   onTap: () {
                     if (isLocked) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                          backgroundColor: Color(0xFF23223D),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                      AppToast.info(context, 'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید');
                       return;
                     }
                     setState(() {
@@ -637,6 +692,17 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         final isPlaying = isExpanded && _currentClipIndex == cIndex;
                         final bool isQuizUnlocked = _unlockedQuizzes.contains(_passedKey(session, cIndex)) ||
                             _passedQuizzes.contains(_passedKey(session, cIndex));
+                        final bool isPartLocked = _isPartLocked(session, cIndex);
+                        void selectPart() {
+                          if (isPartLocked) {
+                            AppToast.info(context, 'برای باز شدن این پارت، ابتدا به آزمون پارت قبل پاسخ دهید');
+                            return;
+                          }
+                          setState(() {
+                            _currentClipIndex = cIndex;
+                          });
+                          _initializeVideoForCurrentSession();
+                        }
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5.5),
@@ -646,13 +712,19 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               children: [
                                 // 1. Far Right in RTL: وضعیت پارت (تایید برای دیده شده، پاز برای در حال دیدن، پلی برای دیده نشده)
                                 GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentClipIndex = cIndex;
-                                    });
-                                    _initializeVideoForCurrentSession();
-                                  },
-                                  child: isPlaying
+                                  onTap: selectPart,
+                                  child: isPartLocked
+                                      ? Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white.withValues(alpha: 0.05),
+                                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.0),
+                                          ),
+                                          child: const Icon(Icons.lock_rounded, color: Colors.white38, size: 11),
+                                        )
+                                      : isPlaying
                                       ? Container(
                                           width: 20,
                                           height: 20,
@@ -689,12 +761,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 // 2. Right in RTL next to icon: عنوان پارت (کوتاه تر، کوچکتر و غیربولد)
                                 Expanded(
                                   child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _currentClipIndex = cIndex;
-                                      });
-                                      _initializeVideoForCurrentSession();
-                                    },
+                                    onTap: selectPart,
                                     child: Text(
                                       clip['title']?.toString() ?? 'پارت ${_toFarsiDigit(cIndex + 1)}',
                                       textAlign: TextAlign.right,
@@ -730,19 +797,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                     if (isQuizUnlocked) {
                                       _showPartMiniQuiz(cIndex);
                                     } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'برای باز شدن آزمون، حداقل ۹۰٪ ویدیو را مشاهده کنید',
-                                            style: TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 11.5,
-                                            ),
-                                          ),
-                                          backgroundColor: Color(0xFF23223D),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
+                                      AppToast.info(context, 'برای باز شدن آزمون، حداقل ۹۰٪ ویدیو را مشاهده کنید');
                                     }
                                   },
                                   child: Container(
@@ -1134,9 +1189,18 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     }
 
     int currentQuestionIndex = 0;
-    final List<int> userAnswers = List.filled(quizQuestions.length, -1);
+    // One attempt only: once answered, the quiz can just be viewed.
+    final bool reviewMode = session != null && _isAnswered(session, partIndex);
+    final stored = session == null ? null : _quizAnswers[_passedKey(session, partIndex)];
+    final List<int> userAnswers = (reviewMode && stored != null && stored.length == quizQuestions.length)
+        ? List<int>.from(stored)
+        : List.filled(quizQuestions.length, -1);
+    final pageContext = context;
     String? feedbackMessage;
     bool isErrorFeedback = false;
+
+    int correctIndexOf(dynamic q) =>
+        q['correctIndex'] is int ? q['correctIndex'] : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
 
     showDialog(
       context: context,
@@ -1147,19 +1211,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             final question = quizQuestions[currentQuestionIndex];
             final selectedAns = userAnswers[currentQuestionIndex];
 
-            // Tapping outside / back asks whether to save the partial result.
-            return PopScope(
-              canPop: false,
-              onPopInvokedWithResult: (didPop, _) async {
-                if (didPop) return;
-                final choice = await _confirmQuizExit(context);
-                if (choice == null || !context.mounted) return;
-                if (choice == 'save') {
-                  await _savePartialQuiz(session, partIndex, currentQuizId, userAnswers);
-                }
-                if (context.mounted) Navigator.of(context).pop();
-              },
-              child: Dialog(
+            return Dialog(
               backgroundColor: const Color(0xFF241F3B),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -1176,9 +1228,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'آزمون ارزیابی پارت',
-                            style: TextStyle(
+                          Text(
+                            reviewMode ? 'مشاهده آزمون پارت' : 'آزمون ارزیابی پارت',
+                            style: const TextStyle(
                               color: Color(0xFFFBE4C8),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -1222,26 +1274,37 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             const SizedBox(height: 12),
                             ...List.generate((question['options'] as List).length, (idx) {
                               bool isSel = selectedAns == idx;
+                              final bool isCorrectOpt = reviewMode && idx == correctIndexOf(question);
+                              final bool isWrongSel = reviewMode && isSel && !isCorrectOpt;
+                              final Color accent = isCorrectOpt
+                                  ? AppToast.successColor
+                                  : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
                               return GestureDetector(
-                                onTap: () => setDialogState(() {
-                                  userAnswers[currentQuestionIndex] = idx;
-                                  feedbackMessage = null;
-                                }),
+                                onTap: reviewMode
+                                    ? null
+                                    : () => setDialogState(() {
+                                          userAnswers[currentQuestionIndex] = idx;
+                                          feedbackMessage = null;
+                                        }),
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                                   decoration: BoxDecoration(
-                                    color: isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33),
+                                    color: (isCorrectOpt || isWrongSel)
+                                        ? accent.withValues(alpha: 0.45)
+                                        : (isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33)),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: isSel ? const Color(0xFFC09268) : const Color(0xFF473E67),
+                                      color: (isCorrectOpt || isWrongSel || isSel) ? accent : const Color(0xFF473E67),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
                                       Icon(
-                                        isSel ? Icons.radio_button_checked : Icons.radio_button_off,
-                                        color: isSel ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
+                                        isCorrectOpt
+                                            ? Icons.check_circle_rounded
+                                            : (isSel ? Icons.radio_button_checked : Icons.radio_button_off),
+                                        color: isSel || isCorrectOpt ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
                                         size: 16,
                                       ),
                                       const SizedBox(width: 8),
@@ -1313,7 +1376,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             ),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: selectedAns == -1
+                              onPressed: (!reviewMode && selectedAns == -1)
                                   ? null
                                   : () async {
                                       if (currentQuestionIndex < quizQuestions.length - 1) {
@@ -1321,69 +1384,78 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                           currentQuestionIndex++;
                                           feedbackMessage = null;
                                         });
-                                      } else {
-                                        // Evaluate all answers against correctIndex
-                                        int correctCount = 0;
-                                        for (int i = 0; i < quizQuestions.length; i++) {
-                                          final q = quizQuestions[i];
-                                          final cIdx = q['correctIndex'] is int
-                                              ? q['correctIndex']
-                                              : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
-                                          if (userAnswers[i] == cIdx) {
-                                            correctCount++;
-                                          }
-                                        }
+                                        return;
+                                      }
+                                      if (reviewMode) {
+                                        Navigator.pop(context);
+                                        return;
+                                      }
 
-                                        // The server is the source of truth for pass/fail.
-                                        final sessionId = session?['id']?.toString() ?? '';
-                                        int shownScore = correctCount;
-                                        int rewardZarik = 10;
-                                        bool passed;
-                                        if (sessionId.isNotEmpty) {
-                                          Map<String, dynamic>? result;
-                                          try {
-                                            result = await HttpApiService().submitClassSessionQuiz(sessionId, userAnswers, quizId: currentQuizId);
-                                          } catch (e) {
-                                            debugPrint('Submit quiz error: $e');
-                                          }
-                                          if (result == null) {
-                                            if (context.mounted) {
-                                              setDialogState(() {
-                                                isErrorFeedback = true;
-                                                feedbackMessage = 'ثبت آزمون با خطا مواجه شد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.';
-                                              });
-                                            }
-                                            return;
-                                          }
-                                          passed = result['passed'] == true;
-                                          if (result['score'] is num) shownScore = (result['score'] as num).toInt();
-                                          if (result['rewardZarik'] is num) rewardZarik = (result['rewardZarik'] as num).toInt();
-                                        } else {
-                                          passed = correctCount == quizQuestions.length ||
-                                              (quizQuestions.length > 1 && correctCount >= (quizQuestions.length * 0.6).ceil());
-                                        }
+                                      // Score locally for the feedback (the server decides pass/fail).
+                                      int correctCount = 0;
+                                      for (int i = 0; i < quizQuestions.length; i++) {
+                                        if (userAnswers[i] == correctIndexOf(quizQuestions[i])) correctCount++;
+                                      }
 
-                                        if (passed) {
-                                          if (session != null && mounted) {
-                                            setState(() {
-                                              _passedQuizzes.add(_passedKey(session, partIndex));
+                                      final sessionId = session?['id']?.toString() ?? '';
+                                      int rewardZarik = 0;
+                                      bool passed;
+                                      if (sessionId.isNotEmpty) {
+                                        Map<String, dynamic>? result;
+                                        try {
+                                          result = await HttpApiService().submitClassSessionQuiz(sessionId, userAnswers, quizId: currentQuizId);
+                                        } catch (e) {
+                                          debugPrint('Submit quiz error: $e');
+                                        }
+                                        if (result == null) {
+                                          if (context.mounted) {
+                                            setDialogState(() {
+                                              isErrorFeedback = true;
+                                              feedbackMessage = 'ثبت آزمون با خطا مواجه شد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.';
                                             });
                                           }
-
-                                          if (context.mounted) {
-                                            Navigator.pop(context);
-                                            RewardPopup.show(
-                                              context,
-                                              message: 'تبریک! آزمون این پارت را با نمره ${_toFarsiDigit(shownScore)} از ${_toFarsiDigit(quizQuestions.length)} گذراندید!',
-                                              zarikAmount: rewardZarik,
-                                            );
-                                          }
-                                        } else {
-                                          setDialogState(() {
-                                            isErrorFeedback = true;
-                                            feedbackMessage = 'نمره قبولی کسب نشد (${_toFarsiDigit(shownScore)} از ${_toFarsiDigit(quizQuestions.length)} درست بود). گزینه‌ها را مجدداً مرور فرمایید.';
-                                          });
+                                          return;
                                         }
+                                        passed = result['passed'] == true;
+                                        if (result['rewardZarik'] is num) rewardZarik = (result['rewardZarik'] as num).toInt();
+                                      } else {
+                                        passed = correctCount == quizQuestions.length ||
+                                            (quizQuestions.length > 1 && correctCount >= (quizQuestions.length * 0.6).ceil());
+                                      }
+
+                                      // Right or wrong, the submitted answer opens the next part.
+                                      _markAnswered(session, partIndex, userAnswers);
+                                      if (passed && session != null && mounted) {
+                                        setState(() {
+                                          _passedQuizzes.add(_passedKey(session, partIndex));
+                                        });
+                                      }
+
+                                      if (context.mounted) Navigator.pop(context);
+                                      if (!pageContext.mounted) return;
+                                      if (passed) {
+                                        AppToast.success(
+                                          pageContext,
+                                          rewardZarik > 0
+                                              ? 'عالی بود! درست جواب دادید و ${_toFarsiDigit(rewardZarik)} زریک دریافت کردید.'
+                                              : 'عالی بود! درست جواب دادید.',
+                                        );
+                                      } else {
+                                        final wrong = <String>[];
+                                        for (int i = 0; i < quizQuestions.length; i++) {
+                                          final q = quizQuestions[i];
+                                          final c = correctIndexOf(q);
+                                          if (userAnswers[i] == c) continue;
+                                          final opts = q['options'] as List;
+                                          final text = (c >= 0 && c < opts.length) ? opts[c].toString() : '';
+                                          wrong.add(quizQuestions.length == 1
+                                              ? '«$text»'
+                                              : 'سوال ${_toFarsiDigit(i + 1)}: «$text»');
+                                        }
+                                        AppToast.error(
+                                          pageContext,
+                                          'بیشتر دقت کنید. جواب درست ${wrong.join('، ')} بود.',
+                                        );
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
@@ -1397,7 +1469,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               child: Text(
                                 currentQuestionIndex < quizQuestions.length - 1
                                     ? 'سوال بعدی'
-                                    : 'ثبت و مشاهده نتیجه',
+                                    : (reviewMode ? 'بستن' : 'ثبت و مشاهده نتیجه'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -1413,7 +1485,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   ),
                 ),
               ),
-            ));
+            );
           },
         );
       },
@@ -1421,68 +1493,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       // Let the next video end (e.g. after a re-watch) open the quiz again
       if (mounted) setState(() => _isMiniQuizShowing = false);
     });
-  }
-
-  /// Returns 'save', 'discard', or null when the student stays in the quiz.
-  Future<String?> _confirmQuizExit(BuildContext ctx) {
-    TextStyle style(Color c, {bool bold = false}) => TextStyle(
-          color: c,
-          fontSize: 12,
-          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          fontFamily: AppTheme.fontFamily,
-          fontFamilyFallback: AppTheme.fontFamilyFallback,
-        );
-    return showDialog<String>(
-      context: ctx,
-      builder: (c) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF241F3B),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFC09268)),
-          ),
-          title: Text('خروج از آزمون', style: style(const Color(0xFFFBE4C8), bold: true)),
-          content: Text(
-            'آیا می‌خواهید نتیجه آزمون ذخیره شود؟',
-            style: style(const Color(0xFFDDD9EE)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c),
-              child: Text('ادامه آزمون', style: style(const Color(0xFF9D99B8))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(c, 'discard'),
-              child: Text('ذخیره نشود', style: style(const Color(0xFFFF8A80))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(c, 'save'),
-              child: Text('ذخیره شود', style: style(const Color(0xFFE5B888), bold: true)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Submits whatever has been answered so far (unanswered stay -1).
-  Future<void> _savePartialQuiz(
-    Map<String, dynamic>? session,
-    int partIndex,
-    String? quizId,
-    List<int> answers,
-  ) async {
-    final sessionId = session?['id']?.toString() ?? '';
-    if (sessionId.isEmpty || answers.every((a) => a == -1)) return;
-    try {
-      final result = await HttpApiService().submitClassSessionQuiz(sessionId, answers, quizId: quizId);
-      if (result != null && result['passed'] == true && session != null && mounted) {
-        setState(() => _passedQuizzes.add(_passedKey(session, partIndex)));
-      }
-    } catch (e) {
-      debugPrint('Save partial quiz error: $e');
-    }
   }
 
   void _showFinalStationExam() {
@@ -1575,19 +1585,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               });
             } else {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'جزوه آموزشی با موفقیت دانلود شد! 📂✅',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  backgroundColor: Color(0xFF10B981),
-                ),
-              );
+              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد! 📂✅');
             }
           });
 

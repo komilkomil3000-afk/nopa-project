@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
@@ -389,16 +390,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
         child: InkWell(
           onTap: isExpired
               ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'این چالش منقضی شده است و امکان مشاهده یا ثبت پاسخ وجود ندارد.',
-                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                      ),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  AppToast.info(context, 'این چالش منقضی شده است و امکان مشاهده یا ثبت پاسخ وجود ندارد.');
                 }
               : () {
                   // Navigate to full challenges screen

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -303,9 +304,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('لطفاً نام و شماره همراه را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily))),
-                              );
+                              AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
                               return;
                             }
                             Navigator.pop(ctx);
@@ -316,12 +315,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                               );
                             } catch (_) {}
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                  backgroundColor: Color(0xFF10B981),
-                                ),
-                              );
+                              AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -400,12 +394,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                             setState(() {
                               caravan.members.removeWhere((m) => m.id == member.id);
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('درخواست حذف «${member.name}» با موفقیت ثبت شد', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                                backgroundColor: const Color(0xFFDE9959),
-                              ),
-                            );
+                            AppToast.info(context, 'درخواست حذف «${member.name}» با موفقیت ثبت شد');
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -478,9 +467,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: member.phoneNumber));
                           Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('شماره تماس کپی شد', style: TextStyle(fontFamily: AppTheme.fontFamily))),
-                          );
+                          AppToast.info(context, 'شماره تماس کپی شد');
                         },
                         icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 16),
                         label: const Text('کپی شماره', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),

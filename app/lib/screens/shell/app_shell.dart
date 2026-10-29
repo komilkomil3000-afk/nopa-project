@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -123,16 +123,7 @@ class MainScreenState extends State<AppShell> {
         final now = DateTime.now();
         if (_lastBackPressTime == null || now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
           _lastBackPressTime = now;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'برای خروج از برنامه، دوباره دکمه برگشت را بزنید.',
-                style: TextStyle(fontFamily: AppTheme.fontFamily),
-              ),
-              duration: Duration(seconds: 2),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          AppToast.info(context, 'برای خروج از برنامه، دوباره دکمه برگشت را بزنید.');
         } else {
           SystemNavigator.pop();
         }

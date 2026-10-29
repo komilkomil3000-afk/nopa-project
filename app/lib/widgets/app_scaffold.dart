@@ -38,11 +38,13 @@ class AppScaffold extends StatelessWidget {
     final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
 
     return PopScope(
-      canPop: true,
+      // A custom back handler takes over only when the user asks to go back.
+      // It must not run after a pop that already happened (bottom nav popUntil,
+      // another screen's pop): handlers like `Navigator.pop` would then pop a
+      // second, unrelated route (the main shell) and leave an empty stack.
+      canPop: onBackTap == null,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          onBackTap?.call();
-        }
+        if (!didPop) onBackTap?.call();
       },
       child: Scaffold(
         backgroundColor: Colors.transparent,

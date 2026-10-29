@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/constants/api_constants.dart';
 
@@ -100,12 +101,7 @@ class JarchiItem extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('در حال باز کردن لینک: $link 🔗', style: const TextStyle(fontFamily: 'YekanBakh')),
-                              backgroundColor: const Color(0xFF8B5CF6),
-                            ),
-                          );
+                          AppToast.info(context, 'در حال باز کردن لینک: $link 🔗');
                         },
                         icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
                         label: const Text(

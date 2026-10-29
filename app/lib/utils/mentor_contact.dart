@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:nopa_app/core/theme/app_theme.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/models/user_model.dart';
 
 /// Builds the chat link for a mentor from the platform and ID stored in the database.
@@ -35,17 +35,7 @@ Uri? buildMentorContactUri(String? platform, String? handle) {
 
 /// Opens the chat with the mentor using the ID registered in the database.
 Future<void> contactMentor(BuildContext context, UserModel user) async {
-  final messenger = ScaffoldMessenger.of(context);
-
-  void showMessage(String text) {
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(text, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-        backgroundColor: const Color(0xFFE11D48),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  void showMessage(String text) => AppToast.error(context, text);
 
   final uri = buildMentorContactUri(user.mentorSocialPlatform, user.mentorSocialHandle);
   if (uri == null) {

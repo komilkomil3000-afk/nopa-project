@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -256,13 +257,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
     // Default feedback
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('پیام با موفقیت بررسی و باز شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFF28274A),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppToast.info(context, 'پیام با موفقیت بررسی و باز شد.');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -1610,23 +1611,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                           onPressed: () {
                             final text = controller.text.trim();
                             if (text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('لطفاً متن پیام را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                  backgroundColor: Color(0xFFC2410C),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.error(context, 'لطفاً متن پیام را وارد کنید');
                               return;
                             }
                             Navigator.pop(dialogCtx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('پیام برای $name با موفقیت ارسال شد.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                                backgroundColor: const Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            AppToast.info(context, 'پیام برای $name با موفقیت ارسال شد.');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

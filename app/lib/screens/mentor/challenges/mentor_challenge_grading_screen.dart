@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
@@ -237,16 +238,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               participant['status'] = 'needs_revision';
                               participant['feedback'] = explanationCtrl.text.trim();
                             });
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'پیام اصلاحیه با موفقیت برای $name ارسال شد ✉️',
-                                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                ),
-                                backgroundColor: const Color(0xFFEAB308),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            AppToast.info(context, 'پیام اصلاحیه با موفقیت برای $name ارسال شد ✉️');
                           },
                           child: const Text(
                             'ارسال',
@@ -290,16 +282,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
       participant['status'] = 'approved';
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'پاسخ $name تایید شد و $reward زریک جایزه به وی اهدا گردید 🏆',
-          style: const TextStyle(fontFamily: AppTheme.fontFamily),
-        ),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, 'پاسخ $name تایید شد و $reward زریک جایزه به وی اهدا گردید 🏆');
   }
 
   Widget _buildDialogRow(String label, String value) {

@@ -714,3 +714,146 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze on both files (no issues)
 - **Status:** Completed
+
+### [2026-10-29 11:50] - Build Assistant
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - None recorded
+- **Description of Changes:**
+  - Built debug APK (no source changes)
+  - output app/build/app/outputs/flutter-apk/app-debug.apk
+- **Verification / Checkpoints Executed:**
+  - flutter build apk --debug (run from app/) succeeded
+- **Status:** Completed
+
+### [2026-10-29 12:24] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class2_screen.dart: next part/lesson now unlocks once the previous part quiz is fully answered (right or wrong), not only when passed
+  - unanswered quiz keeps next part locked (lock icon + hint)
+  - answered state persisted per user in SharedPreferences
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on file
+- **Status:** Completed
+
+### [2026-10-29 12:48] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - Added lib/widgets/app_toast.dart (AppToast.info/success/error: colors 3D3C67 / 266C3A / 7B3334, text E4E4FF, single message at a time via clearSnackBars + duplicate suppression, 120ms animation, 2.5-3.5s duration)
+  - replaced all ScaffoldMessenger.showSnackBar calls across app with AppToast
+  - error toasts now include Persian 'خطایی رخ داده است.' and no longer show raw exceptions
+  - mentor_contact.dart now uses AppToast
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed
+
+### [2026-10-29 12:56] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - student_class2_screen.dart: quiz result now shown as green AppToast (عالی بود، درست جواب دادید و N زریک دریافت کردید) or red AppToast with the correct option(s) instead of RewardPopup
+  - quiz is single-attempt - after answering it opens in review-only mode (own answers + correct option highlighted, no submit, no auto-open)
+  - student answers persisted locally
+  - removed save-on-exit confirmation and partial save
+  - next part unlocks by answering, not by correctness
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed
+
+### [2026-10-29 13:01] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - app_scaffold.dart: fixed double-pop bug - PopScope used to call onBackTap after every successful pop, and screens whose onBackTap is Navigator.pop (class2, certificates, edit profile...) popped a second route (the main shell) when bottom nav popUntil or system back popped them, causing hang/exit/relogin
+  - now onBackTap runs only when a back request is blocked (canPop: onBackTap == null)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed

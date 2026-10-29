@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -306,29 +307,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
     if (res['status'] == 'success') {
       _startCountdownTimer(119);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res['message'] ?? 'کد تأیید برای شماره شما ارسال شد.',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily),
-          ),
-          backgroundColor: const Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.info(context, res['message'] ?? 'کد تأیید برای شماره شما ارسال شد.');
     } else if (res['status'] == 'rate_limited') {
       final retryAfter = (res['retryAfter'] as num?)?.toInt() ?? 119;
       _startCountdownTimer(retryAfter);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily),
-          ),
-          backgroundColor: const Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.error(context, res['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.');
     } else {
       _showError(res['message'] ?? 'خطایی در ارسال کد تایید رخ داد');
     }
@@ -526,16 +509,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     if (response['status'] == 'rate_limited') {
       final retryAfter = (response['retryAfter'] as num?)?.toInt() ?? 119;
       _startCountdownTimer(retryAfter);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            response['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily),
-          ),
-          backgroundColor: const Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.error(context, response['message'] ?? 'لطفاً $retryAfter ثانیه دیگر دوباره تلاش کنید.');
       return;
     }
 
@@ -798,23 +772,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.error(context, message);
   }
 
   void _showWarning(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-        backgroundColor: const Color(0xFFF59E0B),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.error(context, message);
   }
 
   Future<void> _handleLogin() async {
