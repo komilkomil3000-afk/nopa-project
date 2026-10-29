@@ -256,7 +256,7 @@ export async function evaluateMentor(req: AuthRequest, res: Response) {
     const { mentorId, stationId, rating, responsivenessScore, guidanceScore, feedbackText } = req.body;
     const studentId = req.user!.id;
 
-    if (!mentorId || !rating) return res.status(400).json({ error: '??????? ??????? ???? ???' });
+    if (!mentorId || !rating) return res.status(400).json({ error: 'اطلاعات ارزیابی ناقص است' });
 
     const evaluation = await prisma.mentorEvaluation.create({
       data: {
@@ -281,7 +281,7 @@ export async function savePrivateNote(req: AuthRequest, res: Response) {
     const { studentId, noteText } = req.body;
     const mentorId = req.user!.id;
 
-    if (!studentId || !noteText) return res.status(400).json({ error: '??? ??????? ? ????????? ?????? ???' });
+    if (!studentId || !noteText) return res.status(400).json({ error: 'شناسه دانش‌آموز و متن یادداشت الزامی است' });
 
     const note = await prisma.privateStudentNote.create({
       data: {

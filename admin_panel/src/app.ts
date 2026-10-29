@@ -13,6 +13,13 @@ dotenv.config();
 
 const app = express();
 
+// Behind a reverse proxy (nginx etc.) req.ip must be the real client, otherwise every user shares the
+// proxy's IP in the rate limiters. 'loopback' trusts X-Forwarded-For only when it comes from a proxy on
+// the same machine; a client talking directly can never spoof its IP. Override with TRUST_PROXY
+// (a hop count such as "1", or an IP/CIDR list) when the proxy is on another host.
+const trustProxy = process.env.TRUST_PROXY;
+app.set('trust proxy', trustProxy === undefined || trustProxy === '' ? 'loopback' : (/^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy));
+
 // Top-level Concurrency & Compression Middleware
 app.use(compression());
 
@@ -43,7 +50,10 @@ app.use(
     },
   })
 );
-app.use(cors({ origin: '*' }));
+// Auth uses bearer tokens (no cookies), so CORS is not a credential boundary. Set CORS_ORIGINS
+// (comma-separated) to restrict browsers to specific origins; unset keeps the previous open behaviour.
+const corsOrigins = (process.env.CORS_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+app.use(cors({ origin: corsOrigins.length ? corsOrigins : '*' }));
 app.use(express.json());
 
 // Public static files & uploads (Placed before authentication / JWT middleware)

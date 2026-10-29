@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { stripAnswerKeys } from '../utils/answerKeys';
@@ -38,7 +39,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     }
 
     // Generate readable ID if not provided, e.g. CH + random
-    const challengeId = id && id.trim() ? id.trim() : `CH${Math.floor(100 + Math.random() * 900)}`;
+    const challengeId = id && id.trim() ? id.trim() : `CH${randomBytes(4).toString('hex').toUpperCase()}`;
 
     const challenge = await prisma.challenge.create({
       data: {
