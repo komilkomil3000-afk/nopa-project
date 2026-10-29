@@ -109,10 +109,23 @@ export async function reviewChallengeSubmission(req: AuthRequest, res: Response)
       });
 
       if (status === 'APPROVED' || status === 'approved') {
+        const reward = parseInt(rewardZarik) || 0;
         await tx.user.update({
           where: { id: submission.studentId },
-          data: { zarikBalance: { increment: parseInt(rewardZarik) || 0 } }
+          data: { zarikBalance: { increment: reward } }
         });
+        if (reward > 0) {
+          // Ledger entry (same reason format as the admin review path, so reports reconcile)
+          await tx.zarikTransaction.create({
+            data: {
+              userId: submission.studentId,
+              amount: reward,
+              category: 'Skill Tasks',
+              reason: `پاداش تایید تکلیف: ${submission.challenge?.title ?? ''}`,
+              createdBy: req.user!.id
+            }
+          });
+        }
       }
     });
 

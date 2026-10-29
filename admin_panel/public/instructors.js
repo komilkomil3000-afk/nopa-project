@@ -53,27 +53,27 @@ window.renderInstructorsTable = function(list = null) {
   let html = '';
   instructors.forEach((inst, index) => {
     const avatar = inst.avatarUrl 
-      ? `<img src="${inst.avatarUrl}" alt="${inst.name}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #38bdf8;">`
+      ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #38bdf8;">`
       : `<div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #0369a1); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:15px; border:2px solid #38bdf8;"><i class="fa-solid fa-chalkboard-user"></i></div>`;
 
     const degreeBadge = inst.degree 
-      ? `<span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-size:11px; padding:2px 8px; border-radius:6px;">${inst.degree}</span>`
+      ? `<span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-size:11px; padding:2px 8px; border-radius:6px;">${esc(inst.degree)}</span>`
       : `<span style="color:#64748b; font-size:11px;">-</span>`;
 
     const phoneDisplay = inst.phoneNumber 
-      ? `<span style="font-family:monospace; direction:ltr; display:inline-block; color:#cbd5e1;"><i class="fa-solid fa-phone" style="font-size:10px; color:#38bdf8;"></i> ${inst.phoneNumber}</span>`
+      ? `<span style="font-family:monospace; direction:ltr; display:inline-block; color:#cbd5e1;"><i class="fa-solid fa-phone" style="font-size:10px; color:#38bdf8;"></i> ${esc(inst.phoneNumber)}</span>`
       : `<span style="color:#64748b; font-size:11px;">-</span>`;
 
     const nationalIdDisplay = inst.nationalId
-      ? `<span style="font-family:monospace; color:#cbd5e1;"><i class="fa-solid fa-id-card" style="font-size:10px; color:#a78bfa;"></i> ${inst.nationalId}</span>`
+      ? `<span style="font-family:monospace; color:#cbd5e1;"><i class="fa-solid fa-id-card" style="font-size:10px; color:#a78bfa;"></i> ${esc(inst.nationalId)}</span>`
       : `<span style="color:#64748b; font-size:11px;">-</span>`;
 
     const classesDisplay = inst.classes
-      ? `<div style="max-width:220px; font-size:12px; color:#e2e8f0; line-height:1.4;">${inst.classes}</div>`
+      ? `<div style="max-width:220px; font-size:12px; color:#e2e8f0; line-height:1.4;">${esc(inst.classes)}</div>`
       : `<span style="color:#64748b; font-size:11px;">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume
-      ? `<div style="max-width:240px; font-size:11.5px; color:#94a3b8; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${inst.resume}">${inst.resume}</div>`
+      ? `<div style="max-width:240px; font-size:11.5px; color:#94a3b8; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
       : `<span style="color:#64748b; font-size:11px;">-</span>`;
 
     html += `
@@ -84,7 +84,7 @@ window.renderInstructorsTable = function(list = null) {
             ${avatar}
             <div>
               <div style="font-weight:bold; color:white; font-size:13.5px; display:flex; align-items:center; gap:6px;">
-                ${inst.name}
+                ${esc(inst.name)}
               </div>
               <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
                 ${degreeBadge}
@@ -155,7 +155,7 @@ window.openInstructorModal = function(instructorId = null) {
   if (instructorId) {
     const inst = window.globalInstructorsList.find(i => i.id === instructorId);
     if (inst) {
-      document.getElementById('instructor-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ویرایش اطلاعات استاد: ${inst.name}`;
+      document.getElementById('instructor-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ویرایش اطلاعات استاد: ${esc(inst.name)}`;
       document.getElementById('inst-id').value = inst.id;
       document.getElementById('inst-name').value = inst.name || '';
       document.getElementById('inst-phone').value = inst.phoneNumber || '';
@@ -341,8 +341,8 @@ window.renderSelectedInstructorBadges = function(blockId) {
     html += `
       <span class="inst-selected-tag" style="background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-size: 11.5px; font-weight: bold; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
         <i class="fa-solid fa-user-check" style="font-size:10px;"></i>
-        <span>${name}</span>
-        <span class="inst-tag-remove-btn" onclick="window.removeInstructorFromBlock('${blockId}', '${name}', event)" style="cursor:pointer; color:#ef4444; font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
+        <span>${esc(name)}</span>
+        <span class="inst-tag-remove-btn" onclick="window.removeInstructorFromBlock('${blockId}', '${escJs(name)}', event)" style="cursor:pointer; color:#ef4444; font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
       </span>
     `;
   });
@@ -396,13 +396,13 @@ window.populateInstructorDropdownOptions = function(blockId) {
     html += `
       <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'};" onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'" onmouseout="this.style.background='${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'}'">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.selectInstructorForBlock('${blockId}', '${inst.name}', this.checked)" style="cursor: pointer; width: 15px; height: 15px; accent-color: #0284c7;">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.selectInstructorForBlock('${blockId}', '${escJs(inst.name)}', this.checked)" style="cursor: pointer; width: 15px; height: 15px; accent-color: #0284c7;">
           <div>
-            <div style="font-size: 12.5px; font-weight: bold; color: white;">${inst.name}</div>
-            <div style="font-size: 10.5px; color: #94a3b8;">${inst.degree || inst.classes || 'مدرس دوره'}</div>
+            <div style="font-size: 12.5px; font-weight: bold; color: white;">${esc(inst.name)}</div>
+            <div style="font-size: 10.5px; color: #94a3b8;">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
           </div>
         </div>
-        ${inst.avatarUrl ? `<img src="${inst.avatarUrl}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">` : ''}
+        ${inst.avatarUrl ? `<img src="${esc(inst.avatarUrl)}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">` : ''}
       </label>
     `;
   });

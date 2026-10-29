@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
+import { getJwtSecret } from '../config/secrets';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -16,19 +17,19 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
+    let secret: string;
+    try {
+      secret = getJwtSecret();
+    } catch (e) {
+      console.error('JWT configuration error:', e);
+      return res.status(500).json({ error: 'پیکربندی امنیتی سرور نامعتبر است' });
+    }
 
-    jwt.verify(token, secret, async (err, decoded) => {
+    jwt.verify(token, secret, { algorithms: ['HS256'] }, async (err, decoded) => {
       if (err) {
         return res.status(403).json({ error: 'کاربر غیرمجاز است یا توکن منقضی شده است' });
       }
       const payload = decoded as { id: string; role: string; phoneNumber: string; tokenVersion?: number };
-      
-      // Super Admin Bypass
-      if (payload.phoneNumber === '09380346668' || payload.phoneNumber === '09120000001' || payload.id === 'super-admin-bypass') {
-        req.user = payload;
-        return next();
-      }
 
         try {
           const user = await prisma.user.findUnique({ where: { id: payload.id } });
@@ -74,8 +75,6 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
   }
 }
 
-const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
-
 export function authorizeRoles(...roles: string[]) {
   const lowerRoles = roles.map(r => r.toLowerCase());
   return (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -83,7 +82,7 @@ export function authorizeRoles(...roles: string[]) {
       return res.status(403).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
     }
 
-    if (req.user.phoneNumber === UNIVERSAL_SUPER_ADMIN_PHONE || req.user.role?.toLowerCase() === 'admin') {
+    if (req.user.role?.toLowerCase() === 'admin') {
       return next();
     }
 
@@ -100,7 +99,9 @@ export function checkPermission(scope: keyof import('@prisma/client').RolePermis
       return res.status(401).json({ error: 'شما دسترسی لازم برای این عملیات را ندارید' });
     }
 
-    if (req.user.phoneNumber === UNIVERSAL_SUPER_ADMIN_PHONE) {
+    // Admins are authorised by role (verified against the DB in authenticateJWT),
+    // never by a hard-coded phone number.
+    if (req.user.role?.toLowerCase() === 'admin') {
       return next();
     }
 

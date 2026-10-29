@@ -3,7 +3,7 @@ import prisma from '../config/db';
 
 export const getNews = async (req: Request, res: Response) => {
   try {
-    const news = await (prisma as any).newsArticle.findMany({
+    const news = await prisma.newsArticle.findMany({
       where: { isPublished: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -15,7 +15,7 @@ export const getNews = async (req: Request, res: Response) => {
 
 export const getAdminNews = async (req: Request, res: Response) => {
   try {
-    const news = await (prisma as any).newsArticle.findMany({
+    const news = await prisma.newsArticle.findMany({
       orderBy: { createdAt: 'desc' },
     });
     res.status(200).json(news);
@@ -38,7 +38,7 @@ export async function syncNewsNotifications(article: any) {
       whereClause.OR = [
         { role: 'mentor' },
         { role: 'admin' },
-        { caravansLed: { some: {} } }
+        { mentoredCaravans: { some: {} } }
       ];
     }
     
@@ -85,7 +85,7 @@ export const createNews = async (req: Request, res: Response) => {
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
     const isPub = isPublished !== undefined ? String(isPublished) === 'true' : true;
     
-    const article = await (prisma as any).newsArticle.create({
+    const article = await prisma.newsArticle.create({
       data: {
         title,
         subtitle,
@@ -126,7 +126,7 @@ export const updateNews = async (req: Request, res: Response) => {
     if (isPublished !== undefined) data.isPublished = String(isPublished) === 'true';
     if (req.file) data.imageUrl = `/uploads/${req.file.filename}`;
 
-    const article = await (prisma as any).newsArticle.update({
+    const article = await prisma.newsArticle.update({
       where: { id },
       data,
     });
@@ -145,7 +145,7 @@ export const updateNews = async (req: Request, res: Response) => {
 export const deleteNews = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const article = await (prisma as any).newsArticle.findUnique({ where: { id } });
+    const article = await prisma.newsArticle.findUnique({ where: { id } });
     if (article) {
       const notifTitle = `📢 ${article.title}`;
       await prisma.notification.deleteMany({
@@ -157,7 +157,7 @@ export const deleteNews = async (req: Request, res: Response) => {
         }
       });
     }
-    await (prisma as any).newsArticle.delete({ where: { id } });
+    await prisma.newsArticle.delete({ where: { id } });
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (error) {
     console.error('deleteNews error:', error);

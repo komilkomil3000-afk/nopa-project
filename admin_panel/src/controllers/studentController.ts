@@ -1,9 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 
 export async function createOrUpdateStudent(req: AuthRequest, res: Response) {
   try {
@@ -54,25 +53,44 @@ export async function createOrUpdateStudent(req: AuthRequest, res: Response) {
 export async function adjustBalance(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { assetType, amount, note } = req.body; // assetType: 'zarik' | 'nakh' | 'beyragh' | 'farsh'
+    const { assetType, note } = req.body; // assetType: 'zarik' | 'nakh' | 'beyragh' | 'farsh'
+    const amount = Number(req.body.amount);
+
+    // A string amount would be concatenated ("5" + "10" = "510") instead of added
+    if (!Number.isInteger(amount) || amount === 0) {
+      return res.status(400).json({ error: 'مقدار باید یک عدد صحیح غیرصفر باشد' });
+    }
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
 
     let updateData: any = {};
-    if (assetType === 'zarik') updateData.zarikBalance = user.zarikBalance + amount;
-    else if (assetType === 'nakh') updateData.nakh = user.nakh + amount;
-    else if (assetType === 'beyragh') updateData.beyragh = user.beyragh + amount;
-    else if (assetType === 'farsh') updateData.farsh = user.farsh + amount;
-    
+    let currentValue = 0;
+    if (assetType === 'zarik') { updateData.zarikBalance = { increment: amount }; currentValue = user.zarikBalance; }
+    else if (assetType === 'nakh') { updateData.nakh = { increment: amount }; currentValue = user.nakh; }
+    else if (assetType === 'beyragh') { updateData.beyragh = { increment: amount }; currentValue = user.beyragh; }
+    else if (assetType === 'farsh') { updateData.farsh = { increment: amount }; currentValue = user.farsh; }
+    else return res.status(400).json({ error: 'نوع دارایی نامعتبر است' });
+
     // Prevent negative balances
-    if ((Object.values(updateData)[0] as number) < 0) {
+    if (currentValue + amount < 0) {
         return res.status(400).json({ error: 'موجودی نمی‌تواند منفی شود' });
     }
 
-    await prisma.user.update({
-      where: { id },
-      data: updateData
+    // Balance change and ledger entry (zarik) are written atomically
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id }, data: updateData });
+      if (assetType === 'zarik') {
+        await tx.zarikTransaction.create({
+          data: {
+            userId: id,
+            amount,
+            category: 'Special Campaigns',
+            reason: note ? String(note) : 'تغییر دستی موجودی توسط مدیر',
+            createdBy: req.user!.id
+          }
+        });
+      }
     });
 
     // Notify the user

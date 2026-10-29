@@ -1,9 +1,23 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
+
+// Explicit field list for a caravan's mentor: never return the full User row
+// (it contains passwordHash, nationalId, lockout state, ...).
+const MENTOR_PUBLIC_SELECT = {
+  id: true,
+  name: true,
+  phoneNumber: true,
+  userCode: true,
+  role: true,
+  avatarUrl: true,
+  mentorLevel: true,
+  city: true,
+  bio: true,
+  academicDegree: true,
+} as const;
 import { logAdminAction } from './adminController';
 
-const prisma = new PrismaClient();
 
 export async function toggleCaravanStatus(req: AuthRequest, res: Response) {
   try {
@@ -96,16 +110,26 @@ export async function approveAssetConversion(req: AuthRequest, res: Response) {
         return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
       }
 
-      await prisma.$transaction([
-        prisma.user.update({
-          where: { id: mentor.id },
-          data: { nakh: { decrement: 5 }, farsh: { increment: 1 } }
-        }),
-        prisma.assetConversionRequest.update({
-          where: { id },
-          data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
-        })
-      ]);
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Claim the request first: a concurrent second approval sees count 0 and aborts
+          const claimed = await tx.assetConversionRequest.updateMany({
+            where: { id, status: 'pending' },
+            data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
+          });
+          if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
+          // Guarded decrement: never lets the balance go below 5 -> 0 under concurrency
+          const debited = await tx.user.updateMany({
+            where: { id: mentor.id, nakh: { gte: 5 } },
+            data: { nakh: { decrement: 5 }, farsh: { increment: 1 } }
+          });
+          if (debited.count !== 1) throw new Error('INSUFFICIENT_NAKH');
+        });
+      } catch (e: any) {
+        if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'درخواست معتبر یافت نشد' });
+        if (e?.message === 'INSUFFICIENT_NAKH') return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
+        throw e;
+      }
     } else {
       await prisma.assetConversionRequest.update({
         where: { id },
@@ -333,7 +357,7 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
     const caravan = await prisma.caravan.findUnique({
       where: { id },
       include: {
-        mentor: true,
+        mentor: { select: MENTOR_PUBLIC_SELECT },
         members: {
           where: { isDeleted: false },
           select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true, nakh: true, farsh: true, beyragh: true }
@@ -529,7 +553,7 @@ export async function updateCaravan(req: AuthRequest, res: Response) {
     const updated = await prisma.caravan.update({
       where: { id },
       data: dataToUpdate,
-      include: { mentor: true }
+      include: { mentor: { select: MENTOR_PUBLIC_SELECT } }
     });
     res.json({ message: 'کاروان با موفقیت بروزرسانی شد', caravan: updated });
   } catch (error: any) {

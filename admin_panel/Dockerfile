@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
+COPY package*.json .npmrc ./
 COPY prisma ./prisma/
 RUN npm ci
 

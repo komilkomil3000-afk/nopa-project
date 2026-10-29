@@ -1,9 +1,8 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { logAdminAction } from './adminController';
 
-const prisma = new PrismaClient();
 
 export async function revokeAllSessions(req: AuthRequest, res: Response) {
   try {

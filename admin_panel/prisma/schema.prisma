@@ -147,6 +147,10 @@ model AssetConversionRequest {
   
   caravan         Caravan  @relation(fields: [caravanId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
+
+  @@index([caravanId])
+  @@index([requestedBy])
+  @@index([status])
 }
 
 model Challenge {
@@ -186,6 +190,10 @@ model Submission {
   // Relations
   challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   student        User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, studentId])
+  @@index([studentId])
+  @@index([status])
 }
 
 model MentorRating {
@@ -200,6 +208,9 @@ model MentorRating {
   // Relations
   mentor                   User     @relation("RatingMentor", fields: [mentorId], references: [id], onDelete: Cascade)
   student                  User     @relation("RatingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+  @@index([studentId])
 }
 
 model Notification {
@@ -213,6 +224,9 @@ model Notification {
 
   // Relations
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 model ZarikTransaction {
@@ -632,6 +646,9 @@ model SupportTicket {
 
   student       User     @relation("TicketStudent", fields: [studentId], references: [id], onDelete: Cascade)
   replies       SupportTicketReply[]
+
+  @@index([studentId])
+  @@index([status])
 }
 
 model SupportTicketReply {

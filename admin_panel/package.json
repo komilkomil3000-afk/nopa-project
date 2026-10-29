@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "ts-node prisma/seed.ts",
+    "test": "node --test tests/security.test.js",
     "postinstall": "patch-package"
   },
   "prisma": {
