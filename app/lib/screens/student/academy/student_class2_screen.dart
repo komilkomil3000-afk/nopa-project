@@ -1140,14 +1140,26 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final question = quizQuestions[currentQuestionIndex];
             final selectedAns = userAnswers[currentQuestionIndex];
 
-            return Dialog(
+            // Tapping outside / back asks whether to save the partial result.
+            return PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) async {
+                if (didPop) return;
+                final choice = await _confirmQuizExit(context);
+                if (choice == null || !context.mounted) return;
+                if (choice == 'save') {
+                  await _savePartialQuiz(session, partIndex, currentQuizId, userAnswers);
+                }
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              child: Dialog(
               backgroundColor: const Color(0xFF241F3B),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -1401,11 +1413,76 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   ),
                 ),
               ),
-            );
+            ));
           },
         );
       },
+    ).then((_) {
+      // Let the next video end (e.g. after a re-watch) open the quiz again
+      if (mounted) setState(() => _isMiniQuizShowing = false);
+    });
+  }
+
+  /// Returns 'save', 'discard', or null when the student stays in the quiz.
+  Future<String?> _confirmQuizExit(BuildContext ctx) {
+    TextStyle style(Color c, {bool bold = false}) => TextStyle(
+          color: c,
+          fontSize: 12,
+          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          fontFamily: AppTheme.fontFamily,
+          fontFamilyFallback: AppTheme.fontFamilyFallback,
+        );
+    return showDialog<String>(
+      context: ctx,
+      builder: (c) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF241F3B),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFC09268)),
+          ),
+          title: Text('خروج از آزمون', style: style(const Color(0xFFFBE4C8), bold: true)),
+          content: Text(
+            'آیا می‌خواهید نتیجه آزمون ذخیره شود؟',
+            style: style(const Color(0xFFDDD9EE)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: Text('ادامه آزمون', style: style(const Color(0xFF9D99B8))),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, 'discard'),
+              child: Text('ذخیره نشود', style: style(const Color(0xFFFF8A80))),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, 'save'),
+              child: Text('ذخیره شود', style: style(const Color(0xFFE5B888), bold: true)),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  /// Submits whatever has been answered so far (unanswered stay -1).
+  Future<void> _savePartialQuiz(
+    Map<String, dynamic>? session,
+    int partIndex,
+    String? quizId,
+    List<int> answers,
+  ) async {
+    final sessionId = session?['id']?.toString() ?? '';
+    if (sessionId.isEmpty || answers.every((a) => a == -1)) return;
+    try {
+      final result = await HttpApiService().submitClassSessionQuiz(sessionId, answers, quizId: quizId);
+      if (result != null && result['passed'] == true && session != null && mounted) {
+        setState(() => _passedQuizzes.add(_passedKey(session, partIndex)));
+      }
+    } catch (e) {
+      debugPrint('Save partial quiz error: $e');
+    }
   }
 
   void _showFinalStationExam() {

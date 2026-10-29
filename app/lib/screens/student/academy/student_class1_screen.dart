@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +47,40 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   final Set<String> _expandedStatKeys = {};
   final PageController _videoPageController = PageController();
 
+  /// Fraction of an animation that must be watched to unlock the classes.
+  static const double _animUnlockThreshold = 0.90;
+  final Set<String> _watchedAnimations = {};
+  bool _watchedLoaded = false;
+
+  String get _watchedPrefsKey =>
+      'watched_animations_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
+
+  Future<void> _loadWatchedAnimations() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_watchedPrefsKey) ?? [];
+      if (mounted) setState(() => _watchedAnimations.addAll(saved));
+    } catch (e) {
+      debugPrint('Load watched animations error: $e');
+    }
+  }
+
+  void _onAnimationProgress(String key, Duration position, Duration duration) {
+    if (duration.inMilliseconds <= 0 || _watchedAnimations.contains(key)) return;
+    if (position.inMilliseconds < duration.inMilliseconds * _animUnlockThreshold) return;
+    setState(() => _watchedAnimations.add(key));
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setStringList(_watchedPrefsKey, _watchedAnimations.toList());
+    }).catchError((e) {
+      debugPrint('Save watched animations error: $e');
+    });
+  }
+
+  String _animKey(Map<String, dynamic> clip) => '${clip['id']}';
+
+  bool get _animationsWatched =>
+      _allClips.every((c) => _watchedAnimations.contains(_animKey(c)));
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +116,10 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_watchedLoaded) {
+      _watchedLoaded = true;
+      _loadWatchedAnimations();
+    }
     if (!_isInitialized && _station == null && widget.initialStation == null) {
       _isInitialized = true;
       final args = ModalRoute.of(context)?.settings.arguments;
@@ -760,6 +800,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                   videoUrl: videoUrl,
                   title: title,
                   coverImageUrl: poster,
+                  onProgress: (pos, dur) => _onAnimationProgress(_animKey(clip), pos, dur),
                 ),
               );
             },
@@ -890,7 +931,19 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             flex: 3,
             child: _buildActionButton(
               title: 'ورود به کلاس‌ها',
-              onTap: () => _navigateToClass('مهارت'),
+              enabled: _animationsWatched,
+              animatedStroke: true,
+              onTap: _animationsWatched
+                  ? () => _navigateToClass('مهارت')
+                  : () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'برای ورود به کلاس‌ها ابتدا انیمیشن‌های منزلگاه را (حداقل ۹۰٪) ببینید',
+                            style: TextStyle(fontFamily: AppTheme.fontFamily),
+                          ),
+                          backgroundColor: Color(0xFF28274A),
+                        ),
+                      ),
             ),
           ),
           const SizedBox(width: 10),
@@ -911,47 +964,124 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   Widget _buildActionButton({
     required String title,
     required VoidCallback onTap,
+    bool enabled = true,
+    bool animatedStroke = false,
   }) {
+    const gold = Color(0xFFC09268);
+    final rotating = animatedStroke && enabled;
+    final box = Container(
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+      decoration: BoxDecoration(
+        color: enabled ? const Color(0xFF2A2835) : const Color(0xFF26252B),
+        borderRadius: BorderRadius.circular(8),
+        border: rotating
+            ? null
+            : Border.all(
+                color: enabled ? gold.withValues(alpha: 0.85) : const Color(0xFF55535C),
+                width: 1.0,
+              ),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: enabled ? const Color(0xFFF4DCC5) : const Color(0xFF8C8A93),
+          fontSize: 10.5,
+          fontWeight: FontWeight.bold,
+          fontFamily: AppTheme.fontFamily,
+          fontFamilyFallback: AppTheme.fontFamilyFallback,
+        ),
+      ),
+    );
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A2835),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: const Color(0xFFC09268).withValues(alpha: 0.85),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFF4DCC5),
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
-          ),
-        ),
+        child: rotating ? _RotatingStroke(color: gold, child: box) : box,
       ),
     );
   }
+}
+
+/// Slowly rotating highlight running around the border of its child.
+class _RotatingStroke extends StatefulWidget {
+  final Color color;
+  final Widget child;
+  const _RotatingStroke({required this.color, required this.child});
+
+  @override
+  State<_RotatingStroke> createState() => _RotatingStrokeState();
+}
+
+class _RotatingStrokeState extends State<_RotatingStroke> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) => CustomPaint(
+        foregroundPainter: _StrokePainter(color: widget.color, turn: _c.value),
+        child: child,
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+class _StrokePainter extends CustomPainter {
+  final Color color;
+  final double turn;
+  _StrokePainter({required this.color, required this.turn});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(0.75);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+    // Dim base ring
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: 0.35),
+    );
+    // Bright arc travelling around the ring
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..shader = SweepGradient(
+          colors: [color.withValues(alpha: 0), color, color.withValues(alpha: 0)],
+          stops: const [0.0, 0.15, 0.3],
+          transform: GradientRotation(turn * 2 * math.pi),
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_StrokePainter old) => old.turn != turn || old.color != color;
 }
 
 

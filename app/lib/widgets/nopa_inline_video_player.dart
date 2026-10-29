@@ -98,7 +98,8 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
     final value = _controller!.value;
     if (value.isInitialized && value.duration > Duration.zero) {
       widget.onProgress?.call(value.position, value.duration);
-      final atEnd = value.position >= value.duration;
+      // Some platforms stop a few ms short of the exact duration
+      final atEnd = value.position >= value.duration - const Duration(milliseconds: 400);
       if (atEnd && !_endedNotified) {
         _endedNotified = true;
         widget.onEnded?.call();
@@ -147,6 +148,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   }
 
   Future<void> _startVideo({String? overrideUrl, int seekSeconds = 0}) async {
+    _endedNotified = false;
     setState(() {
       _isLoading = true;
       _hasError = false;

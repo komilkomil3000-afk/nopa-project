@@ -49,7 +49,7 @@ Future<void> contactMentor(BuildContext context, UserModel user) async {
 
   final uri = buildMentorContactUri(user.mentorSocialPlatform, user.mentorSocialHandle);
   if (uri == null) {
-    showMessage('آیدی پیام‌رسان راهبر شما هنوز ثبت نشده است.');
+    showMessage('اطلاعات راهبر تکمیل نیست.');
     return;
   }
 

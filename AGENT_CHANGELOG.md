@@ -684,3 +684,33 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (from app/): no issues. tsc not runnable (typescript not installed in admin_panel).
 - **Status:** Completed
+
+### [2026-10-29 10:45] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - nopa_inline_video_player.dart: end detection tolerates 400ms short of duration and _endedNotified resets on each _startVideo so onEnded reliably fires
+  - student_class2_screen.dart: _isMiniQuizShowing now resets when quiz dialog closes (previously stuck true so quiz never auto-opened again after replay), quiz dialog dismissible via outside tap/back with PopScope asking save result or not (save submits partial answers, discard just closes, or continue), allowing re-watching the video then retaking the quiz
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files (no issues)
+- **Status:** Completed
+
+### [2026-10-29 10:57] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: 'ورود به کلاس‌ها' button is grey/disabled until every station animation is watched >=90% (persisted per user in SharedPreferences), then enabled with a slowly rotating gold stroke
+  - tapping while locked shows a hint
+  - mentor_contact.dart: missing-mentor message changed to 'اطلاعات راهبر تکمیل نیست.' (button already uses the mentor's own registered platform/ID, no hardcoded link)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files (no issues)
+- **Status:** Completed
