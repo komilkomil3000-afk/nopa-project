@@ -112,7 +112,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(err.status || err.statusCode || 500).json({
     success: false,
     message: 'Internal server error occurred',
-    error: process.env.NODE_ENV === 'production' ? undefined : err.message
+    error: process.env.NODE_ENV === 'production' && process.env.EXPOSE_ERRORS !== '1' ? undefined : err.message
   });
 });
 
