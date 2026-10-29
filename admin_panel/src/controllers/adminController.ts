@@ -1,11 +1,11 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { csvRow } from '../utils/csv';
+import prisma from '../config/db';
 import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 
-const prisma = new PrismaClient();
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
 let zarikAnalyticsCache: { data: any; expiry: number } | null = null;
@@ -586,7 +586,13 @@ export async function deleteUser(req: AuthRequest, res: Response) {
       return res.status(403).json({ error: 'شما دسترسی حذف کاربر را ندارید' });
     }
 
+    // Soft delete (the shared client rewrites delete -> isDeleted=true); never a physical delete,
+    // which would cascade away the user's ledger, submissions and history.
     const user = await prisma.user.delete({ where: { id } });
+
+    // Invalidate every existing session / token of the deleted user
+    await prisma.userSession.deleteMany({ where: { userId: id } });
+    await prisma.user.update({ where: { id }, data: { tokenVersion: { increment: 1 } } }).catch(() => undefined);
 
     await logAdminAction(
       req.user?.id || 'system',
@@ -663,7 +669,7 @@ export async function exportUsersCsv(req: AuthRequest, res: Response) {
       }
 
       for (const u of users) {
-        res.write(`"${u.id}","${u.name}","${u.phoneNumber}","${u.role}",${u.zarikBalance},${u.levelFrame},"${u.createdAt.toISOString()}"\n`);
+        res.write(csvRow([u.id, u.name, u.phoneNumber, u.role, u.zarikBalance, u.levelFrame, u.createdAt.toISOString()]) + '\n');
       }
 
       skip += batchSize;

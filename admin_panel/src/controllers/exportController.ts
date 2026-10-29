@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { csvRow, escapeHtml } from '../utils/csv';
+import prisma from '../config/db';
 import ExcelJS from 'exceljs';
 // @ts-ignore
 import htmlPdf from 'html-pdf-node';
 
-const prisma = new PrismaClient();
 
 export const exportData = async (req: Request, res: Response) => {
   const { type, format } = req.query; // type: users, caravans, ledger, audit; format: pdf, excel, csv
@@ -520,8 +520,8 @@ export const exportData = async (req: Request, res: Response) => {
     if (format === 'csv') {
       const BOM = '\uFEFF';
       const csvContent = BOM + [
-        headers.join(','),
-        ...data.map(row => row.map((cell: any) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        csvRow(headers),
+        ...data.map(row => csvRow(row))
       ].join('\n');
       
       res.header('Content-Type', 'text/csv; charset=utf-8');
@@ -587,6 +587,8 @@ export const exportData = async (req: Request, res: Response) => {
         <html dir="rtl" lang="fa">
         <head>
           <meta charset="UTF-8">
+          <!-- Defence in depth: no scripts, frames, images, file: or network access except the font CSS -->
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:">
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
             body {
@@ -640,18 +642,18 @@ export const exportData = async (req: Request, res: Response) => {
         <body>
           <div class="header-box">
             <div>
-              <h1 class="title">سامانه جامع نپا | ${reportTitle}</h1>
+              <h1 class="title">سامانه جامع نپا | ${escapeHtml(reportTitle)}</h1>
               <div class="meta">تاریخ صدور گزارش: ${generatedAt} | تعداد کل رکوردها: ${data.length}</div>
             </div>
           </div>
           <table>
             <thead>
               <tr>
-                ${headers.map(h => `<th>${h}</th>`).join('')}
+                ${headers.map((h: any) => `<th>${escapeHtml(h)}</th>`).join('')}
               </tr>
             </thead>
             <tbody>
-              ${data.map(row => `<tr>${row.map((cell: any) => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+              ${data.map(row => `<tr>${row.map((cell: any) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}
             </tbody>
           </table>
           <div class="footer">تولید شده توسط سامانه مدیریت آموزشی نپا (NOPA ERP System)</div>

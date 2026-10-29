@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 
 // Explicit field list for a caravan's mentor: never return the full User row
@@ -18,7 +18,6 @@ const MENTOR_PUBLIC_SELECT = {
 } as const;
 import { logAdminAction } from './adminController';
 
-const prisma = new PrismaClient();
 
 export async function toggleCaravanStatus(req: AuthRequest, res: Response) {
   try {

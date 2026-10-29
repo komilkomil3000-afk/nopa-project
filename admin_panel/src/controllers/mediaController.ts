@@ -4,9 +4,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 
-const prisma = new PrismaClient();
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../uploads');

@@ -1,8 +1,7 @@
 import { Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import { v4 as uuidv4 } from 'uuid';
 
-const prisma = new PrismaClient();
 
 export const evaluateStudentProgress = async (userId: string) => {
   try {

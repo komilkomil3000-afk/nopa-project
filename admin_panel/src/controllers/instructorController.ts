@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 
-const prisma = new PrismaClient();
 
 export const getInstructors = async (req: Request, res: Response) => {
   try {

@@ -191,28 +191,62 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
       }
     }
 
-    // Revert awarded coins for any approved submissions before deletion
-    const approvedSubmissions = await prisma.submission.findMany({
-      where: { challengeId: id, status: 'approved' }
-    });
+    // Reward reversal is opt-in (?revertRewards=true). By default deleting a challenge never touches
+    // balances or the ledger: students keep what they legitimately earned and history stays intact.
+    // (The old code decremented by `score`, which is not the reward for quizzes, and deleted every
+    // ledger row whose reason merely contained the challenge title - for ALL users.)
+    const revertRewards = String(req.query.revertRewards || '').toLowerCase() === 'true';
 
-    for (const sub of approvedSubmissions) {
-      if (sub.score && sub.score > 0) {
-        await prisma.user.update({
-          where: { id: sub.studentId },
-          data: { zarikBalance: { decrement: sub.score } }
+    await prisma.$transaction(async (tx) => {
+      if (revertRewards) {
+        const approved = await tx.submission.findMany({
+          where: { challengeId: id, status: 'approved' },
+          select: { studentId: true }
         });
+        const studentIds = Array.from(new Set(approved.map(a => a.studentId)));
+
+        if (studentIds.length > 0) {
+          // Exact reason strings written when these rewards were granted, limited to the students
+          // who actually have an approved submission on this challenge.
+          const reasons = [
+            `پاداش شرکت در آزمون چالش: ${existing.title}`,
+            `پاداش تایید تکلیف: ${existing.title}`
+          ];
+          const granted = await tx.zarikTransaction.findMany({
+            where: { userId: { in: studentIds }, reason: { in: reasons }, amount: { gt: 0 } }
+          });
+
+          const perStudent = new Map<string, number>();
+          for (const g of granted) {
+            perStudent.set(g.userId, (perStudent.get(g.userId) || 0) + g.amount);
+          }
+
+          for (const [studentId, total] of perStudent) {
+            const student = await tx.user.findUnique({ where: { id: studentId }, select: { zarikBalance: true } });
+            if (!student) continue;
+            const clawback = Math.min(total, Math.max(student.zarikBalance, 0)); // never below zero
+            if (clawback <= 0) continue;
+            await tx.user.update({
+              where: { id: studentId },
+              data: { zarikBalance: { decrement: clawback } }
+            });
+            // Compensating ledger entry instead of deleting history
+            await tx.zarikTransaction.create({
+              data: {
+                userId: studentId,
+                amount: -clawback,
+                category: 'Reversal',
+                reason: `بازگشت پاداش به دلیل حذف چالش: ${existing.title}`,
+                createdBy: req.user!.id
+              }
+            });
+          }
+        }
       }
-    }
 
-    // Clean up related transactions
-    await prisma.zarikTransaction.deleteMany({
-      where: { reason: { contains: existing.title } }
+      await tx.submission.deleteMany({ where: { challengeId: id } });
+      await tx.challenge.delete({ where: { id } });
     });
-
-    // Cascade delete submissions and the challenge
-    await prisma.submission.deleteMany({ where: { challengeId: id } });
-    await prisma.challenge.delete({ where: { id } });
 
     res.json({ message: 'چالش و پاسخ‌های مرتبط با موفقیت حذف گردیدند' });
   } catch (error) {

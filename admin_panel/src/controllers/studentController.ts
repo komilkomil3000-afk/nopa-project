@@ -1,9 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 
 export async function createOrUpdateStudent(req: AuthRequest, res: Response) {
   try {
