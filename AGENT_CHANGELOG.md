@@ -857,3 +857,30 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (whole app): no issues
 - **Status:** Completed
+
+### [2026-10-29 15:40] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/models/user_model.dart` (Modified)
+- **Description of Changes:**
+  - UserModel.fromJson now reads mentor contact info from the User-table fields socialPlatform / socialMessengerHandle of caravan.mentor, falling back to the flattened mentorSocialPlatform / mentorSocialHandle keys
+  - empty strings are skipped via _firstNonEmpty
+  - Files: app/lib/models/user_model.dart (Modified)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/models/user_model.dart lib/utils/mentor_contact.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-29 15:45] - Agent 1 (CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+- **Description of Changes:**
+  - Mentor modal platform field now suggests the four platform names the Flutter app understands (ایتا/بله/تلگرام/واتساپ) via datalist and drops the unsupported 'شاد' from the label
+  - Files: admin_panel/public/index.html (Modified)
+- **Verification / Checkpoints Executed:**
+  - Static HTML edit only; no build needed
+- **Status:** Completed

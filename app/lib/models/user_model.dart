@@ -197,8 +197,15 @@ class UserModel {
       caravanName: json['caravanName'] ?? json['caravan']?['name'] ?? 'فاقد کاروان',
       caravanMentor: json['caravanMentor'] ?? json['caravan']?['mentor']?['name'] ?? 'تعیین نشده',
       mentorPhone: json['mentorPhone'] ?? json['caravan']?['mentor']?['phoneNumber'],
-      mentorSocialPlatform: json['mentorSocialPlatform'],
-      mentorSocialHandle: json['mentorSocialHandle'],
+      // Mentors are rows of the User table; contact fields are User.socialPlatform / User.socialMessengerHandle.
+      mentorSocialPlatform: _firstNonEmpty([
+        json['caravan']?['mentor']?['socialPlatform'],
+        json['mentorSocialPlatform'],
+      ]),
+      mentorSocialHandle: _firstNonEmpty([
+        json['caravan']?['mentor']?['socialMessengerHandle'],
+        json['mentorSocialHandle'],
+      ]),
       completedStationsCount: json['completedStationsCount'] ?? 0,
       completedSessionsCount: json['completedSessionsCount'] ?? 0,
       certificates: json['certificates'] ?? [],
@@ -206,5 +213,13 @@ class UserModel {
       managedMembersCount: json['managedMembersCount'] ?? 0,
       satisfactionScore: (json['satisfactionScore'] ?? 0.0).toDouble(),
     );
+  }
+
+  static String? _firstNonEmpty(List<dynamic> values) {
+    for (final v in values) {
+      final s = v?.toString().trim() ?? '';
+      if (s.isNotEmpty) return s;
+    }
+    return null;
   }
 }
