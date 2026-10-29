@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { apiLimiter } from './middleware/rateLimit';
+import { scrubResponses } from './middleware/responseScrubber';
 import apiRouter from './routes/api';
 
 // Load Environment Config
@@ -80,6 +81,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // General API Rate Limiter (1000 requests per 15 minutes per IP)
 app.use('/api/', apiLimiter);
+
+// Never let password hashes / token versions leave the server, whatever a controller returns
+app.use('/api/', scrubResponses);
 
 // Health check endpoint
 app.get(['/health', '/api/v1/health'], (req, res) => {

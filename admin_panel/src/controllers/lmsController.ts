@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
 
 export const getStations = async (req: Request, res: Response) => {
@@ -25,6 +26,11 @@ export const getStations = async (req: Request, res: Response) => {
       },
       orderBy: { orderIndex: 'asc' }
     });
+
+    // Students must never receive answer keys; only admins (who edit the quizzes) get them
+    if (!isAdminRole((req as any).user?.role)) {
+      stripStationAnswerKeys(stations);
+    }
 
     const now = new Date();
     const mapped = stations.map(st => {
@@ -133,6 +139,9 @@ export const getQuizzes = async (req: Request, res: Response) => {
     const quizzes = await prisma.quiz.findMany({
       orderBy: { orderIndex: 'asc' }
     });
+    if (!isAdminRole((req as any).user?.role)) {
+      quizzes.forEach((q: any) => { q.questionsJson = stripAnswerKeys(q.questionsJson); });
+    }
     res.json(quizzes);
   } catch (error) {
     console.error('getQuizzes error:', error);

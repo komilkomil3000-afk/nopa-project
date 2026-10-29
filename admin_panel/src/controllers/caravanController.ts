@@ -1,6 +1,21 @@
 import { Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth';
+
+// Explicit field list for a caravan's mentor: never return the full User row
+// (it contains passwordHash, nationalId, lockout state, ...).
+const MENTOR_PUBLIC_SELECT = {
+  id: true,
+  name: true,
+  phoneNumber: true,
+  userCode: true,
+  role: true,
+  avatarUrl: true,
+  mentorLevel: true,
+  city: true,
+  bio: true,
+  academicDegree: true,
+} as const;
 import { logAdminAction } from './adminController';
 
 const prisma = new PrismaClient();
@@ -333,7 +348,7 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
     const caravan = await prisma.caravan.findUnique({
       where: { id },
       include: {
-        mentor: true,
+        mentor: { select: MENTOR_PUBLIC_SELECT },
         members: {
           where: { isDeleted: false },
           select: { id: true, name: true, phoneNumber: true, userCode: true, zarikBalance: true, role: true, levelFrame: true, nakh: true, farsh: true, beyragh: true }
@@ -529,7 +544,7 @@ export async function updateCaravan(req: AuthRequest, res: Response) {
     const updated = await prisma.caravan.update({
       where: { id },
       data: dataToUpdate,
-      include: { mentor: true }
+      include: { mentor: { select: MENTOR_PUBLIC_SELECT } }
     });
     res.json({ message: 'کاروان با موفقیت بروزرسانی شد', caravan: updated });
   } catch (error: any) {

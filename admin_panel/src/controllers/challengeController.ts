@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+import { stripAnswerKeys } from '../utils/answerKeys';
 import prisma from '../config/db';
 
 export async function createChallenge(req: AuthRequest, res: Response) {
@@ -348,6 +349,10 @@ export async function getChallenges(req: AuthRequest, res: Response) {
     });
     const mentorCaravanMap = new Map(caravans.filter(c => c.mentorId).map(c => [c.mentorId!, c]));
 
+    // Only staff may see answer keys; students get the questions without them
+    const viewerRole = String(user?.role || '').toLowerCase();
+    const viewerIsStaff = ['admin', 'mentor', 'super_mentor'].includes(viewerRole);
+
     const parsedChallenges = challenges.map(c => {
       let parsedQuestions = null;
       if (c.questions) {
@@ -401,7 +406,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
 
       return {
         ...c,
-        questions: parsedQuestions,
+        questions: viewerIsStaff ? parsedQuestions : stripAnswerKeys(parsedQuestions),
         totalSubmissions,
         pendingSubmissions,
         approvedSubmissions,
