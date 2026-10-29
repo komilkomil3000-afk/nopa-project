@@ -160,7 +160,14 @@ window.handleAdminLogin = async function() {
 
 function setupEventListeners() {
   // Logout Ctrl
-  document.getElementById('btn-logout-ctrl').addEventListener('click', () => {
+  document.getElementById('btn-logout-ctrl').addEventListener('click', async () => {
+    // Revoke the server-side session first; otherwise the token stays valid until it expires
+    try {
+      const t = localStorage.getItem('nopa_admin_token') || localStorage.getItem('token');
+      if (t) {
+        await fetch('/api/v1/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
+      }
+    } catch (_) { /* offline: still clear the local copy */ }
     localStorage.removeItem('token');
     localStorage.removeItem('nopa_admin_token');
     localStorage.removeItem('nopa_admin_user');
