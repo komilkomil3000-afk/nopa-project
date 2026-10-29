@@ -38,8 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const phoneInput = document.getElementById('login-phone') || form.querySelector('input[type="text"]');
       const passInput = document.getElementById('login-password') || form.querySelector('input[type="password"]');
 
-      const phoneNumber = phoneInput ? phoneInput.value.trim() : '09380346668';
-      const password = passInput ? passInput.value.trim() : '123456';
+      const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
+      const password = passInput ? passInput.value.trim() : '';
+      if (!phoneNumber || !password) {
+        alert('شماره همراه و گذرواژه را وارد کنید');
+        return;
+      }
 
       try {
         const res = await fetch('/api/v1/auth/login', {
@@ -115,8 +119,12 @@ window.handleAdminLogin = async function() {
   const phoneInput = document.getElementById('login-phone') || document.querySelector('input[type="text"]');
   const passInput = document.getElementById('login-password') || document.querySelector('input[type="password"]');
 
-  const phoneNumber = phoneInput ? phoneInput.value.trim() : '09380346668';
-  const password = passInput ? passInput.value.trim() : '123456';
+  const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
+  const password = passInput ? passInput.value.trim() : '';
+  if (!phoneNumber || !password) {
+    alert('شماره همراه و گذرواژه را وارد کنید');
+    return;
+  }
 
   try {
     const res = await fetch('/api/v1/auth/login', {

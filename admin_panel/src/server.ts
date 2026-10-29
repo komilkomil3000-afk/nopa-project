@@ -1,9 +1,13 @@
 import dotenv from 'dotenv';
 import app from './app';
 import prisma from './config/db';
+import { assertSecretsConfigured } from './config/secrets';
 
 // Load Environment Config
 dotenv.config();
+
+// Fail fast: refuse to start without strong, non-default JWT secrets
+assertSecretsConfigured();
 
 // Process protection against unhandled rejections and uncaught exceptions
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {

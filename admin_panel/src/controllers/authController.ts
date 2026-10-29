@@ -4,8 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { recordSmsDispatch, getClientIp } from '../middleware/smsProtection';
-
-const UNIVERSAL_SUPER_ADMIN_PHONE = '09380346668';
+import { getJwtSecret, getJwtRefreshSecret } from '../config/secrets';
 
 const normalizePhone = (phone: any) => {
   if (!phone) return '';
@@ -113,19 +112,10 @@ export async function login(req: Request, res: Response) {
       });
     }
 
-    // Password verification (Bcrypt check or universal passcode)
+    // Password verification: bcrypt only. There is no universal/master password.
     let isPasswordCorrect = false;
-    if (rawPassword === '123456') {
-      isPasswordCorrect = true;
-      if (!user.identityVerified) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { identityVerified: true }
-        });
-        user.identityVerified = true;
-      }
-    } else if (password) {
-      isPasswordCorrect = await bcrypt.compare(password, user.passwordHash);
+    if (rawPassword && user.passwordHash) {
+      isPasswordCorrect = await bcrypt.compare(rawPassword, user.passwordHash);
     }
 
     if (!isPasswordCorrect) {
@@ -168,8 +158,8 @@ export async function login(req: Request, res: Response) {
       }
     });
 
-    const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+    const secret = getJwtSecret();
+    const refreshSecret = getJwtRefreshSecret();
     const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
 
@@ -246,32 +236,55 @@ export async function register(req: Request, res: Response) {
     if (!phoneNumber || !fullName || !password) {
       return res.status(400).json({ error: 'اطلاعات وارد شده ناقص است' });
     }
+    if (typeof fullName !== 'string' || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: 'نام یا گذرواژه نامعتبر است (گذرواژه حداقل ۶ کاراکتر)' });
+    }
 
-    // Normalize phone number
-    const numericPhone = phoneNumber.toString().replace(/\D/g, '');
-    let countryPrefix = countryCode || '+98';
+    let countryPrefix = String(countryCode || '+98').trim();
     if (!countryPrefix.startsWith('+')) {
       countryPrefix = '+' + countryPrefix;
     }
-    let cleanPhone = numericPhone;
-    if (cleanPhone.startsWith('0')) {
-      cleanPhone = cleanPhone.substring(1);
+    if (!/^\+\d{1,4}$/.test(countryPrefix)) {
+      return res.status(400).json({ error: 'کد کشور نامعتبر است' });
     }
-    const countryDigits = countryPrefix.replace('+', '');
-    if (cleanPhone.startsWith(countryDigits)) {
-      cleanPhone = cleanPhone.substring(countryDigits.length);
-    }
-    const normalizedPhoneNumber = `${countryPrefix}${cleanPhone}`;
 
-    const corePhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
-    
-    // Check if phone exists (pre-created via CRM or similar)
+    // Iranian numbers are stored in the same 09xxxxxxxxx format that login() looks up.
+    // Other countries keep "<+code><national number>".
+    let normalizedPhoneNumber: string;
+    let phoneCandidates: string[];
+    if (countryPrefix === '+98') {
+      normalizedPhoneNumber = normalizePhone(phoneNumber);
+      if (!/^09\d{9}$/.test(normalizedPhoneNumber)) {
+        return res.status(400).json({ error: 'شماره همراه نامعتبر است' });
+      }
+      // '+98...' is the legacy format written by the old register endpoint
+      phoneCandidates = [normalizedPhoneNumber, '+98' + normalizedPhoneNumber.slice(1)];
+    } else {
+      let national = phoneNumber.toString().replace(/\D/g, '').replace(/^0+/, '');
+      const countryDigits = countryPrefix.slice(1);
+      if (national.startsWith(countryDigits) && national.length > 10) {
+        national = national.slice(countryDigits.length);
+      }
+      if (national.length < 6 || national.length > 14) {
+        return res.status(400).json({ error: 'شماره همراه نامعتبر است' });
+      }
+      normalizedPhoneNumber = `${countryPrefix}${national}`;
+      phoneCandidates = [normalizedPhoneNumber];
+    }
+
+    // SECURITY: registration must never take over an existing account. Without a verified
+    // OTP, proving ownership of a phone number is impossible, so an exact match on an
+    // existing number is always rejected (no endsWith matching, no password overwrite).
     const existingUser = await prisma.user.findFirst({
-      where: { phoneNumber: { endsWith: corePhone } }
+      where: { phoneNumber: { in: phoneCandidates } }
     });
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'این شماره قبلاً در سامانه ثبت شده است. با گذرواژه خود وارد شوید یا با مدیریت تماس بگیرید'
+      });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    let activeUser;
 
     const maxUser = await prisma.user.findFirst({
       orderBy: { userCode: 'desc' },
@@ -279,43 +292,25 @@ export async function register(req: Request, res: Response) {
     });
     const nextUserCode = maxUser && maxUser.userCode ? maxUser.userCode + 1 : 110100;
 
-    if (existingUser) {
-      // Sync strategy: update profile fields, save hashed password, set registrationCompleted = true, preserve caravan
-      activeUser = await prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          name: fullName,
-          phoneNumber: normalizedPhoneNumber,
-          countryCode: countryPrefix,
-          city: city || null,
-          dateOfBirth: dateOfBirth || null,
-          passwordHash,
-          registrationCompleted: true,
-          userCode: existingUser.userCode || nextUserCode
-        }
-      });
-    } else {
-      // Create new student user and award 200 Zarik
-      activeUser = await prisma.user.create({
-        data: {
-          name: fullName,
-          phoneNumber: normalizedPhoneNumber,
-          countryCode: countryPrefix,
-          city: city || null,
-          dateOfBirth: dateOfBirth || null,
-          passwordHash,
-          registrationCompleted: true,
-          role: 'student',
-          zarikBalance: 0,
-          identityVerified: true,
-          userCode: nextUserCode
-        }
-      });
-    }
+    const activeUser = await prisma.user.create({
+      data: {
+        name: fullName,
+        phoneNumber: normalizedPhoneNumber,
+        countryCode: countryPrefix,
+        city: city || null,
+        dateOfBirth: dateOfBirth || null,
+        passwordHash,
+        registrationCompleted: true,
+        role: 'student',
+        zarikBalance: 0,
+        identityVerified: true,
+        userCode: nextUserCode
+      }
+    });
 
     // Generate token and session
-    const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+    const secret = getJwtSecret();
+    const refreshSecret = getJwtRefreshSecret();
     const expiresInSeconds = 30 * 24 * 60 * 60; // 30 days
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
 
@@ -393,8 +388,8 @@ export async function refreshToken(req: Request, res: Response) {
       return res.status(400).json({ error: 'Refresh token is required' });
     }
 
-    const secret = process.env.JWT_SECRET || 'nopa_super_secret_jwt_key_2026';
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'nopa_super_secret_refresh_jwt_key_2026';
+    const secret = getJwtSecret();
+    const refreshSecret = getJwtRefreshSecret();
 
     let decoded: any;
     try {
