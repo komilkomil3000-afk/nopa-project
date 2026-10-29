@@ -64,11 +64,15 @@ import { getSystemSetting, setSystemSetting } from '../controllers/settingContro
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
+import { restrictNonAdmins } from '../middleware/adminAccess';
+
 const router = Router();
 
 // Apply JWT authentication and authorize only admin or mentor roles to the admin panel
 router.use(authenticateJWT as any);
 router.use(authorizeRoles('admin', 'mentor', 'SUPER_MENTOR') as any);
+// Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
+router.use(restrictNonAdmins as any);
 
 // 1. High-Scale User & Contact Directory
 router.get('/users', getUsers as any);

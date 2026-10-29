@@ -16,12 +16,12 @@ async function loadNewsTab() {
     news.forEach(item => {
       const tr = document.createElement('tr');
       const date = new Date(item.publishDate).toLocaleString('fa-IR');
-      const img = item.imageUrl ? `<img src="${API_BASE_URL}${item.imageUrl}" style="width:50px; border-radius:4px;">` : 'بدون تصویر';
+      const img = item.imageUrl ? `<img src="${API_BASE_URL}${esc(item.imageUrl)}" style="width:50px; border-radius:4px;">` : 'بدون تصویر';
       tr.innerHTML = `
         <td>${img}</td>
-        <td>${item.title}</td>
-        <td>${item.category}</td>
-        <td>${item.source}</td>
+        <td>${esc(item.title)}</td>
+        <td>${esc(item.category)}</td>
+        <td>${esc(item.source)}</td>
         <td>${date}</td>
         <td>
           <button class="btn-icon" onclick="editNews('${item.id}')" title="ویرایش"><i class="fa-solid fa-edit"></i></button>

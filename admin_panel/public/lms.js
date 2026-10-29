@@ -289,7 +289,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
             <span style="color:#fbbf24;">📍</span> ${simpleStationName}
           </strong>
           ${st.stayDuration ? `<div style="font-size:11px; color:#38bdf8; margin-top:2px;"><i class="fa-solid fa-hourglass-half"></i> اقامت: ${st.stayDuration}</div>` : ''}
-          ${st.animationTitle ? `<div style="font-size:10px; color:#a78bfa; margin-top:2px;"><i class="fa-solid fa-film"></i> ${st.animationTitle}</div>` : ''}
+          ${st.animationTitle ? `<div style="font-size:10px; color:#a78bfa; margin-top:2px;"><i class="fa-solid fa-film"></i> ${esc(st.animationTitle)}</div>` : ''}
           <div style="font-size:11px; color:#94a3b8; margin-top:3px;">کد ترتیب: منزلگاه ${idx}</div>
         </td>
         <td>${topicsDisplayHtml}</td>
@@ -585,12 +585,12 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         </div>
         <div>
           <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-clapperboard" style="color:#38bdf8;"></i> عنوان انیمیشن معرفی:</label>
-          <input type="text" id="content-modal-st-anim-title" class="input-ctrl" value="${station.animationTitle || ''}" placeholder="مثال: انیمیشن آغاز سفر و منزلگاه اول" style="background:#0f172a; border-color:#475569; color:white;">
+          <input type="text" id="content-modal-st-anim-title" class="input-ctrl" value="${esc(station.animationTitle || '')}" placeholder="مثال: انیمیشن آغاز سفر و منزلگاه اول" style="background:#0f172a; border-color:#475569; color:white;">
         </div>
         <div>
           <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> آدرس / لینک ویدیو انیمیشن:</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" id="content-modal-st-anim-url" class="input-ctrl" value="${station.animationUrl || ''}" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background:#0f172a; border-color:#475569; color:white; direction:ltr; text-align:left; flex:1;">
+            <input type="text" id="content-modal-st-anim-url" class="input-ctrl" value="${esc(station.animationUrl || '')}" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background:#0f172a; border-color:#475569; color:white; direction:ltr; text-align:left; flex:1;">
             <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="آپلود مستقیم ویدیو یا انیمیشن">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
               <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'content-modal-st-anim-url')">
@@ -601,7 +601,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
       <div style="margin-bottom:12px;">
         <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
-        <textarea id="content-modal-st-desc" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های آموزشی این منزلگاه..." style="background:#0f172a; border-color:#475569;">${station.description || ''}</textarea>
+        <textarea id="content-modal-st-desc" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های آموزشی این منزلگاه..." style="background:#0f172a; border-color:#475569;">${esc(station.description || '')}</textarea>
       </div>
 
       <div style="display:flex; justify-content:flex-end;">
@@ -638,7 +638,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             </span>
             <div style="flex:1; display:flex; align-items:center; gap:6px;">
               <label style="font-size:11px; color:#cbd5e1; white-space:nowrap;"><i class="fa-solid fa-pen" style="color:${color};"></i> عنوان دسته کلاس:</label>
-              <input type="text" id="cat-title-${cat.id}" class="input-ctrl" value="${cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای')}" placeholder="عنوان دسته کلاس..." style="background:#0f172a; border-color:${color}66; color:white; font-weight:bold; font-size:13px; padding:6px 12px;">
+              <input type="text" id="cat-title-${cat.id}" class="input-ctrl" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." style="background:#0f172a; border-color:${color}66; color:white; font-weight:bold; font-size:13px; padding:6px 12px;">
             </div>
           </div>
           
@@ -664,7 +664,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
           <div style="display:flex; align-items:center; gap:8px;">
             <label style="font-size:11px; color:#cbd5e1;">انتخاب از بانک اساتید:</label>
             <select id="batch-instructor-cat-${cat.id}" class="input-ctrl" style="width:170px; padding:5px 8px; background:#0f172a; border-color:#38bdf8; color:white; font-size:12px; font-weight:bold;">
-              ${(window.globalInstructorsList || []).map(i => `<option value="${i.name}">${i.name} (${i.degree || 'مدرس'})</option>`).join('')}
+              ${(window.globalInstructorsList || []).map(i => `<option value="${esc(i.name)}">${esc(i.name)} (${esc(i.degree || 'مدرس')})</option>`).join('')}
               ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="علیرضا خوش‌منظر">علیرضا خوش‌منظر</option><option value="پیراینه‌گر">پیراینه‌گر</option>` : ''}
             </select>
             <button type="button" onclick="window.applyBatchInstructorToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
@@ -750,7 +750,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                   <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس:
                 </label>
                 <select id="sess-instructor-${sess.id}" class="input-ctrl" style="font-size:12px; color:#38bdf8; background:#0f172a; padding:7px 10px; font-weight:bold; border-color:rgba(56,189,248,0.4);">
-                  ${(window.globalInstructorsList || []).map(i => `<option value="${i.name}" ${(sess.instructor && sess.instructor.includes(i.name)) ? 'selected' : ''}>${i.name}</option>`).join('')}
+                  ${(window.globalInstructorsList || []).map(i => `<option value="${esc(i.name)}" ${(sess.instructor && sess.instructor.includes(i.name)) ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
                   ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}">${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}</option>` : ''}
                 </select>
               </div>
@@ -825,11 +825,11 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
                   <div>
                     <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:3px;">عنوان پارت:</label>
-                    <input type="text" id="clip-title-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; background:#0f172a;" value="${clip.title || ''}" placeholder="عنوان پارت...">
+                    <input type="text" id="clip-title-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; background:#0f172a;" value="${esc(clip.title || '')}" placeholder="عنوان پارت...">
                   </div>
                   <div>
                     <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:3px;"><i class="fa-solid fa-video"></i> لینک ویدیو (آپارات یا URL مستقیم):</label>
-                    <input type="text" id="clip-url-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:#0f172a;" value="${clip.videoUrl || ''}" placeholder="https://www.aparat.com/v/...">
+                    <input type="text" id="clip-url-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:#0f172a;" value="${esc(clip.videoUrl || '')}" placeholder="https://www.aparat.com/v/...">
                   </div>
                   <div style="display:flex; gap:6px; align-items:flex-end; padding-top:16px;">
                     <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" onclick="window.saveClipVideoUrl('${sess.id}', '${clip.id}')" title="ذخیره ترتیب، عنوان و لینک ویدیو">
@@ -936,7 +936,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                         <span style="background:linear-gradient(135deg, #f59e0b, #d97706); color:black; font-weight:bold; padding:2px 8px; border-radius:5px; font-size:11px;">
-                          آزمونک ${qIdx + 1}: ${quiz.title || 'آزمونک پارت'}
+                          آزمونک ${qIdx + 1}: ${esc(quiz.title || 'آزمونک پارت')}
                         </span>
                         <span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.4); font-size:11px; padding:2px 8px; border-radius:5px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
                           <i class="fa-solid fa-coins" style="color:#fbbf24;"></i> پاداش زریک: ${quiz.rewardZarik ?? 10} زریک
@@ -1538,7 +1538,7 @@ window.editQuizRecord = async function(quizId) {
   const radioEl = document.getElementById(`opt-radio-${correctIdx}`) || document.getElementById('opt-radio-0');
   if (radioEl) radioEl.checked = true;
 
-  document.getElementById('quiz-modal-title').innerHTML = `<i class="fa-solid fa-circle-question"></i> ویرایش آزمونک: ${foundQuiz.title || ''}`;
+  document.getElementById('quiz-modal-title').innerHTML = `<i class="fa-solid fa-circle-question"></i> ویرایش آزمونک: ${esc(foundQuiz.title || '')}`;
   modal.style.display = 'flex';
   modal.style.zIndex = '9999999';
 };
@@ -1843,7 +1843,7 @@ window.renderReorderList = function() {
           <div>
             <div style="font-weight:bold; color:white; font-size:14px; display:flex; align-items:center; gap:8px;">
               <span>${persianStationTitle}</span>
-              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span style="font-size:12px; color:#38bdf8; font-weight:normal;">(${st.title})</span>` : ''}
+              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span style="font-size:12px; color:#38bdf8; font-weight:normal;">(${esc(st.title)})</span>` : ''}
             </div>
             <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <span style="color:#38bdf8;"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
@@ -1966,7 +1966,7 @@ window.exportLmsToExcel = function() {
       <tr>
         <td style="text-align:center; mso-number-format:'\\@';">${rowNum}</td>
         <td style="text-align:center; font-weight:bold; color:#0284c7; mso-number-format:'\\@';">${mzCode}</td>
-        <td style="font-weight:bold; color:#0f172a;">${title}</td>
+        <td style="font-weight:bold; color:#0f172a;">${esc(title)}</td>
         <td>${instructorsStr}</td>
         <td style="text-align:center;">${categories.length} دسته</td>
         <td style="text-align:center;">${skillSessions} جلسه</td>
@@ -1975,7 +1975,7 @@ window.exportLmsToExcel = function() {
         <td style="text-align:center;">${totalClips} پارت</td>
         <td style="text-align:center; font-weight:bold; color:#d97706;">${totalQuizzes} آزمونک</td>
         <td style="text-align:center; mso-number-format:'\\@';">${releaseDateStr}</td>
-        <td style="font-size:11px; color:#475569;">${desc}</td>
+        <td style="font-size:11px; color:#475569;">${esc(desc)}</td>
         <td style="text-align:center; background-color:#dcfce7; color:#166534; font-weight:bold;">فعال</td>
       </tr>
     `;
@@ -2560,7 +2560,7 @@ window.openStationAccessModal = function(stationId) {
       customBox.innerHTML = caravans.map(c => `
         <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; color:#cbd5e1; cursor:pointer;">
           <input type="checkbox" class="sam-caravan-check" value="${c.id}" ${targetCaravans.includes(c.id) ? 'checked' : ''} style="accent-color:#38bdf8;">
-          <span>${c.name} (${c.mentorName || c.mentor?.name || 'بدون راهبر'})</span>
+          <span>${esc(c.name)} (${esc(c.mentorName || c.mentor?.name || 'بدون راهبر')})</span>
         </label>
       `).join('');
     }

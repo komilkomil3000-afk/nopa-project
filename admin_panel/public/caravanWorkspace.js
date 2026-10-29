@@ -45,7 +45,7 @@ async function initCaravanWorkspace(targetCaravanId = null) {
           <label class="text-sm text-gray-400">انتخاب کاروان:</label>
           <select id="standalone-caravan-select" onchange="window.initCaravanWorkspace(this.value)" class="bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             ${caravans.map(c => `
-              <option value="${c.id}" ${String(c.id) === String(activeCaravan.id) ? 'selected' : ''}>${c.title || c.name}</option>
+              <option value="${c.id}" ${String(c.id) === String(activeCaravan.id) ? 'selected' : ''}>${esc(c.title || c.name)}</option>
             `).join('')}
           </select>
         </div>
@@ -55,7 +55,7 @@ async function initCaravanWorkspace(targetCaravanId = null) {
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 text-center">
           <div class="text-xs text-gray-400 mb-1">راهبر اختصاصی</div>
-          <div class="text-lg font-bold text-cyan-400">${mentorName}</div>
+          <div class="text-lg font-bold text-cyan-400">${esc(mentorName)}</div>
         </div>
         <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 text-center">
           <div class="text-xs text-gray-400 mb-1">مجموع ثروت (زریک)</div>
@@ -84,9 +84,9 @@ async function initCaravanWorkspace(targetCaravanId = null) {
               ? '<tr><td colspan="5" class="text-center py-6 text-gray-400">عضوی در این کاروان یافت نشد.</td></tr>' 
               : members.map(m => `
                 <tr class="border-b border-slate-800 hover:bg-slate-800/40 transition">
-                  <td class="p-3 font-mono text-xs text-gray-400">${m.customId || m.id}</td>
-                  <td class="p-3 font-bold text-slate-100">${m.name}</td>
-                  <td class="p-3 text-gray-300 font-mono">${m.phoneNumber || m.phone || '-'}</td>
+                  <td class="p-3 font-mono text-xs text-gray-400">${esc(m.customId || m.id)}</td>
+                  <td class="p-3 font-bold text-slate-100">${esc(m.name)}</td>
+                  <td class="p-3 text-gray-300 font-mono">${esc(m.phoneNumber || m.phone || '-')}</td>
                   <td class="p-3 text-yellow-400 font-semibold">${m.zarikBalance || 0} 🟡</td>
                   <td class="p-3 flex gap-2">
                     <button onclick="window.editMemberZarikPrompt('${m.id}', ${m.zarikBalance || 0})" class="px-3 py-1 bg-amber-600/80 hover:bg-amber-600 text-white rounded text-xs">تغییر زریک</button>

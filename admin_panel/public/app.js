@@ -273,8 +273,8 @@ async function loadLevelsAndCertificatesTab() {
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${user.name || 'کاربر بدون نام'}</strong></td>
-        <td style="font-family: monospace;">${user.phoneNumber}</td>
+        <td><strong>${esc(user.name || 'کاربر بدون نام')}</strong></td>
+        <td style="font-family: monospace;">${esc(user.phoneNumber)}</td>
         <td>${levelBadge}</td>
         <td>${lastCert}</td>
         <td>${user.registrationCompleted ? '<span style="color:var(--color-success)">تکمیل شده</span>' : '<span style="color:var(--color-danger)">ناقص</span>'}</td>
@@ -877,9 +877,9 @@ async function loadTickets() {
     
     tbody.innerHTML = tickets.map(t => `
       <tr>
-        <td>${t.student?.name || 'ناشناس'}</td>
-        <td>${t.category}</td>
-        <td>${t.subject}</td>
+        <td>${esc(t.student?.name || 'ناشناس')}</td>
+        <td>${esc(t.category)}</td>
+        <td>${esc(t.subject)}</td>
         <td><span class="badge ${t.status === 'OPEN' ? 'badge-warning' : 'badge-success'}">${t.status}</span></td>
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.rating || '-'}</td>
@@ -949,7 +949,7 @@ function populateCaravanDropdowns(caravans) {
 
   const optionsHtml = caravans.map(c => {
     const mentorName = c.mentor?.name || 'بدون راهبر';
-    return `<option value="${c.id}">${c.name} (راهبر: ${mentorName})</option>`;
+    return `<option value="${c.id}">${esc(c.name)} (راهبر: ${esc(mentorName)})</option>`;
   }).join('');
 
   if (filterSelect) {
@@ -1009,10 +1009,10 @@ function renderAdminChallenges(challenges) {
       caravanDisplay = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
           <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-users"></i> کاروان: ${audience.name}
+            <i class="fa-solid fa-users"></i> کاروان: ${esc(audience.name)}
           </span>
           <span style="font-size: 11px; color: #94a3b8;">
-            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${audience.mentorName || 'نامشخص'}
+            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${esc(audience.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
@@ -1020,10 +1020,10 @@ function renderAdminChallenges(challenges) {
       caravanDisplay = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
           <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-users"></i> کاروان: ${c.caravanInfo.name}
+            <i class="fa-solid fa-users"></i> کاروان: ${esc(c.caravanInfo.name)}
           </span>
           <span style="font-size: 11px; color: #94a3b8;">
-            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${c.caravanInfo.mentorName || 'نامشخص'}
+            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${esc(c.caravanInfo.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
@@ -1060,8 +1060,8 @@ function renderAdminChallenges(challenges) {
       <tr>
         <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
         <td>
-          <div style="font-weight: bold; color: white; font-size: 13px;">${c.title}</div>
-          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.description || ''}</div>
+          <div style="font-weight: bold; color: white; font-size: 13px;">${esc(c.title)}</div>
+          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(c.description || '')}</div>
         </td>
         <td>${caravanDisplay}</td>
         <td>${creatorBadge}</td>
@@ -1185,7 +1185,7 @@ window.populateStationDropdownForChallenges = function(selectId, selectedId) {
     const num = st.orderIndex || (idx + 1);
     const title = st.title || `منزلگاه ${num}`;
     const isSel = (selectedId && (st.id === selectedId || st.id == selectedId)) ? 'selected' : '';
-    html += `<option value="${st.id}" ${isSel}>📍 ${title} (منزلگاه ${num})</option>`;
+    html += `<option value="${st.id}" ${isSel}>📍 ${esc(title)} (منزلگاه ${num})</option>`;
   });
   sel.innerHTML = html;
 };
@@ -1221,7 +1221,7 @@ window.openCreateChallengeModal = function() {
     }
     if (mentorNotice) {
       mentorNotice.style.display = 'block';
-      mentorNotice.innerHTML = `<i class="fa-solid fa-lock"></i> به عنوان راهبر، این چالش به صورت خودکار برای کاروان «${myCaravan?.name || 'اختصاصی شما'}» تنظیم شده است و فقط اعضای این کاروان آن را مشاهده خواهند کرد.`;
+      mentorNotice.innerHTML = `<i class="fa-solid fa-lock"></i> به عنوان راهبر، این چالش به صورت خودکار برای کاروان «${esc(myCaravan?.name || 'اختصاصی شما')}» تنظیم شده است و فقط اعضای این کاروان آن را مشاهده خواهند کرد.`;
     }
   } else {
     if (caravanSelect) {
@@ -1375,7 +1375,7 @@ window.openEditChallengeModal = function(challengeId) {
     } else {
       badgeEl.className = 'badge';
       badgeEl.style.cssText = 'background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);';
-      badgeEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> ایجاد شده توسط راهبر: ${c.creatorInfo?.name || 'راهبر'}`;
+      badgeEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> ایجاد شده توسط راهبر: ${esc(c.creatorInfo?.name || 'راهبر')}`;
     }
   }
 
@@ -1504,7 +1504,7 @@ window.openChallengeStepsModal = function(challengeId) {
   const bodyEl = document.getElementById('modal-challenge-body');
   if (!modal || !bodyEl) return;
 
-  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${c.title}`;
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${esc(c.title)}`;
   if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${c.rewardZarik || 50} زریک 🪙 | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
@@ -1560,9 +1560,9 @@ window.openChallengeStepsModal = function(challengeId) {
           </span>
           <span style="font-size: 11px; color: #94a3b8;">پاسخ متنی و پیوست فایل</span>
         </div>
-        <h4 style="color: white; font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${c.title}</h4>
+        <h4 style="color: white; font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${esc(c.title)}</h4>
         <div style="background: rgba(0, 0, 0, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; color: #cbd5e1; font-size: 13px; line-height: 1.7; border-right: 3px solid #f59e0b;">
-          ${c.description}
+          ${esc(c.description)}
         </div>
         <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
           <div style="color: #10b981; font-size: 12px; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
@@ -1611,7 +1611,7 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
 
     let options = '<option value="all">🏢 همه کاروان‌ها</option>';
     caravanMap.forEach((name, id) => {
-      options += `<option value="${id}">${name}</option>`;
+      options += `<option value="${id}">${esc(name)}</option>`;
     });
     caravanSelect.innerHTML = options;
     if (caravanMap.has(currentVal)) {
@@ -1647,7 +1647,7 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
 
     let options = '<option value="all">🎓 همه راهبران</option>';
     mentorMap.forEach((name, id) => {
-      options += `<option value="${id}">${name}</option>`;
+      options += `<option value="${id}">${esc(name)}</option>`;
     });
     mentorSelect.innerHTML = options;
     if (mentorMap.has(currentVal)) {
@@ -1661,8 +1661,8 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
     const studentMap = new Map();
     submissions.forEach(s => {
       if (s.student && s.student.id) {
-        const phone = s.student.phoneNumber ? ` (${s.student.phoneNumber})` : '';
-        studentMap.set(s.student.id, `${s.student.name || 'دانش‌آموز'}${phone}`);
+        const phone = s.student.phoneNumber ? ` (${esc(s.student.phoneNumber)})` : '';
+        studentMap.set(s.student.id, `${esc(s.student.name || 'دانش‌آموز')}${phone}`);
       } else if (s.studentId) {
         if (!studentMap.has(s.studentId)) {
           studentMap.set(s.studentId, `دانش‌آموز ${s.studentId.slice(0, 8)}`);
@@ -1805,7 +1805,7 @@ function renderAdminSubmissions(submissions) {
     const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
     const answer = s.answerText || 'بدون متن (فایل ارسالی)';
     const fileLink = s.fileUrl
-      ? `<a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
+      ? `<a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
       : '<span style="color: #64748b;">-</span>';
 
     const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
@@ -1840,15 +1840,15 @@ function renderAdminSubmissions(submissions) {
     return `
       <tr>
         <td>
-          <div style="font-weight: bold; color: white;">${studentName}</div>
-          <div style="font-size: 11px; color: #64748b;">${studentPhone}</div>
+          <div style="font-weight: bold; color: white;">${esc(studentName)}</div>
+          <div style="font-size: 11px; color: #64748b;">${esc(studentPhone)}</div>
         </td>
         <td>
           <div style="font-weight: bold; color: #60a5fa; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-users" style="font-size: 11px;"></i> ${caravanName}
+            <i class="fa-solid fa-users" style="font-size: 11px;"></i> ${esc(caravanName)}
           </div>
           <div style="font-size: 11px; color: #cbd5e1; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-user-tie" style="color: #c084fc; font-size: 11px;"></i> ${mentorName}
+            <i class="fa-solid fa-user-tie" style="color: #c084fc; font-size: 11px;"></i> ${esc(mentorName)}
           </div>
         </td>
         <td>
@@ -1892,8 +1892,8 @@ window.openViewSubmissionModal = function(submissionId) {
 
   // Student Info
   const studentName = s.student?.name || 'دانش‌آموز نپا';
-  const studentPhone = s.student?.phoneNumber ? `تلفن: ${s.student.phoneNumber}` : '';
-  const caravanName = s.student?.caravan?.name ? `کاروان: ${s.student.caravan.name}` : 'کاروان: عمومی';
+  const studentPhone = s.student?.phoneNumber ? `تلفن: ${esc(s.student.phoneNumber)}` : '';
+  const caravanName = s.student?.caravan?.name ? `کاروان: ${esc(s.student.caravan.name)}` : 'کاروان: عمومی';
 
   document.getElementById('view-sub-student-name').textContent = studentName;
   document.getElementById('view-sub-student-phone').textContent = studentPhone;
@@ -1941,8 +1941,8 @@ window.openViewSubmissionModal = function(submissionId) {
       if (isImg) {
         fileContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <a href="${s.fileUrl}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
-              <img src="${s.fileUrl}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);" />
+            <a href="${esc(s.fileUrl)}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
+              <img src="${esc(s.fileUrl)}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);" />
             </a>
             <div style="font-size: 11px; color: #94a3b8;">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
           </div>
@@ -1954,7 +1954,7 @@ window.openViewSubmissionModal = function(submissionId) {
               <i class="fa-solid fa-file-lines" style="color: #38bdf8; font-size: 18px;"></i>
               <span>فایل ضمیمه شده توسط دانش‌آموز</span>
             </div>
-            <a href="${s.fileUrl}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-download"></i> دانلود و مشاهده فایل
             </a>
           </div>
@@ -2093,7 +2093,7 @@ async function loadCaravans() {
     announceSelect.innerHTML = '<option value="">کل ۵۰۰+ کاربر (سراسری)</option>';
 
     caravansList.forEach(c => {
-      const opt = `<option value="${c.id}">${c.name}</option>`;
+      const opt = `<option value="${c.id}">${esc(c.name)}</option>`;
       filterSelect.innerHTML += opt;
       modalSelect.innerHTML += opt;
       announceSelect.innerHTML += opt;
@@ -2155,10 +2155,10 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${u.name}</strong> ${blockBadge}</td>
-        <td style="font-family: monospace;">${u.phoneNumber}</td>
+        <td><strong>${esc(u.name)}</strong> ${blockBadge}</td>
+        <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
-        <td>${u.caravanName || '-'}</td>
+        <td>${esc(u.caravanName || '-')}</td>
         <td><strong style="color: var(--color-neon-blue);">${u.zarikBalance.toLocaleString()}</strong></td>
         <td style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${regDate}</td>
         <td>
@@ -2171,7 +2171,7 @@ async function loadUsers() {
         </td>
         <td>
           <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" onclick="viewUserDetails('${u.id}')"><i class="fa-solid fa-eye"></i></button>
-          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" onclick="openUserModal('${u.id}', '${u.name}', '${u.role}', '${u.caravanId || ''}', ${u.levelFrame}, ${u.mentorLevel || 1}, '${u.nationalId || ''}', '${u.dateOfBirth || ''}')"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" onclick="openUserModal('${u.id}', '${escJs(u.name)}', '${escJs(u.role)}', '${escJs(u.caravanId || '')}', ${u.levelFrame}, ${u.mentorLevel || 1}, '${escJs(u.nationalId || '')}', '${escJs(u.dateOfBirth || '')}')"><i class="fa-solid fa-edit"></i></button>
           <button class="page-btn btn-block" style="padding: 4px 8px; font-size:11px; color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" onclick="toggleBlockUser('${u.id}', ${!u.blocked})"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
           <button class="page-btn btn-delete" style="padding: 4px 8px; font-size:11px; color: var(--color-danger);" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>
         </td>
@@ -2194,7 +2194,7 @@ async function viewUserDetails(userId) {
 
     const drawerHeader = document.querySelector('#user-detail-drawer .drawer-header');
     drawerHeader.innerHTML = `
-      <h3 id="drawer-user-name">${user.name}</h3>
+      <h3 id="drawer-user-name">${esc(user.name)}</h3>
       <div style="flex:1;"></div>
       ${(user.isDualRole || user.role === 'mentor') ? `
         <button id="btn-role-switcher" class="btn-action" style="background-color:#10b981; color:white; margin-left:15px;" onclick="toggleDualRoleView()">
@@ -2223,9 +2223,9 @@ async function viewUserDetails(userId) {
       <div id="student-view-container">
         <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
           <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
-            <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${user.name.substring(0,2)}</div>
+            <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${esc(user.name.substring(0,2))}</div>
             <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'مدیر' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
-            <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${user.phoneNumber}</div>
+            <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
             <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
             <div style="text-align: right; font-size: 13px;">
@@ -2251,11 +2251,11 @@ async function viewUserDetails(userId) {
               <div class="panel-card glass" style="margin-bottom:12px; padding:20px;">
                 <h4 style="margin-bottom:15px; color:var(--color-neon-blue);">اطلاعات هویتی کامل</h4>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                  <p><strong>نام کامل:</strong> ${user.name}</p>
-                  <p><strong>کد ملی:</strong> ${user.nationalId || 'ثبت نشده'}</p>
-                  <p><strong>شماره تماس:</strong> ${user.phoneNumber}</p>
-                  <p><strong>تاریخ تولد:</strong> ${user.dateOfBirth || 'ثبت نشده'}</p>
-                  <p><strong>شهر/استان:</strong> ${user.city || 'ثبت نشده'}</p>
+                  <p><strong>نام کامل:</strong> ${esc(user.name)}</p>
+                  <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
+                  <p><strong>شماره تماس:</strong> ${esc(user.phoneNumber)}</p>
+                  <p><strong>تاریخ تولد:</strong> ${esc(user.dateOfBirth || 'ثبت نشده')}</p>
+                  <p><strong>شهر/استان:</strong> ${esc(user.city || 'ثبت نشده')}</p>
                   <p><strong>رده سنی:</strong> ${ageGroup}</p>
                   <p><strong>سطح فریم:</strong> ${user.levelFrame}</p>
                   <p><strong>تاریخ عضویت:</strong> ${regDate}</p>
@@ -2328,7 +2328,7 @@ async function viewUserDetails(userId) {
             <div id="tab-support" class="drawer-tab-content" style="display:none;">
               <div class="panel-card glass" style="padding:12px; margin-bottom:12px;">
                 <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">اطلاعات کاروان</h5>
-                <p style="margin-top:10px;"><strong>نام کاروان:</strong> ${user.caravanName || 'در هیچ کاروانی عضو نیست'}</p>
+                <p style="margin-top:10px;"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
               </div>
               <div class="panel-card glass" style="padding:12px;">
                 <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">تاریخچه تیکت‌ها</h5>
@@ -2357,7 +2357,7 @@ async function viewUserDetails(userId) {
         <div class="panel-card glass" style="margin-top:20px; padding:15px;">
            <h4 style="margin-bottom:10px;">لیست کاروان‌ها</h4>
            <ul style="list-style:none; padding:0;">
-             ${payload.mentoredCaravans?.map(c => '<li style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' + c.name + ' (شناسه: ' + c.id + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
+             ${payload.mentoredCaravans?.map(c => '<li style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
            </ul>
         </div>
       </div>
@@ -2373,8 +2373,8 @@ async function viewUserDetails(userId) {
     if (payload.tickets && payload.tickets.length > 0) {
       payload.tickets.forEach(t => {
         tList.innerHTML += `<div style="padding:8px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:8px;">
-          <strong>${t.subject}</strong> <span class="badge" style="float:left; font-size:10px;">${t.status}</span>
-          <p style="font-size:12px; margin-top:5px; color:var(--text-secondary);">${t.description}</p>
+          <strong>${esc(t.subject)}</strong> <span class="badge" style="float:left; font-size:10px;">${t.status}</span>
+          <p style="font-size:12px; margin-top:5px; color:var(--text-secondary);">${esc(t.description)}</p>
         </div>`;
       });
     } else {
@@ -2693,7 +2693,7 @@ window.renderDrawerClassProgressTable = function() {
           <span class="badge" style="background:rgba(139, 92, 246, 0.22); color:#c4b5fd; font-size:10px; width:fit-content; border: 1px solid rgba(139, 92, 246, 0.3);">
             <i class="fa-solid fa-map-location-dot" style="margin-left:3px;"></i>منزلگاه ${r.stationNumber}
           </span>
-          <strong style="font-size:12px; color:white;">${r.stationTitle}</strong>
+          <strong style="font-size:12px; color:white;">${esc(r.stationTitle)}</strong>
         </div>`;
     } else {
       stationCell = `<span class="badge" style="background:rgba(255,255,255,0.08); color:#94a3b8; font-size:11px;"><i class="fa-solid fa-layer-group" style="margin-left:3px;"></i>عمومی / کاروان</span>`;
@@ -2705,9 +2705,9 @@ window.renderDrawerClassProgressTable = function() {
       classCell = `
         <div style="display:flex; flex-direction:column; gap:3px;">
           <strong style="font-size:12px; color:#38bdf8;">
-            <i class="fa-solid fa-chalkboard-user" style="margin-left:4px; opacity:0.85;"></i>${r.sessionTitle}
+            <i class="fa-solid fa-chalkboard-user" style="margin-left:4px; opacity:0.85;"></i>${esc(r.sessionTitle)}
           </strong>
-          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span style="font-size:10.5px; color:var(--text-secondary);">${r.categoryTitle}</span>` : ''}
+          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span style="font-size:10.5px; color:var(--text-secondary);">${esc(r.categoryTitle)}</span>` : ''}
         </div>`;
     } else {
       classCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
@@ -2722,7 +2722,7 @@ window.renderDrawerClassProgressTable = function() {
             <i class="fa-solid fa-circle-play" style="margin-left:3px;"></i>${r.clips.length} پارت
           </span>
           <div style="font-size:10.5px; color:${r.isWatched ? '#34d399' : '#94a3b8'};">
-            ${r.isWatched ? '✓ کامل مشاهده شده' : `${r.clips[0]?.title || 'پارت ۱'} (مشاهده نشده)`}
+            ${r.isWatched ? '✓ کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
@@ -2747,7 +2747,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
               <i class="fa-solid fa-check-double" style="margin-left:3px;"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;">${q.title || 'آزمون پایان کلاس'}</span>
+            <span style="font-size:10.5px; color:#cbd5e1;">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       } else if (qSub) {
         quizCell = `
@@ -2755,7 +2755,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
               <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>مردود (${qSub.score})
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;">${q.title || 'آزمون'}</span>
+            <span style="font-size:10.5px; color:#cbd5e1;">${esc(q.title || 'آزمون')}</span>
           </div>`;
       } else {
         quizCell = `
@@ -2763,7 +2763,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; font-size:10px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
               <i class="fa-regular fa-clock" style="margin-left:3px;"></i>شرکت نکرده
             </span>
-            <span style="font-size:10.5px; color:var(--text-secondary);">${q.title || 'آزمون پایان کلاس'}</span>
+            <span style="font-size:10.5px; color:var(--text-secondary);">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       }
     } else {
@@ -2782,7 +2782,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
               <i class="fa-solid fa-trophy" style="margin-left:3px;"></i>تایید (+${ch.rewardZarik || 50} زریک)
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'pending') {
         challengeCell = `
@@ -2790,7 +2790,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; font-size:10.5px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
               <i class="fa-solid fa-hourglass-start" style="margin-left:3px;"></i>در انتظار ارزیابی
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'rejected') {
         challengeCell = `
@@ -2798,7 +2798,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
               <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>نیازمند اصلاح
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${ch.title}">${ch.title}</span>
+            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else {
         challengeCell = `
@@ -2806,7 +2806,7 @@ window.renderDrawerClassProgressTable = function() {
             <span class="badge" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; font-size:10px; width:fit-content; border: 1px solid rgba(236, 72, 153, 0.25);">
               <i class="fa-regular fa-circle" style="margin-left:3px;"></i>انجام نشده (${chTypeLabel})
             </span>
-            <span style="font-size:10.5px; color:var(--text-secondary);" title="${ch.title}">${ch.title}</span>
+            <span style="font-size:10.5px; color:var(--text-secondary);" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       }
     } else {
@@ -2899,11 +2899,11 @@ window.viewMentorDetails = async function(mentorId) {
     body.innerHTML = `
       <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
         <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
-          <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto; background: var(--color-neon-blue);">${user.name.substring(0,2)}</div>
+          <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto; background: var(--color-neon-blue);">${esc(user.name.substring(0,2))}</div>
           <div style="margin-top:8px;"><span class="badge badge-mentor">مربی - سطح ${user.mentorLevel || 1}</span></div>
-          <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${user.phoneNumber}</div>
-          <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${user.userCode || user.phoneNumber}'); alert('کد راهبر کپی شد')">
-            <i class="fa-solid fa-copy text-primary"></i> <strong style="color:var(--text-primary);">NP-${user.userCode || user.phoneNumber}</strong>
+          <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
+          <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${escJs(user.userCode || user.phoneNumber)}'); alert('کد راهبر کپی شد')">
+            <i class="fa-solid fa-copy text-primary"></i> <strong style="color:var(--text-primary);">NP-${esc(user.userCode || user.phoneNumber)}</strong>
           </div>
           <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
           <div style="text-align: right; font-size: 13px;">
@@ -3183,11 +3183,11 @@ async function loadCaravansLeaderboard() {
       tr.innerHTML = `
         <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
         <td>
-          <div style="font-weight: 700; font-size: 14px; color: #fff;">${c.name}</div>
+          <div style="font-weight: 700; font-size: 14px; color: #fff;">${esc(c.name)}</div>
         </td>
         <td>
-          <div style="font-size: 13px; font-weight: 500;">${c.mentorName || '-'}</div>
-          ${c.mentorPhone && c.mentorPhone !== '-' ? `<span style="font-size: 11px; color: var(--text-secondary);">${c.mentorPhone}</span>` : ''}
+          <div style="font-size: 13px; font-weight: 500;">${esc(c.mentorName || '-')}</div>
+          ${c.mentorPhone && c.mentorPhone !== '-' ? `<span style="font-size: 11px; color: var(--text-secondary);">${esc(c.mentorPhone)}</span>` : ''}
         </td>
         <td style="text-align: center;">
           <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${c.memberCount} / ${c.capacityLimit}</span>
@@ -3208,7 +3208,7 @@ async function loadCaravansLeaderboard() {
         </td>
         <td style="color: #10b981; font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{alert('کاروان: ${c.name}');}">
+          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{alert('کاروان: ${escJs(c.name)}');}">
             <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
           </button>
         </td>
@@ -3217,7 +3217,7 @@ async function loadCaravansLeaderboard() {
     });
   } catch (err) {
     console.error('Failed to load caravans leaderboard', err);
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -3310,16 +3310,16 @@ async function loadIndividualsLeaderboard() {
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
             <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-              ${u.avatarUrl ? `<img src="${u.avatarUrl}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fa-solid fa-user" style="color:var(--text-secondary);"></i>'}
+              ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fa-solid fa-user" style="color:var(--text-secondary);"></i>'}
             </div>
             <div>
-              <div style="font-weight: 700; font-size: 13px; color: #fff;">${u.name}</div>
-              <div style="font-size: 11px; color: var(--text-secondary);">${u.phoneNumber || ''}</div>
+              <div style="font-weight: 700; font-size: 13px; color: #fff;">${esc(u.name)}</div>
+              <div style="font-size: 11px; color: var(--text-secondary);">${esc(u.phoneNumber || '')}</div>
             </div>
           </div>
         </td>
         <td>${roleBadge}</td>
-        <td><span style="background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${u.caravanName}</span></td>
+        <td><span style="background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${esc(u.caravanName)}</span></td>
         <td style="color: #fbbf24; font-weight: 600;">${(u.zarik || 0).toLocaleString()}</td>
         <td style="color: #a78bfa; font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
         <td style="color: #ef4444; font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
@@ -3349,7 +3349,7 @@ async function loadIndividualsLeaderboard() {
     });
   } catch (err) {
     console.error('Failed to load individuals leaderboard', err);
-    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -3384,8 +3384,8 @@ async function loadLevels() {
     data.users.forEach(u => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${u.name}</strong></td>
-        <td>${u.phoneNumber}</td>
+        <td><strong>${esc(u.name)}</strong></td>
+        <td>${esc(u.phoneNumber)}</td>
         <td>${u.levelFrame || 1}</td>
         <td>-</td>
         <td>${u.profileCompleted !== false ? '<span style="color:var(--color-success)">کامل</span>' : '<span style="color:var(--color-warning)">ناقص</span>'}</td>
@@ -3481,7 +3481,7 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
     let options = '<option value="">فاقد کاروان</option>';
     const caravans = window.caravansData || window.caravansMasterList || caravansList || [];
     if (caravans.length > 0) {
-      options += caravans.map(c => `<option value="${c.id}" ${c.id === userCaravanId ? 'selected' : ''}>${c.name || c.title}</option>`).join('');
+      options += caravans.map(c => `<option value="${c.id}" ${c.id === userCaravanId ? 'selected' : ''}>${esc(c.name || c.title)}</option>`).join('');
     }
     caravanSelect.innerHTML = options;
     caravanSelect.value = userCaravanId;
@@ -3595,12 +3595,12 @@ async function loadLedger() {
       const amountPrefix = t.amount > 0 ? '+' : '';
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong>${t.userName}</strong></td>
-        <td style="font-family: monospace;">${t.userPhone}</td>
+        <td><strong>${esc(t.userName)}</strong></td>
+        <td style="font-family: monospace;">${esc(t.userPhone)}</td>
         <td><strong style="color: ${amountColor};">${amountPrefix}${t.amount} زریک</strong></td>
-        <td><span class="badge badge-student">${t.category}</span></td>
-        <td>${t.reason}</td>
-        <td>${t.createdBy}</td>
+        <td><span class="badge badge-student">${esc(t.category)}</span></td>
+        <td>${esc(t.reason)}</td>
+        <td>${esc(t.createdBy)}</td>
         <td style="font-size:11px; color:var(--text-secondary);">${new Date(t.createdAt).toLocaleString('fa-IR')}</td>
       `;
       tbody.appendChild(tr);
@@ -3619,7 +3619,7 @@ async function loadAllUsersDropdown() {
     const select = document.getElementById('zarik-target-user');
     select.innerHTML = '<option value="">انتخاب کاربر...</option>';
     data.users.forEach(u => {
-      select.innerHTML += `<option value="${u.id}">${u.name} (${u.phoneNumber}) - موجودی: ${u.zarikBalance}</option>`;
+      select.innerHTML += `<option value="${u.id}">${esc(u.name)} (${esc(u.phoneNumber)}) - موجودی: ${u.zarikBalance}</option>`;
     });
   } catch (err) {
     console.error(err);
@@ -3779,9 +3779,9 @@ async function loadRolePermissions() {
     const roles = await res.json();
 
     roles.forEach(role => {
-      const phoneInput = document.querySelector(`.role-perm-toggle[data-role="${role.roleName}"][data-perm="maskPhoneNumbers"]`);
-      const zarikInput = document.querySelector(`.role-perm-toggle[data-role="${role.roleName}"][data-perm="restrictZarik"]`);
-      const deleteInput = document.querySelector(`.role-perm-toggle[data-role="${role.roleName}"][data-perm="lockUserDeletions"]`);
+      const phoneInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="maskPhoneNumbers"]`);
+      const zarikInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="restrictZarik"]`);
+      const deleteInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="lockUserDeletions"]`);
 
       if (phoneInput) phoneInput.checked = role.maskPhoneNumbers;
       if (zarikInput) zarikInput.checked = role.restrictZarik;
@@ -3855,7 +3855,7 @@ async function loadCaravansTab() {
       const currentVal = caravanPicker.value;
       caravanPicker.innerHTML = '<option value="">-- لطفاً یک کاروان انتخاب کنید --</option>';
       window.caravansData.forEach(c => {
-        caravanPicker.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+        caravanPicker.innerHTML += `<option value="${c.id}">${esc(c.name)}</option>`;
       });
       caravanPicker.onchange = window.loadSelectedCaravanDetails;
       
@@ -3920,7 +3920,7 @@ window.renderCaravansTable = function() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${c.name || c.title}</strong></td>
+      <td><strong>${esc(c.name || c.title)}</strong></td>
       <td><span class="badge badge-student">${mentorDisplay}</span></td>
       <td>${memberCount} / ${capacity}</td>
       <td>
@@ -3939,13 +3939,13 @@ window.renderCaravansTable = function() {
           <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:#0284c7; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.selectCaravanForManagement('${c.id}')" title="مشاهده کاروان">
             <i class="fa-solid fa-eye"></i> مشاهده
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#10b981; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" title="تغییر نام کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#10b981; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${escJs(c.name || '')}')" title="تغییر نام کاروان">
             <i class="fa-solid fa-pen-to-square"></i> تغییر نام
           </button>
           <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openChangeCaravanMentorModalForCaravan('${c.id}')" title="تغییر راهبر">
             <i class="fa-solid fa-user-gear"></i> تغییر راهبر
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#ef4444; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteCaravanRecord('${c.id}', '${(c.name || '').replace(/'/g, "\\'")}')" title="حذف کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#ef4444; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteCaravanRecord('${c.id}', '${escJs(c.name || '')}')" title="حذف کاروان">
             <i class="fa-solid fa-trash"></i> حذف
           </button>
         </div>
@@ -4225,13 +4225,13 @@ window.viewStudentDetails = async function(studentId) {
     if (identityEl) {
       identityEl.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <div><strong style="color:#38bdf8;">نام و نام‌خانوادگی:</strong> ${u.name || 'بدون نام'}</div>
-          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${u.phoneNumber || '-'}</span></div>
+          <div><strong style="color:#38bdf8;">نام و نام‌خانوادگی:</strong> ${esc(u.name || 'بدون نام')}</div>
+          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
           <div><strong style="color:#94a3b8;">کد کاربری:</strong> <span style="font-family:monospace; color:#38bdf8;">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
           <div><strong style="color:#94a3b8;">کاروان عضو:</strong> <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
           <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'مدیر' : 'دانش‌آموز'}</div>
-          <div><strong style="color:#94a3b8;">کد ملی:</strong> ${u.nationalId || 'ثبت نشده'}</div>
-          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${u.dateOfBirth || '-'}</div>
+          <div><strong style="color:#94a3b8;">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
+          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
           <div><strong style="color:#94a3b8;">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
         </div>
       `;
@@ -4330,7 +4330,7 @@ window.viewStudentDetails = async function(studentId) {
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
               <div>
                 <span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:6px; margin-left:6px;">منزلگاه ${stNum}</span>
-                <strong style="color:${titleColor}; font-size:13px;">${st.title}</strong>
+                <strong style="color:${titleColor}; font-size:13px;">${esc(st.title)}</strong>
               </div>
               ${statusBadge}
             </div>
@@ -4371,7 +4371,7 @@ window.viewStudentDetails = async function(studentId) {
       } else {
         ticketsEl.innerHTML = tickets.slice(0, 4).map(t => `
           <div style="border-bottom:1px solid rgba(255,255,255,0.05); padding:4px 0;">
-            <strong style="color:white;">${t.subject || 'تیکت پشتیبانی'}</strong>
+            <strong style="color:white;">${esc(t.subject || 'تیکت پشتیبانی')}</strong>
             <span style="color:#94a3b8; font-size:11px; margin-right:6px;">[${t.status === 'RESOLVED' ? 'حل شده' : 'در حال بررسی'}]</span>
           </div>
         `).join('');
@@ -4505,17 +4505,17 @@ window.loadSelectedCaravanDetails = async function() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-family: monospace; color: #38bdf8; font-weight:bold;">${displayId}</td>
-        <td><strong>${name}</strong></td>
-        <td style="font-family: monospace;" dir="ltr">${phone}</td>
+        <td><strong>${esc(name)}</strong></td>
+        <td style="font-family: monospace;" dir="ltr">${esc(phone)}</td>
         <td style="color:#fbbf24; font-weight:bold;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
         <td style="color:#38bdf8; font-weight:bold;"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
         <td style="color:#34d399; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
         <td style="color:#c084fc; font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
         <td style="white-space:nowrap; display:flex; gap:5px;">
           <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">جزئیات</button>
-          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${name}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
+          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${escJs(name)}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
           <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق</button>
-          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${name.replace(/'/g, "\\'")}')">حذف</button>
+          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${escJs(name)}')">حذف</button>
         </td>
       `;
       rosterBody.appendChild(tr);
@@ -4573,8 +4573,8 @@ async function loadMediaAssets() {
       const absoluteUrl = window.location.origin + m.url;
 
       tr.innerHTML = `
-        <td><i class="fa-solid ${icon}" style="margin-left: 8px; color: var(--color-neon-blue);"></i><strong>${m.filename}</strong></td>
-        <td><span class="badge badge-student">${m.mimeType}</span></td>
+        <td><i class="fa-solid ${icon}" style="margin-left: 8px; color: var(--color-neon-blue);"></i><strong>${esc(m.filename)}</strong></td>
+        <td><span class="badge badge-student">${esc(m.mimeType)}</span></td>
         <td>${sizeMB} MB</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -5112,8 +5112,8 @@ async function loadNotificationData() {
       logs.forEach(l => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><span class="badge ${l.channel === 'in_app' ? 'badge-admin' : 'badge-student'}">${l.channel}</span></td>
-          <td>${l.targetAudience}</td>
+          <td><span class="badge ${l.channel === 'in_app' ? 'badge-admin' : 'badge-student'}">${esc(l.channel)}</span></td>
+          <td>${esc(l.targetAudience)}</td>
           <td><span style="color: ${l.status === 'success' ? '#10b981' : '#ef4444'}">${l.status === 'success' ? 'موفق' : 'خطا'}</span></td>
           <td style="font-size:11px; color:#aaa;">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
         `;
@@ -5154,14 +5154,14 @@ async function loadChats() {
     }
 
     data.messages.forEach(msg => {
-      const typeStr = msg.caravan ? `گروه: ${msg.caravan.name}` : `مستقیم به: ${msg.receiver ? msg.receiver.name : '؟'}`;
-      const fileBadge = msg.fileUrl ? `<a href="${msg.fileUrl}" target="_blank" class="badge" style="background:#10B981; color:white;"><i class="fa-solid fa-paperclip"></i> ${msg.fileType}</a>` : '-';
+      const typeStr = msg.caravan ? `گروه: ${esc(msg.caravan.name)}` : `مستقیم به: ${esc(msg.receiver ? msg.receiver.name : '؟')}`;
+      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge" style="background:#10B981; color:white;"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="direction:ltr; text-align:right;">${new Date(msg.createdAt).toLocaleString('fa-IR')}</td>
-        <td>${msg.sender.name}</td>
+        <td>${esc(msg.sender.name)}</td>
         <td>${typeStr}</td>
-        <td style="max-width: 250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${msg.messageText}</td>
+        <td style="max-width: 250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(msg.messageText)}</td>
         <td>${fileBadge}</td>
         <td>
           <button class="btn-icon" style="color:var(--danger);" onclick="deleteChat('${msg.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -5245,7 +5245,7 @@ window.loadMentors = async function() {
     window.filterMentorsList();
   } catch (err) {
     console.error('Error loading mentors:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
   }
 };
 
@@ -5352,7 +5352,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
     const caravansHtml = caravans.length > 0
-      ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${c.name}</span>`).join(' ')
+      ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
       : '<span style="color:#64748b; font-size:12px;">فاقد کاروان</span>';
 
     // Status indicator
@@ -5361,7 +5361,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
 
     // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
-      ? `<span style="font-family:monospace; color:#cbd5e1;">${m.nationalId}</span>`
+      ? `<span style="font-family:monospace; color:#cbd5e1;">${esc(m.nationalId)}</span>`
       : '<span style="color:#64748b; font-size:11px;">وارد نشده است</span>';
 
     return `
@@ -5374,11 +5374,11 @@ window.renderMentorsRows = function(mentorsList, tbody) {
         <td>
           <div style="display:flex; align-items:center; gap:6px;">
             ${statusDot}
-            <strong style="color:#f8fafc; font-size:13.5px;">${m.name || 'راهبر بدون نام'}</strong>
+            <strong style="color:#f8fafc; font-size:13.5px;">${esc(m.name || 'راهبر بدون نام')}</strong>
           </div>
           ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:#fbbf24; background:rgba(245,158,11,0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
         </td>
-        <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${m.phoneNumber || '-'}</td>
+        <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${esc(m.phoneNumber || '-')}</td>
         <td style="text-align:center;">${nationalIdText}</td>
         <td>${caravansHtml}</td>
         <td style="text-align:center; white-space:nowrap;">
@@ -5459,7 +5459,7 @@ window.viewMentorDossier = async function(mentorId) {
     const mentorName = dossier?.identity?.name || mentor?.name || 'راهبر آموزشی';
     const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
     
-    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:#38bdf8;"></i> شناسنامه راهبر: ${mentorName}`;
+    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:#38bdf8;"></i> شناسنامه راهبر: ${esc(mentorName)}`;
     const cleanNatId = (dossier?.identity?.nationalId || mentor?.nationalId || '').trim();
     const natIdDisplay = (cleanNatId && cleanNatId !== 'null' && !cleanNatId.startsWith('۱۲۳۴۵۶') && !cleanNatId.startsWith('123456')) ? cleanNatId : 'وارد نشده است';
     document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${natIdDisplay} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
@@ -5500,12 +5500,12 @@ window.viewMentorDossier = async function(mentorId) {
           <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
-          <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${mentorName}</span></div>
-          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span style="color:white; font-family:monospace;">${mentor?.phoneNumber || '-'}</span></div>
-          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? mentor.nationalId : 'وارد نشده است'}</span></div>
-          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${mentor?.dateOfBirth || 'ثبت نشده'}</span></div>
-          <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${mentor?.city || 'ثبت نشده'}</span></div>
-          <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${mentor?.socialPlatform || 'ثبت نشده'} (${mentor?.socialMessengerHandle || '-'})</span></div>
+          <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${esc(mentorName)}</span></div>
+          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span style="color:white; font-family:monospace;">${esc(mentor?.phoneNumber || '-')}</span></div>
+          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
+          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
+          <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${esc(mentor?.city || 'ثبت نشده')}</span></div>
+          <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
           <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? '✅ تایید شده' : '🟡 در انتظار بررسی'}</span></div>
         </div>
       </div>
@@ -5520,7 +5520,7 @@ window.viewMentorDossier = async function(mentorId) {
             ${caravans.map(c => `
               <div style="background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:12px;">
                 <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:#38bdf8; margin-bottom:6px;">
-                  <span>${c.name}</span>
+                  <span>${esc(c.name)}</span>
                   <span style="font-size:11px; color:#cbd5e1;">${c.memberCount || 0} عضو</span>
                 </div>
                 <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
@@ -5568,7 +5568,7 @@ window.viewMentorDossier = async function(mentorId) {
     `;
   } catch (err) {
     console.error('viewMentorDossier error:', err);
-    body.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${err.message}</div>`;
+    body.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
   }
 };
 
@@ -5608,13 +5608,13 @@ window.renderDossierStudents = function(students, mentorId) {
               </div>
               <div>
                 <div style="font-weight:bold; color:#f8fafc; font-size:14px; display:flex; align-items:center; gap:8px;">
-                  <span>${s.name}</span>
+                  <span>${esc(s.name)}</span>
                   <span style="background:rgba(139, 92, 246, 0.15); color:#c084fc; border:1px solid rgba(139, 92, 246, 0.3); padding:1px 7px; border-radius:5px; font-size:11px; font-weight:normal;">
-                    <i class="fa-solid fa-campground"></i> ${s.caravanName}
+                    <i class="fa-solid fa-campground"></i> ${esc(s.caravanName)}
                   </span>
                 </div>
                 <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; gap:12px; font-family:monospace;">
-                  <span>موبایل: ${s.phoneNumber || '-'}</span>
+                  <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
                   <span>کد: ${s.userCode || '-'}</span>
                   <span style="color:#fbbf24;">🪙 ${s.zarikBalance || 0} زریک</span>
                 </div>
@@ -5676,7 +5676,7 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:#fbbf24;"></i> تیکت‌ها و مکالمات: <span style="color:#fff;">${student.name}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
+  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:#fbbf24;"></i> تیکت‌ها و مکالمات: <span style="color:#fff;">${esc(student.name)}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
   document.getElementById('student-tickets-subtitle').textContent = `کاروان: ${student.caravanName} | موبایل: ${student.phoneNumber || '-'} | کد دانش‌آموزی: ${student.userCode || '-'}`;
 
   const tickets = student.tickets || [];
@@ -5708,9 +5708,9 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
-                ${t.category || 'پشتیبانی'}
+                ${esc(t.category || 'پشتیبانی')}
               </span>
-              <span style="font-weight:bold; color:#f8fafc; font-size:13.5px;">${t.subject || 'بدون موضوع'}</span>
+              <span style="font-weight:bold; color:#f8fafc; font-size:13.5px;">${esc(t.subject || 'بدون موضوع')}</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${tDate}</span>
@@ -5721,11 +5721,11 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
           <!-- Initial Message from Student -->
           <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
             <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-              <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${student.name}):
+              <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:#e2e8f0; line-height:1.6;">${t.subject || ''}</div>
-            ${t.voiceUrl ? `<div style="margin-top:8px;"><audio controls src="${t.voiceUrl}" style="height:34px; width:100%; max-width:320px;"></audio></div>` : ''}
-            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${t.attachmentUrl}" target="_blank" style="color:#38bdf8; font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+            <div style="font-size:13px; color:#e2e8f0; line-height:1.6;">${esc(t.subject || '')}</div>
+            ${t.voiceUrl ? `<div style="margin-top:8px;"><audio controls src="${esc(t.voiceUrl)}" style="height:34px; width:100%; max-width:320px;"></audio></div>` : ''}
+            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${esc(t.attachmentUrl)}" target="_blank" style="color:#38bdf8; font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
           </div>
 
           <!-- Conversation Replies History -->
@@ -5737,13 +5737,13 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
                   <div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px 12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11.5px;">
                       <span style="font-weight:bold; color:#10b981; display:flex; align-items:center; gap:6px;">
-                        <i class="fa-solid fa-reply"></i> پاسخ راهبر (${r.mentor?.name || mentorName}):
+                        <i class="fa-solid fa-reply"></i> پاسخ راهبر (${esc(r.mentor?.name || mentorName)}):
                       </span>
                       <span style="color:#94a3b8; font-family:monospace;">${rDate}</span>
                     </div>
-                    <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${r.message}</div>
-                    ${r.voiceUrl ? `<div style="margin-top:6px;"><audio controls src="${r.voiceUrl}" style="height:30px; width:100%; max-width:300px;"></audio></div>` : ''}
-                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${r.attachmentUrl}" target="_blank" style="color:#38bdf8; font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+                    <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${esc(r.message)}</div>
+                    ${r.voiceUrl ? `<div style="margin-top:6px;"><audio controls src="${esc(r.voiceUrl)}" style="height:30px; width:100%; max-width:300px;"></audio></div>` : ''}
+                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${esc(r.attachmentUrl)}" target="_blank" style="color:#38bdf8; font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
                   </div>
                 `;
               }).join('')}
@@ -5840,7 +5840,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:#38bdf8;"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:#fff;">${student.name}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(راهبر: ${mentorName})</span>`;
+  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:#38bdf8;"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:#fff;">${esc(student.name)}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(راهبر: ${mentorName})</span>`;
   document.getElementById('student-challenges-subtitle').textContent = `کاروان: ${student.caravanName} | تکالیف، فایل‌های ارسالی، نمرات و بازخوردهای اصلاحی راهبر`;
 
   const submissions = student.submissions || [];
@@ -5876,7 +5876,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
               <span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
                 چالش کاروان
               </span>
-              <span style="font-weight:bold; color:#f8fafc; font-size:14px;"><i class="fa-solid fa-award" style="color:#fbbf24;"></i> ${sub.challenge?.title || 'عنوان چالش'}</span>
+              <span style="font-weight:bold; color:#f8fafc; font-size:14px;"><i class="fa-solid fa-award" style="color:#fbbf24;"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
               <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${subDate}</span>
@@ -5887,12 +5887,12 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
           <!-- Student Submission Box -->
           <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
             <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
-              <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${student.name}):
+              <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:#e2e8f0; line-height:1.7;">${sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)'}</div>
+            <div style="font-size:13px; color:#e2e8f0; line-height:1.7;">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
             ${sub.fileUrl ? `
               <div style="margin-top:8px;">
-                <a href="${sub.fileUrl}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
+                <a href="${esc(sub.fileUrl)}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> مشاهده فایل / تصویر پیوست دانش‌آموز
                 </a>
               </div>
@@ -5910,7 +5910,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
                   امتیاز اعطایی: ${sub.score || 0} زریک
                 </span>
               </div>
-              <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${sub.mentorFeedback}</div>
+              <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${esc(sub.mentorFeedback)}</div>
             </div>
           ` : ''}
 
@@ -5925,7 +5925,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
                 <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>
               </select>
               <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
-              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${sub.mentorFeedback ? sub.mentorFeedback.replace(/"/g, '&quot;') : ''}" style="grid-column: span 2; background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
+              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" style="grid-column: span 2; background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
               <button type="button" onclick="window.submitSubmissionReview('${sub.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
                 <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
               </button>
@@ -6038,7 +6038,7 @@ window.editMentor = async function(mentorId) {
   document.getElementById('modal-mentor-social-platform').value = m.socialPlatform || '';
   document.getElementById('modal-mentor-social-handle').value = m.socialMessengerHandle || '';
 
-  document.getElementById('mentor-modal-form-title').innerHTML = `<i class="fa-solid fa-user-pen"></i> ویرایش اطلاعات راهبر: ${m.name || ''}`;
+  document.getElementById('mentor-modal-form-title').innerHTML = `<i class="fa-solid fa-user-pen"></i> ویرایش اطلاعات راهبر: ${esc(m.name || '')}`;
 
   const caravanSearch = document.getElementById('mentor-caravan-search-input');
   if (caravanSearch) caravanSearch.value = '';
@@ -6061,8 +6061,8 @@ window.editMentor = async function(mentorId) {
                         (doc.status === 'rejected' ? '<span class="badge" style="background:#ef4444;color:white;">🔴 رد شده</span>' : '<span class="badge" style="background:#f59e0b;color:white;">🟡 در انتظار</span>');
         return `
           <tr>
-            <td>${doc.filename || 'مدرک پیوست'}</td>
-            <td><a href="${doc.url}" target="_blank" style="color:#38bdf8; text-decoration:underline;">مشاهده مدرک</a></td>
+            <td>${esc(doc.filename || 'مدرک پیوست')}</td>
+            <td><a href="${esc(doc.url)}" target="_blank" style="color:#38bdf8; text-decoration:underline;">مشاهده مدرک</a></td>
             <td>${statusTag}</td>
             <td>
               ${doc.status === 'pending' ? `
@@ -6107,7 +6107,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
     container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
       <label class="mentor-caravan-item-label" data-caravan-name="${(c.name || '').toLowerCase()}" style="display:flex; align-items:center; gap:8px; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 12px; color:#f8fafc; font-size:12.5px; cursor:pointer; transition:all 0.2s;">
         <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
-        <span style="font-weight:500;">${c.name}</span>
+        <span style="font-weight:500;">${esc(c.name)}</span>
       </label>
     `).join('');
   } catch (e) {
@@ -6267,9 +6267,9 @@ async function loadMentorTickets() {
     if (!tbody) return;
     tbody.innerHTML = tickets.map(t => `
       <tr>
-        <td>${t.student?.name || 'نامشخص'}</td>
-        <td>${t.category}</td>
-        <td>${t.subject}</td>
+        <td>${esc(t.student?.name || 'نامشخص')}</td>
+        <td>${esc(t.category)}</td>
+        <td>${esc(t.subject)}</td>
         <td>${t.status === 'resolved' ? '<span style="color:green">پاسخ‌داده</span>' : '<span style="color:orange">باز</span>'}</td>
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.ratingGiven || '-'}</td>
@@ -6304,16 +6304,16 @@ window.viewTicketThread = async function(ticketId) {
     let card = `
       <div style="padding:14px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center;">
-          <strong>${author}</strong>
-          <span style="font-size:11px; color:#9ca3af;">${role}</span>
+          <strong>${esc(author)}</strong>
+          <span style="font-size:11px; color:#9ca3af;">${esc(role)}</span>
         </div>
-        <p style="margin-top:10px; font-size:13px; line-height:1.6;">${message || '<em>بدون متن</em>'}</p>
+        <p style="margin-top:10px; font-size:13px; line-height:1.6;">${message ? esc(message) : '<em>بدون متن</em>'}</p>
     `;
     if (voiceUrl) {
-      card += `<audio controls style="width:100%; margin-top:8px;" src="${voiceUrl}"></audio>`;
+      card += `<audio controls style="width:100%; margin-top:8px;" src="${esc(voiceUrl)}"></audio>`;
     }
     if (attachmentUrl) {
-      card += `<a href="${attachmentUrl}" target="_blank" style="display:inline-block; margin-top:8px; color:#10b981; font-size:12px; text-decoration:none;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
+      card += `<a href="${esc(attachmentUrl)}" target="_blank" style="display:inline-block; margin-top:8px; color:#10b981; font-size:12px; text-decoration:none;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
     }
     card += '</div>';
     return card;
@@ -6381,9 +6381,9 @@ window.loadMentorLeague = async function(exportAs = '') {
     tbody.innerHTML = scorecards.map((s, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td>${s.name}</td>
-        <td style="font-family: monospace;">${s.phoneNumber}</td>
-        <td>${s.caravanName}</td>
+        <td>${esc(s.name)}</td>
+        <td style="font-family: monospace;">${esc(s.phoneNumber)}</td>
+        <td>${esc(s.caravanName)}</td>
         <td>${s.rating}</td>
         <td>${s.activityScore}</td>
         <td>${s.caravanProgress}%</td>
@@ -6573,17 +6573,17 @@ window.loadAssetConversions = async function() {
     tbody.innerHTML = requests.map(r => `
       <tr>
         <td>
-          <div style="font-weight:bold; color:white;">${r.user?.name || '-'}</div>
-          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${r.user.phoneNumber}</div>` : ''}
+          <div style="font-weight:bold; color:white;">${esc(r.user?.name || '-')}</div>
+          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${esc(r.user.phoneNumber)}</div>` : ''}
         </td>
-        <td>${r.caravan?.name || 'عمومی'}</td>
+        <td>${esc(r.caravan?.name || 'عمومی')}</td>
         <td>
-          <span style="color:#fbbf24; font-weight:bold;">${r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش'}</span>
+          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش')}</span>
         </td>
         <td>
           ${r.status === 'pending' ? '<span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);">⏳ در انتظار بررسی</span>' : 
             r.status === 'approved' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ تایید شده</span>' : 
-            `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">❌ رد شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${r.rejectionReason}</div>` : ''}`}
+            `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">❌ رد شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}`}
         </td>
         <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
         <td style="text-align:center;">
@@ -6648,13 +6648,13 @@ async function loadCourseHierarchyOptions() {
     
     const pkgSelect = document.getElementById('station-pkg-id');
     if (pkgSelect) {
-      pkgSelect.innerHTML = packages.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+      pkgSelect.innerHTML = packages.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('');
     }
     
     const subcourseSelect = document.getElementById('class-subcourse-id');
     if (subcourseSelect) {
       subcourseSelect.innerHTML = packages.flatMap(p => 
-        p.subCourses.map(sc => `<option value="${sc.id}">${p.title} - ${sc.title}</option>`)
+        p.subCourses.map(sc => `<option value="${sc.id}">${esc(p.title)} - ${esc(sc.title)}</option>`)
       ).join('');
     }
   } catch(e) {
@@ -6756,18 +6756,18 @@ async function loadRoles() {
     if (!tbody) return;
     tbody.innerHTML = roles.map(r => `
       <tr>
-        <td>${r.roleName}</td>
-        <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'maskPhoneNumbers', this.checked)"></td>
-        <td><input type="checkbox" ${r.restrictZarik ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'restrictZarik', this.checked)"></td>
-        <td><input type="checkbox" ${r.lockUserDeletions ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'lockUserDeletions', this.checked)"></td>
-        <td><input type="checkbox" ${r.manageContent ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'manageContent', this.checked)"></td>
-        <td><input type="checkbox" ${r.canSendMessage ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canSendMessage', this.checked)"></td>
-        <td><input type="checkbox" ${r.canJoinClasses ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canJoinClasses', this.checked)"></td>
-        <td><input type="checkbox" ${r.canScoreAndEvaluate ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canScoreAndEvaluate', this.checked)"></td>
-        <td><input type="checkbox" ${r.canConvertAssets ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canConvertAssets', this.checked)"></td>
-        <td><input type="checkbox" ${r.canCreateChallenges ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canCreateChallenges', this.checked)"></td>
-        <td><input type="checkbox" ${r.canViewGlobalAnalytics ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canViewGlobalAnalytics', this.checked)"></td>
-        <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} onchange="updateRole('${r.roleName}', 'canManageUsers', this.checked)"></td>
+        <td>${esc(r.roleName)}</td>
+        <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'maskPhoneNumbers', this.checked)"></td>
+        <td><input type="checkbox" ${r.restrictZarik ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'restrictZarik', this.checked)"></td>
+        <td><input type="checkbox" ${r.lockUserDeletions ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'lockUserDeletions', this.checked)"></td>
+        <td><input type="checkbox" ${r.manageContent ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'manageContent', this.checked)"></td>
+        <td><input type="checkbox" ${r.canSendMessage ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canSendMessage', this.checked)"></td>
+        <td><input type="checkbox" ${r.canJoinClasses ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canJoinClasses', this.checked)"></td>
+        <td><input type="checkbox" ${r.canScoreAndEvaluate ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canScoreAndEvaluate', this.checked)"></td>
+        <td><input type="checkbox" ${r.canConvertAssets ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canConvertAssets', this.checked)"></td>
+        <td><input type="checkbox" ${r.canCreateChallenges ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canCreateChallenges', this.checked)"></td>
+        <td><input type="checkbox" ${r.canViewGlobalAnalytics ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canViewGlobalAnalytics', this.checked)"></td>
+        <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canManageUsers', this.checked)"></td>
         <td>-</td>
       </tr>
     `).join('');
@@ -6833,11 +6833,11 @@ async function loadAuditLogs() {
     tbody.innerHTML = logs.map(l => `
       <tr>
         <td><span style="font-size:0.8rem">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
-        <td>${l.actorName}</td>
-        <td>${l.action}</td>
-        <td>${l.targetEntity}</td>
-        <td><span style="font-size:0.8rem">${l.details}</span></td>
-        <td>${l.ipAddress || '-'}</td>
+        <td>${esc(l.actorName)}</td>
+        <td>${esc(l.action)}</td>
+        <td>${esc(l.targetEntity)}</td>
+        <td><span style="font-size:0.8rem">${esc(l.details)}</span></td>
+        <td>${esc(l.ipAddress || '-')}</td>
       </tr>
     `).join('');
   } catch(e) {
@@ -6864,9 +6864,9 @@ window.loadMentorDocs = async function() {
     if (!tbody) return;
     tbody.innerHTML = docs.map(d => `
       <tr>
-        <td>${d.user?.name || 'نامعلوم'}</td>
-        <td>${d.fileName ? `<a href="${d.url || '/uploads/' + d.filePath}" target="_blank">باز کردن</a>` : '-'}</td>
-        <td>${d.documentType || '-'}</td>
+        <td>${esc(d.user?.name || 'نامعلوم')}</td>
+        <td>${d.fileName ? `<a href="${esc(d.url || '/uploads/' + d.filePath)}" target="_blank">باز کردن</a>` : '-'}</td>
+        <td>${esc(d.documentType || '-')}</td>
         <td>${new Date(d.createdAt).toLocaleString('fa-IR')}</td>
         <td>${d.status || 'pending'}</td>
         <td>
@@ -6890,17 +6890,17 @@ window.openMentorDocModal = function(id, focusReject = false) {
   } else {
     let html = `<div style="display:flex; gap:12px; align-items:center;">
       <div style="flex:1">
-        <strong>مربی: </strong>${doc.user?.name || '-'}<br>
-        <strong>نوع: </strong>${doc.documentType || '-'}<br>
-        <strong>فایل: </strong>${doc.fileName || '-'}
+        <strong>مربی: </strong>${esc(doc.user?.name || '-')}<br>
+        <strong>نوع: </strong>${esc(doc.documentType || '-')}<br>
+        <strong>فایل: </strong>${esc(doc.fileName || '-')}
       </div>
       <div style="flex:1; text-align:left;">
-        <a href="${doc.url || ('/uploads/' + doc.filePath)}" target="_blank" class="btn-action">باز کردن در پنجره جدید</a>
+        <a href="${esc(doc.url || ('/uploads/' + doc.filePath))}" target="_blank" class="btn-action">باز کردن در پنجره جدید</a>
       </div>
     </div>`;
     // If image show inline preview
     if(doc.mimeType && doc.mimeType.startsWith('image')) {
-      html += `<div style="margin-top:10px;"><img src="${doc.url || ('/uploads/' + doc.filePath)}" style="max-width:100%; max-height:360px;"/></div>`;
+      html += `<div style="margin-top:10px;"><img src="${esc(doc.url || ('/uploads/' + doc.filePath))}" style="max-width:100%; max-height:360px;"/></div>`;
     }
     preview.innerHTML = html;
   }
@@ -6992,8 +6992,8 @@ async function openCaravanWizard() {
     const allMentors = await res.json();
     const filtered = allMentors.filter(m => m.name.includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
     const html = filtered.map(m => `
-      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;" data-id="${m.id}" data-name="${m.name}">
-        <strong>${m.name}</strong> - NP-${m.userCode || m.phoneNumber}
+      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;" data-id="${m.id}" data-name="${esc(m.name)}">
+        <strong>${esc(m.name)}</strong> - NP-${esc(m.userCode || m.phoneNumber)}
       </div>
     `).join('');
     document.getElementById('cw-mentor-results').innerHTML = html;
@@ -7016,8 +7016,8 @@ async function openCaravanWizard() {
     const data = await res.json();
     const students = Array.isArray(data) ? data : data.users;
     const html = students.filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id)).map(s => `
-      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333; display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${s.name}" data-code="${s.userCode || s.phoneNumber}">
-        <span><strong>${s.name}</strong> - NP-${s.userCode || s.phoneNumber}</span>
+      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333; display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)}</span>
         <i class="fa-solid fa-plus text-primary"></i>
       </div>
     `).join('');
@@ -7057,7 +7057,7 @@ function renderPendingMembers() {
   document.getElementById('cw-pending-count').innerText = window.pendingCaravanMembers.length;
   document.getElementById('cw-pending-members').innerHTML = window.pendingCaravanMembers.map(p => `
     <li style="background:var(--primary-color); padding:4px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:5px;">
-      ${p.name} (NP-${p.code})
+      ${esc(p.name)} (NP-${p.code})
       <i class="fa-solid fa-times" style="cursor:pointer;" onclick="removePendingMember('${p.id}')"></i>
     </li>
   `).join('');
@@ -7104,7 +7104,7 @@ window.renderCaravanDrawerData = function(data) {
   if (titleEl) titleEl.textContent = `داشبورد کاروان: ${data.name || ''}`;
   
   const mentorEl = document.getElementById('cd-mentor-name');
-  if (mentorEl) mentorEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${data.mentor?.name || data.mentorName || 'بدون راهبر'}`;
+  if (mentorEl) mentorEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> مربی: ${esc(data.mentor?.name || data.mentorName || 'بدون راهبر')}`;
   
   const capText = document.getElementById('cd-capacity-text');
   if (capText) capText.innerHTML = `<i class="fa-solid fa-users"></i> ظرفیت: ${data.membersList?.length || data.memberCount || 0} / ${data.capacityLimit || 50} نفر`;
@@ -7169,9 +7169,9 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
     const zarik = (u.zarikBalance ?? u.zarik ?? 0).toLocaleString('fa-IR');
     
     tr.innerHTML = `
-      <td><strong>${u.name || 'بدون نام'}</strong></td>
+      <td><strong>${esc(u.name || 'بدون نام')}</strong></td>
       <td style="font-family: monospace; color: var(--text-secondary);">${displayCode}</td>
-      <td style="font-family: monospace;" dir="ltr">${u.phoneNumber || '-'}</td>
+      <td style="font-family: monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</td>
       <td><span class="badge" style="background: rgba(255,255,255,0.1);">${roleLabel}</span></td>
       <td>سطح ${u.levelFrame || 1}</td>
       <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
@@ -7340,8 +7340,8 @@ async function loadCaravanMembersRoster() {
     users.forEach(u => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td>
-        <td>${u.phoneNumber}</td>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.phoneNumber)}</td>
         <td>${u.caravanId || 'بدون کاروان'}</td>
         <td>-</td>
         <td>
@@ -7440,9 +7440,9 @@ window.loadCaravanDetails = async function(caravanId) {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>
-              <input type="text" id="edit-name-${userId}" value="${name}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:white; border-radius: 4px;">
+              <input type="text" id="edit-name-${userId}" value="${esc(name)}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:white; border-radius: 4px;">
             </td>
-            <td style="font-family: monospace;">${phone}</td>
+            <td style="font-family: monospace;">${esc(phone)}</td>
             <td>${zarik}</td>
             <td>-</td>
             <td style="white-space:nowrap; display:flex; gap:5px;">
@@ -7502,8 +7502,8 @@ async function loadCaravanLeague() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${index + 1}</strong></td>
-        <td>${c.name}</td>
-        <td>${c.mentorName}</td>
+        <td>${esc(c.name)}</td>
+        <td>${esc(c.mentorName)}</td>
         <td>${c.memberCount} / ${c.capacityLimit}</td>
         <td>${c.overallProgress}%</td>
         <td>${c.totalWealth.toLocaleString()}</td>
@@ -7532,9 +7532,9 @@ async function loadLmsData() {
       tbody.innerHTML = stations.map(s => `
   <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); text-align: right; color: #e2e8f0;">
     <td style="padding: 12px;">${s.orderIndex ?? s.order ?? 1}</td>
-    <td style="padding: 12px; font-weight: bold;">${s.title || s.name || 'منزلگاه'}</td>
+    <td style="padding: 12px; font-weight: bold;">${esc(s.title || s.name || 'منزلگاه')}</td>
     <td style="padding: 12px; color: #94a3b8;">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
-    <td style="padding: 12px; color: #94a3b8;">${s.description || '-'}</td>
+    <td style="padding: 12px; color: #94a3b8;">${esc(s.description || '-')}</td>
     <td style="padding: 12px; text-align: center;">
       <button onclick="editLmsStation('${s.id}')" style="background:#2563eb; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
       <button onclick="deleteLmsStation('${s.id}')" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
@@ -7834,7 +7834,7 @@ function editLmsStation(stationId) {
   const container = document.getElementById('builder-categories-container');
   container.innerHTML = '';
   
-  document.getElementById('lms-builder-title').innerText = `ویرایش منزلگاه: ${station.title}`;
+  document.getElementById('lms-builder-title').innerText = `ویرایش منزلگاه: ${esc(station.title)}`;
   document.getElementById('lms-builder-card').style.display = 'block';
   
   if (station.categories) {
@@ -8038,9 +8038,9 @@ async function loadDynForms() {
     forms.forEach(f => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${f.title}</td>
-        <td>${f.placement}</td>
-        <td>${f.targetAudience}</td>
+        <td>${esc(f.title)}</td>
+        <td>${esc(f.placement)}</td>
+        <td>${esc(f.targetAudience)}</td>
         <td>
            <button class="page-btn btn-danger" onclick="deleteDynForm('${f.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
         </td>
@@ -8067,8 +8067,8 @@ async function submitDynamicForm(e) {
     users.forEach(u => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${u.name}</td>
-        <td>${u.phoneNumber}</td>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.phoneNumber)}</td>
         <td>${u.caravanId || 'بدون کاروان'}</td>
         <td>-</td>
         <td>
@@ -8127,8 +8127,8 @@ async function loadCaravanLeague() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${index + 1}</strong></td>
-        <td>${c.name}</td>
-        <td>${c.mentorName}</td>
+        <td>${esc(c.name)}</td>
+        <td>${esc(c.mentorName)}</td>
         <td>${c.memberCount} / ${c.capacityLimit}</td>
         <td>${c.overallProgress}%</td>
         <td>${c.totalWealth.toLocaleString()}</td>
@@ -8151,9 +8151,9 @@ async function loadDynForms() {
     forms.forEach(f => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${f.title}</td>
-        <td>${f.placement}</td>
-        <td>${f.targetAudience}</td>
+        <td>${esc(f.title)}</td>
+        <td>${esc(f.placement)}</td>
+        <td>${esc(f.targetAudience)}</td>
         <td>
            <button class="page-btn btn-danger" onclick="deleteDynForm('${f.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
         </td>
@@ -8213,12 +8213,12 @@ window.loadAuditLogs = async function(role = null) {
     tbody.innerHTML = logs.map(l => `
       <tr>
         <td><span style="font-size:0.8rem">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
-        <td>${l.actorName}</td>
-        <td><span class="badge badge-mentor">${l.actorRole || ''}</span></td>
-        <td>${l.action}</td>
-        <td>${l.targetEntity}</td>
-        <td><span style="font-size:0.8rem">${l.details}</span></td>
-        <td>${l.ipAddress || '-'}</td>
+        <td>${esc(l.actorName)}</td>
+        <td><span class="badge badge-mentor">${esc(l.actorRole || '')}</span></td>
+        <td>${esc(l.action)}</td>
+        <td>${esc(l.targetEntity)}</td>
+        <td><span style="font-size:0.8rem">${esc(l.details)}</span></td>
+        <td>${esc(l.ipAddress || '-')}</td>
       </tr>
     `).join('');
   } catch(e) {
@@ -8373,7 +8373,7 @@ window.openBulkTransferModal = async function() {
     optionsHtml += '<option value="unassign" style="color:red; font-weight:bold;">-- خروج از کاروان فعلی (بدون کاروان) --</option>';
     
     caravans.forEach(c => {
-      optionsHtml += `<option value="${c.id}">${c.name} (راهبر: ${c.mentor?.name || 'ندارد'})</option>`;
+      optionsHtml += `<option value="${c.id}">${esc(c.name)} (راهبر: ${esc(c.mentor?.name || 'ندارد')})</option>`;
     });
     
     document.getElementById('bt-target-caravan').innerHTML = optionsHtml;
@@ -8400,7 +8400,7 @@ window.renderBulkSelectedMembers = function() {
   
   container.innerHTML = window.bulkTransferSelectedMembers.map(m => `
     <li style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
-      ${m.name} (NP-${m.code})
+      ${esc(m.name)} (NP-${m.code})
       <i class="fa-solid fa-times" style="cursor:pointer; color: #f43f5e;" onclick="removeBulkSelectedMember('${m.id}')"></i>
     </li>
   `).join('');
@@ -8425,8 +8425,8 @@ document.getElementById('bt-student-search')?.addEventListener('input', async (e
     const students = Array.isArray(data) ? data : data.users;
     
     const html = students.filter(s => !window.bulkTransferSelectedMembers.some(sel => sel.id === s.id)).map(s => `
-      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${s.name}" data-code="${s.userCode || s.phoneNumber}">
-        <span><strong>${s.name}</strong> - NP-${s.userCode || s.phoneNumber} <span style="font-size:10px; color:#aaa;">(${s.caravan?.name || 'بدون کاروان'})</span></span>
+      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)} <span style="font-size:10px; color:#aaa;">(${esc(s.caravan?.name || 'بدون کاروان')})</span></span>
         <i class="fa-solid fa-plus" style="color: #8b5cf6;"></i>
       </div>
     `).join('');
@@ -8497,10 +8497,10 @@ window.openCaravanStudentDetails = async function(userId) {
     const data = await res.json();
     
     document.getElementById('csd-identity').innerHTML = `
-      <strong>نام:</strong> ${data.name || 'نامشخص'}<br>
-      <strong>کد ملی:</strong> ${data.nationalId || '-'}<br>
-      <strong>شماره تماس:</strong> ${data.phoneNumber || '-'}<br>
-      <strong>شهر:</strong> ${data.city || '-'}<br>
+      <strong>نام:</strong> ${esc(data.name || 'نامشخص')}<br>
+      <strong>کد ملی:</strong> ${esc(data.nationalId || '-')}<br>
+      <strong>شماره تماس:</strong> ${esc(data.phoneNumber || '-')}<br>
+      <strong>شهر:</strong> ${esc(data.city || '-')}<br>
       <strong>تاریخ ثبت‌نام:</strong> ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('fa-IR') : '-'}<br>
       <strong>پروفایل فریم:</strong> ${data.levelFrame || 1}
     `;
@@ -8514,7 +8514,7 @@ window.openCaravanStudentDetails = async function(userId) {
 
     let progHtml = '';
     if(data.classProgress && data.classProgress.length > 0) {
-       progHtml = data.classProgress.map(p => `<div>- ${p.sessionName}: ${p.watchPercentage}% | کوییز: ${p.quizScore}</div>`).join('');
+       progHtml = data.classProgress.map(p => `<div>- ${esc(p.sessionName)}: ${p.watchPercentage}% | کوییز: ${p.quizScore}</div>`).join('');
     } else {
        progHtml = 'داده‌ای موجود نیست';
     }
@@ -8522,7 +8522,7 @@ window.openCaravanStudentDetails = async function(userId) {
 
     let ticketsHtml = '';
     if(data.recentTickets && data.recentTickets.length > 0) {
-       ticketsHtml = data.recentTickets.map(t => `<div>- ${t.subject} (${t.status})</div>`).join('');
+       ticketsHtml = data.recentTickets.map(t => `<div>- ${esc(t.subject)} (${t.status})</div>`).join('');
     } else {
        ticketsHtml = 'تیکتی یافت نشد';
     }
@@ -8564,13 +8564,13 @@ window.openAddMemberToCaravanModal = async function(preSelectedCaravanId, initia
     }
 
     if (Array.isArray(caravans) && caravans.length > 0) {
-      optionsHtml += caravans.map(c => `<option value="${c.id}" ${String(c.id) === String(targetCaravanId) ? 'selected' : ''}>${c.name}</option>`).join('');
+      optionsHtml += caravans.map(c => `<option value="${c.id}" ${String(c.id) === String(targetCaravanId) ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
     } else {
       const pagePicker = document.getElementById('target-caravan-picker') || document.getElementById('main-caravan-selector');
       if (pagePicker && pagePicker.options) {
         Array.from(pagePicker.options).forEach(opt => {
           if (opt.value) {
-            optionsHtml += `<option value="${opt.value}" ${String(opt.value) === String(targetCaravanId) ? 'selected' : ''}>${opt.text}</option>`;
+            optionsHtml += `<option value="${opt.value}" ${String(opt.value) === String(targetCaravanId) ? 'selected' : ''}>${esc(opt.text)}</option>`;
           }
         });
       }
@@ -8651,7 +8651,7 @@ window.searchCandidateMembers = async function(query) {
       const isChecked = window.selectedCandidateMembers.has(u.id) && !hasCaravan ? 'checked' : '';
 
       const caravanBadge = hasCaravan 
-        ? `<span style="color:#ef4444; font-size:11px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${u.caravanName}» (غیرقابل انتخاب)</span>`
+        ? `<span style="color:#ef4444; font-size:11px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
         : `<span style="color:#10b981; font-size:11px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check" style="font-size:10px;"></i> فاقد کاروان (آماده عضویت)</span>`;
 
       return `
@@ -8663,8 +8663,8 @@ window.searchCandidateMembers = async function(query) {
                    style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
             <div style="display:flex; flex-direction:column; gap:2px;">
               <div style="display:flex; align-items:center; gap:8px;">
-                <strong style="color:${hasCaravan ? '#94a3b8' : 'white'};">${u.name || 'بدون نام'}</strong>
-                <span style="color:#94a3b8; font-size:11px; font-family:monospace;" dir="ltr">${u.phoneNumber || '-'}</span>
+                <strong style="color:${hasCaravan ? '#94a3b8' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
+                <span style="color:#94a3b8; font-size:11px; font-family:monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</span>
                 <span style="color:#38bdf8; font-size:11px; background:rgba(56,189,248,0.1); padding:1px 6px; border-radius:4px;">دانش‌آموز</span>
               </div>
               <div style="margin-top:2px;">
@@ -8778,7 +8778,7 @@ window.openChangeCaravanMentorModal = async function() {
       } else {
         options += mentors.map(m => `
           <option value="${m.id}" ${m.id === currentMentorId ? 'selected' : ''}>
-            ${m.name || 'بدون نام'} (${m.phoneNumber || '-'})
+            ${esc(m.name || 'بدون نام')} (${esc(m.phoneNumber || '-')})
           </option>
         `).join('');
       }
@@ -8972,15 +8972,15 @@ window.loadBannersTab = async function() {
         : `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', false)" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
       
       const imgMarkup = b.imageUrl
-        ? `<img src="${b.imageUrl}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
+        ? `<img src="${esc(b.imageUrl)}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
         : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color:#64748b;"><i class="fa-solid fa-image"></i></div>';
 
-      const targetText = b.targetRoute ? `<code style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:#cbd5e1;" dir="ltr">${b.targetRoute}</code>` : '<span style="color:#64748b;">-</span>';
+      const targetText = b.targetRoute ? `<code style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:#cbd5e1;" dir="ltr">${esc(b.targetRoute)}</code>` : '<span style="color:#64748b;">-</span>';
 
       return `
         <tr>
           <td style="text-align: center;">${imgMarkup}</td>
-          <td style="font-weight: bold; color: white;">${b.title || 'بدون عنوان'}</td>
+          <td style="font-weight: bold; color: white;">${esc(b.title || 'بدون عنوان')}</td>
           <td style="text-align: center;">${posLabel}</td>
           <td>${targetText}</td>
           <td style="text-align: center; color: #f59e0b; font-weight: bold;">${b.orderIndex ?? 0}</td>
@@ -9258,7 +9258,7 @@ window.renderNewsTable = function(newsList) {
     const pDate = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
     
     const imageMarkup = n.imageUrl 
-      ? `<img src="${n.imageUrl}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
+      ? `<img src="${esc(n.imageUrl)}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
       : `<div style="width: 50px; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid rgba(255,255,255,0.08);"><i class="fa-solid fa-image" style="font-size: 18px;"></i></div>`;
 
     const statusBadge = n.isPublished
@@ -9269,18 +9269,18 @@ window.renderNewsTable = function(newsList) {
       <tr>
         <td style="text-align:center;">${imageMarkup}</td>
         <td>
-          <div style="font-weight:bold; color:white; font-size:13px; margin-bottom:3px;">${n.title || 'بدون عنوان'}</div>
-          ${n.subtitle ? `<div style="font-size:11px; color:#94a3b8; line-height:1.4;">${n.subtitle}</div>` : ''}
+          <div style="font-weight:bold; color:white; font-size:13px; margin-bottom:3px;">${esc(n.title || 'بدون عنوان')}</div>
+          ${n.subtitle ? `<div style="font-size:11px; color:#94a3b8; line-height:1.4;">${esc(n.subtitle)}</div>` : ''}
         </td>
         <td style="text-align:center;">
-          <span class="badge" style="background:${catStyle.bg}; color:${catStyle.text}; border:1px solid ${catStyle.border}; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:bold;">
-            ${n.category || 'عمومی'}
+          <span class="badge" style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:bold;">
+            ${esc(n.category || 'عمومی')}
           </span>
         </td>
         <td>
           <div style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:5px;">
             <i class="fa-solid fa-user-pen" style="color:#38bdf8; font-size:11px;"></i>
-            <span>${n.reporter || 'ستاد نپا'}</span>
+            <span>${esc(n.reporter || 'ستاد نپا')}</span>
           </div>
         </td>
         <td dir="ltr" style="text-align:right; font-size:11px; color:#94a3b8;">${pDate}</td>

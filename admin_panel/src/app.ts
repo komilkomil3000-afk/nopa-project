@@ -18,14 +18,59 @@ app.use(compression());
 // Security & Request Parsing Middlewares
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Disable CSP to allow external CDNs like Google Fonts, Chart.js, etc.
+    // CSP for the admin panel. The panel still uses inline scripts/handlers, so 'unsafe-inline'
+    // is required for now; the important parts are: no third-party scripts, no connections to
+    // other origins (an injected script cannot send the token elsewhere via fetch/XHR),
+    // no plugins/objects, no framing by other sites, and forms only to this origin.
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        mediaSrc: ["'self'", 'blob:', 'https:'],
+        fontSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        frameSrc: ["'self'", 'https://www.aparat.com'],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+      },
+    },
   })
 );
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // Public static files & uploads (Placed before authentication / JWT middleware)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Uploads are user-controlled. They are served from the same origin as the admin panel, so they
+// must never be able to run as active content: nosniff + a sandboxing CSP on everything, and
+// forced download for anything that is not a plain image/audio/video file.
+const INLINE_UPLOAD_EXT = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp',
+  '.mp3', '.m4a', '.aac', '.ogg', '.wav', '.3gp', '.amr',
+  '.mp4', '.webm', '.mov',
+]);
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    index: false,
+    dotfiles: 'ignore',
+    setHeaders: (res, filePath) => {
+      const ext = path.extname(filePath).toLowerCase();
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      if (ext !== '.pdf') {
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      }
+      if (!INLINE_UPLOAD_EXT.has(ext) && ext !== '.pdf') {
+        res.setHeader('Content-Disposition', 'attachment');
+      }
+    },
+  })
+);
 
 // Serve static admin files
 app.use('/admin', express.static(path.join(__dirname, '../public')));
