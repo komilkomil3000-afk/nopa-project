@@ -1611,12 +1611,32 @@ export async function grantUserLevel(req: AuthRequest, res: Response) {
   try {
     const { targetUserId, levelFrame, zarikBonus } = req.body;
     
-    const user = await prisma.user.update({
-      where: { id: targetUserId },
-      data: {
-        levelFrame,
-        zarikBalance: { increment: zarikBonus || 0 }
+    const bonus = Number(zarikBonus) || 0;
+    if (!Number.isInteger(bonus) || bonus < 0) {
+      return res.status(400).json({ error: 'مقدار زریک هدیه نامعتبر است' });
+    }
+
+    // Level change, balance change and ledger entry in one transaction
+    const user = await prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: targetUserId },
+        data: {
+          levelFrame,
+          zarikBalance: { increment: bonus }
+        }
+      });
+      if (bonus > 0) {
+        await tx.zarikTransaction.create({
+          data: {
+            userId: targetUserId,
+            amount: bonus,
+            category: 'Special Campaigns',
+            reason: `هدیه ارتقا سطح به قاب ${levelFrame}`,
+            createdBy: req.user?.id || 'system'
+          }
+        });
       }
+      return updated;
     });
 
     await logAdminAction(

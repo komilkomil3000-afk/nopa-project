@@ -595,6 +595,19 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
   }
 };
 
+// Explicit entry points so the target is never guessed from which id happens to be present.
+// POST /lms/sessions/:id/clips  -> always CREATE a clip inside session :id
+export const createClipForSession = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), sessionId: req.params.id, clipId: undefined, id: undefined };
+  return createOrUpdateClip(req, res);
+};
+
+// PUT /lms/clips/:id -> always UPDATE clip :id
+export const updateClipById = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), clipId: req.params.id };
+  return createOrUpdateClip(req, res);
+};
+
 export const batchSaveStationContent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -1381,8 +1394,12 @@ export const createClass = createOrUpdateCategory;
 export const updateClass = createOrUpdateCategory;
 export const createSession = createOrUpdateSession;
 export const updateSession = createOrUpdateSession;
-export const createPart = createOrUpdateClip;
-export const updatePart = createOrUpdateClip;
+export const createPart = createClipForSession;
+// PUT /lms/sessions/:id/parts/:clipId -> the clip id is in :clipId, not :id (that is the session)
+export const updatePart = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), clipId: req.params.clipId, sessionId: undefined };
+  return createOrUpdateClip(req, res);
+};
 export const createQuestion = createOrUpdateQuiz;
 export const updateQuestion = createOrUpdateQuiz;
 

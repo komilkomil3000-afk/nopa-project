@@ -35,7 +35,7 @@ import {
   resolveTicketAdmin,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
-import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
+import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
@@ -115,6 +115,7 @@ router.post('/settings/:key', setSystemSetting as any);
 router.get('/caravans', getCaravansAdmin as any);
 router.post('/caravans', createCaravan as any);
 router.get('/caravans/league', getCaravanLeague as any);
+router.get('/caravans/requests', getCaravanRequests as any); // must precede /caravans/:id
 router.get('/caravans/:id', getCaravanDetails as any);
 router.put('/caravans/:id/status', toggleCaravanStatus as any);
 router.post('/caravans/bulk-transfer', bulkTransferMembers as any);
@@ -128,7 +129,6 @@ router.post('/caravans/:id/broadcast', broadcastToCaravan as any);
 router.delete('/caravans/:id', deleteCaravan as any);
 router.put('/caravans/:id/block-members', blockCaravanMembers as any);
 
-router.get('/caravans/requests', getCaravanRequests as any);
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
 router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
 router.get('/tickets', getTickets as any);
@@ -225,7 +225,7 @@ router.put('/lms/sessions/:id/parts/:clipId', updatePart as any);
 router.delete('/lms/parts/:id', deletePart as any);
 
 router.post('/lms/clips', createOrUpdateClip as any);
-router.put('/lms/clips/:id', createOrUpdateClip as any);
+router.put('/lms/clips/:id', updateClipById as any);
 router.delete('/lms/clips/:id', deleteClip as any);
 router.post('/lms/sessions/:id/clips/reorder', reorderClips as any);
 
@@ -247,7 +247,7 @@ router.delete('/stations/:id', deleteStation as any);
 router.get('/courses/hierarchy', getStations as any);
 router.post('/courses/subcourses', createOrUpdateCategory as any);
 router.post('/courses/classes', createOrUpdateSession as any);
-router.post('/lms/sessions/:id/clips', createOrUpdateClip as any);
+router.post('/lms/sessions/:id/clips', createClipForSession as any);
 
 router.get('/forms', getForms as any);
 router.post('/forms', createOrUpdateForm as any);
