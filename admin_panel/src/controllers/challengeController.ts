@@ -580,7 +580,11 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       zarikBalance: updatedUser.zarikBalance,
       submissionId: submission.id
     });
-  } catch (error) {
+  } catch (error: any) {
+    // Unique (challengeId, studentId): a concurrent duplicate submit lost the race -> nothing was credited
+    if (error?.code === 'P2002') {
+      return res.status(400).json({ error: 'شما قبلاً در این آزمون شرکت کرده‌اید و ثبت مجدد امکان‌پذیر نیست' });
+    }
     console.error('submitQuiz error:', error);
     res.status(500).json({ error: 'خطایی در تصحیح و ثبت آزمون رخ داد' });
   }

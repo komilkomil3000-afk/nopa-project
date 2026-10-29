@@ -191,8 +191,8 @@ model Submission {
   challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   student        User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@unique([challengeId, studentId])
   @@index([studentId])
-  @@index([challengeId, studentId])
   @@index([status])
 }
 
