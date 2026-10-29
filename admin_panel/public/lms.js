@@ -160,7 +160,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       topicsDisplayHtml = `
         <div style="display:flex; align-items:center; gap:6px;">
           <span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
-            <i class="fa-solid fa-person-running" style="margin-left:4px;"></i> ${skillTopic}
+            <i class="fa-solid fa-person-running" style="margin-left:4px;"></i> ${esc(skillTopic)}
           </span>
         </div>
       `;
@@ -168,7 +168,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       topicsDisplayHtml = `
         <div style="display:flex; align-items:center; gap:6px;">
           <span class="badge" style="background:rgba(167,139,250,0.15); color:#c4b5fd; border:1px solid rgba(167,139,250,0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
-            <i class="fa-solid fa-microphone-lines" style="margin-left:4px;"></i> ${mediaTopic}
+            <i class="fa-solid fa-microphone-lines" style="margin-left:4px;"></i> ${esc(mediaTopic)}
           </span>
         </div>
       `;
@@ -206,7 +206,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
                 ? 'background:rgba(56,189,248,0.3); color:#38bdf8; border:1px solid #38bdf8;'
                 : 'background:rgba(255,255,255,0.06); color:#cbd5e1; border:1px solid rgba(255,255,255,0.08);';
               return `<span class="badge" style="${badgeStyle} font-size:11px; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
-                <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:#38bdf8;"></i> ${inst}
+                <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:#38bdf8;"></i> ${esc(inst)}
               </span>`;
             }).join('')}
           </div>
@@ -301,7 +301,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
           </div>
         </td>
         <td style="text-align:center;">${sessionsDisplayHtml}</td>
-        <td style="text-align:center; vertical-align:middle; cursor:pointer;" onclick="window.openStationAccessModal('${stationIdentifier}')" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+        <td style="text-align:center; vertical-align:middle; cursor:pointer;" onclick="window.openStationAccessModal('${escJs(stationIdentifier)}')" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
           ${(() => {
             const isStationTimeLocked = Boolean(st.isTimeLocked || (st.scheduledUnlockTime && new Date() < new Date(st.scheduledUnlockTime)));
             const effectiveIsLocked = Boolean(st.isLocked || st.status === 'locked' || isStationTimeLocked);
@@ -953,14 +953,14 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     </div>
 
                     <div style="font-weight:bold; color:#f8fafc; font-size:12px; margin-bottom:8px; background:rgba(15,23,42,0.6); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);">
-                      <i class="fa-solid fa-question-circle" style="color:#38bdf8;"></i> متن سوال: ${questionText}
+                      <i class="fa-solid fa-question-circle" style="color:#38bdf8;"></i> متن سوال: ${esc(questionText)}
                     </div>
 
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
                       ${opts.map((opt, oIdx) => `
                         <div style="background:${oIdx === correctIdx ? 'rgba(16, 185, 129, 0.15)' : 'rgba(15, 23, 42, 0.5)'}; border:1px solid ${oIdx === correctIdx ? '#10b981' : 'rgba(255, 255, 255, 0.06)'}; color:${oIdx === correctIdx ? '#34d399' : '#cbd5e1'}; padding:5px 8px; border-radius:6px; display:flex; align-items:center; gap:6px;">
                           <span style="font-size:12px;">${oIdx === correctIdx ? '✅' : '⚪'}</span>
-                          <span><strong>گزینه ${oIdx + 1}:</strong> ${opt || '-'}</span>
+                          <span><strong>گزینه ${oIdx + 1}:</strong> ${esc(opt || '-')}</span>
                           ${oIdx === correctIdx ? '<span style="color:#10b981; font-weight:bold; margin-right:auto; font-size:10px;">(پاسخ صحیح)</span>' : ''}
                         </div>
                       `).join('')}
@@ -1294,7 +1294,7 @@ window.openFinalLmsSaveConfirmationModal = function() {
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-        <div><strong>📌 نام منزلگاه:</strong> <span style="color:#38bdf8; font-weight:bold;">${stTitle}</span></div>
+        <div><strong>📌 نام منزلگاه:</strong> <span style="color:#38bdf8; font-weight:bold;">${esc(stTitle)}</span></div>
         <div><strong>📅 تاریخ انتشار:</strong> <span style="color:#fbbf24; font-weight:bold;">${stDate || 'تعیین‌نشده'}</span></div>
         <div><strong>🎬 پارت‌های ویدیویی:</strong> <span style="color:#10b981; font-weight:bold;">${clipCount} پارت</span></div>
         <div><strong>⚡ وضعیت اعمال:</strong> <span style="color:#a78bfa; font-weight:bold;">ذخیره‌سازی یکجا و آنی</span></div>
@@ -1967,7 +1967,7 @@ window.exportLmsToExcel = function() {
         <td style="text-align:center; mso-number-format:'\\@';">${rowNum}</td>
         <td style="text-align:center; font-weight:bold; color:#0284c7; mso-number-format:'\\@';">${mzCode}</td>
         <td style="font-weight:bold; color:#0f172a;">${esc(title)}</td>
-        <td>${instructorsStr}</td>
+        <td>${esc(instructorsStr)}</td>
         <td style="text-align:center;">${categories.length} دسته</td>
         <td style="text-align:center;">${skillSessions} جلسه</td>
         <td style="text-align:center;">${mediaSessions} جلسه</td>
@@ -2091,7 +2091,7 @@ window.addAnimationBlockToCreatorModal = function(animData = null) {
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
         <div style="margin: 0; color: #38bdf8; font-size: 13px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
           <span class="anim-badge" style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;">قسمت ${animIndex}</span>
-          <i class="fa-solid fa-clapperboard"></i> <span class="anim-label-display">${defaultTitle}</span>
+          <i class="fa-solid fa-clapperboard"></i> <span class="anim-label-display">${esc(defaultTitle)}</span>
         </div>
         <button type="button" onclick="window.removeAnimationBlockFromCreatorModal('${blockId}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این انیمیشن">
           <i class="fa-solid fa-trash"></i> حذف این قسمت
@@ -2106,7 +2106,7 @@ window.addAnimationBlockToCreatorModal = function(animData = null) {
         <div class="form-group">
           <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> لینک ویدیو انیمیشن:</label>
           <div style="display:flex; gap:6px;">
-            <input type="text" id="${inputUniqueId}" class="modal-anim-url input-ctrl" value="${defaultUrl}" placeholder="https://... یا /uploads/..." style="background: #1e293b; direction:ltr; text-align:left; flex:1;">
+            <input type="text" id="${inputUniqueId}" class="modal-anim-url input-ctrl" value="${esc(defaultUrl)}" placeholder="https://... یا /uploads/..." style="background: #1e293b; direction:ltr; text-align:left; flex:1;">
             <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود مستقیم ویدیو">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
               <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputUniqueId}')">
@@ -2117,7 +2117,7 @@ window.addAnimationBlockToCreatorModal = function(animData = null) {
 
       <div class="form-group" style="margin-bottom:0;">
         <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> توضیحات و داستان این قسمت از انیمیشن:</label>
-        <textarea class="modal-anim-desc input-ctrl" rows="2" placeholder="توضیحات و داستان این قسمت از انیمیشن..." style="background: #1e293b;">${defaultDesc}</textarea>
+        <textarea class="modal-anim-desc input-ctrl" rows="2" placeholder="توضیحات و داستان این قسمت از انیمیشن..." style="background: #1e293b;">${esc(defaultDesc)}</textarea>
       </div>
     </div>
   `;
@@ -2199,7 +2199,7 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
             <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-chalkboard-user" style="color:#38bdf8;"></i> استاد / اساتید دوره:</label>
             <a href="javascript:void(0)" onclick="window.openInstructorModalQuick('${blockId}')" style="font-size:10px; color:#38bdf8; text-decoration:none; display:flex; align-items:center; gap:3px;" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
           </div>
-          <input type="text" class="modal-cat-instructor input-ctrl" value="${defaultInstructor}" readonly onclick="window.toggleInstructorDropdown('${blockId}', event)" style="display:none;">
+          <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly onclick="window.toggleInstructorDropdown('${blockId}', event)" style="display:none;">
           <div id="inst-picker-box-${blockId}" class="inst-picker-box" style="background: #1e293b; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 6px 10px; min-height: 38px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;" onclick="window.toggleInstructorDropdown('${blockId}', event)">
             <!-- Selected badges rendered here -->
           </div>

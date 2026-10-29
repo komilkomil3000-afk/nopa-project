@@ -69,7 +69,7 @@ window.renderInstructorsTable = function(list = null) {
       : `<span style="color:#64748b; font-size:11px;">-</span>`;
 
     const classesDisplay = inst.classes
-      ? `<div style="max-width:220px; font-size:12px; color:#e2e8f0; line-height:1.4;">${inst.classes}</div>`
+      ? `<div style="max-width:220px; font-size:12px; color:#e2e8f0; line-height:1.4;">${esc(inst.classes)}</div>`
       : `<span style="color:#64748b; font-size:11px;">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume

@@ -276,7 +276,7 @@ async function loadLevelsAndCertificatesTab() {
         <td><strong>${esc(user.name || 'کاربر بدون نام')}</strong></td>
         <td style="font-family: monospace;">${esc(user.phoneNumber)}</td>
         <td>${levelBadge}</td>
-        <td>${lastCert}</td>
+        <td>${esc(lastCert)}</td>
         <td>${user.registrationCompleted ? '<span style="color:var(--color-success)">تکمیل شده</span>' : '<span style="color:var(--color-danger)">ناقص</span>'}</td>
         <td>${physicalReqs}</td>
         <td>
@@ -997,7 +997,7 @@ function renderAdminChallenges(challenges) {
           <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
             <i class="fa-solid fa-user-tie"></i> توسط راهبر
           </span>
-          <span style="font-size: 11.5px; color: #cbd5e1; font-weight: 600;">${creatorName}</span>
+          <span style="font-size: 11.5px; color: #cbd5e1; font-weight: 600;">${esc(creatorName)}</span>
         </div>
       `;
     }
@@ -1054,7 +1054,7 @@ function renderAdminChallenges(challenges) {
       <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending}</span>
     </div>`;
 
-    const escapedTitle = (c.title || '').replace(/'/g, "\\'");
+    const escapedTitle = escJs(c.title || '');
 
     return `
       <tr>
@@ -1161,7 +1161,7 @@ window.addQuestionRow = function(mode, initialData = null) {
       </button>
     </div>
     <div style="margin-bottom: 8px;">
-      <input type="text" class="chal-q-title" required placeholder="صورت سوال یا عنوان مرحله..." value="${qText.replace(/"/g, '&quot;')}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+      <input type="text" class="chal-q-title" required placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
     </div>
     <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -1531,7 +1531,7 @@ window.openChallengeStepsModal = function(challengeId) {
             </span>
             <span style="font-size: 11px; color: #94a3b8;">سوال چهارگزینه‌ای</span>
           </div>
-          <h4 style="color: white; font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${qText}</h4>
+          <h4 style="color: white; font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${esc(qText)}</h4>
           ${opts.length > 0 ? `
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${opts.map((opt, oIdx) => {
@@ -1539,7 +1539,7 @@ window.openChallengeStepsModal = function(challengeId) {
                 return `
                   <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: ${isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.2)'}; border: 1px solid ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.06)'}; color: ${isCorrect ? '#6ee7b7' : '#cbd5e1'}; font-size: 12.5px;">
                     <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.1)'}; color: white; font-weight: bold;">${oIdx + 1}</span>
-                    <span style="flex: 1;">${opt}</span>
+                    <span style="flex: 1;">${esc(opt)}</span>
                     ${isCorrect ? '<span style="color: #10b981; font-weight: bold; font-size: 11px;"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
                   </div>
                 `;
@@ -1852,13 +1852,13 @@ function renderAdminSubmissions(submissions) {
           </div>
         </td>
         <td>
-          <div style="font-weight: bold; color: #c4b5fd;">${chalTitle}</div>
+          <div style="font-weight: bold; color: #c4b5fd;">${esc(chalTitle)}</div>
           <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
         </td>
         <td>
           <div style="max-width: 250px;">
             <div style="font-size: 12.5px; color: #f1f5f9; line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
-              ${answer}
+              ${esc(answer)}
             </div>
             <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
               <i class="fa-solid fa-eye"></i> مشاهده جواب
@@ -3921,7 +3921,7 @@ window.renderCaravansTable = function() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${esc(c.name || c.title)}</strong></td>
-      <td><span class="badge badge-student">${mentorDisplay}</span></td>
+      <td><span class="badge badge-student">${esc(mentorDisplay)}</span></td>
       <td>${memberCount} / ${capacity}</td>
       <td>
         <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
@@ -4578,7 +4578,7 @@ async function loadMediaAssets() {
         <td>${sizeMB} MB</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
-            <input type="text" readonly class="input-ctrl" value="${absoluteUrl}" style="font-family: monospace; font-size: 11px; padding: 4px; height: 26px;">
+            <input type="text" readonly class="input-ctrl" value="${esc(absoluteUrl)}" style="font-family: monospace; font-size: 11px; padding: 4px; height: 26px;">
             <button class="page-btn" style="padding: 4px 8px; font-size:11px; flex-shrink: 0;" onclick="navigator.clipboard.writeText('${absoluteUrl}'); alert('لینک کپی شد!');"><i class="fa-solid fa-copy"></i> کپی</button>
           </div>
         </td>
@@ -7579,7 +7579,7 @@ function addCategoryUI(catData = null) {
   catDiv.innerHTML = `
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
       <span style="color: #EC4899; font-weight: bold; font-size: 13px;">دسته کلاس:</span>
-      <input type="text" class="input-ctrl cat-title-input" value="${catTitle}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
+      <input type="text" class="input-ctrl cat-title-input" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
       <input type="number" class="input-ctrl cat-order-input" value="${catOrder}" required placeholder="ترتیب" style="width: 70px; height: 32px; font-size: 12px;">
       <button type="button" class="btn-primary" style="background: #10B981; padding: 4px 10px; font-size: 11px; height: 32px;" onclick="addClassUI(this.closest('.builder-category-item'))"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
       <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" onclick="this.closest('.builder-category-item').remove()"><i class="fa-solid fa-trash"></i> حذف دسته</button>
@@ -7616,15 +7616,15 @@ function addClassUI(catEl, classData = null) {
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px;">
       <div class="form-group" style="grid-column: span 2;">
         <label style="font-size: 10px; color: #8b5cf6;">عنوان کلاس / درس</label>
-        <input type="text" class="input-ctrl class-title-input" value="${classTitle}" required style="height: 30px; font-size: 11px;">
+        <input type="text" class="input-ctrl class-title-input" value="${esc(classTitle)}" required style="height: 30px; font-size: 11px;">
       </div>
       <div class="form-group" style="grid-column: span 2;">
         <label style="font-size: 10px; color: #8b5cf6;">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
-        <input type="text" class="input-ctrl class-desc-input" value="${classDesc}" style="height: 30px; font-size: 11px;" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
+        <input type="text" class="input-ctrl class-desc-input" value="${esc(classDesc)}" style="height: 30px; font-size: 11px;" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
       </div>
       <div class="form-group" style="grid-column: span 2;">
         <label style="font-size: 10px; color: #8b5cf6;">نام استاد</label>
-        <input type="text" class="input-ctrl class-instructor-input" value="${classInstructor}" style="height: 30px; font-size: 11px;" placeholder="نام و نام خانوادگی">
+        <input type="text" class="input-ctrl class-instructor-input" value="${esc(classInstructor)}" style="height: 30px; font-size: 11px;" placeholder="نام و نام خانوادگی">
       </div>
       <div class="form-group">
         <label style="font-size: 10px; color: #8b5cf6;">حداقل درصد تماشا</label>
@@ -7714,8 +7714,8 @@ function addClipUI(classEl, clipData = null) {
   clipDiv.style.cssText = 'background: rgba(245,158,11,0.03); border: 1px solid rgba(245,158,11,0.08); border-radius: 6px; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;';
   clipDiv.innerHTML = `
     <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">پارت/کلیپ:</span>
-    <input type="text" class="input-ctrl clip-title-input" value="${clipTitle}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
-    <input type="text" class="input-ctrl clip-url-input" value="${clipUrl}" required placeholder="آدرس مستقیم ویدیو" style="flex:2; min-width:150px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" style="flex:2; min-width:150px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه)" style="width:75px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
     <div style="display: flex; align-items: center; gap: 5px;">
@@ -7750,7 +7750,7 @@ function addQuizUI(classEl, quizData = null) {
   quizDiv.innerHTML = `
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
       <span style="font-size: 11px; color: #e040fb; font-weight: bold;">آزمون ارزیابی:</span>
-      <input type="text" class="input-ctrl quiz-title-input" value="${quizTitle}" required placeholder="عنوان آزمون" style="flex:2; height:28px; font-size:11px;">
+      <input type="text" class="input-ctrl quiz-title-input" value="${esc(quizTitle)}" required placeholder="عنوان آزمون" style="flex:2; height:28px; font-size:11px;">
       <select class="select-ctrl quiz-type-input" style="width:100px; height:28px; font-size:11px;">
         <option value="MULTIPLE_CHOICE" ${quizType === 'MULTIPLE_CHOICE' ? 'selected' : ''}>تستی (۴ گزینه‌ای)</option>
         <option value="TEXT" ${quizType === 'TEXT' ? 'selected' : ''}>تشریحی (متنی)</option>
@@ -7795,19 +7795,19 @@ function addQuizQuestionUI(quizEl, qData = null) {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-right: 15px;">
       <div style="display:flex; align-items:center; gap:5px;">
         <input type="radio" name="correct_radio_${Math.random()}" class="correct-option-radio" value="0" ${correctIdx === 0 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${options[0] || ''}" required placeholder="گزینه ۱" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input" value="${esc(options[0] || '')}" required placeholder="گزینه ۱" style="height:24px; font-size:10px;">
       </div>
       <div style="display:flex; align-items:center; gap:5px;">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="1" ${correctIdx === 1 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${options[1] || ''}" required placeholder="گزینه ۲" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input" value="${esc(options[1] || '')}" required placeholder="گزینه ۲" style="height:24px; font-size:10px;">
       </div>
       <div style="display:flex; align-items:center; gap:5px;">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="2" ${correctIdx === 2 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${options[2] || ''}" required placeholder="گزینه ۳" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input" value="${esc(options[2] || '')}" required placeholder="گزینه ۳" style="height:24px; font-size:10px;">
       </div>
       <div style="display:flex; align-items:center; gap:5px;">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="3" ${correctIdx === 3 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${options[3] || ''}" required placeholder="گزینه ۴" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input" value="${esc(options[3] || '')}" required placeholder="گزینه ۴" style="height:24px; font-size:10px;">
       </div>
     </div>
   `;
