@@ -1,14 +1,21 @@
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function seedDirectAdmin() {
-  const hashedPassword = await bcrypt.hash('123456', 10);
+  // No hard-coded credentials: both values must be supplied explicitly.
+  const adminPhone = process.env.ADMIN_SEED_PHONE;
+  const adminPassword = process.env.ADMIN_SEED_PASSWORD;
+  if (!adminPhone || !adminPassword || adminPassword.length < 10) {
+    throw new Error('Set ADMIN_SEED_PHONE and ADMIN_SEED_PASSWORD (min 10 chars) before running this script');
+  }
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
   
   // Look up existing to handle the fact that phoneNumber might not be marked @unique in schema
   const existing = await prisma.user.findFirst({
-    where: { phoneNumber: '09380346668' }
+    where: { phoneNumber: adminPhone }
   });
 
   if (existing) {
@@ -26,7 +33,7 @@ async function seedDirectAdmin() {
   } else {
     await prisma.user.create({
       data: {
-        phoneNumber: '09380346668',
+        phoneNumber: adminPhone,
         name: 'مدیر ارشد',
         passwordHash: hashedPassword,
         role: 'admin',
@@ -66,7 +73,7 @@ async function seedDirectAdmin() {
     }
   });
 
-  console.log('✅ Admin 09380346668 guaranteed with password 123456');
+  console.log(`✅ Admin ${adminPhone} guaranteed`);
 }
 
 seedDirectAdmin().finally(() => prisma.$disconnect());

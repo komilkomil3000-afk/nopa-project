@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
 
 export async function getCaravansLeaderboardDetailed(req: Request, res: Response) {
@@ -149,7 +150,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
           rStr = String(currentR);
           prevSc = c.totalScore;
         }
-        csv += `${rStr},${c.name},${c.mentorName},${c.memberCount},${c.zarik},${c.nakh},${c.farsh},${c.beyragh},${c.stars},${c.quizScore},${c.challengeScore},${c.overallProgress}%,${c.totalScore}\n`;
+        csv += csvRow([rStr, c.name, c.mentorName, c.memberCount, c.zarik, c.nakh, c.farsh, c.beyragh, c.stars, c.quizScore, c.challengeScore, `${c.overallProgress}%`, c.totalScore]) + '\n';
       });
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="caravans_leaderboard.csv"');
@@ -311,7 +312,7 @@ export async function getIndividualsLeaderboard(req: Request, res: Response) {
           rStr = String(currentR);
           prevSc = u.totalScore;
         }
-        csv += `${rStr},${u.name},${u.role === 'mentor' ? 'راهبر' : 'دانش‌آموز'},${u.phoneNumber},${u.caravanName},${u.zarik},${u.nakh},${u.farsh},${u.beyragh},${u.stars},${u.quizScore},${u.challengeScore},${u.progressPercentage}%,${u.totalScore}\n`;
+        csv += csvRow([rStr, u.name, u.role === 'mentor' ? 'راهبر' : 'دانش‌آموز', u.phoneNumber, u.caravanName, u.zarik, u.nakh, u.farsh, u.beyragh, u.stars, u.quizScore, u.challengeScore, `${u.progressPercentage}%`, u.totalScore]) + '\n';
       });
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="individuals_leaderboard.csv"');
@@ -403,7 +404,7 @@ export async function getCaravanLeague(req: Request, res: Response) {
     if (exportAs === 'csv') {
       let csv = 'Name,Mentor,Members,Progress,Total Zarik,Total Nakh,Total Farsh,Total Beyragh\n';
       rankedCaravans.forEach(c => {
-        csv += `${c.name},${c.mentorName},${c.memberCount},${c.overallProgress},${c.assets.zarik},${c.assets.nakh},${c.assets.farsh},${c.assets.beyragh}\n`;
+        csv += csvRow([c.name, c.mentorName, c.memberCount, c.overallProgress, c.assets.zarik, c.assets.nakh, c.assets.farsh, c.assets.beyragh]) + '\n';
       });
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="caravan_league.csv"');
@@ -511,7 +512,7 @@ export async function getMentorLeague(req: Request, res: Response) {
     if (exportAs === 'csv') {
       let csv = 'Name,Phone,Caravan,Level,Rating,Progress,Activity\n';
       rankedMentors.forEach(m => {
-        csv += `${m.name},${m.phoneNumber},${m.caravanName},${m.mentorLevel},${m.rating},${m.caravanProgress},${m.activityScore}\n`;
+        csv += csvRow([m.name, m.phoneNumber, m.caravanName, m.mentorLevel, m.rating, m.caravanProgress, m.activityScore]) + '\n';
       });
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       res.setHeader('Content-Disposition', 'attachment; filename="mentors_league.csv"');

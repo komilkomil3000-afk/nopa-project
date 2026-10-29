@@ -48,13 +48,8 @@ setInterval(() => {
  * Robust Client IP Extractor
  */
 export function getClientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
-  }
-  if (Array.isArray(forwarded) && forwarded.length > 0) {
-    return forwarded[0].trim();
-  }
+  // Never read X-Forwarded-For directly: it is client-controlled. Express resolves req.ip
+  // according to the 'trust proxy' setting in app.ts.
   return req.ip || req.socket?.remoteAddress || '127.0.0.1';
 }
 

@@ -295,17 +295,25 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     }
 
     const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
+    if (status === 'approved' && (!Number.isFinite(reward) || reward < 0)) {
+      return res.status(400).json({ error: 'مقدار پاداش نامعتبر است' });
+    }
 
     let updatedSubmission;
+    try {
     await prisma.$transaction(async (tx) => {
-      updatedSubmission = await tx.submission.update({
-        where: { id },
+      // Atomic claim: only one concurrent request can move the row to "approved".
+      // The pre-check above is only a fast path; this is what actually prevents double rewards.
+      const claimed = await tx.submission.updateMany({
+        where: status === 'approved' ? { id, status: { not: 'approved' } } : { id },
         data: {
           status,
           score: status === 'approved' ? reward : 0,
           mentorFeedback
         }
       });
+      if (claimed.count !== 1) throw new Error('ALREADY_APPROVED');
+      updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
         // Credit student wallet and increment assets
@@ -328,6 +336,12 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         });
       }
     });
+    } catch (e: any) {
+      if (e?.message === 'ALREADY_APPROVED') {
+        return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
+      }
+      throw e;
+    }
 
     // Trigger notification
     await prisma.notification.create({

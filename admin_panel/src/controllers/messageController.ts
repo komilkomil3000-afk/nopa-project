@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/db';
 
-const prisma = new PrismaClient();
 
 // User sends a message (escalation)
 export const sendMessage = async (req: Request, res: Response) => {

@@ -3,9 +3,9 @@ import { AuthRequest } from '../middleware/auth';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
+import prisma from '../config/db';
 
-const prisma = new PrismaClient();
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../uploads');
@@ -13,22 +13,65 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// Allow-list of upload types. The stored file extension and the stored MIME type are derived
+// from THIS table, never from the client-supplied filename or Content-Type, so a user cannot
+// store an .html/.svg/.js file that the server would later serve as active content.
+export const ALLOWED_UPLOADS: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.3gp': 'audio/3gpp',
+  '.amr': 'audio/amr',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.txt': 'text/plain',
+};
+
 // Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    // Random name; the client-supplied fieldname/originalname never reaches the file system
+    // (a crafted fieldname such as "../../x" would otherwise be a path traversal).
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, crypto.randomBytes(16).toString('hex') + ext);
   },
 });
+
+function fileFilter(req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) {
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  if (!ALLOWED_UPLOADS[ext]) {
+    const err: any = new Error('نوع فایل مجاز نیست');
+    err.status = 400;
+    return cb(err);
+  }
+  // Store the canonical MIME type for this extension, not what the client claimed
+  file.mimetype = ALLOWED_UPLOADS[ext];
+  cb(null, true);
+}
 
 // Init Upload (100MB limit)
 export const upload = multer({
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  fileFilter,
+  limits: { fileSize: 100 * 1024 * 1024, files: 1 }, // 100MB
 });
 
 export const uploadMedia = async (req: AuthRequest, res: Response) => {

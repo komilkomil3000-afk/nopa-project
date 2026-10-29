@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>پنل مدیریت اختصاصی نپا | Nopa Custom CRM</title>
+  <!-- PWA -->
+  <link rel="manifest" href="/admin/manifest.webmanifest">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" sizes="192x192" href="/admin/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/admin/icons/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="مدیریت نپا">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <!-- Fonts & Icons (Local) -->
   <link rel="stylesheet" href="/admin/libs/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="/admin/style.css">
@@ -3124,11 +3133,11 @@
       <form id="admin-login-form">
         <div class="form-group">
           <label>شماره همراه</label>
-          <input type="text" id="login-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۱" value="09380346668" required>
+          <input type="text" id="login-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۱" autocomplete="username" inputmode="numeric" required>
         </div>
         <div class="form-group">
           <label>گذرواژه</label>
-          <input type="password" id="login-password" class="input-ctrl" placeholder="******" value="123456" required>
+          <input type="password" id="login-password" class="input-ctrl" placeholder="******" autocomplete="current-password" required>
         </div>
         <button type="submit" id="admin-login-btn" class="btn-primary" style="width: 100%; background-color: #2563eb; box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.4); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px;">ورود به پنل کاربری</button>
         <div id="login-error" class="error-msg" style="display:none;">شماره همراه یا رمز عبور نامعتبر است</div>
@@ -3895,6 +3904,16 @@
       </div>
     </div>
 
+    <script>
+      // PWA: register service worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' })
+            .catch(function (err) { console.error('SW registration failed:', err); });
+        });
+      }
+    </script>
+    <script src="safe.js"></script>
     <script src="app.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>

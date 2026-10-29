@@ -87,10 +87,10 @@ router.post('/media/upload', authenticateJWT as any, upload.single('file'), uplo
 router.get('/media', authenticateJWT as any, authorizeRoles('admin') as any, getMediaAssets as any);
 
 // I. LMS and Forms
-router.get('/lms/stations', getStations as any);
-router.put('/lms/stations/:id/access', updateStationAccess as any);
-router.get('/courses', getStations as any);
-router.get('/courses/hierarchy', getStations as any);
+router.get('/lms/stations', authenticateJWT as any, getStations as any);
+router.put('/lms/stations/:id/access', authenticateJWT as any, authorizeRoles('admin') as any, updateStationAccess as any);
+router.get('/courses', authenticateJWT as any, getStations as any);
+router.get('/courses/hierarchy', authenticateJWT as any, getStations as any);
 router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as any);
 router.post('/lms/bookmarks', authenticateJWT as any, addBookmark as any);
 router.post('/lms/sessions/:id/heartbeat', authenticateJWT as any, heartbeatSessionWatch as any);
@@ -101,7 +101,7 @@ router.post('/lms/sessions/:id/submit-quiz', authenticateJWT as any, submitSessi
 router.get('/forms', authenticateJWT as any, getForms as any);
 router.post('/forms/submit', authenticateJWT as any, submitForm as any);
 router.get('/calendar/events', authenticateJWT as any, getCalendarEvents as any);
-router.get('/instructors', getInstructors as any);
+router.get('/instructors', authenticateJWT as any, getInstructors as any);
 
 
 // J. Chat & Messaging Routes

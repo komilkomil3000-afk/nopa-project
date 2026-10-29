@@ -70,7 +70,7 @@ DIRECT_URL="postgresql://postgres.<POOLER_TENANT_ID>:<POSTGRES_PASSWORD>@db.nopa
 ```bash
 npx prisma migrate resolve --applied 0_init   # یک بار: ثبت می‌کند که SQL اولیه اجرا شده
 npx prisma migrate status                     # باید Database schema is up to date نشان دهد
-npm run db:seed                               # داده‌های نمونه
+# ⚠️ seed کل دیتابیس را پاک می‌کند؛ فقط روی دیتابیس آزمایشی و با: ALLOW_DB_WIPE=1 NODE_ENV=development npm run db:seed
 npm run dev
 ```
 برای تغییرات بعدی schema: در محیط توسعه `npx prisma migrate dev --name <name>`. موقع دیپلوی، `prisma migrate deploy` اجرا می‌شود.

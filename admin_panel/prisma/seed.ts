@@ -37,6 +37,14 @@ const mapOptionLetterToIndex = (letter: string): number => {
 };
 
 async function main() {
+  // SAFETY GUARD: this script deletes every row in ~40 tables (users, ledger, submissions, audit log...).
+  // It refuses to run unless the operator explicitly allows the wipe, and never in production.
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DB_WIPE !== '1') {
+    console.error('Refusing to run: this seed WIPES THE ENTIRE DATABASE.');
+    console.error('Run it only against a disposable database with:  ALLOW_DB_WIPE=1 NODE_ENV=development npm run db:seed');
+    process.exit(1);
+  }
+
   console.log('================================================================');
   console.log('=== STRICT EXCEL SEEDING (شیت دوم.xlsx) - 0 GHOST RECORDS ===');
   console.log('================================================================');

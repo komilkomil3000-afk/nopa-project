@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
 
 export const getStations = async (req: Request, res: Response) => {
@@ -25,6 +26,11 @@ export const getStations = async (req: Request, res: Response) => {
       },
       orderBy: { orderIndex: 'asc' }
     });
+
+    // Students must never receive answer keys; only admins (who edit the quizzes) get them
+    if (!isAdminRole((req as any).user?.role)) {
+      stripStationAnswerKeys(stations);
+    }
 
     const now = new Date();
     const mapped = stations.map(st => {
@@ -133,6 +139,9 @@ export const getQuizzes = async (req: Request, res: Response) => {
     const quizzes = await prisma.quiz.findMany({
       orderBy: { orderIndex: 'asc' }
     });
+    if (!isAdminRole((req as any).user?.role)) {
+      quizzes.forEach((q: any) => { q.questionsJson = stripAnswerKeys(q.questionsJson); });
+    }
     res.json(quizzes);
   } catch (error) {
     console.error('getQuizzes error:', error);
@@ -584,6 +593,19 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
     console.error('createOrUpdateClip error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+};
+
+// Explicit entry points so the target is never guessed from which id happens to be present.
+// POST /lms/sessions/:id/clips  -> always CREATE a clip inside session :id
+export const createClipForSession = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), sessionId: req.params.id, clipId: undefined, id: undefined };
+  return createOrUpdateClip(req, res);
+};
+
+// PUT /lms/clips/:id -> always UPDATE clip :id
+export const updateClipById = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), clipId: req.params.id };
+  return createOrUpdateClip(req, res);
 };
 
 export const batchSaveStationContent = async (req: Request, res: Response) => {
@@ -1372,8 +1394,12 @@ export const createClass = createOrUpdateCategory;
 export const updateClass = createOrUpdateCategory;
 export const createSession = createOrUpdateSession;
 export const updateSession = createOrUpdateSession;
-export const createPart = createOrUpdateClip;
-export const updatePart = createOrUpdateClip;
+export const createPart = createClipForSession;
+// PUT /lms/sessions/:id/parts/:clipId -> the clip id is in :clipId, not :id (that is the session)
+export const updatePart = async (req: Request, res: Response) => {
+  req.body = { ...(req.body || {}), clipId: req.params.clipId, sessionId: undefined };
+  return createOrUpdateClip(req, res);
+};
 export const createQuestion = createOrUpdateQuiz;
 export const updateQuestion = createOrUpdateQuiz;
 

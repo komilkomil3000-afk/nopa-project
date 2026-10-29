@@ -21,3 +21,4 @@ uploads/*
 # Temporary & Helper files
 del.txt
 *.log
+PROJECT_AUDIT.md
