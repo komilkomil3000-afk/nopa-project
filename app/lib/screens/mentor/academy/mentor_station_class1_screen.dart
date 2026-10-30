@@ -130,7 +130,6 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         'quizzes': [
           {'title': 'آزمون مقدماتی مهارت‌ها', 'totalQuestions': 10},
           {'title': 'آزمون سواد رسانه‌ای', 'totalQuestions': 10},
-          {'title': 'آزمون جامع منزلگاه اول', 'totalQuestions': 20},
         ],
         'stayDays': 'ده روز',
         'animationEpisodes': 'دو قسمت',
@@ -1331,7 +1330,6 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final quizList = station['quizzes'] as List? ?? [
       {'title': 'آزمون مقدماتی مهارت‌ها'},
       {'title': 'آزمون سواد رسانه‌ای'},
-      {'title': 'آزمون جامع منزلگاه'},
     ];
 
     final quizScores = member['quizScores'] as List? ?? ['۲۰ از ۲۰', '۱۶ از ۲۰', 'در انتظار آزمون'];

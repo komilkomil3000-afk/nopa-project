@@ -44,6 +44,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   bool _showControls = true;
   Timer? _controlsTimer;
   bool _endedNotified = false;
+  int _lastShownTick = -1;
 
   AparatVideoInfo? _aparatInfo;
   String? _selectedQuality;
@@ -106,6 +107,12 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
       } else if (!atEnd) {
         _endedNotified = false;
       }
+    }
+    // The overlay reads the controller on build, so it must be rebuilt as the position moves (twice a second)
+    final tick = value.position.inMilliseconds ~/ 500;
+    if (_showControls && value.isInitialized && tick != _lastShownTick) {
+      _lastShownTick = tick;
+      setState(() {});
     }
     if (value.isPlaying != _isPlaying) {
       setState(() {
@@ -559,8 +566,10 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
             ),
           ),
 
-          // Center Controls: Rewind 10s, Play/Pause/Replay, Forward 10s
-          Row(
+          // Center Controls: Rewind 10s, Play/Pause/Replay, Forward 10s (always left-to-right)
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Rewind 10s
@@ -618,52 +627,57 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               ),
             ],
           ),
+          ),
 
-          // Bottom Bar: Time, Progress Bar, Fullscreen Button
-          Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
-            child: Row(
-              children: [
-                // Fullscreen Button
-                IconButton(
-                  icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: _openFullscreen,
-                ),
-                const SizedBox(width: 6),
+          // Bottom Bar: Time, Progress Bar, Fullscreen Button (always left-to-right)
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
+              child: Row(
+                children: [
+                  // Time elapsed / total
+                  Text(
+                    '${_formatDuration(pos)} / ${_formatDuration(dur)}',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
+                  ),
+                  const SizedBox(width: 8),
 
-                // Time Elapsed / Total
-                Text(
-                  '${_formatDuration(pos)} / ${_formatDuration(dur)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
-                ),
-                const SizedBox(width: 8),
-
-                // Scrubbing Slider
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                      trackHeight: 2.5,
-                      activeTrackColor: const Color(0xFFC09268),
-                      inactiveTrackColor: Colors.white24,
-                      thumbColor: const Color(0xFFF4DCC5),
-                    ),
-                    child: Slider(
-                      value: dur.inMilliseconds > 0
-                          ? pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble()
-                          : 0.0,
-                      max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
-                      onChanged: (val) {
-                        controller.seekTo(Duration(milliseconds: val.toInt()));
-                        _resetControlsTimer();
-                      },
+                  // Scrubbing Slider
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                        trackHeight: 2.5,
+                        activeTrackColor: const Color(0xFFC09268),
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: const Color(0xFFF4DCC5),
+                      ),
+                      child: Slider(
+                        value: dur.inMilliseconds > 0
+                            ? pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble()
+                            : 0.0,
+                        max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                        onChanged: (val) {
+                          controller.seekTo(Duration(milliseconds: val.toInt()));
+                          _resetControlsTimer();
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+
+                  // Fullscreen Button
+                  IconButton(
+                    icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: _openFullscreen,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -758,7 +772,9 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
     final dur = widget.controller.value.duration;
     final isEnded = dur > Duration.zero && pos >= dur;
 
-    return Scaffold(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
         onTap: () {
@@ -968,6 +984,6 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

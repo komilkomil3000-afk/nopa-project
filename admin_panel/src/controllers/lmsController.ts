@@ -1066,10 +1066,12 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       ? (typeof validQuiz.questionsJson === 'string' ? JSON.parse(validQuiz.questionsJson) : validQuiz.questionsJson) 
       : [];
     let correctCount = 0;
+    const correctAnswers: number[] = [];
 
     for (let i = 0; i < questionsList.length; i++) {
       const q = questionsList[i];
       const expectedCorrect = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : q.correctAnswer);
+      correctAnswers.push(Number(expectedCorrect));
       if (Number(answers[i]) === Number(expectedCorrect) || String(answers[i]) === String(expectedCorrect)) {
         correctCount++;
       }
@@ -1083,7 +1085,8 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
     const rewardNakh = validQuiz.rewardNakh || 0;
     const rewardFarsh = validQuiz.rewardFarsh || 0;
 
-    if (validQuiz.type === 'MULTIPLE_CHOICE' || !validQuiz.type) {
+    const quizType = String(validQuiz.type || '').toUpperCase();
+    if (quizType !== 'TEXT' && quizType !== 'FILE') {
       passed = correctCount >= (totalQuestions === 1 ? 1 : requiredCorrect);
       submissionStatus = passed ? 'APPROVED' : 'FAILED';
     } else {
@@ -1119,6 +1122,8 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
         score: correctCount,
         total: questionsList.length,
         passed,
+        status: submissionStatus,
+        correctAnswers,
         rewardZarik: 0,
         submissionId: null
       });
@@ -1221,6 +1226,8 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       score: correctCount,
       total: questionsList.length,
       passed,
+      status: submissionStatus,
+      correctAnswers,
       rewardZarik: isFirstPass ? rewardZarik : 0,
       submissionId: submission?.id
     });
@@ -1257,6 +1264,26 @@ export const getUserProgress = async (req: any, res: Response) => {
     res.json(progress);
   } catch (error) {
     console.error('getUserProgress error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+/** The app reports the real length of a clip once its player knows it (replaces a missing/wrong stored duration). */
+export const reportClipDuration = async (req: any, res: Response) => {
+  try {
+    const { clipId } = req.params;
+    const seconds = Math.round(Number(req.body?.durationSeconds));
+    if (!Number.isFinite(seconds) || seconds < 1 || seconds > 6 * 3600) {
+      return res.status(400).json({ error: 'مدت ویدیو نامعتبر است' });
+    }
+    const clip = await prisma.videoClip.findUnique({ where: { id: clipId }, select: { duration: true } });
+    if (!clip) return res.status(404).json({ error: 'کلیپ یافت نشد' });
+    if (clip.duration === null || Math.abs(clip.duration - seconds) > 2) {
+      await prisma.videoClip.update({ where: { id: clipId }, data: { duration: seconds } });
+    }
+    res.json({ duration: seconds });
+  } catch (error) {
+    console.error('reportClipDuration error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

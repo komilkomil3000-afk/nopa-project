@@ -1086,11 +1086,6 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
         'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
       },
-      {
-        'title': 'جلسه چهارم: آزمون پایانی و ارزیابی منزلگاه',
-        'subtitle': 'آزمون جامع و دریافت پاداش زریک',
-        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
-      },
     ];
   }
 

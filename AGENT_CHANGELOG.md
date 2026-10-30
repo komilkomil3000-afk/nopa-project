@@ -1457,3 +1457,32 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean)
 - **Status:** Completed
+
+### [2026-10-30 22:29] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/android/app/build.gradle.kts` (Modified)
+  - `app/android/app/src/main/AndroidManifest.xml` (Modified)
+  - `app/ios/Runner/Info.plist` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Login: phone field now on the right with the country code on its left, hint 9123456789, number accepted with/without leading 0 (and +98/0098/98) via _normalizedPhone
+  - saved login is kept: auto-login now loads the saved tokens first and also tries a silent refresh (hasSession) instead of racing the background health check. APK/app name Nopa (AndroidManifest label, base.archivesName, iOS display name). Player: controls repaint twice a second so the time/slider are live, controls/time/slider read left-to-right (time | bar | fullscreen
+  - rewind | play | forward), also in fullscreen. Clip duration: fake 15:00 fallback removed, the app reports the real length once the player knows it (POST /lms/clips/:clipId/duration), panel auto-detects it from the video metadata (and fixed the clip upload picking the wrong URL input). Stations: previous/next station buttons now actually switch (sessions reload, locked stations refused with a message), station number+title shown above the video in the lessons screen
+  - unlocking fixed - completedStationsCount is now the real count of leading stations whose clips are all watched/passed (was sessions/4)
+  - per-station final exam removed (student button+dialog, mentor mock data, workspace mock). Quiz result: server grades every non-TEXT/FILE quiz type, returns status + correctAnswers
+  - app treats all-correct as success, shows a pending message for review quizzes and the real correct answers when wrong
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc not run
+- **Status:** Completed

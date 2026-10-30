@@ -1,3 +1,5 @@
+import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/models/station.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
@@ -35,6 +37,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   bool _isLoadingClasses = true;
 
   String _stationId = '';
+  String _stationTitle = '';
+  int _stationNumber = 0;
+  int _stationCount = 0;
+  final Set<String> _reportedDurations = {};
 
   // Clips watched past the threshold (key: '<sessionId>|<clipId>', see _passedKey)
   final Set<String> _unlockedQuizzes = {};
@@ -183,17 +189,27 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     _loadAnsweredQuizzes();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool force = false}) async {
     try {
       final apiService = HttpApiService();
 
-      if (_skillSessions.isEmpty || _mediaSessions.isEmpty) {
-        final stations = await apiService.getStations();
-        if (stations.isNotEmpty) {
-          final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
-          final currentStationData = stations[sIndex];
-          _stationId = currentStationData['id']?.toString() ?? '';
+      final stations = await apiService.getStations();
+      if (force) {
+        _skillSessions = [];
+        _mediaSessions = [];
+      }
+      if (stations.isNotEmpty) {
+        final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
+        final data = stations[sIndex];
+        _stationId = data['id']?.toString() ?? '';
+        _stationCount = stations.length;
+        _stationTitle = data['title']?.toString() ?? '';
+        _stationNumber = (data['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
+      }
 
+      if (_skillSessions.isEmpty || _mediaSessions.isEmpty) {
+        if (stations.isNotEmpty) {
+          final currentStationData = stations[_currentStationIndex.clamp(0, stations.length - 1)];
           final categories = currentStationData['categories'] as List? ?? [];
           for (final cat in categories) {
             if (cat is Map) {
@@ -273,6 +289,30 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     }
   }
 
+  /// A station is open when the user's level reached it or the stations before it are completed.
+  bool _isStationLocked(int index) {
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    final level = user.levelFrame < 1 ? 1 : user.levelFrame;
+    return index > 0 && (index + 1) > level && index > user.completedStationsCount;
+  }
+
+  Future<void> _goToStation(int delta) async {
+    final target = _currentStationIndex + delta;
+    if (target < 0 || (_stationCount > 0 && target >= _stationCount)) return;
+    if (_isStationLocked(target)) {
+      AppToast.info(context, 'این منزلگاه هنوز باز نشده است. ابتدا منزلگاه قبلی را کامل کنید.');
+      return;
+    }
+    setState(() {
+      _currentStationIndex = target;
+      _expandedSessionIndex = 0;
+      _currentClipIndex = 0;
+      _targetSessionTitle = null; // the requested session belonged to the previous station
+      _isLoadingClasses = true;
+    });
+    await _fetchData(force: true);
+  }
+
   List<Map<String, dynamic>> get _currentSessions {
     if (_selectedTab == 1) return _mediaSessions;
     return _skillSessions;
@@ -320,6 +360,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   void _onVideoProgress(Duration position, Duration duration) {
     final pos = position.inMilliseconds;
     final dur = duration.inMilliseconds;
+    _reportRealDuration(duration);
     if (dur > 0 && pos >= dur * _quizUnlockThreshold) {
       final session = _activeSession;
       if (session == null) return;
@@ -332,6 +373,22 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _recordClipWatched(session, _currentClipIndex);
       }
     }
+  }
+
+  /// The player knows a clip's real length: show it in the list and tell the server once.
+  void _reportRealDuration(Duration duration) {
+    final secs = duration.inSeconds;
+    final clips = _activeSession?['videoClips'] as List? ?? [];
+    if (secs <= 0 || _currentClipIndex >= clips.length) return;
+    final clip = clips[_currentClipIndex];
+    final id = clip['id']?.toString();
+    final stored = (clip['duration'] as num?)?.toInt();
+    if (id == null || id.isEmpty || _reportedDurations.contains(id)) return;
+    if (stored != null && (stored - secs).abs() <= 2) return;
+    _reportedDurations.add(id);
+    clip['duration'] = secs;
+    HttpApiService().reportClipDuration(id, secs);
+    if (mounted) setState(() {});
   }
 
   /// Saves the watched clip to the database under its own track (skill / media).
@@ -426,6 +483,25 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Station number and title above the video
+                  if (_stationTitle.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: Text(
+                          'منزلگاه ${_toFarsiDigit(_stationNumber)}: ${Station.getPureName(_stationNumber, _stationTitle)}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: Color(0xFFEDE8F5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
+                        ),
+                      ),
+                    ),
                   // Video Player Box (مثل صفحه کلاس1 قسمت انیمیشن باید ببینید)
                   _buildVideoPlayerCard(),
                   const SizedBox(height: 8),
@@ -533,9 +609,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   }
 
   String _formatDuration(dynamic duration) {
-    if (duration == null) return '۱۵:۰۰';
+    if (duration == null) return '';
     if (duration is num) {
       final int totalSec = duration.toInt();
+      if (totalSec <= 0) return '';
       final int minutes = totalSec ~/ 60;
       final int seconds = totalSec % 60;
       final String minStr = minutes.toString().padLeft(2, '0').toPersianDigits();
@@ -543,7 +620,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       return '$minStr:$secStr';
     }
     final String str = duration.toString().trim();
-    if (str.isEmpty) return '۱۵:۰۰';
+    if (str.isEmpty) return '';
     return str.toPersianDigits();
   }
 
@@ -1027,14 +1104,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         children: [
           // 1. Far Left: منزلگاه بعد (تعویض شده با قبل)
           InkWell(
-            onTap: () {
-              setState(() {
-                _currentStationIndex++;
-                _expandedSessionIndex = 0;
-                _currentClipIndex = 0;
-              });
-              _fetchData();
-            },
+            onTap: (_stationCount == 0 || _currentStationIndex < _stationCount - 1) ? () => _goToStation(1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: const [
@@ -1086,45 +1156,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             ),
           ),
 
-          // 3. Middle Right: شرکت در آزمون نهایی
-          ElevatedButton(
-            onPressed: _showFinalStationExam,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF241F3B),
-              foregroundColor: const Color(0xFFE5B888),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9),
-                side: const BorderSide(
-                  color: Color(0xFFC09268),
-                  width: 1.0,
-                ),
-              ),
-            ),
-            child: const Text(
-              'شرکت در آزمون نهایی',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
-            ),
-          ),
-
           // 4. Far Right: منزلگاه قبل (تعویض شده با بعد)
           InkWell(
-            onTap: _currentStationIndex > 0
-                ? () {
-                    setState(() {
-                      _currentStationIndex--;
-                      _expandedSessionIndex = 0;
-                      _currentClipIndex = 0;
-                    });
-                    _fetchData();
-                  }
-                : null,
+            onTap: _currentStationIndex > 0 ? () => _goToStation(-1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1400,6 +1434,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       final sessionId = session?['id']?.toString() ?? '';
                                       int rewardZarik = 0;
                                       bool passed;
+                                      bool awaitingReview = false;
+                                      List<int>? serverCorrect;
                                       if (sessionId.isNotEmpty) {
                                         Map<String, dynamic>? result;
                                         try {
@@ -1416,7 +1452,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                           }
                                           return;
                                         }
-                                        passed = result['passed'] == true;
+                                        final int? total = (result['total'] as num?)?.toInt();
+                                        final int? score = (result['score'] as num?)?.toInt();
+                                        awaitingReview = result['status']?.toString().toUpperCase() == 'PENDING';
+                                        // Every answer right is a pass, whatever the pass mark says
+                                        passed = result['passed'] == true || (!awaitingReview && total != null && total > 0 && score == total);
+                                        if (result['correctAnswers'] is List) {
+                                          serverCorrect = (result['correctAnswers'] as List).map((e) => (e as num).toInt()).toList();
+                                        }
                                         if (result['rewardZarik'] is num) rewardZarik = (result['rewardZarik'] as num).toInt();
                                       } else {
                                         passed = correctCount == quizQuestions.length ||
@@ -1433,7 +1476,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
                                       if (context.mounted) Navigator.pop(context);
                                       if (!pageContext.mounted) return;
-                                      if (passed) {
+                                      if (awaitingReview) {
+                                        AppToast.info(pageContext, 'پاسخ شما ثبت شد و در انتظار بررسی راهبر است.');
+                                      } else if (passed) {
                                         AppToast.success(
                                           pageContext,
                                           rewardZarik > 0
@@ -1444,7 +1489,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                         final wrong = <String>[];
                                         for (int i = 0; i < quizQuestions.length; i++) {
                                           final q = quizQuestions[i];
-                                          final c = correctIndexOf(q);
+                                          final c = (serverCorrect != null && i < serverCorrect.length) ? serverCorrect[i] : correctIndexOf(q);
                                           if (userAnswers[i] == c) continue;
                                           final opts = q['options'] as List;
                                           final text = (c >= 0 && c < opts.length) ? opts[c].toString() : '';
@@ -1493,82 +1538,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       // Let the next video end (e.g. after a re-watch) open the quiz again
       if (mounted) setState(() => _isMiniQuizShowing = false);
     });
-  }
-
-  void _showFinalStationExam() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF241F3B),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Color(0xFFE5B888),
-                  size: 44,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'آزمون نهایی منزلگاه',
-                  style: TextStyle(
-                    color: Color(0xFFFBE4C8),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'آزمون نهایی شامل سنجش مهارت‌های فراگرفته شده در تمامی جلسات این منزلگاه است.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 11.5,
-                    height: 1.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showPartMiniQuiz(0);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC09268),
-                    foregroundColor: const Color(0xFF1E1A33),
-                    minimumSize: const Size(double.infinity, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'شروع آزمون نهایی',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showDownloadPamphletDialog(String title) {

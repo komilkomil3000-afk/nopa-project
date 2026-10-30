@@ -35,6 +35,9 @@ class HttpApiService {
   DateTime? get tokenExpiry => _tokenExpiry;
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
+  /// A saved login exists: an access token, or a refresh token that can get a new one.
+  bool get hasSession => isAuthenticated || (_refreshToken != null && _refreshToken!.isNotEmpty);
+
   bool _isHandling401 = false;
   bool _isRefreshing = false;
   Completer<bool>? _refreshCompleter;
@@ -1781,6 +1784,19 @@ class HttpApiService {
       debugPrint('getCaravanBanners error: $e');
     }
     return null;
+  }
+
+  /// Tells the server the real length (seconds) of a clip once the player has loaded it.
+  Future<void> reportClipDuration(String clipId, int seconds) async {
+    try {
+      await _post(
+        Uri.parse('$baseUrl/lms/clips/$clipId/duration'),
+        headers: _getHeaders(),
+        body: jsonEncode({'durationSeconds': seconds}),
+      );
+    } catch (e) {
+      debugPrint('reportClipDuration error: $e');
+    }
   }
 
   // --- Calendar Events ---

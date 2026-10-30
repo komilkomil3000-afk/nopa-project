@@ -271,7 +271,6 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         allQuizzes.push(
           { id: `q_${sIdx}_1`, title: 'آزمون مقدماتی مهارت‌ها', totalQuestions: 10 },
           { id: `q_${sIdx}_2`, title: 'آزمون سواد رسانه‌ای', totalQuestions: 10 },
-          { id: `q_${sIdx}_3`, title: 'آزمون جامع منزلگاه', totalQuestions: 20 },
         );
       }
 

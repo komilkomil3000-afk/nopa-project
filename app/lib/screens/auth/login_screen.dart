@@ -128,7 +128,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _checkAutoLogin() async {
-    if (_apiService.isAuthenticated) {
+    await _apiService.loadSavedTokens();
+    if (_apiService.hasSession) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
       AppRepository().recordActivity();
@@ -165,6 +166,18 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       input = input.replaceAll(arabic[i], english[i]);
     }
     return input;
+  }
+
+  /// The typed number in the form the server stores: 09xxxxxxxxx (accepts 9xxxxxxxxx, 09xxxxxxxxx, +989..., 00989...).
+  String _normalizedPhone(String raw) {
+    var p = _toEnglishDigits(raw).replaceAll(RegExp(r'[^0-9]'), '');
+    if (p.startsWith('0098')) {
+      p = p.substring(4);
+    } else if (p.startsWith('98') && p.length >= 12) {
+      p = p.substring(2);
+    }
+    if (p.startsWith('0')) p = p.substring(1);
+    return p.isEmpty ? '' : '0$p';
   }
 
   String _formatTimer(int totalSeconds) {
@@ -280,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _handleSendVerificationCode() async {
-    final phone = _toEnglishDigits(_phoneCtrl.text.trim());
+    final phone = _normalizedPhone(_phoneCtrl.text);
     if (phone.isEmpty) {
       _showError('لطفاً شماره تلفن همراه خود را وارد کنید');
       return;
@@ -765,7 +778,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _handleLoginForRole(String role) async {
-    String phone = _toEnglishDigits(_phoneCtrl.text.trim());
+    String phone = _normalizedPhone(_phoneCtrl.text);
     String password = _secretCtrl.text.trim();
     final response = await _apiService.login(phone, password: password, role: role);
     _processLoginResponse(response);
@@ -780,7 +793,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _handleLogin() async {
-    String phone = _toEnglishDigits(_phoneCtrl.text.trim());
+    String phone = _normalizedPhone(_phoneCtrl.text);
     if (phone.isEmpty) {
       _showError('لطفاً شماره تلفن همراه را وارد کنید');
       return;
@@ -960,7 +973,38 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Right Side in RTL: Clickable Country Selector (Flag + Code + Dropdown Chevron)
+          // Right in RTL: Phone Text Field
+          Expanded(
+            child: TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.0,
+              ),
+              decoration: const InputDecoration(
+                hintText: '9123456789',
+                hintStyle: TextStyle(color: Colors.white24, fontFamily: AppTheme.fontFamily, fontSize: 14.5),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+
+          Container(
+            width: 1,
+            height: 24,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            color: const Color(0xFF6C6C63).withValues(alpha: 0.35),
+          ),
+
+          // Left of the number: Clickable Country Selector (Flag + Code + Dropdown Chevron)
           InkWell(
             onTap: _openCountryPickerModal,
             borderRadius: BorderRadius.circular(8),
@@ -988,38 +1032,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     color: Color(0xFF8E889D),
                     size: 16,
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 1,
-                    height: 24,
-                    color: const Color(0xFF6C6C63).withValues(alpha: 0.35),
-                  ),
-                  const SizedBox(width: 6),
                 ],
-              ),
-            ),
-          ),
-
-          // Center: Phone Text Field
-          Expanded(
-            child: TextField(
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              textDirection: TextDirection.ltr,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.0,
-              ),
-              decoration: const InputDecoration(
-                hintText: '9380346668',
-                hintStyle: TextStyle(color: Colors.white24, fontFamily: AppTheme.fontFamily, fontSize: 14.5),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
               ),
             ),
           ),

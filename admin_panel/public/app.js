@@ -7915,6 +7915,21 @@ function addClassUI(catEl, classData = null) {
   }
 }
 
+// Reads the real length of the clip's video (metadata only) and writes it, in seconds, into the duration field.
+window.detectClipDuration = function(urlInput) {
+  const url = (urlInput.value || '').trim();
+  const durInput = urlInput.closest('.builder-clip-item')?.querySelector('.clip-duration-input');
+  if (!url || !durInput) return;
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  video.onloadedmetadata = () => {
+    if (Number.isFinite(video.duration) && video.duration > 0) durInput.value = Math.round(video.duration);
+    video.removeAttribute('src');
+  };
+  video.onerror = () => {};
+  video.src = url;
+};
+
 window.uploadClipMediaDirect = async function(input) {
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
@@ -7924,7 +7939,7 @@ window.uploadClipMediaDirect = async function(input) {
   
   const parent = input.parentElement;
   const statusEl = parent.querySelector('.clip-upload-status');
-  const urlInput = parent.querySelector('.clip-url-input');
+  const urlInput = input.closest('.builder-clip-item').querySelector('.clip-url-input');
   
   statusEl.innerText = 'در حال آپلود...';
   statusEl.style.color = '#10B981';
@@ -7939,6 +7954,7 @@ window.uploadClipMediaDirect = async function(input) {
     if (data.url) {
       urlInput.value = data.url;
       statusEl.innerText = 'آپلود موفق!';
+      window.detectClipDuration(urlInput);
     } else {
       statusEl.innerText = 'خطا در آپلود';
       statusEl.style.color = 'red';
@@ -7965,8 +7981,8 @@ function addClipUI(classEl, clipData = null) {
   clipDiv.innerHTML = `
     <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">پارت/کلیپ:</span>
     <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
-    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" style="flex:2; min-width:150px; height:28px; font-size:11px;">
-    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه)" style="width:75px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" onchange="window.detectClipDuration(this)" style="flex:2; min-width:150px; height:28px; font-size:11px;">
+    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو" style="width:75px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
     <div style="display: flex; align-items: center; gap: 5px;">
       <input type="file" onchange="uploadClipMediaDirect(this)" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
