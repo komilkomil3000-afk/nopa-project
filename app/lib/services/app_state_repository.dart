@@ -296,6 +296,12 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Reactive Collections
   List<CaravanModel> caravans = [];
 
+  /// The caravan currently picked by the mentor (null until caravans are loaded).
+  CaravanModel? get selectedCaravan {
+    if (caravans.isEmpty) return null;
+    return caravans.firstWhere((c) => c.id == _selectedCaravanId, orElse: () => caravans.first);
+  }
+
   Future<void> fetchCaravans() async {
     try {
       final data = await _apiService.getCaravans();
@@ -306,12 +312,22 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
           final memberCount = (item['memberCount'] is int) ? (item['memberCount'] as int) : members.length;
           final overallProgress = (item['overallProgress'] is num) ? (item['overallProgress'] as num).toDouble() : 0.75;
           final activeStation = item['activeStation']?.toString() ?? 'منزلگاه اول';
+          int sumOf(List<String> keys) => members.whereType<Map>().fold<int>(0, (sum, m) {
+                for (final k in keys) {
+                  if (m[k] is num) return sum + (m[k] as num).toInt();
+                }
+                return sum;
+              });
           loaded.add(CaravanModel(
             id: item['id']?.toString() ?? '',
             name: item['name']?.toString() ?? 'کاروان',
             memberCount: memberCount,
             overallProgress: overallProgress,
             activeStation: activeStation,
+            totalZarik: sumOf(['zarikBalance', 'zarik']),
+            totalBeyragh: sumOf(['beyragh']),
+            totalNakh: sumOf(['nakh']),
+            totalFarsh: sumOf(['farsh']),
           ));
         }
         if (loaded.isNotEmpty) {

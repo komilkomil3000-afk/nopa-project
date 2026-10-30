@@ -22,7 +22,7 @@ test('mentor allowlist: default deny', () => {
   // forbidden for mentors
   for (const [m, p] of [
     ['POST', '/users/u1/zarik'], ['DELETE', '/users/u1'], ['GET', '/users/export'],
-    ['PUT', '/rbac/permissions'], ['POST', '/asset-conversions/x/approve'],
+    ['PUT', '/rbac/permissions'], ['POST', '/asset-conversions/x/cancel'],
     ['DELETE', '/challenges/c1'], ['POST', '/settings'], ['GET', '/unknown-new-route'],
   ]) {
     const r = runMiddleware(restrictNonAdmins, 'mentor', m, p);

@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { stripAnswerKeys } from '../utils/answerKeys';
+import { isMentorRole } from '../utils/roles';
 import prisma from '../config/db';
 
 export async function createChallenge(req: AuthRequest, res: Response) {
@@ -517,7 +518,8 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       }
     }
 
-    const calculatedReward = correctCount * 10; // 10 Zarik per correct answer
+    // 10 Zarik per correct answer; mentors take part without earning personal rewards
+    const calculatedReward = isMentorRole(req.user.role) ? 0 : correctCount * 10;
 
     let submission: any;
     let updatedUser: any;

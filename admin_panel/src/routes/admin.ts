@@ -40,7 +40,7 @@ import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteFi
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
-import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
+import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
 import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, createMentorRewardRule, deleteMentorRewardRule } from '../controllers/rewardController';
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
@@ -130,7 +130,7 @@ router.delete('/caravans/:id', deleteCaravan as any);
 router.put('/caravans/:id/block-members', blockCaravanMembers as any);
 
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
-router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
+router.post('/asset-conversions/:id/cancel', cancelAssetConversion as any);
 router.get('/tickets', getTickets as any);
 router.post('/tickets/:id/reply', replyTicketAdmin as any);
 router.post('/tickets/:id/resolve', resolveTicketAdmin as any);

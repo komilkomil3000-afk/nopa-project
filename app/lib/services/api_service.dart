@@ -1825,10 +1825,12 @@ class HttpApiService {
   }
 
   // --- Mentor Caravan Progress API ---
-  Future<Map<String, dynamic>?> getMentorCaravanProgress() async {
+  Future<Map<String, dynamic>?> getMentorCaravanProgress({String? caravanId}) async {
     try {
       final response = await _get(
-        Uri.parse('$baseUrl/mentor/caravan-progress'),
+        Uri.parse('$baseUrl/mentor/caravan-progress').replace(
+          queryParameters: (caravanId != null && caravanId.isNotEmpty) ? {'caravanId': caravanId} : null,
+        ),
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {
@@ -1859,7 +1861,9 @@ class HttpApiService {
     return [];
   }
 
-  Future<bool> submitStudentAssetConversion({
+  /// Converts the student's own capital immediately. Returns null on success,
+  /// otherwise the error message to show the user.
+  Future<String?> submitStudentAssetConversion({
     required String sourceAsset,
     required String targetAsset,
     required double sourceAmount,
@@ -1876,28 +1880,37 @@ class HttpApiService {
           'targetAmount': targetAmount,
         }),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) return null;
+      return _conversionError(response.body);
     } catch (e) {
       debugPrint('submitStudentAssetConversion error: $e');
-      return false;
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
     }
   }
 
-  Future<bool> approveCaravanAssetConversion(String requestId, bool approve, {String? note}) async {
+  /// Mentor cancels a mistaken exchange (within 24h). Returns null on success,
+  /// otherwise the error message to show the user.
+  Future<String?> cancelCaravanAssetConversion(String requestId, {String? reason}) async {
     try {
       final response = await _post(
-        Uri.parse('$baseUrl/caravans/approve-conversion/$requestId'),
+        Uri.parse('$baseUrl/caravans/cancel-conversion/$requestId'),
         headers: _getHeaders(),
-        body: jsonEncode({
-          'approve': approve,
-          'note': note,
-        }),
+        body: jsonEncode({'reason': reason}),
       );
-      return response.statusCode == 200;
+      if (response.statusCode == 200) return null;
+      return _conversionError(response.body);
     } catch (e) {
-      debugPrint('approveCaravanAssetConversion error: $e');
-      return false;
+      debugPrint('cancelCaravanAssetConversion error: $e');
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
     }
+  }
+
+  String _conversionError(String body) {
+    try {
+      final data = jsonDecode(body);
+      if (data is Map && data['error'] != null) return data['error'].toString();
+    } catch (_) {}
+    return 'خطایی رخ داده است. لطفاً دوباره تلاش کنید.';
   }
 }
 

@@ -64,83 +64,166 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
   }
 }
 
-export async function convertAssets(req: AuthRequest, res: Response) {
+// Capital exchange rules: only zarik -> nakh and nakh -> farsh are allowed.
+// The rate is how many units of the source make one unit of the target.
+const ASSET_FIELDS: Record<string, 'zarik' | 'nakh' | 'farsh'> = { 'زریک': 'zarik', 'نخ': 'nakh', 'فرش': 'farsh' };
+const CONVERSION_RATES: Record<string, number> = { 'zarik>nakh': 500, 'nakh>farsh': 5 };
+const CONVERSION_CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Students convert their own capital immediately; the caravan mentor is only notified
+// and may cancel within CONVERSION_CANCEL_WINDOW_MS (see cancelAssetConversion).
+export async function submitStudentAssetConversion(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || req.user.role !== 'mentor') {
-      return res.status(403).json({ error: 'تنها راهبران مجاز به ثبت درخواست تبدیل هستند' });
+    const userId = req.user!.id;
+    const { sourceAsset, targetAsset } = req.body;
+    const sourceAmount = Number(req.body.sourceAmount);
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
+    if (user.role !== 'student') {
+      return res.status(403).json({ error: 'تنها دانش‌آموزان می‌توانند سرمایه خود را تبدیل کنند' });
+    }
+    if (!user.caravanId) return res.status(400).json({ error: 'شما عضو کاروانی نیستید' });
+
+    const from = ASSET_FIELDS[sourceAsset];
+    const to = ASSET_FIELDS[targetAsset];
+    const rate = from && to ? CONVERSION_RATES[`${from}>${to}`] : undefined;
+    if (!from || !to || !rate) {
+      return res.status(400).json({ error: `تبدیل ${sourceAsset} به ${targetAsset} امکان‌پذیر نیست` });
+    }
+    if (!Number.isInteger(sourceAmount) || sourceAmount <= 0) {
+      return res.status(400).json({ error: 'مقدار نامعتبر است' });
+    }
+    if (sourceAmount % rate !== 0) {
+      return res.status(400).json({ error: `مقدار ${sourceAsset} باید مضربی از ${rate} باشد` });
+    }
+    const targetAmount = sourceAmount / rate;
+    const caravanId = user.caravanId;
+
+    let reqRecord;
+    try {
+      reqRecord = await prisma.$transaction(async (tx) => {
+        // Guarded decrement: the balance can never go negative, even under concurrent requests
+        const debited = await tx.user.updateMany({
+          where: { id: user.id, [from]: { gte: sourceAmount } },
+          data: { [from]: { decrement: sourceAmount }, [to]: { increment: targetAmount } },
+        });
+        if (debited.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
+        if (from === 'zarik') {
+          await tx.zarikTransaction.create({
+            data: { userId: user.id, amount: -sourceAmount, category: 'Asset Exchange', reason: `تبدیل ${sourceAmount} زریک به ${targetAmount} نخ`, createdBy: user.id },
+          });
+        }
+        return tx.assetConversionRequest.create({
+          data: {
+            caravanId,
+            requestedBy: user.id,
+            status: 'completed',
+            sourceAsset,
+            targetAsset,
+            sourceAmount,
+            targetAmount,
+            note: `تبدیل ${sourceAmount} ${sourceAsset} ➔ ${targetAmount} ${targetAsset}`,
+          },
+        });
+      });
+    } catch (e: any) {
+      if (e?.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'دارایی شما کافی نیست' });
+      throw e;
     }
 
-    const mentor = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!mentor || !mentor.caravanId) return res.status(404).json({ error: 'کاربر یا کاروان یافت نشد' });
-
-    if (mentor.nakh < 5) {
-      return res.status(400).json({ error: 'موجودی نخ شما کافی نیست (حداقل 5 کلاف نخ نیاز است)' });
-    }
-
-    // Create a request in the queue
-    await prisma.assetConversionRequest.create({
-      data: {
-        caravanId: mentor.caravanId,
-        requestedBy: mentor.id,
-        note: 'درخواست تبدیل ۵ کلاف نخ به ۱ فرش'
+    // Observer notification for the caravan mentor (best effort: never fails the exchange)
+    try {
+      const caravan = await prisma.caravan.findUnique({ where: { id: caravanId }, select: { mentorId: true } });
+      if (caravan?.mentorId) {
+        await prisma.notification.create({
+          data: {
+            userId: caravan.mentorId,
+            title: 'مبادله سرمایه 🔄',
+            message: `${user.name}: ${reqRecord.note}`,
+            type: 'alert',
+          },
+        });
       }
-    });
+    } catch (e) {
+      console.error('conversion notify mentor error:', e);
+    }
 
-    res.json({ success: true, message: 'درخواست تبدیل با موفقیت ثبت شد و در انتظار تایید مدیریت است' });
+    res.json({ success: true, request: reqRecord });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 }
 
-export async function approveAssetConversion(req: AuthRequest, res: Response) {
+// Cancels a completed conversion (mistaken exchange) and restores the balances.
+// Allowed for the caravan's mentor within 24h of the exchange, or for an admin at any time.
+export async function cancelAssetConversion(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { approve, note, rejectionReason } = req.body; // approve: boolean
+    const reason = String(req.body?.reason || req.body?.note || '').trim();
+    const isAdmin = req.user!.role?.toLowerCase() === 'admin';
 
-    const conversionReq = await prisma.assetConversionRequest.findUnique({ where: { id } });
-    if (!conversionReq || conversionReq.status !== 'pending') {
-      return res.status(404).json({ error: 'درخواست معتبر یافت نشد' });
+    const conversion = await prisma.assetConversionRequest.findUnique({
+      where: { id },
+      include: { caravan: { select: { mentorId: true } } },
+    });
+    if (!conversion || conversion.status !== 'completed') {
+      return res.status(404).json({ error: 'مبادله معتبر یافت نشد' });
+    }
+    if (!isAdmin) {
+      if (conversion.caravan.mentorId !== req.user!.id) {
+        return res.status(403).json({ error: 'تنها راهبر همین کاروان می‌تواند مبادله را لغو کند' });
+      }
+      if (Date.now() - conversion.createdAt.getTime() > CONVERSION_CANCEL_WINDOW_MS) {
+        return res.status(400).json({ error: 'مهلت ۲۴ ساعته لغو این مبادله به پایان رسیده است' });
+      }
     }
 
-    const now = new Date();
-    if (approve) {
-      // Check mentor balance again just in case
-      const mentor = await prisma.user.findUnique({ where: { id: conversionReq.requestedBy } });
-      if (!mentor || mentor.nakh < 5) {
-        return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
-      }
+    const from = ASSET_FIELDS[conversion.sourceAsset || ''];
+    const to = ASSET_FIELDS[conversion.targetAsset || ''];
+    if (!from || !to || !conversion.sourceAmount || !conversion.targetAmount) {
+      return res.status(400).json({ error: 'اطلاعات این مبادله برای لغو کافی نیست' });
+    }
+    const sourceAmount = conversion.sourceAmount;
+    const targetAmount = conversion.targetAmount;
 
-      try {
-        await prisma.$transaction(async (tx) => {
-          // Claim the request first: a concurrent second approval sees count 0 and aborts
-          const claimed = await tx.assetConversionRequest.updateMany({
-            where: { id, status: 'pending' },
-            data: { status: 'approved', note: note || 'تایید شد', reviewedAt: now }
-          });
-          if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
-          // Guarded decrement: never lets the balance go below 5 -> 0 under concurrency
-          const debited = await tx.user.updateMany({
-            where: { id: mentor.id, nakh: { gte: 5 } },
-            data: { nakh: { decrement: 5 }, farsh: { increment: 1 } }
-          });
-          if (debited.count !== 1) throw new Error('INSUFFICIENT_NAKH');
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Claim first: a concurrent second cancel sees count 0 and aborts
+        const claimed = await tx.assetConversionRequest.updateMany({
+          where: { id, status: 'completed' },
+          data: { status: 'cancelled', cancelledBy: req.user!.id, cancelledAt: new Date(), rejectionReason: reason || null },
         });
-      } catch (e: any) {
-        if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'درخواست معتبر یافت نشد' });
-        if (e?.message === 'INSUFFICIENT_NAKH') return res.status(400).json({ error: 'موجودی راهبر کافی نیست' });
-        throw e;
-      }
-    } else {
-      await prisma.assetConversionRequest.update({
-        where: { id },
-        data: { 
-          status: 'rejected', 
-          note: note || 'رد شد', 
-          rejectionReason: rejectionReason || note || 'رد شد',
-          reviewedAt: now 
+        if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
+        // The student must still hold the converted capital; no negative balances allowed
+        const reverted = await tx.user.updateMany({
+          where: { id: conversion.requestedBy, [to]: { gte: targetAmount } },
+          data: { [to]: { decrement: targetAmount }, [from]: { increment: sourceAmount } },
+        });
+        if (reverted.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
+        if (from === 'zarik') {
+          await tx.zarikTransaction.create({
+            data: { userId: conversion.requestedBy, amount: sourceAmount, category: 'Asset Exchange', reason: `لغو مبادله: بازگشت ${sourceAmount} زریک`, createdBy: req.user!.id },
+          });
         }
       });
+    } catch (e: any) {
+      if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'مبادله معتبر یافت نشد' });
+      if (e?.message === 'INSUFFICIENT_BALANCE') {
+        return res.status(400).json({ error: 'دانش‌آموز سرمایه‌ی تبدیل‌شده را خرج کرده و بازگرداندن مبادله ممکن نیست' });
+      }
+      throw e;
     }
+
+    await prisma.notification.create({
+      data: {
+        userId: conversion.requestedBy,
+        title: 'مبادله لغو شد ↩️',
+        message: `مبادله «${conversion.note}» توسط راهبر لغو شد و سرمایه‌های شما بازگردانده شد.${reason ? ` علت: ${reason}` : ''}`,
+        type: 'alert',
+      },
+    });
+    await logAdminAction(req.user!.id, req.user!.phoneNumber || 'Mentor', 'CANCEL_ASSET_CONVERSION', 'AssetConversionRequest', id, reason || 'cancelled', req.ip || '');
 
     res.json({ success: true });
   } catch (error: any) {
@@ -168,14 +251,8 @@ export async function getCaravanAssetConversions(req: AuthRequest, res: Response
     const userId = req.user!.id;
     const userRole = req.user!.role?.toLowerCase();
 
-    const mentorCaravan = await prisma.caravan.findFirst({
-      where: {
-        OR: [
-          { mentorId: userId },
-          { members: { some: { id: userId } } }
-        ]
-      }
-    });
+    // Mentors see every exchange of their caravan (observer view); students only their own
+    const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: userId } });
 
     const whereClause: any = {};
     if (mentorCaravan) {
@@ -198,37 +275,6 @@ export async function getCaravanAssetConversions(req: AuthRequest, res: Response
   }
 }
 
-export async function submitStudentAssetConversion(req: AuthRequest, res: Response) {
-  try {
-    const userId = req.user!.id;
-    const { sourceAsset, targetAsset, sourceAmount, targetAmount } = req.body;
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
-
-    let finalCaravanId = user.caravanId;
-    if (!finalCaravanId) {
-      const firstCaravan = await prisma.caravan.findFirst();
-      finalCaravanId = firstCaravan ? firstCaravan.id : '';
-    }
-
-    if (!finalCaravanId) {
-      return res.status(400).json({ error: 'شما عضو کاروانی نیستید' });
-    }
-
-    const reqRecord = await prisma.assetConversionRequest.create({
-      data: {
-        caravanId: finalCaravanId,
-        requestedBy: user.id,
-        note: `تبدیل ${sourceAmount} ${sourceAsset} ➔ ${targetAmount} ${targetAsset}`
-      }
-    });
-
-    res.json({ success: true, request: reqRecord });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-}
 
 export async function createCaravan(req: AuthRequest, res: Response) {
   try {
@@ -367,11 +413,13 @@ export async function getCaravanDetails(req: AuthRequest, res: Response) {
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
 
     const membersList = caravan.members || [];
+    // Caravan capital is the students' total; a mentor who is also linked as a member adds nothing
+    const students = membersList.filter(u => u.role === 'student');
     const wealth = {
-      zarik: membersList.reduce((acc, u) => acc + (u.zarikBalance || 0), 0),
-      nakh: membersList.reduce((acc, u) => acc + (u.nakh || 0), 0),
-      farsh: membersList.reduce((acc, u) => acc + (u.farsh || 0), 0),
-      beyragh: membersList.reduce((acc, u) => acc + (u.beyragh || 0), 0),
+      zarik: students.reduce((acc, u) => acc + (u.zarikBalance || 0), 0),
+      nakh: students.reduce((acc, u) => acc + (u.nakh || 0), 0),
+      farsh: students.reduce((acc, u) => acc + (u.farsh || 0), 0),
+      beyragh: students.reduce((acc, u) => acc + (u.beyragh || 0), 0),
     };
     const totalWealth = wealth.zarik;
 

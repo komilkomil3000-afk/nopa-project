@@ -884,3 +884,68 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - Static HTML edit only; no build needed
 - **Status:** Completed
+
+### [2026-10-30 12:08] - Flutter App Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+- **Description of Changes:**
+  - Asset exchange: reject conversion when amount exceeds balance (toast: دارایی شما کافی نیست) for student and mentor market screens
+  - only zarik->nakh and nakh->farsh allowed
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/)
+- **Status:** Completed
+
+### [2026-10-30 12:24] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `admin_panel/tests/security.test.js` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261031_asset_conversion_instant/` (Created)
+- **Description of Changes:**
+  - Asset exchange is now instant (no mentor approval): server validates path (zarik>nakh 500:1, nakh>farsh 5:1), integer multiples and balance in one guarded transaction, then notifies the caravan mentor
+  - mentor/admin can cancel within 24h (restores balances, fails if student spent the capital)
+  - removed approve/reject + mentor convert-assets endpoints
+  - added structured columns via migration 20261031_asset_conversion_instant
+  - mentor app UI shows exchanges read-only with a cancel button
+  - admin panel shows cancel instead of approve/reject
+  - students only read their own exchanges
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; node --check admin_panel/public/app.js; backend NOT type-checked (no node_modules in admin_panel here) and migration not applied
+- **Status:** Completed
+
+### [2026-10-30 13:10] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/utils/roles.ts` (Created)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Mentors browse all content in order but earn nothing: submitSessionQuiz (mentor branch) records only per-clip quizPassed progress (needed for ordering), no QuizSubmission/zarik/notification/certificate evaluation; challenge submitQuiz gives mentors 0 reward; heartbeat skips evaluateStudentProgress for mentors
+  - getStations ignores scheduledUnlockTime (time condition) for mentors; order lock (client-side) still applies
+  - Mentor capital is now the caravan's students total: CaravanModel totals computed in fetchCaravans, shown on mentor home (removed fake defaults 3500/8/45/3); mentor market no longer falls back to personal assets; removed local optimistic zarik credit on mentor challenge quiz
+  - getCaravanDetails wealth sums students only; getMentorCaravanProgress accepts optional caravanId (mentor must belong to it, admin any) and the app passes the selected caravan
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
+- **Status:** Completed

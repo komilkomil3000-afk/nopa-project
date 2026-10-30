@@ -138,7 +138,13 @@ model AssetConversionRequest {
   id              String   @id @default(uuid())
   caravanId       String
   requestedBy     String
-  status          String   @default("pending") // "pending" | "approved" | "rejected"
+  status          String   @default("completed") // "completed" | "cancelled" (legacy: "pending" | "approved" | "rejected")
+  sourceAsset     String?
+  targetAsset     String?
+  sourceAmount    Int?
+  targetAmount    Int?
+  cancelledBy     String?
+  cancelledAt     DateTime?
   note            String?
   rejectionReason String?
   reviewedAt      DateTime?

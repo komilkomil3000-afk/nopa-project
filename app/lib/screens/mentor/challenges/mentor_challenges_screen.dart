@@ -530,19 +530,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       answerText: 'گزینه انتخابی: ${(selectedOptionIndex + 1).toString().toPersianDigits()}',
                                       submittedAt: DateTime.now(),
                                       status: 'approved',
-                                      scoreFeedback: 'پاسخ ثبت شد و ${challenge['reward']} زریک به حساب شما اضافه شد.',
+                                      scoreFeedback: 'پاسخ ثبت شد. راهبر امتیاز شخصی دریافت نمی‌کند.',
                                     ));
-                                    repository.currentUser = UserModel(
-                                      id: repository.currentUser.id,
-                                      name: repository.currentUser.name,
-                                      phoneNumber: repository.currentUser.phoneNumber,
-                                      role: repository.currentUser.role,
-                                      zarik: repository.currentUser.zarik + (challenge['reward'] as int),
-                                      nakh: repository.currentUser.nakh,
-                                      beyragh: repository.currentUser.beyragh,
-                                      farsh: repository.currentUser.farsh,
-                                      hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
-                                    );
                                     HttpApiService().submitQuizChallenge(challenge['id'], [selectedOptionIndex]);
                                   } else {
                                     String ansText = textCtrl.text;

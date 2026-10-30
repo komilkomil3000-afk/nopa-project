@@ -79,7 +79,8 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
   Future<void> _fetchMentorStationData() async {
     try {
-      final data = await HttpApiService().getMentorCaravanProgress();
+      final caravanId = Provider.of<AppRepository>(context, listen: false).selectedCaravanId;
+      final data = await HttpApiService().getMentorCaravanProgress(caravanId: caravanId);
       if (data != null && mounted) {
         setState(() {
           _stations = List<Map<String, dynamic>>.from(data['stations'] ?? []);

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
+import { isMentorRole } from '../utils/roles';
 
 export const getStations = async (req: Request, res: Response) => {
   try {
@@ -33,6 +34,8 @@ export const getStations = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
+    // Mentors are not bound by the release schedule (the order of content still applies)
+    const isMentor = isMentorRole((req as any).user?.role);
     const mapped = stations.map(st => {
       let instructors = null;
       let schedule = null;
@@ -53,7 +56,7 @@ export const getStations = async (req: Request, res: Response) => {
       }
 
       // Check scheduled unlock time
-      const isTimeLocked = st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
+      const isTimeLocked = !isMentor && st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
       const isLocked = Boolean(st.isLocked || st.status === 'locked' || isTimeLocked);
 
       // Parse multiple animations
@@ -971,8 +974,8 @@ export const heartbeatSessionWatch = async (req: any, res: Response) => {
       quizUnlocked: record.watchedPercentage >= 70.0
     });
     
-    // Evaluate progress asynchronously
-    evaluateStudentProgress(userId);
+    // Evaluate progress asynchronously (mentors have no personal progress/levels)
+    if (!isMentorRole(req.user?.role)) evaluateStudentProgress(userId);
   } catch (error) {
     console.error('heartbeatSessionWatch error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1085,6 +1088,38 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       // For TEXT and FILE, it awaits mentor review
       passed = false;
       submissionStatus = 'PENDING';
+    }
+
+    // Mentors follow the same content order but earn nothing: no submission row (it would land in
+    // review queues), no rewards, no notification. Only the per-clip progress is kept, which is
+    // what unlocks the next part.
+    if (isMentorRole(req.user?.role)) {
+      if (passed) {
+        const clip = await prisma.videoClip.findFirst({
+          where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
+        });
+        if (clip) {
+          await prisma.userProgress.upsert({
+            where: { userId_clipId: { userId, clipId: clip.id } },
+            update: { quizPassed: true },
+            create: {
+              userId,
+              clipId: clip.id,
+              trackType: session.category?.title?.includes('مهارت') ? 'skill' : 'media',
+              stationId: session.category?.stationId || 'unknown',
+              sessionId: session.id,
+              quizPassed: true
+            }
+          });
+        }
+      }
+      return res.json({
+        score: correctCount,
+        total: questionsList.length,
+        passed,
+        rewardZarik: 0,
+        submissionId: null
+      });
     }
 
     // Check if student has already passed this quiz to prevent double rewards

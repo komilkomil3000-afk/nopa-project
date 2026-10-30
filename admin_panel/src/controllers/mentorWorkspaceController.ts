@@ -188,13 +188,17 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
     const userId = req.user!.id;
     const userRole = req.user!.role?.toLowerCase();
     
-    // Find mentor's caravan
+    // Find mentor's caravan (the one picked in the app when the mentor manages several)
+    const requestedCaravanId = typeof req.query.caravanId === 'string' ? req.query.caravanId : '';
     let caravan = await prisma.caravan.findFirst({
       where: {
-        OR: [
-          { mentorId: userId },
-          { members: { some: { id: userId } } }
-        ]
+        ...(requestedCaravanId ? { id: requestedCaravanId } : {}),
+        ...(userRole === 'admin' && requestedCaravanId ? {} : {
+          OR: [
+            { mentorId: userId },
+            { members: { some: { id: userId } } }
+          ]
+        })
       },
       include: {
         members: {

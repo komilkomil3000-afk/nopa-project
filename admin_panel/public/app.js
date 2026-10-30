@@ -6588,18 +6588,15 @@ window.loadAssetConversions = async function() {
           <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش')}</span>
         </td>
         <td>
-          ${r.status === 'pending' ? '<span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);">⏳ در انتظار بررسی</span>' : 
-            r.status === 'approved' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ تایید شده</span>' : 
-            `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">❌ رد شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}`}
+          ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ انجام شده</span>' :
+            r.status === 'cancelled' ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">↩️ لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
+            '<span class="badge" style="background:rgba(148,163,184,0.2); color:#94a3b8; border:1px solid rgba(148,163,184,0.4);">قدیمی (بدون اثر)</span>'}
         </td>
         <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
         <td style="text-align:center;">
-          ${r.status === 'pending' ? `
-            <div style="display:inline-flex; gap:6px;">
-              <button type="button" class="btn-icon" style="color:#22c55e; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', true)" title="تایید درخواست"><i class="fa-solid fa-check"></i> تایید</button>
-              <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', false)" title="رد درخواست"><i class="fa-solid fa-xmark"></i> رد</button>
-            </div>
-          ` : '<span style="color:#64748b; font-size:11px;">بررسی شده</span>'}
+          ${r.status === 'completed' ? `
+            <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="cancelAssetConversion('${r.id}')" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
+          ` : '<span style="color:#64748b; font-size:11px;">-</span>'}
         </td>
       </tr>
     `).join('');
@@ -6608,36 +6605,25 @@ window.loadAssetConversions = async function() {
   }
 };
 
-window.approveAssetConversion = async function(id, approve) {
-  let note = '';
-  let rejectionReason = '';
-
-  if (approve) {
-    const entered = prompt('یادداشت تایید (اختیاری):', 'درخواست شما تایید و تبدیل دارایی انجام شد.');
-    if (entered === null) return;
-    note = entered;
-  } else {
-    const enteredReason = prompt('لطفاً علت رد درخواست را وارد فرمایید:', 'عدم تطابق موجودی یا عدم احراز شرایط');
-    if (enteredReason === null) return;
-    rejectionReason = enteredReason;
-    note = enteredReason;
-  }
+window.cancelAssetConversion = async function(id) {
+  const reason = prompt('علت لغو مبادله را وارد کنید (اختیاری):', 'مبادله به اشتباه انجام شده است.');
+  if (reason === null) return;
 
   try {
-    const res = await fetch(`/api/v1/admin/asset-conversions/${id}/approve`, {
+    const res = await fetch(`/api/v1/admin/asset-conversions/${id}/cancel`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approve, note, rejectionReason })
+      body: JSON.stringify({ reason })
     });
     const d = await res.json();
     if(res.ok) {
-      alert('عملیات با موفقیت انجام شد');
+      alert('مبادله لغو و سرمایه‌ها بازگردانده شد');
       window.loadAssetConversions();
     } else {
       alert(d.error || 'خطا در عملیات');
     }
   } catch(e) {
-    console.error('approveAssetConversion error:', e);
+    console.error('cancelAssetConversion error:', e);
   }
 };
 

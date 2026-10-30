@@ -97,12 +97,22 @@ class CaravanModel {
   double overallProgress;
   String activeStation;
 
+  /// Capital totals across the caravan's students (a mentor holds none of their own).
+  int totalZarik;
+  int totalBeyragh;
+  int totalNakh;
+  int totalFarsh;
+
   CaravanModel({
     required this.id,
     required this.name,
     required this.memberCount,
     required this.overallProgress,
     required this.activeStation,
+    this.totalZarik = 0,
+    this.totalBeyragh = 0,
+    this.totalNakh = 0,
+    this.totalFarsh = 0,
   });
 }
 

@@ -127,7 +127,8 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                 'studentId': req['requestedBy']?.toString() ?? '',
                 'title': title,
                 'date': date,
-                'status': req['status']?.toString() ?? 'pending',
+                'status': req['status']?.toString() ?? 'completed',
+                'createdAt': req['createdAt']?.toString() ?? '',
               };
             }).toList();
           }
@@ -191,6 +192,35 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0 || _calculatedResult <= 0) {
       AppToast.error(context, 'لطفاً مقدار معتبری برای مبادله وارد کنید.');
+      return;
+    }
+
+    // Conversion path rules (flag rules are defined separately)
+    const capitals = ['زریک', 'نخ', 'فرش'];
+    if (capitals.contains(_sourceAsset) &&
+        capitals.contains(_targetAsset) &&
+        !((_sourceAsset == 'زریک' && _targetAsset == 'نخ') ||
+            (_sourceAsset == 'نخ' && _targetAsset == 'فرش'))) {
+      AppToast.error(context, 'تبدیل $_sourceAsset به $_targetAsset امکان‌پذیر نیست.');
+      return;
+    }
+
+    final int rate = _sourceAsset == 'زریک' ? 500 : 5;
+    if (amount % rate != 0) {
+      AppToast.error(context, 'مقدار $_sourceAsset باید مضربی از ${rate.toString().toPersianDigits()} باشد.');
+      return;
+    }
+
+    // Balance check: amount must not exceed the user's holdings
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    final double? balance = switch (_sourceAsset) {
+      'زریک' => user.zarik.toDouble(),
+      'نخ' => user.nakh.toDouble(),
+      'فرش' => user.farsh.toDouble(),
+      _ => null,
+    };
+    if (balance != null && amount > balance) {
+      AppToast.error(context, 'دارایی شما کافی نیست.');
       return;
     }
 
@@ -370,18 +400,20 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                       TextButton(
                         onPressed: () async {
                           Navigator.pop(ctx);
-                          final success = await HttpApiService().submitStudentAssetConversion(
+                          final repository = Provider.of<AppRepository>(context, listen: false);
+                          final error = await HttpApiService().submitStudentAssetConversion(
                             sourceAsset: _sourceAsset,
                             targetAsset: _targetAsset,
                             sourceAmount: amount,
                             targetAmount: _calculatedResult,
                           );
                           if (mounted) {
-                            if (success) {
-                              AppToast.info(context, 'درخواست مبادله با موفقیت برای راهبر ارسال شد ✅');
+                            if (error == null) {
+                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد ✅');
+                              repository.refreshUser();
                               _loadMarketData();
                             } else {
-                              AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
+                              AppToast.error(context, error);
                             }
                           }
                         },
@@ -1184,7 +1216,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'هیچ درخواست مبادله‌ای در انتظار نیست',
+            'هیچ مبادله‌ای ثبت نشده است',
             style: TextStyle(
               fontFamily: AppTheme.fontFamily,
               color: Colors.white.withValues(alpha: 0.6),
@@ -1213,6 +1245,12 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     final studentName = request['studentName'] as String;
     final title = request['title'] as String;
     final date = request['date'] as String;
+    final status = request['status'] as String;
+    // Mentor may cancel a completed exchange only within 24h of its creation
+    final createdAt = DateTime.tryParse(request['createdAt'] as String? ?? '');
+    final canCancel = status == 'completed' &&
+        createdAt != null &&
+        DateTime.now().difference(createdAt) < const Duration(hours: 24);
 
     return Container(
       decoration: BoxDecoration(
@@ -1406,93 +1444,76 @@ class _MarketScreenState extends State<StudentMarketScreen> {
 
                       const Spacer(),
 
-                      // 2. Left side in RTL: قسمت تایید و رد و توضیح
+                      // 2. Left side in RTL: وضعیت مبادله و دکمه لغو (فقط مشاهده؛ تایید لازم نیست)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // تایید (Approve)
-                          GestureDetector(
-                            onTap: () async {
-                              final success = await HttpApiService().approveCaravanAssetConversion(reqId, true);
-                              if (mounted) {
-                                setState(() {
-                                  _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                                });
-                                if (success) {
-      AppToast.success(context, 'درخواست مبادله برای $studentName تایید شد ✅');
-    } else {
-      AppToast.error(context, 'خطایی رخ داده است. خطا در ثبت تایید در سرور');
-    }
-                                _loadMarketData();
-                              }
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: AppColors.strokeGradient,
-                                borderRadius: BorderRadius.circular(8),
+                          if (status == 'cancelled')
+                            Text(
+                              'لغو شد',
+                              style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.redAccent.withValues(alpha: 0.9),
                               ),
-                              padding: const EdgeInsets.all(AppColors.borderWidth),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.darkSurfaceGradient,
-                                  borderRadius: BorderRadius.circular(7),
-                                ),
-                                child: const Text(
-                                  'تایید',
-                                  style: TextStyle(
-                                    color: Color(0xFFC7B299),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                            )
+                          else ...[
+                            Text(
+                              'انجام شد',
+                              style: TextStyle(
+                                fontFamily: AppTheme.fontFamily,
+                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.greenAccent.withValues(alpha: 0.85),
+                              ),
+                            ),
+                            if (canCancel) ...[
+                              const SizedBox(width: 10),
+                              GestureDetector(
+                                onTap: () {
+                                  _showRejectExplanationDialog(
+                                    memberName: studentName,
+                                    requestDate: date,
+                                    requestSubject: 'لغو مبادله: $title',
+                                    onConfirmReject: (reason) async {
+                                      final error = await HttpApiService().cancelCaravanAssetConversion(reqId, reason: reason);
+                                      if (!mounted) return;
+                                      if (error == null) {
+                                        AppToast.success(context, 'مبادله لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.');
+                                      } else {
+                                        AppToast.error(context, error);
+                                      }
+                                      _loadMarketData();
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'لغو مبادله',
+                                    style: TextStyle(
+                                      fontFamily: AppTheme.fontFamily,
+                                      fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFDCD7F5),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-
-                          // رد و توضیح (Reject & Explain)
-                          GestureDetector(
-                            onTap: () {
-                              _showRejectExplanationDialog(
-                                memberName: studentName,
-                                requestDate: date,
-                                requestSubject: 'رد درخواست مبادله',
-                                onConfirmReject: () async {
-                                  await HttpApiService().approveCaravanAssetConversion(reqId, false);
-                                  if (mounted) {
-                                    setState(() {
-                                      _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
-                                    });
-                                    _loadMarketData();
-                                  }
-                                },
-                              );
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                              decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
-                                  width: 1,
-                                ),
-                              ),
-                              child: const Text(
-                                'رد و توضیح',
-                                style: TextStyle(
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFDCD7F5),
-                                ),
-                              ),
-                            ),
-                          ),
+                            ],
+                          ],
                         ],
                       ),
                     ],
@@ -1510,7 +1531,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     required String memberName,
     required String requestDate,
     required String requestSubject,
-    required VoidCallback onConfirmReject,
+    required void Function(String reason) onConfirmReject,
   }) {
     final TextEditingController explanationController = TextEditingController();
 
@@ -1665,8 +1686,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          onConfirmReject();
-                          AppToast.info(context, 'درخواست رد شد و پیام توضیح برای دانش‌آموز ارسال گردید.');
+                          onConfirmReject(explanationController.text.trim());
                         },
                         child: const Text(
                           'ارسال',

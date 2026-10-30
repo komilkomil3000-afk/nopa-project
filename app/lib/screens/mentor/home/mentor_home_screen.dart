@@ -445,8 +445,9 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   int _selectedAssetIndex = 0;
 
-  /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4)
-  Widget _buildAssetsSection(UserModel? user) {
+  /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4).
+  /// Shows the caravan's total capital; the mentor earns no personal capital.
+  Widget _buildAssetsSection(CaravanModel? caravan) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -478,7 +479,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 _buildAssetPill(
                   badgeNumber: '۱',
                   label: 'زریک',
-                  value: (user?.zarik ?? 3500).toPersian(),
+                  value: (caravan?.totalZarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
                 ),
@@ -486,7 +487,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 _buildAssetPill(
                   badgeNumber: '۲',
                   label: 'بیرق',
-                  value: (user?.beyragh ?? 8).toPersian(),
+                  value: (caravan?.totalBeyragh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 1,
                   onTap: () => setState(() => _selectedAssetIndex = 1),
                 ),
@@ -494,7 +495,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 _buildAssetPill(
                   badgeNumber: '۳',
                   label: 'نخ',
-                  value: (user?.nakh ?? 45).toPersian(),
+                  value: (caravan?.totalNakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
                 ),
@@ -502,7 +503,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 _buildAssetPill(
                   badgeNumber: '۴',
                   label: 'فرش',
-                  value: (user?.farsh ?? 3).toPersian(),
+                  value: (caravan?.totalFarsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
                 ),
@@ -948,7 +949,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             const SizedBox(height: 18),
 
             // 4. Assets Section (سرمایه‌های کاروان)
-            _buildAssetsSection(user),
+            _buildAssetsSection(appState.selectedCaravan),
 
             const SizedBox(height: 22),
 
