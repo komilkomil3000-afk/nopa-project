@@ -62,6 +62,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
     let creatorId = req.user.id;
     let assignedCaravanId: string | null = null;
+    let category: 'intra_group' | 'inter_group' = 'intra_group';
 
     if (req.user.role === 'mentor') {
       // Mentors can only create challenges for their own caravan
@@ -77,7 +78,9 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       if (targetMentorId) {
         creatorId = targetMentorId;
       }
-      if (caravanId && caravanId !== 'all') {
+      if (caravanId === 'inter_group') {
+        category = 'inter_group';
+      } else if (caravanId && caravanId !== 'all') {
         assignedCaravanId = caravanId;
       }
     }
@@ -99,6 +102,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         ...rewardRange.data,
         createdByMentorId: creatorId,
         caravanId: assignedCaravanId,
+        category,
         stationId: stationId || null,
         dueDate: dueDate ? new Date(dueDate) : null
       }
@@ -213,7 +217,9 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
         updateData.createdByMentorId = targetMentorId;
       }
       if (caravanId !== undefined) {
-        updateData.caravanId = caravanId === 'all' ? null : caravanId;
+        const isInter = caravanId === 'inter_group';
+        updateData.caravanId = (caravanId === 'all' || isInter) ? null : caravanId;
+        updateData.category = isInter ? 'inter_group' : 'intra_group';
       }
     }
 

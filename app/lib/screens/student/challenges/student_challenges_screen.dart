@@ -114,12 +114,10 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
       // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
       String category = 'individual';
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
 
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
-      } else if (rawCat.contains('group') || rawCat.contains('گروهی') || title.contains('گروهی') || desc.contains('گروهی')) {
+      } else if (rawCat.contains('group') || rawCat.contains('گروهی')) {
         category = 'group';
       } else {
         category = 'individual';
@@ -203,9 +201,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
       String category = 'intra_group'; // درون گروهی
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
       }
 

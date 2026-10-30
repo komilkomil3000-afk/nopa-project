@@ -966,11 +966,11 @@ function populateCaravanDropdowns(caravans) {
   }
 
   if (newChalSelect) {
-    newChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+    newChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option><option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (editChalSelect) {
-    editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+    editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option><option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (typeof populateSubmissionsFilterDropdowns === 'function') {
@@ -1358,7 +1358,7 @@ window.openEditChallengeModal = function(challengeId) {
 
   const caravanSelect = document.getElementById('edit-chal-caravan-id');
   if (caravanSelect) {
-    caravanSelect.value = c.caravanInfo?.id || c.caravanId || 'all';
+    caravanSelect.value = c.category === 'inter_group' ? 'inter_group' : (c.caravanInfo?.id || c.caravanId || 'all');
     if (currentUser && currentUser.role === 'mentor') {
       caravanSelect.disabled = true;
     } else {

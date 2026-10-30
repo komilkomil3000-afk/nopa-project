@@ -1136,3 +1136,23 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze on both files
 - **Status:** Completed
+
+### [2026-10-30 17:03] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261033_challenge_category/` (Created)
+- **Description of Changes:**
+  - Inter-group challenges: new Challenge.category column ('intra_group'|'inter_group', migration 20261033_challenge_category + schema.prisma)
+  - admin panel create/edit dropdown gets 'عمومی (میان‌گروهی)' (value inter_group -> caravanId null + category inter_group), edit modal preselects it
+  - createChallenge/updateChallenge set category
+  - app now classifies challenges only from server category, title/description keyword guessing removed in student+mentor challenge screens
+- **Verification / Checkpoints Executed:**
+  - flutter analyze student+mentor challenge screens; node --check app.js; tsc not run (no node_modules)
+- **Status:** Completed
