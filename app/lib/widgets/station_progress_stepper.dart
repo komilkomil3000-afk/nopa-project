@@ -2,6 +2,7 @@ import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/app_state_repository.dart';
 
@@ -91,7 +92,7 @@ class StationProgressStepper extends StatelessWidget {
                   ],
 
                   // Champion Victory Trophy Badge (champun01.svg) at the end of the track
-                  _buildChampionBadge(trophySize),
+                  _buildChampionBadge(context, trophySize),
                 ],
               ),
             ),
@@ -116,7 +117,14 @@ class StationProgressStepper extends StatelessWidget {
     );
   }
 
-  /// Individual Station Node with Dynamic Styling Based on Distance/State
+  static const Color _gold = Color(0xFFE5A133);
+  static const Color _locked = Color(0xFF2B284E);
+
+  /// Station node:
+  /// - passed stations are gold with a glow;
+  /// - a station not completed yet is tinted by its distance from the last completed one: the first one after
+  ///   it is the lightest and each following one fades further towards the locked purple;
+  /// - only the selected station has a white stroke and black text, the others have no stroke.
   Widget _buildStationNode({
     required int index,
     required bool isSelected,
@@ -124,89 +132,22 @@ class StationProgressStepper extends StatelessWidget {
     required int userLevelFrame,
     required int completedStationsCount,
   }) {
-    final bool isCurrent = isSelected;
-    final bool isPassed = index < (userLevelFrame - 1) || index < completedStationsCount;
-    final bool isFirstNext = index == activeStationIndex + 1;
-    final bool isSecondNext = index == activeStationIndex + 2;
+    final int passedCount = (userLevelFrame - 1) > completedStationsCount ? (userLevelFrame - 1) : completedStationsCount;
+    final bool isPassed = index < passedCount;
 
-    Gradient gradient;
-    Border border;
+    Color fill;
     List<BoxShadow>? boxShadow;
-
-    if (isCurrent) {
-      // Selected station: Luminous bright golden glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFFD574),
-          Color(0xFFE59819),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFF0B8), width: 2.0);
+    if (isPassed) {
+      fill = _gold;
       boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFFFB800).withValues(alpha: 0.75),
-          blurRadius: 14,
-          spreadRadius: 2.0,
-        ),
-        BoxShadow(
-          color: const Color(0xFFEAA835).withValues(alpha: 0.55),
-          blurRadius: 10,
-          spreadRadius: 1,
-        ),
+        BoxShadow(color: const Color(0xFFFFB800).withValues(alpha: 0.65), blurRadius: 12, spreadRadius: 2),
+        BoxShadow(color: const Color(0xFFEAA835).withValues(alpha: 0.45), blurRadius: 8, spreadRadius: 1),
       ];
-    } else if (isPassed) {
-      // Completed stations: Warm gold light and subtle glow
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFE5A133),
-          Color(0xFFC07F1C),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFFFD574), width: 1.3);
-      boxShadow = [
-        BoxShadow(
-          color: const Color(0xFFD4973B).withValues(alpha: 0.4),
-          blurRadius: 8,
-          spreadRadius: 1,
-        ),
-      ];
-    } else if (isFirstNext) {
-      // 1 step next: Medium warm bronze/gold tint
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFA57C46),
-          Color(0xFF8B6230),
-        ],
-      );
-      border = Border.all(color: const Color(0xFFC9985E), width: 1.2);
-    } else if (isSecondNext) {
-      // 2 steps next: Darker bronze tint
-      gradient = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF755530),
-          Color(0xFF5A3E20),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF906D44), width: 1.2);
     } else {
-      // Subsequent locked stations: Dark purple
-      gradient = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFF38355F),
-          Color(0xFF2B284E),
-        ],
-      );
-      border = Border.all(color: const Color(0xFF5C578F), width: 1.2);
+      final int distance = index - passedCount + 1; // 1 = first station after the last completed one
+      double t = switch (distance) { 1 => 0.55, 2 => 0.34, 3 => 0.2, _ => 0.1 };
+      if (isSelected && t < 0.6) t = 0.6; // keeps the black label readable on the selected node
+      fill = Color.lerp(_locked, _gold, t)!;
     }
 
     return GestureDetector(
@@ -217,17 +158,17 @@ class StationProgressStepper extends StatelessWidget {
         height: nodeSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: gradient,
-          border: border,
+          color: fill,
+          border: isSelected ? Border.all(color: Colors.white, width: 2.0) : null,
           boxShadow: boxShadow,
         ),
         child: Center(
           child: Text(
             StationNumbering.numberAt(index + 1).toString().toPersianDigits(),
             style: TextStyle(
-              color: isCurrent ? const Color(0xFF221503) : Colors.white,
-              fontSize: isCurrent ? 12.5 : 11.5,
-              fontWeight: isCurrent ? FontWeight.w900 : FontWeight.bold,
+              color: isSelected ? Colors.black : Colors.white,
+              fontSize: isSelected ? 12.5 : 11.5,
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
               fontFamily: AppTheme.fontFamily,
               fontFamilyFallback: AppTheme.fontFamilyFallback,
             ),
@@ -295,7 +236,64 @@ class StationProgressStepper extends StatelessWidget {
   }
 
   /// End-of-track Champion Victory Badge with SVG `champun01.svg`
-  Widget _buildChampionBadge(double size) {
+  void _showFinalDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 380),
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 14),
+            decoration: AppColors.loginDialogDecoration(radius: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'اینجا قرار یک ملاقات و اتمام انتظار شما برای رویارویی با دستیافتن شدن ارزوی ابادانی جهان نپاست. اینجا قرارگاه ماست. منتظرتان هستیم.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    height: 1.9,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    'بستن',
+                    style: TextStyle(
+                      color: Color(0xFFE5A855),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChampionBadge(BuildContext context, double size) {
+    return GestureDetector(
+      onTap: () => _showFinalDialog(context),
+      behavior: HitTestBehavior.opaque,
+      child: _championBadgeBody(size),
+    );
+  }
+
+  Widget _championBadgeBody(double size) {
     return Container(
       width: size,
       height: size,
