@@ -8,7 +8,7 @@ import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../
 import { listAssetTypes } from '../controllers/assetController';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
-import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration } from '../controllers/lmsController';
+import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
 import { getInstructors } from '../controllers/instructorController';
 import { getForms, submitForm } from '../controllers/formController';
 import { getCalendarEvents } from '../controllers/calendarController';
@@ -100,6 +100,7 @@ router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as 
 router.post('/lms/bookmarks', authenticateJWT as any, addBookmark as any);
 router.post('/lms/sessions/:id/heartbeat', authenticateJWT as any, heartbeatSessionWatch as any);
 router.get('/lms/user-progress', authenticateJWT as any, getUserProgress as any);
+router.get('/lms/quiz-answers', authenticateJWT as any, getMyQuizAnswers as any);
 router.post('/lms/clips/:clipId/watched', authenticateJWT as any, markClipWatched as any);
 router.post('/lms/clips/:clipId/duration', authenticateJWT as any, reportClipDuration as any);
 router.get('/lms/sessions/:id/progress', authenticateJWT as any, getSessionWatchProgress as any);

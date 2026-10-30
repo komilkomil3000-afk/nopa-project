@@ -279,25 +279,51 @@ class HttpApiService {
         }
       }
 
-      return response;
+      return _persianError(response);
     } on SocketException catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network drop / SocketException for $url (${stopwatch.elapsedMilliseconds}ms): $e');
       if (retryCount < 1) {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response('{"error":"Network connection lost. Please check your internet.","offline":true}', 503);
+      return http.Response(jsonEncode({'error': 'اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     } on TimeoutException catch (e) {
       debugPrint('⚠️ [HttpApiService] ⏱️ TIMEOUT ($method $url) after ${stopwatch.elapsedMilliseconds}ms: $e');
       if (retryCount < 1) {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response('{"error":"Request timed out. Please try again.","timeout":true}', 504);
+      return http.Response(jsonEncode({'error': 'پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.', 'timeout': true}), 504, headers: _jsonUtf8);
     } catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network exception for $url (${stopwatch.elapsedMilliseconds}ms): $e');
-      return http.Response('{"error":"Network communication failed: $e"}', 500);
+      return http.Response(jsonEncode({'error': 'ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     }
+  }
+
+  /// A failing response whose "error" text has no Persian in it (e.g. "Internal Server Error") gets a Persian message.
+  static const Map<String, String> _jsonUtf8 = {'content-type': 'application/json; charset=utf-8'};
+
+  http.Response _persianError(http.Response response) {
+    if (response.statusCode < 400) return response;
+    try {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      if (body is Map && body['error'] is String) {
+        final text = body['error'] as String;
+        if (!RegExp(r'[\u0600-\u06FF]').hasMatch(text)) {
+          final fa = switch (response.statusCode) {
+            400 => 'اطلاعات ارسالی نامعتبر است.',
+            401 => 'نشست شما منقضی شده است. دوباره وارد شوید.',
+            403 => 'شما دسترسی لازم برای این کار را ندارید.',
+            404 => 'مورد درخواستی پیدا نشد.',
+            409 => 'این درخواست با وضعیت فعلی هم‌خوانی ندارد.',
+            429 => 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید.',
+            _ => 'خطایی در سرور رخ داد. لطفاً کمی بعد دوباره تلاش کنید.',
+          };
+          return http.Response(jsonEncode({...body, 'error': fa}), response.statusCode, headers: {...response.headers, 'content-type': 'application/json; charset=utf-8'}, request: response.request);
+        }
+      }
+    } catch (_) {}
+    return response;
   }
 
   /// Internal HTTP wrappers with automatic silent refresh & crash resilience
@@ -1818,6 +1844,20 @@ class HttpApiService {
     } catch (e) {
       debugPrint('reportClipDuration error: $e');
     }
+  }
+
+  /// The user's answered quizzes with their answers (synced across devices): [{quizId, sessionId, clipId, partIndex, status, answers}].
+  Future<List<Map<String, dynamic>>> getMyQuizAnswers() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/lms/quiz-answers'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('getMyQuizAnswers error: $e');
+    }
+    return [];
   }
 
   // --- Calendar Events ---

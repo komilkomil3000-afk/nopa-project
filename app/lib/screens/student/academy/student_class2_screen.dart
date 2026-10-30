@@ -105,6 +105,32 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     } catch (e) {
       debugPrint('Load answered quizzes error: $e');
     }
+    await _syncAnsweredQuizzesFromServer();
+  }
+
+  /// The server is the source of truth: quizzes answered on another device (or before a reinstall) show up here,
+  /// and the merged result is kept locally for offline use.
+  Future<void> _syncAnsweredQuizzesFromServer() async {
+    try {
+      final remote = await HttpApiService().getMyQuizAnswers();
+      if (remote.isEmpty || !mounted) return;
+      setState(() {
+        for (final r in remote) {
+          final clipId = r['clipId']?.toString();
+          final key = '${r['sessionId']}|${(clipId != null && clipId.isNotEmpty) ? clipId : r['partIndex']}';
+          _answeredQuizzes.add(key);
+          final answers = r['answers'];
+          if (answers is List && answers.isNotEmpty) {
+            _quizAnswers[key] = answers.map((e) => (e as num).toInt()).toList();
+          }
+        }
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_answeredPrefsKey, _answeredQuizzes.toList());
+      await prefs.setString(_answersPrefsKey, jsonEncode(_quizAnswers));
+    } catch (e) {
+      debugPrint('Sync answered quizzes error: $e');
+    }
   }
 
   /// A part (after the first) opens only after the previous part's quiz is answered.

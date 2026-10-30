@@ -1268,6 +1268,52 @@ export const getUserProgress = async (req: any, res: Response) => {
   }
 };
 
+/**
+ * The signed-in user's answered quizzes (latest submission per quiz) with the answers they gave, so another
+ * device can show them as answered / reviewable. clipId is the clip the quiz belongs to.
+ */
+export const getMyQuizAnswers = async (req: any, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+    const subs = await prisma.quizSubmission.findMany({
+      where: { studentId: userId },
+      orderBy: { submittedAt: 'desc' },
+      include: { quiz: { select: { id: true, sessionId: true, clipId: true, orderIndex: true } } }
+    });
+
+    // Quizzes that are not linked to a clip are matched to the clip with the same order in their session
+    const sessionIds = Array.from(new Set(subs.filter(x => !x.quiz.clipId).map(x => x.quiz.sessionId)));
+    const clips = sessionIds.length
+      ? await prisma.videoClip.findMany({ where: { sessionId: { in: sessionIds } }, select: { id: true, sessionId: true, clipOrder: true } })
+      : [];
+    const clipByOrder = new Map(clips.map(c => [`${c.sessionId}|${c.clipOrder}`, c.id]));
+
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const sub of subs) {
+      if (seen.has(sub.quizId)) continue;
+      seen.add(sub.quizId);
+      let answers: any[] = [];
+      try { const parsed = sub.answersJson ? JSON.parse(sub.answersJson) : []; if (Array.isArray(parsed)) answers = parsed; } catch (_) {}
+      out.push({
+        quizId: sub.quizId,
+        sessionId: sub.quiz.sessionId,
+        clipId: sub.quiz.clipId || clipByOrder.get(`${sub.quiz.sessionId}|${sub.quiz.orderIndex}`) || null,
+        partIndex: Math.max(0, sub.quiz.orderIndex - 1),
+        status: sub.status,
+        score: sub.score,
+        answers
+      });
+    }
+    res.json(out);
+  } catch (error) {
+    console.error('getMyQuizAnswers error:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 /** The app reports the real length of a clip once its player knows it (replaces a missing/wrong stored duration). */
 export const reportClipDuration = async (req: any, res: Response) => {
   try {

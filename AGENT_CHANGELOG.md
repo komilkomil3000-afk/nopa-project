@@ -1551,3 +1551,18 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean)
 - **Status:** Completed
+
+### [2026-10-30 22:54] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Cross-device sync: new GET /api/v1/lms/quiz-answers (latest QuizSubmission per quiz with the user's answers and the clip it belongs to)
+  - the class screen merges it into its answered/answers state after loading the local copy, so quizzes answered on another device or before a reinstall show as answered and reviewable (merged result is kept in prefs for offline). Persian errors: connection lost / timeout / generic network failures now produce Persian messages (UTF-8 synthetic responses), and any 4xx/5xx whose error text has no Persian (e.g. 'Internal Server Error', 'Unauthorized') is replaced by a Persian message for its status code
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc not run
+- **Status:** Completed
