@@ -1361,3 +1361,18 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
 - **Status:** Completed
+
+### [2026-10-30 20:35] - CRM & Analytics Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+- **Description of Changes:**
+  - Admin panel gets a dedicated sidebar tab 'نام دارایی‌ها' (assets-tab
+  - moved out of the wallet tab) to rename زریک/کلاف/قالیچه/درفش and the four درفش tiers via PUT /admin/assets/:key (no DB access needed). The panel now takes the names from the server: after login it loads them and rewrites every default asset word in text nodes/placeholders/titles (and in content rendered later via MutationObserver, using token replacement to avoid double replacement)
+  - chart labels use window.assetName()
+  - a page refresh applies newly saved names
+- **Verification / Checkpoints Executed:**
+  - node --check admin_panel/public/app.js
+- **Status:** Completed

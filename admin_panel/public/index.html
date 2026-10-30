@@ -63,6 +63,7 @@
           </div>
           <ul class="accordion-content">
             <li class="menu-item active" data-tab="users-tab"><i class="fa-solid fa-users"></i><span class="menu-text">دایرکتوری مخاطبان</span></li>
+            <li class="menu-item" data-tab="assets-tab"><i class="fa-solid fa-tags"></i><span class="menu-text">نام دارایی‌ها</span></li>
             <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و لیگ</span></li>
             <li class="menu-item" data-tab="levels-tab"><i class="fa-solid fa-layer-group"></i><span class="menu-text">سطوح و گواهینامه‌ها</span></li>
           </ul>
@@ -416,15 +417,20 @@
       </section>
 
       <!-- TAB 2: REWARDS & LEDGER -->
+      <section id="assets-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="max-width: 760px;">
+          <div class="panel-title"><i class="fa-solid fa-tags" style="color: #38bdf8; margin-left: 8px;"></i>نام دارایی‌ها</div>
+          <div style="font-size: 12.5px; color: #94a3b8; margin: 6px 0 16px; line-height: 1.8;">
+            نام هر دارایی را اینجا تغییر دهید؛ نیازی به دسترسی به دیتابیس نیست. اپلیکیشن در اجرای بعدی و این پنل پس از رفرش صفحه، نام جدید را نشان می‌دهند. پیام‌ها و اعلان‌های جدید سرور هم با نام جدید ساخته می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.
+          </div>
+          <div id="asset-names-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
+        </div>
+      </section>
+
       <section id="rewards-tab" class="tab-panel" style="display: none;">
         <div class="ledger-grid">
           <!-- Adjustments and Analytics -->
           <div>
-            <div class="panel-card glass" style="margin-bottom: 20px;">
-              <div class="panel-title"><i class="fa-solid fa-tags" style="color: #38bdf8; margin-left: 8px;"></i>نام دارایی‌ها</div>
-              <div style="font-size: 12px; color: #94a3b8; margin: 4px 0 12px;">این نام‌ها در اپ و پیام‌های سیستم نمایش داده می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.</div>
-              <div id="asset-names-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
-            </div>
             <div class="panel-card glass" style="margin-bottom: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <div class="panel-title" style="margin: 0;"><i class="fa-solid fa-trophy" style="color: #fbbf24; margin-left: 8px;"></i>مرکز لیگ و رتبه‌بندی جامع پلتفرم</div>

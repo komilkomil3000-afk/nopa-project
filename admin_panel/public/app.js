@@ -88,6 +88,7 @@ function showLogin() {
 }
 
 function showDashboard() {
+  if (typeof window.loadAssetNames === 'function') window.loadAssetNames();
   const modal = document.getElementById('login-modal');
   if (modal) modal.style.setProperty('display', 'none', 'important');
   const layout = document.getElementById('app-layout');
@@ -650,6 +651,8 @@ async function request(url, options = {}) {
 const HASH_TAB_MAP = {
   '#users': 'users-tab',
   '#users-tab': 'users-tab',
+  '#assets': 'assets-tab',
+  '#assets-tab': 'assets-tab',
   '#rewards': 'rewards-tab',
   '#rewards-tab': 'rewards-tab',
   '#levels': 'levels-tab',
@@ -695,6 +698,7 @@ const HASH_TAB_MAP = {
 
 const TAB_REVERSE_HASH_MAP = {
   'users-tab': 'users',
+  'assets-tab': 'assets',
   'rewards-tab': 'rewards',
   'levels-tab': 'levels',
   'mentors-profile-tab': 'mentors',
@@ -760,6 +764,7 @@ function switchTab(tabId, updateUrl = true) {
     'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا' },
     'levels-tab': { title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه' },
     'analytics-tab': { title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران' },
+    'assets-tab': { title: 'نام دارایی‌ها', desc: 'تغییر نام زریک، کلاف، قالیچه و درفش در اپ، پنل و پیام‌ها' },
     'rewards-tab': { title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک' },
     'roles-tab': { title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا' },
     'caravans-tab': { title: 'کاروان‌ها و مربیان', desc: 'گزارش پیشرفت گروهی کاروان‌ها و ارزیابی مربیان' },
@@ -811,12 +816,13 @@ function switchTab(tabId, updateUrl = true) {
   } else if (tabId === 'lms-tab' || tabId === 'stations-tab') {
     if (typeof window.fetchLiveLmsStations === 'function') window.fetchLiveLmsStations();
     else if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
+  } else if (tabId === 'assets-tab') {
+    window.loadAssetNames();
   } else if (tabId === 'rewards-tab') {
     loadLedger();
     loadZarikAnalytics();
     if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
     if (typeof loadRewardRules === 'function') loadRewardRules();
-    window.loadAssetNames();
   } else if (tabId === 'roles-tab') {
     loadRolePermissions();
   } else if (tabId === 'audit-tab') {
@@ -1265,14 +1271,88 @@ window.submitChallengeRanking = async function(challengeId, places) {
 };
 
 // ---- Editable asset names ----
+// The panel's texts are written with the default names. Once the server's names are loaded every text node
+// (and placeholder/title) that contains a default name is rewritten to the current one, and a MutationObserver
+// does the same for content rendered later. Names change on page refresh, not live.
+const DEFAULT_ASSET_NAMES = {
+  zarik: 'زریک', nakh: 'کلاف', farsh: 'قالیچه', derafsh: 'درفش',
+  derafsh_gold: 'درفش طلایی', derafsh_silver: 'درفش نقره‌ای', derafsh_bronze: 'درفش برنزی', derafsh_cloth: 'درفش پارچه‌ای'
+};
+const ASSET_REPLACE_ORDER = ['derafsh_gold', 'derafsh_silver', 'derafsh_bronze', 'derafsh_cloth', 'derafsh', 'zarik', 'nakh', 'farsh'];
+window.assetNamesMap = { ...DEFAULT_ASSET_NAMES };
+window.assetName = key => (window.assetNamesMap && window.assetNamesMap[key]) || DEFAULT_ASSET_NAMES[key] || key;
+
+(function() {
+  let activeRules = [];
+  const processed = new WeakMap();
+  let observer = null;
+
+  function convert(text) {
+    if (!text || !activeRules.length) return text;
+    let out = text;
+    // default -> token first, so a new name containing another default word is never replaced twice
+    activeRules.forEach((r, i) => { out = out.split(r.from).join(`\u0001${i}\u0001`); });
+    activeRules.forEach((r, i) => { out = out.split(`\u0001${i}\u0001`).join(r.to); });
+    return out;
+  }
+
+  function processTextNode(node) {
+    const value = node.nodeValue;
+    if (!value || processed.get(node) === value) return;
+    const next = convert(value);
+    processed.set(node, next);
+    if (next !== value) node.nodeValue = next;
+  }
+
+  function processElement(el) {
+    if (el.nodeType === 3) { processTextNode(el); return; }
+    if (el.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(el.tagName)) return;
+    ['placeholder', 'title'].forEach(attr => {
+      const v = el.getAttribute && el.getAttribute(attr);
+      if (v) { const n = convert(v); if (n !== v) el.setAttribute(attr, n); }
+    });
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode();
+    while (node) {
+      if (node.nodeType === 3) {
+        if (!/^(SCRIPT|STYLE|TEXTAREA)$/.test(node.parentNode.tagName)) processTextNode(node);
+      } else if (node.getAttribute) {
+        ['placeholder', 'title'].forEach(attr => {
+          const v = node.getAttribute(attr);
+          if (v) { const n = convert(v); if (n !== v) node.setAttribute(attr, n); }
+        });
+      }
+      node = walker.nextNode();
+    }
+  }
+
+  window.applyAssetNames = function() {
+    activeRules = ASSET_REPLACE_ORDER
+      .map(k => ({ from: DEFAULT_ASSET_NAMES[k], to: window.assetName(k) }))
+      .filter(r => r.from !== r.to);
+    if (!activeRules.length) return;
+    processElement(document.body);
+    if (!observer) {
+      observer = new MutationObserver(muts => {
+        muts.forEach(m => {
+          if (m.type === 'characterData') processTextNode(m.target);
+          else m.addedNodes.forEach(n => processElement(n));
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+  };
+})();
+
 window.loadAssetNames = async function() {
   const box = document.getElementById('asset-names-list');
-  if (!box) return;
   try {
     const res = await request('/api/v1/admin/assets');
     const rows = await res.json();
     if (!res.ok) return;
     window.assetNamesMap = Object.fromEntries(rows.map(r => [r.key, r.nameFa]));
+    window.applyAssetNames();
+    if (!box) return;
     box.innerHTML = rows.map(r => `
       <div style="display:flex; gap:6px; align-items:center;">
         <span style="font-size:11px; color:#94a3b8; min-width:78px;">${esc(r.key)}</span>
@@ -1293,7 +1373,7 @@ window.saveAssetName = async function(key) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { alert(data.error || 'خطا در ذخیره'); return; }
   window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
-  alert('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نمایش می‌دهد.');
+  alert('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.');
 };
 
 window.addQuestionRow = function(mode, initialData = null) {
@@ -2582,7 +2662,7 @@ async function viewUserDetails(userId) {
         window.drawerRadarChart = new Chart(ctx, {
           type: 'radar',
           data: {
-            labels: ['زریک', 'کلاف', 'درفش', 'قالیچه', 'فعالیت کلاسی', 'نمره آزمون'],
+            labels: [window.assetName('zarik'), window.assetName('nakh'), window.assetName('derafsh'), window.assetName('farsh'), 'فعالیت کلاسی', 'نمره آزمون'],
             datasets: [{
               label: 'سطح پیشرفت',
               data: [
