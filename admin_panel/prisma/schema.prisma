@@ -166,6 +166,9 @@ model Challenge {
   type              String       // "quiz" | "skill" | "file"
   questions         String?      // JSON string representation of questions
   rewardZarik       Int          @default(0)
+  rewardAssetType   String       @default("zarik") // "zarik" | "nakh": what an approved answer pays out
+  rewardMin         Int          @default(0)       // range the reviewing mentor picks from; 0/0 = fixed rewardZarik
+  rewardMax         Int          @default(0)
   createdByMentorId String
   caravanId         String?
   stationId         String?

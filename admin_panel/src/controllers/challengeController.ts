@@ -5,6 +5,44 @@ import { stripAnswerKeys } from '../utils/answerKeys';
 import { isMentorRole } from '../utils/roles';
 import prisma from '../config/db';
 
+/** Validates the reward asset and the min/max range a mentor chooses from when approving an answer. */
+function parseRewardRange(body: any): { error: string } | { data: { rewardAssetType: string; rewardMin: number; rewardMax: number } } {
+  const rewardAssetType = String(body.rewardAssetType || 'zarik').toLowerCase();
+  if (!['zarik', 'nakh'].includes(rewardAssetType)) {
+    return { error: 'نوع دارایی جایزه باید زریک یا نخ باشد' };
+  }
+  const rewardMin = Number(body.rewardMin ?? 0);
+  const rewardMax = Number(body.rewardMax ?? 0);
+  if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax < 0) {
+    return { error: 'حداقل و حداکثر جایزه باید عدد صحیح نامنفی باشند' };
+  }
+  if (rewardMin > rewardMax) {
+    return { error: 'حداقل جایزه نمی‌تواند از حداکثر بیشتر باشد' };
+  }
+  return { data: { rewardAssetType, rewardMin, rewardMax } };
+}
+
+/**
+ * One quiz shape for app, API and panel: type 'quiz', questions [{ q, options, correct }].
+ * The panel's older 'step_by_step_quiz' / { question, correctIndex } are mapped onto it.
+ */
+function normalizeQuizPayload(type: string, questions: any): { type: string; questions: string | null } {
+  const isQuiz = type === 'quiz' || type === 'step_by_step_quiz';
+  let parsed = questions;
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { return { type, questions: parsed }; }
+  }
+  if (!isQuiz || !Array.isArray(parsed)) {
+    return { type, questions: parsed ? JSON.stringify(parsed) : null };
+  }
+  const list = parsed.map((item: any) => ({
+    q: String(item?.q ?? item?.question ?? item?.text ?? ''),
+    options: Array.isArray(item?.options) ? item.options.map((o: any) => String(o)) : [],
+    correct: Number(item?.correct ?? item?.correctIndex ?? 0) || 0,
+  }));
+  return { type: 'quiz', questions: list.length > 0 ? JSON.stringify(list) : null };
+}
+
 export async function createChallenge(req: AuthRequest, res: Response) {
   try {
     if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
@@ -12,6 +50,11 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     }
 
     const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
+
+    const rewardRange = parseRewardRange(req.body);
+    if ('error' in rewardRange) {
+      return res.status(400).json({ error: rewardRange.error });
+    }
 
     if (!title || !description || !type) {
       return res.status(400).json({ error: 'فیلدهای عنوان، توضیحات و نوع چالش الزامی هستند' });
@@ -42,14 +85,18 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     // Generate readable ID if not provided, e.g. CH + random
     const challengeId = id && id.trim() ? id.trim() : `CH${randomBytes(4).toString('hex').toUpperCase()}`;
 
+    const normalized = normalizeQuizPayload(type, questions);
+
     const challenge = await prisma.challenge.create({
       data: {
         id: challengeId,
         title,
         description,
-        type,
-        questions: questions ? (typeof questions === 'string' ? questions : JSON.stringify(questions)) : null,
-        rewardZarik: Number(rewardZarik) || 50,
+        type: normalized.type,
+        questions: normalized.questions,
+        // rewardZarik doubles as the headline amount: the top of the range when one is set
+        rewardZarik: rewardRange.data.rewardMax > 0 ? rewardRange.data.rewardMax : (Number(rewardZarik) || 50),
+        ...rewardRange.data,
         createdByMentorId: creatorId,
         caravanId: assignedCaravanId,
         stationId: stationId || null,
@@ -107,7 +154,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         data: targetStudents.map(s => ({
           userId: s.id,
           title: 'چالش جدید ابلاغ شد 🏆',
-          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardZarik || 50} زریک 🪙`,
+          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardRange.data.rewardMax > 0 ? `${rewardRange.data.rewardMin} تا ${rewardRange.data.rewardMax}` : (rewardZarik || 50)} ${rewardRange.data.rewardAssetType === 'nakh' ? 'نخ' : 'زریک'} 🪙`,
           type: 'challenge'
         }))
       });
@@ -145,11 +192,20 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     const updateData: any = {};
     if (title) updateData.title = title;
     if (description !== undefined) updateData.description = description;
-    if (type) updateData.type = type;
-    if (questions !== undefined) {
-      updateData.questions = typeof questions === 'string' ? questions : JSON.stringify(questions);
-    }
+    const normalized = normalizeQuizPayload(type || existing.type, questions !== undefined ? questions : existing.questions);
+    if (type) updateData.type = normalized.type;
+    if (questions !== undefined) updateData.questions = normalized.questions;
     if (rewardZarik !== undefined) updateData.rewardZarik = Number(rewardZarik);
+    if (req.body.rewardAssetType !== undefined || req.body.rewardMin !== undefined || req.body.rewardMax !== undefined) {
+      const range = parseRewardRange({
+        rewardAssetType: req.body.rewardAssetType ?? existing.rewardAssetType,
+        rewardMin: req.body.rewardMin ?? existing.rewardMin,
+        rewardMax: req.body.rewardMax ?? existing.rewardMax
+      });
+      if ('error' in range) return res.status(400).json({ error: range.error });
+      Object.assign(updateData, range.data);
+      if (range.data.rewardMax > 0) updateData.rewardZarik = range.data.rewardMax;
+    }
     if (stationId !== undefined) updateData.stationId = stationId || null;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (req.user.role === 'admin') {
@@ -261,6 +317,8 @@ export async function getChallenges(req: AuthRequest, res: Response) {
   try {
     const user = req.user;
     let whereClause: any = {};
+    // Mentors only see (and count) the answers of their own caravans' students
+    let mentorStudentIds: Set<string> | null = null;
 
     if (user) {
       if (user.role === 'student') {
@@ -318,10 +376,19 @@ export async function getChallenges(req: AuthRequest, res: Response) {
         });
         const mentorCaravanIds = mentorCaravans.map(c => c.id);
 
+        // Challenges an admin sent to every caravan (no caravan set) are managed by each mentor too
+        const adminUsers = await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } });
+        const adminIds = adminUsers.map(a => a.id);
+        const caravanStudents = mentorCaravanIds.length > 0
+          ? await prisma.user.findMany({ where: { caravanId: { in: mentorCaravanIds } }, select: { id: true } })
+          : [];
+        mentorStudentIds = new Set(caravanStudents.map(st => st.id));
+
         whereClause = {
           OR: [
             { createdByMentorId: user.id },
-            ...(mentorCaravanIds.length > 0 ? [{ caravanId: { in: mentorCaravanIds } }] : [])
+            ...(mentorCaravanIds.length > 0 ? [{ caravanId: { in: mentorCaravanIds } }] : []),
+            ...(adminIds.length > 0 ? [{ AND: [{ caravanId: null }, { createdByMentorId: { in: adminIds } }] }] : [])
           ]
         };
       } else if (user.role === 'admin') {
@@ -390,7 +457,10 @@ export async function getChallenges(req: AuthRequest, res: Response) {
     const viewerRole = String(user?.role || '').toLowerCase();
     const viewerIsStaff = ['admin', 'mentor', 'super_mentor'].includes(viewerRole);
 
-    const parsedChallenges = challenges.map(c => {
+    const parsedChallenges = challenges.map(rawChallenge => {
+      const c = mentorStudentIds
+        ? { ...rawChallenge, submissions: rawChallenge.submissions.filter(sub => mentorStudentIds!.has(sub.studentId)) }
+        : rawChallenge;
       let parsedQuestions = null;
       if (c.questions) {
         try {
@@ -490,7 +560,7 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       include: { caravan: true }
     });
 
-    if (!challenge || challenge.type !== 'quiz') {
+    if (!challenge || (challenge.type !== 'quiz' && challenge.type !== 'step_by_step_quiz')) {
       return res.status(404).json({ error: 'آزمون مورد نظر یافت نشد' });
     }
 
@@ -517,7 +587,7 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
     let correctCount = 0;
 
     for (let i = 0; i < questionsList.length; i++) {
-      if (answers[i] === questionsList[i].correct) {
+      if (answers[i] === (questionsList[i].correct ?? questionsList[i].correctIndex)) {
         correctCount++;
       }
     }

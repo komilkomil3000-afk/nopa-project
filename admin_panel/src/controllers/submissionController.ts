@@ -308,9 +308,19 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
     }
 
-    const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
+    // The challenge decides what an approval pays (zarik or nakh) and between which bounds the reviewer may choose
+    const assetType = submission.challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+    const assetLabel = assetType === 'nakh' ? 'نخ' : 'زریک';
+    const rewardMin = submission.challenge.rewardMin || 0;
+    const rewardMax = submission.challenge.rewardMax || 0;
+    const hasRange = rewardMax > 0;
+
+    const reward = score !== undefined ? Number(score) : (hasRange ? rewardMax : (submission.challenge.rewardZarik || 200));
     if (status === 'approved' && (!Number.isFinite(reward) || reward < 0)) {
       return res.status(400).json({ error: 'مقدار پاداش نامعتبر است' });
+    }
+    if (status === 'approved' && hasRange && req.user.role === 'mentor' && (!Number.isInteger(reward) || reward < rewardMin || reward > rewardMax)) {
+      return res.status(400).json({ error: `مقدار پاداش باید بین ${rewardMin} و ${rewardMax} ${assetLabel} باشد` });
     }
 
     let updatedSubmission;
@@ -330,24 +340,24 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
-        // Credit student wallet and increment assets
+        // Credit the asset the challenge pays in
         await tx.user.update({
           where: { id: submission.studentId },
-          data: {
-            zarikBalance: { increment: reward }
-          }
+          data: assetType === 'nakh' ? { nakh: { increment: reward } } : { zarikBalance: { increment: reward } }
         });
 
-        // Log transaction in ZarikTransaction
-        await tx.zarikTransaction.create({
-          data: {
-            userId: submission.studentId,
-            amount: reward,
-            category: 'Skill Tasks',
-            reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
-            createdBy: req.user!.id
-          }
-        });
+        // Zarik movements are ledgered; nakh has no ledger table
+        if (assetType === 'zarik') {
+          await tx.zarikTransaction.create({
+            data: {
+              userId: submission.studentId,
+              amount: reward,
+              category: 'Skill Tasks',
+              reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
+              createdBy: req.user!.id
+            }
+          });
+        }
       }
     });
     } catch (e: any) {
@@ -363,7 +373,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         userId: submission.studentId,
         title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
         message: status === 'approved'
-            ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} زریک به ولت شما اضافه گردید.`
+            ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} ${assetLabel} به حساب شما اضافه گردید.`
             : `پاسخ شما به چالش "${submission.challenge.title}" رد شد. فیدبک: ${mentorFeedback || 'اصلاح و مجدداً ارسال کنید.'}`,
         type: 'alert'
       }
@@ -379,7 +389,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
           data: {
             userId: caravan.mentorId,
             title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
-            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
+            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' ' + assetLabel + ')' : 'رد شد'}.`,
             type: 'alert'
           }
         });

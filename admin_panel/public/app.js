@@ -1044,7 +1044,7 @@ function renderAdminChallenges(challenges) {
 
     // Type badge
     let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
-    if (c.type === 'quiz' || c.type === 'step_by_step_quiz') {
+    if (c.type === 'quiz') {
       typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
     } else if (c.type === 'skill') {
       typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
@@ -1141,7 +1141,7 @@ window.handleChallengeTypeChange = function(mode) {
   const section = document.getElementById(`${mode}-chal-questions-section`);
   if (!typeSelect || !section) return;
 
-  if (typeSelect.value === 'step_by_step_quiz') {
+  if (typeSelect.value === 'quiz') {
     section.style.display = 'block';
   } else {
     section.style.display = 'none';
@@ -1153,9 +1153,9 @@ window.addQuestionRow = function(mode, initialData = null) {
   if (!container) return;
 
   const qIndex = container.children.length + 1;
-  const qText = initialData ? (initialData.question || initialData.q || '') : '';
+  const qText = initialData ? (initialData.q || initialData.question || '') : '';
   const opts = initialData && Array.isArray(initialData.options) ? initialData.options : ['', '', '', ''];
-  const correctIdx = initialData && initialData.correctIndex !== undefined ? initialData.correctIndex : 0;
+  const correctIdx = initialData && initialData.correct !== undefined ? initialData.correct : 0;
 
   const card = document.createElement('div');
   card.className = 'challenge-q-card';
@@ -1278,7 +1278,7 @@ window.submitCreateChallenge = async function(event) {
       caravanId = myCaravan.id;
     }
   }
-  const type = document.getElementById('new-chal-type')?.value || 'step_by_step_quiz';
+  const type = document.getElementById('new-chal-type')?.value || 'quiz';
   const description = document.getElementById('new-chal-desc')?.value.trim();
   const stationId = document.getElementById('new-chal-station-id')?.value || null;
   const dueDate = document.getElementById('new-chal-due-date')?.value || null;
@@ -1288,9 +1288,9 @@ window.submitCreateChallenge = async function(event) {
     return;
   }
 
-  // Parse questions if step_by_step_quiz
+  // Parse questions if quiz
   let questions = [];
-  if (type === 'step_by_step_quiz') {
+  if (type === 'quiz') {
     const cards = document.querySelectorAll('#new-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
@@ -1301,9 +1301,9 @@ window.submitCreateChallenge = async function(event) {
 
       questions.push({
         step: idx + 1,
-        question: qTitle,
+        q: qTitle,
         options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
-        correctIndex: correctIndex
+        correct: correctIndex
       });
     });
   }
@@ -1354,7 +1354,7 @@ window.openEditChallengeModal = function(challengeId) {
   document.getElementById('edit-chal-title').value = c.title || '';
   document.getElementById('edit-chal-reward').value = c.rewardZarik || 50;
   document.getElementById('edit-chal-desc').value = c.description || '';
-  document.getElementById('edit-chal-type').value = c.type || 'step_by_step_quiz';
+  document.getElementById('edit-chal-type').value = c.type || 'quiz';
 
   const caravanSelect = document.getElementById('edit-chal-caravan-id');
   if (caravanSelect) {
@@ -1413,7 +1413,7 @@ window.submitEditChallenge = async function(event) {
   const id = document.getElementById('edit-chal-id')?.value;
   const title = document.getElementById('edit-chal-title')?.value.trim();
   const rewardZarik = Number(document.getElementById('edit-chal-reward')?.value || 50);
-  const type = document.getElementById('edit-chal-type')?.value || 'step_by_step_quiz';
+  const type = document.getElementById('edit-chal-type')?.value || 'quiz';
   const description = document.getElementById('edit-chal-desc')?.value.trim();
   const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
   const stationId = document.getElementById('edit-chal-station-id')?.value || null;
@@ -1425,7 +1425,7 @@ window.submitEditChallenge = async function(event) {
   }
 
   let questions = [];
-  if (type === 'step_by_step_quiz') {
+  if (type === 'quiz') {
     const cards = document.querySelectorAll('#edit-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
@@ -1436,9 +1436,9 @@ window.submitEditChallenge = async function(event) {
 
       questions.push({
         step: idx + 1,
-        question: qTitle,
+        q: qTitle,
         options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
-        correctIndex: correctIndex
+        correct: correctIndex
       });
     });
   }
@@ -1526,9 +1526,9 @@ window.openChallengeStepsModal = function(challengeId) {
     `;
 
     qList.forEach((q, idx) => {
-      const qText = q.question || q.q || q.title || `مرحله شماره ${idx + 1}`;
+      const qText = q.q || q.question || q.title || `مرحله شماره ${idx + 1}`;
       const opts = Array.isArray(q.options) ? q.options : (Array.isArray(q.opts) ? q.opts : []);
-      const correctIdx = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : -1);
+      const correctIdx = q.correct !== undefined ? q.correct : -1;
 
       html += `
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">

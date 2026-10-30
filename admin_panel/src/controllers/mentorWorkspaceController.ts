@@ -77,8 +77,12 @@ export async function getMentorChallenges(req: AuthRequest, res: Response) {
 export async function getChallengeSubmissions(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    // A mentor only sees the answers of their own caravans' students (matters for admin challenges sent to everyone)
+    const studentScope = req.user!.role === 'mentor'
+      ? { student: { caravan: { mentorId: req.user!.id } } }
+      : {};
     const submissions = await prisma.submission.findMany({
-      where: { challengeId: id },
+      where: { challengeId: id, ...studentScope },
       include: {
         student: { select: { id: true, name: true, avatarUrl: true } }
       },
