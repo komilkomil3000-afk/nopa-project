@@ -4,6 +4,7 @@ class ChallengeModel {
   /// Remaining time as plain text: "بدون مهلت", "پایان یافته", "کمتر از یک روز" or "N روز مانده" (ASCII digits).
   String get deadlineLabel {
     final due = dueDate;
+    if (startDate != null && DateTime.now().isBefore(startDate!)) return 'هنوز شروع نشده';
     if (due == null) return 'بدون مهلت';
     final left = due.difference(DateTime.now());
     if (left.isNegative) return 'پایان یافته';
@@ -22,6 +23,7 @@ class ChallengeModel {
   final String? caravanId;
   final String? stationId;
   final DateTime? dueDate;
+  final DateTime? startDate; // null = open immediately
   final String? stationTitle;
   final String? mentorName;
   final String? caravanName;
@@ -56,6 +58,7 @@ class ChallengeModel {
     this.caravanId,
     this.stationId,
     this.dueDate,
+    this.startDate,
     this.stationTitle,
     this.mentorName,
     this.caravanName,

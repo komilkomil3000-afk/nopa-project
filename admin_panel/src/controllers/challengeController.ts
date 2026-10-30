@@ -49,7 +49,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
     }
 
-    const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
+    const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate, startDate } = req.body;
 
     const rewardRange = parseRewardRange(req.body);
     if ('error' in rewardRange) {
@@ -108,6 +108,10 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     // Generate readable ID if not provided, e.g. CH + random
     const challengeId = id && id.trim() ? id.trim() : `CH${randomBytes(4).toString('hex').toUpperCase()}`;
 
+    if (startDate && dueDate && new Date(startDate) > new Date(dueDate)) {
+      return res.status(400).json({ error: 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد' });
+    }
+
     const normalized = normalizeQuizPayload(type, questions);
 
     const challenge = await prisma.challenge.create({
@@ -125,6 +129,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         category,
         recipientIds,
         stationId: stationId || null,
+        startDate: startDate ? new Date(startDate) : null,
         dueDate: dueDate ? new Date(dueDate) : null
       }
     });
@@ -201,7 +206,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     }
 
     const { id } = req.params;
-    const { title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate } = req.body;
+    const { title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate, startDate } = req.body;
 
     const existing = await prisma.challenge.findUnique({ where: { id } });
     if (!existing) {
@@ -213,6 +218,11 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       const isOwner = existing.createdByMentorId === req.user.id || (mentorCaravan && existing.caravanId === mentorCaravan.id);
       if (!isOwner) {
         return res.status(403).json({ error: 'شما فقط مجاز به مدیریت چالش‌های کاروان خود هستید' });
+      }
+      // A mentor may only change a challenge nobody has taken part in yet
+      const answered = await prisma.submission.count({ where: { challengeId: id } });
+      if (answered > 0) {
+        return res.status(409).json({ error: 'پس از شرکت اولین عضو، امکان ویرایش چالش وجود ندارد' });
       }
     }
 
@@ -235,6 +245,12 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     }
     if (stationId !== undefined) updateData.stationId = stationId || null;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+    if (startDate !== undefined) updateData.startDate = startDate ? new Date(startDate) : null;
+    const effStart = updateData.startDate !== undefined ? updateData.startDate : existing.startDate;
+    const effDue = updateData.dueDate !== undefined ? updateData.dueDate : existing.dueDate;
+    if (effStart && effDue && effStart > effDue) {
+      return res.status(400).json({ error: 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد' });
+    }
     if (req.user.role === 'admin') {
       if (targetMentorId) {
         updateData.createdByMentorId = targetMentorId;
@@ -603,6 +619,9 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
 
     if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(req.user.id)) {
       return res.status(403).json({ error: 'این آزمون برای شما تعیین نشده است' });
+    }
+    if (challenge.startDate && new Date() < challenge.startDate) {
+      return res.status(400).json({ error: 'این آزمون هنوز شروع نشده است' });
     }
     if (challenge.dueDate && new Date() > challenge.dueDate) {
       return res.status(400).json({ error: 'مهلت شرکت در این آزمون به پایان رسیده است' });

@@ -49,6 +49,10 @@ export async function submitTask(req: AuthRequest, res: Response) {
       return res.status(409).json({ error: 'پاسخ شما در انتظار بررسی راهبر است و تا اعلام نتیجه قابل ویرایش نیست' });
     }
 
+    if (challenge.startDate && new Date() < challenge.startDate) {
+      return res.status(400).json({ error: 'این چالش هنوز شروع نشده است' });
+    }
+
     // A new participation closes with the deadline (a correction requested by the mentor is still allowed)
     if (!existingSubmission && challenge.dueDate && new Date() > challenge.dueDate) {
       return res.status(400).json({ error: 'مهلت شرکت در این چالش به پایان رسیده است' });

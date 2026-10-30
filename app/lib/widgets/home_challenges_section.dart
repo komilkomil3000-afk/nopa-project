@@ -134,12 +134,12 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                               ),
                               const SizedBox(width: 6),
 
-                              // Tab 3: منقضی (fir03.svg - Slate/Purple)
+                              // Tab 3: تمام شده (fir03.svg - Slate/Purple)
                               Expanded(
                                 flex: 9,
                                 child: _buildTabPill(
                                   type: ChallengeTabType.expired,
-                                  title: 'منقضی',
+                                  title: 'تمام شده',
                                   badgeColor: const Color(0xFF3A3763),
                                   iconPath: 'assets/svg_icons/fir03.svg',
                                   selectedGradient: const LinearGradient(
@@ -270,7 +270,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
       final String emptyText = switch (_selectedTab) {
         ChallengeTabType.newChallenges => 'چالش جدیدی وجود ندارد',
         ChallengeTabType.inProgress => 'چالشی در حال بررسی یا اصلاح ندارید',
-        ChallengeTabType.expired => 'چالش منقضی یا تکمیل‌شده‌ای وجود ندارد',
+        ChallengeTabType.expired => 'چالش تمام‌شده‌ای وجود ندارد',
       };
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -393,7 +393,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   ),
                   child: Text(
                     switch (item.status) {
-                      'expired' => 'منقضی',
+                      'expired' => 'تمام شده',
                       'completed' => 'تکمیل',
                       'rejected' => 'اصلاح',
                       _ => 'مشاهده',

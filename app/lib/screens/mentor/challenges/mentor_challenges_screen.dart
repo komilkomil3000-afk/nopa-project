@@ -655,6 +655,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'deadlineLabel': c.deadlineLabel,
         'category': category,
         'desc': c.description,
+        'questions': c.questions,
+        'startDate': c.startDate,
+        'dueDate': c.dueDate,
+        'totalSubmissions': c.totalSubmissions,
+        'createdByMentorId': c.createdByMentorId,
         'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
       });
     }
@@ -1046,6 +1051,27 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       const SizedBox(width: 6),
                     ],
 
+                    // Edit (creator only): locked as soon as one member has taken part
+                    if (item['isByAdmin'] != true && item['createdByMentorId'] == user.id) ...[
+                      GestureDetector(
+                        onTap: () {
+                          if ((item['totalSubmissions'] as int? ?? 0) > 0) {
+                            AppToast.error(context, 'پس از شرکت اولین عضو، امکان ویرایش چالش وجود ندارد.');
+                          } else {
+                            _showCreateChallengeDialog(context, user, existing: item);
+                          }
+                        },
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 16,
+                          color: (item['totalSubmissions'] as int? ?? 0) > 0
+                              ? const Color(0xFF6C6A85)
+                              : const Color(0xFF9E92E8),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+
                     // 2. Reward Amount
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1161,6 +1187,72 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   onPressed: selected.isEmpty
                       ? null
                       : () => Navigator.pop(dctx, (all: everyone, ids: selected, total: students.length)),
+                  child: Text(
+                    'تایید',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      color: selected.isEmpty ? const Color(0xFF6C6A85) : const Color(0xFFE5A855),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dctx),
+                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Jalali date picker (year / month / day dropdowns). Returns the picked day at midnight, or null.
+  Future<DateTime?> _pickJalaliDate(BuildContext ctx, DateTime initial) {
+    const monthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+    final init = Jalali.fromDateTime(initial);
+    int year = init.year, month = init.month, day = init.day;
+    final thisYear = Jalali.now().year;
+    final years = [for (var y = thisYear - 1; y <= thisYear + 3; y++) y];
+    if (!years.contains(year)) years.add(year);
+
+    DropdownButton<int> dropdown(int value, List<int> items, String Function(int) label, ValueChanged<int> onChanged) {
+      return DropdownButton<int>(
+        value: value,
+        dropdownColor: const Color(0xFF2C2849),
+        style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 12.5),
+        items: items.map((v) => DropdownMenuItem(value: v, child: Text(label(v)))).toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      );
+    }
+
+    return showDialog<DateTime>(
+      context: ctx,
+      builder: (dctx) => StatefulBuilder(
+        builder: (dctx, setState) {
+          final maxDay = Jalali(year, month, 1).monthLength;
+          if (day > maxDay) day = maxDay;
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF2C274A),
+              title: const Text('انتخاب تاریخ', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white)),
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  dropdown(day, [for (var d = 1; d <= maxDay; d++) d], (v) => v.toString().toPersianDigits(), (v) => setState(() => day = v)),
+                  dropdown(month, [for (var m = 1; m <= 12; m++) m], (v) => monthNames[v - 1], (v) => setState(() => month = v)),
+                  dropdown(year, years..sort(), (v) => v.toString().toPersianDigits(), (v) => setState(() => year = v)),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    final g = Jalali(year, month, day).toDateTime();
+                    Navigator.pop(dctx, DateTime(g.year, g.month, g.day));
+                  },
                   child: const Text('تایید', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
                 ),
                 TextButton(
@@ -1175,9 +1267,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     );
   }
 
-  void _showCreateChallengeDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController();
-    final questionCtrl = TextEditingController();
+  /// Create a challenge, or edit one of the mentor's own ([existing] = its list item) while nobody has answered it.
+  void _showCreateChallengeDialog(BuildContext context, UserModel user, {Map<String, dynamic>? existing}) {
+    final bool editing = existing != null;
+    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
+    final questionCtrl = TextEditingController(text: existing?['desc']?.toString() ?? '');
     final List<TextEditingController> optionControllers = [
       TextEditingController(text: '۱. '),
       TextEditingController(text: '۲. '),
@@ -1185,7 +1279,30 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     int selectedCorrectOptionIndex = 0;
     final rewardMinCtrl = TextEditingController();
     final rewardMaxCtrl = TextEditingController();
-    final deadlineDaysCtrl = TextEditingController(text: '7');
+    final today = DateTime.now();
+    DateTime startDate = existing?['startDate'] is DateTime
+        ? existing!['startDate'] as DateTime
+        : DateTime(today.year, today.month, today.day);
+    DateTime endDate = existing?['dueDate'] is DateTime
+        ? existing!['dueDate'] as DateTime
+        : DateTime(today.year, today.month, today.day + 7);
+    startDate = DateTime(startDate.year, startDate.month, startDate.day);
+    endDate = DateTime(endDate.year, endDate.month, endDate.day);
+
+    Widget dateBox(String text) => Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13))),
+              const Icon(Icons.calendar_month_rounded, color: Color(0xFF9E9CD6), size: 18),
+            ],
+          ),
+        );
     String selectedAsset = 'زریک';
     bool submitting = false;
     String selectedType = 'چند گزینه ای';
@@ -1193,6 +1310,29 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     bool allMembers = true;
     final Set<String> recipientIds = {};
     int memberTotal = 0;
+
+    if (existing != null) {
+      selectedType = existing['type'] == 'quiz' ? 'چند گزینه ای' : 'تشریحی';
+      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'نخ' : 'زریک';
+      final int exMax = (existing['rewardMax'] as num?)?.toInt() ?? 0;
+      rewardMaxCtrl.text = (exMax > 0 ? exMax : (existing['reward'] as num?)?.toInt() ?? 0).toString();
+      rewardMinCtrl.text = (exMax > 0 ? (existing['rewardMin'] as num?)?.toInt() ?? 0 : 0).toString();
+      final qs = existing['questions'];
+      if (existing['type'] == 'quiz' && qs is List && qs.isNotEmpty && qs.first is Map) {
+        final q = qs.first as Map;
+        questionCtrl.text = q['q']?.toString() ?? questionCtrl.text;
+        final opts = (q['options'] as List? ?? const []).map((e) => e.toString()).toList();
+        if (opts.length >= 2) {
+          optionControllers
+            ..clear()
+            ..addAll([
+              for (var i = 0; i < opts.length; i++)
+                TextEditingController(text: '${(i + 1).toString().toPersian()}. ${opts[i]}'),
+            ]);
+        }
+        selectedCorrectOptionIndex = (q['correct'] as num?)?.toInt() ?? 0;
+      }
+    }
 
     showDialog(
       context: context,
@@ -1226,8 +1366,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 size: 34,
                               ),
                             ),
-                            const Text(
-                              'ایجاد چالش',
+                            Text(
+                              editing ? 'ویرایش چالش' : 'ایجاد چالش',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1259,7 +1399,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         _buildContactDialogFieldRow(
                           label: 'دریافت کننده:',
                           child: GestureDetector(
-                            onTap: () async {
+                            onTap: editing ? null : () async {
                               final picked = await _pickRecipients(ctx, user, allMembers ? <String>{} : recipientIds);
                               if (picked == null) return;
                               setDialogState(() {
@@ -1274,7 +1414,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               children: [
                                 Expanded(
                                   child: _buildContactDialogValueText(
-                                    allMembers
+                                    editing
+                                        ? 'بدون تغییر'
+                                        : allMembers
                                         ? 'همه اعضا'
                                         : '${recipientIds.length.toString().toPersianDigits()} نفر از ${memberTotal.toString().toPersianDigits()} عضو',
                                   ),
@@ -1372,29 +1514,38 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           ),
                         const SizedBox(height: 12),
 
-                        // Field 5b: مهلت (days from today, ends at 23:59 of the last day)
+                        // Field 5b: تاریخ شروع و پایان؛ مهلت از این دو محاسبه و فقط نمایش داده می‌شود
                         _buildContactDialogFieldRow(
-                          label: 'مهلت (روز):',
-                          child: Container(
-                            height: 36,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
-                            ),
-                            child: TextField(
-                              controller: deadlineDaysCtrl,
-                              textAlign: TextAlign.center,
-                              keyboardType: TextInputType.number,
-                              style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
-                              decoration: const InputDecoration(
-                                hintText: 'تعداد روز تا پایان مهلت',
-                                hintStyle: TextStyle(color: Color(0xFF8882A8), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
+                          label: 'شروع:',
+                          child: GestureDetector(
+                            onTap: () async {
+                              final d = await _pickJalaliDate(ctx, startDate);
+                              if (d == null) return;
+                              setDialogState(() {
+                                startDate = d;
+                                if (endDate.isBefore(startDate)) endDate = startDate;
+                              });
+                            },
+                            child: dateBox(_formatDate(startDate)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildContactDialogFieldRow(
+                          label: 'پایان:',
+                          child: GestureDetector(
+                            onTap: () async {
+                              final d = await _pickJalaliDate(ctx, endDate);
+                              if (d == null) return;
+                              setDialogState(() => endDate = d.isBefore(startDate) ? startDate : d);
+                            },
+                            child: dateBox(_formatDate(endDate)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildContactDialogFieldRow(
+                          label: 'مهلت:',
+                          child: _buildContactDialogValueText(
+                            '${(endDate.difference(startDate).inDays + 1).toString().toPersianDigits()} روز',
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -1429,12 +1580,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                   size: 18,
                                 ),
                                 isExpanded: true,
-                                items: ['چند گزینه ای', 'تشریحی', 'فایلی']
+                                items: ['چند گزینه ای', 'تشریحی']
                                     .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                                     .toList(),
-                                onChanged: (v) {
-                                  if (v != null) setDialogState(() => selectedType = v);
-                                },
+                                onChanged: editing
+                                    ? null
+                                    : (v) {
+                                        if (v != null) setDialogState(() => selectedType = v);
+                                      },
                               ),
                             ),
                           ),
@@ -1692,27 +1845,39 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         AppToast.error(ctx, 'دریافت‌کننده‌ی چالش را انتخاب کنید.');
                                         return;
                                       }
-                                      final days = int.tryParse(deadlineDaysCtrl.text.trim().toEnglishDigits());
-                                      if (days == null || days < 1 || days > 365) {
-                                        AppToast.error(ctx, 'مهلت را بین ۱ تا ۳۶۵ روز وارد کنید.');
+                                      final startAt = DateTime(startDate.year, startDate.month, startDate.day);
+                                      final dueDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+                                      if (dueDate.isBefore(DateTime.now())) {
+                                        AppToast.error(ctx, 'تاریخ پایان چالش گذشته است.');
                                         return;
                                       }
-                                      final now = DateTime.now();
-                                      final dueDate = DateTime(now.year, now.month, now.day + days, 23, 59, 59);
 
                                       final repository = Provider.of<AppRepository>(context, listen: false);
                                       setDialogState(() => submitting = true);
-                                      final error = await HttpApiService().createChallengeError(ChallengeModel(
+                                      final String? error = editing
+                                          ? await HttpApiService().updateChallengeError(
+                                              existing['id'].toString(),
+                                              title: title,
+                                              description: question,
+                                              questions: questions,
+                                              assetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
+                                              min: rewardMin,
+                                              max: rewardMax,
+                                              startDate: startAt,
+                                              dueDate: dueDate,
+                                            )
+                                          : await HttpApiService().createChallengeError(ChallengeModel(
                                         id: '',
                                         title: title,
                                         description: question,
                                         rewardZarik: rewardMax,
-                                        type: isQuiz ? 'quiz' : (selectedType == 'فایلی' ? 'file' : 'text'),
+                                        type: isQuiz ? 'quiz' : 'text',
                                         questions: questions,
                                         createdByMentorId: user.id,
                                         rewardAssetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
                                         rewardMin: rewardMin,
                                         rewardMax: rewardMax,
+                                        startDate: startAt,
                                         dueDate: dueDate,
                                       ), recipientIds: recipientIds.toList(), allMembers: allMembers);
                                       if (!context.mounted) return;
@@ -1722,7 +1887,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         return;
                                       }
                                       if (ctx.mounted) Navigator.pop(ctx);
-                                      AppToast.success(context, 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
+                                      AppToast.success(context, editing ? 'چالش "$title" ویرایش شد' : 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
                                       await repository.refreshChallenges();
                                     },
                               style: TextButton.styleFrom(

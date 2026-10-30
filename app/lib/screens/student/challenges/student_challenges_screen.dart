@@ -1437,7 +1437,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
   Widget _buildCategoryTabsBar() {
     final tabs = [
-      {'title': 'فردی', 'index': 0},
+      {'title': 'شخصی', 'index': 0},
       {'title': 'گروهی', 'index': 1},
       {'title': 'میان گروهی', 'index': 2},
     ];

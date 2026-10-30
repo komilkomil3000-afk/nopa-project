@@ -1046,10 +1046,10 @@ function renderAdminChallenges(challenges) {
     let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
     if (c.type === 'quiz') {
       typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
-    } else if (c.type === 'skill') {
-      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
+    } else if (c.type === 'skill' || c.type === 'text') {
+      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     } else if (c.type === 'file') {
-      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-file-arrow-up"></i> ارسال فایل</span>`;
+      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     }
 
     // Submissions participation
@@ -1173,6 +1173,18 @@ window.readChallengeReward = function(mode) {
   return { rewardAssetType, rewardMin, rewardMax, rewardZarik: rewardMax };
 };
 
+// Shows the length of the challenge computed from its start and end dates (read-only).
+window.updateChallengeDuration = function(mode) {
+  const el = document.getElementById(`${mode}-chal-duration`);
+  if (!el) return;
+  const start = document.getElementById(`${mode}-chal-start-date`)?.value;
+  const due = document.getElementById(`${mode}-chal-due-date`)?.value;
+  if (!due) { el.textContent = 'مهلت: -'; return; }
+  const from = start ? new Date(`${start}T00:00:00`) : new Date(new Date().toDateString());
+  const days = Math.round((new Date(`${due}T00:00:00`) - from) / 86400000) + 1;
+  el.textContent = days > 0 ? `مهلت: ${days} روز` : 'تاریخ پایان قبل از شروع است';
+};
+
 window.addQuestionRow = function(mode, initialData = null) {
   const container = document.getElementById(`${mode}-chal-questions-list`);
   if (!container) return;
@@ -1193,7 +1205,7 @@ window.addQuestionRow = function(mode, initialData = null) {
       </button>
     </div>
     <div style="margin-bottom: 8px;">
-      <input type="text" class="chal-q-title" required placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+      <input type="text" class="chal-q-title" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
     </div>
     <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -1259,7 +1271,7 @@ window.openCreateChallengeModal = function() {
   } else {
     if (caravanSelect) {
       caravanSelect.disabled = false;
-      caravanSelect.value = 'all';
+      caravanSelect.value = 'inter_group';
     }
     if (mentorNotice) {
       mentorNotice.style.display = 'none';
@@ -1309,6 +1321,11 @@ window.submitCreateChallenge = async function(event) {
   const description = document.getElementById('new-chal-desc')?.value.trim();
   const stationId = document.getElementById('new-chal-station-id')?.value || null;
   const dueDate = document.getElementById('new-chal-due-date')?.value || null;
+  const startDate = document.getElementById('new-chal-start-date')?.value || null;
+  if (startDate && dueDate && startDate > dueDate) {
+    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    return;
+  }
 
   if (!title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
@@ -1342,6 +1359,7 @@ window.submitCreateChallenge = async function(event) {
       type,
       ...reward,
       stationId: stationId || undefined,
+      startDate: startDate ? new Date(`${startDate}T00:00:00+03:30`).toISOString() : undefined,
       dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : undefined,
       caravanId: caravanId === 'all' ? undefined : caravanId,
       questions: questions.length > 0 ? questions : undefined
@@ -1383,7 +1401,7 @@ window.openEditChallengeModal = function(challengeId) {
   document.getElementById('edit-chal-reward-min').value = c.rewardMin || 0;
   document.getElementById('edit-chal-reward-max').value = c.rewardMax || c.rewardZarik || 50;
   document.getElementById('edit-chal-desc').value = c.description || '';
-  document.getElementById('edit-chal-type').value = c.type || 'quiz';
+  document.getElementById('edit-chal-type').value = c.type === 'quiz' ? 'quiz' : 'text';
 
   const caravanSelect = document.getElementById('edit-chal-caravan-id');
   if (caravanSelect) {
@@ -1400,6 +1418,11 @@ window.openEditChallengeModal = function(challengeId) {
   if (editDueDate) {
     editDueDate.value = c.dueDate ? new Date(c.dueDate).toISOString().split('T')[0] : '';
   }
+  const editStartDate = document.getElementById('edit-chal-start-date');
+  if (editStartDate) {
+    editStartDate.value = c.startDate ? new Date(c.startDate).toISOString().split('T')[0] : '';
+  }
+  window.updateChallengeDuration('edit');
 
   // Creator badge
   const badgeEl = document.getElementById('edit-chal-creator-badge');
@@ -1448,6 +1471,11 @@ window.submitEditChallenge = async function(event) {
   const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
   const stationId = document.getElementById('edit-chal-station-id')?.value || null;
   const dueDate = document.getElementById('edit-chal-due-date')?.value || null;
+  const startDate = document.getElementById('edit-chal-start-date')?.value || null;
+  if (startDate && dueDate && startDate > dueDate) {
+    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    return;
+  }
 
   if (!id || !title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
@@ -1480,6 +1508,7 @@ window.submitEditChallenge = async function(event) {
       type,
       ...reward,
       stationId: stationId || null,
+      startDate: startDate ? new Date(`${startDate}T00:00:00+03:30`).toISOString() : null,
       dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : null,
       caravanId: caravanId === 'all' ? null : caravanId,
       questions: questions.length > 0 ? questions : undefined

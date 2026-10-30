@@ -3513,8 +3513,7 @@
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="new-chal-type" onchange="window.handleChallengeTypeChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
-                  <option value="file">📁 ارسال فایل / پروژه</option>
+                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
@@ -3527,8 +3526,12 @@
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
-                <input type="date" id="new-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <input type="date" id="new-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <input type="date" id="new-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                </div>
+                <div id="new-chal-duration" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">مهلت: -</div>
               </div>
             </div>
 
@@ -3617,8 +3620,7 @@
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="edit-chal-type" onchange="window.handleChallengeTypeChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
-                  <option value="file">📁 ارسال فایل / پروژه</option>
+                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
@@ -3631,8 +3633,12 @@
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
-                <input type="date" id="edit-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <input type="date" id="edit-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <input type="date" id="edit-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                </div>
+                <div id="edit-chal-duration" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">مهلت: -</div>
               </div>
             </div>
 

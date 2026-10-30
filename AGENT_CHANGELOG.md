@@ -1245,3 +1245,36 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); tsc/prisma generate not run here (no node_modules) - run prisma generate after applying the SQL
 - **Status:** Completed
+
+### [2026-10-30 19:18] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/migrations/20261034_challenge_recipients/migration.sql` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+- **Description of Changes:**
+  - App: home 'منقضی'->'تمام شده'
+  - student tab 'فردی'->'شخصی'
+  - read notifications rendered gray
+  - recipient picker confirm looks disabled until someone is ticked
+  - mentor create dialog uses Jalali start/end date pickers and shows the computed deadline read-only (Challenge.startDate added, sent as startDate
+  - server blocks answers before start)
+  - types reduced to تستی/تشریحی (file merged into text)
+  - mentor challenge details screen now shows questions with the correct option marked
+  - mentors can edit their own challenges from the card (pencil, greyed + toast once any member has answered
+  - server PATCH returns 409 for mentors when submissions exist
+  - reward-only edit replaced by full edit via HttpApiService.updateChallengeError). Panel: fixed create failing for non-quiz (hidden required question input, and reset set caravan select to removed value 'all'), types limited to quiz/text (تشریحی), start date input + computed duration, startDate in payloads. SQL: ALTER TABLE "Challenge" ADD COLUMN IF NOT EXISTS "startDate" TIMESTAMP(3) (in migration 20261034)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
+- **Status:** Completed

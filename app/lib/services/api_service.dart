@@ -765,7 +765,8 @@ class HttpApiService {
                 (json['createdByMentorId'] != null && json['createdByMentorId'].toString().toLowerCase().contains('admin'));
             final String creatorName = creatorInfo?['name'] ?? (isByAdmin ? 'مدیر سیستم' : (caravanInfo?['mentorName'] ?? 'راهبر'));
             final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null;
-            final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null;
+            final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString())?.toLocal() : null;
+            final DateTime? startDate = json['startDate'] != null ? DateTime.tryParse(json['startDate'].toString())?.toLocal() : null;
             final String? stationId = json['stationId']?.toString();
             final String? stationTitle = json['station']?['title']?.toString();
             final int durationDays = (json['durationDays'] is num)
@@ -786,6 +787,7 @@ class HttpApiService {
               caravanId: json['caravanId'],
               stationId: stationId,
               dueDate: dueDate,
+              startDate: startDate,
               stationTitle: stationTitle,
               mentorName: creatorName,
               caravanName: caravanInfo?['name'],
@@ -1681,6 +1683,7 @@ class HttpApiService {
           'rewardMax': challenge.rewardMax,
           'allMembers': allMembers,
           if (!allMembers) 'recipientIds': recipientIds,
+          if (challenge.startDate != null) 'startDate': challenge.startDate!.toUtc().toIso8601String(),
           if (challenge.dueDate != null) 'dueDate': challenge.dueDate!.toUtc().toIso8601String(),
           'type': challenge.type,
           if (challenge.questions != null) 'questions': challenge.questions,
@@ -1695,23 +1698,38 @@ class HttpApiService {
     }
   }
 
-  /// Creator edits the reward (asset + min/max range) of a challenge. Returns an error message, or null on success.
-  Future<String?> updateChallengeReward(String challengeId, {required String assetType, required int min, required int max}) async {
+  /// Creator edits a challenge nobody has answered yet. Returns an error message, or null on success.
+  Future<String?> updateChallengeError(
+    String challengeId, {
+    required String title,
+    required String description,
+    List<Map<String, dynamic>>? questions,
+    required String assetType,
+    required int min,
+    required int max,
+    DateTime? startDate,
+    DateTime? dueDate,
+  }) async {
     try {
       final response = await _patch(
         Uri.parse('$baseUrl/challenges/$challengeId'),
         headers: _getHeaders(),
         body: jsonEncode({
+          'title': title,
+          'description': description,
+          'questions': ?questions,
           'rewardAssetType': assetType,
           'rewardMin': min,
           'rewardMax': max,
+          'startDate': startDate?.toUtc().toIso8601String(),
+          'dueDate': dueDate?.toUtc().toIso8601String(),
         }),
       );
       if (response.statusCode == 200) return null;
       final d = await parseJsonAsync(response.body);
-      return d?['error']?.toString() ?? 'ویرایش پاداش انجام نشد';
+      return d?['error']?.toString() ?? 'ویرایش چالش انجام نشد';
     } catch (e) {
-      debugPrint('HTTP updateChallengeReward error: $e');
+      debugPrint('HTTP updateChallengeError error: $e');
       return 'خطای ارتباط با سرور';
     }
   }

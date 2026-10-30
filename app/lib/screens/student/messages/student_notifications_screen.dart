@@ -523,6 +523,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     final String body = notify['body'] ?? '';
     final String dateStr = _formatDate(notify['createdAt'], notify['time']);
     final String actionLabel = _resolveActionLabel(notify);
+    final bool isRead = notify['isRead'] == true;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -540,15 +541,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         topRight: Radius.circular(16),
                       )
                     : BorderRadius.circular(16),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
-                  colors: [
-                    Color(0xFF3A3A6A),
-                    Color(0xFF9292E2),
-                    Color(0xFF3A3A6A),
-                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                  colors: isRead
+                      ? const [Color(0xFF3A3A4A), Color(0xFF6E6E80), Color(0xFF3A3A4A)]
+                      : const [Color(0xFF3A3A6A), Color(0xFF9292E2), Color(0xFF3A3A6A)],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -568,15 +567,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           topRight: Radius.circular(14.8),
                         )
                       : BorderRadius.circular(14.8),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0.0, 0.53, 1.0],
-                    colors: [
-                      Color(0xFF3D3C67),
-                      Color(0xFF36345C),
-                      Color(0xFF333359),
-                    ],
+                    stops: const [0.0, 0.53, 1.0],
+                    colors: isRead
+                        ? const [Color(0xFF3A3A44), Color(0xFF34343D), Color(0xFF30303A)]
+                        : const [Color(0xFF3D3C67), Color(0xFF36345C), Color(0xFF333359)],
                   ),
                 ),
                 child: Row(
@@ -588,8 +585,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isRead ? const Color(0xFF9A9AA8) : Colors.white,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           fontFamily: AppTheme.fontFamily,
