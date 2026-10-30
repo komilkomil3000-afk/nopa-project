@@ -30,8 +30,22 @@ export async function submitTask(req: AuthRequest, res: Response) {
       where: { challengeId, studentId: req.user.id }
     });
 
+    if (challenge.type === 'quiz') {
+      return res.status(400).json({ error: 'پاسخ آزمون‌های تستی از مسیر آزمون ثبت می‌شود' });
+    }
+
     if (existingSubmission && existingSubmission.status === 'approved') {
       return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن دریافت گردیده است' });
+    }
+
+    // Awaiting the mentor's verdict: the answer is locked until it is approved or sent back for correction
+    if (existingSubmission && ['pending', 'PENDING_REVIEW'].includes(existingSubmission.status)) {
+      return res.status(409).json({ error: 'پاسخ شما در انتظار بررسی راهبر است و تا اعلام نتیجه قابل ویرایش نیست' });
+    }
+
+    // A new participation closes with the deadline (a correction requested by the mentor is still allowed)
+    if (!existingSubmission && challenge.dueDate && new Date() > challenge.dueDate) {
+      return res.status(400).json({ error: 'مهلت شرکت در این چالش به پایان رسیده است' });
     }
 
     // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission

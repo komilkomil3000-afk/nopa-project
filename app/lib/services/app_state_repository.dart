@@ -113,8 +113,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         currentUser = user;
       }
       final apiChallenges = await _apiService.getChallenges();
-      challenges.clear();
-      challenges.addAll(apiChallenges);
+      if (apiChallenges != null) {
+        challenges.clear();
+        challenges.addAll(apiChallenges);
+      }
       await fetchNotifications();
       await fetchCaravans();
       notifyListeners();
@@ -241,6 +243,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
     await _apiService.logout();
     challenges.clear();
+    submissions.clear();
     currentUser = UserModel(
       id: 'guest',
       name: 'مهمان',
@@ -266,6 +269,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       farsh: 0,
     );
     challenges.clear();
+    submissions.clear();
     notifyListeners();
   }
 
@@ -476,13 +480,43 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> refreshChallenges() async {
     final apiChallenges = await _apiService.getChallenges();
-    challenges.clear();
-    challenges.addAll(apiChallenges);
+    // A failed load keeps the current list: challenges must never vanish on a network error
+    if (apiChallenges != null) {
+      challenges.clear();
+      challenges.addAll(apiChallenges);
+      // The server is the source of truth for the answers; drop optimistic local copies
+      submissions.removeWhere((s) => challenges.any((c) => c.id == s.challengeId && c.myStatus != null && c.myStatus != 'none'));
+    }
     await fetchNotifications();
     notifyListeners();
   }
 
-  void submitAssignment(SubmissionModel submission) {
+  /// One status for a challenge, shared by the challenges page and the home card:
+  /// 'new' (not answered), 'pending' (waiting for the mentor), 'rejected' (needs correction),
+  /// 'completed' (approved) or 'expired' (deadline passed without an answer).
+  String challengeStatus(ChallengeModel c) {
+    final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
+    String raw = 'none';
+    if (c.myStatus != null && c.myStatus != 'none') {
+      raw = c.myStatus!;
+    } else if (localSub != null) {
+      raw = localSub.status;
+    }
+    switch (raw) {
+      case 'approved':
+      case 'completed':
+        return 'completed';
+      case 'pending':
+      case 'PENDING_REVIEW':
+        return 'pending';
+      case 'rejected':
+        return 'rejected';
+    }
+    final bool dueDatePassed = c.dueDate != null && DateTime.now().isAfter(c.dueDate!);
+    return (dueDatePassed || raw == 'expired') ? 'expired' : 'new';
+  }
+
+  void submitAssignment(SubmissionModel submission, {bool persist = true}) {
     submissions.removeWhere((s) => s.challengeId == submission.challengeId);
     submissions.insert(0, submission);
     addNotification(
@@ -493,6 +527,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
 
     // Persist to backend and reload live challenges with new status
+    if (!persist) return;
     _apiService.submitTask(submission.challengeId, submission.answerText).then((_) {
       refreshChallenges();
     });

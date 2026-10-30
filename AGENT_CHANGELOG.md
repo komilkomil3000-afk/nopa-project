@@ -949,3 +949,24 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
 - **Status:** Completed
+
+### [2026-10-30 14:20] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Created)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+- **Description of Changes:**
+  - Challenge answers are locked while the mentor has not replied: server returns 409 for a re-submit of a pending answer, only "rejected" can be corrected; the app opens a read-only dialog for pending/approved/expired answers with a banner, and an editable one for new/rejected. Attached file has a preview (image thumbnail + fullscreen zoom, other files open via url_launcher); getChallenges now returns mySubmission.fileUrl
+  - "Disappearing challenges": getChallenges returned [] on any network/parse error and refreshChallenges then cleared the list; it now returns null (list kept) and skips only a malformed item. The old flow also fired submitTask twice (once without the file) and sent quiz answers through submitTask, which could leave a quiz pending/lost; the dialog now awaits upload + submit once (quiz via submit-quiz) and shows errors instead of failing silently. Local optimistic submissions are cleared on logout
+  - Home challenges card reads real data with the same shared status (AppRepository.challengeStatus): جدید = not answered, شروع شده = pending/rejected, منقضی = past due or completed; removed hardcoded sample rows and the mentor-name filter that could hide challenges
+  - Server: students only receive their own submission in /challenges (other students' answers were leaked); submitTask rejects quiz-type challenges and new answers after dueDate
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
+- **Status:** Completed

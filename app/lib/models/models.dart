@@ -18,6 +18,7 @@ class ChallengeModel {
   final String? myStatus;
   final String? mentorFeedback;
   final String? myAnswerText;
+  final String? myFileUrl;
   final bool isByAdmin;
   final String? creatorName;
   final String? targetAudienceLabel;
@@ -43,6 +44,7 @@ class ChallengeModel {
     this.myStatus,
     this.mentorFeedback,
     this.myAnswerText,
+    this.myFileUrl,
     this.isByAdmin = false,
     this.creatorName,
     this.targetAudienceLabel,

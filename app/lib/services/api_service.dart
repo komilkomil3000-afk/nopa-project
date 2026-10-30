@@ -733,7 +733,9 @@ class HttpApiService {
   }
 
   // Get Challenges
-  Future<List<ChallengeModel>> getChallenges({int? limit, int? page}) async {
+  /// Returns null when the list could not be loaded, so callers keep what they already have
+  /// instead of wiping the challenges on a network or parse error.
+  Future<List<ChallengeModel>?> getChallenges({int? limit, int? page}) async {
     try {
       final queryParams = <String, String>{};
       if (limit != null) queryParams['limit'] = limit.toString();
@@ -751,7 +753,9 @@ class HttpApiService {
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return data.map((json) {
+          final result = <ChallengeModel>[];
+          for (final json in data) {
+            try {
             final creatorInfo = json['creatorInfo'] as Map<String, dynamic>?;
             final caravanInfo = json['caravanInfo'] as Map<String, dynamic>?;
             final targetAudience = json['targetAudience'] as Map<String, dynamic>?;
@@ -764,15 +768,19 @@ class HttpApiService {
             final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null;
             final String? stationId = json['stationId']?.toString();
             final String? stationTitle = json['station']?['title']?.toString();
-            final int durationDays = json['durationDays'] ?? 5;
+            final int durationDays = (json['durationDays'] is num)
+                ? (json['durationDays'] as num).toInt()
+                : ((createdAt != null && dueDate != null) ? dueDate.difference(createdAt).inDays.clamp(1, 365) : 5);
 
-            return ChallengeModel(
+            result.add(ChallengeModel(
               id: json['id'],
               title: json['title'],
               description: json['description'],
               rewardZarik: json['rewardZarik'] ?? 50,
               type: json['type'],
-              questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
+              questions: json['questions'] is List
+                  ? (json['questions'] as List).whereType<Map>().map((q) => Map<String, dynamic>.from(q)).toList()
+                  : null,
               createdByMentorId: json['createdByMentorId'] ?? '',
               progress: 0.0,
               caravanId: json['caravanId'],
@@ -784,20 +792,26 @@ class HttpApiService {
               myStatus: json['myStatus'] ?? json['mySubmission']?['status'],
               mentorFeedback: json['mySubmission']?['mentorFeedback'],
               myAnswerText: json['mySubmission']?['answerText'],
+              myFileUrl: json['mySubmission']?['fileUrl']?.toString(),
               isByAdmin: isByAdmin,
               creatorName: creatorName,
               targetAudienceLabel: targetLabel,
               category: category,
               createdAt: createdAt,
               durationDays: durationDays,
-            );
-          }).toList();
+            ));
+            } catch (e) {
+              // One malformed challenge must not hide all the others
+              debugPrint('Skipping malformed challenge: $e');
+            }
+          }
+          return result;
         }
       }
-      return [];
+      return null;
     } catch (e) {
       debugPrint('HTTP getChallenges error: $e');
-      return [];
+      return null;
     }
   }
 
@@ -1257,6 +1271,13 @@ class HttpApiService {
 
   // Submit Task Assignment
   Future<bool> submitTask(String challengeId, String answerText, {String? fileUrl}) async {
+    final error = await submitTaskWithError(challengeId, answerText, fileUrl: fileUrl);
+    return error == null;
+  }
+
+  /// Same as [submitTask] but returns the reason on failure (null on success).
+  /// An answer already waiting for review counts as sent, so offline retries stop.
+  Future<String?> submitTaskWithError(String challengeId, String answerText, {String? fileUrl}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/submissions'),
@@ -1267,11 +1288,15 @@ class HttpApiService {
           if (fileUrl != null && fileUrl.isNotEmpty) 'fileUrl': fileUrl,
         }),
       );
-
-      return response.statusCode == 201;
+      if (response.statusCode == 201 || response.statusCode == 409) return null;
+      try {
+        final body = await parseJsonAsync(response.body);
+        if (body is Map && body['error'] != null) return body['error'].toString();
+      } catch (_) {}
+      return 'ارسال پاسخ با خطا مواجه شد';
     } catch (e) {
       debugPrint('HTTP submitTask error: $e');
-      return false;
+      return 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید';
     }
   }
 

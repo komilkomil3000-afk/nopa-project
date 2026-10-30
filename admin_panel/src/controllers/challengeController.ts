@@ -366,6 +366,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
             studentId: true,
             mentorFeedback: true,
             answerText: true,
+            fileUrl: true,
             submittedAt: true
           }
         }
@@ -442,6 +443,8 @@ export async function getChallenges(req: AuthRequest, res: Response) {
 
       return {
         ...c,
+        // Students must not receive other students' answers; they only get their own submission
+        submissions: viewerIsStaff ? c.submissions : c.submissions.filter(s => s.studentId === user?.id),
         questions: viewerIsStaff ? parsedQuestions : stripAnswerKeys(parsedQuestions),
         totalSubmissions,
         pendingSubmissions,
@@ -455,6 +458,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
           score: mySub.score,
           mentorFeedback: mySub.mentorFeedback,
           answerText: mySub.answerText,
+          fileUrl: mySub.fileUrl,
           submittedAt: mySub.submittedAt
         } : null,
         myStatus: myStatus
