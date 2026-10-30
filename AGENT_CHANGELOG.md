@@ -1156,3 +1156,19 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze student+mentor challenge screens; node --check app.js; tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-30 17:09] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 1.4: removed legacy POST /mentor/submissions/:id/review (no range/ownership/double-approve checks) - route, reviewChallengeSubmission controller and unused app method reviewMentorSubmission deleted
+  - grading goes only through PATCH /submissions/:id/review. Admin panel challenge create/edit dropdown: removed useless 'عمومی (همه کاروان‌ها و راهبران)' option, default is now inter_group
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/services/api_service.dart; node --check app.js; grep confirms no remaining references; tsc not run (no node_modules)
+- **Status:** Completed

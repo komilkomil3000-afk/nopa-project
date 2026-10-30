@@ -1753,29 +1753,6 @@ class HttpApiService {
     return [];
   }
 
-  Future<Map<String, dynamic>> reviewMentorSubmission(String submissionId, bool approve, int reward, String feedback) async {
-    try {
-      final response = await _post(
-        Uri.parse('$baseUrl/mentor/submissions/$submissionId/review'),
-        headers: _getHeaders(),
-        body: jsonEncode({
-          'status': approve ? 'APPROVED' : 'REJECTED',
-          'rewardZarik': reward,
-          'mentorFeedback': feedback,
-        }),
-      );
-      if (response.statusCode == 200) {
-        return {'success': true};
-      } else {
-        final d = await parseJsonAsync(response.body);
-        return {'success': false, 'error': d?['error'] ?? 'خطای ناشناخته'};
-      }
-    } catch (e) {
-      debugPrint('reviewMentorSubmission error: $e');
-      return {'success': false, 'error': 'خطای ارتباط با سرور'};
-    }
-  }
-
   Future<Map<String, dynamic>?> getMentorTicketDetails(String ticketId) async {
     try {
       final response = await _get(Uri.parse('$baseUrl/mentor/tickets/$ticketId'), headers: _getHeaders());

@@ -94,51 +94,6 @@ export async function getChallengeSubmissions(req: AuthRequest, res: Response) {
   }
 }
 
-export async function reviewChallengeSubmission(req: AuthRequest, res: Response) {
-  try {
-    const { id } = req.params;
-    const { status, rewardZarik, mentorFeedback } = req.body;
-    
-    const submission = await prisma.submission.findUnique({ where: { id }, include: { challenge: true } });
-    if (!submission) return res.status(404).json({ error: 'یافت نشد' });
-
-    await prisma.$transaction(async (tx) => {
-      await tx.submission.update({
-        where: { id },
-        data: {
-          status: status, // "APPROVED" or "REJECTED"
-          score: parseInt(rewardZarik) || 0,
-          mentorFeedback
-        }
-      });
-
-      if (status === 'APPROVED' || status === 'approved') {
-        const reward = parseInt(rewardZarik) || 0;
-        await tx.user.update({
-          where: { id: submission.studentId },
-          data: { zarikBalance: { increment: reward } }
-        });
-        if (reward > 0) {
-          // Ledger entry (same reason format as the admin review path, so reports reconcile)
-          await tx.zarikTransaction.create({
-            data: {
-              userId: submission.studentId,
-              amount: reward,
-              category: 'Skill Tasks',
-              reason: `پاداش تایید تکلیف: ${submission.challenge?.title ?? ''}`,
-              createdBy: req.user!.id
-            }
-          });
-        }
-      }
-    });
-
-    res.json({ success: true });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-}
-
 export async function getMentorTicketDetails(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;

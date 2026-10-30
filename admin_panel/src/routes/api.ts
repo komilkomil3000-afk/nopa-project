@@ -25,7 +25,6 @@ import {
   createMentorChallenge, 
   getMentorChallenges, 
   getChallengeSubmissions, 
-  reviewChallengeSubmission,
   getMentorTicketDetails,
   replyMentorTicket,
   getMentorCaravanProgress
@@ -129,7 +128,6 @@ router.post('/caravans/cancel-conversion/:id', authenticateJWT as any, authorize
 router.post('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createMentorChallenge as any);
 router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorChallenges as any);
 router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getChallengeSubmissions as any);
-router.post('/mentor/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewChallengeSubmission as any);
 router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorTicketDetails as any);
 router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
 router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);

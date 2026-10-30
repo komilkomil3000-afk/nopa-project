@@ -966,11 +966,11 @@ function populateCaravanDropdowns(caravans) {
   }
 
   if (newChalSelect) {
-    newChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option><option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
+    newChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (editChalSelect) {
-    editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option><option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
+    editChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (typeof populateSubmissionsFilterDropdowns === 'function') {
@@ -1269,7 +1269,7 @@ window.submitCreateChallenge = async function(event) {
 
   const title = document.getElementById('new-chal-title')?.value.trim();
   const rewardZarik = Number(document.getElementById('new-chal-reward')?.value || 50);
-  let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'all';
+  let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'inter_group';
   if (currentUser && currentUser.role === 'mentor') {
     const myCaravan = (window.cachedAdminCaravans || []).find(cv => 
       cv.mentorId === currentUser.id || cv.mentor?.id === currentUser.id || cv.id === currentUser.caravanId
@@ -1358,7 +1358,7 @@ window.openEditChallengeModal = function(challengeId) {
 
   const caravanSelect = document.getElementById('edit-chal-caravan-id');
   if (caravanSelect) {
-    caravanSelect.value = c.category === 'inter_group' ? 'inter_group' : (c.caravanInfo?.id || c.caravanId || 'all');
+    caravanSelect.value = c.category === 'inter_group' ? 'inter_group' : (c.caravanInfo?.id || c.caravanId || 'inter_group');
     if (currentUser && currentUser.role === 'mentor') {
       caravanSelect.disabled = true;
     } else {
