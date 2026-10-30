@@ -75,7 +75,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
         data: {
           answerText,
           fileUrl,
-          status: 'PENDING_REVIEW',
+          status: 'pending',
           score: 0,
           submittedAt: new Date()
         }
@@ -87,7 +87,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
           studentId: req.user.id,
           answerText,
           fileUrl,
-          status: 'PENDING_REVIEW'
+          status: 'pending'
         }
       });
     }

@@ -139,6 +139,10 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       final result = await FilePicker.platform.pickFiles(type: FileType.any, allowMultiple: false);
       if (result != null && result.files.isNotEmpty) {
         final f = result.files.first;
+        if (f.size > 20 * 1024 * 1024) {
+          if (mounted) AppToast.error(context, 'حجم فایل نباید بیشتر از ۲۰ مگابایت باشد.');
+          return;
+        }
         setState(() {
           _pickedName = f.name;
           _pickedFile = f.path != null ? io.File(f.path!) : null;

@@ -1728,7 +1728,7 @@ window.submitEditChallenge = async function(event) {
 };
 
 window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
-  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف و پاسخ‌های ثبت‌شده برای این چالش نیز حذف خواهند شد.`)) {
+  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف، پاسخ‌ها و تاریخچه‌ی ثبت‌شده برای این چالش نیز حذف می‌شوند. پاداش‌هایی که قبلاً پرداخت شده برگردانده نمی‌شود.`)) {
     return;
   }
 

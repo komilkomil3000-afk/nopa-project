@@ -1392,3 +1392,22 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); tsc not run
 - **Status:** Completed
+
+### [2026-10-30 21:03] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/mediaController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261037_submission_status_normalize/` (Created)
+- **Description of Changes:**
+  - Audit section 4: submissions are now written as 'pending' only (migration 20261037 normalises old PENDING_REVIEW rows
+  - reads still tolerate both)
+  - student challenge attachments are limited to 20MB (server rejects in uploadMedia for assetType challenge_submission, app checks before upload
+  - the extension whitelist already existed)
+  - panel delete-challenge confirm now says answers/history are deleted and paid rewards are not reverted
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc not run
+- **Status:** Completed
