@@ -51,16 +51,19 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
   static const _fileMarker = '\nفایل: ';
 
   late final TextEditingController _textCtrl;
-  int _selectedOption = -1;
+  // Quiz: one entry per question; _answers[i] is the chosen option (-1 = unanswered).
+  int _step = 0;
+  late final List<int> _answers;
   bool _sending = false;
   String? _pickedName;
   io.File? _pickedFile;
 
   late final bool _isQuiz;
-  late final List<String> _options;
-  late final String _questionText;
+  late final List<({String text, List<String> options})> _questions;
   late final String? _existingFileUrl;
   late final String _existingFileName;
+
+  ({String text, List<String> options}) get _currentQuestion => _questions[_step];
 
   bool get _readOnly => widget.status != 'new' && widget.status != 'rejected';
 
@@ -72,19 +75,28 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
     final List<dynamic> qList = c['questions'] is List ? (c['questions'] as List) : [];
     _isQuiz = type == 'quiz' || type == 'step_by_step_quiz' || type == 'multiple_choice' || qList.isNotEmpty;
 
-    var options = <String>[];
-    String question = c['desc']?.toString() ?? '';
-    if (qList.isNotEmpty && qList[0] is Map) {
-      final firstQ = qList[0] as Map;
-      question = (firstQ['q'] ?? firstQ['question'] ?? firstQ['text'] ?? question).toString();
-      final rawOpts = firstQ['options'] ?? firstQ['opts'];
-      if (rawOpts is List) options = rawOpts.map((e) => e.toString()).toList();
+    final fallbackText = c['desc']?.toString() ?? '';
+    final questions = <({String text, List<String> options})>[];
+    for (final raw in qList) {
+      if (raw is! Map) continue;
+      final rawOpts = raw['options'] ?? raw['opts'];
+      var options = rawOpts is List ? rawOpts.map((e) => e.toString()).toList() : <String>[];
+      if (options.isEmpty && _isQuiz) {
+        options = ['پاسخ شماره اول', 'پاسخ شماره دوم', 'پاسخ شماره سوم', 'پاسخ شماره چهارم'];
+      }
+      questions.add((
+        text: (raw['q'] ?? raw['question'] ?? raw['text'] ?? fallbackText).toString(),
+        options: options,
+      ));
     }
-    if (options.isEmpty && _isQuiz) {
-      options = ['پاسخ شماره اول', 'پاسخ شماره دوم', 'پاسخ شماره سوم', 'پاسخ شماره چهارم'];
+    if (questions.isEmpty) {
+      questions.add((
+        text: fallbackText,
+        options: _isQuiz ? ['پاسخ شماره اول', 'پاسخ شماره دوم', 'پاسخ شماره سوم', 'پاسخ شماره چهارم'] : <String>[],
+      ));
     }
-    _options = options;
-    _questionText = question;
+    _questions = questions;
+    _answers = List<int>.filled(questions.length, -1);
 
     String answer = c['myAnswerText']?.toString() ?? '';
     final markerAt = answer.lastIndexOf(_fileMarker);
@@ -164,22 +176,26 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
     final id = widget.challenge['id']?.toString() ?? '';
 
     if (_isQuiz) {
-      if (_selectedOption == -1) {
-        AppToast.error(context, 'لطفاً یکی از گزینه‌ها را انتخاب کنید.');
+      final firstMissing = _answers.indexOf(-1);
+      if (firstMissing != -1) {
+        setState(() => _step = firstMissing);
+        AppToast.error(context, 'لطفاً به همه‌ی سوال‌ها پاسخ دهید.');
         return;
       }
       setState(() => _sending = true);
-      final res = await api.submitQuizChallenge(id, [_selectedOption]);
+      final res = await api.submitQuizChallengeWithError(id, _answers);
       if (!mounted) return;
-      if (res == null) {
+      if (res.result == null) {
         setState(() => _sending = false);
-        AppToast.error(context, 'ثبت پاسخ با خطا مواجه شد. دوباره تلاش کنید.');
+        AppToast.error(context, res.error ?? 'ثبت پاسخ با خطا مواجه شد. دوباره تلاش کنید.');
         return;
       }
       Navigator.pop(
         context,
         ChallengeSubmissionResult(
-          answerText: 'گزینه انتخابی: ${_selectedOption + 1}',
+          answerText: _questions.length == 1
+              ? 'گزینه انتخابی: ${_answers[0] + 1}'
+              : 'گزینه‌های انتخابی: ${_answers.map((a) => a + 1).join('، ')}',
           isQuiz: true,
         ),
       );
@@ -246,8 +262,8 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                   _labeledRow('تیتر:', widget.challenge['title']?.toString() ?? '', 13, FontWeight.w600),
                   const SizedBox(height: 14),
                   _labeledRow(
-                    _isQuiz ? 'سوال۱:' : 'سوال:',
-                    _questionText.isNotEmpty ? _questionText : 'توضیحات تکمیلی این چالش',
+                    _isQuiz ? 'سوال${(_step + 1).toString().toPersianDigits()}:' : 'سوال:',
+                    _currentQuestion.text.isNotEmpty ? _currentQuestion.text : 'توضیحات تکمیلی این چالش',
                     12.5,
                     FontWeight.w500,
                     height: 1.5,
@@ -408,12 +424,13 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       if (answer.isEmpty) return [];
       return [_labeledRow('پاسخ:', answer, 12.5, FontWeight.w500)];
     }
-    return List.generate(_options.length, (index) {
-      final bool isSelected = _selectedOption == index;
+    final options = _currentQuestion.options;
+    final tiles = List.generate(options.length, (index) {
+      final bool isSelected = _answers[_step] == index;
       return Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
         child: GestureDetector(
-          onTap: () => setState(() => _selectedOption = index),
+          onTap: _sending ? null : () => setState(() => _answers[_step] = index),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -439,7 +456,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _options[index],
+                    options[index],
                     style: TextStyle(
                       color: isSelected ? Colors.white : const Color(0xFFD3D0E3),
                       fontSize: 12,
@@ -454,6 +471,36 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
         ),
       );
     });
+    return [
+      ...tiles,
+      if (_questions.length > 1) _buildStepper(),
+    ];
+  }
+
+  Widget _buildStepper() {
+    final last = _step == _questions.length - 1;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        TextButton(
+          onPressed: _step == 0 || _sending ? null : () => setState(() => _step--),
+          child: const Text('قبلی'),
+        ),
+        Text(
+          'سوال ${(_step + 1).toString().toPersianDigits()} از ${_questions.length.toString().toPersianDigits()}',
+          style: const TextStyle(
+            color: Color(0xFF9E92E8),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.fontFamily,
+          ),
+        ),
+        TextButton(
+          onPressed: last || _sending ? null : () => setState(() => _step++),
+          child: const Text('بعدی'),
+        ),
+      ],
+    );
   }
 
   List<Widget> _buildTextBody() {

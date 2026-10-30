@@ -182,34 +182,23 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
     final List<Map<String, dynamic>> list = [];
-    final submissions = repository.submissions;
 
     for (var c in repository.challenges) {
-      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = 'none';
-      if (c.myStatus != null && c.myStatus != 'none') {
-        rawStatus = c.myStatus!;
-      } else if (localSub != null) {
-        rawStatus = localSub.status;
-      }
-
+      // Mentors never answer challenges: the tag reflects the review state of their students' answers
       final String statusTag;
       final Color statusColor;
-      if (rawStatus == 'approved' || rawStatus == 'completed') {
-        statusTag = 'تایید شده';
-        statusColor = const Color(0xFF22C55E);
-      } else if (rawStatus == 'pending') {
-        statusTag = 'در انتظار بررسی';
+      if (c.pendingSubmissions > 0) {
+        statusTag = '${c.pendingSubmissions.toString().toPersianDigits()} پاسخ در انتظار بررسی';
         statusColor = const Color(0xFFEAB308);
-      } else if (rawStatus == 'rejected') {
-        statusTag = 'نیاز به اصلاح';
-        statusColor = const Color(0xFFEF4444);
-      } else if (rawStatus == 'expired') {
+      } else if (c.totalSubmissions > 0) {
+        statusTag = 'بررسی شده';
+        statusColor = const Color(0xFF22C55E);
+      } else if (c.dueDate != null && DateTime.now().isAfter(c.dueDate!)) {
         statusTag = 'منقضی';
         statusColor = const Color(0xFF9E9AC0);
       } else {
-        statusTag = 'جدید';
-        statusColor = const Color(0xFF22C55E);
+        statusTag = 'بدون پاسخ';
+        statusColor = const Color(0xFF9E9AC0);
       }
 
       String category = 'intra_group'; // درون گروهی
@@ -227,32 +216,16 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardMin': c.rewardMin,
+        'rewardMax': c.rewardMax,
+        'rewardAsset': c.rewardAssetType,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
         'durationDays': c.durationDays ?? 5,
         'category': category,
         'desc': c.description,
-        'actionLabel': rawStatus == 'pending' ? 'بررسی پاسخ‌ها' : (rawStatus == 'rejected' ? 'ویرایش پاسخ' : 'مشاهده'),
+        'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
       });
-    }
-
-    if (list.isEmpty) {
-      return [
-        {
-          'id': 'm_ch_1',
-          'title': 'پوسترینو',
-          'creatorName': repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان',
-          'statusTag': 'جدید',
-          'statusColor': const Color(0xFF22C55E),
-          'reward': 50,
-          'typeLabel': 'تستی',
-          'createdDate': '15/08/1405',
-          'durationDays': 5,
-          'category': 'intra_group',
-          'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
-          'actionLabel': 'مشاهده',
-        },
-      ];
     }
 
     return list;

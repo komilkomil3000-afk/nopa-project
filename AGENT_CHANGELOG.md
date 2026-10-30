@@ -970,3 +970,169 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
 - **Status:** Completed
+
+### [2026-10-30 13:13] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Removed fake client-side notifications (addNotification calls in createChallenge/submitAssignment/rateMentor/reviewSubmission) so only server notifications are shown
+  - pass real createdAt so dates are not faked as today
+  - rewrote notification action button: single _classify() decides label and destination together (شرکت for new challenges, اصلاح for rejected answers, تکمیل for profile completion, مشاهده for informational)
+  - removed '/tickets' loop and body-keyword false matches
+  - news matched by exact title ignoring 📢 prefix
+  - informational messages just expand
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): No issues found
+- **Status:** Completed
+
+### [2026-10-30 13:21] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Notification button: mentors never get 'شرکت'
+  - new challenge -> مشاهده, new student answer -> بررسی
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): No issues found
+- **Status:** Completed
+
+### [2026-10-30 13:26] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Mentor challenges: removed fake sample challenge and hardcoded fake participants
+  - grading screen now loads real student answers (GET /mentor/challenges/:id/submissions), approve asks the mentor for the reward amount and calls PATCH /submissions/:id/review, send-back-for-revision sends feedback to the student
+  - mentor list status tags now come from students' answer counts (pending/approved/total added to ChallengeModel) instead of the mentor's own submission
+  - backend getChallenges now also returns admin challenges sent to all caravans for mentors and counts only their caravans' students
+  - getChallengeSubmissions scoped to the mentor's caravans
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found. Backend edits NOT type-checked (typescript not installed in admin_panel, node_modules missing)
+- **Status:** Completed
+
+### [2026-10-30 13:34] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Challenge reward range: Challenge gets rewardAssetType (zarik|nakh), rewardMin, rewardMax (schema + migration 20261032_challenge_reward_range)
+  - createChallenge validates and stores them
+  - submission review requires mentor amount within range, credits zarik or nakh accordingly and ledgers only zarik
+  - app: the mentor create-challenge dialog was a mock (only showed a toast) - now creates a real challenge via POST /challenges with min/max/asset (quiz type keeps fixed auto reward), blank form instead of canned text
+  - approve dialog shows the range, validates it, and asks a final confirmation before crediting
+  - added String.toEnglishDigits()
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found. Backend NOT type-checked and migration NOT applied (no node_modules; prisma generate + migrate deploy needed on the backend machine)
+- **Status:** Completed
+
+### [2026-10-30 13:53] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Added challenges_audit.md: full lifecycle analysis of challenges (creation to review/rewards), with severity-ranked findings
+- **Verification / Checkpoints Executed:**
+  - Documentation only; no code changed
+- **Status:** Completed
+
+### [2026-10-30 15:25] - Flutter App & LMS Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Audit 1.1/1.2: unified challenge quiz shape (type 'quiz', questions [{q, options, correct}]) across app, API and admin panel
+  - challengeController normalizes legacy step_by_step_quiz/question/correctIndex on create+update and submitQuiz accepts both
+  - admin panel select value and payload keys switched to quiz/q/correct
+  - ChallengeSubmissionDialog now steps through all questions (prev/next, all must be answered) and submits the full answers list. Verified stripAnswerKeys already hides both correct and correctIndex from students. No SQL migration needed (existing data is fake).
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/widgets/challenge_submission_dialog.dart (clean); node --check admin_panel/public/app.js; npx tsc --noEmit NOT run (admin_panel/node_modules missing)
+- **Status:** Completed
+
+### [2026-10-30 16:13] - Flutter App & LMS Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Quiz challenge submit now surfaces the server's real error message (new submitQuizChallengeWithError in api_service.dart
+  - used by ChallengeSubmissionDialog) instead of a generic failure toast
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files
+- **Status:** Completed

@@ -611,34 +611,23 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
     final List<Map<String, dynamic>> list = [];
-    final submissions = repository.submissions;
 
     for (var c in repository.challenges) {
-      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = 'none';
-      if (c.myStatus != null && c.myStatus != 'none') {
-        rawStatus = c.myStatus!;
-      } else if (localSub != null) {
-        rawStatus = localSub.status;
-      }
-
+      // Mentors never answer challenges: the tag reflects the review state of their students' answers
       final String statusTag;
       final Color statusColor;
-      if (rawStatus == 'approved' || rawStatus == 'completed') {
-        statusTag = 'تایید شده';
-        statusColor = const Color(0xFF22C55E);
-      } else if (rawStatus == 'pending') {
-        statusTag = 'در انتظار بررسی';
+      if (c.pendingSubmissions > 0) {
+        statusTag = '${c.pendingSubmissions.toString().toPersianDigits()} پاسخ در انتظار بررسی';
         statusColor = const Color(0xFFEAB308);
-      } else if (rawStatus == 'rejected') {
-        statusTag = 'نیاز به اصلاح';
-        statusColor = const Color(0xFFEF4444);
-      } else if (rawStatus == 'expired') {
+      } else if (c.totalSubmissions > 0) {
+        statusTag = 'بررسی شده';
+        statusColor = const Color(0xFF22C55E);
+      } else if (c.dueDate != null && DateTime.now().isAfter(c.dueDate!)) {
         statusTag = 'منقضی';
         statusColor = const Color(0xFF9E9AC0);
       } else {
-        statusTag = 'جدید';
-        statusColor = const Color(0xFF22C55E);
+        statusTag = 'بدون پاسخ';
+        statusColor = const Color(0xFF9E9AC0);
       }
 
       String category = 'intra_group'; // درون گروهی
@@ -656,32 +645,16 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardMin': c.rewardMin,
+        'rewardMax': c.rewardMax,
+        'rewardAsset': c.rewardAssetType,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
         'durationDays': c.durationDays ?? 5,
         'category': category,
         'desc': c.description,
-        'actionLabel': rawStatus == 'pending' ? 'بررسی پاسخ‌ها' : (rawStatus == 'rejected' ? 'ویرایش پاسخ' : 'مشاهده'),
+        'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
       });
-    }
-
-    if (list.isEmpty) {
-      return [
-        {
-          'id': 'm_ch_1',
-          'title': 'پوسترینو',
-          'creatorName': repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان',
-          'statusTag': 'جدید',
-          'statusColor': const Color(0xFF22C55E),
-          'reward': 50,
-          'typeLabel': 'تستی',
-          'createdDate': '15/08/1405',
-          'durationDays': 5,
-          'category': 'intra_group',
-          'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
-          'actionLabel': 'مشاهده',
-        },
-      ];
     }
 
     return list;
@@ -1115,17 +1088,17 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   void _showCreateChallengeDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
-    final questionCtrl = TextEditingController(text: 'وقتی استاد سر کلاس نمیاد چکار میکنید شما؟');
+    final titleCtrl = TextEditingController();
+    final questionCtrl = TextEditingController();
     final List<TextEditingController> optionControllers = [
-      TextEditingController(text: '۱. سوال نداره میریم خونه'),
-      TextEditingController(text: '۲. تکالیف جلسه بعد رو انجام میدیم'),
-      TextEditingController(text: '۳. با بچه‌ها تمرین مباحث قبلی رو انجام میدیم'),
-      TextEditingController(text: '۴. منتظر اعلام نماینده کلاس می‌مونیم'),
+      TextEditingController(text: '۱. '),
+      TextEditingController(text: '۲. '),
     ];
     int selectedCorrectOptionIndex = 0;
-    final rewardCtrl = TextEditingController(text: '100');
+    final rewardMinCtrl = TextEditingController();
+    final rewardMaxCtrl = TextEditingController();
     String selectedAsset = 'زریک';
+    bool submitting = false;
     String selectedType = 'چند گزینه ای';
     String selectedAudience = 'همه اعضا';
 
@@ -1186,7 +1159,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 2: نام کاروان
                         _buildContactDialogFieldRow(
                           label: 'نام کاروان:',
-                          child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
+                          child: _buildContactDialogValueText(user.caravanName ?? ''),
                         ),
                         const SizedBox(height: 12),
 
@@ -1200,88 +1173,100 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 4: تاریخ
                         _buildContactDialogFieldRow(
                           label: 'تاریخ:',
-                          child: _buildContactDialogValueText('1405/05/05'),
+                          child: _buildContactDialogValueText(_formatDate(DateTime.now())),
                         ),
                         const SizedBox(height: 12),
 
-                        // Field 5: جایزه (Amount + Asset)
-                        _buildContactDialogFieldRow(
-                          label: 'جایزه:',
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Container(
-                                  height: 36,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF7A709E),
-                                      width: 1.1,
+                        // Field 5: جایزه - the mentor sets a range now and picks the exact amount when approving
+                        if (selectedType == 'چند گزینه ای')
+                          _buildContactDialogFieldRow(
+                            label: 'جایزه:',
+                            child: const Text(
+                              'آزمون تستی خودکار تصحیح می‌شود و جایزه‌ی آن ثابت است.',
+                              style: TextStyle(
+                                color: Color(0xFF9E9AC0),
+                                fontSize: 11,
+                                fontFamily: AppTheme.fontFamily,
+                              ),
+                            ),
+                          )
+                        else
+                          _buildContactDialogFieldRow(
+                            label: 'جایزه:',
+                            child: Row(
+                              children: [
+                                for (final entry in [
+                                  ['حداقل', rewardMinCtrl],
+                                  ['حداکثر', rewardMaxCtrl],
+                                ]) ...[
+                                  Expanded(
+                                    flex: 3,
+                                    child: Container(
+                                      height: 36,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+                                      ),
+                                      child: TextField(
+                                        controller: entry[1] as TextEditingController,
+                                        textAlign: TextAlign.center,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 13,
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: entry[0] as String,
+                                          hintStyle: const TextStyle(
+                                            color: Color(0xFF8882A8),
+                                            fontSize: 11.5,
+                                            fontFamily: AppTheme.fontFamily,
+                                          ),
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: TextField(
-                                    controller: rewardCtrl,
-                                    textAlign: TextAlign.center,
-                                    keyboardType: TextInputType.number,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontSize: 13,
+                                  const SizedBox(width: 8),
+                                ],
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    height: 36,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
                                     ),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
+                                    alignment: Alignment.center,
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedAsset,
+                                        dropdownColor: const Color(0xFF2C2849),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 12,
+                                        ),
+                                        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                                        isExpanded: true,
+                                        items: ['زریک', 'نخ']
+                                            .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+                                            .toList(),
+                                        onChanged: (v) {
+                                          if (v != null) setDialogState(() => selectedAsset = v);
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: Container(
-                                  height: 36,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF7A709E),
-                                      width: 1.1,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: selectedAsset,
-                                      dropdownColor: const Color(0xFF2C2849),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.keyboard_arrow_down,
-                                        color: Color(0xFF9E9CD6),
-                                        size: 18,
-                                      ),
-                                      isExpanded: true,
-                                      items: ['زریک', 'نخ', 'فرش']
-                                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                                          .toList(),
-                                      onChanged: (v) {
-                                        if (v != null) setDialogState(() => selectedAsset = v);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
                         const SizedBox(height: 12),
 
                         // Field 6: نوع
@@ -1531,10 +1516,72 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           children: [
                             // ارسال (Right in RTL)
                             TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆');
-                              },
+                              onPressed: submitting
+                                  ? null
+                                  : () async {
+                                      final title = titleCtrl.text.trim();
+                                      final question = questionCtrl.text.trim();
+                                      final bool isQuiz = selectedType == 'چند گزینه ای';
+                                      if (title.isEmpty || question.isEmpty) {
+                                        AppToast.error(ctx, 'تیتر و متن سوال را وارد کنید.');
+                                        return;
+                                      }
+
+                                      List<Map<String, dynamic>>? questions;
+                                      if (isQuiz) {
+                                        final options = optionControllers
+                                            .map((c) => c.text.replaceFirst(RegExp(r'^[۰-۹0-9]+[.\-]\s*'), '').trim())
+                                            .toList();
+                                        if (options.any((o) => o.isEmpty)) {
+                                          AppToast.error(ctx, 'متن همه‌ی گزینه‌ها را وارد کنید.');
+                                          return;
+                                        }
+                                        questions = [
+                                          {'q': question, 'options': options, 'correct': selectedCorrectOptionIndex},
+                                        ];
+                                      }
+
+                                      int rewardMin = 0;
+                                      int rewardMax = 0;
+                                      if (!isQuiz) {
+                                        final min = int.tryParse(rewardMinCtrl.text.trim().toEnglishDigits());
+                                        final max = int.tryParse(rewardMaxCtrl.text.trim().toEnglishDigits());
+                                        if (min == null || max == null || min < 0 || max <= 0) {
+                                          AppToast.error(ctx, 'حداقل و حداکثر جایزه را به صورت عدد وارد کنید.');
+                                          return;
+                                        }
+                                        if (min > max) {
+                                          AppToast.error(ctx, 'حداقل جایزه نمی‌تواند از حداکثر بیشتر باشد.');
+                                          return;
+                                        }
+                                        rewardMin = min;
+                                        rewardMax = max;
+                                      }
+
+                                      final repository = Provider.of<AppRepository>(context, listen: false);
+                                      setDialogState(() => submitting = true);
+                                      final error = await HttpApiService().createChallengeError(ChallengeModel(
+                                        id: '',
+                                        title: title,
+                                        description: question,
+                                        rewardZarik: rewardMax,
+                                        type: isQuiz ? 'quiz' : (selectedType == 'فایلی' ? 'file' : 'text'),
+                                        questions: questions,
+                                        createdByMentorId: user.id,
+                                        rewardAssetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
+                                        rewardMin: rewardMin,
+                                        rewardMax: rewardMax,
+                                      ));
+                                      if (!context.mounted) return;
+                                      if (error != null) {
+                                        if (ctx.mounted) setDialogState(() => submitting = false);
+                                        AppToast.error(context, error);
+                                        return;
+                                      }
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      AppToast.success(context, 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
+                                      await repository.refreshChallenges();
+                                    },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),

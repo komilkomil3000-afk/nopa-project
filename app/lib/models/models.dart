@@ -25,6 +25,14 @@ class ChallengeModel {
   final String? category; // 'individual' (فردی), 'group' (گروهی), 'inter_group' (میان گروهی)
   final DateTime? createdAt;
   final int? durationDays;
+  // Answers of the viewer's own students (filled for mentors only)
+  // What an approved answer pays: 'zarik' or 'nakh', picked by the mentor between min and max (0/0 = fixed rewardZarik)
+  final String rewardAssetType;
+  final int rewardMin;
+  final int rewardMax;
+  final int totalSubmissions;
+  final int pendingSubmissions;
+  final int approvedSubmissions;
 
   ChallengeModel({
     required this.id,
@@ -51,6 +59,12 @@ class ChallengeModel {
     this.category,
     this.createdAt,
     this.durationDays,
+    this.rewardAssetType = 'zarik',
+    this.rewardMin = 0,
+    this.rewardMax = 0,
+    this.totalSubmissions = 0,
+    this.pendingSubmissions = 0,
+    this.approvedSubmissions = 0,
   });
 }
 

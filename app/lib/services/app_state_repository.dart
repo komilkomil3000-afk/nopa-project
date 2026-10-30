@@ -373,18 +373,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Notifications collections
   final List<Map<String, dynamic>> notifications = [];
 
-  void addNotification(String title, String body, {bool isForMentor = false}) {
-    notifications.insert(0, {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'title': title,
-      'body': body,
-      'isForMentor': isForMentor,
-      'isRead': false,
-      'time': 'الان',
-    });
-    notifyListeners();
-  }
-
   Future<void> fetchNotifications() async {
     try {
       final data = await _apiService.getNotifications();
@@ -417,6 +405,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
             'title': item['title'] ?? '',
             'body': item['message'] ?? '',
             'type': item['type'] ?? 'alert',
+            'createdAt': item['createdAt'],
             'isForMentor': isMentor,
             'isRead': item['isRead'] == true,
             'time': timeStr,
@@ -470,11 +459,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void createChallenge(ChallengeModel challenge) {
     challenges.insert(0, challenge);
-    addNotification(
-      'چالش جدید منتشر شد 🏆',
-      'راهبر کاروان چالش جدید "${challenge.title}" را ثبت کرد.',
-      isForMentor: false,
-    );
     notifyListeners();
   }
 
@@ -519,11 +503,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   void submitAssignment(SubmissionModel submission, {bool persist = true}) {
     submissions.removeWhere((s) => s.challengeId == submission.challengeId);
     submissions.insert(0, submission);
-    addNotification(
-      'پاسخ جدید دریافت شد 📝',
-      'دانش‌آموز "${submission.studentName}" پاسخی برای چالش ثبت کرد.',
-      isForMentor: true,
-    );
     notifyListeners();
 
     // Persist to backend and reload live challenges with new status
@@ -556,11 +535,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       mentorData[mentorId]!['rating'] = double.parse(calculated.toStringAsFixed(1));
     }
 
-    addNotification(
-      'ارزیابی جدید ثبت شد ⭐',
-      'یک عضو کاروان ارزیابی عملکرد جدیدی با امتیاز $rating ثبت کرد.',
-      isForMentor: true,
-    );
 
     notifyListeners();
   }
@@ -589,13 +563,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
 
-      addNotification(
-        approved ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
-        approved 
-            ? 'پاسخ شما به چالش تایید شد و ${reward.toInt()} زریک و ۱ نخ به شما اهدا گردید.' 
-            : 'پاسخ شما به چالش رد شد. فیدبک را بررسی کنید.',
-        isForMentor: false,
-      );
 
       notifyListeners();
     }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -82,24 +81,108 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     return '$y/$m/$d'.toPersianDigits();
   }
 
-  String _resolveActionLabel(Map<String, dynamic> notify) {
-    final String title = notify['title'] ?? '';
-    final String body = notify['body'] ?? '';
-    final String type = notify['type'] ?? '';
+  /// One decision for a notification: the button label and where the button leads.
+  /// Label and destination come from the same place so they can never disagree.
+  _NotifAction _classify(Map<String, dynamic> notify, {required bool isMentor}) {
+    final String title = notify['title']?.toString() ?? '';
+    final String type = notify['type']?.toString() ?? '';
 
-    if (title.contains('تکمیل پروفایل') || body.contains('تکمیل پروفایل') || title.contains('پروفایل')) {
-      return 'تکمیل';
+    if (type == 'news' || title.startsWith('📢')) {
+      return const _NotifAction('مشاهده', _NotifTarget.news);
     }
-    if (type == 'challenge' || title.contains('چالش') || body.contains('چالش')) {
-      return 'مشاهده';
+    if (type == 'profile_completion' ||
+        (title.contains('تکمیل پروفایل') && !title.contains('پاداش'))) {
+      return const _NotifAction('تکمیل', _NotifTarget.profile);
     }
-    if (title.contains('کلاس') || title.contains('منزلگاه') || body.contains('کلاس') || body.contains('منزلگاه')) {
-      return 'ورود';
+    // Mentors never take part in challenges: they review the students' answers
+    if (isMentor && (title.contains('پاسخ جدید') || type == 'challenge')) {
+      return _NotifAction(title.contains('پاسخ جدید') ? 'بررسی' : 'مشاهده', _NotifTarget.challenges);
     }
-    if (title.contains('بازارچه') || title.contains('فروشگاه') || title.contains('سکه')) {
-      return 'مشاهده';
+    // A rejected answer is the only challenge message that asks the student to act again
+    if (title.contains('تکلیف رد شد')) {
+      return const _NotifAction('اصلاح', _NotifTarget.challenges);
     }
-    return 'مشاهده';
+    // A newly announced challenge: the user is expected to take part
+    if (type == 'challenge') {
+      return const _NotifAction('شرکت', _NotifTarget.challenges);
+    }
+    if (title.contains('کلاس')) {
+      return const _NotifAction('مشاهده', _NotifTarget.academy);
+    }
+    if (title.contains('تکلیف') || title.contains('پاسخ جدید') || title.contains('آزمون')) {
+      return const _NotifAction('مشاهده', _NotifTarget.challenges);
+    }
+    if (title.contains('مبادله')) {
+      return const _NotifAction('مشاهده', _NotifTarget.market);
+    }
+    if (title.contains('ارزیابی')) {
+      return const _NotifAction('مشاهده', _NotifTarget.league);
+    }
+    if (title.contains('پروفایل') ||
+        title.contains('گواهینامه') ||
+        title.contains('پاداش') ||
+        title.contains('کسر موجودی') ||
+        title.contains('ارتقای سطح')) {
+      return const _NotifAction('مشاهده', _NotifTarget.profile);
+    }
+    // Informational only (e.g. a caravan leader's message): just open the text
+    return const _NotifAction('مشاهده', _NotifTarget.none);
+  }
+
+  bool get _isMentor {
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    return role == UserRole.mentor || role == UserRole.superMentor;
+  }
+
+  String _resolveActionLabel(Map<String, dynamic> notify) => _classify(notify, isMentor: _isMentor).label;
+
+  void _goToTab(int index) {
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    navigateToMainTab(index);
+  }
+
+  Future<void> _showNews(Map<String, dynamic> notify) async {
+    // Server titles carry a "📢 " prefix that the news article itself does not have
+    final String title = (notify['title']?.toString() ?? '').replaceFirst('📢', '').trim();
+    final String body = notify['body']?.toString() ?? '';
+    const fallbackImage = 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
+
+    try {
+      final newsList = await HttpApiService().getNews();
+      Map<String, dynamic>? matched;
+      for (final n in newsList) {
+        final nTitle = n['title']?.toString() ?? '';
+        if (nTitle.isNotEmpty && nTitle == title) {
+          matched = n;
+          break;
+        }
+      }
+
+      String imageUrl = fallbackImage;
+      if (matched?['imageUrl'] != null) {
+        imageUrl = '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${matched!['imageUrl']}';
+      }
+      if (!mounted) return;
+      JarchiItem.showNewsDialog(
+        context,
+        title: matched?['title'] ?? title,
+        date: _formatDate(matched?['createdAt'] ?? notify['createdAt'], notify['time']),
+        imageUrl: imageUrl,
+        content: matched?['body'] ?? body,
+        link: matched?['reporter'],
+      );
+    } catch (_) {
+      if (!mounted) return;
+      JarchiItem.showNewsDialog(
+        context,
+        title: title,
+        date: _formatDate(notify['createdAt'], notify['time']),
+        imageUrl: fallbackImage,
+        content: body,
+      );
+    }
   }
 
   Future<void> _handleActionClick(Map<String, dynamic> notify, AppRepository repository) async {
@@ -108,156 +191,23 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       await repository.markNotificationAsRead(notifId);
     }
 
-    final String title = notify['title'] ?? '';
-    final String body = notify['body'] ?? '';
-    final String type = notify['type'] ?? '';
-
-    // 1. News / جارچی اطلاعیه‌ها
-    if (type == 'news' ||
-        title.contains('خبر') ||
-        body.contains('خبر') ||
-        title.contains('اطلاعیه') ||
-        title.contains('جارچی')) {
-      try {
-        final newsList = await HttpApiService().getNews();
-        Map<String, dynamic>? matched;
-        for (final n in newsList) {
-          final nTitle = n['title']?.toString() ?? '';
-          if (nTitle.isNotEmpty &&
-              (title.contains(nTitle) ||
-                  nTitle.contains(title.trim()))) {
-            matched = n;
-            break;
-          }
+    switch (_classify(notify, isMentor: _isMentor).target) {
+      case _NotifTarget.news:
+        await _showNews(notify);
+      case _NotifTarget.profile:
+        _goToTab(4);
+      case _NotifTarget.challenges:
+        _goToTab(2);
+      case _NotifTarget.academy:
+        _goToTab(1);
+      case _NotifTarget.market:
+        _goToTab(3);
+      case _NotifTarget.league:
+        if (mounted) Navigator.pushNamed(context, '/mentor_league');
+      case _NotifTarget.none:
+        if (mounted && notifId.isNotEmpty) {
+          setState(() => _expandedItemIds.add(notifId));
         }
-
-        final String itemTitle = matched?['title'] ?? title;
-        final String itemContent = matched?['body'] ?? body;
-        final String? link = matched?['reporter'];
-        String imageUrl =
-            'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
-        if (matched?['imageUrl'] != null) {
-          imageUrl =
-              '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${matched!['imageUrl']}';
-        }
-        final dateStr = _formatDate(matched?['createdAt'], notify['time']);
-
-        if (mounted) {
-          JarchiItem.showNewsDialog(
-            context,
-            title: itemTitle,
-            date: dateStr,
-            imageUrl: imageUrl,
-            content: itemContent,
-            link: link,
-          );
-        }
-      } catch (_) {
-        if (mounted) {
-          JarchiItem.showNewsDialog(
-            context,
-            title: title,
-            date: _formatDate(null, notify['time']),
-            imageUrl:
-                'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400',
-            content: body,
-          );
-        }
-      }
-      return;
-    }
-
-    // 2. Complete Profile / تکمیل پروفایل و مشخصات
-    if (title.contains('تکمیل پروفایل') ||
-        body.contains('تکمیل پروفایل') ||
-        title.contains('تکمیل مشخصات') ||
-        body.contains('تکمیل مشخصات') ||
-        title.contains('پروفایل') ||
-        body.contains('پروفایل') ||
-        title.contains('مشخصات') ||
-        body.contains('مشخصات')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(4); // Profile tab for both student & mentor
-      return;
-    }
-
-    // 3. Challenge / Message / چالش و پیام‌ها و پاسخ‌ها
-    if (type == 'challenge' ||
-        type == 'message' ||
-        title.contains('چالش') ||
-        body.contains('چالش') ||
-        title.contains('پیام') ||
-        body.contains('پیام') ||
-        title.contains('پاسخ') ||
-        body.contains('پاسخ') ||
-        title.contains('تایید شد') ||
-        title.contains('رد شد')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(2); // Challenges / Messages tab for both student & mentor
-      return;
-    }
-
-    // 4. Tickets / تیکت‌ها و پشتیبانی
-    if (title.contains('تیکت') ||
-        body.contains('تیکت') ||
-        title.contains('پشتیبانی')) {
-      if (mounted) {
-        Navigator.pushNamed(context, '/tickets');
-      }
-      return;
-    }
-
-    // 5. Market / فروشگاه / زریک / سکه / مبادلات
-    if (title.contains('فروشگاه') ||
-        body.contains('فروشگاه') ||
-        title.contains('سکه') ||
-        body.contains('زریک') ||
-        title.contains('بازار') ||
-        body.contains('بازار') ||
-        title.contains('مبادله') ||
-        body.contains('مبادله') ||
-        title.contains('نرخ') ||
-        body.contains('نرخ')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(3); // Market tab for both student & mentor
-      return;
-    }
-
-    // 6. Map / Stations / کلاس و منزلگاه / آموزگاه
-    if (title.contains('منزلگاه') ||
-        title.contains('کلاس') ||
-        title.contains('ایستگاه') ||
-        title.contains('آموزگاه') ||
-        body.contains('منزلگاه') ||
-        body.contains('کلاس') ||
-        body.contains('آموزگاه') ||
-        title.contains('نقشه')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(1); // Stations / Classes / MentorStation tab for both
-      return;
-    }
-
-    // 7. Ratings / League / کارنامه
-    if (title.contains('ارزیابی') ||
-        title.contains('کارنامه') ||
-        title.contains('لیگ')) {
-      if (mounted) {
-        Navigator.pushNamed(context, '/mentor_league');
-      }
-      return;
-    }
-
-    // Default feedback
-    if (mounted) {
-      AppToast.info(context, 'پیام با موفقیت بررسی و باز شد.');
     }
   }
 
@@ -834,3 +784,11 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
 
 typedef NotificationsScreen = StudentNotificationsScreen;
+
+enum _NotifTarget { news, profile, challenges, academy, market, league, none }
+
+class _NotifAction {
+  final String label;
+  final _NotifTarget target;
+  const _NotifAction(this.label, this.target);
+}

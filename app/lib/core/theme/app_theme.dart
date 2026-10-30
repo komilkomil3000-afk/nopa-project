@@ -89,6 +89,17 @@ extension PersianNumberExtension on String {
 
   /// Short alias for toPersianDigits()
   String toPersian() => toPersianDigits();
+
+  /// Converts Persian (۰-۹) and Arabic-Indic (٠-٩) digits to English digits, e.g. before int.tryParse
+  String toEnglishDigits() {
+    const farsi = '۰۱۲۳۴۵۶۷۸۹';
+    const arabic = '٠١٢٣٤٥٦٧٨٩';
+    String result = this;
+    for (int i = 0; i < 10; i++) {
+      result = result.replaceAll(farsi[i], '$i').replaceAll(arabic[i], '$i');
+    }
+    return result;
+  }
 }
 
 extension PersianNumExtension on num {

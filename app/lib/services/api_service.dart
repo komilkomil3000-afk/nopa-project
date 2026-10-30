@@ -799,6 +799,12 @@ class HttpApiService {
               category: category,
               createdAt: createdAt,
               durationDays: durationDays,
+              rewardAssetType: json['rewardAssetType']?.toString() == 'nakh' ? 'nakh' : 'zarik',
+              rewardMin: (json['rewardMin'] as num?)?.toInt() ?? 0,
+              rewardMax: (json['rewardMax'] as num?)?.toInt() ?? 0,
+              totalSubmissions: (json['totalSubmissions'] as num?)?.toInt() ?? 0,
+              pendingSubmissions: (json['pendingSubmissions'] as num?)?.toInt() ?? 0,
+              approvedSubmissions: (json['approvedSubmissions'] as num?)?.toInt() ?? 0,
             ));
             } catch (e) {
               // One malformed challenge must not hide all the others
@@ -834,6 +840,32 @@ class HttpApiService {
       return null;
     }
   }
+
+  /// Same as [submitQuizChallenge] but also returns the server's error message (null on success).
+  Future<({Map<String, dynamic>? result, String? error})> submitQuizChallengeWithError(
+    String challengeId,
+    List<int> answers,
+  ) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/challenges/$challengeId/submit-quiz'),
+        headers: _getHeaders(),
+        body: jsonEncode({'answers': answers}),
+      );
+      if (response.statusCode == 200) {
+        return (result: (await parseJsonAsync(response.body)) as Map<String, dynamic>?, error: null);
+      }
+      String? message;
+      try {
+        message = (jsonDecode(response.body) as Map)['error']?.toString();
+      } catch (_) {}
+      return (result: null, error: message ?? 'خطای سرور (${response.statusCode})');
+    } catch (e) {
+      debugPrint('HTTP submitQuizChallengeWithError error: $e');
+      return (result: null, error: 'ارتباط با سرور برقرار نشد.');
+    }
+  }
+
   String resolveMediaUrl(String url) {
     return ApiConstants.resolveImageUrl(url);
   }
@@ -1635,7 +1667,7 @@ class HttpApiService {
   }
 
   // --- Create Challenge ---
-  Future<bool> createChallenge(ChallengeModel challenge) async {
+  Future<String?> createChallengeError(ChallengeModel challenge) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/challenges'),
@@ -1644,14 +1676,19 @@ class HttpApiService {
           'title': challenge.title,
           'description': challenge.description,
           'rewardZarik': challenge.rewardZarik,
+          'rewardAssetType': challenge.rewardAssetType,
+          'rewardMin': challenge.rewardMin,
+          'rewardMax': challenge.rewardMax,
           'type': challenge.type,
           if (challenge.questions != null) 'questions': challenge.questions,
         }),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) return null;
+      final d = await parseJsonAsync(response.body);
+      return d?['error']?.toString() ?? 'ثبت چالش انجام نشد';
     } catch (e) {
       debugPrint('HTTP createChallenge error: $e');
-      return false;
+      return 'خطای ارتباط با سرور';
     }
   }
 

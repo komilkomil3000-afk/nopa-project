@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
+import 'package:shamsi_date/shamsi_date.dart';
+import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
@@ -22,73 +24,81 @@ class MentorChallengeGradingScreen extends StatefulWidget {
 }
 
 class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScreen> {
-  final Set<String> _expandedParticipantIds = {'part_1'};
+  final Set<String> _expandedParticipantIds = {};
 
-  late List<Map<String, dynamic>> _participants;
+  List<Map<String, dynamic>> _participants = [];
+  bool _loading = true;
+  bool _loadFailed = false;
 
   @override
   void initState() {
     super.initState();
-    _participants = _generateInitialParticipants();
+    _loadParticipants();
   }
 
-  List<Map<String, dynamic>> _generateInitialParticipants() {
-    final typeLabel = widget.challenge['typeLabel']?.toString() ?? 'تستی';
-    final createdDate = widget.challenge['createdDate']?.toString() ?? '15/08/1405';
+  String _jalali(dynamic value) {
+    final dt = value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');
+    if (dt == null) return '';
+    final j = Jalali.fromDateTime(dt.toLocal());
+    return '${j.year}/${j.month.toString().padLeft(2, '0')}/${j.day.toString().padLeft(2, '0')}'.toPersianDigits();
+  }
 
-    return [
-      {
-        'id': 'part_1',
-        'name': 'محمد حسینی',
-        'typeLabel': typeLabel,
-        'createdDate': createdDate,
-        'answerDate': '15/08/1405',
-        'questionText': 'وقتی معلم نیاد سر کلاس دقیقا چیکار میکنی؟',
-        'userAnswer': '۱. سوال نذاره میریم خونه',
-        'status': 'pending', // 'pending', 'approved', 'needs_revision'
-        'feedback': '',
-      },
-      {
-        'id': 'part_2',
-        'name': 'علی رضایی',
-        'typeLabel': typeLabel,
-        'createdDate': createdDate,
-        'answerDate': '15/08/1405',
-        'questionText': 'وقتی معلم نیاد سر کلاس دقیقا چیکار میکنی؟',
-        'userAnswer': '۲. تکالیف جلسه بعد رو انجام میدیم',
-        'status': 'pending',
-        'feedback': '',
-      },
-      {
-        'id': 'part_3',
-        'name': 'زهرا محمدی',
-        'typeLabel': typeLabel,
-        'createdDate': createdDate,
-        'answerDate': '14/08/1405',
-        'questionText': 'وقتی معلم نیاد سر کلاس دقیقا چیکار میکنی؟',
-        'userAnswer': '۳. با بچه‌ها تمرین مباحث قبلی رو انجام میدیم',
-        'status': 'approved',
-        'feedback': '',
-      },
-      {
-        'id': 'part_4',
-        'name': 'مهدی صادقی',
-        'typeLabel': typeLabel,
-        'createdDate': createdDate,
-        'answerDate': '14/08/1405',
-        'questionText': 'وقتی معلم نیاد سر کلاس دقیقا چیکار میکنی؟',
-        'userAnswer': '۴. منتظر اعلام نماینده کلاس می‌مونیم',
-        'status': 'needs_revision',
-        'feedback': 'پاسخ ارسالی نیاز به توضیح تکمیلی دارد.',
-      },
-    ];
+  /// The server keeps 'pending' / 'approved' / 'rejected'; the card uses 'needs_revision' for the last one.
+  String _uiStatus(dynamic raw) {
+    switch (raw?.toString().toLowerCase()) {
+      case 'approved':
+      case 'completed':
+        return 'approved';
+      case 'rejected':
+        return 'needs_revision';
+      default:
+        return 'pending';
+    }
+  }
+
+  Future<void> _loadParticipants() async {
+    final challengeId = widget.challenge['id']?.toString() ?? '';
+    final typeLabel = widget.challenge['typeLabel']?.toString() ?? '';
+    final createdDate = widget.challenge['createdDate']?.toString() ?? '';
+    final question = (widget.challenge['desc'] ?? widget.challenge['description'] ?? '').toString();
+
+    try {
+      final list = await HttpApiService().getChallengeSubmissions(challengeId);
+      if (!mounted) return;
+      setState(() {
+        _participants = list.map((sub) {
+          final answer = (sub['answerText'] ?? '').toString();
+          final fileUrl = (sub['fileUrl'] ?? '').toString();
+          return <String, dynamic>{
+            'id': sub['id']?.toString() ?? '',
+            'name': sub['student']?['name']?.toString() ?? 'عضو کاروان',
+            'typeLabel': typeLabel,
+            'createdDate': createdDate,
+            'answerDate': _jalali(sub['submittedAt']),
+            'questionText': question,
+            'userAnswer': answer.isNotEmpty ? answer : (fileUrl.isNotEmpty ? 'فایل پیوست' : ''),
+            'status': _uiStatus(sub['status']),
+            'feedback': sub['mentorFeedback']?.toString() ?? '',
+            'score': sub['score'],
+          };
+        }).toList();
+        _loading = false;
+        _loadFailed = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadFailed = true;
+      });
+    }
   }
 
   void _showRevisionDialog(Map<String, dynamic> participant) {
     final name = participant['name']?.toString() ?? '';
     final subjectCtrl = TextEditingController(text: 'اصلاح پاسخ چالش');
     final explanationCtrl = TextEditingController();
-    final dateStr = '1405/05/05';
+    final dateStr = _jalali(DateTime.now());
 
     showDialog(
       context: context,
@@ -232,13 +242,28 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TextButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            final feedback = explanationCtrl.text.trim();
+                            if (feedback.isEmpty) {
+                              AppToast.error(ctx, 'لطفاً توضیح اصلاح را بنویسید.');
+                              return;
+                            }
                             Navigator.pop(ctx);
-                            setState(() {
-                              participant['status'] = 'needs_revision';
-                              participant['feedback'] = explanationCtrl.text.trim();
-                            });
-                            AppToast.info(context, 'پیام اصلاحیه با موفقیت برای $name ارسال شد ✉️');
+                            final res = await HttpApiService().reviewSubmission(
+                              participant['id'].toString(),
+                              status: 'rejected',
+                              mentorFeedback: feedback,
+                            );
+                            if (!mounted) return;
+                            if (res['success'] == true) {
+                              setState(() {
+                                participant['status'] = 'needs_revision';
+                                participant['feedback'] = feedback;
+                              });
+                              AppToast.info(context, 'پاسخ برای اصلاح به $name بازگردانده شد');
+                            } else {
+                              AppToast.error(context, res['error']?.toString() ?? 'ثبت انجام نشد');
+                            }
                           },
                           child: const Text(
                             'ارسال',
@@ -274,15 +299,125 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     );
   }
 
-  void _approveParticipant(Map<String, dynamic> participant) {
+  int get _rewardMin => int.tryParse(widget.challenge['rewardMin']?.toString() ?? '') ?? 0;
+  int get _rewardMax => int.tryParse(widget.challenge['rewardMax']?.toString() ?? '') ?? 0;
+  String get _assetLabel => widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'نخ' : 'زریک';
+
+  Future<void> _approveParticipant(Map<String, dynamic> participant) async {
     final name = participant['name']?.toString() ?? '';
-    final reward = widget.challenge['reward'] ?? 50;
+    final int min = _rewardMin;
+    final int max = _rewardMax;
+    final bool hasRange = max > 0;
+    final int fixedReward = int.tryParse(widget.challenge['reward']?.toString() ?? '') ?? 0;
+    final rewardCtrl = TextEditingController(text: (hasRange ? max : fixedReward).toString());
+    final String asset = _assetLabel;
 
-    setState(() {
-      participant['status'] = 'approved';
-    });
+    final int? reward = await showDialog<int>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF2C274A),
+          title: Text(
+            'تایید پاسخ $name',
+            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                hasRange
+                    ? 'مقدار $asset را بین ${min.toPersianDigits()} و ${max.toPersianDigits()} تعیین کنید:'
+                    : 'مقدار $asset که به حساب این عضو اضافه می‌شود را تعیین کنید:',
+                style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11.5, color: Color(0xFFC7C5DD)),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: rewardCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  isDense: true,
+                  suffixText: asset,
+                  suffixStyle: const TextStyle(color: Color(0xFFDFB690), fontFamily: AppTheme.fontFamily),
+                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
+                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC09268))),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                final v = int.tryParse(rewardCtrl.text.trim().toEnglishDigits());
+                if (v == null || v < 0) {
+                  AppToast.error(ctx, 'مقدار نامعتبر است.');
+                  return;
+                }
+                if (hasRange && (v < min || v > max)) {
+                  AppToast.error(ctx, 'مقدار باید بین ${min.toPersianDigits()} و ${max.toPersianDigits()} باشد.');
+                  return;
+                }
+                Navigator.pop(ctx, v);
+              },
+              child: const Text('ادامه', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (reward == null || !mounted) return;
 
-    AppToast.success(context, 'پاسخ $name تایید شد و $reward زریک جایزه به وی اهدا گردید 🏆');
+    // Final confirmation: nothing is credited until the mentor explicitly agrees
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF2C274A),
+          title: const Text(
+            'تایید نهایی',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+          ),
+          content: Text(
+            'با تایید شما ${reward.toPersianDigits()} $asset به حساب $name اضافه می‌شود و این کار قابل بازگشت نیست. ادامه می‌دهید؟',
+            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, height: 1.6, color: Color(0xFFC7C5DD)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('تایید و ثبت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('بازگشت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final res = await HttpApiService().reviewSubmission(
+      participant['id'].toString(),
+      status: 'approved',
+      score: reward,
+    );
+    if (!mounted) return;
+    if (res['success'] == true) {
+      setState(() {
+        participant['status'] = 'approved';
+        participant['score'] = reward;
+      });
+      AppToast.success(context, '${reward.toPersianDigits()} $asset به حساب $name اضافه شد');
+    } else {
+      AppToast.error(context, res['error']?.toString() ?? 'ثبت انجام نشد');
+    }
   }
 
   Widget _buildDialogRow(String label, String value) {
@@ -327,12 +462,13 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context, listen: false);
     final currentUser = widget.user ?? repository.currentUser;
-    final caravanName = currentUser.caravanName ?? 'کاروان پنجم رضا جلالی';
-    final challengeTitle = widget.challenge['title']?.toString() ?? 'پوسترینو';
-    final challengeType = widget.challenge['typeLabel']?.toString() ?? 'چند گزینه‌ای';
-    final challengeReward = widget.challenge['reward']?.toString() ?? '100';
-    final challengeDescription = widget.challenge['description']?.toString() ??
-        'پوستر مربوط به جلسه آموزش طراحی کاروان را آماده و ارسال نمایید.';
+    final caravanName = currentUser.caravanName ?? '';
+    final challengeTitle = widget.challenge['title']?.toString() ?? '';
+    final challengeType = widget.challenge['typeLabel']?.toString() ?? '';
+    final challengeReward = _rewardMax > 0
+        ? '${_rewardMin.toPersianDigits()} تا ${_rewardMax.toPersianDigits()}'
+        : (widget.challenge['reward'] ?? 0).toString().toPersianDigits();
+    final challengeDescription = (widget.challenge['desc'] ?? widget.challenge['description'] ?? '').toString();
 
     return AppScaffold(
       showBackButton: true,
@@ -393,7 +529,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               ),
                             ),
                             Text(
-                              '$challengeReward زریک',
+                              '$challengeReward $_assetLabel',
                               style: const TextStyle(
                                 fontFamily: AppTheme.fontFamily,
                                 fontSize: 13,
@@ -498,7 +634,29 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
               const SizedBox(height: 10),
 
               // Participants Submissions List (Styled like گزارش آموزشی اعضا در آموزگاه راهبران)
-              if (_participants.isEmpty)
+              if (_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: CircularProgressIndicator(color: Color(0xFFCD8449))),
+                )
+              else if (_loadFailed)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _loading = true;
+                          _loadFailed = false;
+                        });
+                        _loadParticipants();
+                      },
+                      child: const Text('دریافت پاسخ‌ها ناموفق بود؛ تلاش دوباره',
+                          style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFDFB690))),
+                    ),
+                  ),
+                )
+              else if (_participants.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 32),
                   child: Center(
@@ -547,9 +705,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
   }) {
     final name = item['name'] ?? '';
     final status = item['status'] ?? 'pending';
-    final typeLabel = item['typeLabel'] ?? 'تستی';
-    final createdDate = item['createdDate'] ?? '15/08/1405';
-    final answerDate = item['answerDate'] ?? '15/08/1405';
+    final typeLabel = item['typeLabel'] ?? '';
+    final createdDate = item['createdDate'] ?? '';
+    final answerDate = item['answerDate'] ?? '';
     final questionText = item['questionText'] ?? '';
     final userAnswer = item['userAnswer'] ?? '';
 
