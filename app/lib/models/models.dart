@@ -1,6 +1,15 @@
+import 'package:nopa_app/core/asset_names.dart';
 export 'user_model.dart';
 
 class ChallengeModel {
+  /// Reward as shown on a card: "+۱۰ تا ۵۰ کلاف", or the banner for inter-group challenges.
+  String get rewardLabel {
+    if (rewardAssetType == 'derafsh' || category == 'inter_group') return AssetNames.of('derafsh');
+    final unit = AssetNames.of(rewardAssetType == 'nakh' ? 'nakh' : 'zarik');
+    final amount = rewardMax > 0 ? (rewardMin == rewardMax ? '$rewardMax' : '$rewardMin تا $rewardMax') : '$rewardZarik';
+    return '+$amount $unit';
+  }
+
   /// Remaining time as plain text: "بدون مهلت", "پایان یافته", "کمتر از یک روز" or "N روز مانده" (ASCII digits).
   String get deadlineLabel {
     final due = dueDate;

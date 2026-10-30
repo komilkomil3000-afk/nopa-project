@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -523,10 +524,10 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('زریک'), user.zarik.toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox(AssetNames.labelFor('درفش'), user.beyragh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('کلاف'), user.nakh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('قالیچه'), user.farsh.toPersian(), const Color(0xFF9292E2)),
                       ],
                     ),
                   ],

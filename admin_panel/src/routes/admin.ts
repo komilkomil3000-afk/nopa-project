@@ -45,6 +45,8 @@ import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, create
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
+import { listAssetTypes, updateAssetType } from '../controllers/assetController';
+import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -139,6 +141,10 @@ router.post('/challenges', createChallenge as any);
 router.put('/challenges/:id', updateChallenge as any);
 router.patch('/challenges/:id', updateChallenge as any);
 router.delete('/challenges/:id', deleteChallenge as any);
+router.get('/challenges/:id/ranking', getChallengeRanking as any);
+router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
+router.get('/assets', listAssetTypes as any);
+router.put('/assets/:key', updateAssetType as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
 router.patch('/submissions/:id/review', reviewSubmission as any);

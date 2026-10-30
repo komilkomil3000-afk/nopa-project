@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
@@ -1230,10 +1231,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAssetBox('زریک', member.zarikBalance.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox('درفش', member.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('نخ', member.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('فرش', member.farsh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('زریک'), member.zarikBalance.toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox(AssetNames.labelFor('درفش'), member.beyragh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('کلاف'), member.nakh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('قالیچه'), member.farsh.toPersian(), const Color(0xFF9292E2)),
                       ],
                     ),
                   ],

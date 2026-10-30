@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
@@ -393,7 +394,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
 
   int get _rewardMin => int.tryParse(widget.challenge['rewardMin']?.toString() ?? '') ?? 0;
   int get _rewardMax => int.tryParse(widget.challenge['rewardMax']?.toString() ?? '') ?? 0;
-  String get _assetLabel => widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'نخ' : 'زریک';
+  String get _assetLabel => AssetNames.of(widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'nakh' : 'zarik');
 
   /// The creator's view of the questions: options with the correct one marked.
   List<Widget> _buildQuestionsView() {
@@ -666,7 +667,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               ),
                             ),
                             Text(
-                              '$challengeReward $_assetLabel',
+                              widget.challenge['category'] == 'inter_group' ? AssetNames.of('derafsh') : '$challengeReward $_assetLabel',
                               style: const TextStyle(
                                 fontFamily: AppTheme.fontFamily,
                                 fontSize: 13,

@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
@@ -128,6 +129,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'title': c.title,
         'desc': c.description,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'type': c.type,
         'status': status,
         'category': category,
@@ -174,7 +176,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
       context,
       result.isQuiz
           ? (result.rewardAmount > 0
-              ? 'پاسخ شما ثبت شد؛ +${result.rewardAmount.toString().toPersianDigits()} ${result.rewardAsset == 'nakh' ? 'نخ' : 'زریک'} به حساب شما اضافه شد'
+              ? 'پاسخ شما ثبت شد؛ +${result.rewardAmount.toString().toPersianDigits()} ${AssetNames.of(result.rewardAsset == 'nakh' ? 'nakh' : 'zarik')} به حساب شما اضافه شد'
               : 'پاسخ شما ثبت شد')
           : 'پاسخ شما ارسال شد و در انتظار بررسی راهبر است',
     );
@@ -217,6 +219,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'rewardMin': c.rewardMin,
         'rewardMax': c.rewardMax,
         'rewardAsset': c.rewardAssetType,
@@ -621,7 +624,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -814,7 +817,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                         size: 18,
                                       ),
                                       isExpanded: true,
-                                      items: ['زریک', 'نخ', 'فرش']
+                                      items: ['زریک', 'کلاف', 'قالیچه']
                                           .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                                           .toList(),
                                       onChanged: (v) {
@@ -1659,7 +1662,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,

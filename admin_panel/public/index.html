@@ -421,6 +421,11 @@
           <!-- Adjustments and Analytics -->
           <div>
             <div class="panel-card glass" style="margin-bottom: 20px;">
+              <div class="panel-title"><i class="fa-solid fa-tags" style="color: #38bdf8; margin-left: 8px;"></i>نام دارایی‌ها</div>
+              <div style="font-size: 12px; color: #94a3b8; margin: 4px 0 12px;">این نام‌ها در اپ و پیام‌های سیستم نمایش داده می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.</div>
+              <div id="asset-names-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;"></div>
+            </div>
+            <div class="panel-card glass" style="margin-bottom: 20px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <div class="panel-title" style="margin: 0;"><i class="fa-solid fa-trophy" style="color: #fbbf24; margin-left: 8px;"></i>مرکز لیگ و رتبه‌بندی جامع پلتفرم</div>
                 <div class="pill-nav" style="display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
@@ -435,13 +440,13 @@
                   <div><div class="stat-label">کل زریک پلتفرم</div><div class="stat-value" id="eco-zarik" style="font-size:18px; color:#fbbf24;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل نخ</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
+                  <div><div class="stat-label">کل کلاف</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل فرش</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
+                  <div><div class="stat-label">کل قالیچه</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
+                  <div><div class="stat-label">کل درفش</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
                 </div>
               </div>
 
@@ -452,9 +457,9 @@
                   <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" onchange="applyLeagueFilters()">
                     <option value="totalScore">کل امتیازات (جام زرین)</option>
                     <option value="zarik">زریک</option>
-                    <option value="beyragh">بیرق</option>
-                    <option value="nakh">نخ</option>
-                    <option value="farsh">فرش</option>
+                    <option value="beyragh">درفش</option>
+                    <option value="nakh">کلاف</option>
+                    <option value="farsh">قالیچه</option>
                     <option value="stars">ستاره‌ها و آزمون‌ها</option>
                     <option value="quizScore">نمره آزمون‌ها</option>
                     <option value="challengeScore">امتیاز چالش‌ها</option>
@@ -509,9 +514,9 @@
                         <th>راهبر</th>
                         <th style="text-align: center;">اعضا</th>
                         <th style="color: #fbbf24;">زریک</th>
-                        <th style="color: #a78bfa;">نخ</th>
-                        <th style="color: #ef4444;">فرش</th>
-                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #a78bfa;">کلاف</th>
+                        <th style="color: #ef4444;">قالیچه</th>
+                        <th style="color: #3b82f6;">درفش</th>
                         <th style="color: #f59e0b;">ستاره/آزمون</th>
                         <th>امتیاز چالش</th>
                         <th>پیشرفت کلاس</th>
@@ -537,9 +542,9 @@
                         <th>نقش</th>
                         <th>کاروان</th>
                         <th style="color: #fbbf24;">زریک</th>
-                        <th style="color: #a78bfa;">نخ</th>
-                        <th style="color: #ef4444;">فرش</th>
-                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #a78bfa;">کلاف</th>
+                        <th style="color: #ef4444;">قالیچه</th>
+                        <th style="color: #3b82f6;">درفش</th>
                         <th style="color: #f59e0b;">ستاره‌ها</th>
                         <th>نمره آزمون</th>
                         <th>نمره چالش</th>
@@ -612,9 +617,9 @@
                   <label>نوع دارایی</label>
               <select id="adj-asset-type" class="select-ctrl" style="width:100%;">
                 <option value="zarik">زریک (سکه)</option>
-                <option value="nakh">کلاف نخ</option>
-                <option value="beyragh">بیرق</option>
-                <option value="farsh">فرش</option>
+                <option value="nakh">کلاف</option>
+                <option value="beyragh">درفش</option>
+                <option value="farsh">قالیچه</option>
               </select>
             </div>
             <div class="form-group" style="flex:1;">
@@ -927,11 +932,11 @@
               <div id="caravan-detail-derafsh" style="color:#38bdf8; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-flag"></i></div>
             </div>
             <div style="background:rgba(52,211,153,0.06); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(52,211,153,0.2);">
-              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-layer-group" style="color:#34d399;"></i> مجموع نخ</div>
+              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-layer-group" style="color:#34d399;"></i> مجموع کلاف</div>
               <div id="caravan-detail-nokh" style="color:#34d399; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-layer-group"></i></div>
             </div>
             <div style="background:rgba(192,132,252,0.06); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(192,132,252,0.2);">
-              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-rug" style="color:#c084fc;"></i> مجموع فرش</div>
+              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-rug" style="color:#c084fc;"></i> مجموع قالیچه</div>
               <div id="caravan-detail-farsh" style="color:#c084fc; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-rug"></i></div>
             </div>
             <div style="background:rgba(255,255,255,0.05); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(255,255,255,0.06);">
@@ -956,8 +961,8 @@
                   <th style="padding:12px 10px;">شماره تماس</th>
                   <th style="padding:12px 10px; color:#fbbf24;"><i class="fa-solid fa-coins"></i> زریک</th>
                   <th style="padding:12px 10px; color:#38bdf8;"><i class="fa-solid fa-flag"></i> درفش</th>
-                  <th style="padding:12px 10px; color:#34d399;"><i class="fa-solid fa-layer-group"></i> نخ</th>
-                  <th style="padding:12px 10px; color:#c084fc;"><i class="fa-solid fa-rug"></i> فرش</th>
+                  <th style="padding:12px 10px; color:#34d399;"><i class="fa-solid fa-layer-group"></i> کلاف</th>
+                  <th style="padding:12px 10px; color:#c084fc;"><i class="fa-solid fa-rug"></i> قالیچه</th>
                   <th style="padding:12px 10px;">عملیات</th>
                 </tr>
               </thead>
@@ -2891,17 +2896,17 @@
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#d946ef; font-size: 20px; display: block;"><i class="fa-solid fa-gem"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">نخ</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">کلاف</span>
                      <h3 id="cd-wealth-nakh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#0ea5e9; font-size: 20px; display: block;"><i class="fa-solid fa-cube"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">فرش</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">قالیچه</span>
                      <h3 id="cd-wealth-farsh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#f43f5e; font-size: 20px; display: block;"><i class="fa-solid fa-flag"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">بیرق</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">درفش</span>
                      <h3 id="cd-wealth-beyragh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                  </div>
@@ -3484,7 +3489,7 @@
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
                 <select id="new-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
                   <option value="zarik">🪙 زریک</option>
-                  <option value="nakh">🧵 نخ</option>
+                  <option value="nakh">🧵 کلاف</option>
                 </select>
               </div>
             </div>
@@ -3504,7 +3509,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف *</label>
-                <select id="new-chal-caravan-id" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <select id="new-chal-caravan-id" required onchange="window.handleChallengeAudienceChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
                 </select>
                 <div id="new-chal-mentor-notice" style="display: none; font-size: 11px; color: #38bdf8; margin-top: 5px; background: rgba(56, 189, 248, 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); line-height: 1.5;"></div>
@@ -3567,6 +3572,16 @@
     </div>
 
     <!-- EDIT CHALLENGE MODAL (ADMIN) -->
+    <div class="modal-overlay" id="ranking-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="glass" style="width: 100%; max-width: 520px; padding: 22px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div id="ranking-title" style="font-size: 15px; font-weight: bold; color: white;">رتبه‌بندی کاروان‌ها</div>
+          <button type="button" onclick="document.getElementById('ranking-modal').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="ranking-body" style="color: #cbd5e1; font-size: 13px;"></div>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="edit-challenge-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
       <div class="modal-content glass" style="max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(59, 130, 246, 0.4); background: #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); color: white; display: flex; flex-direction: column;">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
@@ -3592,7 +3607,7 @@
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
                 <select id="edit-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
                   <option value="zarik">🪙 زریک</option>
-                  <option value="nakh">🧵 نخ</option>
+                  <option value="nakh">🧵 کلاف</option>
                 </select>
               </div>
             </div>
@@ -3612,7 +3627,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف</label>
-                <select id="edit-chal-caravan-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <select id="edit-chal-caravan-id" onchange="window.handleChallengeAudienceChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
                 </select>
               </div>

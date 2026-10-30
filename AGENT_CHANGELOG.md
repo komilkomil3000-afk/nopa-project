@@ -1314,3 +1314,50 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); tsc/prisma generate not run
 - **Status:** Completed
+
+### [2026-10-30 20:29] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/exportController.ts` (Modified)
+  - `admin_panel/src/controllers/leagueController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/core/constants/app_strings.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261036_assets_caravan_banners/` (Created)
+  - `admin_panel/src/controllers/assetController.ts` (Created)
+  - `admin_panel/src/controllers/caravanBannerController.ts` (Created)
+  - `admin_panel/src/utils/assetNames.ts` (Created)
+  - `app/lib/core/asset_names.dart` (Created)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Created)
+- **Description of Changes:**
+  - Inter-group rewards + asset renaming. DB (migration 20261036_assets_caravan_banners): AssetType table (editable names: zarik=زریک, nakh=کلاف, farsh=قالیچه, derafsh=درفش + gold/silver/bronze/cloth tiers), CaravanBanner table (caravan-owned banners), Challenge.rankingFinalizedAt. Server: inter_group challenges pay only banners (rewards forced to derafsh/0, no student payout on review/quiz)
+  - admin ranking API (GET/POST /admin/challenges/:id/ranking: caravans with >=1 answer, 1st/2nd/3rd = gold/silver/bronze, rest cloth, once only, notifications to members+mentor)
+  - GET /my-caravan/banners
+  - GET /assets + PUT /admin/assets/:key
+  - getAssetNames util used for messages
+  - conversion accepts new names/keys
+  - league totals include caravan banners
+  - CSV headers renamed. Panel: inter-group form hides reward fields with a note, 'رتبه‌بندی' button + modal, asset-name editor in the wallet tab, labels renamed (درفش/کلاف/قالیچه). App: core/asset_names.dart (defaults + server override at start), all hardcoded بیرق/نخ/فرش renamed (market 'مسی'->'برنزی'), display via AssetNames.labelFor, home 'درفش' pill = caravan banner total with a breakdown dialog (tier + challenge + station), challenge cards show reward asset/range or درفش for inter-group
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
+- **Status:** Completed

@@ -3,13 +3,14 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { stripAnswerKeys } from '../utils/answerKeys';
 import { isMentorRole } from '../utils/roles';
+import { getAssetNames } from '../utils/assetNames';
 import prisma from '../config/db';
 
 /** Validates the reward asset and the min/max range a mentor chooses from when approving an answer. */
 function parseRewardRange(body: any): { error: string } | { data: { rewardAssetType: string; rewardMin: number; rewardMax: number } } {
   const rewardAssetType = String(body.rewardAssetType || 'zarik').toLowerCase();
   if (!['zarik', 'nakh'].includes(rewardAssetType)) {
-    return { error: 'نوع دارایی جایزه باید زریک یا نخ باشد' };
+    return { error: 'نوع دارایی جایزه باید زریک یا کلاف باشد' };
   }
   const rewardMin = Number(body.rewardMin ?? 0);
   const rewardMax = Number(body.rewardMax ?? 0);
@@ -112,6 +113,10 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد' });
     }
 
+    if (category === 'inter_group') {
+      (rewardRange as any).data = { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0 };
+    }
+
     const normalized = normalizeQuizPayload(type, questions);
 
     const challenge = await prisma.challenge.create({
@@ -122,7 +127,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         type: normalized.type,
         questions: normalized.questions,
         // rewardZarik doubles as the headline amount: the top of the range when one is set
-        rewardZarik: rewardRange.data.rewardMax > 0 ? rewardRange.data.rewardMax : (Number(rewardZarik) || 50),
+        rewardZarik: category === 'inter_group' ? 0 : (rewardRange.data.rewardMax > 0 ? rewardRange.data.rewardMax : (Number(rewardZarik) || 50)),
         ...rewardRange.data,
         createdByMentorId: creatorId,
         caravanId: assignedCaravanId,
@@ -181,12 +186,17 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       }
     }
 
+    const assetNames = await getAssetNames();
+    const rewardText = category === 'inter_group'
+      ? `${assetNames.derafsh} (بر اساس رتبه‌ی کاروان)`
+      : `${rewardRange.data.rewardMax > 0 ? `${rewardRange.data.rewardMin} تا ${rewardRange.data.rewardMax}` : (rewardZarik || 50)} ${rewardRange.data.rewardAssetType === 'nakh' ? assetNames.nakh : assetNames.zarik}`;
+
     if (targetStudents.length > 0) {
       await prisma.notification.createMany({
         data: targetStudents.map(s => ({
           userId: s.id,
           title: 'چالش جدید ابلاغ شد 🏆',
-          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardRange.data.rewardMax > 0 ? `${rewardRange.data.rewardMin} تا ${rewardRange.data.rewardMax}` : (rewardZarik || 50)} ${rewardRange.data.rewardAssetType === 'nakh' ? 'نخ' : 'زریک'} 🪙`,
+          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText} 🪙`,
           type: 'challenge'
         }))
       });
@@ -232,8 +242,11 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     const normalized = normalizeQuizPayload(type || existing.type, questions !== undefined ? questions : existing.questions);
     if (type) updateData.type = normalized.type;
     if (questions !== undefined) updateData.questions = normalized.questions;
-    if (rewardZarik !== undefined) updateData.rewardZarik = Number(rewardZarik);
-    if (req.body.rewardAssetType !== undefined || req.body.rewardMin !== undefined || req.body.rewardMax !== undefined) {
+    if (rewardZarik !== undefined && existing.category !== 'inter_group') updateData.rewardZarik = Number(rewardZarik);
+    const willBeInter = (req.user.role === 'admin' && caravanId !== undefined) ? caravanId === 'inter_group' : existing.category === 'inter_group';
+    if (willBeInter) {
+      Object.assign(updateData, { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0, rewardZarik: 0 });
+    } else if (req.body.rewardAssetType !== undefined || req.body.rewardMin !== undefined || req.body.rewardMax !== undefined) {
       const range = parseRewardRange({
         rewardAssetType: req.body.rewardAssetType ?? existing.rewardAssetType,
         rewardMin: req.body.rewardMin ?? existing.rewardMin,
@@ -657,9 +670,12 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
 
     // The challenge decides the asset and the range; the final amount follows the share of correct answers
     const assetType = challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
-    const assetLabel = assetType === 'nakh' ? 'نخ' : 'زریک';
+    const assetNames = await getAssetNames();
+    const assetLabel = assetType === 'nakh' ? assetNames.nakh : assetNames.zarik;
     let calculatedReward: number;
-    if (challenge.rewardMax > 0) {
+    if (challenge.category === 'inter_group') {
+      calculatedReward = 0; // inter-group challenges pay only the caravan's banner, awarded by the admin's ranking
+    } else if (challenge.rewardMax > 0) {
       const share = questionsList.length > 0 ? correctCount / questionsList.length : 0;
       calculatedReward = Math.round(challenge.rewardMin + (challenge.rewardMax - challenge.rewardMin) * share);
     } else {

@@ -17,6 +17,7 @@ const MENTOR_PUBLIC_SELECT = {
   academicDegree: true,
 } as const;
 import { logAdminAction } from './adminController';
+import { getAssetNames } from '../utils/assetNames';
 
 
 export async function toggleCaravanStatus(req: AuthRequest, res: Response) {
@@ -66,7 +67,7 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
 
 // Capital exchange rules: only zarik -> nakh and nakh -> farsh are allowed.
 // The rate is how many units of the source make one unit of the target.
-const ASSET_FIELDS: Record<string, 'zarik' | 'nakh' | 'farsh'> = { 'زریک': 'zarik', 'نخ': 'nakh', 'فرش': 'farsh' };
+const ASSET_FIELDS: Record<string, 'zarik' | 'nakh' | 'farsh'> = { 'زریک': 'zarik', 'نخ': 'nakh', 'فرش': 'farsh', 'کلاف': 'nakh', 'قالیچه': 'farsh' };
 const CONVERSION_RATES: Record<string, number> = { 'zarik>nakh': 500, 'nakh>farsh': 5 };
 const CONVERSION_CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -85,8 +86,11 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
     }
     if (!user.caravanId) return res.status(400).json({ error: 'شما عضو کاروانی نیستید' });
 
-    const from = ASSET_FIELDS[sourceAsset];
-    const to = ASSET_FIELDS[targetAsset];
+    // The client may send the current display name, a legacy name or the key
+    const names = await getAssetNames();
+    const resolve = (n: string) => ASSET_FIELDS[n] ?? (['zarik', 'nakh', 'farsh'] as const).find(k => k === n || names[k] === n);
+    const from = resolve(sourceAsset);
+    const to = resolve(targetAsset);
     const rate = from && to ? CONVERSION_RATES[`${from}>${to}`] : undefined;
     if (!from || !to || !rate) {
       return res.status(400).json({ error: `تبدیل ${sourceAsset} به ${targetAsset} امکان‌پذیر نیست` });
@@ -111,7 +115,7 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
         if (debited.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
         if (from === 'zarik') {
           await tx.zarikTransaction.create({
-            data: { userId: user.id, amount: -sourceAmount, category: 'Asset Exchange', reason: `تبدیل ${sourceAmount} زریک به ${targetAmount} نخ`, createdBy: user.id },
+            data: { userId: user.id, amount: -sourceAmount, category: 'Asset Exchange', reason: `تبدیل ${sourceAmount} ${names.zarik} به ${targetAmount} ${names.nakh}`, createdBy: user.id },
           });
         }
         return tx.assetConversionRequest.create({

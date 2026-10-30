@@ -1,3 +1,5 @@
+import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -216,7 +218,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: 'زریک',
+                  label: AssetNames.labelFor('زریک'),
                   value: (user?.zarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
@@ -224,15 +226,18 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: 'بیرق',
-                  value: (user?.beyragh ?? 0).toPersian(),
+                  label: AssetNames.labelFor('درفش'),
+                  value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
                   isGold: _selectedAssetIndex == 1,
-                  onTap: () => setState(() => _selectedAssetIndex = 1),
+                  onTap: () {
+                    setState(() => _selectedAssetIndex = 1);
+                    CaravanBannersDialog.show(context, Provider.of<AppRepository>(context, listen: false).caravanBanners);
+                  },
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: 'نخ',
+                  label: AssetNames.labelFor('کلاف'),
                   value: (user?.nakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
@@ -240,7 +245,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: 'فرش',
+                  label: AssetNames.labelFor('قالیچه'),
                   value: (user?.farsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
@@ -336,7 +341,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Middle: Label (زریک, بیرق, نخ, فرش)
+                // Middle: Label (زریک, درفش, نخ, فرش)
                 Text(
                   label,
                   style: const TextStyle(

@@ -126,6 +126,7 @@ model Caravan {
   chatMessages    ChatMessage[]
   assetConversions AssetConversionRequest[]
   challenges      Challenge[]
+  banners         CaravanBanner[]
 }
 
 model SystemSetting {
@@ -174,6 +175,7 @@ model Challenge {
   createdByMentorId String
   caravanId         String?
   stationId         String?
+  rankingFinalizedAt DateTime?                              // inter-group: when the admin confirmed the caravans' ranking
   startDate         DateTime?                                // challenge opens at this moment (null = already open)
   dueDate           DateTime?
   createdAt         DateTime     @default(now())
@@ -228,6 +230,30 @@ model SubmissionEvent {
 
   @@index([submissionId, createdAt])
   @@index([challengeId])
+}
+
+// Display names of the assets (editable from the admin panel); the app reads them at start
+model AssetType {
+  key       String   @id // "zarik" | "nakh" | "farsh" | "derafsh" | "derafsh_gold" | "derafsh_silver" | "derafsh_bronze" | "derafsh_cloth"
+  nameFa    String
+  sortOrder Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+// Banner (درفش) won by a caravan in an inter-group challenge; the caravan owns them, not its members
+model CaravanBanner {
+  id          String   @id @default(uuid())
+  caravanId   String
+  tier        String   // "gold" | "silver" | "bronze" | "cloth"
+  rank        Int?     // 1..3 for the medals, null for cloth
+  challengeId String?
+  awardedBy   String?
+  createdAt   DateTime @default(now())
+
+  caravan     Caravan  @relation(fields: [caravanId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, caravanId])
+  @@index([caravanId])
 }
 
 model MentorRating {

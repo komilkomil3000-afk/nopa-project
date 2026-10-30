@@ -816,6 +816,7 @@ function switchTab(tabId, updateUrl = true) {
     loadZarikAnalytics();
     if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
     if (typeof loadRewardRules === 'function') loadRewardRules();
+    window.loadAssetNames();
   } else if (tabId === 'roles-tab') {
     loadRolePermissions();
   } else if (tabId === 'audit-tab') {
@@ -1074,7 +1075,7 @@ function renderAdminChallenges(challenges) {
         <td>${creatorBadge}</td>
         <td style="white-space: nowrap;">
           <div style="margin-bottom: 6px;">${typeBadge}</div>
-          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid fa-coins"></i> ${window.formatChallengeReward(c)}</div>
+          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
         </td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
@@ -1082,6 +1083,7 @@ function renderAdminChallenges(challenges) {
             <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-list-check"></i> مراحل
             </button>
+            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" onclick="window.openChallengeRanking('${c.id}')" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
             <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
@@ -1150,7 +1152,7 @@ window.handleChallengeTypeChange = function(mode) {
 
 // Reward of a challenge as "min تا max نخ/زریک" (fixed amount when no range is set).
 window.formatChallengeReward = function(c) {
-  const unit = c.rewardAssetType === 'nakh' ? 'نخ' : 'زریک';
+  const unit = c.rewardAssetType === 'nakh' ? 'کلاف' : 'زریک';
   const min = Number(c.rewardMin) || 0;
   const max = Number(c.rewardMax) || 0;
   if (max > 0) return min === max ? `${max} ${unit}` : `${min} تا ${max} ${unit}`;
@@ -1159,6 +1161,9 @@ window.formatChallengeReward = function(c) {
 
 // Reads + validates the reward fields of the create ('new') / edit ('edit') form. Returns null after alerting.
 window.readChallengeReward = function(mode) {
+  if (document.getElementById(`${mode}-chal-caravan-id`)?.value === 'inter_group') {
+    return { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0, rewardZarik: 0 };
+  }
   const rewardAssetType = document.getElementById(`${mode}-chal-asset`)?.value === 'nakh' ? 'nakh' : 'zarik';
   const rewardMin = Number(document.getElementById(`${mode}-chal-reward-min`)?.value);
   const rewardMax = Number(document.getElementById(`${mode}-chal-reward-max`)?.value);
@@ -1183,6 +1188,112 @@ window.updateChallengeDuration = function(mode) {
   const from = start ? new Date(`${start}T00:00:00`) : new Date(new Date().toDateString());
   const days = Math.round((new Date(`${due}T00:00:00`) - from) / 86400000) + 1;
   el.textContent = days > 0 ? `مهلت: ${days} روز` : 'تاریخ پایان قبل از شروع است';
+};
+
+// Inter-group challenges pay no zarik/kalaf: the only reward is the caravan banner (derafsh) given by the admin's ranking.
+window.handleChallengeAudienceChange = function(mode) {
+  const inter = document.getElementById(`${mode}-chal-caravan-id`)?.value === 'inter_group';
+  const assetBox = document.getElementById(`${mode}-chal-asset`)?.parentElement;
+  const rangeRow = document.getElementById(`${mode}-chal-reward-min`)?.parentElement?.parentElement;
+  [assetBox, rangeRow].forEach(el => { if (el) el.style.display = inter ? 'none' : ''; });
+  let note = document.getElementById(`${mode}-chal-banner-note`);
+  if (!note && rangeRow) {
+    note = document.createElement('div');
+    note.id = `${mode}-chal-banner-note`;
+    note.style.cssText = 'font-size: 12px; color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
+    note.innerHTML = '🚩 پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
+    rangeRow.parentElement.insertBefore(note, rangeRow);
+  }
+  if (note) note.style.display = inter ? 'block' : 'none';
+};
+
+// ---- Ranking of the caravans in an inter-group challenge ----
+window.openChallengeRanking = async function(challengeId) {
+  const modal = document.getElementById('ranking-modal');
+  const body = document.getElementById('ranking-body');
+  if (!modal || !body) return;
+  body.innerHTML = '<div style="color:#94a3b8;">در حال بارگذاری...</div>';
+  modal.style.display = 'flex';
+  try {
+    const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`);
+    const data = await res.json();
+    if (!res.ok) { body.innerHTML = `<div style="color:#f87171;">${esc(data.error || 'خطا')}</div>`; return; }
+    document.getElementById('ranking-title').textContent = `رتبه‌بندی کاروان‌ها: ${data.challenge.title}`;
+    const names = window.assetNamesMap || {};
+    const tierName = { gold: names.derafsh_gold || 'درفش طلایی', silver: names.derafsh_silver || 'درفش نقره‌ای', bronze: names.derafsh_bronze || 'درفش برنزی', cloth: names.derafsh_cloth || 'درفش پارچه‌ای' };
+    const tierColor = { gold: '#fbbf24', silver: '#cbd5e1', bronze: '#d97706', cloth: '#94a3b8' };
+
+    if (data.challenge.finalized) {
+      body.innerHTML = '<div style="margin-bottom:10px; color:#34d399;"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
+        data.result.map(r => `<div style="display:flex; justify-content:space-between; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.04); border-radius:8px;"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
+      return;
+    }
+    if (!data.caravans.length) {
+      body.innerHTML = '<div style="color:#94a3b8;">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
+      return;
+    }
+    const places = Math.min(3, data.caravans.length);
+    const placeLabel = ['رتبه‌ی اول (' + tierName.gold + ')', 'رتبه‌ی دوم (' + tierName.silver + ')', 'رتبه‌ی سوم (' + tierName.bronze + ')'];
+    const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
+    let html = `<div style="margin-bottom:12px; color:#94a3b8;">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
+    for (let i = 0; i < places; i++) {
+      html += `<label style="display:block; font-size:12px; font-weight:bold; margin:10px 0 4px; color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]};">${placeLabel[i]}</label>
+        <select class="ranking-select" style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:white;">${options}</select>`;
+    }
+    html += `<button type="button" onclick="window.submitChallengeRanking('${challengeId}', ${places})" style="margin-top:16px; width:100%; padding:10px; background:#fbbf24; color:#1e293b; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div style="color:#f87171;">خطا در ارتباط با سرور</div>';
+  }
+};
+
+window.submitChallengeRanking = async function(challengeId, places) {
+  const ranking = Array.from(document.querySelectorAll('#ranking-body .ranking-select')).map(s => s.value);
+  if (ranking.length !== places || ranking.some(v => !v) || new Set(ranking).size !== places) {
+    alert('برای هر رتبه یک کاروان متفاوت انتخاب کنید.');
+    return;
+  }
+  if (!confirm('رتبه‌بندی نهایی می‌شود و قابل ویرایش نیست. ادامه می‌دهید؟')) return;
+  const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ranking })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(data.error || 'خطا در ثبت رتبه‌بندی'); return; }
+  await window.openChallengeRanking(challengeId);
+};
+
+// ---- Editable asset names ----
+window.loadAssetNames = async function() {
+  const box = document.getElementById('asset-names-list');
+  if (!box) return;
+  try {
+    const res = await request('/api/v1/admin/assets');
+    const rows = await res.json();
+    if (!res.ok) return;
+    window.assetNamesMap = Object.fromEntries(rows.map(r => [r.key, r.nameFa]));
+    box.innerHTML = rows.map(r => `
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px; color:#94a3b8; min-width:78px;">${esc(r.key)}</span>
+        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:12.5px;">
+        <button type="button" onclick="window.saveAssetName('${r.key}')" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
+      </div>`).join('');
+  } catch (e) { console.error('loadAssetNames error', e); }
+};
+
+window.saveAssetName = async function(key) {
+  const nameFa = document.getElementById(`asset-name-${key}`)?.value.trim();
+  if (!nameFa) { alert('نام دارایی نمی‌تواند خالی باشد.'); return; }
+  const res = await request(`/api/v1/admin/assets/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nameFa })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(data.error || 'خطا در ذخیره'); return; }
+  window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
+  alert('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نمایش می‌دهد.');
 };
 
 window.addQuestionRow = function(mode, initialData = null) {
@@ -1279,6 +1390,7 @@ window.openCreateChallengeModal = function() {
   }
 
   window.populateStationDropdownForChallenges('new-chal-station-id', '');
+  window.handleChallengeAudienceChange('new');
 
   const qContainer = document.getElementById('new-chal-questions-list');
   if (qContainer) {
@@ -1451,6 +1563,7 @@ window.openEditChallengeModal = function(challengeId) {
   }
 
   window.handleChallengeTypeChange('edit');
+  window.handleChallengeAudienceChange('edit');
   modal.style.display = 'flex';
 };
 
@@ -1985,7 +2098,7 @@ window.openViewSubmissionModal = function(submissionId) {
     } else if (s.status === 'approved') {
       metaBadge.style.background = 'rgba(16, 185, 129, 0.2)';
       metaBadge.style.color = '#34d399';
-      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} ${s.challenge?.rewardAssetType === 'nakh' ? 'نخ' : 'زریک'})`;
+      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} ${s.challenge?.rewardAssetType === 'nakh' ? 'کلاف' : 'زریک'})`;
     } else {
       metaBadge.style.background = 'rgba(239, 68, 68, 0.2)';
       metaBadge.style.color = '#f87171';
@@ -2302,8 +2415,8 @@ async function viewUserDetails(userId) {
             <div style="text-align: right; font-size: 13px;">
               <p><strong>زریک:</strong> <span style="color:var(--color-neon-blue);">${payload.balances.zarik.toLocaleString()}</span></p>
               <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
-              <p><strong>بیرق:</strong> ${payload.balances.beyragh}</p>
-              <p><strong>فرش:</strong> ${payload.balances.farsh}</p>
+              <p><strong>درفش:</strong> ${payload.balances.beyragh}</p>
+              <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
             </div>
             <div style="margin-top:15px; display:flex; gap:5px; flex-wrap:wrap; justify-content:space-between;">
               <button class="btn-primary" style="flex:1; font-size:11px;" onclick="openPasswordOverride('${user.id}')">تغییر رمز</button>
@@ -2469,7 +2582,7 @@ async function viewUserDetails(userId) {
         window.drawerRadarChart = new Chart(ctx, {
           type: 'radar',
           data: {
-            labels: ['زریک', 'نخ', 'بیرق', 'فرش', 'فعالیت کلاسی', 'نمره آزمون'],
+            labels: ['زریک', 'کلاف', 'درفش', 'قالیچه', 'فعالیت کلاسی', 'نمره آزمون'],
             datasets: [{
               label: 'سطح پیشرفت',
               data: [
@@ -4312,9 +4425,9 @@ window.viewStudentDetails = async function(studentId) {
       assetsEl.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:8px;">
           <div><strong style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span style="font-size:16px; font-weight:bold; color:#fbbf24;">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
-          <div><strong style="color:#a78bfa;"><i class="fa-solid fa-layer-group"></i> نخ:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
-          <div><strong style="color:#38bdf8;"><i class="fa-solid fa-flag"></i> بیرق:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
-          <div><strong style="color:#10b981;"><i class="fa-solid fa-rug"></i> فرش:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
+          <div><strong style="color:#a78bfa;"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
+          <div><strong style="color:#38bdf8;"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
+          <div><strong style="color:#10b981;"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
           <div><strong style="color:#94a3b8;">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
         </div>
       `;
@@ -6649,7 +6762,7 @@ window.loadAssetConversions = async function() {
         </td>
         <td>${esc(r.caravan?.name || 'عمومی')}</td>
         <td>
-          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش')}</span>
+          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
         </td>
         <td>
           ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ انجام شده</span>' :
@@ -8564,9 +8677,9 @@ window.openCaravanStudentDetails = async function(userId) {
 
     document.getElementById('csd-assets').innerHTML = `
       <strong>موجودی زریک:</strong> ${data.zarikBalance || 0}<br>
-      <strong>موجودی نخ:</strong> ${data.nakhBalance || 0}<br>
-      <strong>موجودی بیرق:</strong> ${data.beyraghBalance || 0}<br>
-      <strong>موجودی فرش:</strong> ${data.farshBalance || 0}
+      <strong>موجودی کلاف:</strong> ${data.nakhBalance || 0}<br>
+      <strong>موجودی درفش:</strong> ${data.beyraghBalance || 0}<br>
+      <strong>موجودی قالیچه:</strong> ${data.farshBalance || 0}
     `;
 
     let progHtml = '';

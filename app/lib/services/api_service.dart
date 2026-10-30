@@ -1748,6 +1748,38 @@ class HttpApiService {
     return [];
   }
 
+  /// Admin-editable display names of the assets: [{key, nameFa}].
+  Future<List<dynamic>> getAssetTypes() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/assets'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data;
+      }
+    } catch (e) {
+      debugPrint('getAssetTypes error: $e');
+    }
+    return [];
+  }
+
+  /// Banners (درفش) of the user's caravan: {total, byTier, items}. Mentors may pick the caravan.
+  Future<Map<String, dynamic>?> getCaravanBanners({String? caravanId}) async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/my-caravan/banners').replace(
+          queryParameters: (caravanId != null && caravanId.isNotEmpty) ? {'caravanId': caravanId} : null,
+        ),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('getCaravanBanners error: $e');
+    }
+    return null;
+  }
+
   // --- Calendar Events ---
   Future<Map<String, dynamic>?> getCalendarEvents() async {
     try {

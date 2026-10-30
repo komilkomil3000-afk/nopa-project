@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -23,33 +24,33 @@ class _MarketScreenState extends State<StudentMarketScreen> {
   // 5 Standard Market Rate Items matching screenshot
   final List<Map<String, dynamic>> _rateItems = const [
     {
-      'title': 'نخ',
+      'title': 'کلاف',
       'priceText': '500 زریک',
-      'assetKey': 'نخ',
+      'assetKey': 'کلاف',
       'zarikCost': 500,
     },
     {
-      'title': 'فرش',
-      'priceText': '5 نخ',
-      'assetKey': 'فرش',
+      'title': 'قالیچه',
+      'priceText': '5 کلاف',
+      'assetKey': 'قالیچه',
       'zarikCost': 2500,
     },
     {
-      'title': 'بیرق مسی',
-      'priceText': '5 نخ',
-      'assetKey': 'بیرق مسی',
+      'title': 'درفش برنزی',
+      'priceText': '5 کلاف',
+      'assetKey': 'درفش برنزی',
       'zarikCost': 2500,
     },
     {
-      'title': 'بیرق نقره ای',
-      'priceText': '3 فرش',
-      'assetKey': 'بیرق نقره ای',
+      'title': 'درفش نقره ای',
+      'priceText': '3 قالیچه',
+      'assetKey': 'درفش نقره ای',
       'zarikCost': 7500,
     },
     {
-      'title': 'بیرق طلایی',
+      'title': 'درفش طلایی',
       'priceText': 'غیر قابل خرید',
-      'assetKey': 'بیرق طلایی',
+      'assetKey': 'درفش طلایی',
       'zarikCost': 22500,
     },
   ];
@@ -68,14 +69,14 @@ class _MarketScreenState extends State<StudentMarketScreen> {
 
   // Exchange calculator states
   String _sourceAsset = 'زریک';
-  String _targetAsset = 'نخ';
+  String _targetAsset = 'کلاف';
   final TextEditingController _amountController = TextEditingController(text: '500');
   double _calculatedResult = 1.0;
 
   // Interactive button selection states (0: none, 1: submit active, 2: mentor active)
   int _activeActionButton = 1; // Default: 'ثبت درخواست' is active/colored
 
-  final List<String> _availableAssets = ['زریک', 'نخ', 'فرش', 'بیرق مسی', 'بیرق نقره ای', 'بیرق طلایی'];
+  final List<String> _availableAssets = ['زریک', 'کلاف', 'قالیچه', 'درفش برنزی', 'درفش نقره ای', 'درفش طلایی'];
 
   // Mentor Market States
   int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
@@ -158,15 +159,15 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     switch (asset) {
       case 'زریک':
         return 1.0;
-      case 'نخ':
+      case 'کلاف':
         return 500.0;
-      case 'فرش':
-      case 'بیرق مسی':
+      case 'قالیچه':
+      case 'درفش برنزی':
         return 2500.0; // 5 Nakh * 500
-      case 'بیرق نقره ای':
-      case 'بیرق نقره‌ای':
+      case 'درفش نقره ای':
+      case 'درفش نقره‌ای':
         return 7500.0; // 3 Carpet * 2500
-      case 'بیرق طلایی':
+      case 'درفش طلایی':
         return 22500.0; // 3 Silver * 7500
       default:
         return 1.0;
@@ -196,11 +197,11 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     }
 
     // Conversion path rules (flag rules are defined separately)
-    const capitals = ['زریک', 'نخ', 'فرش'];
+    const capitals = ['زریک', 'کلاف', 'قالیچه'];
     if (capitals.contains(_sourceAsset) &&
         capitals.contains(_targetAsset) &&
-        !((_sourceAsset == 'زریک' && _targetAsset == 'نخ') ||
-            (_sourceAsset == 'نخ' && _targetAsset == 'فرش'))) {
+        !((_sourceAsset == 'زریک' && _targetAsset == 'کلاف') ||
+            (_sourceAsset == 'کلاف' && _targetAsset == 'قالیچه'))) {
       AppToast.error(context, 'تبدیل $_sourceAsset به $_targetAsset امکان‌پذیر نیست.');
       return;
     }
@@ -215,8 +216,8 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
     final double? balance = switch (_sourceAsset) {
       'زریک' => user.zarik.toDouble(),
-      'نخ' => user.nakh.toDouble(),
-      'فرش' => user.farsh.toDouble(),
+      'کلاف' => user.nakh.toDouble(),
+      'قالیچه' => user.farsh.toDouble(),
       _ => null,
     };
     if (balance != null && amount > balance) {
@@ -658,7 +659,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        item['title'] as String,
+                        AssetNames.labelFor(item['title'] as String),
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         style: const TextStyle(
@@ -725,19 +726,17 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     final title = isMentor ? 'مجموع سرمایه های کاروان' : 'سرمایه های شما';
 
     int totalZarik = user?.zarik ?? 0;
-    int totalBeyragh = user?.beyragh ?? 0;
     int totalNakh = user?.nakh ?? 0;
     int totalFarsh = user?.farsh ?? 0;
 
     if (isMentor && _mentorMembersAssets.isNotEmpty) {
       totalZarik = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['zarik'] as num?)?.toInt() ?? (m['zarikBalance'] as num?)?.toInt() ?? 0));
-      totalBeyragh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['beyragh'] as num?)?.toInt() ?? 0));
       totalNakh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['nakh'] as num?)?.toInt() ?? 0));
       totalFarsh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['farsh'] as num?)?.toInt() ?? 0));
     }
 
     final zarikVal = totalZarik.toPersian();
-    final beyrahVal = totalBeyragh.toPersian();
+    final beyrahVal = Provider.of<AppRepository>(context).caravanBannerTotal.toPersian();
     final nakhVal = totalNakh.toPersian();
     final farshVal = totalFarsh.toPersian();
 
@@ -771,7 +770,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: 'زریک',
+                  label: AssetNames.labelFor('زریک'),
                   value: zarikVal,
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
@@ -779,7 +778,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: 'بیرق',
+                  label: AssetNames.labelFor('درفش'),
                   value: beyrahVal,
                   isGold: _selectedAssetIndex == 1,
                   onTap: () => setState(() => _selectedAssetIndex = 1),
@@ -787,7 +786,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: 'نخ',
+                  label: AssetNames.labelFor('کلاف'),
                   value: nakhVal,
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
@@ -795,7 +794,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: 'فرش',
+                  label: AssetNames.labelFor('قالیچه'),
                   value: farshVal,
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
@@ -962,7 +961,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                   ),
                 ),
                 Text(
-                  'فرش: ${totalFarsh.toString().toPersian()}',
+                  '${AssetNames.labelFor('قالیچه')}: ${totalFarsh.toString().toPersian()}',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 10.5,
@@ -971,7 +970,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                   ),
                 ),
                 Text(
-                  'درفش: ${totalBeyragh.toString().toPersian()}',
+                  '${AssetNames.labelFor('درفش')}: ${totalBeyragh.toString().toPersian()}',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 10.5,
@@ -1160,10 +1159,10 @@ class _MarketScreenState extends State<StudentMarketScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildMemberAssetChip('زریک', zarik),
-                      _buildMemberAssetChip('درفش', derafsh),
-                      _buildMemberAssetChip('نخ', nakh),
-                      _buildMemberAssetChip('فرش', farsh),
+                      _buildMemberAssetChip(AssetNames.labelFor('زریک'), zarik),
+                      _buildMemberAssetChip(AssetNames.labelFor('درفش'), derafsh),
+                      _buildMemberAssetChip(AssetNames.labelFor('کلاف'), nakh),
+                      _buildMemberAssetChip(AssetNames.labelFor('قالیچه'), farsh),
                     ],
                   ),
                 ),
@@ -2195,7 +2194,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
             items: _availableAssets.map((asset) {
               return DropdownMenuItem<String>(
                 value: asset,
-                child: Text(asset, style: const TextStyle(fontSize: 12, color: Colors.white)),
+                child: Text(AssetNames.labelFor(asset), style: const TextStyle(fontSize: 12, color: Colors.white)),
               );
             }).toList(),
             onChanged: onChanged,

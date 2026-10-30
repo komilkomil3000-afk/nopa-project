@@ -8,6 +8,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
     const search = ((req.query.search as string) || '').trim().toLowerCase();
     const exportAs = req.query.exportAs as string;
     
+    const bannerCounts = new Map<string, number>((await prisma.caravanBanner.groupBy({ by: ['caravanId'], _count: { _all: true } })).map(b => [b.caravanId, b._count._all]));
     const caravans = await prisma.caravan.findMany({
       where: { isDeleted: false },
       include: {
@@ -47,7 +48,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
       let totalZarik = 0;
       let totalNakh = 0;
       let totalFarsh = 0;
-      let totalBeyragh = 0;
+      let totalBeyragh = bannerCounts.get(c.id) || 0; // banners owned by the caravan itself
       let totalQuizScore = 0;
       let totalPassedQuizzes = 0;
       let totalChallengeScore = 0;
@@ -139,7 +140,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
     });
 
     if (exportAs === 'csv') {
-      let csv = 'رتبه,نام کاروان,راهبر,تعداد اعضا,زریک,نخ,فرش,بیرق,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
+      let csv = 'رتبه,نام کاروان,راهبر,تعداد اعضا,زریک,کلاف,قالیچه,درفش,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
       let currentR = 0;
       let prevSc: number | null = null;
       filtered.forEach((c) => {
@@ -301,7 +302,7 @@ export async function getIndividualsLeaderboard(req: Request, res: Response) {
     });
 
     if (exportAs === 'csv') {
-      let csv = 'رتبه,نام,نقش,شماره تماس,کاروان,زریک,نخ,فرش,بیرق,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
+      let csv = 'رتبه,نام,نقش,شماره تماس,کاروان,زریک,کلاف,قالیچه,درفش,ستاره و آزمون,نمره آزمون,نمره چالش,درصد پیشرفت,امتیاز کل\n';
       let currentR = 0;
       let prevSc: number | null = null;
       filtered.forEach((u) => {
@@ -331,6 +332,7 @@ export async function getCaravanLeague(req: Request, res: Response) {
     const sortBy = (req.query.sortBy as string) || 'progress';
     const exportAs = req.query.exportAs as string;
     
+    const bannerCounts = new Map<string, number>((await prisma.caravanBanner.groupBy({ by: ['caravanId'], _count: { _all: true } })).map(b => [b.caravanId, b._count._all]));
     const caravans = await prisma.caravan.findMany({
       include: {
         mentor: {
@@ -351,7 +353,7 @@ export async function getCaravanLeague(req: Request, res: Response) {
       const totalZarik = c.members.reduce((sum, m) => sum + m.zarikBalance, 0);
       const totalNakh = c.members.reduce((sum, m) => sum + m.nakh, 0);
       const totalFarsh = c.members.reduce((sum, m) => sum + m.farsh, 0);
-      const totalBeyragh = c.members.reduce((sum, m) => sum + m.beyragh, 0);
+      const totalBeyragh = c.members.reduce((sum, m) => sum + m.beyragh, 0) + (bannerCounts.get(c.id) || 0);
 
       let caravanProgress = 0;
       const totalMembers = c.members.length;

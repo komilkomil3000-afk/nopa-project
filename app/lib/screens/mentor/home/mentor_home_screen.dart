@@ -1,3 +1,5 @@
+import 'package:nopa_app/core/asset_names.dart';
+import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -478,7 +480,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: 'زریک',
+                  label: AssetNames.labelFor('زریک'),
                   value: (caravan?.totalZarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
@@ -486,15 +488,18 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: 'بیرق',
-                  value: (caravan?.totalBeyragh ?? 0).toPersian(),
+                  label: AssetNames.labelFor('درفش'),
+                  value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
                   isGold: _selectedAssetIndex == 1,
-                  onTap: () => setState(() => _selectedAssetIndex = 1),
+                  onTap: () {
+                    setState(() => _selectedAssetIndex = 1);
+                    CaravanBannersDialog.show(context, Provider.of<AppRepository>(context, listen: false).caravanBanners);
+                  },
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: 'نخ',
+                  label: AssetNames.labelFor('کلاف'),
                   value: (caravan?.totalNakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
@@ -502,7 +507,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: 'فرش',
+                  label: AssetNames.labelFor('قالیچه'),
                   value: (caravan?.totalFarsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),

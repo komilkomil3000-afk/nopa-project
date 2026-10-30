@@ -1,4 +1,5 @@
 import { isMentorRole } from '../utils/roles';
+import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
@@ -337,14 +338,17 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
 
     // The challenge decides what an approval pays (zarik or nakh) and between which bounds the reviewer may choose
     const assetType = submission.challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
-    const assetLabel = assetType === 'nakh' ? 'نخ' : 'زریک';
+    const assetNames = await getAssetNames();
+    const assetLabel = assetType === 'nakh' ? assetNames.nakh : assetNames.zarik;
+    // Inter-group answers pay nothing to the student: the caravan gets a banner from the admin's ranking
+    const bannerOnly = submission.challenge.category === 'inter_group';
     const rewardMin = submission.challenge.rewardMin || 0;
     const rewardMax = submission.challenge.rewardMax || 0;
     const hasRange = rewardMax > 0;
-    const allowedMin = hasRange ? rewardMin : (submission.challenge.rewardZarik || 0);
-    const allowedMax = hasRange ? rewardMax : allowedMin;
+    const allowedMin = bannerOnly ? 0 : (hasRange ? rewardMin : (submission.challenge.rewardZarik || 0));
+    const allowedMax = bannerOnly ? 0 : (hasRange ? rewardMax : allowedMin);
 
-    const reward = score !== undefined ? Number(score) : (hasRange ? rewardMax : (submission.challenge.rewardZarik || 200));
+    const reward = bannerOnly ? 0 : (score !== undefined ? Number(score) : (hasRange ? rewardMax : (submission.challenge.rewardZarik || 200)));
     if (status === 'approved' && (!Number.isFinite(reward) || reward < 0)) {
       return res.status(400).json({ error: 'مقدار پاداش نامعتبر است' });
     }
@@ -376,7 +380,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         });
 
         // Zarik movements are ledgered; nakh has no ledger table
-        if (assetType === 'zarik') {
+        if (assetType === 'zarik' && reward > 0) {
           await tx.zarikTransaction.create({
             data: {
               userId: submission.studentId,
@@ -416,7 +420,9 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         userId: submission.studentId,
         title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
         message: status === 'approved'
-            ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} ${assetLabel} به حساب شما اضافه گردید.`
+            ? (bannerOnly
+              ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد. ${assetNames.derafsh} بر اساس رتبه‌بندی نهایی کاروان‌ها اعطا می‌شود.`
+              : `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} ${assetLabel} به حساب شما اضافه گردید.`)
             : `پاسخ شما به چالش "${submission.challenge.title}" رد شد. فیدبک: ${mentorFeedback || 'اصلاح و مجدداً ارسال کنید.'}`,
         type: 'alert'
       }

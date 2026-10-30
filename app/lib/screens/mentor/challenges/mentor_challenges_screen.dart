@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
@@ -151,6 +152,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'title': c.title,
         'desc': c.description,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'type': c.type,
         'status': status,
         'category': category,
@@ -645,6 +647,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'rewardMin': c.rewardMin,
         'rewardMax': c.rewardMax,
         'rewardAsset': c.rewardAssetType,
@@ -1077,7 +1080,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -1317,7 +1320,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
     if (existing != null) {
       selectedType = existing['type'] == 'quiz' ? 'چند گزینه ای' : 'تشریحی';
-      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'نخ' : 'زریک';
+      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'کلاف' : 'زریک';
       final int exMax = (existing['rewardMax'] as num?)?.toInt() ?? 0;
       rewardMaxCtrl.text = (exMax > 0 ? exMax : (existing['reward'] as num?)?.toInt() ?? 0).toString();
       rewardMinCtrl.text = (exMax > 0 ? (existing['rewardMin'] as num?)?.toInt() ?? 0 : 0).toString();
@@ -1503,8 +1506,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         ),
                                         icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
                                         isExpanded: true,
-                                        items: ['زریک', 'نخ']
-                                            .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+                                        items: ['زریک', 'کلاف']
+                                            .map((a) => DropdownMenuItem(value: a, child: Text(AssetNames.labelFor(a))))
                                             .toList(),
                                         onChanged: (v) {
                                           if (v != null) setDialogState(() => selectedAsset = v);
@@ -1889,7 +1892,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                               title: title,
                                               description: question,
                                               questions: questions,
-                                              assetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
+                                              assetType: selectedAsset == 'کلاف' ? 'nakh' : 'zarik',
                                               min: rewardMin,
                                               max: rewardMax,
                                               startDate: startAt,
@@ -1903,7 +1906,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         type: isQuiz ? 'quiz' : 'text',
                                         questions: questions,
                                         createdByMentorId: user.id,
-                                        rewardAssetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
+                                        rewardAssetType: selectedAsset == 'کلاف' ? 'nakh' : 'zarik',
                                         rewardMin: rewardMin,
                                         rewardMax: rewardMax,
                                         startDate: startAt,
@@ -2498,7 +2501,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,

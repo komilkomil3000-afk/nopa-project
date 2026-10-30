@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -106,9 +107,37 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
 
 
+  bool _assetNamesLoaded = false;
+
+  /// Admin-editable asset names (once per session) – the app keeps its built-in defaults when this fails.
+  Future<void> loadAssetNames() async {
+    if (_assetNamesLoaded) return;
+    final rows = await _apiService.getAssetTypes();
+    if (rows.isEmpty) return;
+    AssetNames.apply(rows);
+    _assetNamesLoaded = true;
+    notifyListeners();
+  }
+
+  /// Banners (درفش) won by the caravan: shown as one total on the home screens, itemised in a dialog.
+  int caravanBannerTotal = 0;
+  Map<String, dynamic> caravanBanners = {};
+
+  Future<void> fetchCaravanBanners() async {
+    final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final data = await _apiService.getCaravanBanners(caravanId: isMentor ? _selectedCaravanId : null);
+    if (data != null) {
+      caravanBanners = data;
+      caravanBannerTotal = (data['total'] as num?)?.toInt() ?? 0;
+      notifyListeners();
+    }
+  }
+
   Future<void> refreshUser() async {
     final user = await _apiService.getMe();
     if (user != null) {
+      loadAssetNames().catchError((e) => debugPrint('loadAssetNames error: $e'));
+      fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
       final existingRole = currentUser.role;
       if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
         currentUser = user.copyWith(role: existingRole);
@@ -573,6 +602,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void switchCaravan(String caravanId) {
     _selectedCaravanId = caravanId;
+    fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
     notifyListeners();
   }
 
