@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/user_model.dart';
@@ -84,7 +85,7 @@ class CustomBottomNavBar extends StatelessWidget {
             final item = items[index];
 
             return Expanded(
-              child: GestureDetector(
+              child: TapExpander(child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => onTap(index),
                 child: Column(
@@ -107,7 +108,7 @@ class CustomBottomNavBar extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              )),
             );
           }).toList(),
         ),

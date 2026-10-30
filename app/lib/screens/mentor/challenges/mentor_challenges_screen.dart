@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -333,7 +334,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10.0),
-                              child: GestureDetector(
+                              child: TapExpander(child: GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
                                     selectedOptionIndex = index;
@@ -386,7 +387,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     ],
                                   ),
                                 ),
-                              ),
+                              )),
                             );
                           }),
                         ] else ...[
@@ -443,7 +444,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               _buildDialogPillBadge('پیوست فایل:'),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: GestureDetector(
+                                child: TapExpander(child: GestureDetector(
                                   onTap: () async {
                                     try {
                                       final result = await FilePicker.platform.pickFiles(
@@ -492,7 +493,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       ],
                                     ),
                                   ),
-                                ),
+                                )),
                               ),
                             ],
                           ),
@@ -847,7 +848,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     required String title,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
@@ -876,7 +877,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildMentorCategoryTabsBar() {
@@ -888,7 +889,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // درون گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -905,9 +906,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
               // میان گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -924,7 +925,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 6),
@@ -985,7 +986,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           borderRadius: BorderRadius.circular(14.8),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
@@ -1056,7 +1057,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
                     // Edit (creator only): locked as soon as one member has taken part
                     if (item['isByAdmin'] != true && item['createdByMentorId'] == user.id) ...[
-                      GestureDetector(
+                      TapExpander(child: GestureDetector(
                         onTap: () {
                           if ((item['totalSubmissions'] as int? ?? 0) > 0) {
                             AppToast.error(context, 'پس از شرکت اولین عضو، امکان ویرایش چالش وجود ندارد.');
@@ -1071,7 +1072,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ? const Color(0xFF6C6A85)
                               : const Color(0xFF9E92E8),
                         ),
-                      ),
+                      )),
                       const SizedBox(width: 10),
                     ],
 
@@ -1111,7 +1112,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
         ),
       ),
@@ -1405,7 +1406,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 3: دریافت کننده
                         _buildContactDialogFieldRow(
                           label: 'دریافت کننده:',
-                          child: GestureDetector(
+                          child: TapExpander(child: GestureDetector(
                             onTap: editing ? null : () async {
                               final picked = await _pickRecipients(ctx, user, allMembers ? <String>{} : recipientIds);
                               if (picked == null) return;
@@ -1431,7 +1432,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
                               ],
                             ),
-                          ),
+                          )),
                         ),
                         const SizedBox(height: 12),
 
@@ -1524,7 +1525,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 5b: تاریخ شروع و پایان؛ مهلت از این دو محاسبه و فقط نمایش داده می‌شود
                         _buildContactDialogFieldRow(
                           label: 'شروع:',
-                          child: GestureDetector(
+                          child: TapExpander(child: GestureDetector(
                             onTap: () async {
                               final d = await _pickJalaliDate(ctx, startDate);
                               if (d == null) return;
@@ -1534,19 +1535,19 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               });
                             },
                             child: dateBox(_formatDate(startDate)),
-                          ),
+                          )),
                         ),
                         const SizedBox(height: 12),
                         _buildContactDialogFieldRow(
                           label: 'پایان:',
-                          child: GestureDetector(
+                          child: TapExpander(child: GestureDetector(
                             onTap: () async {
                               final d = await _pickJalaliDate(ctx, endDate);
                               if (d == null) return;
                               setDialogState(() => endDate = d.isBefore(startDate) ? startDate : d);
                             },
                             child: dateBox(_formatDate(endDate)),
-                          ),
+                          )),
                         ),
                         const SizedBox(height: 12),
                         _buildContactDialogFieldRow(
@@ -1706,7 +1707,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                           ),
                                         ),
                                         if (optionControllers.length > 2) ...[
-                                          InkWell(
+                                          TapExpander(child: InkWell(
                                             onTap: () {
                                               setDialogState(() {
                                                 optionControllers.removeAt(i);
@@ -1723,11 +1724,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                                 size: 16,
                                               ),
                                             ),
-                                          ),
+                                          )),
                                           const SizedBox(width: 4),
                                         ],
                                         // Radio Button to mark correct answer
-                                        GestureDetector(
+                                        TapExpander(child: GestureDetector(
                                           onTap: () {
                                             setDialogState(() {
                                               selectedCorrectOptionIndex = i;
@@ -1761,14 +1762,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                                   )
                                                 : null,
                                           ),
-                                        ),
+                                        )),
                                       ],
                                     ),
                                   ),
                                 ],
                                 const SizedBox(height: 2),
                                 // + Add button
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     setDialogState(() {
                                       final nextNumber = (optionControllers.length + 1).toString().toPersian();
@@ -1794,7 +1795,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
@@ -2301,7 +2302,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
               return Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: TapExpander(child: GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = idx),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -2325,7 +2326,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               );
             }).toList(),
@@ -2396,7 +2397,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
                 if (_expandedChallengeIds.contains(id)) {
@@ -2534,7 +2535,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
           if (isExpanded)
@@ -2645,7 +2646,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       const SizedBox(width: 8),
 
                       // Left: Participate Button (دکمه شرکت)
-                      GestureDetector(
+                      TapExpander(child: GestureDetector(
                         onTap: () => _showSubmissionDialog(item),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
@@ -2674,7 +2675,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ],
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -341,7 +342,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
           if (unreadCount > 0)
             Material(
               color: Colors.transparent,
-              child: InkWell(
+              child: TapExpander(child: InkWell(
                 onTap: () => repository.markAllNotificationsAsRead(),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
@@ -363,7 +364,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                     ],
                   ),
                 ),
-              ),
+              )),
             ),
         ],
       ),
@@ -376,7 +377,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       textDirection: TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
+        child: TapExpander(child: InkWell(
           onTap: () => SupportMessageDialog.show(context),
           borderRadius: BorderRadius.circular(8),
           child: Container(
@@ -420,7 +421,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               ],
             ),
           ),
-        ),
+        )),
       ),
     );
   }
@@ -444,7 +445,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
               return Padding(
                 padding: const EdgeInsets.only(left: 20.0),
-                child: GestureDetector(
+                child: TapExpander(child: GestureDetector(
                   onTap: () => setState(() => _selectedFilterIndex = idx),
                   behavior: HitTestBehavior.opaque,
                   child: Row(
@@ -497,7 +498,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                       ],
                     ],
                   ),
-                ),
+                )),
               );
             }),
           ),
@@ -531,7 +532,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Top Header Box: Station card gradient stroke + dark surface
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () => _toggleExpanded(id, notify, repository),
             child: Container(
               decoration: BoxDecoration(
@@ -611,7 +612,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                     const SizedBox(width: 10),
 
                     // Action Button on the far left (styled identical to "شرکت" button in Home challenges)
-                    GestureDetector(
+                    TapExpander(child: GestureDetector(
                       onTap: () => _handleActionClick(notify, repository),
                       child: Container(
                         decoration: BoxDecoration(
@@ -637,12 +638,12 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    )),
                   ],
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Description Area directly below header
           if (isExpanded)
@@ -688,7 +689,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: GestureDetector(
+                    child: TapExpander(child: GestureDetector(
                       onTap: () => _handleActionClick(notify, repository),
                       child: Container(
                         decoration: BoxDecoration(
@@ -724,7 +725,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    )),
                   ),
                 ],
               ),

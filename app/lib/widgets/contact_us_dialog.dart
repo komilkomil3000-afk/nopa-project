@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
@@ -206,7 +207,7 @@ class ContactUsDialog extends StatelessWidget {
     required VoidCallback onTap,
     bool isAddress = false,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Row(
@@ -252,7 +253,7 @@ class ContactUsDialog extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 
   /// Location Row: Label Pill on RIGHT (First child in RTL) and Map/Pin Button on LEFT (Second child in RTL)
@@ -286,7 +287,7 @@ class ContactUsDialog extends StatelessWidget {
 
         // 2. Location button on LEFT (Second child in RTL)
         Expanded(
-          child: GestureDetector(
+          child: TapExpander(child: GestureDetector(
             onTap: () => _launch(context, 'https://maps.google.com/?q=34.6416,50.8746'),
             child: Container(
               height: 48,
@@ -316,7 +317,7 @@ class ContactUsDialog extends StatelessWidget {
                 ],
               ),
             ),
-          ),
+          )),
         ),
       ],
     );

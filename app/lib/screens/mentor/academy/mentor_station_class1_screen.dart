@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart';
@@ -476,7 +477,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            GestureDetector(
+                            TapExpander(child: GestureDetector(
                               onTap: () => setState(() => _isDescriptionExpanded = false),
                               child: const Text(
                                 'بستن (کمتر)',
@@ -488,7 +489,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                   fontFamily: AppTheme.fontFamily,
                                 ),
                               ),
-                            ),
+                            )),
                           ],
                         );
                       }
@@ -524,7 +525,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          GestureDetector(
+                          TapExpander(child: GestureDetector(
                             onTap: () => setState(() => _isDescriptionExpanded = true),
                             child: const Text(
                               'بیشتر...',
@@ -537,7 +538,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 decoration: TextDecoration.underline,
                               ),
                             ),
-                          ),
+                          )),
                         ],
                       );
                     },
@@ -582,7 +583,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final bool isExpanded = _expandedStatKeys.contains(title);
 
     return Expanded(
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: () {
           setState(() {
             if (_expandedStatKeys.contains(title)) {
@@ -629,7 +630,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -644,7 +645,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   /// Button to enter classes screen (styled compact with stroke gradient)
   Widget _buildEnterClassesButton(Map<String, dynamic> station) {
     return Center(
-      child: GestureDetector(
+      child: TapExpander(child: GestureDetector(
         onTap: () {
           Navigator.push(
             context,
@@ -706,7 +707,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -798,7 +799,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       // Next Button (On right in RTL: moves to next clip)
                       Material(
                         color: Colors.transparent,
-                        child: InkWell(
+                        child: TapExpander(child: InkWell(
                           onTap: _currentClipIndex < clips.length - 1
                               ? () {
                                   _videoPageController.nextPage(
@@ -829,14 +830,14 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                               size: 19,
                             ),
                           ),
-                        ),
+                        )),
                       ),
                       const SizedBox(width: 6),
 
                       // Previous Button (On left in RTL: moves to previous clip)
                       Material(
                         color: Colors.transparent,
-                        child: InkWell(
+                        child: TapExpander(child: InkWell(
                           onTap: _currentClipIndex > 0
                               ? () {
                                   _videoPageController.previousPage(
@@ -867,7 +868,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                               size: 19,
                             ),
                           ),
-                        ),
+                        )),
                       ),
                     ],
                   ),
@@ -943,7 +944,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   }
 
   Widget _buildTabButton(String title, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -963,7 +964,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Accordion Cards for each Member (مشابه باکس پیام‌ها)
@@ -1047,7 +1048,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Member Header (Capsule gradient surface matching Class2)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1144,7 +1145,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          GestureDetector(
+                          TapExpander(child: GestureDetector(
                             onTap: () => _openFollowUpDialog(member),
                             child: Container(
                               decoration: BoxDecoration(
@@ -1170,7 +1171,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 ),
                               ),
                             ),
-                          ),
+                          )),
                           const SizedBox(width: 8),
                           Icon(
                             isExpanded
@@ -1185,7 +1186,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   ),
                 ),
               ),
-            ),
+            )),
 
             // Member Expanded Content (Matching Class2 body background)
             if (isExpanded)

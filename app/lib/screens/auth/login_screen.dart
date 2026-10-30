@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
@@ -63,6 +64,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   // Controllers
   final TextEditingController _phoneCtrl = TextEditingController();
   final TextEditingController _secretCtrl = TextEditingController();
+  final FocusNode _phoneFocus = FocusNode();
+  final FocusNode _secretFocus = FocusNode();
   final TextEditingController _honeypotCtrl = TextEditingController();
 
   _CountryOption _selectedCountry = _availableCountries.first;
@@ -109,6 +112,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _countdownTimer?.cancel();
     _phoneCtrl.dispose();
     _secretCtrl.dispose();
+    _phoneFocus.dispose();
+    _secretFocus.dispose();
     _honeypotCtrl.dispose();
     super.dispose();
   }
@@ -470,7 +475,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             ),
                           ],
                           const SizedBox(height: 18),
-                          GestureDetector(
+                          TapExpander(child: GestureDetector(
                             onTap: saving ? null : submit,
                             child: Container(
                               height: 44,
@@ -496,7 +501,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       ),
                               ),
                             ),
-                          ),
+                          )),
                         ],
                       ),
                     ),
@@ -686,7 +691,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }) {
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -738,7 +743,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -946,7 +951,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   /// Input Container with Gradient Border
-  Widget _buildDecoratedInputBox({required Widget child, EdgeInsetsGeometry? padding}) {
+  Widget _buildDecoratedInputBox({required Widget child, EdgeInsetsGeometry? padding, FocusNode? focusNode}) {
+    // Tapping anywhere in the box (not only on the text) puts the cursor in the field
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: focusNode?.requestFocus,
+      child: _decoratedInputBoxBody(child: child, padding: padding),
+    );
+  }
+
+  Widget _decoratedInputBoxBody({required Widget child, EdgeInsetsGeometry? padding}) {
     return Container(
       decoration: BoxDecoration(
         gradient: AppColors.strokeGradient,
@@ -969,6 +983,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   /// Phone Number Input Widget with functional Country Selection Dropdown
   Widget _buildPhoneNumberInput() {
     return _buildDecoratedInputBox(
+      focusNode: _phoneFocus,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -977,6 +992,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           Expanded(
             child: TextField(
               controller: _phoneCtrl,
+              focusNode: _phoneFocus,
               keyboardType: TextInputType.phone,
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.right,
@@ -1005,7 +1021,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ),
 
           // Left of the number: Clickable Country Selector (Flag + Code + Dropdown Chevron)
-          InkWell(
+          TapExpander(child: InkWell(
             onTap: _openCountryPickerModal,
             borderRadius: BorderRadius.circular(8),
             child: Padding(
@@ -1035,7 +1051,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 ],
               ),
             ),
-          ),
+          )),
 
           // Left Side in RTL: Inline "ارسال کد" / Countdown Button
           if (_loginMode == AuthLoginMode.otp) ...[
@@ -1054,7 +1070,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ? _formatTimer(_cooldownRemainingSeconds)
         : (_hasSentOnce ? 'ارسال مجدد' : 'ارسال کد');
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: (_isSendingCode || isTimerActive) ? null : _handleSendVerificationCode,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
@@ -1082,7 +1098,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 ),
               ),
       ),
-    );
+    ));
   }
 
   /// Secret / Password Input Widget:
@@ -1092,6 +1108,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     final bool isOtp = _loginMode == AuthLoginMode.otp;
 
     return _buildDecoratedInputBox(
+      focusNode: _secretFocus,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1100,6 +1117,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           Expanded(
             child: TextField(
               controller: _secretCtrl,
+              focusNode: _secretFocus,
               obscureText: !isOtp && !_isPasswordVisible,
               keyboardType: isOtp ? TextInputType.number : TextInputType.text,
               textDirection: isOtp ? TextDirection.ltr : TextDirection.rtl,
@@ -1121,7 +1139,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
           // Eye toggle icon placed at the FAR LEFT (trailing end in RTL)
           if (!isOtp)
-            GestureDetector(
+            TapExpander(child: GestureDetector(
               onTap: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
               child: Padding(
                 padding: const EdgeInsets.only(right: 6.0),
@@ -1131,7 +1149,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   size: 20,
                 ),
               ),
-            ),
+            )),
         ],
       ),
     );
@@ -1181,7 +1199,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerRight,
-          child: GestureDetector(
+          child: TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
                 _loginMode = isOtp ? AuthLoginMode.password : AuthLoginMode.otp;
@@ -1198,14 +1216,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 fontFamily: AppTheme.fontFamily,
               ),
             ),
-          ),
+          )),
         ),
 
         const SizedBox(height: 18),
 
         // 3. Centered Golden Submit CTA: "تایید و ورود"
         Center(
-          child: GestureDetector(
+          child: TapExpander(child: GestureDetector(
             onTap: _isLoading ? null : _handleLogin,
             child: Container(
               width: 175,
@@ -1232,7 +1250,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       ),
               ),
             ),
-          ),
+          )),
         ),
       ],
     );

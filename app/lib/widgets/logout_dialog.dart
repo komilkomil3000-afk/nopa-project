@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
@@ -99,7 +100,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
                 children: [
                   // 1. Right Button (in RTL): آره ولی زود برمیگردم (Action - Camel)
                   Expanded(
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: _isLoading ? null : _handleLogout,
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -133,13 +134,13 @@ class _LogoutDialogState extends State<LogoutDialog> {
                                 textAlign: TextAlign.center,
                               ),
                       ),
-                    ),
+                    )),
                   ),
                   const SizedBox(width: 12),
 
                   // 2. Left Button (in RTL): نه، دستم خورد (Cancel - Purple)
                   Expanded(
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: _isLoading ? null : () => Navigator.pop(context),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -164,7 +165,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
+                    )),
                   ),
                 ],
               ),

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
@@ -581,7 +582,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      tapTargetSize: MaterialTapTargetSize.padded,
                     ),
                     child: const Text(
                       'درخواست اضافه کردن کاربر',
@@ -639,7 +640,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: () => _showCaravanSelectionBottomSheet(context, appState),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -743,7 +744,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -803,7 +804,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: () {
                         appState.setSelectedCaravan(c.id, c.name);
                         Navigator.pop(ctx);
@@ -869,7 +870,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                           ],
                         ),
                       ),
-                    ),
+                    )),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -885,7 +886,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   Widget _buildMemberCard(CaravanMemberModel member, CaravanModel caravan) {
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: () => _openMemberReportCard(member, caravan),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -966,7 +967,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         minimumSize: const Size(0, 26),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       child: const Text(
                         'درخواست حذف',
@@ -988,7 +989,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         minimumSize: const Size(0, 26),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       child: const Text(
                         'تماس',
@@ -1014,7 +1015,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }
@@ -1308,7 +1309,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         child: Column(
           children: [
             // Station Header Row (Tap to expand/collapse)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1366,7 +1367,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                   ],
                 ),
               ),
-            ),
+            )),
 
             // Expanded Sessions Stepper List
             if (isExpanded) ...[

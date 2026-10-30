@@ -1486,3 +1486,52 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); node --check app.js; tsc not run
 - **Status:** Completed
+
+### [2026-10-30 22:48] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_gallery_item.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/tap_expander.dart` (Created)
+- **Description of Changes:**
+  - Bigger touch ranges: login phone/password boxes focus their field when tapped anywhere in the box (FocusNodes)
+  - new TapExpander widget (extends the hit area of small tappables to a 44px target without changing layout) now wraps all 153 GestureDetector/InkWell usages in lib
+  - theme gets textButton/iconButton minimum size 44-56 and padded tap targets
+  - shrinkWrap tap targets and zero-size IconButton constraints enlarged
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed

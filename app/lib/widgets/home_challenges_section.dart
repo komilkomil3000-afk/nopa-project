@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -50,7 +51,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(40, 30),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       child: const Text(
                         'همه',
@@ -183,7 +184,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
   }) {
     final bool isSelected = _selectedTab == type;
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           _selectedTab = type;
@@ -246,7 +247,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   /// The latest challenges of the active tab, read from the challenges the server returned for this
@@ -321,7 +322,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           borderRadius: BorderRadius.circular(13),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: InkWell(
+        child: TapExpander(child: InkWell(
           // Every challenge, even an expired or completed one, opens in the challenges page
           onTap: () => context.findAncestorStateOfType<MainScreenState>()?.setIndex(2),
           borderRadius: BorderRadius.circular(13),
@@ -410,7 +411,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }

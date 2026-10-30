@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -150,7 +151,7 @@ class StationProgressStepper extends StatelessWidget {
       fill = Color.lerp(_locked, _gold, t)!;
     }
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onStationSelected != null ? () => onStationSelected!(index) : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
@@ -175,7 +176,7 @@ class StationProgressStepper extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Connecting Horizontal Rail Track Segment between Stations
@@ -286,11 +287,11 @@ class StationProgressStepper extends StatelessWidget {
   }
 
   Widget _buildChampionBadge(BuildContext context, double size) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () => _showFinalDialog(context),
       behavior: HitTestBehavior.opaque,
       child: _championBadgeBody(size),
-    );
+    ));
   }
 
   Widget _championBadgeBody(double size) {

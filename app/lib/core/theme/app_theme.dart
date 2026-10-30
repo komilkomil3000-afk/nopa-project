@@ -43,6 +43,20 @@ class AppTheme {
         brightness: Brightness.light,
         surface: Colors.white,
       ),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(56, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(fontFamily: fontFamily),
         labelStyle: TextStyle(fontFamily: fontFamily),
@@ -65,6 +79,20 @@ class AppTheme {
         seedColor: AppColors.purple,
         brightness: Brightness.dark,
         surface: AppColors.cardBackground,
+      ),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          minimumSize: const Size(56, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(fontFamily: fontFamily),

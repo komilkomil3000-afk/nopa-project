@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -127,7 +128,7 @@ class JarchiItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () => showNewsDialog(
         context,
         title: title,
@@ -205,6 +206,6 @@ class JarchiItem extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

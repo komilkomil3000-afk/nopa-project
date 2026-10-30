@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'dart:math' as math;
@@ -575,7 +576,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          GestureDetector(
+                          TapExpander(child: GestureDetector(
                             onTap: () => setState(() => _isDescriptionExpanded = false),
                             child: const Text(
                               'بستن (کمتر)',
@@ -587,7 +588,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                                 fontFamily: AppTheme.fontFamily,
                               ),
                             ),
-                          ),
+                          )),
                         ],
                       );
                     }
@@ -623,7 +624,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        GestureDetector(
+                        TapExpander(child: GestureDetector(
                           onTap: () => setState(() => _isDescriptionExpanded = true),
                           child: const Text(
                             'بیشتر...',
@@ -636,7 +637,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                               decoration: TextDecoration.underline,
                             ),
                           ),
-                        ),
+                        )),
                       ],
                     );
                   },
@@ -680,7 +681,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final bool isExpanded = _expandedStatKeys.contains(title);
 
     return Expanded(
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: () {
           setState(() {
             if (_expandedStatKeys.contains(title)) {
@@ -727,7 +728,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -825,7 +826,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                     // 1. Next Button (On right in RTL: moves to next clip)
                     Material(
                       color: Colors.transparent,
-                      child: InkWell(
+                      child: TapExpander(child: InkWell(
                         onTap: _currentClipIndex < _allClips.length - 1
                             ? () {
                                 _videoPageController.nextPage(
@@ -856,14 +857,14 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                             size: 19,
                           ),
                         ),
-                      ),
+                      )),
                     ),
                     const SizedBox(width: 6),
 
                     // 2. Previous Button (On left in RTL: moves to previous clip)
                     Material(
                       color: Colors.transparent,
-                      child: InkWell(
+                      child: TapExpander(child: InkWell(
                         onTap: _currentClipIndex > 0
                             ? () {
                                 _videoPageController.previousPage(
@@ -894,7 +895,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                             size: 19,
                           ),
                         ),
-                      ),
+                      )),
                     ),
                   ],
                 ),
@@ -982,11 +983,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     );
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: rotating ? _RotatingStroke(color: gold, child: box) : box,
-      ),
+      )),
     );
   }
 }

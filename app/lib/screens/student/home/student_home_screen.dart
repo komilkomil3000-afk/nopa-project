@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
@@ -112,7 +113,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
               const SizedBox(width: 6),
               Expanded(
-                child: GestureDetector(
+                child: TapExpander(child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
                     final currentStationMap = levelStation;
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     title: 'منزلگاه کنونی',
                     value: currentStationTitle,
                   ),
-                ),
+                )),
               ),
             ],
           ),
@@ -145,7 +146,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
   Widget _buildInfoColumn({required String title, required String value}) {
     final bool isExpanded = _expandedInfoTitles.contains(title);
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           if (isExpanded) {
@@ -187,7 +188,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   int _selectedAssetIndex = 0;
@@ -271,7 +272,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -376,7 +377,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   @override
@@ -462,7 +463,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(40, 30),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          tapTargetSize: MaterialTapTargetSize.padded,
                         ),
                         child: const Text(
                           'همه',

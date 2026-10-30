@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
@@ -63,7 +64,7 @@ class StationGalleryItem extends StatelessWidget {
       );
     }
     final resolved = ApiConstants.resolveImageUrl(url);
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () => _showFull(context, resolved),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -79,6 +80,6 @@ class StationGalleryItem extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

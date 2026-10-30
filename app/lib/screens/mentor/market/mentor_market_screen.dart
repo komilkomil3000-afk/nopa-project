@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -859,7 +860,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   Widget _buildMentorTabButton(String title, int tabIndex) {
     final bool isSelected = _selectedMentorMarketTab == tabIndex;
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           _selectedMentorMarketTab = tabIndex;
@@ -883,7 +884,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// List of Member Assets for Mentor
@@ -1023,7 +1024,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Member Header (Capsule gradient surface matching Mentor Station)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1103,7 +1104,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          GestureDetector(
+                          TapExpander(child: GestureDetector(
                             onTap: () {
                               Navigator.pushNamed(context, '/tickets');
                             },
@@ -1131,7 +1132,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 ),
                               ),
                             ),
-                          ),
+                          )),
                           const SizedBox(width: 8),
                           Icon(
                             isExpanded
@@ -1146,7 +1147,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
               ),
-            ),
+            )),
 
             // Expanded Asset Values Row (Matching Dark Body style)
             if (isExpanded)
@@ -1281,7 +1282,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header Row (مبادله سمت راست، نام فرد سمت چپ)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1403,7 +1404,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
               ),
-            ),
+            )),
 
             // Expanded Body: تاریخ سمت راست، تایید و رد و توضیح سمت چپ
             if (isExpanded)
@@ -1473,7 +1474,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             ),
                             if (canCancel) ...[
                               const SizedBox(width: 10),
-                              GestureDetector(
+                              TapExpander(child: GestureDetector(
                                 onTap: () {
                                   _showRejectExplanationDialog(
                                     memberName: studentName,
@@ -1512,7 +1513,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                     ),
                                   ),
                                 ),
-                              ),
+                              )),
                             ],
                           ],
                         ],
@@ -1773,7 +1774,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -1878,7 +1879,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and responsive layout
@@ -2280,7 +2281,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   }) {
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
@@ -2319,7 +2320,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -2394,7 +2395,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   children: [
                     // Tab 0: برترین شرکت کننده ها
                     Expanded(
-                      child: GestureDetector(
+                      child: TapExpander(child: GestureDetector(
                         onTap: () => setState(() => _selectedLeaderboardTab = 0),
                         behavior: HitTestBehavior.opaque,
                         child: AnimatedContainer(
@@ -2417,14 +2418,14 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ),
 
                     const SizedBox(width: 4),
 
                     // Tab 1: برترین کاروان ها
                     Expanded(
-                      child: GestureDetector(
+                      child: TapExpander(child: GestureDetector(
                         onTap: () => setState(() => _selectedLeaderboardTab = 1),
                         behavior: HitTestBehavior.opaque,
                         child: AnimatedContainer(
@@ -2447,7 +2448,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ),
                   ],
                 ),

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -522,7 +523,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                         const SizedBox(height: 24),
 
                         // Action 1: دانلود مستقیم گواهی Button (Matching ثبت تغییرات Style)
-                        InkWell(
+                        TapExpander(child: InkWell(
                           onTap: _isDownloading ? null : _downloadCertificate,
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -569,11 +570,11 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     ),
                             ),
                           ),
-                        ),
+                        )),
                         const SizedBox(height: 12),
 
                         // Action 2: درخواست نسخه فیزیکی گواهی Button
-                        InkWell(
+                        TapExpander(child: InkWell(
                           onTap: _showPhysicalOrderModal,
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -604,7 +605,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                               ],
                             ),
                           ),
-                        ),
+                        )),
                         const SizedBox(height: 20),
                       ],
                     ),

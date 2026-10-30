@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -878,7 +879,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Member Header (Capsule gradient surface matching Class2)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -982,7 +983,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               ),
                             ),
                           ] else if (status == 'needs_revision') ...[
-                            GestureDetector(
+                            TapExpander(child: GestureDetector(
                               onTap: () => _showRevisionDialog(item),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
@@ -1001,10 +1002,10 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                   ),
                                 ),
                               ),
-                            ),
+                            )),
                           ] else ...[
                             // Button 1: نیاز به اصلاح
-                            GestureDetector(
+                            TapExpander(child: GestureDetector(
                               onTap: () => _showRevisionDialog(item),
                               child: Container(
                                 decoration: BoxDecoration(
@@ -1029,11 +1030,11 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                   ),
                                 ),
                               ),
-                            ),
+                            )),
                             const SizedBox(width: 6),
 
                             // Button 2: تایید و اهدای جایزه
-                            GestureDetector(
+                            TapExpander(child: GestureDetector(
                               onTap: () => _approveParticipant(item),
                               child: Container(
                                 decoration: BoxDecoration(
@@ -1058,7 +1059,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                   ),
                                 ),
                               ),
-                            ),
+                            )),
                           ],
 
                           const SizedBox(width: 6),
@@ -1076,7 +1077,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                   ),
                 ),
               ),
-            ),
+            )),
 
             // Expanded Content Area
             if (isExpanded)
@@ -1164,7 +1165,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: GestureDetector(
+                        child: TapExpander(child: GestureDetector(
                           onTap: () => _showHistory(item),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1177,7 +1178,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                               ),
                             ],
                           ),
-                        ),
+                        )),
                       ),
                     ],
                   ),

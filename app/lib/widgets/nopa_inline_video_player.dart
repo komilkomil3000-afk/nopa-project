@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -314,7 +315,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               children: [
                 // 1. Video Player or Thumbnail Poster
                 if (_isInitialized && _controller != null)
-                  GestureDetector(
+                  TapExpander(child: GestureDetector(
                     onTap: _toggleControls,
                     child: Center(
                       child: AspectRatio(
@@ -324,7 +325,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         child: VideoPlayer(_controller!),
                       ),
                     ),
-                  )
+                  ))
                 else
                   _buildThumbnailPoster(),
 
@@ -378,7 +379,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   Center(
                     child: Material(
                       color: Colors.transparent,
-                      child: InkWell(
+                      child: TapExpander(child: InkWell(
                         onTap: () => _startVideo(),
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
@@ -400,7 +401,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ),
                   ),
 
@@ -498,7 +499,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       initialValue: _playbackSpeed,
                       tooltip: 'سرعت پخش',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                       onSelected: _changeSpeed,
                       itemBuilder: (context) => [
                         const PopupMenuItem(value: 0.5, child: Text('0.5x')),
@@ -529,7 +530,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         initialValue: _selectedQuality,
                         tooltip: 'کیفیت ویدیو',
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -582,7 +583,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               // Play / Pause / Replay Button
               Material(
                 color: Colors.transparent,
-                child: InkWell(
+                child: TapExpander(child: InkWell(
                   onTap: () {
                     if (isEnded) {
                       controller.seekTo(Duration.zero);
@@ -616,7 +617,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       ),
                     ),
                   ),
-                ),
+                )),
               ),
               const SizedBox(width: 8),
 
@@ -673,7 +674,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   IconButton(
                     icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
                     padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     onPressed: _openFullscreen,
                   ),
                 ],
@@ -776,7 +777,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
       textDirection: TextDirection.ltr,
       child: Scaffold(
       backgroundColor: Colors.black,
-      body: GestureDetector(
+      body: TapExpander(child: GestureDetector(
         onTap: () {
           setState(() => _showControls = !_showControls);
           if (_showControls) _resetTimer();
@@ -983,7 +984,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
               ),
           ],
         ),
-      ),
+      )),
     ));
   }
 }

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -424,7 +425,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                           children: [
                             // 1. ثبت تغییرات Button (English NOPA Gold Gradient Style)
                             Expanded(
-                              child: InkWell(
+                              child: TapExpander(child: InkWell(
                                 onTap: _isSaving ? null : _saveChanges,
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -464,13 +465,13 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                           ),
                                   ),
                                 ),
-                              ),
+                              )),
                             ),
                             const SizedBox(width: 14),
 
                             // 2. لغو Button (Purple border & text)
                             Expanded(
-                              child: InkWell(
+                              child: TapExpander(child: InkWell(
                                 onTap: () => Navigator.pop(context),
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -501,7 +502,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                                     ),
                                   ),
                                 ),
-                              ),
+                              )),
                             ),
                           ],
                         ),
@@ -716,7 +717,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
               ),
 
               // Embedded Change Request Button (matching ثبت تغییرات style)
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
@@ -738,7 +739,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
         ),
@@ -801,7 +802,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   margin: EdgeInsets.only(bottom: maxLines > 1 ? 4 : 0),
@@ -824,7 +825,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
         ),
@@ -914,14 +915,14 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                             ),
                           ),
                         ),
-                        GestureDetector(
+                        TapExpander(child: GestureDetector(
                           onTap: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
                           child: Icon(
                             _isNewPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             color: const Color(0xFF8E889D),
                             size: 18,
                           ),
-                        ),
+                        )),
                       ],
                     ),
                   ),
@@ -972,14 +973,14 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                             ),
                           ),
                         ),
-                        GestureDetector(
+                        TapExpander(child: GestureDetector(
                           onTap: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
                           child: Icon(
                             _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             color: const Color(0xFF8E889D),
                             size: 18,
                           ),
-                        ),
+                        )),
                       ],
                     ),
                   ),

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
@@ -150,7 +151,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // 1. Right: Circular Avatar with Double Ring and Pencil Edit Badge
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () => _openEditProfile(user),
             child: Stack(
               clipBehavior: Clip.none,
@@ -206,7 +207,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 ),
               ],
             ),
-          ),
+          )),
 
           const SizedBox(width: 16),
 
@@ -319,7 +320,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
   }) {
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: TapExpander(child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
@@ -374,7 +375,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -606,7 +607,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
         child: Column(
           children: [
             // Station Header Row (Tap to expand/collapse)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -664,7 +665,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                   ],
                 ),
               ),
-            ),
+            )),
 
             // Expanded Sessions Stepper List
             if (isExpanded) ...[

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -412,7 +413,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     required String title,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
@@ -441,7 +442,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildMentorCategoryTabsBar() {
@@ -453,7 +454,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // درون گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -470,9 +471,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
               // میان گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -489,7 +490,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 6),
@@ -550,7 +551,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           borderRadius: BorderRadius.circular(14.8),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
@@ -655,7 +656,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
         ),
       ),
@@ -977,7 +978,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                           ),
                                         ),
                                         if (optionControllers.length > 2) ...[
-                                          InkWell(
+                                          TapExpander(child: InkWell(
                                             onTap: () {
                                               setDialogState(() {
                                                 optionControllers.removeAt(i);
@@ -994,11 +995,11 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                                 size: 16,
                                               ),
                                             ),
-                                          ),
+                                          )),
                                           const SizedBox(width: 4),
                                         ],
                                         // Radio Button to mark correct answer
-                                        GestureDetector(
+                                        TapExpander(child: GestureDetector(
                                           onTap: () {
                                             setDialogState(() {
                                               selectedCorrectOptionIndex = i;
@@ -1032,14 +1033,14 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                                   )
                                                 : null,
                                           ),
-                                        ),
+                                        )),
                                       ],
                                     ),
                                   ),
                                 ],
                                 const SizedBox(height: 2),
                                 // + Add button
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     setDialogState(() {
                                       final nextNumber = (optionControllers.length + 1).toString().toPersian();
@@ -1065,7 +1066,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
@@ -1462,7 +1463,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
               return Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: TapExpander(child: GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = idx),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -1486,7 +1487,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               );
             }).toList(),
@@ -1557,7 +1558,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
                 if (_expandedChallengeIds.contains(id)) {
@@ -1695,7 +1696,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
           if (isExpanded)
@@ -1806,7 +1807,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       const SizedBox(width: 8),
 
                       // Left: Participate Button (دکمه شرکت)
-                      GestureDetector(
+                      TapExpander(child: GestureDetector(
                         onTap: () => _showSubmissionDialog(item),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
@@ -1837,7 +1838,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ],
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
@@ -131,7 +132,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
   Widget _buildInfoColumn({required String title, required String value}) {
     final bool isExpanded = _expandedInfoTitles.contains(title);
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           if (isExpanded) {
@@ -173,7 +174,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   /// Caravan Selector Action Card styled like "ورود به صفحه کلاس ها"
@@ -182,7 +183,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
-      child: GestureDetector(
+      child: TapExpander(child: GestureDetector(
         onTap: () => _showCaravanSelectionBottomSheet(context, appState),
         child: Container(
           decoration: BoxDecoration(
@@ -308,7 +309,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -368,7 +369,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: () {
                         appState.setSelectedCaravan(c.id, c.name);
                         Navigator.pop(ctx);
@@ -434,7 +435,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                           ],
                         ),
                       ),
-                    ),
+                    )),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -528,7 +529,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -633,7 +634,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Section: Quick Access ("دسترسی سریع") with 5 Action Cards matching StationCard design
@@ -730,7 +731,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     required String imageUrl,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         width: 164,
@@ -893,7 +894,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   @override

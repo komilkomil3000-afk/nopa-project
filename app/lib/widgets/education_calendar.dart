@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../services/api_service.dart';
@@ -363,7 +364,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Left Side: Previous Month (< شهریور)
-                  GestureDetector(
+                  TapExpander(child: GestureDetector(
                     onTap: _goToPreviousMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
@@ -387,7 +388,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                       ],
                     ),
-                  ),
+                  )),
 
                   // Center: Current Month Title (مهرماه)
                   Text(
@@ -402,7 +403,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   ),
 
                   // Right Side: Next Month (آبان >)
-                  GestureDetector(
+                  TapExpander(child: GestureDetector(
                     onTap: _goToNextMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
@@ -426,7 +427,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                       ],
                     ),
-                  ),
+                  )),
                 ],
               ),
             ),
@@ -513,7 +514,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     required bool hasOverdue,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         width: 48,
@@ -638,7 +639,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   /// Bottom 2-Column Class Details Card: Right is Skill Classes, Left is Media Classes (Overdue removed)
@@ -706,7 +707,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
           padding: const EdgeInsets.symmetric(vertical: 3.0),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: () => _navigateToClass(event),
               borderRadius: BorderRadius.circular(8),
               splashColor: accentColor.withValues(alpha: 0.15),
@@ -750,7 +751,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
         );
       }).toList(),

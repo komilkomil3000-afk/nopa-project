@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:io' as io;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
@@ -442,7 +443,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       final bool isSelected = _answers[_step] == index;
       return Padding(
         padding: const EdgeInsets.only(bottom: 10.0),
-        child: GestureDetector(
+        child: TapExpander(child: GestureDetector(
           onTap: _sending ? null : () => setState(() => _answers[_step] = index),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
@@ -481,7 +482,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
               ],
             ),
           ),
-        ),
+        )),
       );
     });
     return [
@@ -567,7 +568,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
             _pill('پیوست فایل:'),
             const SizedBox(width: 12),
             Expanded(
-              child: GestureDetector(
+              child: TapExpander(child: GestureDetector(
                 onTap: _sending ? null : _pickFile,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -602,7 +603,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                     ],
                   ),
                 ),
-              ),
+              )),
             ),
           ],
         ),
@@ -636,7 +637,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                 ),
               ),
               if (!picked && _existingFileUrl != null)
-                GestureDetector(
+                TapExpander(child: GestureDetector(
                   onTap: () => _openUrl(_existingFileUrl),
                   child: const Text(
                     'باز کردن',
@@ -647,7 +648,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                       fontFamily: AppTheme.fontFamily,
                     ),
                   ),
-                ),
+                )),
             ],
           ),
         );
@@ -659,7 +660,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
         : CachedNetworkImageProvider(_existingFileUrl!);
     if (provider == null) return tile();
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () => _showFullImage(provider),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -674,7 +675,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildActions() {

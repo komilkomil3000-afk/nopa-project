@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
@@ -252,7 +253,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   children: [
-                    GestureDetector(
+                    TapExpander(child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (isLocked) {
@@ -426,7 +427,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   fit: BoxFit.contain,
                                 ),
                               const SizedBox(height: 12),
-                              GestureDetector(
+                              TapExpander(child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   setState(() {
@@ -445,12 +446,12 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                     size: 19,
                                   ),
                                 ),
-                              ),
+                              )),
                             ],
                           ),
                         ],
                       ),
-                    ),
+                    )),
 
                     // Expandable Panel with summary info (Right-aligned in RTL, No dark background box, clean small text, no emojis)
                     AnimatedCrossFade(

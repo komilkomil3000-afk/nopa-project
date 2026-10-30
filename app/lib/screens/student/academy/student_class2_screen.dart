@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/models/station.dart';
 import 'dart:async';
@@ -582,7 +583,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   Widget _buildTabItem({required String title, required int index}) {
     final isSelected = _selectedTab == index;
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           _selectedTab = index;
@@ -605,7 +606,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   String _formatDuration(dynamic duration) {
@@ -679,7 +680,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             child: Column(
               children: [
                 // 1. Session Header (Capsule gradient surface matching StationCard)
-                InkWell(
+                TapExpander(child: InkWell(
                   onTap: () {
                     if (isLocked) {
                       AppToast.info(context, 'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید');
@@ -753,7 +754,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       ],
                     ),
                   ),
-                ),
+                )),
 
                 // 2. Expanded Parts Section (Seamless dark background without purple box)
                 if (isExpanded && clips.isNotEmpty) ...[
@@ -788,7 +789,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             child: Row(
                               children: [
                                 // 1. Far Right in RTL: وضعیت پارت (تایید برای دیده شده، پاز برای در حال دیدن، پلی برای دیده نشده)
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: selectPart,
                                   child: isPartLocked
                                       ? Container(
@@ -832,12 +833,12 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                               ),
                                               child: const Icon(Icons.play_arrow_rounded, color: Colors.white70, size: 13),
                                             )),
-                                ),
+                                )),
                                 const SizedBox(width: 8),
 
                                 // 2. Right in RTL next to icon: عنوان پارت (کوتاه تر، کوچکتر و غیربولد)
                                 Expanded(
-                                  child: GestureDetector(
+                                  child: TapExpander(child: GestureDetector(
                                     onTap: selectPart,
                                     child: Text(
                                       clip['title']?.toString() ?? 'پارت ${_toFarsiDigit(cIndex + 1)}',
@@ -852,7 +853,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                         fontFamilyFallback: AppTheme.fontFamilyFallback,
                                       ),
                                     ),
-                                  ),
+                                  )),
                                 ),
                                 const SizedBox(width: 8),
 
@@ -869,7 +870,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 const SizedBox(width: 8),
 
                                 // 4. Far Left in RTL: دکمه آزمون
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     if (isQuizUnlocked) {
                                       _showPartMiniQuiz(cIndex);
@@ -902,7 +903,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
@@ -1103,7 +1104,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 1. Far Left: منزلگاه بعد (تعویض شده با قبل)
-          InkWell(
+          TapExpander(child: InkWell(
             onTap: (_stationCount == 0 || _currentStationIndex < _stationCount - 1) ? () => _goToStation(1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1124,7 +1125,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ],
             ),
-          ),
+          )),
 
           // 2. Middle Left: ارتباط با راهبر
           ElevatedButton(
@@ -1157,7 +1158,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ),
 
           // 4. Far Right: منزلگاه قبل (تعویض شده با بعد)
-          InkWell(
+          TapExpander(child: InkWell(
             onTap: _currentStationIndex > 0 ? () => _goToStation(-1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1178,7 +1179,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ],
             ),
-          ),
+          )),
         ],
       ),
     );
@@ -1313,7 +1314,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               final Color accent = isCorrectOpt
                                   ? AppToast.successColor
                                   : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
-                              return GestureDetector(
+                              return TapExpander(child: GestureDetector(
                                 onTap: reviewMode
                                     ? null
                                     : () => setDialogState(() {
@@ -1356,7 +1357,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                     ],
                                   ),
                                 ),
-                              );
+                              ));
                             }),
                           ],
                         ),
