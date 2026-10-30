@@ -1289,6 +1289,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     startDate = DateTime(startDate.year, startDate.month, startDate.day);
     endDate = DateTime(endDate.year, endDate.month, endDate.day);
 
+    // Fields left empty / invalid on submit get a red border
+    final Set<String> invalid = {};
+    Color borderFor(String key) => invalid.contains(key) ? const Color(0xFFEF4444) : const Color(0xFF7A709E);
+
     Widget dateBox(String text) => Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -1451,7 +1455,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       alignment: Alignment.center,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+                                        border: Border.all(color: borderFor(entry[0] as String), width: 1.1),
                                       ),
                                       child: TextField(
                                         controller: entry[1] as TextEditingController,
@@ -1604,7 +1608,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               color: Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF7A709E),
+                                color: borderFor('title'),
                                 width: 1.1,
                               ),
                             ),
@@ -1636,7 +1640,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               color: Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF7A709E),
+                                color: borderFor('question'),
                                 width: 1.1,
                               ),
                             ),
@@ -1673,9 +1677,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: selectedCorrectOptionIndex == i
-                                            ? const Color(0xFFC09268)
-                                            : const Color(0xFF7A709E),
+                                        color: invalid.contains('opt$i')
+                                            ? const Color(0xFFEF4444)
+                                            : selectedCorrectOptionIndex == i
+                                                ? const Color(0xFFC09268)
+                                                : const Color(0xFF7A709E),
                                         width: 1.1,
                                       ),
                                     ),
@@ -1805,8 +1811,31 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       final title = titleCtrl.text.trim();
                                       final question = questionCtrl.text.trim();
                                       final bool isQuiz = selectedType == 'چند گزینه ای';
-                                      if (title.isEmpty || question.isEmpty) {
-                                        AppToast.error(ctx, 'تیتر و متن سوال را وارد کنید.');
+                                      final bad = <String>{};
+                                      if (title.isEmpty) bad.add('title');
+                                      if (question.isEmpty) bad.add('question');
+                                      if (isQuiz) {
+                                        for (var i = 0; i < optionControllers.length; i++) {
+                                          final text = optionControllers[i].text.replaceFirst(RegExp(r'^[۰-۹0-9]+[.\-]\s*'), '').trim();
+                                          if (text.isEmpty) bad.add('opt$i');
+                                        }
+                                      }
+                                      final rMin = int.tryParse(rewardMinCtrl.text.trim().toEnglishDigits());
+                                      final rMax = int.tryParse(rewardMaxCtrl.text.trim().toEnglishDigits());
+                                      if (rMin == null || rMin < 0) bad.add('حداقل');
+                                      if (rMax == null || rMax <= 0) bad.add('حداکثر');
+                                      if (rMin != null && rMax != null && rMin > rMax) {
+                                        bad
+                                          ..add('حداقل')
+                                          ..add('حداکثر');
+                                      }
+                                      setDialogState(() {
+                                        invalid
+                                          ..clear()
+                                          ..addAll(bad);
+                                      });
+                                      if (bad.isNotEmpty) {
+                                        AppToast.error(ctx, 'بخش‌های قرمزشده را تکمیل کنید.');
                                         return;
                                       }
 
@@ -1896,7 +1925,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               child: const Text(
                                 'ارسال',
                                 style: TextStyle(
-                                  color: Color(0xFF9E9CD6),
+                                  color: Color(0xFFE5A855),
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: AppTheme.fontFamily,

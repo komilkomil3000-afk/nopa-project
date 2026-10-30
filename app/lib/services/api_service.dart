@@ -1734,6 +1734,20 @@ class HttpApiService {
     }
   }
 
+  /// Timeline of one submission: answers, rejections (with the mentor's message) and approval.
+  Future<List<Map<String, dynamic>>> getSubmissionHistory(String submissionId) async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/submissions/$submissionId/history'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('getSubmissionHistory error: $e');
+    }
+    return [];
+  }
+
   // --- Calendar Events ---
   Future<Map<String, dynamic>?> getCalendarEvents() async {
     try {

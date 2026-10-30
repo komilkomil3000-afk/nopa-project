@@ -172,10 +172,15 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     );
     AppToast.success(
       context,
-      result.isQuiz ? 'پاسخ شما ثبت شد' : 'پاسخ شما ارسال شد و در انتظار بررسی راهبر است',
+      result.isQuiz
+          ? (result.rewardAmount > 0
+              ? 'پاسخ شما ثبت شد؛ +${result.rewardAmount.toString().toPersianDigits()} ${result.rewardAsset == 'nakh' ? 'نخ' : 'زریک'} به حساب شما اضافه شد'
+              : 'پاسخ شما ثبت شد')
+          : 'پاسخ شما ارسال شد و در انتظار بررسی راهبر است',
     );
     await repository.refreshChallenges();
     if (result.isQuiz) await repository.refreshUser();
+    await repository.fetchNotifications();
   }
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {

@@ -91,6 +91,19 @@ export async function submitTask(req: AuthRequest, res: Response) {
       });
     }
 
+    await prisma.submissionEvent.create({
+      data: {
+        submissionId: submission.id,
+        challengeId,
+        studentId: req.user.id,
+        action: 'submitted',
+        answerText: answerText ?? null,
+        fileUrl: fileUrl ?? null,
+        actorId: req.user.id,
+        actorName: student?.name ?? null
+      }
+    });
+
     // Notify caravan mentor
     if (student?.caravanId) {
       const caravan = await prisma.caravan.findUnique({
@@ -328,13 +341,15 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     const rewardMin = submission.challenge.rewardMin || 0;
     const rewardMax = submission.challenge.rewardMax || 0;
     const hasRange = rewardMax > 0;
+    const allowedMin = hasRange ? rewardMin : (submission.challenge.rewardZarik || 0);
+    const allowedMax = hasRange ? rewardMax : allowedMin;
 
     const reward = score !== undefined ? Number(score) : (hasRange ? rewardMax : (submission.challenge.rewardZarik || 200));
     if (status === 'approved' && (!Number.isFinite(reward) || reward < 0)) {
       return res.status(400).json({ error: 'مقدار پاداش نامعتبر است' });
     }
-    if (status === 'approved' && hasRange && req.user.role === 'mentor' && (!Number.isInteger(reward) || reward < rewardMin || reward > rewardMax)) {
-      return res.status(400).json({ error: `مقدار پاداش باید بین ${rewardMin} و ${rewardMax} ${assetLabel} باشد` });
+    if (status === 'approved' && req.user.role === 'mentor' && (!Number.isInteger(reward) || reward < allowedMin || reward > allowedMax)) {
+      return res.status(400).json({ error: allowedMin === allowedMax ? `مقدار پاداش این چالش ${allowedMin} ${assetLabel} است` : `مقدار پاداش باید بین ${allowedMin} و ${allowedMax} ${assetLabel} باشد` });
     }
 
     let updatedSubmission;
@@ -381,6 +396,20 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       throw e;
     }
 
+    const reviewer = await prisma.user.findUnique({ where: { id: req.user.id }, select: { name: true } });
+    await prisma.submissionEvent.create({
+      data: {
+        submissionId: id,
+        challengeId: submission.challengeId,
+        studentId: submission.studentId,
+        action: status === 'approved' ? 'approved' : 'rejected',
+        feedback: mentorFeedback ?? null,
+        score: status === 'approved' ? reward : 0,
+        actorId: req.user.id,
+        actorName: req.user.role === 'admin' ? 'مدیر سیستم' : (reviewer?.name ?? 'راهبر')
+      }
+    });
+
     // Trigger notification
     await prisma.notification.create({
       data: {
@@ -414,5 +443,45 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
   } catch (error) {
     console.error('reviewSubmission error:', error);
     res.status(500).json({ error: 'خطایی در ثبت ارزیابی تکلیف رخ داد' });
+  }
+}
+
+/** Full timeline of one submission: answers, rejections (with the mentor's message) and the approval. */
+export async function getSubmissionHistory(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+    const { id } = req.params;
+    const submission = await prisma.submission.findUnique({
+      where: { id },
+      include: { challenge: true, student: { select: { caravanId: true } } }
+    });
+    if (!submission) {
+      return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
+    }
+
+    if (req.user.role === 'student') {
+      if (submission.studentId !== req.user.id) {
+        return res.status(403).json({ error: 'دسترسی غیرمجاز' });
+      }
+    } else if (req.user.role === 'mentor') {
+      const caravans = await prisma.caravan.findMany({ where: { mentorId: req.user.id }, select: { id: true } });
+      const caravanIds = caravans.map(c => c.id);
+      const isOwner = submission.challenge.createdByMentorId === req.user.id ||
+        (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId));
+      if (!isOwner) {
+        return res.status(403).json({ error: 'شما فقط به سابقه‌ی اعضای کاروان خود دسترسی دارید' });
+      }
+    }
+
+    const events = await prisma.submissionEvent.findMany({
+      where: { submissionId: id },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json(events);
+  } catch (error) {
+    console.error('getSubmissionHistory error:', error);
+    res.status(500).json({ error: 'خطایی در دریافت تاریخچه رخ داد' });
   }
 }

@@ -14,7 +14,14 @@ import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 class ChallengeSubmissionResult {
   final String answerText;
   final bool isQuiz;
-  const ChallengeSubmissionResult({required this.answerText, required this.isQuiz});
+  final int rewardAmount;
+  final String rewardAsset; // 'zarik' | 'nakh'
+  const ChallengeSubmissionResult({
+    required this.answerText,
+    required this.isQuiz,
+    this.rewardAmount = 0,
+    this.rewardAsset = 'zarik',
+  });
 }
 
 /// Answer dialog for a challenge.
@@ -197,6 +204,8 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
               ? 'گزینه انتخابی: ${_answers[0] + 1}'
               : 'گزینه‌های انتخابی: ${_answers.map((a) => a + 1).join('، ')}',
           isQuiz: true,
+          rewardAmount: (res.result?['rewardAmount'] as num?)?.toInt() ?? 0,
+          rewardAsset: res.result?['rewardAssetType']?.toString() == 'nakh' ? 'nakh' : 'zarik',
         ),
       );
       return;

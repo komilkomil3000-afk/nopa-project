@@ -1278,3 +1278,39 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
 - **Status:** Completed
+
+### [2026-10-30 19:38] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Mentor create/edit challenge dialog: empty or invalid fields (title, question, options, reward min/max) get a red border when 'ارسال' is pressed (with one toast)
+  - 'ارسال' text now uses the same colour (0xFFE5A855) as the recipient picker's 'تایید'
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed
+
+### [2026-10-30 19:48] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261035_submission_events/` (Created)
+- **Description of Changes:**
+  - Review range: reviewSubmission now binds a mentor's approval amount to the challenge's min/max, and to exactly rewardZarik for legacy fixed challenges (app approve dialog mirrors it). Student notifications: quiz always creates a result notification (reward type, with asset added), app shows the added zarik/nakh in the toast and fetches notifications immediately after a quiz and when the app resumes. History: new SubmissionEvent table (migration 20261035_submission_events) logs every submission, rejection (with mentor message) and approval
+  - GET /api/v1/submissions/:id/history (mentor of that student/creator, admin, or the student)
+  - mentor grading screen gets 'تاریخچه رد، اصلاح و تایید' per member showing the timeline
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc/prisma generate not run
+- **Status:** Completed

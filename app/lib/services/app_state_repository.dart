@@ -88,6 +88,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       if (state == AppLifecycleState.resumed) {
         recordActivity();
         if (_apiService.isAuthenticated) {
+          fetchNotifications().catchError((e) {
+            debugPrint('Resumed fetchNotifications error: $e');
+          });
           refreshUser().catchError((e) {
             debugPrint('Resumed refreshUser error: $e');
           });

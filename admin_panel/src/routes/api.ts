@@ -5,7 +5,7 @@ import { login, verifyPhone, sendOtp, requestOtp, changePassword, register, logo
 import { getMe, getMentorById, completeProfile } from '../controllers/userController';
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
-import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
+import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess } from '../controllers/lmsController';
 import { getInstructors } from '../controllers/instructorController';
 import { getForms, submitForm } from '../controllers/formController';
@@ -58,6 +58,7 @@ router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as
 // C. Submissions Routes
 router.post('/submissions', authenticateJWT as any, submitTask as any);
 router.get('/submissions/pending', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getPendingSubmissions as any);
+router.get('/submissions/:id/history', authenticateJWT as any, getSubmissionHistory as any);
 router.patch('/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewSubmission as any);
 
 // D. Leagues Routes

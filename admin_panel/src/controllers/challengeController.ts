@@ -708,17 +708,16 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       }
     });
 
-    // Send reward notification
-    if (calculatedReward > 0) {
-      await prisma.notification.create({
-        data: {
-          userId: req.user.id,
-          title: 'ثبت پاداش آزمون 💰',
-          message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}. مقدار پاداش: +${calculatedReward} ${assetLabel}.`,
-          type: 'reward'
-        }
-      });
-    }
+    // Result notification: score plus the asset that was added
+    await prisma.notification.create({
+      data: {
+        userId: req.user.id,
+        title: calculatedReward > 0 ? 'ثبت پاداش آزمون 💰' : 'نتیجه آزمون',
+        message: `آزمون "${challenge.title}" بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}.` +
+          (calculatedReward > 0 ? ` مقدار پاداش: +${calculatedReward} ${assetLabel} به حساب شما اضافه شد.` : ''),
+        type: 'reward'
+      }
+    });
 
     res.json({
       score: correctCount,

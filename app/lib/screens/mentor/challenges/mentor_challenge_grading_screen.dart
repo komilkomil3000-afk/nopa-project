@@ -94,6 +94,98 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     }
   }
 
+  /// Every answer, rejection (with the mentor's message) and approval of one member's submission.
+  Future<void> _showHistory(Map<String, dynamic> participant) async {
+    final events = await HttpApiService().getSubmissionHistory(participant['id'].toString());
+    if (!mounted) return;
+
+    String when(dynamic v) {
+      final dt = DateTime.tryParse(v?.toString() ?? '')?.toLocal();
+      if (dt == null) return '';
+      final time = '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}'.toPersianDigits();
+      return '${_jalali(dt)}  $time';
+    }
+
+    ({String label, Color color}) style(String action) => switch (action) {
+          'rejected' => (label: 'رد / درخواست اصلاح', color: const Color(0xFFEF4444)),
+          'approved' => (label: 'تایید', color: const Color(0xFF22C55E)),
+          _ => (label: 'ارسال پاسخ', color: const Color(0xFF38BDF8)),
+        };
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF2C274A),
+          title: Text(
+            'تاریخچه ${participant['name'] ?? ''}',
+            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: events.isEmpty
+                ? const Text(
+                    'سابقه‌ای ثبت نشده است.',
+                    style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, color: Color(0xFFC7C5DD)),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: events.length,
+                    separatorBuilder: (_, _) => const Divider(color: Color(0xFF4C4578), height: 16),
+                    itemBuilder: (_, i) {
+                      final e = events[i];
+                      final st = style(e['action']?.toString() ?? '');
+                      final feedback = e['feedback']?.toString() ?? '';
+                      final answer = e['answerText']?.toString() ?? '';
+                      final hasFile = (e['fileUrl']?.toString() ?? '').isNotEmpty;
+                      final score = e['score'];
+                      Widget line(String label, String value) => Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              '$label $value',
+                              style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11.5, color: Color(0xFFD3D0E3), height: 1.5),
+                            ),
+                          );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: st.color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: st.color.withValues(alpha: 0.5), width: 0.9),
+                                ),
+                                child: Text(st.label, style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10.5, fontWeight: FontWeight.bold, color: st.color)),
+                              ),
+                              const Spacer(),
+                              Text(when(e['createdAt']), style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 10, color: Color(0xFF9D99B8))),
+                            ],
+                          ),
+                          if (e['actorName'] != null && e['action'] != 'submitted') line('توسط:', e['actorName'].toString()),
+                          if (answer.isNotEmpty) line('پاسخ:', answer),
+                          if (hasFile) line('پیوست:', 'فایل ارسال شد'),
+                          if (feedback.isNotEmpty) line('پیام:', feedback),
+                          if (e['action'] == 'approved' && score != null) line('امتیاز:', score.toString().toPersianDigits()),
+                        ],
+                      );
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('بستن', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showRevisionDialog(Map<String, dynamic> participant) {
     final name = participant['name']?.toString() ?? '';
     final subjectCtrl = TextEditingController(text: 'اصلاح پاسخ چالش');
@@ -351,11 +443,10 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
 
   Future<void> _approveParticipant(Map<String, dynamic> participant) async {
     final name = participant['name']?.toString() ?? '';
-    final int min = _rewardMin;
-    final int max = _rewardMax;
-    final bool hasRange = max > 0;
     final int fixedReward = int.tryParse(widget.challenge['reward']?.toString() ?? '') ?? 0;
-    final rewardCtrl = TextEditingController(text: (hasRange ? max : fixedReward).toString());
+    final int min = _rewardMax > 0 ? _rewardMin : fixedReward;
+    final int max = _rewardMax > 0 ? _rewardMax : fixedReward;
+    final rewardCtrl = TextEditingController(text: max.toString());
     final String asset = _assetLabel;
 
     final int? reward = await showDialog<int>(
@@ -373,9 +464,9 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                hasRange
-                    ? 'مقدار $asset را بین ${min.toPersianDigits()} و ${max.toPersianDigits()} تعیین کنید:'
-                    : 'مقدار $asset که به حساب این عضو اضافه می‌شود را تعیین کنید:',
+                min == max
+                    ? 'مقدار $asset این چالش ${max.toPersianDigits()} است:'
+                    : 'مقدار $asset را بین ${min.toPersianDigits()} و ${max.toPersianDigits()} تعیین کنید:',
                 style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11.5, color: Color(0xFFC7C5DD)),
               ),
               const SizedBox(height: 10),
@@ -401,7 +492,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                   AppToast.error(ctx, 'مقدار نامعتبر است.');
                   return;
                 }
-                if (hasRange && (v < min || v > max)) {
+                if (v < min || v > max) {
                   AppToast.error(ctx, 'مقدار باید بین ${min.toPersianDigits()} و ${max.toPersianDigits()} باشد.');
                   return;
                 }
@@ -1066,6 +1157,25 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                             ),
                             TextSpan(text: userAnswer),
                           ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap: () => _showHistory(item),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.history_rounded, size: 15, color: Color(0xFF9E92E8)),
+                              SizedBox(width: 4),
+                              Text(
+                                'تاریخچه رد، اصلاح و تایید',
+                                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF9E92E8)),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

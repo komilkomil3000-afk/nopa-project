@@ -202,10 +202,32 @@ model Submission {
   // Relations
   challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   student        User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  events         SubmissionEvent[]
 
   @@unique([challengeId, studentId])
   @@index([studentId])
   @@index([status])
+}
+
+// Every answer, rejection (with the mentor's message) and approval of a submission, kept after the row is overwritten by a re-submit
+model SubmissionEvent {
+  id           String     @id @default(uuid())
+  submissionId String
+  challengeId  String
+  studentId    String
+  action       String     // "submitted" | "rejected" | "approved"
+  answerText   String?
+  fileUrl      String?
+  feedback     String?
+  score        Int?
+  actorId      String?
+  actorName    String?
+  createdAt    DateTime   @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, createdAt])
+  @@index([challengeId])
 }
 
 model MentorRating {
