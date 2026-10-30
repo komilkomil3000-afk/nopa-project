@@ -144,7 +144,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'isByAdmin': c.isByAdmin,
         'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
         'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
       });
     }
     return list;
@@ -217,7 +217,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'rewardAsset': c.rewardAssetType,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
         'category': category,
         'desc': c.description,
         'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
@@ -1507,7 +1507,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     final int reward = item['reward'] ?? 50;
     final String dateStr = _formatDate(item['createdAt']);
     final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
-    final int durationDays = item['durationDays'] ?? 5;
+    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
     final String? feedback = item['mentorFeedback']?.toString();
 
     // Status label, text color & background
@@ -1774,7 +1774,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               ),
                             ),
                             Text(
-                              'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                              'مهلت: ${deadlineLabel.toPersianDigits()}',
                               style: const TextStyle(
                                 color: Color(0xFFB8B5CE),
                                 fontSize: 10.5,

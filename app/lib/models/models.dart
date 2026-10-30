@@ -1,6 +1,16 @@
 export 'user_model.dart';
 
 class ChallengeModel {
+  /// Remaining time as plain text: "بدون مهلت", "پایان یافته", "کمتر از یک روز" or "N روز مانده" (ASCII digits).
+  String get deadlineLabel {
+    final due = dueDate;
+    if (due == null) return 'بدون مهلت';
+    final left = due.difference(DateTime.now());
+    if (left.isNegative) return 'پایان یافته';
+    if (left.inHours < 24) return 'کمتر از یک روز';
+    return '${(left.inHours / 24).ceil()} روز مانده';
+  }
+
   final String id;
   final String title;
   final String description;

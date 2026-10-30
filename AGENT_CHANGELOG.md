@@ -1190,3 +1190,21 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib/screens/mentor/challenges lib/services/api_service.dart (clean); node --check app.js; tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-30 17:35] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 2.3-2.5 (deadline): mentor create-challenge dialog gets 'مهلت (روز)' (1-365, default 7) and sends dueDate = 23:59:59 of the last day
+  - createChallengeError forwards dueDate
+  - ChallengeModel.deadlineLabel (بدون مهلت / پایان یافته / کمتر از یک روز / N روز مانده) replaces the fake 'مهلت: 5 روز' default on student and mentor challenge cards
+  - admin panel create/edit now sends dueDate as end of the chosen day in Tehran time (+03:30) instead of midnight UTC, so challenges no longer expire a day early
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check admin_panel/public/app.js
+- **Status:** Completed

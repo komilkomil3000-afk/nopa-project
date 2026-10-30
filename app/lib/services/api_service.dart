@@ -1679,6 +1679,7 @@ class HttpApiService {
           'rewardAssetType': challenge.rewardAssetType,
           'rewardMin': challenge.rewardMin,
           'rewardMax': challenge.rewardMax,
+          if (challenge.dueDate != null) 'dueDate': challenge.dueDate!.toUtc().toIso8601String(),
           'type': challenge.type,
           if (challenge.questions != null) 'questions': challenge.questions,
         }),

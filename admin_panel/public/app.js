@@ -1342,7 +1342,7 @@ window.submitCreateChallenge = async function(event) {
       type,
       ...reward,
       stationId: stationId || undefined,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+      dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : undefined,
       caravanId: caravanId === 'all' ? undefined : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };
@@ -1480,7 +1480,7 @@ window.submitEditChallenge = async function(event) {
       type,
       ...reward,
       stationId: stationId || null,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : null,
       caravanId: caravanId === 'all' ? null : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };

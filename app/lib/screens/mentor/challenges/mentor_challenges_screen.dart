@@ -166,7 +166,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'isByAdmin': c.isByAdmin,
         'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
         'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
       });
     }
 
@@ -648,7 +648,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'type': c.type,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
         'category': category,
         'desc': c.description,
         'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
@@ -1095,6 +1095,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     int selectedCorrectOptionIndex = 0;
     final rewardMinCtrl = TextEditingController();
     final rewardMaxCtrl = TextEditingController();
+    final deadlineDaysCtrl = TextEditingController(text: '7');
     String selectedAsset = 'زریک';
     bool submitting = false;
     String selectedType = 'چند گزینه ای';
@@ -1265,6 +1266,33 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ],
                             ),
                           ),
+                        const SizedBox(height: 12),
+
+                        // Field 5b: مهلت (days from today, ends at 23:59 of the last day)
+                        _buildContactDialogFieldRow(
+                          label: 'مهلت (روز):',
+                          child: Container(
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+                            ),
+                            child: TextField(
+                              controller: deadlineDaysCtrl,
+                              textAlign: TextAlign.center,
+                              keyboardType: TextInputType.number,
+                              style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
+                              decoration: const InputDecoration(
+                                hintText: 'تعداد روز تا پایان مهلت',
+                                hintStyle: TextStyle(color: Color(0xFF8882A8), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 12),
 
                         // Field 6: نوع
@@ -1556,6 +1584,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         rewardMax = max;
                                       }
 
+                                      final days = int.tryParse(deadlineDaysCtrl.text.trim().toEnglishDigits());
+                                      if (days == null || days < 1 || days > 365) {
+                                        AppToast.error(ctx, 'مهلت را بین ۱ تا ۳۶۵ روز وارد کنید.');
+                                        return;
+                                      }
+                                      final now = DateTime.now();
+                                      final dueDate = DateTime(now.year, now.month, now.day + days, 23, 59, 59);
+
                                       final repository = Provider.of<AppRepository>(context, listen: false);
                                       setDialogState(() => submitting = true);
                                       final error = await HttpApiService().createChallengeError(ChallengeModel(
@@ -1569,6 +1605,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         rewardAssetType: selectedAsset == 'نخ' ? 'nakh' : 'zarik',
                                         rewardMin: rewardMin,
                                         rewardMax: rewardMax,
+                                        dueDate: dueDate,
                                       ));
                                       if (!context.mounted) return;
                                       if (error != null) {
@@ -2012,7 +2049,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     final int reward = item['reward'] ?? 50;
     final String dateStr = _formatDate(item['createdAt']);
     final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
-    final int durationDays = item['durationDays'] ?? 5;
+    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
     final String? feedback = item['mentorFeedback']?.toString();
 
     // Status label, text color & background
@@ -2279,7 +2316,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ),
                             ),
                             Text(
-                              'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                              'مهلت: ${deadlineLabel.toPersianDigits()}',
                               style: const TextStyle(
                                 color: Color(0xFFB8B5CE),
                                 fontSize: 10.5,
