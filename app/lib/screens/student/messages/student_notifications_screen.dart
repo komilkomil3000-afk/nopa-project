@@ -99,7 +99,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       return _NotifAction(title.contains('پاسخ جدید') ? 'بررسی' : 'مشاهده', _NotifTarget.challenges);
     }
     // A rejected answer is the only challenge message that asks the student to act again
-    if (title.contains('تکلیف رد شد')) {
+    if (title.contains('تکلیف رد شد') || title.contains('نیاز به اصلاح')) {
       return const _NotifAction('اصلاح', _NotifTarget.challenges);
     }
     // A newly announced challenge: the user is expected to take part

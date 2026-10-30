@@ -418,12 +418,12 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: submission.studentId,
-        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
+        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف نیاز به اصلاح دارد ✍️',
         message: status === 'approved'
             ? (bannerOnly
               ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد. ${assetNames.derafsh} بر اساس رتبه‌بندی نهایی کاروان‌ها اعطا می‌شود.`
               : `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} ${assetLabel} به حساب شما اضافه گردید.`)
-            : `پاسخ شما به چالش "${submission.challenge.title}" رد شد. فیدبک: ${mentorFeedback || 'اصلاح و مجدداً ارسال کنید.'}`,
+            : `پاسخ شما به چالش "${submission.challenge.title}" نیاز به اصلاح دارد. پیام راهبر: ${mentorFeedback || '-'}. از بخش چالش‌ها پاسخ را اصلاح و دوباره ارسال کنید.`,
         type: 'alert'
       }
     });

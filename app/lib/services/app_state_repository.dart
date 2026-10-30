@@ -72,10 +72,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
+    var tick = 0;
     _notificationPollTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
       try {
         if (_apiService.isAuthenticated) {
           await fetchNotifications();
+          // A new / updated challenge shows up without reopening the page (about every 90 seconds)
+          if (++tick % 2 == 0) await syncChallenges();
         }
       } catch (e) {
         debugPrint('Periodic notification sync caught: $e');
@@ -491,6 +494,16 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void createChallenge(ChallengeModel challenge) {
     challenges.insert(0, challenge);
+    notifyListeners();
+  }
+
+  /// Reloads the challenge list only (no notification fetch); a failed load keeps the current list.
+  Future<void> syncChallenges() async {
+    final apiChallenges = await _apiService.getChallenges();
+    if (apiChallenges == null) return;
+    challenges.clear();
+    challenges.addAll(apiChallenges);
+    submissions.removeWhere((s) => challenges.any((c) => c.id == s.challengeId && c.myStatus != null && c.myStatus != 'none'));
     notifyListeners();
   }
 

@@ -1376,3 +1376,19 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - node --check admin_panel/public/app.js
 - **Status:** Completed
+
+### [2026-10-30 20:58] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Audit section 3: challenges are now polled (syncChallenges about every 90s next to the 45s notification poll)
+  - submitTaskWithError no longer treats 409 as success for the dialog (only the offline-retry path does), so a locked answer shows the server message
+  - rejection notification reworded to 'تکلیف نیاز به اصلاح دارد ✍️' with the mentor's message and instructions to correct and resend (app action label 'اصلاح' recognises it). Card reward asset/range display was done earlier (rewardLabel)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc not run
+- **Status:** Completed

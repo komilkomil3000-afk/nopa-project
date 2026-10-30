@@ -1305,13 +1305,14 @@ class HttpApiService {
 
   // Submit Task Assignment
   Future<bool> submitTask(String challengeId, String answerText, {String? fileUrl}) async {
-    final error = await submitTaskWithError(challengeId, answerText, fileUrl: fileUrl);
+    final error = await submitTaskWithError(challengeId, answerText, fileUrl: fileUrl, lockedIsSent: true);
     return error == null;
   }
 
   /// Same as [submitTask] but returns the reason on failure (null on success).
-  /// An answer already waiting for review counts as sent, so offline retries stop.
-  Future<String?> submitTaskWithError(String challengeId, String answerText, {String? fileUrl}) async {
+  /// With [lockedIsSent] an answer already waiting for review counts as sent (so offline retries stop);
+  /// otherwise the server's 409 message is returned to the user.
+  Future<String?> submitTaskWithError(String challengeId, String answerText, {String? fileUrl, bool lockedIsSent = false}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/submissions'),
@@ -1322,7 +1323,7 @@ class HttpApiService {
           if (fileUrl != null && fileUrl.isNotEmpty) 'fileUrl': fileUrl,
         }),
       );
-      if (response.statusCode == 201 || response.statusCode == 409) return null;
+      if (response.statusCode == 201 || (lockedIsSent && response.statusCode == 409)) return null;
       try {
         final body = await parseJsonAsync(response.body);
         if (body is Map && body['error'] != null) return body['error'].toString();
