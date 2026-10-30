@@ -42,9 +42,9 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     super.dispose();
   }
 
-  Future<void> _fetchStationsData() async {
+  Future<void> _fetchStationsData({bool force = false}) async {
     try {
-      final stations = await HttpApiService().getStations();
+      final stations = await HttpApiService().getStations(forceRefresh: force);
       final userProgress = await HttpApiService().getUserProgress();
       if (mounted) {
         setState(() {
@@ -82,7 +82,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
 
     return RefreshIndicator(
-      onRefresh: _fetchStationsData,
+      onRefresh: () => _fetchStationsData(force: true),
       color: const Color(0xFFCD8449),
       child: SingleChildScrollView(
         controller: _scrollController,

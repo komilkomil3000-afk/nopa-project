@@ -1535,3 +1535,19 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean)
 - **Status:** Completed
+
+### [2026-10-30 22:52] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/services/aparat_service.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Cache audit fixes: LMS in-memory caches (stations/classes/news/banners) now expire after 3 minutes (were kept for the whole process and never cleared), a failed or paged stations request no longer overwrites the good cache, caches are cleared on logout/new login (clearTokens + login success) so a previous account's stations/answer-key-stripped data never carries over, home/mentor-home/roadmap pull-to-refresh force a real refetch, AppRepository._resetSessionData clears notifications/caravans/mentorData/banners on logout and 401, the offline submission/watch queues remember the owning user and are only sent as that user, Aparat stream-URL cache expires after 20 minutes
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed

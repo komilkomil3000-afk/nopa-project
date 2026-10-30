@@ -128,6 +128,7 @@ class HttpApiService {
     _token = null;
     _refreshToken = null;
     _tokenExpiry = null;
+    clearLmsCache();
     try {
       await _secureStorage.delete(key: 'auth_token');
       await _secureStorage.delete(key: 'refresh_token');
@@ -552,6 +553,7 @@ class HttpApiService {
           expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
         }
 
+        clearLmsCache();
         await setAuthTokens(
           token: accessToken,
           refreshToken: refreshToken,
@@ -621,6 +623,7 @@ class HttpApiService {
           expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
         }
 
+        clearLmsCache();
         await setAuthTokens(
           token: accessToken,
           refreshToken: refreshToken,
@@ -883,18 +886,30 @@ class HttpApiService {
   List<Map<String, dynamic>>? _cachedNews;
   final Map<String, List<Map<String, dynamic>>> _cachedBanners = {};
 
+  // When each cache was filled: an entry older than [_lmsCacheTtl] is fetched again (content and unlock state change)
+  static const Duration _lmsCacheTtl = Duration(minutes: 3);
+  DateTime? _stationsAt;
+  DateTime? _classesAt;
+  DateTime? _newsAt;
+  final Map<String, DateTime> _bannersAt = {};
+  bool _isFresh(DateTime? at) => at != null && DateTime.now().difference(at) < _lmsCacheTtl;
+
   /// Invalidate cached LMS data to force a fresh fetch
   void clearLmsCache() {
     _cachedStations = null;
     _cachedClasses = null;
     _cachedNews = null;
     _cachedBanners.clear();
+    _stationsAt = null;
+    _classesAt = null;
+    _newsAt = null;
+    _bannersAt.clear();
     debugPrint('🧹 [HttpApiService] LMS in-memory cache cleared');
   }
 
   // Get Course Classes (with in-memory cache)
   Future<List<Map<String, dynamic>>> getClasses({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedClasses != null && _cachedClasses!.isNotEmpty) {
+    if (!forceRefresh && _cachedClasses != null && _cachedClasses!.isNotEmpty && _isFresh(_classesAt)) {
       return _cachedClasses!;
     }
     try {
@@ -907,6 +922,7 @@ class HttpApiService {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
           _cachedClasses = List<Map<String, dynamic>>.from(data);
+          _classesAt = DateTime.now();
           return _cachedClasses!;
         }
       }
@@ -919,7 +935,7 @@ class HttpApiService {
 
   // Get Stations (with in-memory cache and Station 0 guaranteed)
   Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false, int? limit, int? page}) async {
-    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty && limit == null && page == null) {
+    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty && _isFresh(_stationsAt) && limit == null && page == null) {
       return _cachedStations!;
     }
     try {
@@ -936,17 +952,20 @@ class HttpApiService {
         headers: _getHeaders(),
       );
 
-      List<Map<String, dynamic>> list = [];
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          list = List<Map<String, dynamic>>.from(data);
+          final list = List<Map<String, dynamic>>.from(data);
+          // A paged request is a slice: it must not become the full cached list
+          if (limit == null && page == null) {
+            _cachedStations = list;
+            _stationsAt = DateTime.now();
+            StationNumbering.update(list);
+          }
+          return list;
         }
       }
-
-      _cachedStations = list;
-      StationNumbering.update(list);
-      return _cachedStations!;
+      return _cachedStations ?? [];
     } catch (e) {
       debugPrint('HTTP getStations error: $e');
       return _cachedStations ?? [];
@@ -1007,7 +1026,7 @@ class HttpApiService {
   }
 
   Future<List<Map<String, dynamic>>> getNews({bool forceRefresh = false, int? limit, int? page}) async {
-    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty && limit == null && page == null) {
+    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty && _isFresh(_newsAt) && limit == null && page == null) {
       return _cachedNews!;
     }
     try {
@@ -1024,6 +1043,7 @@ class HttpApiService {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
           _cachedNews = List<Map<String, dynamic>>.from(data);
+          _newsAt = DateTime.now();
           return _cachedNews!;
         }
       }
@@ -1036,7 +1056,7 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getBanners({String? position, bool forceRefresh = false, int? limit}) async {
     final cacheKey = position ?? 'all';
-    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty && limit == null) {
+    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty && _isFresh(_bannersAt[cacheKey]) && limit == null) {
       return _cachedBanners[cacheKey]!;
     }
     try {
@@ -1054,6 +1074,7 @@ class HttpApiService {
         if (data is List) {
           final list = List<Map<String, dynamic>>.from(data);
           _cachedBanners[cacheKey] = list;
+          _bannersAt[cacheKey] = DateTime.now();
           return list;
         }
       }

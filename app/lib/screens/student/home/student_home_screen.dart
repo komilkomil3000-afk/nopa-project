@@ -36,12 +36,12 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     _fetchData();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool force = false}) async {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        HttpApiService().getStations(),
-        HttpApiService().getBanners(position: 'home_top'),
+        HttpApiService().getStations(forceRefresh: force),
+        HttpApiService().getBanners(position: 'home_top', forceRefresh: force),
       ]);
       if (mounted) {
         setState(() {
@@ -414,7 +414,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _fetchData,
+      onRefresh: () => _fetchData(force: true),
       color: const Color(0xFFCD8449),
       backgroundColor: const Color(0xFF231C38),
       child: SingleChildScrollView(

@@ -169,6 +169,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       for (final raw in offlineSubmissions) {
         try {
           final data = jsonDecode(raw) as Map<String, dynamic>;
+          // Another account's queued answer stays queued until that account is signed in again
+          if (data['userId'] != null && data['userId'] != currentUser.id) {
+            remainingSubmissions.add(raw);
+            continue;
+          }
           final challengeId = data['challengeId']?.toString();
           final answerText = data['answerText']?.toString() ?? '';
           final fileUrl = data['fileUrl']?.toString();
@@ -198,6 +203,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       for (final raw in offlineWatchProgress) {
         try {
           final data = jsonDecode(raw) as Map<String, dynamic>;
+          if (data['userId'] != null && data['userId'] != currentUser.id) {
+            remainingWatch.add(raw);
+            continue;
+          }
           final sessionId = data['sessionId']?.toString();
           final percentage = (data['percentage'] as num?)?.toDouble() ?? 0.0;
           final currentPos = (data['currentPositionSeconds'] as num?)?.toInt() ?? (percentage * 10).toInt();
@@ -226,7 +235,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> cacheSubmissionOffline(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final submissions = prefs.getStringList('offline_submissions') ?? [];
-    submissions.add(jsonEncode(data));
+    submissions.add(jsonEncode({...data, 'userId': currentUser.id}));
     await prefs.setStringList('offline_submissions', submissions);
   }
   
@@ -243,6 +252,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     if (durationSeconds != null) {
       map['durationSeconds'] = durationSeconds;
     }
+    map['userId'] = currentUser.id;
     progressList.add(jsonEncode(map));
     await prefs.setStringList('offline_watch_progress', progressList);
   }
@@ -278,8 +288,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {}
 
     await _apiService.logout();
-    challenges.clear();
-    submissions.clear();
+    _resetSessionData();
     currentUser = UserModel(
       id: 'guest',
       name: 'مهمان',
@@ -304,9 +313,20 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       beyragh: 0,
       farsh: 0,
     );
+    _resetSessionData();
+    notifyListeners();
+  }
+
+  /// Everything loaded for the signed-in user (a singleton outlives the session, so it must be emptied explicitly).
+  void _resetSessionData() {
     challenges.clear();
     submissions.clear();
-    notifyListeners();
+    notifications.clear();
+    caravans = [];
+    mentorData.clear();
+    caravanBanners = {};
+    caravanBannerTotal = 0;
+    _selectedCaravanId = '';
   }
 
   // Current Logged-in User
