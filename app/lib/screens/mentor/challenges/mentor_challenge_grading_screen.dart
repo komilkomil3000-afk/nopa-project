@@ -303,8 +303,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
   int get _rewardMax => int.tryParse(widget.challenge['rewardMax']?.toString() ?? '') ?? 0;
   String get _assetLabel => widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'نخ' : 'زریک';
 
-  bool get _canEditReward =>
-      widget.challenge['isByAdmin'] != true && widget.challenge['type']?.toString() != 'quiz';
+  bool get _canEditReward => widget.challenge['isByAdmin'] != true;
 
   Future<void> _editReward() async {
     final int fixed = int.tryParse(widget.challenge['reward']?.toString() ?? '') ?? 0;

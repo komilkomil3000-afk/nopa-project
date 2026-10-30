@@ -62,7 +62,8 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
     let creatorId = req.user.id;
     let assignedCaravanId: string | null = null;
-    let category: 'intra_group' | 'inter_group' = 'intra_group';
+    let category: 'intra_group' | 'inter_group' | 'individual' = 'intra_group';
+    let recipientIds: string[] = [];
 
     if (req.user.role === 'mentor') {
       // Mentors can only create challenges for their own caravan
@@ -74,6 +75,25 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       }
       assignedCaravanId = mentorCaravan.id;
       creatorId = req.user.id;
+
+      // Either every member of the caravan or a non-empty selection of them
+      const picked: string[] = Array.isArray(req.body.recipientIds)
+        ? Array.from(new Set(req.body.recipientIds.map((r: any) => String(r))))
+        : [];
+      if (req.body.allMembers !== true && picked.length === 0) {
+        return res.status(400).json({ error: 'دریافت‌کننده‌ی چالش را انتخاب کنید (یک یا چند عضو، یا همه اعضا)' });
+      }
+      if (req.body.allMembers !== true) {
+        const valid = await prisma.user.findMany({
+          where: { id: { in: picked }, caravanId: mentorCaravan.id, role: 'student' },
+          select: { id: true }
+        });
+        if (valid.length !== picked.length) {
+          return res.status(400).json({ error: 'دریافت‌کننده‌ها باید اعضای کاروان شما باشند' });
+        }
+        recipientIds = picked;
+        category = 'individual';
+      }
     } else if (req.user.role === 'admin') {
       if (targetMentorId) {
         creatorId = targetMentorId;
@@ -103,6 +123,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         createdByMentorId: creatorId,
         caravanId: assignedCaravanId,
         category,
+        recipientIds,
         stationId: stationId || null,
         dueDate: dueDate ? new Date(dueDate) : null
       }
@@ -114,10 +135,12 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
     let targetStudents: { id: string }[] = [];
     if (assignedCaravanId) {
-      targetStudents = await prisma.user.findMany({
-        where: { caravanId: assignedCaravanId, role: 'student' },
-        select: { id: true }
-      });
+      targetStudents = recipientIds.length > 0
+        ? recipientIds.map(id => ({ id }))
+        : await prisma.user.findMany({
+            where: { caravanId: assignedCaravanId, role: 'student' },
+            select: { id: true }
+          });
       // Also notify caravan mentor if created by admin
       const caravan = await prisma.caravan.findUnique({ where: { id: assignedCaravanId } });
       if (caravan?.mentorId && isByAdmin) {
@@ -219,7 +242,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       if (caravanId !== undefined) {
         const isInter = caravanId === 'inter_group';
         updateData.caravanId = (caravanId === 'all' || isInter) ? null : caravanId;
-        updateData.category = isInter ? 'inter_group' : 'intra_group';
+        updateData.category = isInter ? 'inter_group' : (existing.recipientIds.length > 0 ? 'individual' : 'intra_group');
       }
     }
 
@@ -408,6 +431,10 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       }
     }
 
+    if (user?.role === 'student') {
+      whereClause = { AND: [whereClause, { OR: [{ recipientIds: { isEmpty: true } }, { recipientIds: { has: user.id } }] }] };
+    }
+
     if (req.query.stationId && req.query.stationId !== 'all') {
       whereClause.stationId = req.query.stationId as string;
     }
@@ -574,6 +601,13 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'آزمون مورد نظر یافت نشد' });
     }
 
+    if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(req.user.id)) {
+      return res.status(403).json({ error: 'این آزمون برای شما تعیین نشده است' });
+    }
+    if (challenge.dueDate && new Date() > challenge.dueDate) {
+      return res.status(400).json({ error: 'مهلت شرکت در این آزمون به پایان رسیده است' });
+    }
+
     // Verify student belongs to this caravan if caravan-locked
     if (challenge.caravanId) {
       const student = await prisma.user.findUnique({
@@ -602,8 +636,16 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       }
     }
 
-    // 10 Zarik per correct answer
-    const calculatedReward = correctCount * 10;
+    // The challenge decides the asset and the range; the final amount follows the share of correct answers
+    const assetType = challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+    const assetLabel = assetType === 'nakh' ? 'نخ' : 'زریک';
+    let calculatedReward: number;
+    if (challenge.rewardMax > 0) {
+      const share = questionsList.length > 0 ? correctCount / questionsList.length : 0;
+      calculatedReward = Math.round(challenge.rewardMin + (challenge.rewardMax - challenge.rewardMin) * share);
+    } else {
+      calculatedReward = correctCount * 10; // legacy quizzes without a range
+    }
 
     let submission: any;
     let updatedUser: any;
@@ -622,24 +664,24 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       });
 
       if (calculatedReward > 0) {
-        // Update student balance
+        // Credit the asset the challenge pays in
         updatedUser = await tx.user.update({
           where: { id: req.user!.id },
-          data: {
-            zarikBalance: { increment: calculatedReward }
-          }
+          data: assetType === 'nakh' ? { nakh: { increment: calculatedReward } } : { zarikBalance: { increment: calculatedReward } }
         });
 
-        // Log transaction
-        await tx.zarikTransaction.create({
-          data: {
-            userId: req.user!.id,
-            amount: calculatedReward,
-            category: 'Quiz Rewards',
-            reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
-            createdBy: req.user!.id
-          }
-        });
+        // Zarik movements are ledgered; nakh has no ledger table
+        if (assetType === 'zarik') {
+          await tx.zarikTransaction.create({
+            data: {
+              userId: req.user!.id,
+              amount: calculatedReward,
+              category: 'Quiz Rewards',
+              reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
+              createdBy: req.user!.id
+            }
+          });
+        }
       } else {
         updatedUser = await tx.user.findUnique({
           where: { id: req.user!.id }
@@ -653,7 +695,7 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
         data: {
           userId: req.user.id,
           title: 'ثبت پاداش آزمون 💰',
-          message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}. مقدار پاداش: +${calculatedReward} زریک.`,
+          message: `آزمون شما بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}. مقدار پاداش: +${calculatedReward} ${assetLabel}.`,
           type: 'reward'
         }
       });
@@ -662,7 +704,9 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
     res.json({
       score: correctCount,
       total: questionsList.length,
-      rewardZarik: calculatedReward,
+      rewardZarik: assetType === 'zarik' ? calculatedReward : 0,
+      rewardAmount: calculatedReward,
+      rewardAssetType: assetType,
       zarikBalance: updatedUser.zarikBalance,
       submissionId: submission.id
     });

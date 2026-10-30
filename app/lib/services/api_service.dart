@@ -1667,7 +1667,7 @@ class HttpApiService {
   }
 
   // --- Create Challenge ---
-  Future<String?> createChallengeError(ChallengeModel challenge) async {
+  Future<String?> createChallengeError(ChallengeModel challenge, {List<String> recipientIds = const [], bool allMembers = true}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/challenges'),
@@ -1679,6 +1679,8 @@ class HttpApiService {
           'rewardAssetType': challenge.rewardAssetType,
           'rewardMin': challenge.rewardMin,
           'rewardMax': challenge.rewardMax,
+          'allMembers': allMembers,
+          if (!allMembers) 'recipientIds': recipientIds,
           if (challenge.dueDate != null) 'dueDate': challenge.dueDate!.toUtc().toIso8601String(),
           'type': challenge.type,
           if (challenge.questions != null) 'questions': challenge.questions,

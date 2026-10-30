@@ -169,7 +169,8 @@ model Challenge {
   rewardAssetType   String       @default("zarik") // "zarik" | "nakh": what an approved answer pays out
   rewardMin         Int          @default(0)       // range the reviewing mentor picks from; 0/0 = fixed rewardZarik
   rewardMax         Int          @default(0)
-  category          String       @default("intra_group") // "intra_group" | "inter_group"
+  category          String       @default("intra_group") // "intra_group" | "inter_group" | "individual"
+  recipientIds      String[]     @default([])             // empty = every member of the caravan; else only these students
   createdByMentorId String
   caravanId         String?
   stationId         String?

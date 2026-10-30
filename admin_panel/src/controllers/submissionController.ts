@@ -54,6 +54,10 @@ export async function submitTask(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'مهلت شرکت در این چالش به پایان رسیده است' });
     }
 
+    if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(req.user.id)) {
+      return res.status(403).json({ error: 'این چالش برای شما تعیین نشده است' });
+    }
+
     // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission
     if (challenge.caravanId && student?.caravanId && challenge.caravanId !== student.caravanId && !existingSubmission) {
       return res.status(403).json({ error: 'شما فقط مجاز به ارسال پاسخ برای چالش‌های کاروان خود هستید' });

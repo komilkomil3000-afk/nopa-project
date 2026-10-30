@@ -1222,3 +1222,26 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib/screens/mentor/challenges (clean); tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-30 18:09] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261034_challenge_recipients/` (Created)
+- **Description of Changes:**
+  - Audit 2.1: Challenge.recipientIds TEXT[] (migration 20261034_challenge_recipients, schema.prisma). Mentor create dialog: 'دریافت کننده' opens a multi-select of caravan students (select all or some, confirm disabled when none ticked)
+  - createChallenge requires allMembers=true or a non-empty recipientIds of the mentor's own students, sets category 'individual' for subsets and notifies only them
+  - students' challenge list filters by recipientIds
+  - submitTask/submitQuiz reject non-recipients. 2.6: quiz challenges now use the reward asset+range like the rest: submitQuiz pays rewardMin + (rewardMax-rewardMin)*correct/total (rounded) in zarik or nakh (legacy quizzes without range keep 10 zarik per correct answer), adds the missing deadline check
+  - app dialog asks for the range for quiz type too and the creator may edit quiz rewards
+  - panel hint text updated
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc/prisma generate not run here (no node_modules) - run prisma generate after applying the SQL
+- **Status:** Completed

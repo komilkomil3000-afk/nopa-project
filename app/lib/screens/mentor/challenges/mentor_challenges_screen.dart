@@ -1089,6 +1089,92 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     );
   }
 
+  /// Multi-select of the caravan's students. Returns null when cancelled; "all" means every member.
+  /// Confirm stays disabled while nothing is ticked, so an empty recipient list cannot be sent.
+  Future<({bool all, Set<String> ids, int total})?> _pickRecipients(
+    BuildContext ctx,
+    UserModel user,
+    Set<String> current,
+  ) async {
+    final caravanId = user.caravanId;
+    if (caravanId == null || caravanId.isEmpty) {
+      AppToast.error(ctx, 'کاروان شما مشخص نیست.');
+      return null;
+    }
+    final details = await HttpApiService().getCaravanDetails(caravanId);
+    if (!ctx.mounted) return null;
+    final students = ((details?['membersList'] ?? details?['members']) as List? ?? [])
+        .whereType<Map>()
+        .where((m) => m['role']?.toString() == 'student')
+        .toList();
+    if (students.isEmpty) {
+      AppToast.error(ctx, 'عضوی در کاروان پیدا نشد.');
+      return null;
+    }
+    final selected = current.isEmpty ? students.map((m) => m['id'].toString()).toSet() : <String>{...current};
+    return showDialog<({bool all, Set<String> ids, int total})>(
+      context: ctx,
+      builder: (dctx) => StatefulBuilder(
+        builder: (dctx, setState) {
+          final bool everyone = selected.length == students.length;
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF2C274A),
+              title: const Text(
+                'دریافت‌کننده‌ها',
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    CheckboxListTile(
+                      dense: true,
+                      value: everyone,
+                      title: const Text('همه اعضا', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white, fontSize: 13)),
+                      onChanged: (v) => setState(() {
+                        selected.clear();
+                        if (v == true) selected.addAll(students.map((m) => m['id'].toString()));
+                      }),
+                    ),
+                    const Divider(color: Color(0xFF4C4578), height: 1),
+                    for (final m in students)
+                      CheckboxListTile(
+                        dense: true,
+                        value: selected.contains(m['id'].toString()),
+                        title: Text(
+                          m['name']?.toString() ?? '',
+                          style: const TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFD6D3E6), fontSize: 12.5),
+                        ),
+                        onChanged: (v) => setState(() {
+                          final id = m['id'].toString();
+                          v == true ? selected.add(id) : selected.remove(id);
+                        }),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: selected.isEmpty
+                      ? null
+                      : () => Navigator.pop(dctx, (all: everyone, ids: selected, total: students.length)),
+                  child: const Text('تایید', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dctx),
+                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showCreateChallengeDialog(BuildContext context, UserModel user) {
     final titleCtrl = TextEditingController();
     final questionCtrl = TextEditingController();
@@ -1103,7 +1189,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     String selectedAsset = 'زریک';
     bool submitting = false;
     String selectedType = 'چند گزینه ای';
-    String selectedAudience = 'همه اعضا';
+    // Recipients: every member (default) or a non-empty selection of them
+    bool allMembers = true;
+    final Set<String> recipientIds = {};
+    int memberTotal = 0;
 
     showDialog(
       context: context,
@@ -1169,7 +1258,31 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 3: دریافت کننده
                         _buildContactDialogFieldRow(
                           label: 'دریافت کننده:',
-                          child: _buildContactDialogValueText(selectedAudience),
+                          child: GestureDetector(
+                            onTap: () async {
+                              final picked = await _pickRecipients(ctx, user, allMembers ? <String>{} : recipientIds);
+                              if (picked == null) return;
+                              setDialogState(() {
+                                allMembers = picked.all;
+                                recipientIds
+                                  ..clear()
+                                  ..addAll(picked.ids);
+                                memberTotal = picked.total;
+                              });
+                            },
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildContactDialogValueText(
+                                    allMembers
+                                        ? 'همه اعضا'
+                                        : '${recipientIds.length.toString().toPersianDigits()} نفر از ${memberTotal.toString().toPersianDigits()} عضو',
+                                  ),
+                                ),
+                                const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                              ],
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
 
@@ -1181,20 +1294,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         const SizedBox(height: 12),
 
                         // Field 5: جایزه - the mentor sets a range now and picks the exact amount when approving
-                        if (selectedType == 'چند گزینه ای')
-                          _buildContactDialogFieldRow(
-                            label: 'جایزه:',
-                            child: const Text(
-                              'آزمون تستی خودکار تصحیح می‌شود و جایزه‌ی آن ثابت است.',
-                              style: TextStyle(
-                                color: Color(0xFF9E9AC0),
-                                fontSize: 11,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          )
-                        else
-                          _buildContactDialogFieldRow(
+                        _buildContactDialogFieldRow(
                             label: 'جایزه:',
                             child: Row(
                               children: [
@@ -1573,7 +1673,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
                                       int rewardMin = 0;
                                       int rewardMax = 0;
-                                      if (!isQuiz) {
+                                      {
                                         final min = int.tryParse(rewardMinCtrl.text.trim().toEnglishDigits());
                                         final max = int.tryParse(rewardMaxCtrl.text.trim().toEnglishDigits());
                                         if (min == null || max == null || min < 0 || max <= 0) {
@@ -1588,6 +1688,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         rewardMax = max;
                                       }
 
+                                      if (!allMembers && recipientIds.isEmpty) {
+                                        AppToast.error(ctx, 'دریافت‌کننده‌ی چالش را انتخاب کنید.');
+                                        return;
+                                      }
                                       final days = int.tryParse(deadlineDaysCtrl.text.trim().toEnglishDigits());
                                       if (days == null || days < 1 || days > 365) {
                                         AppToast.error(ctx, 'مهلت را بین ۱ تا ۳۶۵ روز وارد کنید.');
@@ -1610,7 +1714,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         rewardMin: rewardMin,
                                         rewardMax: rewardMax,
                                         dueDate: dueDate,
-                                      ));
+                                      ), recipientIds: recipientIds.toList(), allMembers: allMembers);
                                       if (!context.mounted) return;
                                       if (error != null) {
                                         if (ctx.mounted) setDialogState(() => submitting = false);
