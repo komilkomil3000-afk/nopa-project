@@ -644,6 +644,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'rewardMin': c.rewardMin,
         'rewardMax': c.rewardMax,
         'rewardAsset': c.rewardAssetType,
+        'isByAdmin': c.isByAdmin,
+        'type': c.type,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
         'durationDays': c.durationDays ?? 5,

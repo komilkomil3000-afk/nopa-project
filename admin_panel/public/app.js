@@ -1074,7 +1074,7 @@ function renderAdminChallenges(challenges) {
         <td>${creatorBadge}</td>
         <td style="white-space: nowrap;">
           <div style="margin-bottom: 6px;">${typeBadge}</div>
-          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50} زریک</div>
+          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid fa-coins"></i> ${window.formatChallengeReward(c)}</div>
         </td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
@@ -1148,6 +1148,31 @@ window.handleChallengeTypeChange = function(mode) {
   }
 };
 
+// Reward of a challenge as "min تا max نخ/زریک" (fixed amount when no range is set).
+window.formatChallengeReward = function(c) {
+  const unit = c.rewardAssetType === 'nakh' ? 'نخ' : 'زریک';
+  const min = Number(c.rewardMin) || 0;
+  const max = Number(c.rewardMax) || 0;
+  if (max > 0) return min === max ? `${max} ${unit}` : `${min} تا ${max} ${unit}`;
+  return `${c.rewardZarik || 50} ${unit}`;
+};
+
+// Reads + validates the reward fields of the create ('new') / edit ('edit') form. Returns null after alerting.
+window.readChallengeReward = function(mode) {
+  const rewardAssetType = document.getElementById(`${mode}-chal-asset`)?.value === 'nakh' ? 'nakh' : 'zarik';
+  const rewardMin = Number(document.getElementById(`${mode}-chal-reward-min`)?.value);
+  const rewardMax = Number(document.getElementById(`${mode}-chal-reward-max`)?.value);
+  if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax <= 0) {
+    alert('حداقل و حداکثر پاداش را به صورت عدد صحیح وارد کنید (حداکثر بزرگ‌تر از صفر).');
+    return null;
+  }
+  if (rewardMin > rewardMax) {
+    alert('حداقل پاداش نمی‌تواند از حداکثر بیشتر باشد.');
+    return null;
+  }
+  return { rewardAssetType, rewardMin, rewardMax, rewardZarik: rewardMax };
+};
+
 window.addQuestionRow = function(mode, initialData = null) {
   const container = document.getElementById(`${mode}-chal-questions-list`);
   if (!container) return;
@@ -1209,8 +1234,9 @@ window.openCreateChallengeModal = function() {
   const form = document.getElementById('create-challenge-form');
   if (form) form.reset();
 
-  const rewardInput = document.getElementById('new-chal-reward');
-  if (rewardInput) rewardInput.value = '50';
+  document.getElementById('new-chal-asset').value = 'zarik';
+  document.getElementById('new-chal-reward-min').value = '10';
+  document.getElementById('new-chal-reward-max').value = '50';
 
   const caravanSelect = document.getElementById('new-chal-caravan-id');
   const mentorNotice = document.getElementById('new-chal-mentor-notice');
@@ -1268,7 +1294,8 @@ window.submitCreateChallenge = async function(event) {
   event.preventDefault();
 
   const title = document.getElementById('new-chal-title')?.value.trim();
-  const rewardZarik = Number(document.getElementById('new-chal-reward')?.value || 50);
+  const reward = window.readChallengeReward('new');
+  if (!reward) return;
   let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'inter_group';
   if (currentUser && currentUser.role === 'mentor') {
     const myCaravan = (window.cachedAdminCaravans || []).find(cv => 
@@ -1313,7 +1340,7 @@ window.submitCreateChallenge = async function(event) {
       title,
       description,
       type,
-      rewardZarik,
+      ...reward,
       stationId: stationId || undefined,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       caravanId: caravanId === 'all' ? undefined : caravanId,
@@ -1352,7 +1379,9 @@ window.openEditChallengeModal = function(challengeId) {
 
   document.getElementById('edit-chal-id').value = c.id;
   document.getElementById('edit-chal-title').value = c.title || '';
-  document.getElementById('edit-chal-reward').value = c.rewardZarik || 50;
+  document.getElementById('edit-chal-asset').value = c.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+  document.getElementById('edit-chal-reward-min').value = c.rewardMin || 0;
+  document.getElementById('edit-chal-reward-max').value = c.rewardMax || c.rewardZarik || 50;
   document.getElementById('edit-chal-desc').value = c.description || '';
   document.getElementById('edit-chal-type').value = c.type || 'quiz';
 
@@ -1412,7 +1441,8 @@ window.submitEditChallenge = async function(event) {
 
   const id = document.getElementById('edit-chal-id')?.value;
   const title = document.getElementById('edit-chal-title')?.value.trim();
-  const rewardZarik = Number(document.getElementById('edit-chal-reward')?.value || 50);
+  const reward = window.readChallengeReward('edit');
+  if (!reward) return;
   const type = document.getElementById('edit-chal-type')?.value || 'quiz';
   const description = document.getElementById('edit-chal-desc')?.value.trim();
   const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
@@ -1448,7 +1478,7 @@ window.submitEditChallenge = async function(event) {
       title,
       description,
       type,
-      rewardZarik,
+      ...reward,
       stationId: stationId || null,
       dueDate: dueDate ? new Date(dueDate).toISOString() : null,
       caravanId: caravanId === 'all' ? null : caravanId,
@@ -1512,7 +1542,7 @@ window.openChallengeStepsModal = function(challengeId) {
   if (!modal || !bodyEl) return;
 
   if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${esc(c.title)}`;
-  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${c.rewardZarik || 50} زریک 🪙 | نوع: ${c.type}`;
+  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} 🪙 | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
 
@@ -1912,7 +1942,7 @@ window.openViewSubmissionModal = function(submissionId) {
   const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
 
   document.getElementById('view-sub-chal-title').textContent = chalTitle;
-  document.getElementById('view-sub-chal-reward').innerHTML = `<i class="fa-solid fa-coins"></i> پاداش پایه چالش: ${defaultReward} زریک`;
+  document.getElementById('view-sub-chal-reward').innerHTML = `<i class="fa-solid fa-coins"></i> پاداش چالش: ${window.formatChallengeReward(s.challenge || {})}`;
   document.getElementById('view-sub-date').textContent = `تاریخ ارسال: ${dateStr}`;
 
   // Status Badge
@@ -1926,7 +1956,7 @@ window.openViewSubmissionModal = function(submissionId) {
     } else if (s.status === 'approved') {
       metaBadge.style.background = 'rgba(16, 185, 129, 0.2)';
       metaBadge.style.color = '#34d399';
-      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} زریک)`;
+      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} ${s.challenge?.rewardAssetType === 'nakh' ? 'نخ' : 'زریک'})`;
     } else {
       metaBadge.style.background = 'rgba(239, 68, 68, 0.2)';
       metaBadge.style.color = '#f87171';
@@ -1980,6 +2010,11 @@ window.openViewSubmissionModal = function(submissionId) {
 
   const rewardInput = document.getElementById('view-sub-reward-input');
   if (rewardInput) {
+    const ch = s.challenge || {};
+    if (Number(ch.rewardMax) > 0) {
+      rewardInput.min = ch.rewardMin || 0;
+      rewardInput.max = ch.rewardMax;
+    }
     rewardInput.value = s.score || defaultReward;
   }
 

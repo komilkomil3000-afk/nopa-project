@@ -1692,6 +1692,27 @@ class HttpApiService {
     }
   }
 
+  /// Creator edits the reward (asset + min/max range) of a challenge. Returns an error message, or null on success.
+  Future<String?> updateChallengeReward(String challengeId, {required String assetType, required int min, required int max}) async {
+    try {
+      final response = await _patch(
+        Uri.parse('$baseUrl/challenges/$challengeId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'rewardAssetType': assetType,
+          'rewardMin': min,
+          'rewardMax': max,
+        }),
+      );
+      if (response.statusCode == 200) return null;
+      final d = await parseJsonAsync(response.body);
+      return d?['error']?.toString() ?? 'ویرایش پاداش انجام نشد';
+    } catch (e) {
+      debugPrint('HTTP updateChallengeReward error: $e');
+      return 'خطای ارتباط با سرور';
+    }
+  }
+
   // --- Calendar Events ---
   Future<Map<String, dynamic>?> getCalendarEvents() async {
     try {

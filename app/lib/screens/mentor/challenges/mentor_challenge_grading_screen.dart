@@ -303,6 +303,116 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
   int get _rewardMax => int.tryParse(widget.challenge['rewardMax']?.toString() ?? '') ?? 0;
   String get _assetLabel => widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'نخ' : 'زریک';
 
+  bool get _canEditReward =>
+      widget.challenge['isByAdmin'] != true && widget.challenge['type']?.toString() != 'quiz';
+
+  Future<void> _editReward() async {
+    final int fixed = int.tryParse(widget.challenge['reward']?.toString() ?? '') ?? 0;
+    final minCtrl = TextEditingController(text: (_rewardMax > 0 ? _rewardMin : 0).toString());
+    final maxCtrl = TextEditingController(text: (_rewardMax > 0 ? _rewardMax : fixed).toString());
+    String asset = widget.challenge['rewardAsset']?.toString() == 'nakh' ? 'nakh' : 'zarik';
+
+    InputDecoration deco(String label) => InputDecoration(
+          isDense: true,
+          labelText: label,
+          labelStyle: const TextStyle(color: Color(0xFFC7C5DD), fontFamily: AppTheme.fontFamily, fontSize: 12),
+          enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF4C4578))),
+          focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Color(0xFFC09268))),
+        );
+
+    final bool? saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF2C274A),
+            title: const Text(
+              'ویرایش پاداش چالش',
+              style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    for (final opt in const [['zarik', 'زریک'], ['nakh', 'نخ']]) ...[
+                      Expanded(
+                        child: ChoiceChip(
+                          label: Center(child: Text(opt[1], style: const TextStyle(fontFamily: AppTheme.fontFamily))),
+                          selected: asset == opt[0],
+                          onSelected: (_) => setDialogState(() => asset = opt[0]),
+                        ),
+                      ),
+                      if (opt[0] == 'zarik') const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: minCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                  decoration: deco('حداقل'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: maxCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily),
+                  decoration: deco('حداکثر'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final min = int.tryParse(minCtrl.text.trim().toEnglishDigits());
+                  final max = int.tryParse(maxCtrl.text.trim().toEnglishDigits());
+                  if (min == null || max == null || min < 0 || max <= 0) {
+                    AppToast.error(ctx, 'حداقل و حداکثر را به صورت عدد وارد کنید.');
+                    return;
+                  }
+                  if (min > max) {
+                    AppToast.error(ctx, 'حداقل پاداش نمی‌تواند از حداکثر بیشتر باشد.');
+                    return;
+                  }
+                  final error = await HttpApiService().updateChallengeReward(
+                    widget.challenge['id'].toString(),
+                    assetType: asset,
+                    min: min,
+                    max: max,
+                  );
+                  if (!ctx.mounted) return;
+                  if (error != null) {
+                    AppToast.error(ctx, error);
+                    return;
+                  }
+                  setState(() {
+                    widget.challenge['rewardAsset'] = asset;
+                    widget.challenge['rewardMin'] = min;
+                    widget.challenge['rewardMax'] = max;
+                    widget.challenge['reward'] = max;
+                  });
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('ذخیره', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      AppToast.success(context, 'پاداش چالش ویرایش شد');
+      await Provider.of<AppRepository>(context, listen: false).refreshChallenges();
+    }
+  }
+
   Future<void> _approveParticipant(Map<String, dynamic> participant) async {
     final name = participant['name']?.toString() ?? '';
     final int min = _rewardMin;
@@ -537,6 +647,14 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                                 color: Color(0xFFDFB690),
                               ),
                             ),
+                            if (_canEditReward)
+                              GestureDetector(
+                                onTap: _editReward,
+                                child: const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  child: Icon(Icons.edit_rounded, size: 15, color: Color(0xFF9E92E8)),
+                                ),
+                              ),
                           ],
                         ),
                       ],

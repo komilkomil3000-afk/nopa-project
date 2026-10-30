@@ -1172,3 +1172,21 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib/services/api_service.dart; node --check app.js; grep confirms no remaining references; tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-30 17:18] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 1.3: admin panel challenge create/edit forms replace the single 'پاداش زریک' (min 10/max 5000) field with asset type (zarik/nakh) + min/max range (validated, sent as rewardAssetType/rewardMin/rewardMax)
+  - challenge list, submissions modal and review input show range+unit and bound the review amount. Creators can edit reward: new PATCH /api/v1/challenges/:id (mentor/admin, reuses updateChallenge ownership checks)
+  - app mentor challenge screen gets an edit-reward dialog (asset + min/max, hidden for admin-created and quiz challenges) via HttpApiService.updateChallengeReward
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/mentor/challenges lib/services/api_service.dart (clean); node --check app.js; tsc not run (no node_modules)
+- **Status:** Completed

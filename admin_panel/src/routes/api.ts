@@ -4,7 +4,7 @@ import { authLimiter, smsProtectionMiddleware } from '../middleware/rateLimit';
 import { login, verifyPhone, sendOtp, requestOtp, changePassword, register, logout, refreshToken } from '../controllers/authController';
 import { getMe, getMentorById, completeProfile } from '../controllers/userController';
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
-import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
+import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
 import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess } from '../controllers/lmsController';
 import { getInstructors } from '../controllers/instructorController';
@@ -52,6 +52,7 @@ router.post('/certificates/:id/physical-order', authenticateJWT as any, requestP
 // B. Challenges Routes
 router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createChallenge as any);
 router.get('/challenges', authenticateJWT as any, getChallenges as any);
+router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);
 
 // C. Submissions Routes
