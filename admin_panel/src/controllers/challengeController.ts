@@ -554,6 +554,10 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
     }
 
+    if (isMentorRole(req.user.role) || req.user.role === 'admin') {
+      return res.status(403).json({ error: 'راهبر و مدیر در چالش شرکت نمی‌کنند و فقط آن را مدیریت می‌کنند' });
+    }
+
     const { id } = req.params;
     const { answers } = req.body; // Array of selected options indices
 
@@ -598,8 +602,8 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       }
     }
 
-    // 10 Zarik per correct answer; mentors take part without earning personal rewards
-    const calculatedReward = isMentorRole(req.user.role) ? 0 : correctCount * 10;
+    // 10 Zarik per correct answer
+    const calculatedReward = correctCount * 10;
 
     let submission: any;
     let updatedUser: any;

@@ -175,6 +175,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   /// Interactive Question Dialog matching exact reference designs
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
+    // Mentors manage challenges, they never answer them
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    if (role == UserRole.mentor || role == UserRole.superMentor) return;
+
     final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
     int selectedOptionIndex = -1;
     String? attachedFileName;

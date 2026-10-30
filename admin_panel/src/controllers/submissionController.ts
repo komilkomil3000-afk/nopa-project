@@ -1,3 +1,4 @@
+import { isMentorRole } from '../utils/roles';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
@@ -6,6 +7,11 @@ export async function submitTask(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+
+    // Mentors and admins only manage challenges; they do not take part in them
+    if (isMentorRole(req.user.role) || req.user.role === 'admin') {
+      return res.status(403).json({ error: 'راهبر و مدیر در چالش شرکت نمی‌کنند و فقط آن را مدیریت می‌کنند' });
     }
 
     const { challengeId, answerText, fileUrl } = req.body;

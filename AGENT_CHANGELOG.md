@@ -1208,3 +1208,17 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); node --check admin_panel/public/app.js
 - **Status:** Completed
+
+### [2026-10-30 17:39] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Audit 2.7: mentors/admins can no longer take part in challenges - submitTask and submitQuiz return 403 for mentor/super-mentor/admin roles (submitQuiz's zero-reward special case removed)
+  - mentor challenge screen's answer dialog is guarded so it never opens for mentors
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/mentor/challenges (clean); tsc not run (no node_modules)
+- **Status:** Completed
