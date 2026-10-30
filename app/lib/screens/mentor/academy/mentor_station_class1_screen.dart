@@ -1,3 +1,5 @@
+import 'package:nopa_app/widgets/station_gallery_item.dart';
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +12,6 @@ import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
-import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/screens/student/academy/student_class2_screen.dart';
 
 class MentorStationClass1Screen extends StatefulWidget {
@@ -345,7 +346,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     const double cardHeight = 138.0;
     final String stationImage = station['imageUrl']?.toString() ?? '';
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
-    final String ordinalTitle = station['title'] ?? Station.getOrdinalName(_selectedStationIndex);
+    final String ordinalTitle = station['title'] ?? Station.getOrdinalName(StationNumbering.numberAt(_selectedStationIndex + 1));
     final String fullDescription = station['description']?.toString() ?? 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';
 
     return Padding(
@@ -722,7 +723,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         children: [
           // Heading
           const Text(
-            'انیمیشن هایی که باید ببینید',
+            'گالری منزلگاه',
             textAlign: TextAlign.right,
             style: TextStyle(
               color: Colors.white,
@@ -754,9 +755,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: NopaInlineVideoPlayer(
+                  child: StationGalleryItem(
                     key: ValueKey('mentor_clip_${_selectedStationIndex}_$index'),
-                    videoUrl: videoUrl,
+                    url: videoUrl,
                     title: title,
                     coverImageUrl: poster,
                   ),

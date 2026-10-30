@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
@@ -69,7 +70,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   /// 4-Column Summary Strip (راهبر, کاروان, اعضا, منزلگاه کنونی)
   Widget _buildUserInfoStrip(UserModel? user, AppRepository appState) {
-    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
+    final String currentStationTitle = '${StationNumbering.numberAt(1).toString().toPersianDigits()}. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
     final String caravanName = (user?.caravanName != null && user!.caravanName!.isNotEmpty)
         ? user.caravanName!
         : appState.selectedCaravanName;

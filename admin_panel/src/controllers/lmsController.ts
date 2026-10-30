@@ -191,14 +191,16 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
     const result = await prisma.$transaction(async (tx) => {
       let station;
       const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
-      let orderIndexVal = parseInt(orderIndex) || 0;
+      // -1 = no number given (keep / assign automatically); 0 is a real station number
+      const parsedOrder = parseInt(orderIndex);
+      let orderIndexVal = Number.isNaN(parsedOrder) || parsedOrder < 0 ? -1 : parsedOrder;
 
       const parsedUnlockTime = (scheduledUnlockTime && String(scheduledUnlockTime).trim() !== '') ? new Date(scheduledUnlockTime) : undefined;
       const lockedVal = typeof isLocked === 'boolean' ? isLocked : (status === 'locked' ? true : (status === 'active' ? false : undefined));
 
       if (id && !id.startsWith('new_')) {
         // When updating, ensure orderIndex is not duplicated with another station
-        if (orderIndexVal > 0) {
+        if (orderIndexVal >= 0) {
           const duplicate = await tx.station.findFirst({
             where: { orderIndex: orderIndexVal, id: { not: id } }
           });
@@ -241,7 +243,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
         const maxOrderAgg = await tx.station.aggregate({ _max: { orderIndex: true } });
         const nextAutoOrder = (maxOrderAgg._max.orderIndex || 0) + 1;
 
-        if (orderIndexVal <= 0) {
+        if (orderIndexVal < 0) {
           orderIndexVal = nextAutoOrder;
         } else {
           const existingWithSameOrder = await tx.station.findFirst({

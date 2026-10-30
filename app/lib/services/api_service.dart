@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show InternetAddressType, NetworkInterface, SocketException;
@@ -941,6 +942,7 @@ class HttpApiService {
       }
 
       _cachedStations = list;
+      StationNumbering.update(list);
       return _cachedStations!;
     } catch (e) {
       debugPrint('HTTP getStations error: $e');

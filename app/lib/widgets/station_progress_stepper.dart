@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -222,7 +223,7 @@ class StationProgressStepper extends StatelessWidget {
         ),
         child: Center(
           child: Text(
-            '${index + 1}'.toPersianDigits(),
+            StationNumbering.numberAt(index + 1).toString().toPersianDigits(),
             style: TextStyle(
               color: isCurrent ? const Color(0xFF221503) : Colors.white,
               fontSize: isCurrent ? 12.5 : 11.5,

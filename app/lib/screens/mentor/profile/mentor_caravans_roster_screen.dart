@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -1201,7 +1202,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatBox('منزلگاه کنونی', member.levelFrame.toPersian()),
+                        _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(member.levelFrame).toPersian()),
                         _buildStatBox('ویدیوها', ((member.levelFrame * 3) + 2).toPersian()),
                         _buildStatBox('آزمون‌ها', (member.levelFrame * 2).toPersian()),
                         _buildStatBox('گواهی‌نامه‌ها', certificatesCount.toPersian()),
@@ -1292,7 +1293,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
     final String stationTitle = stationData != null && stationData['title'] != null
         ? stationData['title'].toString()
-        : 'منزلگاه ${index + 1}';
+        : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
 
     final sessions = _getStationSessions(index, stationData);
 
@@ -1351,7 +1352,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     // Station Title
                     Expanded(
                       child: Text(
-                        'منزلگاه ${(index + 1).toPersian()}: $stationTitle',
+                        'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
                         style: TextStyle(
                           color: isLocked ? Colors.white54 : Colors.white,
                           fontSize: 13,

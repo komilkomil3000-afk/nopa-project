@@ -1417,7 +1417,7 @@ window.populateStationDropdownForChallenges = function(selectId, selectedId) {
   const stations = window.lmsStationsMasterList || [];
   let html = '<option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>';
   stations.forEach((st, idx) => {
-    const num = st.orderIndex || (idx + 1);
+    const num = st.orderIndex ?? (idx + 1);
     const title = st.title || `منزلگاه ${num}`;
     const isSel = (selectedId && (st.id === selectedId || st.id == selectedId)) ? 'selected' : '';
     html += `<option value="${st.id}" ${isSel}>📍 ${esc(title)} (منزلگاه ${num})</option>`;

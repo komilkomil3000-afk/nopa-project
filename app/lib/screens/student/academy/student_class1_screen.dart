@@ -1,3 +1,5 @@
+import 'package:nopa_app/widgets/station_gallery_item.dart';
+import 'package:nopa_app/core/station_numbering.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +14,6 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
-import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/main.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
@@ -79,17 +80,13 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   String _animKey(Map<String, dynamic> clip) => '${clip['id']}';
 
-  bool get _animationsWatched =>
-      _allClips.every((c) => _watchedAnimations.contains(_animKey(c)));
 
   @override
   void initState() {
     super.initState();
     if (widget.initialStation != null) {
       _station = widget.initialStation;
-      _currentStationIndex = widget.initialStation!.orderIndex > 0
-          ? widget.initialStation!.orderIndex - 1
-          : 0;
+      _currentStationIndex = StationNumbering.indexOfNumber(widget.initialStation!.orderIndex);
       _loadClassCategories();
     }
   }
@@ -99,9 +96,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     super.didUpdateWidget(oldWidget);
     if (widget.initialStation != null && widget.initialStation != oldWidget.initialStation) {
       _station = widget.initialStation;
-      _currentStationIndex = widget.initialStation!.orderIndex > 0
-          ? widget.initialStation!.orderIndex - 1
-          : 0;
+      _currentStationIndex = StationNumbering.indexOfNumber(widget.initialStation!.orderIndex);
       _loadClassCategories();
     }
   }
@@ -126,7 +121,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Station) {
         _station = args;
-        _currentStationIndex = args.orderIndex > 0 ? args.orderIndex - 1 : 0;
+        _currentStationIndex = StationNumbering.indexOfNumber(args.orderIndex);
       } else {
         _currentStationIndex = 0;
       }
@@ -140,7 +135,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       _allStationsData = List<Map<String, dynamic>>.from(stations);
 
       Map<String, dynamic> stationData = {};
-      final int targetOrder = _currentStationIndex + 1;
+      final int targetOrder = StationNumbering.numberAt(_currentStationIndex + 1);
       if (_allStationsData.isNotEmpty) {
         stationData = _allStationsData.firstWhere(
           (s) => (s['orderIndex'] == targetOrder),
@@ -216,7 +211,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   void _switchStation(int index) {
     if (index == _currentStationIndex && _station != null) return;
-    final int targetOrder = index + 1;
+    final int targetOrder = StationNumbering.numberAt(index + 1);
     setState(() {
       _currentStationIndex = index;
       _isDescriptionExpanded = false;
@@ -449,7 +444,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
     final String ordinalTitle = (_station?.title != null && _station!.title.trim().isNotEmpty)
         ? _station!.title
-        : Station.getOrdinalName(_currentStationIndex);
+        : Station.getOrdinalName(StationNumbering.numberAt(_currentStationIndex + 1));
     final String fullDescription = _station?.description?.isNotEmpty == true
         ? _station!.description!
         : 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';
@@ -753,7 +748,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       children: [
         // Heading
         const Text(
-          'انیمیشن هایی که باید ببینید',
+          'گالری منزلگاه',
           textAlign: TextAlign.right,
           style: TextStyle(
             color: Colors.white,
@@ -785,9 +780,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: NopaInlineVideoPlayer(
+                child: StationGalleryItem(
                   key: ValueKey('clip_${_currentStationIndex}_$index'),
-                  videoUrl: videoUrl,
+                  url: videoUrl,
                   title: title,
                   coverImageUrl: poster,
                   onProgress: (pos, dur) => _onAnimationProgress(_animKey(clip), pos, dur),
@@ -921,11 +916,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             flex: 3,
             child: _buildActionButton(
               title: 'ورود به کلاس‌ها',
-              enabled: _animationsWatched,
+              enabled: true,
               animatedStroke: true,
-              onTap: _animationsWatched
-                  ? () => _navigateToClass('مهارت')
-                  : () => AppToast.info(context, 'برای ورود به کلاس‌ها ابتدا انیمیشن‌های منزلگاه را (حداقل ۹۰٪) ببینید'),
+              onTap: () => _navigateToClass('مهارت'),
             ),
           ),
           const SizedBox(width: 10),

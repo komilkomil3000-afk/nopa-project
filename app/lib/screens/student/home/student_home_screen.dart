@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
@@ -69,7 +70,12 @@ class _HomeScreenState extends State<StudentHomeScreen> {
 
   /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned & Tap-to-expand
   Widget _buildUserInfoStrip(UserModel? user) {
-    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
+    final int levelPosition = (user?.levelFrame ?? 1) < 1 ? 1 : user!.levelFrame;
+    final Map<String, dynamic>? levelStation =
+        _stations.isNotEmpty ? _stations[(levelPosition - 1).clamp(0, _stations.length - 1)] : null;
+    final int levelNumber = (levelStation?['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(levelPosition);
+    final String currentStationTitle =
+        '${levelNumber.toString().toPersianDigits()}. ${Station.resolveTitle(levelStation?['title']?.toString(), levelNumber)}';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -109,8 +115,8 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
-                    final currentStationMap = _stations.isNotEmpty ? _stations.first : null;
-                    final stationOrder = (currentStationMap?['orderIndex'] as num?)?.toInt() ?? 1;
+                    final currentStationMap = levelStation;
+                    final stationOrder = levelNumber;
                     final station = Station(
                       id: currentStationMap?['id'] ?? '1',
                       title: Station.resolveTitle(currentStationMap?['title']?.toString(), stationOrder),

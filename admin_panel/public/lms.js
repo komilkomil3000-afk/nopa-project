@@ -75,7 +75,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     return;
   }
 
-  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
   const DEFAULT_STATION_TOPICS = {
     1: { skill: 'شناخت هوش و حافظه', media: 'پادکست و مبانی رسانه' },
     2: { skill: 'خودشناسی جامع', media: 'تولید پادکست حرفه‌ای' },
@@ -431,7 +431,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   let station = window.lmsStationsMasterList.find(s => 
     s.id === stationId || 
     s.id == stationId || 
-    ('MZ' + (s.orderIndex || s.index)) === stationId || 
+    ('MZ' + (s.orderIndex ?? s.index)) === stationId || 
     s.orderIndex == stationId
   );
 
@@ -451,9 +451,9 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   const modal = document.getElementById('lms-content-manager-modal');
   if (!modal) return;
 
-  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
-  const stationIdx = station.orderIndex || 1;
-  const simpleStationName = PERSIAN_NUMS[stationIdx - 1] ? `منزلگاه ${PERSIAN_NUMS[stationIdx - 1]}` : `منزلگاه ${stationIdx}`;
+  const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const stationIdx = station.orderIndex ?? 1;
+  const simpleStationName = PERSIAN_NUMS[stationIdx] ? `منزلگاه ${PERSIAN_NUMS[stationIdx]}` : `منزلگاه ${stationIdx}`;
 
   let filterTitleSuffix = '';
   if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
@@ -2104,7 +2104,7 @@ window.addAnimationBlockToCreatorModal = function(animData = null) {
           <input type="text" class="modal-anim-title input-ctrl" value="${defaultTitle}" placeholder="مثال: قسمت اول - شروع ماجرا" style="background: #1e293b;" oninput="this.closest('.modal-animation-card').querySelector('.anim-label-display').textContent = this.value">
         </div>
         <div class="form-group">
-          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> لینک ویدیو انیمیشن:</label>
+          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-photo-film" style="color:#38bdf8;"></i> لینک یا آپلود ویدیو / تصویر:</label>
           <div style="display:flex; gap:6px;">
             <input type="text" id="${inputUniqueId}" class="modal-anim-url input-ctrl" value="${esc(defaultUrl)}" placeholder="https://... یا /uploads/..." style="background: #1e293b; direction:ltr; text-align:left; flex:1;">
             <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود مستقیم ویدیو">
@@ -2262,9 +2262,10 @@ window.openCreateStationModal = function() {
   const modal = document.getElementById('lms-station-creator-modal');
   if (!modal) return;
 
-  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
-  const nextIdx = (window.lmsStationsMasterList?.length || 0) + 1;
-  const nextPersianName = PERSIAN_NUMS[nextIdx - 1] ? `منزلگاه ${PERSIAN_NUMS[nextIdx - 1]}` : `منزلگاه ${nextIdx}`;
+  const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const existingNumbers = (window.lmsStationsMasterList || []).map(x => Number(x.orderIndex ?? x.index)).filter(n => Number.isFinite(n));
+  const nextIdx = existingNumbers.length ? Math.max(...existingNumbers) + 1 : 1;
+  const nextPersianName = PERSIAN_NUMS[nextIdx] ? `منزلگاه ${PERSIAN_NUMS[nextIdx]}` : `منزلگاه ${nextIdx}`;
 
   document.getElementById('station-modal-title').innerHTML = `<i class="fa-solid fa-plus-circle"></i> ایجاد و تعریف ${nextPersianName}`;
   document.getElementById('modal-st-id').value = '';
@@ -2295,7 +2296,7 @@ window.editStationModal = function(stationId) {
   const station = window.lmsStationsMasterList.find(s => 
     s.id === stationId || 
     s.id == stationId || 
-    ('MZ' + (s.orderIndex || s.index)) === stationId || 
+    ('MZ' + (s.orderIndex ?? s.index)) === stationId || 
     s.orderIndex == stationId
   );
 
@@ -2304,9 +2305,9 @@ window.editStationModal = function(stationId) {
   const modal = document.getElementById('lms-station-creator-modal');
   if (!modal) return;
 
-  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
-  const stIdx = station.orderIndex || 1;
-  const simpleStationName = PERSIAN_NUMS[stIdx - 1] ? `منزلگاه ${PERSIAN_NUMS[stIdx - 1]}` : `منزلگاه ${stIdx}`;
+  const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const stIdx = station.orderIndex ?? 1;
+  const simpleStationName = PERSIAN_NUMS[stIdx] ? `منزلگاه ${PERSIAN_NUMS[stIdx]}` : `منزلگاه ${stIdx}`;
 
   document.getElementById('station-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ویرایش مشخصات ${simpleStationName}`;
   document.getElementById('modal-st-id').value = station.id;
@@ -2366,7 +2367,8 @@ window.saveCompleteStation = async function(e) {
   if (e) e.preventDefault();
 
   const id = document.getElementById('modal-st-id')?.value;
-  const orderIndex = parseInt(document.getElementById('modal-st-index')?.value) || 1;
+  const parsedOrder = parseInt(document.getElementById('modal-st-index')?.value);
+  const orderIndex = Number.isNaN(parsedOrder) || parsedOrder < 0 ? 1 : parsedOrder; // 0 is a valid station
   const title = document.getElementById('modal-st-title')?.value || 'منزلگاه';
   const releaseDate = document.getElementById('modal-st-release-date')?.value;
   const stayDuration = document.getElementById('modal-st-duration')?.value;
@@ -2519,7 +2521,7 @@ window.openStationAccessModal = function(stationId) {
   const modal = document.getElementById('station-access-modal');
   if (!modal) return;
 
-  const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
+  const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
   const idx = station.orderIndex ?? 1;
   const stationTitleName = PERSIAN_NUMS[idx - 1] ? `منزلگاه ${PERSIAN_NUMS[idx - 1]}` : `منزلگاه ${idx}`;
 

@@ -694,7 +694,9 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
           status: 'approved',
           score: correctCount,
           mentorFeedback: `ثبت خودکار پاسخنامه آزمون. نمره: ${correctCount}/${questionsList.length}`,
-          answerText: `پاسخ‌ها: ${JSON.stringify(answers)}`
+          answerText: questionsList
+            .map((q: any, i: number) => `${i + 1}. ${q.q ?? q.question ?? ''}: ${Array.isArray(q.options) && q.options[answers[i]] !== undefined ? q.options[answers[i]] : '-'}`)
+            .join('\n')
         }
       });
 

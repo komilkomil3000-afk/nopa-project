@@ -1411,3 +1411,35 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); node --check app.js; tsc not run
 - **Status:** Completed
+
+### [2026-10-30 21:25] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/core/station_numbering.dart` (Created)
+  - `app/lib/widgets/station_gallery_item.dart` (Created)
+- **Description of Changes:**
+  - 1) Quiz answers: submitQuiz stores readable answerText ('n. question: chosen option text') instead of '[3]'. 2) Station 0: station numbers shown in the app are the panel's orderIndex (new core/station_numbering.dart
+  - levelFrame stays a 1-based position so locks/certificates are unchanged): stepper nodes, station card number, profile 'منزلگاه کنونی', roster/profile station rows, home current-station (now the station at the user's level), Station.* default names indexed by number with 'منزلگاه صفر'
+  - student class screen maps station number to list index. Panel: station number input editable and accepts 0 (lms.js, lmsController: explicit 0 kept, blank = auto next), falsy-0 bugs fixed (|| -> ??), names array starts with صفر. 3) Station gallery: animations section is now a gallery (images and videos
+  - StationGalleryItem picks by extension, tap to enlarge), heading 'گالری منزلگاه', panel wording updated, and the 'watch the animations first' lock on entering the classes is removed. Mentor home challenge section: not added (per request)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check lms.js/app.js; tsc not run
+- **Status:** Completed

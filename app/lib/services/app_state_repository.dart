@@ -140,6 +140,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     final user = await _apiService.getMe();
     if (user != null) {
       loadAssetNames().catchError((e) => debugPrint('loadAssetNames error: $e'));
+      _apiService.getStations().then((_) => notifyListeners()).catchError((e) => debugPrint('getStations error: $e'));
       fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
       final existingRole = currentUser.role;
       if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {

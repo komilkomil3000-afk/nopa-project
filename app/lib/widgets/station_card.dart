@@ -189,7 +189,7 @@ class StationCard extends StatelessWidget {
                         children: [
                           // Station Number (Right in RTL)
                           Text(
-                            (station.orderIndex > 0 ? station.orderIndex : 1).toPersian(),
+                            station.orderIndex.toPersian(),
                             style: const TextStyle(
                               color: Color(0xFF9292E2),
                               fontSize: 17,
