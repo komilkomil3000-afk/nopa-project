@@ -172,6 +172,56 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   int _videoSessionToken = 0;
   bool _isMiniQuizShowing = false;
 
+  // The video starts only after the student taps a part; opening a lesson just shows it.
+  bool _playRequested = false;
+
+  // Used to open the last thing the student watched when the screen opens.
+  final List<Map<String, dynamic>> _progressRecords = [];
+  bool _progressLoaded = false;
+  bool _sessionsLoaded = false;
+  bool _lastSeenApplied = false;
+
+  /// Opens the folder (lesson) and part the student watched last, without playing it.
+  void _applyLastSeen() {
+    if (_lastSeenApplied || !_progressLoaded || !_sessionsLoaded) return;
+    _lastSeenApplied = true;
+    if (_targetSessionTitle != null && _targetSessionTitle!.trim().isNotEmpty) return;
+
+    String latest = '';
+    int? bestTab;
+    int bestSession = -1;
+    int bestClip = -1;
+    for (final p in _progressRecords) {
+      if (p['isWatched'] != true && p['quizPassed'] != true) continue;
+      final updated = p['updatedAt']?.toString() ?? '';
+      if (updated.compareTo(latest) < 0) continue;
+      for (int tab = 0; tab < 2; tab++) {
+        final sessions = tab == 1 ? _mediaSessions : _skillSessions;
+        for (int s = 0; s < sessions.length; s++) {
+          if (sessions[s]['id']?.toString() != p['sessionId']?.toString()) continue;
+          final clips = sessions[s]['videoClips'] as List? ?? [];
+          for (int c = 0; c < clips.length; c++) {
+            if (clips[c]['id']?.toString() == p['clipId']?.toString() &&
+                !_isSessionLocked(sessions, s)) {
+              latest = updated;
+              bestTab = tab;
+              bestSession = s;
+              bestClip = c;
+            }
+          }
+        }
+      }
+    }
+    if (bestTab == null) return;
+    setState(() {
+      _selectedTab = bestTab!;
+      _expandedSessionIndex = bestSession;
+      _currentClipIndex = bestClip;
+      _playRequested = false;
+    });
+    _initializeVideoForCurrentSession();
+  }
+
   bool _argumentsLoaded = false;
   String? _targetSessionTitle;
   String? _targetInstructor;
@@ -328,6 +378,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _initializeVideoForCurrentSession();
       }
     }
+    _sessionsLoaded = true;
+    if (mounted) _applyLastSeen();
   }
 
   /// A station is open when the user's level reached it or the stations before it are completed.
@@ -352,6 +404,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       _currentStationIndex = target;
       _expandedSessionIndex = 0;
       _currentClipIndex = 0;
+      _playRequested = false;
       _targetSessionTitle = null; // the requested session belonged to the previous station
       _stationDataArg = null;
       _isLoadingClasses = true;
@@ -478,6 +531,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       setState(() {
         for (final p in progress) {
           if (p is! Map) continue;
+          _progressRecords.add(Map<String, dynamic>.from(p));
           final key = '${p['sessionId']}|${p['clipId']}';
           if (p['quizPassed'] == true) _passedQuizzes.add(key);
           if (p['isWatched'] == true) _unlockedQuizzes.add(key);
@@ -486,6 +540,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     } catch (e) {
       debugPrint('Load quiz progress error: $e');
     }
+    _progressLoaded = true;
+    if (mounted) _applyLastSeen();
   }
 
   void _onVideoEnded() {
@@ -597,7 +653,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       key: ValueKey('class2_video_${_videoSessionToken}_$url'),
       videoUrl: url,
       title: _currentPlayingTitle,
-      autoPlay: url.isNotEmpty,
+      autoPlay: url.isNotEmpty && _playRequested,
       onProgress: _onVideoProgress,
       onEnded: _onVideoEnded,
     );
@@ -634,6 +690,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         setState(() {
           _selectedTab = index;
           _currentClipIndex = 0;
+          _playRequested = false;
         });
         if (index != 2) {
           _initializeVideoForCurrentSession();
@@ -744,6 +801,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       } else {
                         _expandedSessionIndex = sIndex;
                         _currentClipIndex = 0;
+                        _playRequested = false;
                         _initializeVideoForCurrentSession();
                       }
                     });
@@ -836,6 +894,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                           }
                           setState(() {
                             _currentClipIndex = cIndex;
+                            _playRequested = true;
                           });
                           _initializeVideoForCurrentSession();
                         }

@@ -11,7 +11,6 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
-import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/main.dart';
 
@@ -264,13 +263,8 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                           return;
                         }
 
-                        final isNewStation = index > 0 && !isCompleted;
-                        final appState = Provider.of<AppRepository>(context, listen: false);
-                        if (isNewStation && appState.hasPendingChallenges) {
-                          AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
-                          PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
-                          return;
-                        }
+                        // Leaving this page closes any open box
+                        setState(() => _expandedIndices.clear());
 
                         final result = await Navigator.pushNamed(
                           context,
@@ -434,11 +428,9 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   setState(() {
-                                    if (isExpanded) {
-                                      _expandedIndices.remove(index);
-                                    } else {
-                                      _expandedIndices.add(index);
-                                    }
+                                    // Only one box open at a time
+                                    _expandedIndices.clear();
+                                    if (!isExpanded) _expandedIndices.add(index);
                                   });
                                 },
                                 child: Padding(

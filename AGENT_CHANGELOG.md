@@ -1872,3 +1872,20 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `npx tsc --noEmit` clean; `node --test tests/security.test.js` 9/9; `node --check public/app.js`. Not run against a live DB.
 - **Status:** Completed
+
+### [2026-10-31 21:44] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+- **Description of Changes:**
+  - Removed pending-challenges block when entering next station (roadmap + class1)
+  - single-open boxes that close on leaving page
+  - tightened class1 spacing to avoid scrolling
+  - class2 lesson tap only opens parts, part tap plays
+  - class2 opens last watched lesson/part (by progress updatedAt) without autoplay. Files: app/lib/screens/student/academy/student_academy_roadmap_screen.dart, student_class1_screen.dart, student_class2_screen.dart
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/student/academy (from app/)
+- **Status:** Completed

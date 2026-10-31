@@ -15,7 +15,6 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
-import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/widgets/zoomable_image.dart';
 import 'package:nopa_app/main.dart';
@@ -240,6 +239,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     setState(() {
       _currentStationIndex = index;
       _isDescriptionExpanded = false;
+      _expandedStatKeys.clear();
       if (_allStationsData.isNotEmpty) {
         final matching = _allStationsData.firstWhere(
           (s) => (s['orderIndex'] == targetOrder),
@@ -255,24 +255,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     _loadClassCategories();
   }
 
-  bool _checkCanAccessContent(BuildContext context) {
-    if (_station == null) return true;
-    final appState = Provider.of<AppRepository>(context, listen: false);
-    final isNewStation = _currentStationIndex > 0 && !_station!.isCompleted;
-    if (isNewStation && appState.hasPendingChallenges) {
-      AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
-      PendingChallengesDialog.show(
-        context,
-        appState.uncompletedChallengesCount,
-      );
-      return false;
-    }
-    return true;
-  }
-
   void _navigateToClass(String categoryKeyword) {
-    if (!_checkCanAccessContent(context)) return;
-
     final split = StationCategories.splitByTitle(_classCategories);
     final List<Map<String, dynamic>> targetSessions =
         split[categoryKeyword.contains('رسانه') ? StationCategories.media : StationCategories.skill]!;
@@ -285,6 +268,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       return;
     }
 
+    // Leaving this page closes any open box
+    setState(() {
+      _expandedStatKeys.clear();
+      _isDescriptionExpanded = false;
+    });
     Navigator.pushNamed(
       context,
       '/class2',
@@ -368,7 +356,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             onStationSelected: _switchStation,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
 
           if (isLocked)
             // Locked Station State
@@ -377,7 +365,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             // 3. Station Header: Description on Left & Station Image Box on Right
             _buildStationLoreHeader(),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
 
             // 4. Class Information & Statistics Strip
             _buildStatsStrip(
@@ -387,18 +375,18 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               stayText: stayText,
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
             // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
             if (_allClips.isNotEmpty) ...[
               _buildAnimationCarouselSection(currentClipTitle),
-              const SizedBox(height: 22),
+              const SizedBox(height: 12),
             ],
 
             // 6. Action Buttons
             _buildActionButtonsRow(),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
           ],
         ],
       ),
@@ -732,11 +720,10 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         child: InkWell(
           onTap: () {
             setState(() {
-              if (_expandedStatKeys.contains(title)) {
-                _expandedStatKeys.remove(title);
-              } else {
-                _expandedStatKeys.add(title);
-              }
+              // Only one box open at a time
+              final wasOpen = _expandedStatKeys.contains(title);
+              _expandedStatKeys.clear();
+              if (!wasOpen) _expandedStatKeys.add(title);
             });
           },
           borderRadius: BorderRadius.circular(8),
