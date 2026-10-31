@@ -1842,3 +1842,16 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - file size checked
 - **Status:** Completed
+
+### [2026-10-31 22:00] - Claude Code (Backend / Prisma)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/migrations/20261039_panel_access/migration.sql` (Created)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+- **Description of Changes:**
+  - Recorded the manual DB change as a migration (found via `prisma migrate diff`, read-only): `User.panelAccess`, `RolePermission.canLoginPanel`, `RolePermission.permissionsJson`. Statements use IF NOT EXISTS since they already exist on the live DB.
+  - Added the same fields to schema.prisma.
+- **Verification / Checkpoints Executed:**
+  - `prisma validate`; re-running the diff shows no remaining difference for these columns.
+- **Status:** Completed
