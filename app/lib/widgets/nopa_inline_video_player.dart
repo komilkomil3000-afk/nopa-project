@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,12 +16,20 @@ class NopaInlineVideoPlayer extends StatefulWidget {
   final String? coverImageUrl;
   final bool autoPlay;
 
+  /// Called on every controller tick with the current position and duration.
+  final void Function(Duration position, Duration duration)? onProgress;
+
+  /// Called once when playback reaches the end of the video.
+  final VoidCallback? onEnded;
+
   const NopaInlineVideoPlayer({
     super.key,
     required this.videoUrl,
     this.title,
     this.coverImageUrl,
     this.autoPlay = false,
+    this.onProgress,
+    this.onEnded,
   });
 
   @override
@@ -35,6 +44,8 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   bool _isPlaying = false;
   bool _showControls = true;
   Timer? _controlsTimer;
+  bool _endedNotified = false;
+  int _lastShownTick = -1;
 
   AparatVideoInfo? _aparatInfo;
   String? _selectedQuality;
@@ -87,6 +98,23 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   void _videoListener() {
     if (!mounted || _controller == null) return;
     final value = _controller!.value;
+    if (value.isInitialized && value.duration > Duration.zero) {
+      widget.onProgress?.call(value.position, value.duration);
+      // Some platforms stop a few ms short of the exact duration
+      final atEnd = value.position >= value.duration - const Duration(milliseconds: 400);
+      if (atEnd && !_endedNotified) {
+        _endedNotified = true;
+        widget.onEnded?.call();
+      } else if (!atEnd) {
+        _endedNotified = false;
+      }
+    }
+    // The overlay reads the controller on build, so it must be rebuilt as the position moves (twice a second)
+    final tick = value.position.inMilliseconds ~/ 500;
+    if (_showControls && value.isInitialized && tick != _lastShownTick) {
+      _lastShownTick = tick;
+      setState(() {});
+    }
     if (value.isPlaying != _isPlaying) {
       setState(() {
         _isPlaying = value.isPlaying;
@@ -128,6 +156,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
   }
 
   Future<void> _startVideo({String? overrideUrl, int seekSeconds = 0}) async {
+    _endedNotified = false;
     setState(() {
       _isLoading = true;
       _hasError = false;
@@ -286,7 +315,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               children: [
                 // 1. Video Player or Thumbnail Poster
                 if (_isInitialized && _controller != null)
-                  GestureDetector(
+                  TapExpander(child: GestureDetector(
                     onTap: _toggleControls,
                     child: Center(
                       child: AspectRatio(
@@ -296,7 +325,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         child: VideoPlayer(_controller!),
                       ),
                     ),
-                  )
+                  ))
                 else
                   _buildThumbnailPoster(),
 
@@ -350,7 +379,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   Center(
                     child: Material(
                       color: Colors.transparent,
-                      child: InkWell(
+                      child: TapExpander(child: InkWell(
                         onTap: () => _startVideo(),
                         borderRadius: BorderRadius.circular(24),
                         child: Container(
@@ -372,7 +401,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ),
                   ),
 
@@ -470,7 +499,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       initialValue: _playbackSpeed,
                       tooltip: 'سرعت پخش',
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                       onSelected: _changeSpeed,
                       itemBuilder: (context) => [
                         const PopupMenuItem(value: 0.5, child: Text('0.5x')),
@@ -501,7 +530,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         initialValue: _selectedQuality,
                         tooltip: 'کیفیت ویدیو',
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
@@ -538,8 +567,10 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
             ),
           ),
 
-          // Center Controls: Rewind 10s, Play/Pause/Replay, Forward 10s
-          Row(
+          // Center Controls: Rewind 10s, Play/Pause/Replay, Forward 10s (always left-to-right)
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Rewind 10s
@@ -552,7 +583,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               // Play / Pause / Replay Button
               Material(
                 color: Colors.transparent,
-                child: InkWell(
+                child: TapExpander(child: InkWell(
                   onTap: () {
                     if (isEnded) {
                       controller.seekTo(Duration.zero);
@@ -586,7 +617,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                       ),
                     ),
                   ),
-                ),
+                )),
               ),
               const SizedBox(width: 8),
 
@@ -597,52 +628,57 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
               ),
             ],
           ),
+          ),
 
-          // Bottom Bar: Time, Progress Bar, Fullscreen Button
-          Padding(
-            padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
-            child: Row(
-              children: [
-                // Fullscreen Button
-                IconButton(
-                  icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: _openFullscreen,
-                ),
-                const SizedBox(width: 6),
+          // Bottom Bar: Time, Progress Bar, Fullscreen Button (always left-to-right)
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 4),
+              child: Row(
+                children: [
+                  // Time elapsed / total
+                  Text(
+                    '${_formatDuration(pos)} / ${_formatDuration(dur)}',
+                    textDirection: TextDirection.ltr,
+                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
+                  ),
+                  const SizedBox(width: 8),
 
-                // Time Elapsed / Total
-                Text(
-                  '${_formatDuration(pos)} / ${_formatDuration(dur)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
-                ),
-                const SizedBox(width: 8),
-
-                // Scrubbing Slider
-                Expanded(
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                      trackHeight: 2.5,
-                      activeTrackColor: const Color(0xFFC09268),
-                      inactiveTrackColor: Colors.white24,
-                      thumbColor: const Color(0xFFF4DCC5),
-                    ),
-                    child: Slider(
-                      value: dur.inMilliseconds > 0
-                          ? pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble()
-                          : 0.0,
-                      max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
-                      onChanged: (val) {
-                        controller.seekTo(Duration(milliseconds: val.toInt()));
-                        _resetControlsTimer();
-                      },
+                  // Scrubbing Slider
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                        trackHeight: 2.5,
+                        activeTrackColor: const Color(0xFFC09268),
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: const Color(0xFFF4DCC5),
+                      ),
+                      child: Slider(
+                        value: dur.inMilliseconds > 0
+                            ? pos.inMilliseconds.clamp(0, dur.inMilliseconds).toDouble()
+                            : 0.0,
+                        max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                        onChanged: (val) {
+                          controller.seekTo(Duration(milliseconds: val.toInt()));
+                          _resetControlsTimer();
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+
+                  // Fullscreen Button
+                  IconButton(
+                    icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    onPressed: _openFullscreen,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -737,9 +773,11 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
     final dur = widget.controller.value.duration;
     final isEnded = dur > Duration.zero && pos >= dur;
 
-    return Scaffold(
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Scaffold(
       backgroundColor: Colors.black,
-      body: GestureDetector(
+      body: TapExpander(child: GestureDetector(
         onTap: () {
           setState(() => _showControls = !_showControls);
           if (_showControls) _resetTimer();
@@ -946,7 +984,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
               ),
           ],
         ),
-      ),
-    );
+      )),
+    ));
   }
 }

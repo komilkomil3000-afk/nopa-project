@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -22,7 +23,7 @@ class StationCard extends StatelessWidget {
 
     return AspectRatio(
       aspectRatio: 0.65,
-      child: GestureDetector(
+      child: TapExpander(child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
@@ -189,7 +190,7 @@ class StationCard extends StatelessWidget {
                         children: [
                           // Station Number (Right in RTL)
                           Text(
-                            (station.orderIndex > 0 ? station.orderIndex : 1).toPersian(),
+                            station.orderIndex.toPersian(),
                             style: const TextStyle(
                               color: Color(0xFF9292E2),
                               fontSize: 17,
@@ -224,7 +225,7 @@ class StationCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 }

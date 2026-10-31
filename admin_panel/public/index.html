@@ -63,6 +63,7 @@
           </div>
           <ul class="accordion-content">
             <li class="menu-item active" data-tab="users-tab"><i class="fa-solid fa-users"></i><span class="menu-text">دایرکتوری مخاطبان</span></li>
+            <li class="menu-item" data-tab="assets-tab"><i class="fa-solid fa-tags"></i><span class="menu-text">نام دارایی‌ها</span></li>
             <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و لیگ</span></li>
             <li class="menu-item" data-tab="levels-tab"><i class="fa-solid fa-layer-group"></i><span class="menu-text">سطوح و گواهینامه‌ها</span></li>
           </ul>
@@ -417,6 +418,16 @@
       </section>
 
       <!-- TAB 2: REWARDS & LEDGER -->
+      <section id="assets-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" style="max-width: 760px;">
+          <div class="panel-title"><i class="fa-solid fa-tags" style="color: #38bdf8; margin-left: 8px;"></i>نام دارایی‌ها</div>
+          <div style="font-size: 12.5px; color: #94a3b8; margin: 6px 0 16px; line-height: 1.8;">
+            نام هر دارایی را اینجا تغییر دهید؛ نیازی به دسترسی به دیتابیس نیست. اپلیکیشن در اجرای بعدی و این پنل پس از رفرش صفحه، نام جدید را نشان می‌دهند. پیام‌ها و اعلان‌های جدید سرور هم با نام جدید ساخته می‌شوند. تغییر نام، موجودی‌ها را تغییر نمی‌دهد.
+          </div>
+          <div id="asset-names-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
+        </div>
+      </section>
+
       <section id="rewards-tab" class="tab-panel" style="display: none;">
         <div class="ledger-grid">
           <!-- Adjustments and Analytics -->
@@ -436,13 +447,13 @@
                   <div><div class="stat-label">کل زریک پلتفرم</div><div class="stat-value" id="eco-zarik" style="font-size:18px; color:#fbbf24;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل نخ</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
+                  <div><div class="stat-label">کل کلاف</div><div class="stat-value" id="eco-nakh" style="font-size:18px; color:#a78bfa;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل فرش</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
+                  <div><div class="stat-label">کل قالیچه</div><div class="stat-value" id="eco-farsh" style="font-size:18px; color:#ef4444;">0</div></div>
                 </div>
                 <div class="stat-card glass" style="padding:12px 15px;">
-                  <div><div class="stat-label">کل بیرق</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
+                  <div><div class="stat-label">کل درفش</div><div class="stat-value" id="eco-beyragh" style="font-size:18px; color:#3b82f6;">0</div></div>
                 </div>
               </div>
 
@@ -453,9 +464,9 @@
                   <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" onchange="applyLeagueFilters()">
                     <option value="totalScore">کل امتیازات (جام زرین)</option>
                     <option value="zarik">زریک</option>
-                    <option value="beyragh">بیرق</option>
-                    <option value="nakh">نخ</option>
-                    <option value="farsh">فرش</option>
+                    <option value="beyragh">درفش</option>
+                    <option value="nakh">کلاف</option>
+                    <option value="farsh">قالیچه</option>
                     <option value="stars">ستاره‌ها و آزمون‌ها</option>
                     <option value="quizScore">نمره آزمون‌ها</option>
                     <option value="challengeScore">امتیاز چالش‌ها</option>
@@ -510,9 +521,9 @@
                         <th>راهبر</th>
                         <th style="text-align: center;">اعضا</th>
                         <th style="color: #fbbf24;">زریک</th>
-                        <th style="color: #a78bfa;">نخ</th>
-                        <th style="color: #ef4444;">فرش</th>
-                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #a78bfa;">کلاف</th>
+                        <th style="color: #ef4444;">قالیچه</th>
+                        <th style="color: #3b82f6;">درفش</th>
                         <th style="color: #f59e0b;">ستاره/آزمون</th>
                         <th>امتیاز چالش</th>
                         <th>پیشرفت کلاس</th>
@@ -538,9 +549,9 @@
                         <th>نقش</th>
                         <th>کاروان</th>
                         <th style="color: #fbbf24;">زریک</th>
-                        <th style="color: #a78bfa;">نخ</th>
-                        <th style="color: #ef4444;">فرش</th>
-                        <th style="color: #3b82f6;">بیرق</th>
+                        <th style="color: #a78bfa;">کلاف</th>
+                        <th style="color: #ef4444;">قالیچه</th>
+                        <th style="color: #3b82f6;">درفش</th>
                         <th style="color: #f59e0b;">ستاره‌ها</th>
                         <th>نمره آزمون</th>
                         <th>نمره چالش</th>
@@ -613,9 +624,9 @@
                   <label>نوع دارایی</label>
               <select id="adj-asset-type" class="select-ctrl" style="width:100%;">
                 <option value="zarik">زریک (سکه)</option>
-                <option value="nakh">کلاف نخ</option>
-                <option value="beyragh">بیرق</option>
-                <option value="farsh">فرش</option>
+                <option value="nakh">کلاف</option>
+                <option value="beyragh">درفش</option>
+                <option value="farsh">قالیچه</option>
               </select>
             </div>
             <div class="form-group" style="flex:1;">
@@ -937,11 +948,11 @@
               <div id="caravan-detail-derafsh" style="color:#38bdf8; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-flag"></i></div>
             </div>
             <div style="background:rgba(52,211,153,0.06); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(52,211,153,0.2);">
-              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-layer-group" style="color:#34d399;"></i> مجموع نخ</div>
+              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-layer-group" style="color:#34d399;"></i> مجموع کلاف</div>
               <div id="caravan-detail-nokh" style="color:#34d399; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-layer-group"></i></div>
             </div>
             <div style="background:rgba(192,132,252,0.06); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(192,132,252,0.2);">
-              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-rug" style="color:#c084fc;"></i> مجموع فرش</div>
+              <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-rug" style="color:#c084fc;"></i> مجموع قالیچه</div>
               <div id="caravan-detail-farsh" style="color:#c084fc; font-weight:bold; font-size:16px;">0 <i class="fa-solid fa-rug"></i></div>
             </div>
             <div style="background:rgba(255,255,255,0.05); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgba(255,255,255,0.06);">
@@ -966,8 +977,8 @@
                   <th style="padding:12px 10px;">شماره تماس</th>
                   <th style="padding:12px 10px; color:#fbbf24;"><i class="fa-solid fa-coins"></i> زریک</th>
                   <th style="padding:12px 10px; color:#38bdf8;"><i class="fa-solid fa-flag"></i> درفش</th>
-                  <th style="padding:12px 10px; color:#34d399;"><i class="fa-solid fa-layer-group"></i> نخ</th>
-                  <th style="padding:12px 10px; color:#c084fc;"><i class="fa-solid fa-rug"></i> فرش</th>
+                  <th style="padding:12px 10px; color:#34d399;"><i class="fa-solid fa-layer-group"></i> کلاف</th>
+                  <th style="padding:12px 10px; color:#c084fc;"><i class="fa-solid fa-rug"></i> قالیچه</th>
                   <th style="padding:12px 10px;">عملیات</th>
                 </tr>
               </thead>
@@ -1445,8 +1456,14 @@
 
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
                 <div class="form-group">
-                  <label style="font-size: 12px; color: #cbd5e1;">پلتفرم پیام‌رسان (ایتا، شاد، تلگرام):</label>
-                  <input type="text" id="modal-mentor-social-platform" class="input-ctrl" placeholder="مثال: Eitaa" style="background:#1e293b; color:white;">
+                  <label style="font-size: 12px; color: #cbd5e1;">پلتفرم پیام‌رسان (ایتا، بله، تلگرام، واتساپ):</label>
+                  <input type="text" id="modal-mentor-social-platform" list="mentor-social-platform-options" class="input-ctrl" placeholder="مثال: ایتا" style="background:#1e293b; color:white;">
+                  <datalist id="mentor-social-platform-options">
+                    <option value="ایتا"></option>
+                    <option value="بله"></option>
+                    <option value="تلگرام"></option>
+                    <option value="واتساپ"></option>
+                  </datalist>
                 </div>
                 <div class="form-group">
                   <label style="font-size: 12px; color: #cbd5e1;">آیدی / هندل پیام‌رسان:</label>
@@ -1692,7 +1709,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 2fr 1.5fr; gap: 12px; margin-bottom: 12px;">
                   <div class="form-group">
                     <label style="font-size: 12px; color: #cbd5e1;"><i class="fa-solid fa-hashtag" style="color:#38bdf8;"></i> شماره منزلگاه (خودکار و یکتا):</label>
-                    <input type="number" id="modal-st-index" class="input-ctrl" readonly style="background: #0f172a; border-color: #334155; color: #38bdf8; font-weight: bold; cursor: not-allowed;" title="شماره منزلگاه به صورت خودکار و یکتا تخصیص داده می‌شود. برای تغییر ترتیب از دکمه «مرتب‌سازی منزلگاه‌ها» استفاده نمایید.">
+                    <input type="number" id="modal-st-index" class="input-ctrl" min="0" step="1" style="background: #0f172a; border-color: #334155; color: #38bdf8; font-weight: bold; cursor: not-allowed;" title="شماره منزلگاه به صورت خودکار و یکتا تخصیص داده می‌شود. برای تغییر ترتیب از دکمه «مرتب‌سازی منزلگاه‌ها» استفاده نمایید.">
                   </div>
                   <div class="form-group">
                     <label style="font-size: 12px; color: #cbd5e1;">عنوان منزلگاه:</label>
@@ -1730,7 +1747,7 @@
                       </div>
                     </div>
                     <button type="button" onclick="window.addAnimationBlockToCreatorModal()" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 6px 14px; border-radius: 7px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgba(2,132,199,0.3);">
-                      <i class="fa-solid fa-plus"></i> + افزودن انیمیشن جدید
+                      <i class="fa-solid fa-plus"></i> + افزودن ویدیو یا تصویر به گالری
                     </button>
                   </div>
 
@@ -2277,7 +2294,13 @@
           <button type="button" id="subtab-btn-news" onclick="window.switchJarchiSubTab('news')" style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
             <i class="fa-solid fa-newspaper"></i> اطلاعیه‌ها و اخبار جارچی
           </button>
+          <button type="button" id="subtab-btn-support" onclick="window.switchJarchiSubTab('support')" style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+            <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" style="display:none; background:#ef4444; color:#fff; border-radius:10px; padding:1px 7px; font-size:11px;"></span>
+          </button>
         </div>
+
+        <!-- SUBVIEW 3: SUPPORT MESSAGES (sent from the app's "ارسال پیام به پشتیبانی") -->
+        <div id="jarchi-support-view" style="display: none;"></div>
 
         <!-- SUBVIEW 1: BANNERS MANAGEMENT -->
         <div id="jarchi-banners-view">
@@ -2905,17 +2928,17 @@
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#d946ef; font-size: 20px; display: block;"><i class="fa-solid fa-gem"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">نخ</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">کلاف</span>
                      <h3 id="cd-wealth-nakh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#0ea5e9; font-size: 20px; display: block;"><i class="fa-solid fa-cube"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">فرش</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">قالیچه</span>
                      <h3 id="cd-wealth-farsh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; text-align: center;">
                      <span style="color:#f43f5e; font-size: 20px; display: block;"><i class="fa-solid fa-flag"></i></span>
-                     <span style="font-size: 12px; color: var(--text-secondary);">بیرق</span>
+                     <span style="font-size: 12px; color: var(--text-secondary);">درفش</span>
                      <h3 id="cd-wealth-beyragh" style="margin: 5px 0 0 0; color: white;">0</h3>
                    </div>
                  </div>
@@ -3495,25 +3518,39 @@
                 <input type="text" id="new-chal-title" required placeholder="مثال: مسابقه استدلال و تحلیل منطقی" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 13px;">
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">پاداش زریک (🪙) *</label>
-                <input type="number" id="new-chal-reward" required min="10" max="5000" value="50" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
+                <select id="new-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                  <option value="zarik">🪙 زریک</option>
+                  <option value="nakh">🧵 کلاف</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">حداقل پاداش *</label>
+                <input type="number" id="new-chal-reward-min" min="0" step="1" value="10" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">حداکثر پاداش *</label>
+                <input type="number" id="new-chal-reward-max" min="1" step="1" value="50" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">راهبر هنگام تأیید پاسخ، امتیاز را در این بازه انتخاب می‌کند. (در آزمون‌های تستی، پاداش نهایی به نسبت پاسخ‌های درست در همین بازه محاسبه می‌شود.)</div>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف *</label>
-                <select id="new-chal-caravan-id" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>
+                <select id="new-chal-caravan-id" required onchange="window.handleChallengeAudienceChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
                 </select>
                 <div id="new-chal-mentor-notice" style="display: none; font-size: 11px; color: #38bdf8; margin-top: 5px; background: rgba(56, 189, 248, 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); line-height: 1.5;"></div>
               </div>
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="new-chal-type" onchange="window.handleChallengeTypeChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="step_by_step_quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
-                  <option value="file">📁 ارسال فایل / پروژه</option>
+                  <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
@@ -3526,8 +3563,12 @@
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
-                <input type="date" id="new-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <input type="date" id="new-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <input type="date" id="new-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                </div>
+                <div id="new-chal-duration" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">مهلت: -</div>
               </div>
             </div>
 
@@ -3563,6 +3604,16 @@
     </div>
 
     <!-- EDIT CHALLENGE MODAL (ADMIN) -->
+    <div class="modal-overlay" id="ranking-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+      <div class="glass" style="width: 100%; max-width: 520px; padding: 22px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div id="ranking-title" style="font-size: 15px; font-weight: bold; color: white;">رتبه‌بندی کاروان‌ها</div>
+          <button type="button" onclick="document.getElementById('ranking-modal').style.display='none'" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="ranking-body" style="color: #cbd5e1; font-size: 13px;"></div>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="edit-challenge-modal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
       <div class="modal-content glass" style="max-width: 720px; width: 95%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(59, 130, 246, 0.4); background: #0f172a; border-radius: 16px; padding: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9); color: white; display: flex; flex-direction: column;">
         <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px;">
@@ -3585,24 +3636,38 @@
                 <input type="text" id="edit-chal-title" required style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 13px;">
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">پاداش زریک (🪙) *</label>
-                <input type="number" id="edit-chal-reward" required min="10" max="5000" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
+                <select id="edit-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                  <option value="zarik">🪙 زریک</option>
+                  <option value="nakh">🧵 کلاف</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">حداقل پاداش *</label>
+                <input type="number" id="edit-chal-reward-min" min="0" step="1" value="" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+              </div>
+              <div>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">حداکثر پاداش *</label>
+                <input type="number" id="edit-chal-reward-max" min="1" step="1" value="" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">راهبر هنگام تأیید پاسخ، امتیاز را در این بازه انتخاب می‌کند. (در آزمون‌های تستی، پاداش نهایی به نسبت پاسخ‌های درست در همین بازه محاسبه می‌شود.)</div>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف</label>
-                <select id="edit-chal-caravan-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>
+                <select id="edit-chal-caravan-id" onchange="window.handleChallengeAudienceChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
                 </select>
               </div>
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="edit-chal-type" onchange="window.handleChallengeTypeChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="step_by_step_quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="skill">💡 چالش مهارتی (پاسخ متنی یا تصویری)</option>
-                  <option value="file">📁 ارسال فایل / پروژه</option>
+                  <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
@@ -3615,8 +3680,12 @@
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">⏳ مهلت تحویل / تاریخ انقضا (اختیاری):</label>
-                <input type="date" id="edit-chal-due-date" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <input type="date" id="edit-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                  <input type="date" id="edit-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
+                </div>
+                <div id="edit-chal-duration" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">مهلت: -</div>
               </div>
             </div>
 
@@ -3937,6 +4006,7 @@
     <script src="toast.js"></script>
     <script src="roles.js"></script>
     <script src="app.js"></script>
+    <script src="support.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>
 </body>

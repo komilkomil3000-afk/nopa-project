@@ -1,16 +1,16 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
-import 'dart:io' as io;
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
-import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
-import 'package:nopa_app/widgets/nopa_dialog_container.dart';
+import 'package:nopa_app/widgets/challenge_submission_dialog.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenge_grading_screen.dart';
 
 class StudentChallengesScreen extends StatefulWidget {
@@ -111,38 +111,15 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
     for (var c in repository.challenges) {
       final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = 'none';
-      if (c.myStatus != null && c.myStatus != 'none') {
-        rawStatus = c.myStatus!;
-      } else if (localSub != null) {
-        rawStatus = localSub.status;
-      }
-      if (rawStatus == 'PENDING_REVIEW') rawStatus = 'pending';
-
-      final bool isDueDatePassed = c.dueDate != null && DateTime.now().isAfter(c.dueDate!);
-
-      final String status;
-      if (rawStatus == 'approved' || rawStatus == 'completed') {
-        status = 'completed';
-      } else if (rawStatus == 'pending') {
-        status = 'pending';
-      } else if (rawStatus == 'rejected') {
-        status = 'rejected';
-      } else if (isDueDatePassed || rawStatus == 'expired') {
-        status = 'expired';
-      } else {
-        status = 'started';
-      }
+      final String status = repository.challengeStatus(c);
 
       // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
       String category = 'individual';
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
 
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
-      } else if (rawCat.contains('group') || rawCat.contains('گروهی') || title.contains('گروهی') || desc.contains('گروهی')) {
+      } else if (rawCat.contains('group') || rawCat.contains('گروهی')) {
         category = 'group';
       } else {
         category = 'individual';
@@ -153,6 +130,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'title': c.title,
         'desc': c.description,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'type': c.type,
         'status': status,
         'category': category,
@@ -165,539 +143,73 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'caravanName': c.caravanName,
         'mentorFeedback': c.mentorFeedback ?? localSub?.scoreFeedback,
         'myAnswerText': c.myAnswerText ?? localSub?.answerText,
+        'myFileUrl': c.myFileUrl,
         'isByAdmin': c.isByAdmin,
         'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
         'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
       });
     }
     return list;
   }
 
-  /// Interactive Question Dialog matching exact reference designs
-  void _showSubmissionDialog(Map<String, dynamic> challenge) {
-    final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
-    int selectedOptionIndex = -1;
-    String? attachedFileName;
-    io.File? pickedFile;
+  /// Opens the answer dialog. Editable only for a new or corrected answer; while the
+  /// mentor has not replied (or after approval/expiry) it is a read-only view.
+  Future<void> _showSubmissionDialog(Map<String, dynamic> challenge) async {
+    final repository = Provider.of<AppRepository>(context, listen: false);
+    final String status = challenge['status']?.toString() ?? 'new';
+    final result = await ChallengeSubmissionDialog.show(context, challenge: challenge, status: status);
+    if (result == null || !mounted) return;
 
-    final String type = challenge['type']?.toString().toLowerCase() ?? '';
-    final List<dynamic> qList = (challenge['questions'] != null && challenge['questions'] is List)
-        ? (challenge['questions'] as List)
-        : [];
-    final bool isMultipleChoice = type == 'quiz' ||
-        type == 'step_by_step_quiz' ||
-        type == 'multiple_choice' ||
-        qList.isNotEmpty ||
-        (challenge['options'] != null && (challenge['options'] as List).isNotEmpty);
-
-    // Extract options
-    List<String> options = [];
-    String questionText = challenge['desc'] ?? '';
-    if (qList.isNotEmpty) {
-      final firstQ = qList[0];
-      if (firstQ is Map) {
-        questionText = firstQ['q'] ?? firstQ['question'] ?? firstQ['text'] ?? questionText;
-        final rawOpts = firstQ['options'] ?? firstQ['opts'];
-        if (rawOpts is List) {
-          options = rawOpts.map((e) => e.toString()).toList();
-        }
-      }
-    } else if (challenge['options'] != null && challenge['options'] is List) {
-      options = (challenge['options'] as List).map((e) => e.toString()).toList();
-    }
-    if (options.isEmpty && isMultipleChoice) {
-      options = [
-        'پاسخ شماره اول',
-        'پاسخ شماره دوم',
-        'پاسخ شماره سوم',
-        'پاسخ شماره چهارم',
-      ];
-    }
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return Directionality(
-              textDirection: TextDirection.rtl,
-              child: Dialog(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                child: NopaDialogContainer(
-                  maxWidth: 420,
-                  radius: 24,
-                  padding: const EdgeInsets.all(22),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // 1. Top Header: Flame/Challenge Icon on Left + Title centered
-                        Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF7E72B8).withValues(alpha: 0.35),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.local_fire_department_rounded,
-                                  color: Color(0xFF9E92E8),
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                            const Expanded(
-                              child: Center(
-                                child: Text(
-                                  'شرکت در چالش',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 36), // Symmetrical balance for center title
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // 2. Row: تیتر: | Title
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Pill Badge "تیتر:"
-                            _buildDialogPillBadge('تیتر:'),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                challenge['title'] ?? '',
-                                style: const TextStyle(
-                                  color: Color(0xFFD6D3E6),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 14),
-
-                        // 3. Row: سوال: | Question
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Pill Badge "سوال:"
-                            _buildDialogPillBadge(isMultipleChoice ? 'سوال۱:' : 'سوال:'),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                questionText.isNotEmpty ? questionText : 'توضیحات تکمیلی این چالش',
-                                style: const TextStyle(
-                                  color: Color(0xFFD6D3E6),
-                                  fontSize: 12.5,
-                                  height: 1.5,
-                                  fontWeight: FontWeight.w500,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // 4. Input Area: Multiple Choice OR Descriptive Text + File Picker
-                        if (isMultipleChoice) ...[
-                          // Multiple Choice Options List matching photo
-                          ...List.generate(options.length, (index) {
-                            final bool isSelected = selectedOptionIndex == index;
-                            final String optionNumber = (index + 1).toString().toPersianDigits();
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10.0),
-                              child: GestureDetector(
-                                onTap: () {
-                                  setDialogState(() {
-                                    selectedOptionIndex = index;
-                                  });
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? const Color(0xFF383568)
-                                        : const Color(0xFF1E1D38),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? const Color(0xFF9292E2)
-                                          : const Color(0xFF454270),
-                                      width: isSelected ? 1.4 : 1.0,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      // Option Number on Right in RTL
-                                      Text(
-                                        optionNumber,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? const Color(0xFFDE9959)
-                                              : const Color(0xFF8E88B0),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: AppTheme.fontFamily,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      // Option Text
-                                      Expanded(
-                                        child: Text(
-                                          options[index],
-                                          style: TextStyle(
-                                            color: isSelected
-                                                ? Colors.white
-                                                : const Color(0xFFD3D0E3),
-                                            fontSize: 12,
-                                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ] else ...[
-                          // Descriptive Question Area (پاسخ:)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildDialogPillBadge('پاسخ:'),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextField(
-                                  controller: textCtrl,
-                                  maxLines: 4,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                  decoration: InputDecoration(
-                                    hintText: 'پاسخ تشریحی خود را بنویسید...',
-                                    hintStyle: const TextStyle(
-                                      color: Color(0xFF7E789F),
-                                      fontSize: 11.5,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                    filled: true,
-                                    fillColor: const Color(0xFF1E1D38),
-                                    contentPadding: const EdgeInsets.all(12),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(color: Color(0xFF454270)),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(color: Color(0xFF454270)),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(color: Color(0xFF9292E2)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          // File Attachment Row (پیوست فایل:)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              _buildDialogPillBadge('پیوست فایل:'),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () async {
-                                    try {
-                                      final result = await FilePicker.platform.pickFiles(
-                                        type: FileType.any,
-                                        allowMultiple: false,
-                                      );
-                                      if (result != null && result.files.isNotEmpty) {
-                                        final firstFile = result.files.first;
-                                        setDialogState(() {
-                                          attachedFileName = firstFile.name;
-                                          if (firstFile.path != null) {
-                                            pickedFile = io.File(firstFile.path!);
-                                          }
-                                        });
-                                      }
-                                    } catch (e) {
-                                      debugPrint('FilePicker error: $e');
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1D38),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: const Color(0xFF454270)),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            attachedFileName ?? 'انتخاب فایل از دستگاه',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              color: attachedFileName == null
-                                                  ? const Color(0xFF7E789F)
-                                                  : const Color(0xFF22C55E),
-                                              fontSize: 11.5,
-                                              fontWeight: attachedFileName == null ? FontWeight.normal : FontWeight.bold,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
-                                          ),
-                                        ),
-                                        Icon(
-                                          attachedFileName == null ? Icons.attach_file : Icons.check_circle_outline,
-                                          color: attachedFileName == null ? const Color(0xFF7E789F) : const Color(0xFF22C55E),
-                                          size: 16,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-
-                          const SizedBox(height: 24),
-
-                          // 5. Bottom Action Row: ارسال (Right) | لغو (Left)
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              // ارسال Button on Right in RTL
-                              TextButton(
-                                onPressed: () {
-                                  if (isMultipleChoice) {
-                                    if (selectedOptionIndex == -1) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً یکی از گزینه‌ها را انتخاب کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  } else {
-                                    final String textValue = textCtrl.text.trim();
-                                    final bool hasText = textValue.isNotEmpty;
-                                    final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
-                                    if (!hasText && !hasFile) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً متن پاسخ یا فایل را وارد نمایید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                  }
-
-                                  Navigator.pop(context);
-
-                                  final repository = Provider.of<AppRepository>(context, listen: false);
-                                  if (isMultipleChoice) {
-                                    repository.submitAssignment(SubmissionModel(
-                                      id: 's_${DateTime.now().millisecondsSinceEpoch}',
-                                      challengeId: challenge['id'],
-                                      studentId: repository.currentUser.id,
-                                      studentName: repository.currentUser.name,
-                                      answerText: 'گزینه انتخابی: ${(selectedOptionIndex + 1).toString().toPersianDigits()}',
-                                      submittedAt: DateTime.now(),
-                                      status: 'approved',
-                                      scoreFeedback: 'پاسخ ثبت شد و ${challenge['reward']} زریک به حساب شما اضافه شد.',
-                                    ));
-                                    repository.currentUser = UserModel(
-                                      id: repository.currentUser.id,
-                                      name: repository.currentUser.name,
-                                      phoneNumber: repository.currentUser.phoneNumber,
-                                      role: repository.currentUser.role,
-                                      zarik: repository.currentUser.zarik + (challenge['reward'] as int),
-                                      nakh: repository.currentUser.nakh,
-                                      beyragh: repository.currentUser.beyragh,
-                                      farsh: repository.currentUser.farsh,
-                                      hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
-                                    );
-                                    HttpApiService().submitQuizChallenge(challenge['id'], [selectedOptionIndex]);
-                                  } else {
-                                    String ansText = textCtrl.text;
-                                    if (attachedFileName != null) {
-                                      ansText += '\nفایل: $attachedFileName';
-                                    }
-                                    repository.submitAssignment(SubmissionModel(
-                                      id: 's_${DateTime.now().millisecondsSinceEpoch}',
-                                      challengeId: challenge['id'],
-                                      studentId: repository.currentUser.id,
-                                      studentName: repository.currentUser.name,
-                                      answerText: ansText,
-                                      submittedAt: DateTime.now(),
-                                      status: 'pending',
-                                    ));
-
-                                    () async {
-                                      try {
-                                        String? fileUrl;
-                                        if (pickedFile != null) {
-                                          final uploadRes = await HttpApiService().uploadMediaFile(
-                                            pickedFile!,
-                                            assetType: 'challenge_submission',
-                                            title: challenge['title']?.toString(),
-                                          );
-                                          fileUrl = uploadRes?['url']?.toString() ?? uploadRes?['media']?['url']?.toString();
-                                        }
-                                        await HttpApiService().submitTask(challenge['id'], ansText, fileUrl: fileUrl);
-                                      } catch (e) {
-                                        debugPrint('Error uploading and submitting task: $e');
-                                      }
-                                    }();
-                                  }
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'با موفقیت ارسال شد',
-                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                      backgroundColor: Color(0xFF10B981),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  'ارسال',
-                                  style: TextStyle(
-                                    color: AppColors.buttonCamel,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
-                                ),
-                              ),
-
-                              // لغو Button on Left in RTL
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  'لغو',
-                                  style: TextStyle(
-                                    color: AppColors.buttonCancelPurple,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      );
-    }
-
-  static Widget _buildDialogPillBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF383562),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF535084), width: 1.0),
+    repository.submitAssignment(
+      SubmissionModel(
+        id: 's_${DateTime.now().millisecondsSinceEpoch}',
+        challengeId: challenge['id'],
+        studentId: repository.currentUser.id,
+        studentName: repository.currentUser.name,
+        answerText: result.answerText,
+        submittedAt: DateTime.now(),
+        status: result.isQuiz ? 'approved' : 'pending',
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Color(0xFFD6D3E6),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
-        ),
-      ),
+      persist: false,
     );
+    AppToast.success(
+      context,
+      result.isQuiz
+          ? (result.rewardAmount > 0
+              ? 'پاسخ شما ثبت شد؛ +${result.rewardAmount.toString().toPersianDigits()} ${AssetNames.of(result.rewardAsset == 'nakh' ? 'nakh' : 'zarik')} به حساب شما اضافه شد'
+              : 'پاسخ شما ثبت شد')
+          : 'پاسخ شما ارسال شد و در انتظار بررسی راهبر است',
+    );
+    await repository.refreshChallenges();
+    if (result.isQuiz) await repository.refreshUser();
+    await repository.fetchNotifications();
   }
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
     final List<Map<String, dynamic>> list = [];
-    final submissions = repository.submissions;
 
     for (var c in repository.challenges) {
-      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = 'none';
-      if (c.myStatus != null && c.myStatus != 'none') {
-        rawStatus = c.myStatus!;
-      } else if (localSub != null) {
-        rawStatus = localSub.status;
-      }
-
+      // Mentors never answer challenges: the tag reflects the review state of their students' answers
       final String statusTag;
       final Color statusColor;
-      if (rawStatus == 'approved' || rawStatus == 'completed') {
-        statusTag = 'تایید شده';
-        statusColor = const Color(0xFF22C55E);
-      } else if (rawStatus == 'pending') {
-        statusTag = 'در انتظار بررسی';
+      if (c.pendingSubmissions > 0) {
+        statusTag = '${c.pendingSubmissions.toString().toPersianDigits()} پاسخ در انتظار بررسی';
         statusColor = const Color(0xFFEAB308);
-      } else if (rawStatus == 'rejected') {
-        statusTag = 'نیاز به اصلاح';
-        statusColor = const Color(0xFFEF4444);
-      } else if (rawStatus == 'expired') {
+      } else if (c.totalSubmissions > 0) {
+        statusTag = 'بررسی شده';
+        statusColor = const Color(0xFF22C55E);
+      } else if (c.dueDate != null && DateTime.now().isAfter(c.dueDate!)) {
         statusTag = 'منقضی';
         statusColor = const Color(0xFF9E9AC0);
       } else {
-        statusTag = 'جدید';
-        statusColor = const Color(0xFF22C55E);
+        statusTag = 'بدون پاسخ';
+        statusColor = const Color(0xFF9E9AC0);
       }
 
       String category = 'intra_group'; // درون گروهی
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
       }
 
@@ -708,32 +220,17 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
+        'rewardMin': c.rewardMin,
+        'rewardMax': c.rewardMax,
+        'rewardAsset': c.rewardAssetType,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
         'category': category,
         'desc': c.description,
-        'actionLabel': rawStatus == 'pending' ? 'بررسی پاسخ‌ها' : (rawStatus == 'rejected' ? 'ویرایش پاسخ' : 'مشاهده'),
+        'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
       });
-    }
-
-    if (list.isEmpty) {
-      return [
-        {
-          'id': 'm_ch_1',
-          'title': 'پوسترینو',
-          'creatorName': repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان',
-          'statusTag': 'جدید',
-          'statusColor': const Color(0xFF22C55E),
-          'reward': 50,
-          'typeLabel': 'تستی',
-          'createdDate': '15/08/1405',
-          'durationDays': 5,
-          'category': 'intra_group',
-          'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
-          'actionLabel': 'مشاهده',
-        },
-      ];
     }
 
     return list;
@@ -916,7 +413,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     required String title,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
@@ -945,7 +442,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildMentorCategoryTabsBar() {
@@ -957,7 +454,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // درون گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -974,9 +471,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
               // میان گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -993,7 +490,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 6),
@@ -1054,7 +551,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           borderRadius: BorderRadius.circular(14.8),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
@@ -1128,7 +625,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -1159,7 +656,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
         ),
       ),
@@ -1321,7 +818,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                         size: 18,
                                       ),
                                       isExpanded: true,
-                                      items: ['زریک', 'نخ', 'فرش']
+                                      items: ['زریک', 'کلاف', 'قالیچه']
                                           .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                                           .toList(),
                                       onChanged: (v) {
@@ -1481,7 +978,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                           ),
                                         ),
                                         if (optionControllers.length > 2) ...[
-                                          InkWell(
+                                          TapExpander(child: InkWell(
                                             onTap: () {
                                               setDialogState(() {
                                                 optionControllers.removeAt(i);
@@ -1498,11 +995,11 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                                 size: 16,
                                               ),
                                             ),
-                                          ),
+                                          )),
                                           const SizedBox(width: 4),
                                         ],
                                         // Radio Button to mark correct answer
-                                        GestureDetector(
+                                        TapExpander(child: GestureDetector(
                                           onTap: () {
                                             setDialogState(() {
                                               selectedCorrectOptionIndex = i;
@@ -1536,14 +1033,14 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                                   )
                                                 : null,
                                           ),
-                                        ),
+                                        )),
                                       ],
                                     ),
                                   ),
                                 ],
                                 const SizedBox(height: 2),
                                 // + Add button
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     setDialogState(() {
                                       final nextNumber = (optionControllers.length + 1).toString().toPersian();
@@ -1569,7 +1066,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
@@ -1585,16 +1082,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆',
-                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                    ),
-                                    backgroundColor: const Color(0xFF10B981),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆');
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1791,16 +1279,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️',
-                                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                ),
-                                backgroundColor: const Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1967,7 +1446,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   /// Category Tabs: فردی / گروهی / میان گروهی (Strictly equal distances with گروهی dead-center)
   Widget _buildCategoryTabsBar() {
     final tabs = [
-      {'title': 'فردی', 'index': 0},
+      {'title': 'شخصی', 'index': 0},
       {'title': 'گروهی', 'index': 1},
       {'title': 'میان گروهی', 'index': 2},
     ];
@@ -1984,7 +1463,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
               return Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: TapExpander(child: GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = idx),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -2008,7 +1487,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               );
             }).toList(),
@@ -2037,22 +1516,22 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     final int reward = item['reward'] ?? 50;
     final String dateStr = _formatDate(item['createdAt']);
     final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
-    final int durationDays = item['durationDays'] ?? 5;
+    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
     final String? feedback = item['mentorFeedback']?.toString();
 
     // Status label, text color & background
-    String statusLabel = 'شروع شده';
+    String statusLabel = 'جدید';
     Color statusColor = const Color(0xFFE5A86D);
     Color statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
     Color statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
 
     if (status == 'pending') {
-      statusLabel = 'در حال انجام';
+      statusLabel = 'در انتظار بررسی';
       statusColor = const Color(0xFF38BDF8);
       statusBg = const Color(0xFF38BDF8).withValues(alpha: 0.15);
       statusBorder = const Color(0xFF38BDF8).withValues(alpha: 0.4);
     } else if (status == 'started' || status == 'new') {
-      statusLabel = 'شروع شده';
+      statusLabel = 'جدید';
       statusColor = const Color(0xFFE5A86D);
       statusBg = const Color(0xFFE5A86D).withValues(alpha: 0.15);
       statusBorder = const Color(0xFFE5A86D).withValues(alpha: 0.4);
@@ -2079,7 +1558,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
                 if (_expandedChallengeIds.contains(id)) {
@@ -2184,7 +1663,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -2217,7 +1696,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
           if (isExpanded)
@@ -2304,7 +1783,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               ),
                             ),
                             Text(
-                              'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                              'مهلت: ${deadlineLabel.toPersianDigits()}',
                               style: const TextStyle(
                                 color: Color(0xFFB8B5CE),
                                 fontSize: 10.5,
@@ -2328,7 +1807,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       const SizedBox(width: 8),
 
                       // Left: Participate Button (دکمه شرکت)
-                      GestureDetector(
+                      TapExpander(child: GestureDetector(
                         onTap: () => _showSubmissionDialog(item),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
@@ -2348,7 +1827,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             ],
                           ),
                           child: Text(
-                            status == 'rejected' ? 'اصلاح و ارسال' : (status == 'started' ? 'ادامه' : 'شرکت'),
+                            status == 'rejected'
+                                ? 'اصلاح و ارسال'
+                                : (status == 'new' ? 'شرکت' : 'مشاهده'),
                             style: const TextStyle(
                               color: Color(0xFFF4DCC5),
                               fontSize: 11,
@@ -2357,7 +1838,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ],
                   ),
                 ],

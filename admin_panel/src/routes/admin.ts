@@ -41,11 +41,13 @@ import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteFi
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
-import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
+import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
 import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, createMentorRewardRule, deleteMentorRewardRule } from '../controllers/rewardController';
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
+import { listAssetTypes, updateAssetType } from '../controllers/assetController';
+import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -138,7 +140,7 @@ router.delete('/caravans/:id', deleteCaravan as any);
 router.put('/caravans/:id/block-members', blockCaravanMembers as any);
 
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
-router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
+router.post('/asset-conversions/:id/cancel', cancelAssetConversion as any);
 router.get('/tickets', getTickets as any);
 router.post('/tickets/:id/reply', replyTicketAdmin as any);
 router.post('/tickets/:id/resolve', resolveTicketAdmin as any);
@@ -147,6 +149,10 @@ router.post('/challenges', createChallenge as any);
 router.put('/challenges/:id', updateChallenge as any);
 router.patch('/challenges/:id', updateChallenge as any);
 router.delete('/challenges/:id', deleteChallenge as any);
+router.get('/challenges/:id/ranking', getChallengeRanking as any);
+router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
+router.get('/assets', listAssetTypes as any);
+router.put('/assets/:key', updateAssetType as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
 router.patch('/submissions/:id/review', reviewSubmission as any);

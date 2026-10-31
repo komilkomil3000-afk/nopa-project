@@ -4,9 +4,11 @@ import { authLimiter, smsProtectionMiddleware } from '../middleware/rateLimit';
 import { login, verifyPhone, sendOtp, requestOtp, changePassword, register, logout, refreshToken } from '../controllers/authController';
 import { getMe, getMentorById, completeProfile } from '../controllers/userController';
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
-import { createChallenge, getChallenges, submitQuiz } from '../controllers/challengeController';
-import { submitTask, getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
-import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess } from '../controllers/lmsController';
+import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
+import { listAssetTypes } from '../controllers/assetController';
+import { getMyCaravanBanners } from '../controllers/caravanBannerController';
+import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
+import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
 import { getInstructors } from '../controllers/instructorController';
 import { getForms, submitForm } from '../controllers/formController';
 import { getCalendarEvents } from '../controllers/calendarController';
@@ -18,17 +20,17 @@ import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
 import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
-import { convertAssets, getCaravanAssetConversions, submitStudentAssetConversion, approveAssetConversion, getCaravans, getCaravanDetails, removeMemberFromCaravan, addMemberToCaravan } from '../controllers/caravanController';
+import { getCaravanAssetConversions, submitStudentAssetConversion, cancelAssetConversion, getCaravans, getCaravanDetails, removeMemberFromCaravan, addMemberToCaravan } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
 import { 
   createMentorChallenge, 
   getMentorChallenges, 
   getChallengeSubmissions, 
-  reviewChallengeSubmission,
   getMentorTicketDetails,
   replyMentorTicket,
-  getMentorCaravanProgress
+  getMentorCaravanProgress,
+  sendMentorMessage
 } from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
 
@@ -53,11 +55,15 @@ router.post('/certificates/:id/physical-order', authenticateJWT as any, requestP
 // B. Challenges Routes
 router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createChallenge as any);
 router.get('/challenges', authenticateJWT as any, getChallenges as any);
+router.get('/assets', authenticateJWT as any, listAssetTypes as any);
+router.get('/my-caravan/banners', authenticateJWT as any, getMyCaravanBanners as any);
+router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);
 
 // C. Submissions Routes
 router.post('/submissions', authenticateJWT as any, submitTask as any);
 router.get('/submissions/pending', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getPendingSubmissions as any);
+router.get('/submissions/:id/history', authenticateJWT as any, getSubmissionHistory as any);
 router.patch('/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewSubmission as any);
 
 // D. Leagues Routes
@@ -95,7 +101,9 @@ router.get('/lms/bookmarks/:sessionId', authenticateJWT as any, getBookmarks as 
 router.post('/lms/bookmarks', authenticateJWT as any, addBookmark as any);
 router.post('/lms/sessions/:id/heartbeat', authenticateJWT as any, heartbeatSessionWatch as any);
 router.get('/lms/user-progress', authenticateJWT as any, getUserProgress as any);
+router.get('/lms/quiz-answers', authenticateJWT as any, getMyQuizAnswers as any);
 router.post('/lms/clips/:clipId/watched', authenticateJWT as any, markClipWatched as any);
+router.post('/lms/clips/:clipId/duration', authenticateJWT as any, reportClipDuration as any);
 router.get('/lms/sessions/:id/progress', authenticateJWT as any, getSessionWatchProgress as any);
 router.post('/lms/sessions/:id/submit-quiz', authenticateJWT as any, submitSessionQuiz as any);
 router.get('/forms', authenticateJWT as any, getForms as any);
@@ -120,19 +128,18 @@ router.get('/caravans', authenticateJWT as any, getCaravans as any);
 router.get('/caravans/:id', authenticateJWT as any, getCaravanDetails as any);
 router.delete('/caravans/:id/members/:studentId', authenticateJWT as any, authorizeRoles('mentor', 'admin', 'SUPER_MENTOR') as any, removeMemberFromCaravan as any);
 router.post('/caravans/:id/members/:studentId', authenticateJWT as any, authorizeRoles('mentor', 'admin', 'SUPER_MENTOR') as any, addMemberToCaravan as any);
-router.post('/caravans/convert-assets', authenticateJWT as any, convertAssets as any);
 router.get('/caravans/asset-conversions', authenticateJWT as any, getCaravanAssetConversions as any);
 router.post('/caravans/submit-exchange', authenticateJWT as any, submitStudentAssetConversion as any);
-router.post('/caravans/approve-conversion/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, approveAssetConversion as any);
+router.post('/caravans/cancel-conversion/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, cancelAssetConversion as any);
 
 
 // Mentor Workspace Routes
 router.post('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createMentorChallenge as any);
 router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorChallenges as any);
 router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getChallengeSubmissions as any);
-router.post('/mentor/submissions/:id/review', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, reviewChallengeSubmission as any);
 router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorTicketDetails as any);
 router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
+router.post('/mentor/messages', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, sendMentorMessage as any);
 router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);
 
 export default router;

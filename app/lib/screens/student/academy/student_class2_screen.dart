@@ -1,13 +1,21 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/schedule_utils.dart';
+import 'package:nopa_app/core/station_categories.dart';
+import 'package:nopa_app/models/user_model.dart';
+import 'package:nopa_app/models/station.dart';
 import 'dart:async';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/api_service.dart';
-import 'package:nopa_app/services/audio_exclusivity_service.dart';
+import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
-import 'package:nopa_app/widgets/contact_us_dialog.dart';
-import 'package:nopa_app/widgets/reward_popup.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/utils/mentor_contact.dart';
 
 /// Class 2 Screen (صفحه کلاس‌ها، مجموعه‌ها، پارت‌ها، پخش‌کننده ویدیو و آزمون‌ها)
 class StudentClass2Screen extends StatefulWidget {
@@ -32,15 +40,137 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   int _currentClipIndex = 0;
   bool _isLoadingClasses = true;
 
-  // Track unlocked quizzes (key: 'sessionIndex_clipIndex')
-  final Set<String> _unlockedQuizzes = {'0_0'}; // First clip quiz unlocked by default
+  List<Map<String, dynamic>> _stationsData = [];
+  // The station exactly as the opening screen showed it (the mentor's report); null = take it from the server list
+  Map<String, dynamic>? _stationDataArg;
+  String _stationId = '';
+  String _stationTitle = '';
+  int _stationNumber = 0;
+  int _stationCount = 0;
+  final Set<String> _reportedDurations = {};
+
+  // Clips watched past the threshold (key: '<sessionId>|<clipId>', see _passedKey)
+  final Set<String> _unlockedQuizzes = {};
+
+  // Quizzes the student has passed (key: '<sessionId>|<clipId>', see _passedKey)
+  final Set<String> _passedQuizzes = {};
+
+  // Quizzes the student has fully answered and submitted, right or wrong.
+  // Answering (not passing) is what opens the next part.
+  final Set<String> _answeredQuizzes = {};
+
+  String get _answeredPrefsKey =>
+      'answered_quizzes_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
+
+  bool _isAnswered(Map<String, dynamic> session, int clipIndex) {
+    final key = _passedKey(session, clipIndex);
+    return _answeredQuizzes.contains(key) || _passedQuizzes.contains(key);
+  }
+
+  // The student's own answers per quiz, shown when the quiz is reviewed later.
+  final Map<String, List<int>> _quizAnswers = {};
+
+  String get _answersPrefsKey =>
+      'quiz_answers_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
+
+  void _markAnswered(Map<String, dynamic>? session, int clipIndex, List<int> answers) {
+    if (session == null) return;
+    final key = _passedKey(session, clipIndex);
+    if (_answeredQuizzes.contains(key)) return;
+    if (mounted) {
+      setState(() {
+        _answeredQuizzes.add(key);
+        _quizAnswers[key] = List<int>.from(answers);
+      });
+    }
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setStringList(_answeredPrefsKey, _answeredQuizzes.toList());
+      prefs.setString(_answersPrefsKey, jsonEncode(_quizAnswers));
+    }).catchError((e) {
+      debugPrint('Save answered quizzes error: $e');
+    });
+  }
+
+  Future<void> _loadAnsweredQuizzes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_answeredPrefsKey) ?? [];
+      final rawAnswers = prefs.getString(_answersPrefsKey);
+      final loaded = <String, List<int>>{};
+      if (rawAnswers != null) {
+        (jsonDecode(rawAnswers) as Map).forEach((k, v) {
+          loaded[k.toString()] = (v as List).map((e) => (e as num).toInt()).toList();
+        });
+      }
+      if (mounted) {
+        setState(() {
+          _answeredQuizzes.addAll(saved);
+          _quizAnswers.addAll(loaded);
+        });
+      }
+    } catch (e) {
+      debugPrint('Load answered quizzes error: $e');
+    }
+    await _syncAnsweredQuizzesFromServer();
+  }
+
+  /// The server is the source of truth: quizzes answered on another device (or before a reinstall) show up here,
+  /// and the merged result is kept locally for offline use.
+  Future<void> _syncAnsweredQuizzesFromServer() async {
+    try {
+      final remote = await HttpApiService().getMyQuizAnswers();
+      if (remote.isEmpty || !mounted) return;
+      setState(() {
+        for (final r in remote) {
+          final clipId = r['clipId']?.toString();
+          final key = '${r['sessionId']}|${(clipId != null && clipId.isNotEmpty) ? clipId : r['partIndex']}';
+          _answeredQuizzes.add(key);
+          final answers = r['answers'];
+          if (answers is List && answers.isNotEmpty) {
+            _quizAnswers[key] = answers.map((e) => (e as num).toInt()).toList();
+          }
+        }
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_answeredPrefsKey, _answeredQuizzes.toList());
+      await prefs.setString(_answersPrefsKey, jsonEncode(_quizAnswers));
+    } catch (e) {
+      debugPrint('Sync answered quizzes error: $e');
+    }
+  }
+
+  /// A part (after the first) opens only after the previous part's quiz is answered.
+  bool _isPartLocked(Map<String, dynamic> session, int clipIndex) =>
+      (clipIndex > 0 && !_isAnswered(session, clipIndex - 1)) || _clipUnlockTime(session, clipIndex) != null;
+
+  /// Mentors are not bound by the release schedule (the server does the same for stations).
+  bool get _isMentorUser {
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    return role == UserRole.mentor || role == UserRole.superMentor;
+  }
+
+  /// When a session that has not started yet opens; null when it is open (or has no schedule).
+  DateTime? _sessionOpensAt(Map<String, dynamic> session) {
+    if (_isMentorUser) return null;
+    final start = ScheduleUtils.sessionStart(session);
+    return ScheduleUtils.hasStarted(start) ? null : start;
+  }
+
+  /// When a part that is still waiting for its scheduled time opens; null when it is open.
+  DateTime? _clipUnlockTime(Map<String, dynamic> session, int clipIndex) {
+    if (_isMentorUser) return null;
+    final clips = session['videoClips'] as List? ?? [];
+    if (clipIndex < 0 || clipIndex >= clips.length || clips[clipIndex] is! Map) return null;
+    final unlock = ScheduleUtils.clipUnlockInstant(Map<String, dynamic>.from(clips[clipIndex] as Map));
+    return ScheduleUtils.hasStarted(unlock) ? null : unlock;
+  }
+
+  /// Fraction of a video that must be watched before its quiz unlocks.
+  static const double _quizUnlockThreshold = 0.90;
 
   // Video controller
-  VideoPlayerController? _videoPlayerController;
-  bool _isVideoInitialized = false;
+  int _videoSessionToken = 0;
   bool _isMiniQuizShowing = false;
-  final double _playbackSpeed = 1.0;
-  Timer? _heartbeatTimer;
 
   bool _argumentsLoaded = false;
   String? _targetSessionTitle;
@@ -61,6 +191,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (args['stationIndex'] is int) {
         _currentStationIndex = args['stationIndex'];
       }
+      // Shown right away; replaced by the loaded station data
+      if (args['stationTitle'] is String) _stationTitle = args['stationTitle'];
+      if (args['stationNumber'] is int) _stationNumber = args['stationNumber'];
 
       if (args['initialTab'] is int) {
         _selectedTab = args['initialTab'];
@@ -81,101 +214,62 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
       final passedCategories = args['categories'] as Map<String, List<Map<String, dynamic>>>?;
       final passedClasses = args['classes'] as List?;
-
-      if (passedCategories != null && passedCategories.isNotEmpty) {
-        for (var entry in passedCategories.entries) {
-          final sessions = entry.value.map((s) {
-            final map = Map<String, dynamic>.from(s);
-            var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-            if (clips.isEmpty) {
-              clips = [
-                {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-                {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-              ];
-            }
-            map['videoClips'] = clips;
-            return map;
-          }).toList();
-
-          if (entry.key.contains('مهارت')) {
-            _skillSessions = sessions;
-          } else if (entry.key.contains('رسانه')) {
-            _mediaSessions = sessions;
-          }
-        }
+      if (args['stationData'] is Map) {
+        _stationDataArg = Map<String, dynamic>.from(args['stationData'] as Map);
       }
 
-      if (_skillSessions.isEmpty && passedClasses != null && passedClasses.isNotEmpty) {
-        _skillSessions = passedClasses.map((c) {
-          final map = Map<String, dynamic>.from(c as Map);
-          var clips = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
-          if (clips.isEmpty) {
-            clips = [
-              {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-              {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-            ];
-          }
-          map['videoClips'] = clips;
+      if (passedCategories != null && passedCategories.isNotEmpty) {
+        final split = StationCategories.splitByTitle(passedCategories);
+        _skillSessions = split[StationCategories.skill]!;
+        _mediaSessions = split[StationCategories.media]!;
+      } else if (passedClasses != null && passedClasses.isNotEmpty) {
+        // Only one class type is passed: put it under the tab that was asked for
+        final sessions = passedClasses.whereType<Map>().map((c) {
+          final map = Map<String, dynamic>.from(c);
+          map['videoClips'] = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
           return map;
         }).toList();
+        if (_selectedTab == 1) {
+          _mediaSessions = sessions;
+        } else {
+          _skillSessions = sessions;
+        }
       }
     }
 
     _fetchData();
+    _loadPassedQuizzes();
+    _loadAnsweredQuizzes();
   }
 
-  Future<void> _fetchData() async {
+  Future<void> _fetchData({bool force = false}) async {
     try {
       final apiService = HttpApiService();
 
+      final stations = await apiService.getStations();
+      if (force) {
+        _skillSessions = [];
+        _mediaSessions = [];
+      }
+      if (stations.isNotEmpty) {
+        final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
+        _stationsData = stations;
+        final data = stations[sIndex];
+        final shown = _stationDataArg ?? data;
+        _stationId = shown['id']?.toString() ?? '';
+        _stationCount = stations.length;
+        _stationTitle = shown['title']?.toString() ?? '';
+        _stationNumber = (shown['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
+      }
+
       if (_skillSessions.isEmpty || _mediaSessions.isEmpty) {
-        final stations = await apiService.getStations();
-        if (stations.isNotEmpty) {
-          final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
-          final currentStationData = stations[sIndex];
-
-          final categories = currentStationData['categories'] as List? ?? [];
-          for (final cat in categories) {
-            if (cat is Map) {
-              final catTitle = cat['title']?.toString() ?? '';
-              final sessions = (cat['sessions'] as List?)?.map((s) {
-                final map = Map<String, dynamic>.from(s as Map);
-                var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-                if (clips.isEmpty) {
-                  clips = [
-                    {'id': 'clip_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-                    {'id': 'clip_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-                  ];
-                }
-                map['videoClips'] = clips;
-                return map;
-              }).toList() ?? [];
-
-              if (catTitle.contains('مهارت')) {
-                _skillSessions = sessions;
-              } else if (catTitle.contains('رسانه')) {
-                _mediaSessions = sessions;
-              }
-            }
-          }
+        final Map<String, dynamic>? stationData = _stationDataArg ??
+            (stations.isNotEmpty ? stations[_currentStationIndex.clamp(0, stations.length - 1)] : null);
+        if (stationData != null) {
+          final split = StationCategories.split(stationData['categories'] as List? ?? []);
+          if (_skillSessions.isEmpty) _skillSessions = split[StationCategories.skill]!;
+          if (_mediaSessions.isEmpty) _mediaSessions = split[StationCategories.media]!;
         }
-      }
-
-      // Default mock sessions if empty so the UI always looks full
-      if (_skillSessions.isEmpty) {
-        _skillSessions = _createDefaultMockSessions('مهارتی');
-      }
-      if (_mediaSessions.isEmpty) {
-        _mediaSessions = _createDefaultMockSessions('رسانه‌ای');
       }
 
       // If a specific session was requested, select and expand it
@@ -227,12 +321,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       }
     } catch (e) {
       debugPrint('Error fetching class data: $e');
-      if (_skillSessions.isEmpty) {
-        _skillSessions = _createDefaultMockSessions('مهارتی');
-      }
-      if (_mediaSessions.isEmpty) {
-        _mediaSessions = _createDefaultMockSessions('رسانه‌ای');
-      }
       if (mounted) {
         setState(() {
           _isLoadingClasses = false;
@@ -242,79 +330,33 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     }
   }
 
-  List<Map<String, dynamic>> _createDefaultMockSessions(String type) {
-    return [
-      {
-        'id': 'sess_1',
-        'title': 'جلسه اول. خودشناسی دوپس دوپس',
-        'instructor': 'استاد حسینی',
-        'description': 'شناخت ابعاد شخصیتی، تقویت مهارت‌های فردی و برنامه‌ریزی هدفمند در کاروان نپا.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_1_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_2', 'title': 'پارت دوم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_3', 'title': 'پارت سوم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_4', 'title': 'پارت چهارم', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_1_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_2',
-        'title': 'جلسه دوم. هنوز پول استادو ندادن نیومده',
-        'instructor': 'استاد حسینی',
-        'description': 'بررسی چالش‌های پیش‌رو و تحلیل روش‌های حل مسئله.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_2_1', 'title': 'پارت اول', 'duration': 780, 'videoUrl': ''},
-          {'id': 'clip_2_2', 'title': 'پارت دوم', 'duration': 820, 'videoUrl': ''},
-          {'id': 'clip_2_3', 'title': 'پارت سوم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_2_4', 'title': 'پارت چهارم', 'duration': 800, 'videoUrl': ''},
-          {'id': 'clip_2_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_3',
-        'title': 'جلسه سوم. حاجی چقدر پیگیری ول کن دیگه',
-        'instructor': 'استاد حسینی',
-        'description': 'تمرین‌های عملی و سناریوهای کاروانی.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_3_1', 'title': 'پارت اول', 'duration': 650, 'videoUrl': ''},
-          {'id': 'clip_3_2', 'title': 'پارت دوم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_3_3', 'title': 'پارت سوم', 'duration': 700, 'videoUrl': ''},
-          {'id': 'clip_3_4', 'title': 'پارت چهارم', 'duration': 850, 'videoUrl': ''},
-          {'id': 'clip_3_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_4',
-        'title': 'جلسه چهارم. من خودم نبودم تو اومدی دنبال جلسه؟',
-        'instructor': 'استاد حسینی',
-        'description': 'راهکارهای پیشرفته موفقیت در چالش‌های تیمی.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_4_1', 'title': 'پارت اول', 'duration': 900, 'videoUrl': ''},
-          {'id': 'clip_4_2', 'title': 'پارت دوم', 'duration': 850, 'videoUrl': ''},
-          {'id': 'clip_4_3', 'title': 'پارت سوم', 'duration': 800, 'videoUrl': ''},
-          {'id': 'clip_4_4', 'title': 'پارت چهارم', 'duration': 750, 'videoUrl': ''},
-          {'id': 'clip_4_5', 'title': 'پارت پنجم', 'duration': 900, 'videoUrl': ''},
-        ],
-      },
-      {
-        'id': 'sess_5',
-        'title': 'جلسه پنجم. از پیگیریت خوشم اومد',
-        'instructor': 'استاد حسینی',
-        'description': 'جمع‌بندی پایانی و آمادگی برای آزمون سراسری.',
-        'videoUrl': '',
-        'videoClips': [
-          {'id': 'clip_5_1', 'title': 'پارت اول', 'duration': 1200, 'videoUrl': ''},
-          {'id': 'clip_5_2', 'title': 'پارت دوم', 'duration': 1100, 'videoUrl': ''},
-          {'id': 'clip_5_3', 'title': 'پارت سوم', 'duration': 950, 'videoUrl': ''},
-          {'id': 'clip_5_4', 'title': 'پارت چهارم', 'duration': 1000, 'videoUrl': ''},
-          {'id': 'clip_5_5', 'title': 'پارت پنجم', 'duration': 1050, 'videoUrl': ''},
-        ],
-      },
-    ];
+  /// A station is open when the user's level reached it or the stations before it are completed.
+  bool _isStationLocked(int index) {
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    // The server also locks a station by its release time or manually
+    if (!_isMentorUser && index >= 0 && index < _stationsData.length && _stationsData[index]['isLocked'] == true) {
+      return true;
+    }
+    final level = user.levelFrame < 1 ? 1 : user.levelFrame;
+    return index > 0 && (index + 1) > level && index > user.completedStationsCount;
+  }
+
+  Future<void> _goToStation(int delta) async {
+    final target = _currentStationIndex + delta;
+    if (target < 0 || (_stationCount > 0 && target >= _stationCount)) return;
+    if (_isStationLocked(target)) {
+      AppToast.info(context, 'این منزلگاه هنوز باز نشده است. ابتدا منزلگاه قبلی را کامل کنید.');
+      return;
+    }
+    setState(() {
+      _currentStationIndex = target;
+      _expandedSessionIndex = 0;
+      _currentClipIndex = 0;
+      _targetSessionTitle = null; // the requested session belonged to the previous station
+      _stationDataArg = null;
+      _isLoadingClasses = true;
+    });
+    await _fetchData(force: true);
   }
 
   List<Map<String, dynamic>> get _currentSessions {
@@ -340,15 +382,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   }
 
   void _initializeVideoForCurrentSession() {
-    _disposeVideoController();
     setState(() {
-      _isVideoInitialized = false;
+      _videoSessionToken++;
       _isMiniQuizShowing = false;
     });
+  }
 
+  String get _currentVideoUrl {
     final session = _activeSession;
-    if (session == null) return;
-
+    if (session == null) return '';
+    if (_isSessionLocked(_currentSessions, _expandedSessionIndex)) return '';
     final clips = session['videoClips'] as List? ?? [];
     String url = '';
     if (clips.isNotEmpty && _currentClipIndex < clips.length) {
@@ -357,106 +400,105 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     if (url.isEmpty) {
       url = session['videoUrl'] ?? '';
     }
-
-    if (url.isEmpty) {
-      return;
-    }
-
-    if (url.startsWith('/')) {
-      final baseUrl = HttpApiService().baseUrl.replaceAll('/api/v1', '');
-      url = '$baseUrl$url';
-    }
-
-    String resolvedUrl = HttpApiService().resolveMediaUrl(url);
-    if (resolvedUrl.contains('localhost') || resolvedUrl.contains('127.0.0.1')) {
-      final baseUrl = HttpApiService().baseUrl;
-      final hostIp = Uri.parse(baseUrl).host;
-      resolvedUrl = resolvedUrl.replaceAll('localhost', hostIp).replaceAll('127.0.0.1', hostIp);
-    }
-
-    final newController = VideoPlayerController.networkUrl(Uri.parse(resolvedUrl));
-    _videoPlayerController = newController;
-
-    newController.initialize().then((_) async {
-      if (!mounted || _videoPlayerController != newController) {
-        newController.dispose();
-        return;
-      }
-
-      setState(() {
-        _isVideoInitialized = true;
-      });
-
-      newController.setPlaybackSpeed(_playbackSpeed);
-      newController.addListener(_videoListener);
-      AudioExclusivityService.registerVideoController(newController);
-      newController.play();
-      AudioExclusivityService.onVideoPlay();
-      _startHeartbeatTimer();
-    }).catchError((error) {
-      debugPrint('Video init error: $error');
-    });
+    return url.trim();
   }
 
-  void _videoListener() {
-    final controller = _videoPlayerController;
-    if (controller != null && controller.value.isInitialized) {
-      final pos = controller.value.position.inMilliseconds;
-      final dur = controller.value.duration.inMilliseconds;
-
-      // Unlock quiz if >= 70% watched
-      if (dur > 0 && pos >= dur * 0.70) {
-        final key = '${_expandedSessionIndex}_$_currentClipIndex';
-        if (!_unlockedQuizzes.contains(key)) {
-          setState(() {
-            _unlockedQuizzes.add(key);
-          });
-        }
-      }
-
-      // Automatically show mini quiz at the end
-      if (dur > 0 && pos >= dur && !_isMiniQuizShowing) {
+  void _onVideoProgress(Duration position, Duration duration) {
+    final pos = position.inMilliseconds;
+    final dur = duration.inMilliseconds;
+    _reportRealDuration(duration);
+    if (dur > 0 && pos >= dur * _quizUnlockThreshold) {
+      final session = _activeSession;
+      if (session == null) return;
+      // Keyed by session + clip id so the skill and media tabs never share a tick
+      final key = _passedKey(session, _currentClipIndex);
+      if (!_unlockedQuizzes.contains(key)) {
         setState(() {
-          _isMiniQuizShowing = true;
+          _unlockedQuizzes.add(key);
         });
-        controller.pause();
-        Future.delayed(Duration.zero, () {
-          _showPartMiniQuiz(_currentClipIndex);
-        });
+        _recordClipWatched(session, _currentClipIndex);
       }
     }
   }
 
-  void _startHeartbeatTimer() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
+  /// The player knows a clip's real length: show it in the list and tell the server once.
+  void _reportRealDuration(Duration duration) {
+    final secs = duration.inSeconds;
+    final clips = _activeSession?['videoClips'] as List? ?? [];
+    if (secs <= 0 || _currentClipIndex >= clips.length) return;
+    final clip = clips[_currentClipIndex];
+    final id = clip['id']?.toString();
+    final stored = (clip['duration'] as num?)?.toInt();
+    if (id == null || id.isEmpty || _reportedDurations.contains(id)) return;
+    if (stored != null && (stored - secs).abs() <= 2) return;
+    _reportedDurations.add(id);
+    clip['duration'] = secs;
+    HttpApiService().reportClipDuration(id, secs);
+    if (mounted) setState(() {});
+  }
+
+  /// Saves the watched clip to the database under its own track (skill / media).
+  void _recordClipWatched(Map<String, dynamic> session, int clipIndex) {
+    final clips = session['videoClips'] as List? ?? [];
+    if (clipIndex >= clips.length) return;
+    final clipId = clips[clipIndex]['id']?.toString();
+    if (clipId == null || clipId.isEmpty) return;
+    final bool isMedia = _mediaSessions.any((s) => s['id'] == session['id']);
+    HttpApiService().markClipWatched(
+      clipId,
+      trackType: isMedia ? 'media' : 'skill',
+      stationId: _stationId,
+      sessionId: session['id']?.toString(),
+    );
+  }
+
+  String _passedKey(Map<String, dynamic> session, int clipIndex) {
+    final clips = session['videoClips'] as List? ?? [];
+    final clipId = (clipIndex < clips.length ? clips[clipIndex]['id'] : null) ?? clipIndex;
+    return '${session['id']}|$clipId';
+  }
+
+  /// A lesson (after the first) is open only once every part quiz of the
+  /// previous lesson has been answered.
+  bool _isSessionLocked(List<Map<String, dynamic>> sessions, int sIndex) {
+    if (sIndex >= 0 && sIndex < sessions.length && _sessionOpensAt(sessions[sIndex]) != null) return true;
+    if (sIndex <= 0 || sIndex >= sessions.length) return false;
+    final prev = sessions[sIndex - 1];
+    final prevClips = prev['videoClips'] as List? ?? [];
+    for (int i = 0; i < prevClips.length; i++) {
+      if (!_isAnswered(prev, i)) return true;
+    }
+    return false;
+  }
+
+  Future<void> _loadPassedQuizzes() async {
+    try {
+      final progress = await HttpApiService().getUserProgress();
+      if (!mounted) return;
+      setState(() {
+        for (final p in progress) {
+          if (p is! Map) continue;
+          final key = '${p['sessionId']}|${p['clipId']}';
+          if (p['quizPassed'] == true) _passedQuizzes.add(key);
+          if (p['isWatched'] == true) _unlockedQuizzes.add(key);
+        }
+      });
+    } catch (e) {
+      debugPrint('Load quiz progress error: $e');
+    }
+  }
+
+  void _onVideoEnded() {
+    if (_isMiniQuizShowing) return;
+    // The quiz can be taken only once; after that it is review-only on demand
+    final session = _activeSession;
+    if (session != null && _isAnswered(session, _currentClipIndex)) return;
+    setState(() {
+      _isMiniQuizShowing = true;
     });
-  }
-
-  void _disposeVideoController() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
-    final controller = _videoPlayerController;
-    if (controller != null) {
-      _videoPlayerController = null;
-      try {
-        controller.removeListener(_videoListener);
-        AudioExclusivityService.unregisterVideoController(controller);
-        controller.dispose();
-      } catch (e) {
-        debugPrint('Error disposing video controller: $e');
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _disposeVideoController();
-    super.dispose();
+    Future.delayed(Duration.zero, () {
+      if (mounted) _showPartMiniQuiz(_currentClipIndex);
+    });
   }
 
   String _toFarsiDigit(dynamic input) {
@@ -488,6 +530,25 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Station number and title above the video
+                  if (_stationTitle.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: Text(
+                          'منزلگاه ${_toFarsiDigit(_stationNumber)}: ${Station.getPureName(_stationNumber, _stationTitle)}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: Color(0xFFEDE8F5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                            fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          ),
+                        ),
+                      ),
+                    ),
                   // Video Player Box (مثل صفحه کلاس1 قسمت انیمیشن باید ببینید)
                   _buildVideoPlayerCard(),
                   const SizedBox(height: 8),
@@ -531,150 +592,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// 2. Video Player Card (دقیقاً مشابه باکس پخش ویدیو در کلاس1 برای انیمیشن باید ببینید)
   Widget _buildVideoPlayerCard() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          stops: [0.0, 0.5, 1.0],
-          colors: [
-            Color(0xFF3A3A6A),
-            Color(0xFF9292E2),
-            Color(0xFF3A3A6A),
-          ],
-        ),
-      ),
-      padding: const EdgeInsets.all(1.2), // Gradient border
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18.8),
-        child: Container(
-          color: const Color(0xFF1E1D34),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (_isVideoInitialized &&
-                    _videoPlayerController != null &&
-                    _videoPlayerController!.value.isInitialized) ...[
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (_videoPlayerController!.value.isPlaying) {
-                          _videoPlayerController!.pause();
-                        } else {
-                          _videoPlayerController!.play();
-                          AudioExclusivityService.onVideoPlay();
-                        }
-                      });
-                    },
-                    child: VideoPlayer(_videoPlayerController!),
-                  ),
-                  _buildVideoControlsOverlay(),
-                ] else ...[
-                  // Default Thumbnail & Centered Play button matching NopaInlineVideoPlayer
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: [0.0, 0.53, 1.0],
-                        colors: [
-                          Color(0xFF3D3C67),
-                          Color(0xFF36345C),
-                          Color(0xFF333359),
-                        ],
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFF1E1D34).withValues(alpha: 0.65),
-                          border: Border.all(
-                            color: const Color(0xFFC09268),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.play_arrow_rounded,
-                            color: Color(0xFFDEB58A),
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVideoControlsOverlay() {
-    final controller = _videoPlayerController;
-    if (controller == null || !_isVideoInitialized) {
-      return const SizedBox.shrink();
-    }
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        color: Colors.black54,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        child: Row(
-          children: [
-            IconButton(
-              icon: Icon(
-                controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                color: Colors.white,
-                size: 18,
-              ),
-              onPressed: () {
-                setState(() {
-                  if (controller.value.isPlaying) {
-                    controller.pause();
-                  } else {
-                    controller.play();
-                    AudioExclusivityService.onVideoPlay();
-                  }
-                });
-              },
-            ),
-            Expanded(
-              child: VideoProgressIndicator(
-                controller,
-                allowScrubbing: true,
-                colors: const VideoProgressColors(
-                  playedColor: Color(0xFFC09268),
-                  bufferedColor: Colors.white24,
-                  backgroundColor: Colors.white12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ValueListenableBuilder(
-              valueListenable: controller,
-              builder: (context, VideoPlayerValue value, child) {
-                final duration = value.duration;
-                final position = value.position;
-                return Text(
-                  '${position.inMinutes}:${(position.inSeconds % 60).toString().padLeft(2, '0')} / ${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}',
-                  style: const TextStyle(color: Colors.white, fontSize: 9.5),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+    final url = _currentVideoUrl;
+    return NopaInlineVideoPlayer(
+      key: ValueKey('class2_video_${_videoSessionToken}_$url'),
+      videoUrl: url,
+      title: _currentPlayingTitle,
+      autoPlay: url.isNotEmpty,
+      onProgress: _onVideoProgress,
+      onEnded: _onVideoEnded,
     );
   }
 
@@ -704,7 +629,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   Widget _buildTabItem({required String title, required int index}) {
     final isSelected = _selectedTab == index;
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           _selectedTab = index;
@@ -727,13 +652,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   String _formatDuration(dynamic duration) {
-    if (duration == null) return '۱۵:۰۰';
+    if (duration == null) return '';
     if (duration is num) {
       final int totalSec = duration.toInt();
+      if (totalSec <= 0) return '';
       final int minutes = totalSec ~/ 60;
       final int seconds = totalSec % 60;
       final String minStr = minutes.toString().padLeft(2, '0').toPersianDigits();
@@ -741,7 +667,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       return '$minStr:$secStr';
     }
     final String str = duration.toString().trim();
-    if (str.isEmpty) return '۱۵:۰۰';
+    if (str.isEmpty) return '';
     return str.toPersianDigits();
   }
 
@@ -768,7 +694,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return Column(
       children: List.generate(sessions.length, (sIndex) {
         final session = sessions[sIndex];
-        final isExpanded = _expandedSessionIndex == sIndex;
+        final isLocked = _isSessionLocked(sessions, sIndex);
+        final isExpanded = _expandedSessionIndex == sIndex && !isLocked;
         final clips = session['videoClips'] as List? ?? [];
 
         return Container(
@@ -799,8 +726,18 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             child: Column(
               children: [
                 // 1. Session Header (Capsule gradient surface matching StationCard)
-                InkWell(
+                TapExpander(child: InkWell(
                   onTap: () {
+                    if (isLocked) {
+                      final opensAt = _sessionOpensAt(session);
+                      AppToast.info(
+                        context,
+                        opensAt != null
+                            ? 'این جلسه ${ScheduleUtils.describe(opensAt)} باز می‌شود'
+                            : 'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید',
+                      );
+                      return;
+                    }
                     setState(() {
                       if (isExpanded) {
                         _expandedSessionIndex = -1;
@@ -840,9 +777,11 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       children: [
                         // Left: Arrow Up / Down
                         Icon(
-                          isExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
+                          isLocked
+                              ? Icons.lock_rounded
+                              : (isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded),
                           color: const Color(0xFFDDD9EE),
                           size: 20,
                         ),
@@ -867,7 +806,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       ],
                     ),
                   ),
-                ),
+                )),
 
                 // 2. Expanded Parts Section (Seamless dark background without purple box)
                 if (isExpanded && clips.isNotEmpty) ...[
@@ -881,24 +820,47 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       children: List.generate(clips.length, (cIndex) {
                         final clip = clips[cIndex];
                         final isPlaying = isExpanded && _currentClipIndex == cIndex;
-                        final quizKey = '${sIndex}_$cIndex';
-                        final bool isQuizUnlocked = _unlockedQuizzes.contains(quizKey);
+                        final bool isQuizUnlocked = _unlockedQuizzes.contains(_passedKey(session, cIndex)) ||
+                            _passedQuizzes.contains(_passedKey(session, cIndex));
+                        final bool isPartLocked = _isPartLocked(session, cIndex);
+                        void selectPart() {
+                          if (isPartLocked) {
+                            final opensAt = _clipUnlockTime(session, cIndex);
+                            AppToast.info(
+                              context,
+                              opensAt != null
+                                  ? 'این پارت ${ScheduleUtils.describe(opensAt)} باز می‌شود'
+                                  : 'برای باز شدن این پارت، ابتدا به آزمون پارت قبل پاسخ دهید',
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _currentClipIndex = cIndex;
+                          });
+                          _initializeVideoForCurrentSession();
+                        }
 
-                        return Padding(
+                        final Widget partRow = Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5.5),
                           child: Directionality(
                             textDirection: TextDirection.rtl,
                             child: Row(
                               children: [
                                 // 1. Far Right in RTL: وضعیت پارت (تایید برای دیده شده، پاز برای در حال دیدن، پلی برای دیده نشده)
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _currentClipIndex = cIndex;
-                                    });
-                                    _initializeVideoForCurrentSession();
-                                  },
-                                  child: isPlaying
+                                TapExpander(child: GestureDetector(
+                                  onTap: selectPart,
+                                  child: isPartLocked
+                                      ? Container(
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.white.withValues(alpha: 0.05),
+                                            border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.0),
+                                          ),
+                                          child: const Icon(Icons.lock_rounded, color: Colors.white38, size: 11),
+                                        )
+                                      : isPlaying
                                       ? Container(
                                           width: 20,
                                           height: 20,
@@ -929,18 +891,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                               ),
                                               child: const Icon(Icons.play_arrow_rounded, color: Colors.white70, size: 13),
                                             )),
-                                ),
+                                )),
                                 const SizedBox(width: 8),
 
                                 // 2. Right in RTL next to icon: عنوان پارت (کوتاه تر، کوچکتر و غیربولد)
                                 Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _currentClipIndex = cIndex;
-                                      });
-                                      _initializeVideoForCurrentSession();
-                                    },
+                                  child: TapExpander(child: GestureDetector(
+                                    onTap: selectPart,
                                     child: Text(
                                       clip['title']?.toString() ?? 'پارت ${_toFarsiDigit(cIndex + 1)}',
                                       textAlign: TextAlign.right,
@@ -954,7 +911,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                         fontFamilyFallback: AppTheme.fontFamilyFallback,
                                       ),
                                     ),
-                                  ),
+                                  )),
                                 ),
                                 const SizedBox(width: 8),
 
@@ -971,24 +928,12 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 const SizedBox(width: 8),
 
                                 // 4. Far Left in RTL: دکمه آزمون
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     if (isQuizUnlocked) {
                                       _showPartMiniQuiz(cIndex);
                                     } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'برای باز شدن آزمون، حداقل ۷۰٪ ویدیو را مشاهده کنید',
-                                            style: TextStyle(
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 11.5,
-                                            ),
-                                          ),
-                                          backgroundColor: Color(0xFF23223D),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
+                                      AppToast.info(context, 'برای باز شدن آزمون، حداقل ۹۰٪ ویدیو را مشاهده کنید');
                                     }
                                   },
                                   child: Container(
@@ -1016,10 +961,28 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
+                        );
+                        if (cIndex == 0) return partRow;
+                        return Column(
+                          children: [
+                            Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.0),
+                                    Colors.white.withValues(alpha: 0.12),
+                                    Colors.white.withValues(alpha: 0.0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            partRow,
+                          ],
                         );
                       }),
                     ),
@@ -1217,15 +1180,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 1. Far Left: منزلگاه بعد (تعویض شده با قبل)
-          InkWell(
-            onTap: () {
-              setState(() {
-                _currentStationIndex++;
-                _expandedSessionIndex = 0;
-                _currentClipIndex = 0;
-              });
-              _fetchData();
-            },
+          TapExpander(child: InkWell(
+            onTap: (_stationCount == 0 || _currentStationIndex < _stationCount - 1) ? () => _goToStation(1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: const [
@@ -1245,11 +1201,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ],
             ),
-          ),
+          )),
 
           // 2. Middle Left: ارتباط با راهبر
           ElevatedButton(
-            onPressed: () => ContactUsDialog.show(context),
+            onPressed: () => contactMentor(
+              context,
+              Provider.of<AppRepository>(context, listen: false).currentUser,
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF241F3B),
               foregroundColor: const Color(0xFFDDD9EE),
@@ -1263,36 +1222,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ),
             ),
-            child: const Text(
-              'ارتباط با راهبر',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
-            ),
-          ),
-
-          // 3. Middle Right: شرکت در آزمون نهایی
-          ElevatedButton(
-            onPressed: _showFinalStationExam,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF241F3B),
-              foregroundColor: const Color(0xFFE5B888),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9),
-                side: const BorderSide(
-                  color: Color(0xFFC09268),
-                  width: 1.0,
-                ),
-              ),
-            ),
-            child: const Text(
-              'شرکت در آزمون نهایی',
-              style: TextStyle(
+            child: Text(
+              contactMentorLabel(Provider.of<AppRepository>(context, listen: false).currentUser),
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
                 fontFamily: AppTheme.fontFamily,
@@ -1302,17 +1234,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ),
 
           // 4. Far Right: منزلگاه قبل (تعویض شده با بعد)
-          InkWell(
-            onTap: _currentStationIndex > 0
-                ? () {
-                    setState(() {
-                      _currentStationIndex--;
-                      _expandedSessionIndex = 0;
-                      _currentClipIndex = 0;
-                    });
-                    _fetchData();
-                  }
-                : null,
+          TapExpander(child: InkWell(
+            onTap: _currentStationIndex > 0 ? () => _goToStation(-1) : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1332,7 +1255,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ],
             ),
-          ),
+          )),
         ],
       ),
     );
@@ -1377,13 +1300,22 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     }
 
     int currentQuestionIndex = 0;
-    final List<int> userAnswers = List.filled(quizQuestions.length, -1);
+    // One attempt only: once answered, the quiz can just be viewed.
+    final bool reviewMode = session != null && _isAnswered(session, partIndex);
+    final stored = session == null ? null : _quizAnswers[_passedKey(session, partIndex)];
+    final List<int> userAnswers = (reviewMode && stored != null && stored.length == quizQuestions.length)
+        ? List<int>.from(stored)
+        : List.filled(quizQuestions.length, -1);
+    final pageContext = context;
     String? feedbackMessage;
     bool isErrorFeedback = false;
 
+    int correctIndexOf(dynamic q) =>
+        q['correctIndex'] is int ? q['correctIndex'] : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
+
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -1407,9 +1339,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'آزمون ارزیابی پارت',
-                            style: TextStyle(
+                          Text(
+                            reviewMode ? 'مشاهده آزمون پارت' : 'آزمون ارزیابی پارت',
+                            style: const TextStyle(
                               color: Color(0xFFFBE4C8),
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -1453,26 +1385,37 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             const SizedBox(height: 12),
                             ...List.generate((question['options'] as List).length, (idx) {
                               bool isSel = selectedAns == idx;
-                              return GestureDetector(
-                                onTap: () => setDialogState(() {
-                                  userAnswers[currentQuestionIndex] = idx;
-                                  feedbackMessage = null;
-                                }),
+                              final bool isCorrectOpt = reviewMode && idx == correctIndexOf(question);
+                              final bool isWrongSel = reviewMode && isSel && !isCorrectOpt;
+                              final Color accent = isCorrectOpt
+                                  ? AppToast.successColor
+                                  : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
+                              return TapExpander(child: GestureDetector(
+                                onTap: reviewMode
+                                    ? null
+                                    : () => setDialogState(() {
+                                          userAnswers[currentQuestionIndex] = idx;
+                                          feedbackMessage = null;
+                                        }),
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                                   decoration: BoxDecoration(
-                                    color: isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33),
+                                    color: (isCorrectOpt || isWrongSel)
+                                        ? accent.withValues(alpha: 0.45)
+                                        : (isSel ? const Color(0xFF473E67) : const Color(0xFF1E1A33)),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: isSel ? const Color(0xFFC09268) : const Color(0xFF473E67),
+                                      color: (isCorrectOpt || isWrongSel || isSel) ? accent : const Color(0xFF473E67),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
                                       Icon(
-                                        isSel ? Icons.radio_button_checked : Icons.radio_button_off,
-                                        color: isSel ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
+                                        isCorrectOpt
+                                            ? Icons.check_circle_rounded
+                                            : (isSel ? Icons.radio_button_checked : Icons.radio_button_off),
+                                        color: isSel || isCorrectOpt ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
                                         size: 16,
                                       ),
                                       const SizedBox(width: 8),
@@ -1490,7 +1433,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                     ],
                                   ),
                                 ),
-                              );
+                              ));
                             }),
                           ],
                         ),
@@ -1544,7 +1487,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             ),
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: selectedAns == -1
+                              onPressed: (!reviewMode && selectedAns == -1)
                                   ? null
                                   : () async {
                                       if (currentQuestionIndex < quizQuestions.length - 1) {
@@ -1552,46 +1495,89 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                           currentQuestionIndex++;
                                           feedbackMessage = null;
                                         });
+                                        return;
+                                      }
+                                      if (reviewMode) {
+                                        Navigator.pop(context);
+                                        return;
+                                      }
+
+                                      // Score locally for the feedback (the server decides pass/fail).
+                                      int correctCount = 0;
+                                      for (int i = 0; i < quizQuestions.length; i++) {
+                                        if (userAnswers[i] == correctIndexOf(quizQuestions[i])) correctCount++;
+                                      }
+
+                                      final sessionId = session?['id']?.toString() ?? '';
+                                      int rewardZarik = 0;
+                                      bool passed;
+                                      bool awaitingReview = false;
+                                      List<int>? serverCorrect;
+                                      if (sessionId.isNotEmpty) {
+                                        Map<String, dynamic>? result;
+                                        try {
+                                          result = await HttpApiService().submitClassSessionQuiz(sessionId, userAnswers, quizId: currentQuizId);
+                                        } catch (e) {
+                                          debugPrint('Submit quiz error: $e');
+                                        }
+                                        if (result == null) {
+                                          if (context.mounted) {
+                                            setDialogState(() {
+                                              isErrorFeedback = true;
+                                              feedbackMessage = 'ثبت آزمون با خطا مواجه شد. اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.';
+                                            });
+                                          }
+                                          return;
+                                        }
+                                        final int? total = (result['total'] as num?)?.toInt();
+                                        final int? score = (result['score'] as num?)?.toInt();
+                                        awaitingReview = result['status']?.toString().toUpperCase() == 'PENDING';
+                                        // Every answer right is a pass, whatever the pass mark says
+                                        passed = result['passed'] == true || (!awaitingReview && total != null && total > 0 && score == total);
+                                        if (result['correctAnswers'] is List) {
+                                          serverCorrect = (result['correctAnswers'] as List).map((e) => (e as num).toInt()).toList();
+                                        }
+                                        if (result['rewardZarik'] is num) rewardZarik = (result['rewardZarik'] as num).toInt();
                                       } else {
-                                        // Evaluate all answers against correctIndex
-                                        int correctCount = 0;
+                                        passed = correctCount == quizQuestions.length ||
+                                            (quizQuestions.length > 1 && correctCount >= (quizQuestions.length * 0.6).ceil());
+                                      }
+
+                                      // Right or wrong, the submitted answer opens the next part.
+                                      _markAnswered(session, partIndex, userAnswers);
+                                      if (passed && session != null && mounted) {
+                                        setState(() {
+                                          _passedQuizzes.add(_passedKey(session, partIndex));
+                                        });
+                                      }
+
+                                      if (context.mounted) Navigator.pop(context);
+                                      if (!pageContext.mounted) return;
+                                      if (awaitingReview) {
+                                        AppToast.info(pageContext, 'پاسخ شما ثبت شد و در انتظار بررسی راهبر است.');
+                                      } else if (passed) {
+                                        AppToast.success(
+                                          pageContext,
+                                          rewardZarik > 0
+                                              ? 'عالی بود! درست جواب دادید و ${_toFarsiDigit(rewardZarik)} زریک دریافت کردید.'
+                                              : 'عالی بود! درست جواب دادید.',
+                                        );
+                                      } else {
+                                        final wrong = <String>[];
                                         for (int i = 0; i < quizQuestions.length; i++) {
                                           final q = quizQuestions[i];
-                                          final cIdx = q['correctIndex'] is int
-                                              ? q['correctIndex']
-                                              : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
-                                          if (userAnswers[i] == cIdx) {
-                                            correctCount++;
-                                          }
+                                          final c = (serverCorrect != null && i < serverCorrect.length) ? serverCorrect[i] : correctIndexOf(q);
+                                          if (userAnswers[i] == c) continue;
+                                          final opts = q['options'] as List;
+                                          final text = (c >= 0 && c < opts.length) ? opts[c].toString() : '';
+                                          wrong.add(quizQuestions.length == 1
+                                              ? '«$text»'
+                                              : 'سوال ${_toFarsiDigit(i + 1)}: «$text»');
                                         }
-
-                                        final bool passed = correctCount == quizQuestions.length ||
-                                            (quizQuestions.length > 1 && correctCount >= (quizQuestions.length * 0.6).ceil());
-
-                                        if (passed) {
-                                          final sessionId = session?['id']?.toString() ?? '';
-                                          if (sessionId.isNotEmpty) {
-                                            try {
-                                              await HttpApiService().submitClassSessionQuiz(sessionId, userAnswers, quizId: currentQuizId);
-                                            } catch (e) {
-                                              debugPrint('Submit quiz error: $e');
-                                            }
-                                          }
-
-                                          if (context.mounted) {
-                                            Navigator.pop(context);
-                                            RewardPopup.show(
-                                              context,
-                                              message: 'تبریک! آزمون این پارت را با نمره ${_toFarsiDigit(correctCount)} از ${_toFarsiDigit(quizQuestions.length)} گذراندید!',
-                                              zarikAmount: 10,
-                                            );
-                                          }
-                                        } else {
-                                          setDialogState(() {
-                                            isErrorFeedback = true;
-                                            feedbackMessage = 'نمره قبولی کسب نشد (${_toFarsiDigit(correctCount)} از ${_toFarsiDigit(quizQuestions.length)} درست بود). گزینه‌ها را مجدداً مرور فرمایید.';
-                                          });
-                                        }
+                                        AppToast.error(
+                                          pageContext,
+                                          'بیشتر دقت کنید. جواب درست ${wrong.join('، ')} بود.',
+                                        );
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
@@ -1605,7 +1591,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               child: Text(
                                 currentQuestionIndex < quizQuestions.length - 1
                                     ? 'سوال بعدی'
-                                    : 'ثبت و مشاهده نتیجه',
+                                    : (reviewMode ? 'بستن' : 'ثبت و مشاهده نتیجه'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -1625,83 +1611,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           },
         );
       },
-    );
-  }
-
-  void _showFinalStationExam() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF241F3B),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Color(0xFFE5B888),
-                  size: 44,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'آزمون نهایی منزلگاه',
-                  style: TextStyle(
-                    color: Color(0xFFFBE4C8),
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'آزمون نهایی شامل سنجش مهارت‌های فراگرفته شده در تمامی جلسات این منزلگاه است.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 11.5,
-                    height: 1.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showPartMiniQuiz(0);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFC09268),
-                    foregroundColor: const Color(0xFF1E1A33),
-                    minimumSize: const Size(double.infinity, 40),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    'شروع آزمون نهایی',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    ).then((_) {
+      // Let the next video end (e.g. after a re-watch) open the quiz again
+      if (mounted) setState(() => _isMiniQuizShowing = false);
+    });
   }
 
   void _showDownloadPamphletDialog(String title) {
@@ -1718,19 +1631,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               });
             } else {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'جزوه آموزشی با موفقیت دانلود شد! 📂✅',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                  backgroundColor: Color(0xFF10B981),
-                ),
-              );
+              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد! 📂✅');
             }
           });
 

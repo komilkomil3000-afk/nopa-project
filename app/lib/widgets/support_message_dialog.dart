@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
@@ -51,22 +52,12 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
     final text = _descCtrl.text.trim();
 
     if (subject.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفاً موضوع پیام را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'لطفاً موضوع پیام را وارد کنید');
       return;
     }
 
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفاً شرح درخواست خود را بنویسید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'لطفاً شرح درخواست خود را بنویسید');
       return;
     }
 
@@ -82,21 +73,11 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
       if (!mounted) return;
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطا در ارسال درخواست: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'خطایی رخ داده است. خطا در ارسال درخواست');
     }
   }
 

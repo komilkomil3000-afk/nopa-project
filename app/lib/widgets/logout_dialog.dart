@@ -1,4 +1,6 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme/app_colors.dart';
@@ -47,15 +49,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'خطا در خروج از حساب: $e',
-              style: const TextStyle(fontFamily: AppTheme.fontFamily),
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        AppToast.error(context, 'خطایی رخ داده است. خطا در خروج از حساب');
       }
     }
   }
@@ -106,7 +100,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
                 children: [
                   // 1. Right Button (in RTL): آره ولی زود برمیگردم (Action - Camel)
                   Expanded(
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: _isLoading ? null : _handleLogout,
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -140,13 +134,13 @@ class _LogoutDialogState extends State<LogoutDialog> {
                                 textAlign: TextAlign.center,
                               ),
                       ),
-                    ),
+                    )),
                   ),
                   const SizedBox(width: 12),
 
                   // 2. Left Button (in RTL): نه، دستم خورد (Cancel - Purple)
                   Expanded(
-                    child: InkWell(
+                    child: TapExpander(child: InkWell(
                       onTap: _isLoading ? null : () => Navigator.pop(context),
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
@@ -171,7 +165,7 @@ class _LogoutDialogState extends State<LogoutDialog> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
+                    )),
                   ),
                 ],
               ),

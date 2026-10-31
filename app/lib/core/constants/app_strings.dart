@@ -1,9 +1,9 @@
 class AppStrings {
   static const String appName = 'نپا';
   static const String zarik = 'زریک';
-  static const String nakh = 'نخ';
-  static const String beyragh = 'بیرق';
-  static const String farsh = 'فرش';
+  static const String nakh = 'کلاف';
+  static const String beyragh = 'درفش';
+  static const String farsh = 'قالیچه';
   
   static const String navHome = 'خانه';
   static const String navMap = 'آموزگاه';

@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -71,10 +72,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
+    var tick = 0;
     _notificationPollTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
       try {
         if (_apiService.isAuthenticated) {
           await fetchNotifications();
+          // A new / updated challenge shows up without reopening the page (about every 90 seconds)
+          if (++tick % 2 == 0) await syncChallenges();
         }
       } catch (e) {
         debugPrint('Periodic notification sync caught: $e');
@@ -88,6 +92,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       if (state == AppLifecycleState.resumed) {
         recordActivity();
         if (_apiService.isAuthenticated) {
+          fetchNotifications().catchError((e) {
+            debugPrint('Resumed fetchNotifications error: $e');
+          });
           refreshUser().catchError((e) {
             debugPrint('Resumed refreshUser error: $e');
           });
@@ -103,9 +110,38 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
 
 
+  bool _assetNamesLoaded = false;
+
+  /// Admin-editable asset names (once per session) – the app keeps its built-in defaults when this fails.
+  Future<void> loadAssetNames() async {
+    if (_assetNamesLoaded) return;
+    final rows = await _apiService.getAssetTypes();
+    if (rows.isEmpty) return;
+    AssetNames.apply(rows);
+    _assetNamesLoaded = true;
+    notifyListeners();
+  }
+
+  /// Banners (درفش) won by the caravan: shown as one total on the home screens, itemised in a dialog.
+  int caravanBannerTotal = 0;
+  Map<String, dynamic> caravanBanners = {};
+
+  Future<void> fetchCaravanBanners() async {
+    final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final data = await _apiService.getCaravanBanners(caravanId: isMentor ? _selectedCaravanId : null);
+    if (data != null) {
+      caravanBanners = data;
+      caravanBannerTotal = (data['total'] as num?)?.toInt() ?? 0;
+      notifyListeners();
+    }
+  }
+
   Future<void> refreshUser() async {
     final user = await _apiService.getMe();
     if (user != null) {
+      loadAssetNames().catchError((e) => debugPrint('loadAssetNames error: $e'));
+      _apiService.getStations().then((_) => notifyListeners()).catchError((e) => debugPrint('getStations error: $e'));
+      fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
       final existingRole = currentUser.role;
       if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
         currentUser = user.copyWith(role: existingRole);
@@ -113,8 +149,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         currentUser = user;
       }
       final apiChallenges = await _apiService.getChallenges();
-      challenges.clear();
-      challenges.addAll(apiChallenges);
+      if (apiChallenges != null) {
+        challenges.clear();
+        challenges.addAll(apiChallenges);
+      }
       await fetchNotifications();
       await fetchCaravans();
       notifyListeners();
@@ -131,6 +169,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       for (final raw in offlineSubmissions) {
         try {
           final data = jsonDecode(raw) as Map<String, dynamic>;
+          // Another account's queued answer stays queued until that account is signed in again
+          if (data['userId'] != null && data['userId'] != currentUser.id) {
+            remainingSubmissions.add(raw);
+            continue;
+          }
           final challengeId = data['challengeId']?.toString();
           final answerText = data['answerText']?.toString() ?? '';
           final fileUrl = data['fileUrl']?.toString();
@@ -160,6 +203,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       for (final raw in offlineWatchProgress) {
         try {
           final data = jsonDecode(raw) as Map<String, dynamic>;
+          if (data['userId'] != null && data['userId'] != currentUser.id) {
+            remainingWatch.add(raw);
+            continue;
+          }
           final sessionId = data['sessionId']?.toString();
           final percentage = (data['percentage'] as num?)?.toDouble() ?? 0.0;
           final currentPos = (data['currentPositionSeconds'] as num?)?.toInt() ?? (percentage * 10).toInt();
@@ -188,7 +235,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> cacheSubmissionOffline(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final submissions = prefs.getStringList('offline_submissions') ?? [];
-    submissions.add(jsonEncode(data));
+    submissions.add(jsonEncode({...data, 'userId': currentUser.id}));
     await prefs.setStringList('offline_submissions', submissions);
   }
   
@@ -205,6 +252,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     if (durationSeconds != null) {
       map['durationSeconds'] = durationSeconds;
     }
+    map['userId'] = currentUser.id;
     progressList.add(jsonEncode(map));
     await prefs.setStringList('offline_watch_progress', progressList);
   }
@@ -240,7 +288,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {}
 
     await _apiService.logout();
-    challenges.clear();
+    _resetSessionData();
     currentUser = UserModel(
       id: 'guest',
       name: 'مهمان',
@@ -265,8 +313,20 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       beyragh: 0,
       farsh: 0,
     );
-    challenges.clear();
+    _resetSessionData();
     notifyListeners();
+  }
+
+  /// Everything loaded for the signed-in user (a singleton outlives the session, so it must be emptied explicitly).
+  void _resetSessionData() {
+    challenges.clear();
+    submissions.clear();
+    notifications.clear();
+    caravans = [];
+    mentorData.clear();
+    caravanBanners = {};
+    caravanBannerTotal = 0;
+    _selectedCaravanId = '';
   }
 
   // Current Logged-in User
@@ -282,11 +342,11 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   );
 
   // Active Caravan Selector
-  String _selectedCaravanId = 'c1'; // Default: یاوران علاءالملک
+  String _selectedCaravanId = '';
   String get selectedCaravanId => _selectedCaravanId;
   String get selectedCaravanName {
     if (caravans.isEmpty) {
-      return currentUser.caravanName ?? 'کاروان یاوران علاءالملک';
+      return currentUser.caravanName ?? 'بدون کاروان';
     }
     final c = caravans.firstWhere((element) => element.id == _selectedCaravanId,
         orElse: () => caravans.first);
@@ -294,11 +354,13 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // Reactive Collections
-  List<CaravanModel> caravans = [
-    CaravanModel(id: 'c1', name: 'کاروان یاوران علاءالملک', memberCount: 24, overallProgress: 0.78, activeStation: 'منزلگاه اول'),
-    CaravanModel(id: 'c2', name: 'کاروان عمار', memberCount: 20, overallProgress: 0.65, activeStation: 'منزلگاه دوم'),
-    CaravanModel(id: 'c3', name: 'کاروان مالک اشتر', memberCount: 18, overallProgress: 0.50, activeStation: 'منزلگاه سوم'),
-  ];
+  List<CaravanModel> caravans = [];
+
+  /// The caravan currently picked by the mentor (null until caravans are loaded).
+  CaravanModel? get selectedCaravan {
+    if (caravans.isEmpty) return null;
+    return caravans.firstWhere((c) => c.id == _selectedCaravanId, orElse: () => caravans.first);
+  }
 
   Future<void> fetchCaravans() async {
     try {
@@ -310,12 +372,22 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
           final memberCount = (item['memberCount'] is int) ? (item['memberCount'] as int) : members.length;
           final overallProgress = (item['overallProgress'] is num) ? (item['overallProgress'] as num).toDouble() : 0.75;
           final activeStation = item['activeStation']?.toString() ?? 'منزلگاه اول';
+          int sumOf(List<String> keys) => members.whereType<Map>().fold<int>(0, (sum, m) {
+                for (final k in keys) {
+                  if (m[k] is num) return sum + (m[k] as num).toInt();
+                }
+                return sum;
+              });
           loaded.add(CaravanModel(
             id: item['id']?.toString() ?? '',
             name: item['name']?.toString() ?? 'کاروان',
             memberCount: memberCount,
             overallProgress: overallProgress,
             activeStation: activeStation,
+            totalZarik: sumOf(['zarikBalance', 'zarik']),
+            totalBeyragh: sumOf(['beyragh']),
+            totalNakh: sumOf(['nakh']),
+            totalFarsh: sumOf(['farsh']),
           ));
         }
         if (loaded.isNotEmpty) {
@@ -354,103 +426,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Mentor Satisfaction Data Cache
   final Map<String, Map<String, dynamic>> mentorData = {};
 
-  // Caravan dynamic stats helper
-  Map<String, dynamic> get activeCaravanStats {
-    CaravanModel caravan;
-    if (caravans.isEmpty) {
-      caravan = CaravanModel(
-        id: 'c1',
-        name: currentUser.caravanName ?? 'کاروان یاوران علاءالملک',
-        memberCount: 24,
-        overallProgress: 0.78,
-        activeStation: 'منزلگاه اول',
-      );
-    } else {
-      caravan = caravans.firstWhere((element) => element.id == _selectedCaravanId,
-          orElse: () => caravans.first);
-    }
-
-    // Calculate dynamic tickets and submission values from repository
-    final activeCaravanSubmissions = submissions.where((s) => 
-      s.status == 'pending' && 
-      (s.studentName.contains('رضایی') || s.studentName.contains('حسینی') || s.studentName.contains('احمدی'))
-    ).length;
-
-    // Base values that get returned
-    if (caravan.id == 'c1') {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۴۵/۵۰',
-        'tasksVal': 0.90,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۳,۵۰۰',
-        'scoreVal': 0.95,
-        'progressLabel': 'پیشرفت عالی کلاس‌های مهارتی و رسانه‌ای کاروان علاءالملک',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.85,
-        'progressM2': 0.75,
-        'progressM3': 0.80,
-        'progressM4': 0.60,
-        'progressM5': 0.40,
-      };
-    } else if (caravan.id == 'c2') {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۳۴/۴۰',
-        'tasksVal': 0.85,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۲,۴۵۰',
-        'scoreVal': 0.70,
-        'progressLabel': 'روند مناسب کلاس‌های جاری کاروان عمار',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.70,
-        'progressM2': 0.60,
-        'progressM3': 0.55,
-        'progressM4': 0.45,
-        'progressM5': 0.35,
-      };
-    } else {
-      return {
-        'members': caravan.memberCount,
-        'progress': '${(caravan.overallProgress * 100).toInt()}%',
-        'progressVal': caravan.overallProgress,
-        'tasks': '۲۰/۴۸',
-        'tasksVal': 0.41,
-        'tickets': '$activeCaravanSubmissions',
-        'ticketsVal': activeCaravanSubmissions / 10.0,
-        'score': '۱,۸۰۰',
-        'scoreVal': 0.50,
-        'progressLabel': 'نیاز به تمرکز بیشتر بر سرفصل‌های کاروان مالک',
-        'progressPercent': caravan.overallProgress,
-        'progressM1': 0.50,
-        'progressM2': 0.40,
-        'progressM3': 0.45,
-        'progressM4': 0.30,
-        'progressM5': 0.10,
-      };
-    }
-  }
-
   // Notifications collections
   final List<Map<String, dynamic>> notifications = [];
-
-  void addNotification(String title, String body, {bool isForMentor = false}) {
-    notifications.insert(0, {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'title': title,
-      'body': body,
-      'isForMentor': isForMentor,
-      'isRead': false,
-      'time': 'الان',
-    });
-    notifyListeners();
-  }
 
   Future<void> fetchNotifications() async {
     try {
@@ -484,6 +461,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
             'title': item['title'] ?? '',
             'body': item['message'] ?? '',
             'type': item['type'] ?? 'alert',
+            'createdAt': item['createdAt'],
             'isForMentor': isMentor,
             'isRead': item['isRead'] == true,
             'time': timeStr,
@@ -537,33 +515,64 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void createChallenge(ChallengeModel challenge) {
     challenges.insert(0, challenge);
-    addNotification(
-      'چالش جدید منتشر شد 🏆',
-      'راهبر کاروان چالش جدید "${challenge.title}" را ثبت کرد.',
-      isForMentor: false,
-    );
+    notifyListeners();
+  }
+
+  /// Reloads the challenge list only (no notification fetch); a failed load keeps the current list.
+  Future<void> syncChallenges() async {
+    final apiChallenges = await _apiService.getChallenges();
+    if (apiChallenges == null) return;
+    challenges.clear();
+    challenges.addAll(apiChallenges);
+    submissions.removeWhere((s) => challenges.any((c) => c.id == s.challengeId && c.myStatus != null && c.myStatus != 'none'));
     notifyListeners();
   }
 
   Future<void> refreshChallenges() async {
     final apiChallenges = await _apiService.getChallenges();
-    challenges.clear();
-    challenges.addAll(apiChallenges);
+    // A failed load keeps the current list: challenges must never vanish on a network error
+    if (apiChallenges != null) {
+      challenges.clear();
+      challenges.addAll(apiChallenges);
+      // The server is the source of truth for the answers; drop optimistic local copies
+      submissions.removeWhere((s) => challenges.any((c) => c.id == s.challengeId && c.myStatus != null && c.myStatus != 'none'));
+    }
     await fetchNotifications();
     notifyListeners();
   }
 
-  void submitAssignment(SubmissionModel submission) {
+  /// One status for a challenge, shared by the challenges page and the home card:
+  /// 'new' (not answered), 'pending' (waiting for the mentor), 'rejected' (needs correction),
+  /// 'completed' (approved) or 'expired' (deadline passed without an answer).
+  String challengeStatus(ChallengeModel c) {
+    final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
+    String raw = 'none';
+    if (c.myStatus != null && c.myStatus != 'none') {
+      raw = c.myStatus!;
+    } else if (localSub != null) {
+      raw = localSub.status;
+    }
+    switch (raw) {
+      case 'approved':
+      case 'completed':
+        return 'completed';
+      case 'pending':
+      case 'PENDING_REVIEW':
+        return 'pending';
+      case 'rejected':
+        return 'rejected';
+    }
+    final bool dueDatePassed = c.dueDate != null && DateTime.now().isAfter(c.dueDate!);
+    return (dueDatePassed || raw == 'expired') ? 'expired' : 'new';
+  }
+
+  void submitAssignment(SubmissionModel submission, {bool persist = true}) {
     submissions.removeWhere((s) => s.challengeId == submission.challengeId);
     submissions.insert(0, submission);
-    addNotification(
-      'پاسخ جدید دریافت شد 📝',
-      'دانش‌آموز "${submission.studentName}" پاسخی برای چالش ثبت کرد.',
-      isForMentor: true,
-    );
     notifyListeners();
 
     // Persist to backend and reload live challenges with new status
+    if (!persist) return;
     _apiService.submitTask(submission.challengeId, submission.answerText).then((_) {
       refreshChallenges();
     });
@@ -592,11 +601,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       mentorData[mentorId]!['rating'] = double.parse(calculated.toStringAsFixed(1));
     }
 
-    addNotification(
-      'ارزیابی جدید ثبت شد ⭐',
-      'یک عضو کاروان ارزیابی عملکرد جدیدی با امتیاز $rating ثبت کرد.',
-      isForMentor: true,
-    );
 
     notifyListeners();
   }
@@ -625,13 +629,6 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
         }
       }
 
-      addNotification(
-        approved ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
-        approved 
-            ? 'پاسخ شما به چالش تایید شد و ${reward.toInt()} زریک و ۱ نخ به شما اهدا گردید.' 
-            : 'پاسخ شما به چالش رد شد. فیدبک را بررسی کنید.',
-        isForMentor: false,
-      );
 
       notifyListeners();
     }
@@ -639,6 +636,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void switchCaravan(String caravanId) {
     _selectedCaravanId = caravanId;
+    fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
     notifyListeners();
   }
 

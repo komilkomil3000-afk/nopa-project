@@ -1,9 +1,9 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
-import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
 import '../main.dart'; // For navigateToMainTab
 
@@ -23,9 +23,6 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
   Widget build(BuildContext context) {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
-        final challenges = repository.challenges;
-        final submissions = repository.submissions;
-
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Column(
@@ -54,7 +51,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(40, 30),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize: MaterialTapTargetSize.padded,
                       ),
                       child: const Text(
                         'همه',
@@ -138,12 +135,12 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                               ),
                               const SizedBox(width: 6),
 
-                              // Tab 3: منقضی (fir03.svg - Slate/Purple)
+                              // Tab 3: تمام شده (fir03.svg - Slate/Purple)
                               Expanded(
                                 flex: 9,
                                 child: _buildTabPill(
                                   type: ChallengeTabType.expired,
-                                  title: 'منقضی',
+                                  title: 'تمام شده',
                                   badgeColor: const Color(0xFF3A3763),
                                   iconPath: 'assets/svg_icons/fir03.svg',
                                   selectedGradient: const LinearGradient(
@@ -161,7 +158,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                           const SizedBox(height: 14),
 
                           // 2 Latest Challenge Items List for the Active Tab
-                          _buildItemsList(challenges, submissions, repository.currentUser),
+                          _buildItemsList(repository),
                         ],
                       ),
                     ),
@@ -187,7 +184,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
   }) {
     final bool isSelected = _selectedTab == type;
 
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: () {
         setState(() {
           _selectedTab = type;
@@ -250,105 +247,44 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           ],
         ),
       ),
-    );
+    ));
   }
 
-  /// Builds the 2 latest items for the active tab (Strictly scoped to Caravan Mentor or Admin)
-  Widget _buildItemsList(List<dynamic> allChallenges, List<dynamic> allSubmissions, UserModel? user) {
-    final String myMentorName = (user?.caravanMentor != null && user!.caravanMentor!.isNotEmpty)
-        ? user.caravanMentor!
-        : 'رضا جلالی';
-
-    // Strictly filter challenges: only challenges created by the user's own mentor or admin/system
-    final authorizedChallenges = allChallenges.where((c) {
-      if (c.isByAdmin == true) return true;
-      if (c.caravanId != null && user?.caravanId != null && c.caravanId == user!.caravanId) return true;
-      if (c.mentorName == myMentorName || c.creatorName == myMentorName) return true;
-      if (c.creatorName == 'مدیر سیستم' || c.creatorName == 'مدیر') return true;
-      return false;
-    }).toList();
-
+  /// The latest challenges of the active tab, read from the challenges the server returned for this
+  /// user (already scoped to their caravan/mentor/admin), using the same status as the challenges page:
+  /// جدید = not answered yet, شروع شده = waiting for the mentor or sent back for correction,
+  /// منقضی = deadline passed (approved ones are listed here too, so nothing disappears).
+  Widget _buildItemsList(AppRepository repository) {
     final List<_ChallengeItemData> items = [];
+    for (final c in repository.challenges) {
+      final status = repository.challengeStatus(c);
+      final bool inTab = switch (_selectedTab) {
+        ChallengeTabType.newChallenges => status == 'new',
+        ChallengeTabType.inProgress => status == 'pending' || status == 'rejected',
+        ChallengeTabType.expired => status == 'expired' || status == 'completed',
+      };
+      if (inTab) items.add(_ChallengeItemData(id: c.id, title: c.title, status: status));
+      if (items.length == 2) break;
+    }
 
-    if (_selectedTab == ChallengeTabType.newChallenges) {
-      final activeChallenges = authorizedChallenges.where((c) {
-        final sub = allSubmissions.where((s) => s.challengeId == c.id).firstOrNull;
-        final status = c.myStatus ?? sub?.status ?? 'none';
-        return status == 'none' || status == 'active';
-      }).toList();
-
-      for (var c in activeChallenges.take(2)) {
-        items.add(_ChallengeItemData(
-          id: c.id,
-          title: c.title,
-        ));
-      }
-
-      // Fallback items
-      if (items.isEmpty) {
-        items.add(const _ChallengeItemData(
-          id: 'CH_SAMPLE_1',
-          title: 'پوسترینو',
-        ));
-        items.add(const _ChallengeItemData(
-          id: 'CH_SAMPLE_2',
-          title: 'تدوین خلاقانه',
-        ));
-      } else if (items.length == 1) {
-        items.add(const _ChallengeItemData(
-          id: 'CH_SAMPLE_2',
-          title: 'تدوین خلاقانه',
-        ));
-      }
-    } else if (_selectedTab == ChallengeTabType.inProgress) {
-      final inProgressChallenges = authorizedChallenges.where((c) {
-        final sub = allSubmissions.where((s) => s.challengeId == c.id).firstOrNull;
-        final status = c.myStatus ?? sub?.status ?? 'none';
-        return status == 'pending' || status == 'PENDING_REVIEW' || status == 'in_progress' || status == 'archived_pending';
-      }).toList();
-
-      for (var c in inProgressChallenges.take(2)) {
-        items.add(_ChallengeItemData(
-          id: c.id,
-          title: c.title,
-        ));
-      }
-
-      if (items.isEmpty) {
-        items.add(const _ChallengeItemData(
-          id: 'CH_PROG_1',
-          title: 'طراحی پوستر مفهومی',
-        ));
-        items.add(const _ChallengeItemData(
-          id: 'CH_PROG_2',
-          title: 'ارزیابی خودشناسی',
-        ));
-      }
-    } else {
-      // Expired / Completed Tab
-      final expiredChallenges = authorizedChallenges.where((c) {
-        final sub = allSubmissions.where((s) => s.challengeId == c.id).firstOrNull;
-        final status = c.myStatus ?? sub?.status ?? 'none';
-        return status == 'approved' || status == 'archived_completed' || status == 'rejected' || status == 'expired';
-      }).toList();
-
-      for (var c in expiredChallenges.take(2)) {
-        items.add(_ChallengeItemData(
-          id: c.id,
-          title: c.title,
-        ));
-      }
-
-      if (items.isEmpty) {
-        items.add(const _ChallengeItemData(
-          id: 'CH_EXP_1',
-          title: 'آزمونک اینشات',
-        ));
-        items.add(const _ChallengeItemData(
-          id: 'CH_EXP_2',
-          title: 'چالش عمومی نپا',
-        ));
-      }
+    if (items.isEmpty) {
+      final String emptyText = switch (_selectedTab) {
+        ChallengeTabType.newChallenges => 'چالش جدیدی وجود ندارد',
+        ChallengeTabType.inProgress => 'چالشی در حال بررسی یا اصلاح ندارید',
+        ChallengeTabType.expired => 'چالش تمام‌شده‌ای وجود ندارد',
+      };
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Text(
+          emptyText,
+          style: const TextStyle(
+            color: Color(0xFF9D99B8),
+            fontSize: 12,
+            fontFamily: AppTheme.fontFamily,
+            fontFamilyFallback: AppTheme.fontFamilyFallback,
+          ),
+        ),
+      );
     }
 
     return Column(
@@ -358,7 +294,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
 
   /// Builds an individual Challenge item row (Grayscale & locked if expired)
   Widget _buildChallengeItemRow(_ChallengeItemData item) {
-    final bool isExpired = _selectedTab == ChallengeTabType.expired;
+    final bool isExpired = item.status == 'expired';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -386,24 +322,9 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           borderRadius: BorderRadius.circular(13),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: InkWell(
-          onTap: isExpired
-              ? () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'این چالش منقضی شده است و امکان مشاهده یا ثبت پاسخ وجود ندارد.',
-                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                      ),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              : () {
-                  // Navigate to full challenges screen
-                  context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
-                },
+        child: TapExpander(child: InkWell(
+          // Every challenge, even an expired or completed one, opens in the challenges page
+          onTap: () => context.findAncestorStateOfType<MainScreenState>()?.setIndex(2),
           borderRadius: BorderRadius.circular(13),
           child: Row(
             children: [
@@ -472,7 +393,12 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: Text(
-                    isExpired ? 'منقضی' : 'مشاهده',
+                    switch (item.status) {
+                      'expired' => 'تمام شده',
+                      'completed' => 'تکمیل',
+                      'rejected' => 'اصلاح',
+                      _ => 'مشاهده',
+                    },
                     style: TextStyle(
                       color: isExpired ? const Color(0xFF787886) : const Color(0xFFC7B299),
                       fontSize: 10,
@@ -485,7 +411,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }
@@ -494,9 +420,11 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
 class _ChallengeItemData {
   final String id;
   final String title;
+  final String status;
 
   const _ChallengeItemData({
     required this.id,
     required this.title,
+    required this.status,
   });
 }

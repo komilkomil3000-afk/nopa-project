@@ -1,4 +1,6 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/user_model.dart';
@@ -110,16 +112,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
       ),
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد ✅',
-          style: const TextStyle(fontFamily: AppTheme.fontFamily),
-        ),
-        backgroundColor: const Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, 'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد ✅');
   }
 
   @override
@@ -171,7 +164,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
 
               return Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: TapExpander(child: GestureDetector(
                     onTap: () => setState(() => _selectedTabIndex = idx),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -194,7 +187,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               );
             }).toList(),
@@ -260,16 +253,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
           course: item,
           isCompleted: false,
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'این دوره در حال برگزاری است. پیشرفت شما: ${item['progressText']}',
-                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                ),
-                backgroundColor: const Color(0xFF2C2849),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppToast.info(context, 'این دوره در حال برگزاری است. پیشرفت شما: ${item['progressText']}');
           },
         );
       },
@@ -310,7 +294,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
         children: [
           Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(20),
               child: Padding(
@@ -405,7 +389,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                           if (isCompleted)
                             Padding(
                               padding: const EdgeInsets.only(top: 5),
-                              child: GestureDetector(
+                              child: TapExpander(child: GestureDetector(
                                 onTap: () => _handleVirtualCertificate(course),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5.5),
@@ -435,7 +419,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                     ],
                                   ),
                                 ),
-                              ),
+                              )),
                             )
                           else
                             Column(
@@ -468,7 +452,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
 
           // Dedicated Direct Download Icon Button in Top-Left corner of certificate card
@@ -478,7 +462,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
               top: 10,
               child: Material(
                 color: Colors.transparent,
-                child: InkWell(
+                child: TapExpander(child: InkWell(
                   onTap: () => _handleVirtualCertificate(course),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
@@ -499,7 +483,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                       size: 16,
                     ),
                   ),
-                ),
+                )),
               ),
             ),
         ],

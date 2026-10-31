@@ -453,3 +453,1285 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze on bottom_nav_bar.dart
 - **Status:** Completed
+
+### [2026-10-28 19:54] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: carousel 'انیمیشن هایی که باید ببینید' now shows only the station's animations
+  - session videoClips are no longer merged into it (they remain in their own class/session sections)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/student/academy/student_class1_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:02] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: removed hardcoded aparat fallback video
+  - animation section is hidden when the station has no animations (data comes from Station animationUrl/animationsJson, editable in admin panel)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze student_class1_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 20:06] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - mentor_station_class1_screen.dart: animation carousel shows only station animations (no session videoClips), removed hardcoded aparat fallback, section hidden when no animations
+- **Verification / Checkpoints Executed:**
+  - flutter analyze mentor_station_class1_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 20:07] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - mentor_station_class1_screen.dart: empty 'animations' list now falls back to animationUrl, matching the student screen
+- **Verification / Checkpoints Executed:**
+  - flutter analyze mentor_station_class1_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 20:14] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/android/app/src/main/res/mipmap-hdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-mdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png` (Modified)
+  - `app/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png` (Modified)
+  - `app/ios/Runner.xcodeproj/project.pbxproj` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-60x60@3x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@1x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-76x76@2x.png` (Modified)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-83.5x83.5@2x.png` (Modified)
+  - `app/pubspec.lock` (Modified)
+  - `app/pubspec.yaml` (Modified)
+  - `app/android/app/src/main/res/drawable-hdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-mdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xhdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xxhdpi/` (Created)
+  - `app/android/app/src/main/res/drawable-xxxhdpi/` (Created)
+  - `app/android/app/src/main/res/mipmap-anydpi-v26/` (Created)
+  - `app/android/app/src/main/res/values/colors.xml` (Created)
+  - `app/assets/icon/` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-50x50@2x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-57x57@2x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@1x.png` (Created)
+  - `app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-72x72@2x.png` (Created)
+- **Description of Changes:**
+  - Replaced default app icon with Nopa logo using flutter_launcher_icons
+  - added assets/icon/app_icon.jpg, dev dependency and config in pubspec.yaml
+  - regenerated Android (legacy+adaptive) and iOS icons
+- **Verification / Checkpoints Executed:**
+  - dart run flutter_launcher_icons
+- **Status:** Completed
+
+### [2026-10-28 20:41] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Added onProgress/onEnded callbacks to NopaInlineVideoPlayer
+  - student_class2_screen (parts/lessons) now uses NopaInlineVideoPlayer instead of its bare VideoPlayer, so fullscreen, speed, quality and seek controls are identical everywhere
+  - 70% quiz unlock and end-of-video mini quiz kept via callbacks
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on the two changed files (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:45] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Quiz unlock threshold raised from 70% to 90% watched, applied to lesson 1 too (removed default-unlocked first quiz)
+  - lessons 2+ are locked until all part quizzes of the previous lesson are passed (passes loaded from /lms/user-progress and recorded on quiz pass)
+  - lock icon and snackbar on locked lesson headers
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on student_class2_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:51] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Part quiz pass/fail in student_class2_screen now comes from the server response (passed, score, rewardZarik) instead of the client 60% rule
+  - failed submit shows a retry error and does not unlock the next lesson
+  - client rule kept only as fallback when the session has no id
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on student_class2_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-28 20:57] - Agent 2 (Flutter App)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Removed the test bypass login mode and mode switcher from login_screen.dart
+  - fixed-password login is now the default
+  - added forgot-password link that switches to SMS code login
+  - after SMS login a mandatory new-password dialog (changePassword) runs before entering the app
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/auth/login_screen.dart
+- **Status:** Completed
+
+### [2026-10-28 21:07] - Flutter App Agent
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Swapped previous/next month sides in education_calendar.dart month selector (left=previous, right=next)
+- **Verification / Checkpoints Executed:**
+  - Manual code review
+- **Status:** Completed
+
+### [2026-10-28 22:37] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Created)
+- **Description of Changes:**
+  - Leaderboard (top 3, total count, user rank) on student/mentor market screens now reads /leagues/wealthiest and /leagues/caravans instead of hard-coded names
+  - 'ارتباط با راهبر' in market, class1 and class2 now opens the mentor's registered messenger ID (platform + handle from DB) via new utils/mentor_contact.dart, with a message when no ID is registered
+  - getMe now returns mentorSocialPlatform/mentorSocialHandle
+  - UserModel parses them
+  - removed mock sessions and placeholder part clips from student_class2_screen
+  - removed unused fake stationZeroData and activeCaravanStats
+  - removed placeholder default caravans in AppRepository
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): no issues. tsc not runnable (typescript not installed in admin_panel).
+- **Status:** Completed
+
+### [2026-10-28 22:54] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Created)
+- **Description of Changes:**
+  - Fix skill-class watching ticking media sessions: student_class2_screen keyed watched ticks by sessionIndex_clipIndex (shared between skill and media tabs) -> now keyed by sessionId|clipId, loaded from UserProgress.isWatched and saved via markClipWatched with trackType skill/media
+  - lmsController trackType check fixed ('مهارتی' -> 'مهارت')
+  - student/mentor profile report card ticks now computed from real UserProgress instead of station level, mock sessions removed
+  - mentorWorkspaceController caravan-progress replaces fabricated skillProgress/mediaProgress and fake fallback sessions with per-session clipProgress from UserProgress
+  - mentor_station_class1_screen reads clipProgress
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): no issues. tsc not runnable (typescript not installed in admin_panel).
+- **Status:** Completed
+
+### [2026-10-29 10:45] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - nopa_inline_video_player.dart: end detection tolerates 400ms short of duration and _endedNotified resets on each _startVideo so onEnded reliably fires
+  - student_class2_screen.dart: _isMiniQuizShowing now resets when quiz dialog closes (previously stuck true so quiz never auto-opened again after replay), quiz dialog dismissible via outside tap/back with PopScope asking save result or not (save submits partial answers, discard just closes, or continue), allowing re-watching the video then retaking the quiz
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files (no issues)
+- **Status:** Completed
+
+### [2026-10-29 10:57] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - student_class1_screen.dart: 'ورود به کلاس‌ها' button is grey/disabled until every station animation is watched >=90% (persisted per user in SharedPreferences), then enabled with a slowly rotating gold stroke
+  - tapping while locked shows a hint
+  - mentor_contact.dart: missing-mentor message changed to 'اطلاعات راهبر تکمیل نیست.' (button already uses the mentor's own registered platform/ID, no hardcoded link)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files (no issues)
+- **Status:** Completed
+
+### [2026-10-29 11:50] - Build Assistant
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - None recorded
+- **Description of Changes:**
+  - Built debug APK (no source changes)
+  - output app/build/app/outputs/flutter-apk/app-debug.apk
+- **Verification / Checkpoints Executed:**
+  - flutter build apk --debug (run from app/) succeeded
+- **Status:** Completed
+
+### [2026-10-29 12:24] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+- **Description of Changes:**
+  - student_class2_screen.dart: next part/lesson now unlocks once the previous part quiz is fully answered (right or wrong), not only when passed
+  - unanswered quiz keeps next part locked (lock icon + hint)
+  - answered state persisted per user in SharedPreferences
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on file
+- **Status:** Completed
+
+### [2026-10-29 12:48] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - Added lib/widgets/app_toast.dart (AppToast.info/success/error: colors 3D3C67 / 266C3A / 7B3334, text E4E4FF, single message at a time via clearSnackBars + duplicate suppression, 120ms animation, 2.5-3.5s duration)
+  - replaced all ScaffoldMessenger.showSnackBar calls across app with AppToast
+  - error toasts now include Persian 'خطایی رخ داده است.' and no longer show raw exceptions
+  - mentor_contact.dart now uses AppToast
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed
+
+### [2026-10-29 12:56] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - student_class2_screen.dart: quiz result now shown as green AppToast (عالی بود، درست جواب دادید و N زریک دریافت کردید) or red AppToast with the correct option(s) instead of RewardPopup
+  - quiz is single-attempt - after answering it opens in review-only mode (own answers + correct option highlighted, no submit, no auto-open)
+  - student answers persisted locally
+  - removed save-on-exit confirmation and partial save
+  - next part unlocks by answering, not by correctness
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed
+
+### [2026-10-29 13:01] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Created)
+- **Description of Changes:**
+  - app_scaffold.dart: fixed double-pop bug - PopScope used to call onBackTap after every successful pop, and screens whose onBackTap is Navigator.pop (class2, certificates, edit profile...) popped a second route (the main shell) when bottom nav popUntil or system back popped them, causing hang/exit/relogin
+  - now onBackTap runs only when a back request is blocked (canPop: onBackTap == null)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (whole app): no issues
+- **Status:** Completed
+
+### [2026-10-29 15:40] - Agent 2 (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/models/user_model.dart` (Modified)
+- **Description of Changes:**
+  - UserModel.fromJson now reads mentor contact info from the User-table fields socialPlatform / socialMessengerHandle of caravan.mentor, falling back to the flattened mentorSocialPlatform / mentorSocialHandle keys
+  - empty strings are skipped via _firstNonEmpty
+  - Files: app/lib/models/user_model.dart (Modified)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/models/user_model.dart lib/utils/mentor_contact.dart (no issues)
+- **Status:** Completed
+
+### [2026-10-29 15:45] - Agent 1 (CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+- **Description of Changes:**
+  - Mentor modal platform field now suggests the four platform names the Flutter app understands (ایتا/بله/تلگرام/واتساپ) via datalist and drops the unsupported 'شاد' from the label
+  - Files: admin_panel/public/index.html (Modified)
+- **Verification / Checkpoints Executed:**
+  - Static HTML edit only; no build needed
+- **Status:** Completed
+
+### [2026-10-30 12:08] - Flutter App Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+- **Description of Changes:**
+  - Asset exchange: reject conversion when amount exceeds balance (toast: دارایی شما کافی نیست) for student and mentor market screens
+  - only zarik->nakh and nakh->farsh allowed
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/)
+- **Status:** Completed
+
+### [2026-10-30 12:24] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `admin_panel/tests/security.test.js` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261031_asset_conversion_instant/` (Created)
+- **Description of Changes:**
+  - Asset exchange is now instant (no mentor approval): server validates path (zarik>nakh 500:1, nakh>farsh 5:1), integer multiples and balance in one guarded transaction, then notifies the caravan mentor
+  - mentor/admin can cancel within 24h (restores balances, fails if student spent the capital)
+  - removed approve/reject + mentor convert-assets endpoints
+  - added structured columns via migration 20261031_asset_conversion_instant
+  - mentor app UI shows exchanges read-only with a cancel button
+  - admin panel shows cancel instead of approve/reject
+  - students only read their own exchanges
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; node --check admin_panel/public/app.js; backend NOT type-checked (no node_modules in admin_panel here) and migration not applied
+- **Status:** Completed
+
+### [2026-10-30 13:10] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/utils/roles.ts` (Created)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Mentors browse all content in order but earn nothing: submitSessionQuiz (mentor branch) records only per-clip quizPassed progress (needed for ordering), no QuizSubmission/zarik/notification/certificate evaluation; challenge submitQuiz gives mentors 0 reward; heartbeat skips evaluateStudentProgress for mentors
+  - getStations ignores scheduledUnlockTime (time condition) for mentors; order lock (client-side) still applies
+  - Mentor capital is now the caravan's students total: CaravanModel totals computed in fetchCaravans, shown on mentor home (removed fake defaults 3500/8/45/3); mentor market no longer falls back to personal assets; removed local optimistic zarik credit on mentor challenge quiz
+  - getCaravanDetails wealth sums students only; getMentorCaravanProgress accepts optional caravanId (mentor must belong to it, admin any) and the app passes the selected caravan
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
+- **Status:** Completed
+
+### [2026-10-30 14:20] - Flutter App & Integration Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Created)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+- **Description of Changes:**
+  - Challenge answers are locked while the mentor has not replied: server returns 409 for a re-submit of a pending answer, only "rejected" can be corrected; the app opens a read-only dialog for pending/approved/expired answers with a banner, and an editable one for new/rejected. Attached file has a preview (image thumbnail + fullscreen zoom, other files open via url_launcher); getChallenges now returns mySubmission.fileUrl
+  - "Disappearing challenges": getChallenges returned [] on any network/parse error and refreshChallenges then cleared the list; it now returns null (list kept) and skips only a malformed item. The old flow also fired submitTask twice (once without the file) and sent quiz answers through submitTask, which could leave a quiz pending/lost; the dialog now awaits upload + submit once (quiz via submit-quiz) and shows errors instead of failing silently. Local optimistic submissions are cleared on logout
+  - Home challenges card reads real data with the same shared status (AppRepository.challengeStatus): جدید = not answered, شروع شده = pending/rejected, منقضی = past due or completed; removed hardcoded sample rows and the mentor-name filter that could hide challenges
+  - Server: students only receive their own submission in /challenges (other students' answers were leaked); submitTask rejects quiz-type challenges and new answers after dueDate
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean; backend NOT type-checked (no node_modules in admin_panel here), not run against a DB
+- **Status:** Completed
+
+### [2026-10-30 13:13] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Removed fake client-side notifications (addNotification calls in createChallenge/submitAssignment/rateMentor/reviewSubmission) so only server notifications are shown
+  - pass real createdAt so dates are not faked as today
+  - rewrote notification action button: single _classify() decides label and destination together (شرکت for new challenges, اصلاح for rejected answers, تکمیل for profile completion, مشاهده for informational)
+  - removed '/tickets' loop and body-keyword false matches
+  - news matched by exact title ignoring 📢 prefix
+  - informational messages just expand
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): No issues found
+- **Status:** Completed
+
+### [2026-10-30 13:21] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Notification button: mentors never get 'شرکت'
+  - new challenge -> مشاهده, new student answer -> بررسی
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (from app/): No issues found
+- **Status:** Completed
+
+### [2026-10-30 13:26] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Mentor challenges: removed fake sample challenge and hardcoded fake participants
+  - grading screen now loads real student answers (GET /mentor/challenges/:id/submissions), approve asks the mentor for the reward amount and calls PATCH /submissions/:id/review, send-back-for-revision sends feedback to the student
+  - mentor list status tags now come from students' answer counts (pending/approved/total added to ChallengeModel) instead of the mentor's own submission
+  - backend getChallenges now also returns admin challenges sent to all caravans for mentors and counts only their caravans' students
+  - getChallengeSubmissions scoped to the mentor's caravans
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found. Backend edits NOT type-checked (typescript not installed in admin_panel, node_modules missing)
+- **Status:** Completed
+
+### [2026-10-30 13:34] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Challenge reward range: Challenge gets rewardAssetType (zarik|nakh), rewardMin, rewardMax (schema + migration 20261032_challenge_reward_range)
+  - createChallenge validates and stores them
+  - submission review requires mentor amount within range, credits zarik or nakh accordingly and ledgers only zarik
+  - app: the mentor create-challenge dialog was a mock (only showed a toast) - now creates a real challenge via POST /challenges with min/max/asset (quiz type keeps fixed auto reward), blank form instead of canned text
+  - approve dialog shows the range, validates it, and asks a final confirmation before crediting
+  - added String.toEnglishDigits()
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found. Backend NOT type-checked and migration NOT applied (no node_modules; prisma generate + migrate deploy needed on the backend machine)
+- **Status:** Completed
+
+### [2026-10-30 13:53] - Flutter App & LMS Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Added challenges_audit.md: full lifecycle analysis of challenges (creation to review/rewards), with severity-ranked findings
+- **Verification / Checkpoints Executed:**
+  - Documentation only; no code changed
+- **Status:** Completed
+
+### [2026-10-30 15:25] - Flutter App & LMS Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Audit 1.1/1.2: unified challenge quiz shape (type 'quiz', questions [{q, options, correct}]) across app, API and admin panel
+  - challengeController normalizes legacy step_by_step_quiz/question/correctIndex on create+update and submitQuiz accepts both
+  - admin panel select value and payload keys switched to quiz/q/correct
+  - ChallengeSubmissionDialog now steps through all questions (prev/next, all must be answered) and submits the full answers list. Verified stripAnswerKeys already hides both correct and correctIndex from students. No SQL migration needed (existing data is fake).
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/widgets/challenge_submission_dialog.dart (clean); node --check admin_panel/public/app.js; npx tsc --noEmit NOT run (admin_panel/node_modules missing)
+- **Status:** Completed
+
+### [2026-10-30 16:13] - Flutter App & LMS Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261032_challenge_reward_range/` (Created)
+- **Description of Changes:**
+  - Quiz challenge submit now surfaces the server's real error message (new submitQuizChallengeWithError in api_service.dart
+  - used by ChallengeSubmissionDialog) instead of a generic failure toast
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on both files
+- **Status:** Completed
+
+### [2026-10-30 17:03] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261033_challenge_category/` (Created)
+- **Description of Changes:**
+  - Inter-group challenges: new Challenge.category column ('intra_group'|'inter_group', migration 20261033_challenge_category + schema.prisma)
+  - admin panel create/edit dropdown gets 'عمومی (میان‌گروهی)' (value inter_group -> caravanId null + category inter_group), edit modal preselects it
+  - createChallenge/updateChallenge set category
+  - app now classifies challenges only from server category, title/description keyword guessing removed in student+mentor challenge screens
+- **Verification / Checkpoints Executed:**
+  - flutter analyze student+mentor challenge screens; node --check app.js; tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-30 17:09] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 1.4: removed legacy POST /mentor/submissions/:id/review (no range/ownership/double-approve checks) - route, reviewChallengeSubmission controller and unused app method reviewMentorSubmission deleted
+  - grading goes only through PATCH /submissions/:id/review. Admin panel challenge create/edit dropdown: removed useless 'عمومی (همه کاروان‌ها و راهبران)' option, default is now inter_group
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/services/api_service.dart; node --check app.js; grep confirms no remaining references; tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-30 17:18] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 1.3: admin panel challenge create/edit forms replace the single 'پاداش زریک' (min 10/max 5000) field with asset type (zarik/nakh) + min/max range (validated, sent as rewardAssetType/rewardMin/rewardMax)
+  - challenge list, submissions modal and review input show range+unit and bound the review amount. Creators can edit reward: new PATCH /api/v1/challenges/:id (mentor/admin, reuses updateChallenge ownership checks)
+  - app mentor challenge screen gets an edit-reward dialog (asset + min/max, hidden for admin-created and quiz challenges) via HttpApiService.updateChallengeReward
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/mentor/challenges lib/services/api_service.dart (clean); node --check app.js; tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-30 17:35] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Audit 2.3-2.5 (deadline): mentor create-challenge dialog gets 'مهلت (روز)' (1-365, default 7) and sends dueDate = 23:59:59 of the last day
+  - createChallengeError forwards dueDate
+  - ChallengeModel.deadlineLabel (بدون مهلت / پایان یافته / کمتر از یک روز / N روز مانده) replaces the fake 'مهلت: 5 روز' default on student and mentor challenge cards
+  - admin panel create/edit now sends dueDate as end of the chosen day in Tehran time (+03:30) instead of midnight UTC, so challenges no longer expire a day early
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check admin_panel/public/app.js
+- **Status:** Completed
+
+### [2026-10-30 17:39] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Audit 2.7: mentors/admins can no longer take part in challenges - submitTask and submitQuiz return 403 for mentor/super-mentor/admin roles (submitQuiz's zero-reward special case removed)
+  - mentor challenge screen's answer dialog is guarded so it never opens for mentors
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/mentor/challenges (clean); tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-30 18:09] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261034_challenge_recipients/` (Created)
+- **Description of Changes:**
+  - Audit 2.1: Challenge.recipientIds TEXT[] (migration 20261034_challenge_recipients, schema.prisma). Mentor create dialog: 'دریافت کننده' opens a multi-select of caravan students (select all or some, confirm disabled when none ticked)
+  - createChallenge requires allMembers=true or a non-empty recipientIds of the mentor's own students, sets category 'individual' for subsets and notifies only them
+  - students' challenge list filters by recipientIds
+  - submitTask/submitQuiz reject non-recipients. 2.6: quiz challenges now use the reward asset+range like the rest: submitQuiz pays rewardMin + (rewardMax-rewardMin)*correct/total (rounded) in zarik or nakh (legacy quizzes without range keep 10 zarik per correct answer), adds the missing deadline check
+  - app dialog asks for the range for quiz type too and the creator may edit quiz rewards
+  - panel hint text updated
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc/prisma generate not run here (no node_modules) - run prisma generate after applying the SQL
+- **Status:** Completed
+
+### [2026-10-30 19:18] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/migrations/20261034_challenge_recipients/migration.sql` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+- **Description of Changes:**
+  - App: home 'منقضی'->'تمام شده'
+  - student tab 'فردی'->'شخصی'
+  - read notifications rendered gray
+  - recipient picker confirm looks disabled until someone is ticked
+  - mentor create dialog uses Jalali start/end date pickers and shows the computed deadline read-only (Challenge.startDate added, sent as startDate
+  - server blocks answers before start)
+  - types reduced to تستی/تشریحی (file merged into text)
+  - mentor challenge details screen now shows questions with the correct option marked
+  - mentors can edit their own challenges from the card (pencil, greyed + toast once any member has answered
+  - server PATCH returns 409 for mentors when submissions exist
+  - reward-only edit replaced by full edit via HttpApiService.updateChallengeError). Panel: fixed create failing for non-quiz (hidden required question input, and reset set caravan select to removed value 'all'), types limited to quiz/text (تشریحی), start date input + computed duration, startDate in payloads. SQL: ALTER TABLE "Challenge" ADD COLUMN IF NOT EXISTS "startDate" TIMESTAMP(3) (in migration 20261034)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
+- **Status:** Completed
+
+### [2026-10-30 19:38] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Mentor create/edit challenge dialog: empty or invalid fields (title, question, options, reward min/max) get a red border when 'ارسال' is pressed (with one toast)
+  - 'ارسال' text now uses the same colour (0xFFE5A855) as the recipient picker's 'تایید'
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed
+
+### [2026-10-30 19:48] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261035_submission_events/` (Created)
+- **Description of Changes:**
+  - Review range: reviewSubmission now binds a mentor's approval amount to the challenge's min/max, and to exactly rewardZarik for legacy fixed challenges (app approve dialog mirrors it). Student notifications: quiz always creates a result notification (reward type, with asset added), app shows the added zarik/nakh in the toast and fetches notifications immediately after a quiz and when the app resumes. History: new SubmissionEvent table (migration 20261035_submission_events) logs every submission, rejection (with mentor message) and approval
+  - GET /api/v1/submissions/:id/history (mentor of that student/creator, admin, or the student)
+  - mentor grading screen gets 'تاریخچه رد، اصلاح و تایید' per member showing the timeline
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc/prisma generate not run
+- **Status:** Completed
+
+### [2026-10-30 20:29] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/exportController.ts` (Modified)
+  - `admin_panel/src/controllers/leagueController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/core/constants/app_strings.dart` (Modified)
+  - `app/lib/models/models.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261036_assets_caravan_banners/` (Created)
+  - `admin_panel/src/controllers/assetController.ts` (Created)
+  - `admin_panel/src/controllers/caravanBannerController.ts` (Created)
+  - `admin_panel/src/utils/assetNames.ts` (Created)
+  - `app/lib/core/asset_names.dart` (Created)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Created)
+- **Description of Changes:**
+  - Inter-group rewards + asset renaming. DB (migration 20261036_assets_caravan_banners): AssetType table (editable names: zarik=زریک, nakh=کلاف, farsh=قالیچه, derafsh=درفش + gold/silver/bronze/cloth tiers), CaravanBanner table (caravan-owned banners), Challenge.rankingFinalizedAt. Server: inter_group challenges pay only banners (rewards forced to derafsh/0, no student payout on review/quiz)
+  - admin ranking API (GET/POST /admin/challenges/:id/ranking: caravans with >=1 answer, 1st/2nd/3rd = gold/silver/bronze, rest cloth, once only, notifications to members+mentor)
+  - GET /my-caravan/banners
+  - GET /assets + PUT /admin/assets/:key
+  - getAssetNames util used for messages
+  - conversion accepts new names/keys
+  - league totals include caravan banners
+  - CSV headers renamed. Panel: inter-group form hides reward fields with a note, 'رتبه‌بندی' button + modal, asset-name editor in the wallet tab, labels renamed (درفش/کلاف/قالیچه). App: core/asset_names.dart (defaults + server override at start), all hardcoded بیرق/نخ/فرش renamed (market 'مسی'->'برنزی'), display via AssetNames.labelFor, home 'درفش' pill = caravan banner total with a breakdown dialog (tier + challenge + station), challenge cards show reward asset/range or درفش for inter-group
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc/prisma generate not run
+- **Status:** Completed
+
+### [2026-10-30 20:35] - CRM & Analytics Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+- **Description of Changes:**
+  - Admin panel gets a dedicated sidebar tab 'نام دارایی‌ها' (assets-tab
+  - moved out of the wallet tab) to rename زریک/کلاف/قالیچه/درفش and the four درفش tiers via PUT /admin/assets/:key (no DB access needed). The panel now takes the names from the server: after login it loads them and rewrites every default asset word in text nodes/placeholders/titles (and in content rendered later via MutationObserver, using token replacement to avoid double replacement)
+  - chart labels use window.assetName()
+  - a page refresh applies newly saved names
+- **Verification / Checkpoints Executed:**
+  - node --check admin_panel/public/app.js
+- **Status:** Completed
+
+### [2026-10-30 20:58] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Audit section 3: challenges are now polled (syncChallenges about every 90s next to the 45s notification poll)
+  - submitTaskWithError no longer treats 409 as success for the dialog (only the offline-retry path does), so a locked answer shows the server message
+  - rejection notification reworded to 'تکلیف نیاز به اصلاح دارد ✍️' with the mentor's message and instructions to correct and resend (app action label 'اصلاح' recognises it). Card reward asset/range display was done earlier (rewardLabel)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc not run
+- **Status:** Completed
+
+### [2026-10-30 21:03] - Backend Integration & Flutter
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/mediaController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261037_submission_status_normalize/` (Created)
+- **Description of Changes:**
+  - Audit section 4: submissions are now written as 'pending' only (migration 20261037 normalises old PENDING_REVIEW rows
+  - reads still tolerate both)
+  - student challenge attachments are limited to 20MB (server rejects in uploadMedia for assetType challenge_submission, app checks before upload
+  - the extension whitelist already existed)
+  - panel delete-challenge confirm now says answers/history are deleted and paid rewards are not reverted
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc not run
+- **Status:** Completed
+
+### [2026-10-30 21:25] - Flutter App & CRM Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/core/station_numbering.dart` (Created)
+  - `app/lib/widgets/station_gallery_item.dart` (Created)
+- **Description of Changes:**
+  - 1) Quiz answers: submitQuiz stores readable answerText ('n. question: chosen option text') instead of '[3]'. 2) Station 0: station numbers shown in the app are the panel's orderIndex (new core/station_numbering.dart
+  - levelFrame stays a 1-based position so locks/certificates are unchanged): stepper nodes, station card number, profile 'منزلگاه کنونی', roster/profile station rows, home current-station (now the station at the user's level), Station.* default names indexed by number with 'منزلگاه صفر'
+  - student class screen maps station number to list index. Panel: station number input editable and accepts 0 (lms.js, lmsController: explicit 0 kept, blank = auto next), falsy-0 bugs fixed (|| -> ??), names array starts with صفر. 3) Station gallery: animations section is now a gallery (images and videos
+  - StationGalleryItem picks by extension, tap to enlarge), heading 'گالری منزلگاه', panel wording updated, and the 'watch the animations first' lock on entering the classes is removed. Mentor home challenge section: not added (per request)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check lms.js/app.js; tsc not run
+- **Status:** Completed
+
+### [2026-10-30 21:36] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/widgets/station_progress_stepper.dart` (Modified)
+- **Description of Changes:**
+  - StationProgressStepper redesign: passed stations are gold with a glow
+  - not-yet-completed stations are tinted by distance from the last completed one (first after it lightest, then fading to the locked purple)
+  - only the selected node has a white stroke and black text, others have no stroke
+  - tapping the trophy opens a dialog with the requested text
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed
+
+### [2026-10-30 22:29] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/android/app/build.gradle.kts` (Modified)
+  - `app/android/app/src/main/AndroidManifest.xml` (Modified)
+  - `app/ios/Runner/Info.plist` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Login: phone field now on the right with the country code on its left, hint 9123456789, number accepted with/without leading 0 (and +98/0098/98) via _normalizedPhone
+  - saved login is kept: auto-login now loads the saved tokens first and also tries a silent refresh (hasSession) instead of racing the background health check. APK/app name Nopa (AndroidManifest label, base.archivesName, iOS display name). Player: controls repaint twice a second so the time/slider are live, controls/time/slider read left-to-right (time | bar | fullscreen
+  - rewind | play | forward), also in fullscreen. Clip duration: fake 15:00 fallback removed, the app reports the real length once the player knows it (POST /lms/clips/:clipId/duration), panel auto-detects it from the video metadata (and fixed the clip upload picking the wrong URL input). Stations: previous/next station buttons now actually switch (sessions reload, locked stations refused with a message), station number+title shown above the video in the lessons screen
+  - unlocking fixed - completedStationsCount is now the real count of leading stations whose clips are all watched/passed (was sessions/4)
+  - per-station final exam removed (student button+dialog, mentor mock data, workspace mock). Quiz result: server grades every non-TEXT/FILE quiz type, returns status + correctAnswers
+  - app treats all-correct as success, shows a pending message for review quizzes and the real correct answers when wrong
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); node --check app.js; tsc not run
+- **Status:** Completed
+
+### [2026-10-30 22:48] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_gallery_item.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/tap_expander.dart` (Created)
+- **Description of Changes:**
+  - Bigger touch ranges: login phone/password boxes focus their field when tapped anywhere in the box (FocusNodes)
+  - new TapExpander widget (extends the hit area of small tappables to a 44px target without changing layout) now wraps all 153 GestureDetector/InkWell usages in lib
+  - theme gets textButton/iconButton minimum size 44-56 and padded tap targets
+  - shrinkWrap tap targets and zero-size IconButton constraints enlarged
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed
+
+### [2026-10-30 22:52] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/services/aparat_service.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+- **Description of Changes:**
+  - Cache audit fixes: LMS in-memory caches (stations/classes/news/banners) now expire after 3 minutes (were kept for the whole process and never cleared), a failed or paged stations request no longer overwrites the good cache, caches are cleared on logout/new login (clearTokens + login success) so a previous account's stations/answer-key-stripped data never carries over, home/mentor-home/roadmap pull-to-refresh force a real refetch, AppRepository._resetSessionData clears notifications/caravans/mentorData/banners on logout and 401, the offline submission/watch queues remember the owning user and are only sent as that user, Aparat stream-URL cache expires after 20 minutes
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean)
+- **Status:** Completed
+
+### [2026-10-30 22:54] - Flutter App & Backend Integration
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+- **Description of Changes:**
+  - Cross-device sync: new GET /api/v1/lms/quiz-answers (latest QuizSubmission per quiz with the user's answers and the clip it belongs to)
+  - the class screen merges it into its answered/answers state after loading the local copy, so quizzes answered on another device or before a reinstall show as answered and reviewable (merged result is kept in prefs for offline). Persian errors: connection lost / timeout / generic network failures now produce Persian messages (UTF-8 synthetic responses), and any 4xx/5xx whose error text has no Persian (e.g. 'Internal Server Error', 'Unauthorized') is replaced by a Persian message for its status code
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (clean); tsc not run
+- **Status:** Completed
+
+### [2026-10-31 11:31] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+- **Description of Changes:**
+  - Mentor home quick access reduced to 3 icon+text tiles (منزلگاه ها -> tab 1, اعضا و کاروان -> /mentor_members, چالش ها -> tab 2)
+  - removed images/subtitles/badges
+  - added qa_stations01.svg, qa_members01.svg, qa_challenges01.svg (duotone #9292E2 style) in app/assets/svg_icons
+  - files: app/lib/screens/mentor/home/mentor_home_screen.dart
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on mentor_home_screen.dart: no issues
+- **Status:** Completed
+
+### [2026-10-31 11:39] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+- **Description of Changes:**
+  - Background now painted behind the whole Scaffold (no black strip behind bottom nav) in app_scaffold.dart and app_shell.dart
+  - stepper: current station gold like finished ones
+  - class2: station number/name header also from route args, class1 now passes stationIndex/title/number to class2 (it showed station 1 data before)
+  - calendar: starts on today's Jalali date, removed hard-coded master curriculum, station resolved from event stationId, future classes show a toast with opening time while open/past ones go to the class
+  - new core/schedule_utils.dart (Iran-time session start)
+  - sessions and clips locked until sessionDate/sessionTime and clip scheduledUnlockTime for non-mentors
+  - ststations also locked by server isLocked in roadmap/class1/class2
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues
+- **Status:** Completed
+
+### [2026-10-31 11:51] - Flutter App + Backend Integration (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+- **Description of Changes:**
+  - class2: thin gradient divider between session parts
+  - mentor station report (گزارش آموزشی اعضا): removed fake members/scores, per-member parts watched with Jalali date and per-quiz result (درست/اشتباه/در انتظار/شرکت نکرده, score, date, per-question dots) for the selected station
+  - roster member report: real videos watched of total, quizzes taken of total, challenges participated of total (replaces certificates), real station progress and stepper using server levelFrame/completedStationsCount and real station count
+  - StationNumbering.count + stepper default nodes unify station count across mentor and student screens
+  - admin_panel mentorWorkspaceController getMentorCaravanProgress now returns per-member levelFrame, completedStationsCount, challengesTotal/Participated, clipStatus (watch dates), quizResults and quiz metadata (clipId, sessionTitle, totalQuestions from questionsJson)
+  - fake fallback quizzes/scores removed. Files: app/lib/screens/student/academy/student_class2_screen.dart, app/lib/screens/mentor/academy/mentor_station_class1_screen.dart, app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart, app/lib/screens/student/profile/student_profile_screen.dart, app/lib/screens/mentor/profile/mentor_profile_screen.dart, app/lib/screens/student/academy/student_academy_roadmap_screen.dart, app/lib/screens/student/academy/student_class1_screen.dart, app/lib/widgets/station_progress_stepper.dart, app/lib/core/station_numbering.dart, app/lib/core/schedule_utils.dart, admin_panel/src/controllers/mentorWorkspaceController.ts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; backend tsc NOT run (no node_modules on this machine) - must be type-checked and deployed
+- **Status:** Completed
+
+### [2026-10-31 11:58] - Flutter App + Admin Panel (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/public/support.js` (Created)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+  - `app/lib/widgets/zoomable_image.dart` (Created)
+- **Description of Changes:**
+  - Calendar: a class that has not started or whose earlier sessions are unfinished no longer opens
+  - a lock message is shown instead
+  - station picture on class1/mentor station pages: first tap dims + zoom icon, second tap opens full screen (new widgets/zoomable_image.dart)
+  - mentor station report collapsed behind a line + مشاهده کامل button
+  - notifications: unread tab first (right) with count, all tab without count, smaller support button aligned left on the tabs row
+  - admin_panel: new پیام‌های پشتیبانی sub tab in the Jarchi/news tab (public/support.js, index.html) to read, answer and resolve support tickets
+  - supportController notifies admins on a new ticket and returns sender role/phone/caravan
+  - adminController replyTicketAdmin notifies the sender. dart format was run on mentor_station_class1_screen.dart and student_class1_screen.dart, so their diffs include formatting changes.
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check support.js ok; backend tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-31 12:12] - Flutter App + Backend (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/public/support.js` (Created)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+  - `app/lib/core/station_categories.dart` (Created)
+  - `app/lib/widgets/zoomable_image.dart` (Created)
+- **Description of Changes:**
+  - Mentor class sync: new core/station_categories.dart classifies a station's categories into skill/media by title keyword, else by position (first=skill, second=media)
+  - used in class2, class1 and mentorWorkspaceController getMentorCaravanProgress (which also flattens multiple categories and drops deleted sessions)
+  - class2 now uses the station data the mentor screen passed (stationData) and no longer puts a passed media list under the skill tab
+  - mentors see 'پیام به پشتیبانی' instead of 'ارتباط با راهبر' (contactMentor opens the support dialog for mentors)
+  - mentor messages were fake toasts: new POST /mentor/messages (sendMentorMessage) creates notifications for the caravan's students (all or one) and app_service.sendMentorMessage is wired to the create-message dialog (removed placeholder text and fixed date) and the member follow-up dialog
+  - profile: کارنامه و دستاوردها disabled/grey for mentors and گواهی ها disabled/grey for students
+  - notifications: minimal search icon + field searching title/body. Files: app/lib/core/station_categories.dart, app/lib/utils/mentor_contact.dart, app/lib/screens/student/academy/student_class1_screen.dart, student_class2_screen.dart, app/lib/screens/mentor/academy/mentor_station_class1_screen.dart, app/lib/screens/mentor/challenges/mentor_challenges_screen.dart, app/lib/screens/mentor/market/mentor_market_screen.dart, app/lib/screens/mentor/profile/mentor_profile_screen.dart, app/lib/screens/student/profile/student_profile_screen.dart, app/lib/screens/student/messages/student_notifications_screen.dart, app/lib/services/api_service.dart, admin_panel/src/controllers/mentorWorkspaceController.ts, admin_panel/src/routes/api.ts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; backend tsc not run (no node_modules)
+- **Status:** Completed

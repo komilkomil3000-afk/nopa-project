@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -19,9 +20,17 @@ class StudentNotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<StudentNotificationsScreen> {
-  // 0: همه, 1: خوانده‌نشده
+  // 0: خوانده‌نشده (opens first), 1: همه
   int _selectedFilterIndex = 0;
   final Set<String> _expandedItemIds = {};
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -81,24 +90,108 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     return '$y/$m/$d'.toPersianDigits();
   }
 
-  String _resolveActionLabel(Map<String, dynamic> notify) {
-    final String title = notify['title'] ?? '';
-    final String body = notify['body'] ?? '';
-    final String type = notify['type'] ?? '';
+  /// One decision for a notification: the button label and where the button leads.
+  /// Label and destination come from the same place so they can never disagree.
+  _NotifAction _classify(Map<String, dynamic> notify, {required bool isMentor}) {
+    final String title = notify['title']?.toString() ?? '';
+    final String type = notify['type']?.toString() ?? '';
 
-    if (title.contains('تکمیل پروفایل') || body.contains('تکمیل پروفایل') || title.contains('پروفایل')) {
-      return 'تکمیل';
+    if (type == 'news' || title.startsWith('📢')) {
+      return const _NotifAction('مشاهده', _NotifTarget.news);
     }
-    if (type == 'challenge' || title.contains('چالش') || body.contains('چالش')) {
-      return 'مشاهده';
+    if (type == 'profile_completion' ||
+        (title.contains('تکمیل پروفایل') && !title.contains('پاداش'))) {
+      return const _NotifAction('تکمیل', _NotifTarget.profile);
     }
-    if (title.contains('کلاس') || title.contains('منزلگاه') || body.contains('کلاس') || body.contains('منزلگاه')) {
-      return 'ورود';
+    // Mentors never take part in challenges: they review the students' answers
+    if (isMentor && (title.contains('پاسخ جدید') || type == 'challenge')) {
+      return _NotifAction(title.contains('پاسخ جدید') ? 'بررسی' : 'مشاهده', _NotifTarget.challenges);
     }
-    if (title.contains('بازارچه') || title.contains('فروشگاه') || title.contains('سکه')) {
-      return 'مشاهده';
+    // A rejected answer is the only challenge message that asks the student to act again
+    if (title.contains('تکلیف رد شد') || title.contains('نیاز به اصلاح')) {
+      return const _NotifAction('اصلاح', _NotifTarget.challenges);
     }
-    return 'مشاهده';
+    // A newly announced challenge: the user is expected to take part
+    if (type == 'challenge') {
+      return const _NotifAction('شرکت', _NotifTarget.challenges);
+    }
+    if (title.contains('کلاس')) {
+      return const _NotifAction('مشاهده', _NotifTarget.academy);
+    }
+    if (title.contains('تکلیف') || title.contains('پاسخ جدید') || title.contains('آزمون')) {
+      return const _NotifAction('مشاهده', _NotifTarget.challenges);
+    }
+    if (title.contains('مبادله')) {
+      return const _NotifAction('مشاهده', _NotifTarget.market);
+    }
+    if (title.contains('ارزیابی')) {
+      return const _NotifAction('مشاهده', _NotifTarget.league);
+    }
+    if (title.contains('پروفایل') ||
+        title.contains('گواهینامه') ||
+        title.contains('پاداش') ||
+        title.contains('کسر موجودی') ||
+        title.contains('ارتقای سطح')) {
+      return const _NotifAction('مشاهده', _NotifTarget.profile);
+    }
+    // Informational only (e.g. a caravan leader's message): just open the text
+    return const _NotifAction('مشاهده', _NotifTarget.none);
+  }
+
+  bool get _isMentor {
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    return role == UserRole.mentor || role == UserRole.superMentor;
+  }
+
+  String _resolveActionLabel(Map<String, dynamic> notify) => _classify(notify, isMentor: _isMentor).label;
+
+  void _goToTab(int index) {
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    navigateToMainTab(index);
+  }
+
+  Future<void> _showNews(Map<String, dynamic> notify) async {
+    // Server titles carry a "📢 " prefix that the news article itself does not have
+    final String title = (notify['title']?.toString() ?? '').replaceFirst('📢', '').trim();
+    final String body = notify['body']?.toString() ?? '';
+    const fallbackImage = 'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
+
+    try {
+      final newsList = await HttpApiService().getNews();
+      Map<String, dynamic>? matched;
+      for (final n in newsList) {
+        final nTitle = n['title']?.toString() ?? '';
+        if (nTitle.isNotEmpty && nTitle == title) {
+          matched = n;
+          break;
+        }
+      }
+
+      String imageUrl = fallbackImage;
+      if (matched?['imageUrl'] != null) {
+        imageUrl = '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${matched!['imageUrl']}';
+      }
+      if (!mounted) return;
+      JarchiItem.showNewsDialog(
+        context,
+        title: matched?['title'] ?? title,
+        date: _formatDate(matched?['createdAt'] ?? notify['createdAt'], notify['time']),
+        imageUrl: imageUrl,
+        content: matched?['body'] ?? body,
+        link: matched?['reporter'],
+      );
+    } catch (_) {
+      if (!mounted) return;
+      JarchiItem.showNewsDialog(
+        context,
+        title: title,
+        date: _formatDate(notify['createdAt'], notify['time']),
+        imageUrl: fallbackImage,
+        content: body,
+      );
+    }
   }
 
   Future<void> _handleActionClick(Map<String, dynamic> notify, AppRepository repository) async {
@@ -107,162 +200,23 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       await repository.markNotificationAsRead(notifId);
     }
 
-    final String title = notify['title'] ?? '';
-    final String body = notify['body'] ?? '';
-    final String type = notify['type'] ?? '';
-
-    // 1. News / جارچی اطلاعیه‌ها
-    if (type == 'news' ||
-        title.contains('خبر') ||
-        body.contains('خبر') ||
-        title.contains('اطلاعیه') ||
-        title.contains('جارچی')) {
-      try {
-        final newsList = await HttpApiService().getNews();
-        Map<String, dynamic>? matched;
-        for (final n in newsList) {
-          final nTitle = n['title']?.toString() ?? '';
-          if (nTitle.isNotEmpty &&
-              (title.contains(nTitle) ||
-                  nTitle.contains(title.trim()))) {
-            matched = n;
-            break;
-          }
+    switch (_classify(notify, isMentor: _isMentor).target) {
+      case _NotifTarget.news:
+        await _showNews(notify);
+      case _NotifTarget.profile:
+        _goToTab(4);
+      case _NotifTarget.challenges:
+        _goToTab(2);
+      case _NotifTarget.academy:
+        _goToTab(1);
+      case _NotifTarget.market:
+        _goToTab(3);
+      case _NotifTarget.league:
+        if (mounted) Navigator.pushNamed(context, '/mentor_league');
+      case _NotifTarget.none:
+        if (mounted && notifId.isNotEmpty) {
+          setState(() => _expandedItemIds.add(notifId));
         }
-
-        final String itemTitle = matched?['title'] ?? title;
-        final String itemContent = matched?['body'] ?? body;
-        final String? link = matched?['reporter'];
-        String imageUrl =
-            'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400';
-        if (matched?['imageUrl'] != null) {
-          imageUrl =
-              '${HttpApiService().baseUrl.replaceAll('/api/v1', '')}${matched!['imageUrl']}';
-        }
-        final dateStr = _formatDate(matched?['createdAt'], notify['time']);
-
-        if (mounted) {
-          JarchiItem.showNewsDialog(
-            context,
-            title: itemTitle,
-            date: dateStr,
-            imageUrl: imageUrl,
-            content: itemContent,
-            link: link,
-          );
-        }
-      } catch (_) {
-        if (mounted) {
-          JarchiItem.showNewsDialog(
-            context,
-            title: title,
-            date: _formatDate(null, notify['time']),
-            imageUrl:
-                'https://images.unsplash.com/photo-1573164713988-8665fc963095?w=400',
-            content: body,
-          );
-        }
-      }
-      return;
-    }
-
-    // 2. Complete Profile / تکمیل پروفایل و مشخصات
-    if (title.contains('تکمیل پروفایل') ||
-        body.contains('تکمیل پروفایل') ||
-        title.contains('تکمیل مشخصات') ||
-        body.contains('تکمیل مشخصات') ||
-        title.contains('پروفایل') ||
-        body.contains('پروفایل') ||
-        title.contains('مشخصات') ||
-        body.contains('مشخصات')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(4); // Profile tab for both student & mentor
-      return;
-    }
-
-    // 3. Challenge / Message / چالش و پیام‌ها و پاسخ‌ها
-    if (type == 'challenge' ||
-        type == 'message' ||
-        title.contains('چالش') ||
-        body.contains('چالش') ||
-        title.contains('پیام') ||
-        body.contains('پیام') ||
-        title.contains('پاسخ') ||
-        body.contains('پاسخ') ||
-        title.contains('تایید شد') ||
-        title.contains('رد شد')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(2); // Challenges / Messages tab for both student & mentor
-      return;
-    }
-
-    // 4. Tickets / تیکت‌ها و پشتیبانی
-    if (title.contains('تیکت') ||
-        body.contains('تیکت') ||
-        title.contains('پشتیبانی')) {
-      if (mounted) {
-        Navigator.pushNamed(context, '/tickets');
-      }
-      return;
-    }
-
-    // 5. Market / فروشگاه / زریک / سکه / مبادلات
-    if (title.contains('فروشگاه') ||
-        body.contains('فروشگاه') ||
-        title.contains('سکه') ||
-        body.contains('زریک') ||
-        title.contains('بازار') ||
-        body.contains('بازار') ||
-        title.contains('مبادله') ||
-        body.contains('مبادله') ||
-        title.contains('نرخ') ||
-        body.contains('نرخ')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(3); // Market tab for both student & mentor
-      return;
-    }
-
-    // 6. Map / Stations / کلاس و منزلگاه / آموزگاه
-    if (title.contains('منزلگاه') ||
-        title.contains('کلاس') ||
-        title.contains('ایستگاه') ||
-        title.contains('آموزگاه') ||
-        body.contains('منزلگاه') ||
-        body.contains('کلاس') ||
-        body.contains('آموزگاه') ||
-        title.contains('نقشه')) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      navigateToMainTab(1); // Stations / Classes / MentorStation tab for both
-      return;
-    }
-
-    // 7. Ratings / League / کارنامه
-    if (title.contains('ارزیابی') ||
-        title.contains('کارنامه') ||
-        title.contains('لیگ')) {
-      if (mounted) {
-        Navigator.pushNamed(context, '/mentor_league');
-      }
-      return;
-    }
-
-    // Default feedback
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('پیام با موفقیت بررسی و باز شد.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFF28274A),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 
@@ -278,10 +232,18 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
         .toList();
 
     List<Map<String, dynamic>> filteredList;
-    if (_selectedFilterIndex == 1) {
+    if (_selectedFilterIndex == 0) {
       filteredList = allList.where((n) => n['isRead'] != true).toList();
     } else {
       filteredList = allList;
+    }
+
+    final String query = _searchController.text.trim();
+    if (_isSearching && query.isNotEmpty) {
+      filteredList = allList.where((n) {
+        final text = '${n['title'] ?? ''} ${n['body'] ?? ''}';
+        return text.contains(query);
+      }).toList();
     }
 
     final int unreadCount = repository.unreadNotificationsCount;
@@ -308,12 +270,38 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               // Header Title & Mark All Read
               _buildSectionHeader(repository, unreadCount),
 
+              if (_isSearching) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: (_) => setState(() {}),
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                  decoration: InputDecoration(
+                    hintText: 'جستجو در پیام‌ها',
+                    hintStyle: const TextStyle(color: Color(0xFF9D99B8), fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFF23223D),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: const Color(0xFF383556).withValues(alpha: 0.8)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: const Color(0xFF383556).withValues(alpha: 0.8)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFDE9959)),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
-
-              // Action Button: ارسال پیام به پشتیبانی (Styled identically to ورود به کلاس‌ها)
-              _buildSupportActionButton(),
-
-              const SizedBox(height: 14),
 
               // Filter Pills Bar (Styled identically to Calendar day pill cards)
               _buildFilterPills(allList, unreadCount),
@@ -393,10 +381,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             ],
           ),
 
-          if (unreadCount > 0)
-            Material(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (unreadCount > 0)
+                Material(
               color: Colors.transparent,
-              child: InkWell(
+              child: TapExpander(child: InkWell(
                 onTap: () => repository.markAllNotificationsAsRead(),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
@@ -418,8 +409,26 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                     ],
                   ),
                 ),
-              ),
+              )),
             ),
+              TapExpander(
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: Icon(
+                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    color: const Color(0xFFDEB58A),
+                    size: 22,
+                  ),
+                  onPressed: () => setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) _searchController.clear();
+                  }),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -431,11 +440,11 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       textDirection: TextDirection.rtl,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
+        child: TapExpander(child: InkWell(
           onTap: () => SupportMessageDialog.show(context),
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF2A2835),
               borderRadius: BorderRadius.circular(8),
@@ -453,20 +462,21 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             ),
             alignment: Alignment.center,
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
                 Icon(
                   Icons.support_agent_rounded,
                   color: Color(0xFFF4DCC5),
-                  size: 18,
+                  size: 15,
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 5),
                 Text(
                   'ارسال پیام به پشتیبانی',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFFF4DCC5),
-                    fontSize: 12.5,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -475,16 +485,17 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               ],
             ),
           ),
-        ),
+        )),
       ),
     );
   }
 
   /// Filter Tabs Bar: Text-only tabs matching the category tabs in Challenges screen
   Widget _buildFilterPills(List<Map<String, dynamic>> allList, int unreadCount) {
+    // Only the unread tab shows a count; "all" has none
     final filters = [
-      {'title': 'همه', 'count': allList.length},
       {'title': 'خوانده‌نشده', 'count': unreadCount},
+      {'title': 'همه', 'count': 0},
     ];
 
     return Directionality(
@@ -492,14 +503,15 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       child: Column(
         children: [
           Row(
-            children: List.generate(filters.length, (idx) {
+            children: [
+              ...List.generate(filters.length, (idx) {
               final isSelected = _selectedFilterIndex == idx;
               final item = filters[idx];
               final int count = item['count'] as int;
 
               return Padding(
                 padding: const EdgeInsets.only(left: 20.0),
-                child: GestureDetector(
+                child: TapExpander(child: GestureDetector(
                   onTap: () => setState(() => _selectedFilterIndex = idx),
                   behavior: HitTestBehavior.opaque,
                   child: Row(
@@ -552,9 +564,12 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                       ],
                     ],
                   ),
-                ),
+                )),
               );
-            }),
+              }),
+              const Spacer(),
+              _buildSupportActionButton(),
+            ],
           ),
           const SizedBox(height: 8),
           Container(
@@ -578,6 +593,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     final String body = notify['body'] ?? '';
     final String dateStr = _formatDate(notify['createdAt'], notify['time']);
     final String actionLabel = _resolveActionLabel(notify);
+    final bool isRead = notify['isRead'] == true;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -585,7 +601,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Top Header Box: Station card gradient stroke + dark surface
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () => _toggleExpanded(id, notify, repository),
             child: Container(
               decoration: BoxDecoration(
@@ -595,15 +611,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         topRight: Radius.circular(16),
                       )
                     : BorderRadius.circular(16),
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
-                  stops: [0.0, 0.5, 1.0],
-                  colors: [
-                    Color(0xFF3A3A6A),
-                    Color(0xFF9292E2),
-                    Color(0xFF3A3A6A),
-                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                  colors: isRead
+                      ? const [Color(0xFF3A3A4A), Color(0xFF6E6E80), Color(0xFF3A3A4A)]
+                      : const [Color(0xFF3A3A6A), Color(0xFF9292E2), Color(0xFF3A3A6A)],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -623,15 +637,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           topRight: Radius.circular(14.8),
                         )
                       : BorderRadius.circular(14.8),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0.0, 0.53, 1.0],
-                    colors: [
-                      Color(0xFF3D3C67),
-                      Color(0xFF36345C),
-                      Color(0xFF333359),
-                    ],
+                    stops: const [0.0, 0.53, 1.0],
+                    colors: isRead
+                        ? const [Color(0xFF3A3A44), Color(0xFF34343D), Color(0xFF30303A)]
+                        : const [Color(0xFF3D3C67), Color(0xFF36345C), Color(0xFF333359)],
                   ),
                 ),
                 child: Row(
@@ -643,8 +655,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: isRead ? const Color(0xFF9A9AA8) : Colors.white,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
                           fontFamily: AppTheme.fontFamily,
@@ -669,7 +681,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                     const SizedBox(width: 10),
 
                     // Action Button on the far left (styled identical to "شرکت" button in Home challenges)
-                    GestureDetector(
+                    TapExpander(child: GestureDetector(
                       onTap: () => _handleActionClick(notify, repository),
                       child: Container(
                         decoration: BoxDecoration(
@@ -695,12 +707,12 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    )),
                   ],
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Description Area directly below header
           if (isExpanded)
@@ -746,7 +758,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: GestureDetector(
+                    child: TapExpander(child: GestureDetector(
                       onTap: () => _handleActionClick(notify, repository),
                       child: Container(
                         decoration: BoxDecoration(
@@ -782,7 +794,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                         ),
                       ),
-                    ),
+                    )),
                   ),
                 ],
               ),
@@ -839,3 +851,11 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
 
 typedef NotificationsScreen = StudentNotificationsScreen;
+
+enum _NotifTarget { news, profile, challenges, academy, market, league, none }
+
+class _NotifAction {
+  final String label;
+  final _NotifTarget target;
+  const _NotifAction(this.label, this.target);
+}

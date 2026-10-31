@@ -2,6 +2,32 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 
+/**
+ * Number of leading stations (in station order) the user has completed: every video clip of the station is
+ * watched or its quiz passed. A station without clips (e.g. only a gallery) counts as completed, so it never
+ * blocks the next one. The app opens station i only when i <= this count.
+ */
+async function countCompletedStations(userId: string): Promise<number> {
+  const stations = await prisma.station.findMany({
+    orderBy: { orderIndex: 'asc' },
+    select: {
+      categories: { select: { sessions: { where: { isDeleted: false }, select: { videoClips: { select: { id: true } } } } } }
+    }
+  });
+  const done = await prisma.userProgress.findMany({
+    where: { userId, OR: [{ isWatched: true }, { quizPassed: true }] },
+    select: { clipId: true }
+  });
+  const doneIds = new Set(done.map(d => d.clipId));
+  let count = 0;
+  for (const st of stations) {
+    const clipIds = st.categories.flatMap(c => c.sessions.flatMap(s => s.videoClips.map(v => v.id)));
+    if (clipIds.every(id => doneIds.has(id))) count++;
+    else break;
+  }
+  return count;
+}
+
 export async function getMe(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
@@ -13,7 +39,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       include: {
         caravan: {
           include: { 
-            mentor: { select: { id: true, name: true, phoneNumber: true } },
+            mentor: { select: { id: true, name: true, phoneNumber: true, socialMessengerHandle: true, socialPlatform: true } },
             members: { select: { id: true, name: true } }
           }
         },
@@ -33,10 +59,11 @@ export async function getMe(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'کاربر یافت نشد' });
     }
 
-    // Calculate real station progress dynamically
-    const completedStationsCount = await prisma.sessionWatchRecord.count({
+    // Completed sessions (kept for the profile) and the real number of completed stations
+    const completedSessionsCount = await prisma.sessionWatchRecord.count({
       where: { userId: user.id, watchedPercentage: { gte: 70 } }
     });
+    const completedStationsCount = await countCompletedStations(user.id);
 
     const isDualRole = Boolean(user.isDualRole || user.role === 'admin');
     let managedMembersCount = 0;
@@ -51,7 +78,7 @@ export async function getMe(req: AuthRequest, res: Response) {
           where: { isDeleted: false },
           include: { 
             members: { select: { id: true, name: true } },
-            mentor: { select: { id: true, name: true, phoneNumber: true } }
+            mentor: { select: { id: true, name: true, phoneNumber: true, socialMessengerHandle: true, socialPlatform: true } }
           }
         });
       }
@@ -71,6 +98,11 @@ export async function getMe(req: AuthRequest, res: Response) {
       ? (assignedCaravan.members?.map((m: any) => ({ id: m.id, name: m.name })) || [])
       : (user.caravan?.members?.map((m: any) => ({ id: m.id, name: m.name })) || []);
 
+    // The mentor a user reaches out to: the caravan's mentor for students, themselves for mentors
+    const contactMentor: any = assignedCaravan
+      ? ((assignedCaravan as any).mentor || user)
+      : user.caravan?.mentor;
+
     res.json({
       id: user.id,
       name: user.name,
@@ -82,11 +114,13 @@ export async function getMe(req: AuthRequest, res: Response) {
       caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
       caravanMentor: assignedCaravan ? ((assignedCaravan as any).mentor?.name || user.name) : (user.caravan?.mentor?.name || 'تعیین نشده'),
       mentorPhone: assignedCaravan ? ((assignedCaravan as any).mentor?.phoneNumber || user.phoneNumber) : (user.caravan?.mentor?.phoneNumber || ''),
+      mentorSocialPlatform: contactMentor?.socialPlatform || '',
+      mentorSocialHandle: contactMentor?.socialMessengerHandle || '',
       socialGroupLink: assignedCaravan ? assignedCaravan.socialGroupLink : (user.caravan?.socialGroupLink || ''),
       managedMembersCount,
       satisfactionScore: parseFloat(satisfactionScore.toFixed(1)),
-      completedSessionsCount: completedStationsCount,
-      completedStationsCount: Math.floor(completedStationsCount / 4), // 4 sessions per station baseline
+      completedSessionsCount,
+      completedStationsCount,
       zarikBalance: user.zarikBalance,
       nakh: user.nakh,
       beyragh: user.beyragh,

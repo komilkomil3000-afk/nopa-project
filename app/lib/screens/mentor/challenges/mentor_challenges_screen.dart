@@ -1,4 +1,8 @@
+import 'package:nopa_app/core/schedule_utils.dart';
+import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:file_picker/file_picker.dart';
@@ -136,12 +140,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
       // Determine category (0: فردی, 1: گروهی, 2: میان گروهی)
       String category = 'individual';
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
 
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
-      } else if (rawCat.contains('group') || rawCat.contains('گروهی') || title.contains('گروهی') || desc.contains('گروهی')) {
+      } else if (rawCat.contains('group') || rawCat.contains('گروهی')) {
         category = 'group';
       } else {
         category = 'individual';
@@ -152,6 +154,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'title': c.title,
         'desc': c.description,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
         'type': c.type,
         'status': status,
         'category': category,
@@ -167,7 +170,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'isByAdmin': c.isByAdmin,
         'creatorName': c.creatorName ?? (c.isByAdmin ? 'مدیر سیستم' : (c.mentorName ?? 'راهبر')),
         'createdAt': c.createdAt ?? DateTime.now().subtract(const Duration(days: 2)),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
       });
     }
 
@@ -176,6 +179,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   /// Interactive Question Dialog matching exact reference designs
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
+    // Mentors manage challenges, they never answer them
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    if (role == UserRole.mentor || role == UserRole.superMentor) return;
+
     final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
     int selectedOptionIndex = -1;
     String? attachedFileName;
@@ -328,7 +335,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 10.0),
-                              child: GestureDetector(
+                              child: TapExpander(child: GestureDetector(
                                 onTap: () {
                                   setDialogState(() {
                                     selectedOptionIndex = index;
@@ -381,7 +388,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     ],
                                   ),
                                 ),
-                              ),
+                              )),
                             );
                           }),
                         ] else ...[
@@ -438,7 +445,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               _buildDialogPillBadge('پیوست فایل:'),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: GestureDetector(
+                                child: TapExpander(child: GestureDetector(
                                   onTap: () async {
                                     try {
                                       final result = await FilePicker.platform.pickFiles(
@@ -487,7 +494,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       ],
                                     ),
                                   ),
-                                ),
+                                )),
                               ),
                             ],
                           ),
@@ -504,12 +511,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 onPressed: () {
                                   if (isMultipleChoice) {
                                     if (selectedOptionIndex == -1) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً یکی از گزینه‌ها را انتخاب کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
+                                      AppToast.error(context, 'لطفاً یکی از گزینه‌ها را انتخاب کنید.');
                                       return;
                                     }
                                   } else {
@@ -517,12 +519,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     final bool hasText = textValue.isNotEmpty;
                                     final bool hasFile = attachedFileName != null && attachedFileName!.trim().isNotEmpty;
                                     if (!hasText && !hasFile) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('لطفاً متن پاسخ یا فایل را وارد نمایید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Color(0xFFEF4444),
-                                        ),
-                                      );
+                                      AppToast.error(context, 'لطفاً متن پاسخ یا فایل را وارد نمایید.');
                                       return;
                                     }
                                   }
@@ -539,19 +536,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       answerText: 'گزینه انتخابی: ${(selectedOptionIndex + 1).toString().toPersianDigits()}',
                                       submittedAt: DateTime.now(),
                                       status: 'approved',
-                                      scoreFeedback: 'پاسخ ثبت شد و ${challenge['reward']} زریک به حساب شما اضافه شد.',
+                                      scoreFeedback: 'پاسخ ثبت شد. راهبر امتیاز شخصی دریافت نمی‌کند.',
                                     ));
-                                    repository.currentUser = UserModel(
-                                      id: repository.currentUser.id,
-                                      name: repository.currentUser.name,
-                                      phoneNumber: repository.currentUser.phoneNumber,
-                                      role: repository.currentUser.role,
-                                      zarik: repository.currentUser.zarik + (challenge['reward'] as int),
-                                      nakh: repository.currentUser.nakh,
-                                      beyragh: repository.currentUser.beyragh,
-                                      farsh: repository.currentUser.farsh,
-                                      hasEvaluatedMentorThisSeason: repository.currentUser.hasEvaluatedMentorThisSeason,
-                                    );
                                     HttpApiService().submitQuizChallenge(challenge['id'], [selectedOptionIndex]);
                                   } else {
                                     String ansText = textCtrl.text;
@@ -569,17 +555,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                     ));
                                   }
 
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'با موفقیت ارسال شد',
-                                        style: TextStyle(fontFamily: AppTheme.fontFamily),
-                                        textAlign: TextAlign.right,
-                                      ),
-                                      backgroundColor: Color(0xFF10B981),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                  AppToast.info(context, 'با موفقیت ارسال شد');
                                 },
                                 child: const Text(
                                   'ارسال',
@@ -641,41 +617,28 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   List<Map<String, dynamic>> _getMentorChallenges(AppRepository repository) {
     final List<Map<String, dynamic>> list = [];
-    final submissions = repository.submissions;
 
     for (var c in repository.challenges) {
-      final localSub = submissions.where((s) => s.challengeId == c.id).firstOrNull;
-      String rawStatus = 'none';
-      if (c.myStatus != null && c.myStatus != 'none') {
-        rawStatus = c.myStatus!;
-      } else if (localSub != null) {
-        rawStatus = localSub.status;
-      }
-
+      // Mentors never answer challenges: the tag reflects the review state of their students' answers
       final String statusTag;
       final Color statusColor;
-      if (rawStatus == 'approved' || rawStatus == 'completed') {
-        statusTag = 'تایید شده';
-        statusColor = const Color(0xFF22C55E);
-      } else if (rawStatus == 'pending') {
-        statusTag = 'در انتظار بررسی';
+      if (c.pendingSubmissions > 0) {
+        statusTag = '${c.pendingSubmissions.toString().toPersianDigits()} پاسخ در انتظار بررسی';
         statusColor = const Color(0xFFEAB308);
-      } else if (rawStatus == 'rejected') {
-        statusTag = 'نیاز به اصلاح';
-        statusColor = const Color(0xFFEF4444);
-      } else if (rawStatus == 'expired') {
+      } else if (c.totalSubmissions > 0) {
+        statusTag = 'بررسی شده';
+        statusColor = const Color(0xFF22C55E);
+      } else if (c.dueDate != null && DateTime.now().isAfter(c.dueDate!)) {
         statusTag = 'منقضی';
         statusColor = const Color(0xFF9E9AC0);
       } else {
-        statusTag = 'جدید';
-        statusColor = const Color(0xFF22C55E);
+        statusTag = 'بدون پاسخ';
+        statusColor = const Color(0xFF9E9AC0);
       }
 
       String category = 'intra_group'; // درون گروهی
       final String rawCat = (c.category ?? '').toLowerCase();
-      final String title = c.title.toLowerCase();
-      final String desc = c.description.toLowerCase();
-      if (rawCat.contains('inter') || rawCat.contains('میان') || title.contains('میان گروهی') || desc.contains('میان گروهی') || title.contains('بین گروهی')) {
+      if (rawCat.contains('inter') || rawCat.contains('میان')) {
         category = 'inter_group';
       }
 
@@ -686,32 +649,24 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         'statusTag': statusTag,
         'statusColor': statusColor,
         'reward': c.rewardZarik,
+        'rewardLabel': c.rewardLabel,
+        'rewardMin': c.rewardMin,
+        'rewardMax': c.rewardMax,
+        'rewardAsset': c.rewardAssetType,
+        'isByAdmin': c.isByAdmin,
+        'type': c.type,
         'typeLabel': _resolveChallengeTypeLabel(c.type),
         'createdDate': _formatPersianDate(c.createdAt),
-        'durationDays': c.durationDays ?? 5,
+        'deadlineLabel': c.deadlineLabel,
         'category': category,
         'desc': c.description,
-        'actionLabel': rawStatus == 'pending' ? 'بررسی پاسخ‌ها' : (rawStatus == 'rejected' ? 'ویرایش پاسخ' : 'مشاهده'),
+        'questions': c.questions,
+        'startDate': c.startDate,
+        'dueDate': c.dueDate,
+        'totalSubmissions': c.totalSubmissions,
+        'createdByMentorId': c.createdByMentorId,
+        'actionLabel': c.pendingSubmissions > 0 ? 'بررسی پاسخ‌ها' : 'مشاهده',
       });
-    }
-
-    if (list.isEmpty) {
-      return [
-        {
-          'id': 'm_ch_1',
-          'title': 'پوسترینو',
-          'creatorName': repository.currentUser.name.isNotEmpty ? repository.currentUser.name : 'راهبر کاروان',
-          'statusTag': 'جدید',
-          'statusColor': const Color(0xFF22C55E),
-          'reward': 50,
-          'typeLabel': 'تستی',
-          'createdDate': '15/08/1405',
-          'durationDays': 5,
-          'category': 'intra_group',
-          'desc': 'چالش تستی طراحی پوستر و استفاده از خلاقیت فردی در ارائه پیام موثر.',
-          'actionLabel': 'مشاهده',
-        },
-      ];
     }
 
     return list;
@@ -894,7 +849,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     required String title,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
@@ -923,7 +878,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildMentorCategoryTabsBar() {
@@ -935,7 +890,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // درون گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 0),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -952,9 +907,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
               // میان گروهی
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: () => setState(() => _mentorSelectedCategoryIndex = 1),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
@@ -971,7 +926,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
           const SizedBox(height: 6),
@@ -1032,7 +987,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           borderRadius: BorderRadius.circular(14.8),
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: TapExpander(child: InkWell(
               onTap: () {
                 Navigator.push(
                   context,
@@ -1101,12 +1056,33 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       const SizedBox(width: 6),
                     ],
 
+                    // Edit (creator only): locked as soon as one member has taken part
+                    if (item['isByAdmin'] != true && item['createdByMentorId'] == user.id) ...[
+                      TapExpander(child: GestureDetector(
+                        onTap: () {
+                          if ((item['totalSubmissions'] as int? ?? 0) > 0) {
+                            AppToast.error(context, 'پس از شرکت اولین عضو، امکان ویرایش چالش وجود ندارد.');
+                          } else {
+                            _showCreateChallengeDialog(context, user, existing: item);
+                          }
+                        },
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 16,
+                          color: (item['totalSubmissions'] as int? ?? 0) > 0
+                              ? const Color(0xFF6C6A85)
+                              : const Color(0xFF9E92E8),
+                        ),
+                      )),
+                      const SizedBox(width: 10),
+                    ],
+
                     // 2. Reward Amount
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -1137,27 +1113,235 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
           ),
         ),
       ),
     );
   }
 
-  void _showCreateChallengeDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
-    final questionCtrl = TextEditingController(text: 'وقتی استاد سر کلاس نمیاد چکار میکنید شما؟');
+  /// Multi-select of the caravan's students. Returns null when cancelled; "all" means every member.
+  /// Confirm stays disabled while nothing is ticked, so an empty recipient list cannot be sent.
+  Future<({bool all, Set<String> ids, int total})?> _pickRecipients(
+    BuildContext ctx,
+    UserModel user,
+    Set<String> current,
+  ) async {
+    final caravanId = user.caravanId;
+    if (caravanId == null || caravanId.isEmpty) {
+      AppToast.error(ctx, 'کاروان شما مشخص نیست.');
+      return null;
+    }
+    final details = await HttpApiService().getCaravanDetails(caravanId);
+    if (!ctx.mounted) return null;
+    final students = ((details?['membersList'] ?? details?['members']) as List? ?? [])
+        .whereType<Map>()
+        .where((m) => m['role']?.toString() == 'student')
+        .toList();
+    if (students.isEmpty) {
+      AppToast.error(ctx, 'عضوی در کاروان پیدا نشد.');
+      return null;
+    }
+    final selected = current.isEmpty ? students.map((m) => m['id'].toString()).toSet() : <String>{...current};
+    return showDialog<({bool all, Set<String> ids, int total})>(
+      context: ctx,
+      builder: (dctx) => StatefulBuilder(
+        builder: (dctx, setState) {
+          final bool everyone = selected.length == students.length;
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF2C274A),
+              title: const Text(
+                'دریافت‌کننده‌ها',
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    CheckboxListTile(
+                      dense: true,
+                      value: everyone,
+                      title: const Text('همه اعضا', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Colors.white, fontSize: 13)),
+                      onChanged: (v) => setState(() {
+                        selected.clear();
+                        if (v == true) selected.addAll(students.map((m) => m['id'].toString()));
+                      }),
+                    ),
+                    const Divider(color: Color(0xFF4C4578), height: 1),
+                    for (final m in students)
+                      CheckboxListTile(
+                        dense: true,
+                        value: selected.contains(m['id'].toString()),
+                        title: Text(
+                          m['name']?.toString() ?? '',
+                          style: const TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFD6D3E6), fontSize: 12.5),
+                        ),
+                        onChanged: (v) => setState(() {
+                          final id = m['id'].toString();
+                          v == true ? selected.add(id) : selected.remove(id);
+                        }),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: selected.isEmpty
+                      ? null
+                      : () => Navigator.pop(dctx, (all: everyone, ids: selected, total: students.length)),
+                  child: Text(
+                    'تایید',
+                    style: TextStyle(
+                      fontFamily: AppTheme.fontFamily,
+                      color: selected.isEmpty ? const Color(0xFF6C6A85) : const Color(0xFFE5A855),
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dctx),
+                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Jalali date picker (year / month / day dropdowns). Returns the picked day at midnight, or null.
+  Future<DateTime?> _pickJalaliDate(BuildContext ctx, DateTime initial) {
+    const monthNames = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+    final init = Jalali.fromDateTime(initial);
+    int year = init.year, month = init.month, day = init.day;
+    final thisYear = Jalali.now().year;
+    final years = [for (var y = thisYear - 1; y <= thisYear + 3; y++) y];
+    if (!years.contains(year)) years.add(year);
+
+    DropdownButton<int> dropdown(int value, List<int> items, String Function(int) label, ValueChanged<int> onChanged) {
+      return DropdownButton<int>(
+        value: value,
+        dropdownColor: const Color(0xFF2C2849),
+        style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 12.5),
+        items: items.map((v) => DropdownMenuItem(value: v, child: Text(label(v)))).toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      );
+    }
+
+    return showDialog<DateTime>(
+      context: ctx,
+      builder: (dctx) => StatefulBuilder(
+        builder: (dctx, setState) {
+          final maxDay = Jalali(year, month, 1).monthLength;
+          if (day > maxDay) day = maxDay;
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: AlertDialog(
+              backgroundColor: const Color(0xFF2C274A),
+              title: const Text('انتخاب تاریخ', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white)),
+              content: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  dropdown(day, [for (var d = 1; d <= maxDay; d++) d], (v) => v.toString().toPersianDigits(), (v) => setState(() => day = v)),
+                  dropdown(month, [for (var m = 1; m <= 12; m++) m], (v) => monthNames[v - 1], (v) => setState(() => month = v)),
+                  dropdown(year, years..sort(), (v) => v.toString().toPersianDigits(), (v) => setState(() => year = v)),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    final g = Jalali(year, month, day).toDateTime();
+                    Navigator.pop(dctx, DateTime(g.year, g.month, g.day));
+                  },
+                  child: const Text('تایید', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(dctx),
+                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Create a challenge, or edit one of the mentor's own ([existing] = its list item) while nobody has answered it.
+  void _showCreateChallengeDialog(BuildContext context, UserModel user, {Map<String, dynamic>? existing}) {
+    final bool editing = existing != null;
+    final titleCtrl = TextEditingController(text: existing?['title']?.toString() ?? '');
+    final questionCtrl = TextEditingController(text: existing?['desc']?.toString() ?? '');
     final List<TextEditingController> optionControllers = [
-      TextEditingController(text: '۱. سوال نداره میریم خونه'),
-      TextEditingController(text: '۲. تکالیف جلسه بعد رو انجام میدیم'),
-      TextEditingController(text: '۳. با بچه‌ها تمرین مباحث قبلی رو انجام میدیم'),
-      TextEditingController(text: '۴. منتظر اعلام نماینده کلاس می‌مونیم'),
+      TextEditingController(text: '۱. '),
+      TextEditingController(text: '۲. '),
     ];
     int selectedCorrectOptionIndex = 0;
-    final rewardCtrl = TextEditingController(text: '100');
+    final rewardMinCtrl = TextEditingController();
+    final rewardMaxCtrl = TextEditingController();
+    final today = DateTime.now();
+    DateTime startDate = existing?['startDate'] is DateTime
+        ? existing!['startDate'] as DateTime
+        : DateTime(today.year, today.month, today.day);
+    DateTime endDate = existing?['dueDate'] is DateTime
+        ? existing!['dueDate'] as DateTime
+        : DateTime(today.year, today.month, today.day + 7);
+    startDate = DateTime(startDate.year, startDate.month, startDate.day);
+    endDate = DateTime(endDate.year, endDate.month, endDate.day);
+
+    // Fields left empty / invalid on submit get a red border
+    final Set<String> invalid = {};
+    Color borderFor(String key) => invalid.contains(key) ? const Color(0xFFEF4444) : const Color(0xFF7A709E);
+
+    Widget dateBox(String text) => Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: Text(text, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13))),
+              const Icon(Icons.calendar_month_rounded, color: Color(0xFF9E9CD6), size: 18),
+            ],
+          ),
+        );
     String selectedAsset = 'زریک';
+    bool submitting = false;
     String selectedType = 'چند گزینه ای';
-    String selectedAudience = 'همه اعضا';
+    // Recipients: every member (default) or a non-empty selection of them
+    bool allMembers = true;
+    final Set<String> recipientIds = {};
+    int memberTotal = 0;
+
+    if (existing != null) {
+      selectedType = existing['type'] == 'quiz' ? 'چند گزینه ای' : 'تشریحی';
+      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'کلاف' : 'زریک';
+      final int exMax = (existing['rewardMax'] as num?)?.toInt() ?? 0;
+      rewardMaxCtrl.text = (exMax > 0 ? exMax : (existing['reward'] as num?)?.toInt() ?? 0).toString();
+      rewardMinCtrl.text = (exMax > 0 ? (existing['rewardMin'] as num?)?.toInt() ?? 0 : 0).toString();
+      final qs = existing['questions'];
+      if (existing['type'] == 'quiz' && qs is List && qs.isNotEmpty && qs.first is Map) {
+        final q = qs.first as Map;
+        questionCtrl.text = q['q']?.toString() ?? questionCtrl.text;
+        final opts = (q['options'] as List? ?? const []).map((e) => e.toString()).toList();
+        if (opts.length >= 2) {
+          optionControllers
+            ..clear()
+            ..addAll([
+              for (var i = 0; i < opts.length; i++)
+                TextEditingController(text: '${(i + 1).toString().toPersian()}. ${opts[i]}'),
+            ]);
+        }
+        selectedCorrectOptionIndex = (q['correct'] as num?)?.toInt() ?? 0;
+      }
+    }
 
     showDialog(
       context: context,
@@ -1191,8 +1375,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 size: 34,
                               ),
                             ),
-                            const Text(
-                              'ایجاد چالش',
+                            Text(
+                              editing ? 'ویرایش چالش' : 'ایجاد چالش',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1216,100 +1400,161 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         // Field 2: نام کاروان
                         _buildContactDialogFieldRow(
                           label: 'نام کاروان:',
-                          child: _buildContactDialogValueText(user.caravanName ?? 'کاروان شماره پنجم'),
+                          child: _buildContactDialogValueText(user.caravanName ?? ''),
                         ),
                         const SizedBox(height: 12),
 
                         // Field 3: دریافت کننده
                         _buildContactDialogFieldRow(
                           label: 'دریافت کننده:',
-                          child: _buildContactDialogValueText(selectedAudience),
+                          child: TapExpander(child: GestureDetector(
+                            onTap: editing ? null : () async {
+                              final picked = await _pickRecipients(ctx, user, allMembers ? <String>{} : recipientIds);
+                              if (picked == null) return;
+                              setDialogState(() {
+                                allMembers = picked.all;
+                                recipientIds
+                                  ..clear()
+                                  ..addAll(picked.ids);
+                                memberTotal = picked.total;
+                              });
+                            },
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildContactDialogValueText(
+                                    editing
+                                        ? 'بدون تغییر'
+                                        : allMembers
+                                        ? 'همه اعضا'
+                                        : '${recipientIds.length.toString().toPersianDigits()} نفر از ${memberTotal.toString().toPersianDigits()} عضو',
+                                  ),
+                                ),
+                                const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                              ],
+                            ),
+                          )),
                         ),
                         const SizedBox(height: 12),
 
                         // Field 4: تاریخ
                         _buildContactDialogFieldRow(
                           label: 'تاریخ:',
-                          child: _buildContactDialogValueText('1405/05/05'),
+                          child: _buildContactDialogValueText(_formatDate(DateTime.now())),
                         ),
                         const SizedBox(height: 12),
 
-                        // Field 5: جایزه (Amount + Asset)
+                        // Field 5: جایزه - the mentor sets a range now and picks the exact amount when approving
                         _buildContactDialogFieldRow(
-                          label: 'جایزه:',
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Container(
-                                  height: 36,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF7A709E),
-                                      width: 1.1,
+                            label: 'جایزه:',
+                            child: Row(
+                              children: [
+                                for (final entry in [
+                                  ['حداقل', rewardMinCtrl],
+                                  ['حداکثر', rewardMaxCtrl],
+                                ]) ...[
+                                  Expanded(
+                                    flex: 3,
+                                    child: Container(
+                                      height: 36,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: borderFor(entry[0] as String), width: 1.1),
+                                      ),
+                                      child: TextField(
+                                        controller: entry[1] as TextEditingController,
+                                        textAlign: TextAlign.center,
+                                        keyboardType: TextInputType.number,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 13,
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: entry[0] as String,
+                                          hintStyle: const TextStyle(
+                                            color: Color(0xFF8882A8),
+                                            fontSize: 11.5,
+                                            fontFamily: AppTheme.fontFamily,
+                                          ),
+                                          border: InputBorder.none,
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: TextField(
-                                    controller: rewardCtrl,
-                                    textAlign: TextAlign.center,
-                                    keyboardType: TextInputType.number,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontSize: 13,
+                                  const SizedBox(width: 8),
+                                ],
+                                Expanded(
+                                  flex: 3,
+                                  child: Container(
+                                    height: 36,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
                                     ),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.zero,
+                                    alignment: Alignment.center,
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedAsset,
+                                        dropdownColor: const Color(0xFF2C2849),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: AppTheme.fontFamily,
+                                          fontSize: 12,
+                                        ),
+                                        icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
+                                        isExpanded: true,
+                                        items: ['زریک', 'کلاف']
+                                            .map((a) => DropdownMenuItem(value: a, child: Text(AssetNames.labelFor(a))))
+                                            .toList(),
+                                        onChanged: (v) {
+                                          if (v != null) setDialogState(() => selectedAsset = v);
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: Container(
-                                  height: 36,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF7A709E),
-                                      width: 1.1,
-                                    ),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: selectedAsset,
-                                      dropdownColor: const Color(0xFF2C2849),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.keyboard_arrow_down,
-                                        color: Color(0xFF9E9CD6),
-                                        size: 18,
-                                      ),
-                                      isExpanded: true,
-                                      items: ['زریک', 'نخ', 'فرش']
-                                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                                          .toList(),
-                                      onChanged: (v) {
-                                        if (v != null) setDialogState(() => selectedAsset = v);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+
+                        // Field 5b: تاریخ شروع و پایان؛ مهلت از این دو محاسبه و فقط نمایش داده می‌شود
+                        _buildContactDialogFieldRow(
+                          label: 'شروع:',
+                          child: TapExpander(child: GestureDetector(
+                            onTap: () async {
+                              final d = await _pickJalaliDate(ctx, startDate);
+                              if (d == null) return;
+                              setDialogState(() {
+                                startDate = d;
+                                if (endDate.isBefore(startDate)) endDate = startDate;
+                              });
+                            },
+                            child: dateBox(_formatDate(startDate)),
+                          )),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildContactDialogFieldRow(
+                          label: 'پایان:',
+                          child: TapExpander(child: GestureDetector(
+                            onTap: () async {
+                              final d = await _pickJalaliDate(ctx, endDate);
+                              if (d == null) return;
+                              setDialogState(() => endDate = d.isBefore(startDate) ? startDate : d);
+                            },
+                            child: dateBox(_formatDate(endDate)),
+                          )),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildContactDialogFieldRow(
+                          label: 'مهلت:',
+                          child: _buildContactDialogValueText(
+                            '${(endDate.difference(startDate).inDays + 1).toString().toPersianDigits()} روز',
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -1344,12 +1589,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                   size: 18,
                                 ),
                                 isExpanded: true,
-                                items: ['چند گزینه ای', 'تشریحی', 'فایلی']
+                                items: ['چند گزینه ای', 'تشریحی']
                                     .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                                     .toList(),
-                                onChanged: (v) {
-                                  if (v != null) setDialogState(() => selectedType = v);
-                                },
+                                onChanged: editing
+                                    ? null
+                                    : (v) {
+                                        if (v != null) setDialogState(() => selectedType = v);
+                                      },
                               ),
                             ),
                           ),
@@ -1366,7 +1613,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               color: Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF7A709E),
+                                color: borderFor('title'),
                                 width: 1.1,
                               ),
                             ),
@@ -1398,7 +1645,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               color: Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF7A709E),
+                                color: borderFor('question'),
                                 width: 1.1,
                               ),
                             ),
@@ -1435,9 +1682,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       color: Colors.transparent,
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
-                                        color: selectedCorrectOptionIndex == i
-                                            ? const Color(0xFFC09268)
-                                            : const Color(0xFF7A709E),
+                                        color: invalid.contains('opt$i')
+                                            ? const Color(0xFFEF4444)
+                                            : selectedCorrectOptionIndex == i
+                                                ? const Color(0xFFC09268)
+                                                : const Color(0xFF7A709E),
                                         width: 1.1,
                                       ),
                                     ),
@@ -1459,7 +1708,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                           ),
                                         ),
                                         if (optionControllers.length > 2) ...[
-                                          InkWell(
+                                          TapExpander(child: InkWell(
                                             onTap: () {
                                               setDialogState(() {
                                                 optionControllers.removeAt(i);
@@ -1476,11 +1725,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                                 size: 16,
                                               ),
                                             ),
-                                          ),
+                                          )),
                                           const SizedBox(width: 4),
                                         ],
                                         // Radio Button to mark correct answer
-                                        GestureDetector(
+                                        TapExpander(child: GestureDetector(
                                           onTap: () {
                                             setDialogState(() {
                                               selectedCorrectOptionIndex = i;
@@ -1514,14 +1763,14 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                                   )
                                                 : null,
                                           ),
-                                        ),
+                                        )),
                                       ],
                                     ),
                                   ),
                                 ],
                                 const SizedBox(height: 2),
                                 // + Add button
-                                GestureDetector(
+                                TapExpander(child: GestureDetector(
                                   onTap: () {
                                     setDialogState(() {
                                       final nextNumber = (optionControllers.length + 1).toString().toPersian();
@@ -1547,7 +1796,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
+                                )),
                               ],
                             ),
                           ),
@@ -1561,26 +1810,127 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                           children: [
                             // ارسال (Right in RTL)
                             TextButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆',
-                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                    ),
-                                    backgroundColor: const Color(0xFF10B981),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
+                              onPressed: submitting
+                                  ? null
+                                  : () async {
+                                      final title = titleCtrl.text.trim();
+                                      final question = questionCtrl.text.trim();
+                                      final bool isQuiz = selectedType == 'چند گزینه ای';
+                                      final bad = <String>{};
+                                      if (title.isEmpty) bad.add('title');
+                                      if (question.isEmpty) bad.add('question');
+                                      if (isQuiz) {
+                                        for (var i = 0; i < optionControllers.length; i++) {
+                                          final text = optionControllers[i].text.replaceFirst(RegExp(r'^[۰-۹0-9]+[.\-]\s*'), '').trim();
+                                          if (text.isEmpty) bad.add('opt$i');
+                                        }
+                                      }
+                                      final rMin = int.tryParse(rewardMinCtrl.text.trim().toEnglishDigits());
+                                      final rMax = int.tryParse(rewardMaxCtrl.text.trim().toEnglishDigits());
+                                      if (rMin == null || rMin < 0) bad.add('حداقل');
+                                      if (rMax == null || rMax <= 0) bad.add('حداکثر');
+                                      if (rMin != null && rMax != null && rMin > rMax) {
+                                        bad
+                                          ..add('حداقل')
+                                          ..add('حداکثر');
+                                      }
+                                      setDialogState(() {
+                                        invalid
+                                          ..clear()
+                                          ..addAll(bad);
+                                      });
+                                      if (bad.isNotEmpty) {
+                                        AppToast.error(ctx, 'بخش‌های قرمزشده را تکمیل کنید.');
+                                        return;
+                                      }
+
+                                      List<Map<String, dynamic>>? questions;
+                                      if (isQuiz) {
+                                        final options = optionControllers
+                                            .map((c) => c.text.replaceFirst(RegExp(r'^[۰-۹0-9]+[.\-]\s*'), '').trim())
+                                            .toList();
+                                        if (options.any((o) => o.isEmpty)) {
+                                          AppToast.error(ctx, 'متن همه‌ی گزینه‌ها را وارد کنید.');
+                                          return;
+                                        }
+                                        questions = [
+                                          {'q': question, 'options': options, 'correct': selectedCorrectOptionIndex},
+                                        ];
+                                      }
+
+                                      int rewardMin = 0;
+                                      int rewardMax = 0;
+                                      {
+                                        final min = int.tryParse(rewardMinCtrl.text.trim().toEnglishDigits());
+                                        final max = int.tryParse(rewardMaxCtrl.text.trim().toEnglishDigits());
+                                        if (min == null || max == null || min < 0 || max <= 0) {
+                                          AppToast.error(ctx, 'حداقل و حداکثر جایزه را به صورت عدد وارد کنید.');
+                                          return;
+                                        }
+                                        if (min > max) {
+                                          AppToast.error(ctx, 'حداقل جایزه نمی‌تواند از حداکثر بیشتر باشد.');
+                                          return;
+                                        }
+                                        rewardMin = min;
+                                        rewardMax = max;
+                                      }
+
+                                      if (!allMembers && recipientIds.isEmpty) {
+                                        AppToast.error(ctx, 'دریافت‌کننده‌ی چالش را انتخاب کنید.');
+                                        return;
+                                      }
+                                      final startAt = DateTime(startDate.year, startDate.month, startDate.day);
+                                      final dueDate = DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+                                      if (dueDate.isBefore(DateTime.now())) {
+                                        AppToast.error(ctx, 'تاریخ پایان چالش گذشته است.');
+                                        return;
+                                      }
+
+                                      final repository = Provider.of<AppRepository>(context, listen: false);
+                                      setDialogState(() => submitting = true);
+                                      final String? error = editing
+                                          ? await HttpApiService().updateChallengeError(
+                                              existing['id'].toString(),
+                                              title: title,
+                                              description: question,
+                                              questions: questions,
+                                              assetType: selectedAsset == 'کلاف' ? 'nakh' : 'zarik',
+                                              min: rewardMin,
+                                              max: rewardMax,
+                                              startDate: startAt,
+                                              dueDate: dueDate,
+                                            )
+                                          : await HttpApiService().createChallengeError(ChallengeModel(
+                                        id: '',
+                                        title: title,
+                                        description: question,
+                                        rewardZarik: rewardMax,
+                                        type: isQuiz ? 'quiz' : 'text',
+                                        questions: questions,
+                                        createdByMentorId: user.id,
+                                        rewardAssetType: selectedAsset == 'کلاف' ? 'nakh' : 'zarik',
+                                        rewardMin: rewardMin,
+                                        rewardMax: rewardMax,
+                                        startDate: startAt,
+                                        dueDate: dueDate,
+                                      ), recipientIds: recipientIds.toList(), allMembers: allMembers);
+                                      if (!context.mounted) return;
+                                      if (error != null) {
+                                        if (ctx.mounted) setDialogState(() => submitting = false);
+                                        AppToast.error(context, error);
+                                        return;
+                                      }
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      AppToast.success(context, editing ? 'چالش "$title" ویرایش شد' : 'چالش "$title" ایجاد و برای کاروان ابلاغ شد');
+                                      await repository.refreshChallenges();
+                                    },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
                               child: const Text(
                                 'ارسال',
                                 style: TextStyle(
-                                  color: Color(0xFF9E9CD6),
+                                  color: Color(0xFFE5A855),
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: AppTheme.fontFamily,
@@ -1619,9 +1969,12 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   void _showCreateMessageDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
-    final messageCtrl = TextEditingController(text: 'بچه بیاید توی گروه کلی صحبت باهاتون دارم گلای من');
+    final titleCtrl = TextEditingController();
+    final messageCtrl = TextEditingController();
     String selectedAudience = 'همه اعضا';
+    bool isSending = false;
+    final today = ScheduleUtils.todayJalali();
+    final todayText = '${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}'.toPersianDigits();
 
     showDialog(
       context: context,
@@ -1692,7 +2045,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     // Field 4: تاریخ
                     _buildContactDialogFieldRow(
                       label: 'تاریخ:',
-                      child: _buildContactDialogValueText('1405/05/05'),
+                      child: _buildContactDialogValueText(todayText),
                     ),
                     const SizedBox(height: 12),
 
@@ -1767,18 +2120,29 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       children: [
                         // ارسال (Right in RTL)
                         TextButton(
-                          onPressed: () {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️',
-                                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                ),
-                                backgroundColor: const Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                          onPressed: () async {
+                            final title = titleCtrl.text.trim();
+                            final text = messageCtrl.text.trim();
+                            if (title.isEmpty || text.isEmpty) {
+                              AppToast.error(context, 'لطفاً تیتر و متن پیام را وارد کنید');
+                              return;
+                            }
+                            if (isSending) return;
+                            isSending = true;
+                            final repository = Provider.of<AppRepository>(context, listen: false);
+                            final sent = await HttpApiService().sendMentorMessage(
+                              title: title,
+                              message: text,
+                              caravanId: repository.activeCaravanId,
                             );
+                            if (!ctx.mounted) return;
+                            if (sent == null) {
+                              isSending = false;
+                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد ✉️');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1962,7 +2326,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
               return Expanded(
                 child: Center(
-                  child: GestureDetector(
+                  child: TapExpander(child: GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = idx),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -1986,7 +2350,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  )),
                 ),
               );
             }).toList(),
@@ -2015,7 +2379,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     final int reward = item['reward'] ?? 50;
     final String dateStr = _formatDate(item['createdAt']);
     final String typeLabel = _resolveChallengeTypeLabel(item['type']?.toString() ?? '');
-    final int durationDays = item['durationDays'] ?? 5;
+    final String deadlineLabel = item['deadlineLabel']?.toString() ?? 'بدون مهلت';
     final String? feedback = item['mentorFeedback']?.toString();
 
     // Status label, text color & background
@@ -2057,7 +2421,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 1. Compact Header Box (Title -> Tag -> Reward Amount & Coin)
-          GestureDetector(
+          TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
                 if (_expandedChallengeIds.contains(id)) {
@@ -2162,7 +2526,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '+${reward.toString().toPersianDigits()}',
+                          (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
@@ -2195,7 +2559,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                 ),
               ),
             ),
-          ),
+          )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
           if (isExpanded)
@@ -2282,7 +2646,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ),
                             ),
                             Text(
-                              'مهلت: ${durationDays.toString().toPersianDigits()} روز',
+                              'مهلت: ${deadlineLabel.toPersianDigits()}',
                               style: const TextStyle(
                                 color: Color(0xFFB8B5CE),
                                 fontSize: 10.5,
@@ -2306,7 +2670,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       const SizedBox(width: 8),
 
                       // Left: Participate Button (دکمه شرکت)
-                      GestureDetector(
+                      TapExpander(child: GestureDetector(
                         onTap: () => _showSubmissionDialog(item),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5.5),
@@ -2335,7 +2699,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             ),
                           ),
                         ),
-                      ),
+                      )),
                     ],
                   ),
                 ],

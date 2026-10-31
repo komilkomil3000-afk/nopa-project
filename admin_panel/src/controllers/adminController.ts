@@ -1447,6 +1447,16 @@ export async function replyTicketAdmin(req: AuthRequest, res: Response) {
       data: { status: 'answered', updatedAt: new Date() }
     });
 
+    // The sender is told in the app that the support team answered
+    await prisma.notification.create({
+      data: {
+        userId: ticket.studentId,
+        title: 'پاسخ پشتیبانی',
+        message: message.trim().slice(0, 300),
+        type: 'alert'
+      }
+    });
+
     res.json({ success: true, reply });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

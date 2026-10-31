@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show InternetAddressType, NetworkInterface, SocketException;
@@ -33,6 +34,9 @@ class HttpApiService {
   DateTime? _tokenExpiry;
   DateTime? get tokenExpiry => _tokenExpiry;
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
+
+  /// A saved login exists: an access token, or a refresh token that can get a new one.
+  bool get hasSession => isAuthenticated || (_refreshToken != null && _refreshToken!.isNotEmpty);
 
   bool _isHandling401 = false;
   bool _isRefreshing = false;
@@ -124,6 +128,7 @@ class HttpApiService {
     _token = null;
     _refreshToken = null;
     _tokenExpiry = null;
+    clearLmsCache();
     try {
       await _secureStorage.delete(key: 'auth_token');
       await _secureStorage.delete(key: 'refresh_token');
@@ -274,25 +279,51 @@ class HttpApiService {
         }
       }
 
-      return response;
+      return _persianError(response);
     } on SocketException catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network drop / SocketException for $url (${stopwatch.elapsedMilliseconds}ms): $e');
       if (retryCount < 1) {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response('{"error":"Network connection lost. Please check your internet.","offline":true}', 503);
+      return http.Response(jsonEncode({'error': 'اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     } on TimeoutException catch (e) {
       debugPrint('⚠️ [HttpApiService] ⏱️ TIMEOUT ($method $url) after ${stopwatch.elapsedMilliseconds}ms: $e');
       if (retryCount < 1) {
         await Future.delayed(const Duration(milliseconds: 600));
         return _sendWithAuthRetry(method, url, headers: headers, body: body, checkAuth: checkAuth, retryCount: retryCount + 1);
       }
-      return http.Response('{"error":"Request timed out. Please try again.","timeout":true}', 504);
+      return http.Response(jsonEncode({'error': 'پاسخی از سرور دریافت نشد. لطفاً دوباره تلاش کنید.', 'timeout': true}), 504, headers: _jsonUtf8);
     } catch (e) {
       debugPrint('⚠️ [HttpApiService] ❌ Network exception for $url (${stopwatch.elapsedMilliseconds}ms): $e');
-      return http.Response('{"error":"Network communication failed: $e"}', 500);
+      return http.Response(jsonEncode({'error': 'ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.', 'offline': true}), 503, headers: _jsonUtf8);
     }
+  }
+
+  /// A failing response whose "error" text has no Persian in it (e.g. "Internal Server Error") gets a Persian message.
+  static const Map<String, String> _jsonUtf8 = {'content-type': 'application/json; charset=utf-8'};
+
+  http.Response _persianError(http.Response response) {
+    if (response.statusCode < 400) return response;
+    try {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      if (body is Map && body['error'] is String) {
+        final text = body['error'] as String;
+        if (!RegExp(r'[\u0600-\u06FF]').hasMatch(text)) {
+          final fa = switch (response.statusCode) {
+            400 => 'اطلاعات ارسالی نامعتبر است.',
+            401 => 'نشست شما منقضی شده است. دوباره وارد شوید.',
+            403 => 'شما دسترسی لازم برای این کار را ندارید.',
+            404 => 'مورد درخواستی پیدا نشد.',
+            409 => 'این درخواست با وضعیت فعلی هم‌خوانی ندارد.',
+            429 => 'تعداد درخواست‌ها زیاد است. کمی بعد دوباره تلاش کنید.',
+            _ => 'خطایی در سرور رخ داد. لطفاً کمی بعد دوباره تلاش کنید.',
+          };
+          return http.Response(jsonEncode({...body, 'error': fa}), response.statusCode, headers: {...response.headers, 'content-type': 'application/json; charset=utf-8'}, request: response.request);
+        }
+      }
+    } catch (_) {}
+    return response;
   }
 
   /// Internal HTTP wrappers with automatic silent refresh & crash resilience
@@ -548,6 +579,7 @@ class HttpApiService {
           expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
         }
 
+        clearLmsCache();
         await setAuthTokens(
           token: accessToken,
           refreshToken: refreshToken,
@@ -617,6 +649,7 @@ class HttpApiService {
           expiresAt = DateTime.now().add(Duration(seconds: (data['expiresIn'] as num).toInt()));
         }
 
+        clearLmsCache();
         await setAuthTokens(
           token: accessToken,
           refreshToken: refreshToken,
@@ -733,7 +766,9 @@ class HttpApiService {
   }
 
   // Get Challenges
-  Future<List<ChallengeModel>> getChallenges({int? limit, int? page}) async {
+  /// Returns null when the list could not be loaded, so callers keep what they already have
+  /// instead of wiping the challenges on a network or parse error.
+  Future<List<ChallengeModel>?> getChallenges({int? limit, int? page}) async {
     try {
       final queryParams = <String, String>{};
       if (limit != null) queryParams['limit'] = limit.toString();
@@ -751,7 +786,9 @@ class HttpApiService {
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          return data.map((json) {
+          final result = <ChallengeModel>[];
+          for (final json in data) {
+            try {
             final creatorInfo = json['creatorInfo'] as Map<String, dynamic>?;
             final caravanInfo = json['caravanInfo'] as Map<String, dynamic>?;
             final targetAudience = json['targetAudience'] as Map<String, dynamic>?;
@@ -761,43 +798,61 @@ class HttpApiService {
                 (json['createdByMentorId'] != null && json['createdByMentorId'].toString().toLowerCase().contains('admin'));
             final String creatorName = creatorInfo?['name'] ?? (isByAdmin ? 'مدیر سیستم' : (caravanInfo?['mentorName'] ?? 'راهبر'));
             final DateTime? createdAt = json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null;
-            final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString()) : null;
+            final DateTime? dueDate = json['dueDate'] != null ? DateTime.tryParse(json['dueDate'].toString())?.toLocal() : null;
+            final DateTime? startDate = json['startDate'] != null ? DateTime.tryParse(json['startDate'].toString())?.toLocal() : null;
             final String? stationId = json['stationId']?.toString();
             final String? stationTitle = json['station']?['title']?.toString();
-            final int durationDays = json['durationDays'] ?? 5;
+            final int durationDays = (json['durationDays'] is num)
+                ? (json['durationDays'] as num).toInt()
+                : ((createdAt != null && dueDate != null) ? dueDate.difference(createdAt).inDays.clamp(1, 365) : 5);
 
-            return ChallengeModel(
+            result.add(ChallengeModel(
               id: json['id'],
               title: json['title'],
               description: json['description'],
               rewardZarik: json['rewardZarik'] ?? 50,
               type: json['type'],
-              questions: json['questions'] != null ? List<Map<String, dynamic>>.from(json['questions']) : null,
+              questions: json['questions'] is List
+                  ? (json['questions'] as List).whereType<Map>().map((q) => Map<String, dynamic>.from(q)).toList()
+                  : null,
               createdByMentorId: json['createdByMentorId'] ?? '',
               progress: 0.0,
               caravanId: json['caravanId'],
               stationId: stationId,
               dueDate: dueDate,
+              startDate: startDate,
               stationTitle: stationTitle,
               mentorName: creatorName,
               caravanName: caravanInfo?['name'],
               myStatus: json['myStatus'] ?? json['mySubmission']?['status'],
               mentorFeedback: json['mySubmission']?['mentorFeedback'],
               myAnswerText: json['mySubmission']?['answerText'],
+              myFileUrl: json['mySubmission']?['fileUrl']?.toString(),
               isByAdmin: isByAdmin,
               creatorName: creatorName,
               targetAudienceLabel: targetLabel,
               category: category,
               createdAt: createdAt,
               durationDays: durationDays,
-            );
-          }).toList();
+              rewardAssetType: json['rewardAssetType']?.toString() == 'nakh' ? 'nakh' : 'zarik',
+              rewardMin: (json['rewardMin'] as num?)?.toInt() ?? 0,
+              rewardMax: (json['rewardMax'] as num?)?.toInt() ?? 0,
+              totalSubmissions: (json['totalSubmissions'] as num?)?.toInt() ?? 0,
+              pendingSubmissions: (json['pendingSubmissions'] as num?)?.toInt() ?? 0,
+              approvedSubmissions: (json['approvedSubmissions'] as num?)?.toInt() ?? 0,
+            ));
+            } catch (e) {
+              // One malformed challenge must not hide all the others
+              debugPrint('Skipping malformed challenge: $e');
+            }
+          }
+          return result;
         }
       }
-      return [];
+      return null;
     } catch (e) {
       debugPrint('HTTP getChallenges error: $e');
-      return [];
+      return null;
     }
   }
 
@@ -820,6 +875,32 @@ class HttpApiService {
       return null;
     }
   }
+
+  /// Same as [submitQuizChallenge] but also returns the server's error message (null on success).
+  Future<({Map<String, dynamic>? result, String? error})> submitQuizChallengeWithError(
+    String challengeId,
+    List<int> answers,
+  ) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/challenges/$challengeId/submit-quiz'),
+        headers: _getHeaders(),
+        body: jsonEncode({'answers': answers}),
+      );
+      if (response.statusCode == 200) {
+        return (result: (await parseJsonAsync(response.body)) as Map<String, dynamic>?, error: null);
+      }
+      String? message;
+      try {
+        message = (jsonDecode(response.body) as Map)['error']?.toString();
+      } catch (_) {}
+      return (result: null, error: message ?? 'خطای سرور (${response.statusCode})');
+    } catch (e) {
+      debugPrint('HTTP submitQuizChallengeWithError error: $e');
+      return (result: null, error: 'ارتباط با سرور برقرار نشد.');
+    }
+  }
+
   String resolveMediaUrl(String url) {
     return ApiConstants.resolveImageUrl(url);
   }
@@ -831,18 +912,30 @@ class HttpApiService {
   List<Map<String, dynamic>>? _cachedNews;
   final Map<String, List<Map<String, dynamic>>> _cachedBanners = {};
 
+  // When each cache was filled: an entry older than [_lmsCacheTtl] is fetched again (content and unlock state change)
+  static const Duration _lmsCacheTtl = Duration(minutes: 3);
+  DateTime? _stationsAt;
+  DateTime? _classesAt;
+  DateTime? _newsAt;
+  final Map<String, DateTime> _bannersAt = {};
+  bool _isFresh(DateTime? at) => at != null && DateTime.now().difference(at) < _lmsCacheTtl;
+
   /// Invalidate cached LMS data to force a fresh fetch
   void clearLmsCache() {
     _cachedStations = null;
     _cachedClasses = null;
     _cachedNews = null;
     _cachedBanners.clear();
+    _stationsAt = null;
+    _classesAt = null;
+    _newsAt = null;
+    _bannersAt.clear();
     debugPrint('🧹 [HttpApiService] LMS in-memory cache cleared');
   }
 
   // Get Course Classes (with in-memory cache)
   Future<List<Map<String, dynamic>>> getClasses({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedClasses != null && _cachedClasses!.isNotEmpty) {
+    if (!forceRefresh && _cachedClasses != null && _cachedClasses!.isNotEmpty && _isFresh(_classesAt)) {
       return _cachedClasses!;
     }
     try {
@@ -855,6 +948,7 @@ class HttpApiService {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
           _cachedClasses = List<Map<String, dynamic>>.from(data);
+          _classesAt = DateTime.now();
           return _cachedClasses!;
         }
       }
@@ -865,63 +959,9 @@ class HttpApiService {
     }
   }
 
-  static final Map<String, dynamic> stationZeroData = {
-    'id': 'station_0',
-    'title': 'منزلگاه صفر (راهنمای کاروان)',
-    'subtitle': 'آشنایی با مسیر کاروان و اطلاعات کلی در مورد تمامی منزلگاه‌ها',
-    'instructors': 'راهبر ارشد کاروان',
-    'teacher': 'راهبر ارشد کاروان',
-    'orderIndex': 0,
-    'iconUrl': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500',
-    'imageUrl': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500',
-    'categories': [
-      {
-        'id': 'cat_s0_intro',
-        'title': 'راهنمای سفر و آشنایی با منزلگاه‌ها',
-        'orderIndex': 0,
-        'sessions': [
-          {
-            'id': 'sess_s0_1',
-            'title': 'فیلم اول: معرفی مسیر کاروان و نقشه راه',
-            'name': 'فیلم اول: معرفی مسیر کاروان و نقشه راه',
-            'orderIndex': 0,
-            'maxZarikReward': 50,
-            'videoClips': [
-              {
-                'id': 'clip_s0_1',
-                'title': 'فیلم اول: معرفی مسیر کاروان و نقشه راه کلیه منزلگاه‌ها',
-                'clipOrder': 1,
-                'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                'durationSeconds': 240,
-                'description': 'در این فیلم کوتاه با اهداف کاروان نپا، نحوه عبور از منزلگاه‌ها و قوانین مسیر آشنا می‌شوید.',
-              },
-            ],
-          },
-          {
-            'id': 'sess_s0_2',
-            'title': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
-            'name': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
-            'orderIndex': 1,
-            'maxZarikReward': 50,
-            'videoClips': [
-              {
-                'id': 'clip_s0_2',
-                'title': 'فیلم دوم: راهنمای چالش‌ها، کلاس‌ها و زریک',
-                'clipOrder': 1,
-                'videoUrl': 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-                'durationSeconds': 180,
-                'description': 'در این فیلم با نحوه شرکت در کلاس‌ها، آزمون‌های زریک و تکمیل تکالیف ویژه آشنا می‌شوید.',
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  };
-
   // Get Stations (with in-memory cache and Station 0 guaranteed)
   Future<List<Map<String, dynamic>>> getStations({bool forceRefresh = false, int? limit, int? page}) async {
-    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty && limit == null && page == null) {
+    if (!forceRefresh && _cachedStations != null && _cachedStations!.isNotEmpty && _isFresh(_stationsAt) && limit == null && page == null) {
       return _cachedStations!;
     }
     try {
@@ -938,16 +978,20 @@ class HttpApiService {
         headers: _getHeaders(),
       );
 
-      List<Map<String, dynamic>> list = [];
       if (response.statusCode == 200) {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
-          list = List<Map<String, dynamic>>.from(data);
+          final list = List<Map<String, dynamic>>.from(data);
+          // A paged request is a slice: it must not become the full cached list
+          if (limit == null && page == null) {
+            _cachedStations = list;
+            _stationsAt = DateTime.now();
+            StationNumbering.update(list);
+          }
+          return list;
         }
       }
-
-      _cachedStations = list;
-      return _cachedStations!;
+      return _cachedStations ?? [];
     } catch (e) {
       debugPrint('HTTP getStations error: $e');
       return _cachedStations ?? [];
@@ -970,8 +1014,45 @@ class HttpApiService {
     }
   }
 
+  /// Students ranked by Zarik balance (best first)
+  Future<List<Map<String, dynamic>>> getWealthiestLeague() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/leagues/wealthiest'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data.whereType<Map<String, dynamic>>());
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('getWealthiestLeague error: $e');
+      return [];
+    }
+  }
+
+  /// Caravans ranked by [sortBy] ('wealth' or 'progress'), best first
+  Future<List<Map<String, dynamic>>> getCaravanLeague({String sortBy = 'wealth'}) async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/leagues/caravans').replace(queryParameters: {'sortBy': sortBy}),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) {
+          return List<Map<String, dynamic>>.from(data.whereType<Map<String, dynamic>>());
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('getCaravanLeague error: $e');
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getNews({bool forceRefresh = false, int? limit, int? page}) async {
-    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty && limit == null && page == null) {
+    if (!forceRefresh && _cachedNews != null && _cachedNews!.isNotEmpty && _isFresh(_newsAt) && limit == null && page == null) {
       return _cachedNews!;
     }
     try {
@@ -988,6 +1069,7 @@ class HttpApiService {
         final dynamic data = await parseJsonAsync(response.body);
         if (data is List) {
           _cachedNews = List<Map<String, dynamic>>.from(data);
+          _newsAt = DateTime.now();
           return _cachedNews!;
         }
       }
@@ -1000,7 +1082,7 @@ class HttpApiService {
 
   Future<List<Map<String, dynamic>>> getBanners({String? position, bool forceRefresh = false, int? limit}) async {
     final cacheKey = position ?? 'all';
-    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty && limit == null) {
+    if (!forceRefresh && _cachedBanners.containsKey(cacheKey) && _cachedBanners[cacheKey]!.isNotEmpty && _isFresh(_bannersAt[cacheKey]) && limit == null) {
       return _cachedBanners[cacheKey]!;
     }
     try {
@@ -1018,6 +1100,7 @@ class HttpApiService {
         if (data is List) {
           final list = List<Map<String, dynamic>>.from(data);
           _cachedBanners[cacheKey] = list;
+          _bannersAt[cacheKey] = DateTime.now();
           return list;
         }
       }
@@ -1274,6 +1357,14 @@ class HttpApiService {
 
   // Submit Task Assignment
   Future<bool> submitTask(String challengeId, String answerText, {String? fileUrl}) async {
+    final error = await submitTaskWithError(challengeId, answerText, fileUrl: fileUrl, lockedIsSent: true);
+    return error == null;
+  }
+
+  /// Same as [submitTask] but returns the reason on failure (null on success).
+  /// With [lockedIsSent] an answer already waiting for review counts as sent (so offline retries stop);
+  /// otherwise the server's 409 message is returned to the user.
+  Future<String?> submitTaskWithError(String challengeId, String answerText, {String? fileUrl, bool lockedIsSent = false}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/submissions'),
@@ -1284,11 +1375,15 @@ class HttpApiService {
           if (fileUrl != null && fileUrl.isNotEmpty) 'fileUrl': fileUrl,
         }),
       );
-
-      return response.statusCode == 201;
+      if (response.statusCode == 201 || (lockedIsSent && response.statusCode == 409)) return null;
+      try {
+        final body = await parseJsonAsync(response.body);
+        if (body is Map && body['error'] != null) return body['error'].toString();
+      } catch (_) {}
+      return 'ارسال پاسخ با خطا مواجه شد';
     } catch (e) {
       debugPrint('HTTP submitTask error: $e');
-      return false;
+      return 'اتصال اینترنت را بررسی کنید و دوباره تلاش کنید';
     }
   }
 
@@ -1627,7 +1722,7 @@ class HttpApiService {
   }
 
   // --- Create Challenge ---
-  Future<bool> createChallenge(ChallengeModel challenge) async {
+  Future<String?> createChallengeError(ChallengeModel challenge, {List<String> recipientIds = const [], bool allMembers = true}) async {
     try {
       final response = await _post(
         Uri.parse('$baseUrl/challenges'),
@@ -1636,15 +1731,133 @@ class HttpApiService {
           'title': challenge.title,
           'description': challenge.description,
           'rewardZarik': challenge.rewardZarik,
+          'rewardAssetType': challenge.rewardAssetType,
+          'rewardMin': challenge.rewardMin,
+          'rewardMax': challenge.rewardMax,
+          'allMembers': allMembers,
+          if (!allMembers) 'recipientIds': recipientIds,
+          if (challenge.startDate != null) 'startDate': challenge.startDate!.toUtc().toIso8601String(),
+          if (challenge.dueDate != null) 'dueDate': challenge.dueDate!.toUtc().toIso8601String(),
           'type': challenge.type,
           if (challenge.questions != null) 'questions': challenge.questions,
         }),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) return null;
+      final d = await parseJsonAsync(response.body);
+      return d?['error']?.toString() ?? 'ثبت چالش انجام نشد';
     } catch (e) {
       debugPrint('HTTP createChallenge error: $e');
-      return false;
+      return 'خطای ارتباط با سرور';
     }
+  }
+
+  /// Creator edits a challenge nobody has answered yet. Returns an error message, or null on success.
+  Future<String?> updateChallengeError(
+    String challengeId, {
+    required String title,
+    required String description,
+    List<Map<String, dynamic>>? questions,
+    required String assetType,
+    required int min,
+    required int max,
+    DateTime? startDate,
+    DateTime? dueDate,
+  }) async {
+    try {
+      final response = await _patch(
+        Uri.parse('$baseUrl/challenges/$challengeId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+          'questions': ?questions,
+          'rewardAssetType': assetType,
+          'rewardMin': min,
+          'rewardMax': max,
+          'startDate': startDate?.toUtc().toIso8601String(),
+          'dueDate': dueDate?.toUtc().toIso8601String(),
+        }),
+      );
+      if (response.statusCode == 200) return null;
+      final d = await parseJsonAsync(response.body);
+      return d?['error']?.toString() ?? 'ویرایش چالش انجام نشد';
+    } catch (e) {
+      debugPrint('HTTP updateChallengeError error: $e');
+      return 'خطای ارتباط با سرور';
+    }
+  }
+
+  /// Timeline of one submission: answers, rejections (with the mentor's message) and approval.
+  Future<List<Map<String, dynamic>>> getSubmissionHistory(String submissionId) async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/submissions/$submissionId/history'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('getSubmissionHistory error: $e');
+    }
+    return [];
+  }
+
+  /// Admin-editable display names of the assets: [{key, nameFa}].
+  Future<List<dynamic>> getAssetTypes() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/assets'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data;
+      }
+    } catch (e) {
+      debugPrint('getAssetTypes error: $e');
+    }
+    return [];
+  }
+
+  /// Banners (درفش) of the user's caravan: {total, byTier, items}. Mentors may pick the caravan.
+  Future<Map<String, dynamic>?> getCaravanBanners({String? caravanId}) async {
+    try {
+      final response = await _get(
+        Uri.parse('$baseUrl/my-caravan/banners').replace(
+          queryParameters: (caravanId != null && caravanId.isNotEmpty) ? {'caravanId': caravanId} : null,
+        ),
+        headers: _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      debugPrint('getCaravanBanners error: $e');
+    }
+    return null;
+  }
+
+  /// Tells the server the real length (seconds) of a clip once the player has loaded it.
+  Future<void> reportClipDuration(String clipId, int seconds) async {
+    try {
+      await _post(
+        Uri.parse('$baseUrl/lms/clips/$clipId/duration'),
+        headers: _getHeaders(),
+        body: jsonEncode({'durationSeconds': seconds}),
+      );
+    } catch (e) {
+      debugPrint('reportClipDuration error: $e');
+    }
+  }
+
+  /// The user's answered quizzes with their answers (synced across devices): [{quizId, sessionId, clipId, partIndex, status, answers}].
+  Future<List<Map<String, dynamic>>> getMyQuizAnswers() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/lms/quiz-answers'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is List) return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('getMyQuizAnswers error: $e');
+    }
+    return [];
   }
 
   // --- Calendar Events ---
@@ -1706,29 +1919,6 @@ class HttpApiService {
       debugPrint('getChallengeSubmissions error: $e');
     }
     return [];
-  }
-
-  Future<Map<String, dynamic>> reviewMentorSubmission(String submissionId, bool approve, int reward, String feedback) async {
-    try {
-      final response = await _post(
-        Uri.parse('$baseUrl/mentor/submissions/$submissionId/review'),
-        headers: _getHeaders(),
-        body: jsonEncode({
-          'status': approve ? 'APPROVED' : 'REJECTED',
-          'rewardZarik': reward,
-          'mentorFeedback': feedback,
-        }),
-      );
-      if (response.statusCode == 200) {
-        return {'success': true};
-      } else {
-        final d = await parseJsonAsync(response.body);
-        return {'success': false, 'error': d?['error'] ?? 'خطای ناشناخته'};
-      }
-    } catch (e) {
-      debugPrint('reviewMentorSubmission error: $e');
-      return {'success': false, 'error': 'خطای ارتباط با سرور'};
-    }
   }
 
   Future<Map<String, dynamic>?> getMentorTicketDetails(String ticketId) async {
@@ -1841,11 +2031,42 @@ class HttpApiService {
     }
   }
 
+  /// A mentor's message to the students of their caravan: all of them, or one when [userId] is given.
+  /// Returns how many students received it, or null when it could not be sent.
+  Future<int?> sendMentorMessage({
+    required String title,
+    required String message,
+    String? caravanId,
+    String? userId,
+  }) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/mentor/messages'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'title': title,
+          'message': message,
+          if (caravanId != null && caravanId.isNotEmpty) 'caravanId': caravanId,
+          if (userId != null && userId.isNotEmpty) 'userId': userId,
+        }),
+      );
+      if (response.statusCode == 201) {
+        final data = await parseJsonAsync(response.body);
+        return (data is Map ? (data['sent'] as num?)?.toInt() : null) ?? 0;
+      }
+    } catch (e) {
+      debugPrint('sendMentorMessage error: $e');
+    }
+    return null;
+  }
+
   // --- Mentor Caravan Progress API ---
-  Future<Map<String, dynamic>?> getMentorCaravanProgress() async {
+  Future<Map<String, dynamic>?> getMentorCaravanProgress({String? caravanId}) async {
     try {
       final response = await _get(
-        Uri.parse('$baseUrl/mentor/caravan-progress'),
+        Uri.parse('$baseUrl/mentor/caravan-progress').replace(
+          queryParameters: (caravanId != null && caravanId.isNotEmpty) ? {'caravanId': caravanId} : null,
+        ),
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {
@@ -1876,7 +2097,9 @@ class HttpApiService {
     return [];
   }
 
-  Future<bool> submitStudentAssetConversion({
+  /// Converts the student's own capital immediately. Returns null on success,
+  /// otherwise the error message to show the user.
+  Future<String?> submitStudentAssetConversion({
     required String sourceAsset,
     required String targetAsset,
     required double sourceAmount,
@@ -1893,28 +2116,37 @@ class HttpApiService {
           'targetAmount': targetAmount,
         }),
       );
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) return null;
+      return _conversionError(response.body);
     } catch (e) {
       debugPrint('submitStudentAssetConversion error: $e');
-      return false;
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
     }
   }
 
-  Future<bool> approveCaravanAssetConversion(String requestId, bool approve, {String? note}) async {
+  /// Mentor cancels a mistaken exchange (within 24h). Returns null on success,
+  /// otherwise the error message to show the user.
+  Future<String?> cancelCaravanAssetConversion(String requestId, {String? reason}) async {
     try {
       final response = await _post(
-        Uri.parse('$baseUrl/caravans/approve-conversion/$requestId'),
+        Uri.parse('$baseUrl/caravans/cancel-conversion/$requestId'),
         headers: _getHeaders(),
-        body: jsonEncode({
-          'approve': approve,
-          'note': note,
-        }),
+        body: jsonEncode({'reason': reason}),
       );
-      return response.statusCode == 200;
+      if (response.statusCode == 200) return null;
+      return _conversionError(response.body);
     } catch (e) {
-      debugPrint('approveCaravanAssetConversion error: $e');
-      return false;
+      debugPrint('cancelCaravanAssetConversion error: $e');
+      return 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
     }
+  }
+
+  String _conversionError(String body) {
+    try {
+      final data = jsonDecode(body);
+      if (data is Map && data['error'] != null) return data['error'].toString();
+    } catch (_) {}
+    return 'خطایی رخ داده است. لطفاً دوباره تلاش کنید.';
   }
 }
 
