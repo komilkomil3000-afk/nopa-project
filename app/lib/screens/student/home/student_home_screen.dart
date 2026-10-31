@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
@@ -496,9 +497,15 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                           itemBuilder: (context, index) {
                             final stationMap = _stations[index];
                             final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-                            bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
-                            bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
-                            bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
+                            final stationState = StationState.resolve(
+                              index: index,
+                              levelFrame: userLevelFrame,
+                              completedStationsCount: user.completedStationsCount,
+                              serverLocked: stationMap['isLocked'] == true,
+                            );
+                            final bool isLocked = stationState.isLocked;
+                            final bool isCurrent = stationState.isCurrent;
+                            final bool isCompleted = stationState.isCompleted;
 
                             final String teacherName = stationMap['instructors']?.toString() ??
                                 stationMap['subtitle']?.toString() ??

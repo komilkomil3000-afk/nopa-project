@@ -22,6 +22,7 @@ model User {
   mentorLevel                  Int            @default(1) // 1: Junior, 2: Senior, 3: Master
   nationalId                   String?
   dateOfBirth                  String?
+  email                        String?
   totalTransactions            Int            @default(0)
   totalZarikPurchases          Int            @default(0)
   identityVerified             Boolean        @default(false)

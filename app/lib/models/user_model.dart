@@ -24,6 +24,7 @@ class UserModel {
   final String? gender; // 'male' | 'female'
   final String? nationalId;
   final String? dateOfBirth;
+  final String? email;
   final bool identityVerified;
   final int totalTransactions;
   final int totalZarikPurchases;
@@ -62,6 +63,7 @@ class UserModel {
     this.gender,
     this.nationalId,
     this.dateOfBirth,
+    this.email,
     this.identityVerified = false,
     this.totalTransactions = 0,
     this.totalZarikPurchases = 0,
@@ -103,6 +105,7 @@ class UserModel {
     String? gender,
     String? nationalId,
     String? dateOfBirth,
+    String? email,
     bool? identityVerified,
     int? totalTransactions,
     int? totalZarikPurchases,
@@ -141,6 +144,7 @@ class UserModel {
       gender: gender ?? this.gender,
       nationalId: nationalId ?? this.nationalId,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      email: email ?? this.email,
       identityVerified: identityVerified ?? this.identityVerified,
       totalTransactions: totalTransactions ?? this.totalTransactions,
       totalZarikPurchases: totalZarikPurchases ?? this.totalZarikPurchases,
@@ -191,6 +195,7 @@ class UserModel {
       gender: json['gender']?.toString(),
       nationalId: json['nationalId'],
       dateOfBirth: json['dateOfBirth'],
+      email: json['email']?.toString(),
       identityVerified: json['identityVerified'] ?? false,
       totalTransactions: json['totalTransactions'] ?? 0,
       totalZarikPurchases: json['totalZarikPurchases'] ?? 0,

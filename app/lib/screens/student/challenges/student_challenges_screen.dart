@@ -7,10 +7,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/widgets/challenge_submission_dialog.dart';
+import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenge_grading_screen.dart';
 
 class StudentChallengesScreen extends StatefulWidget {
@@ -26,6 +28,8 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   // 0: درون گروهی, 1: میان گروهی (ویژه راهبر)
   int _mentorSelectedCategoryIndex = 0;
   final Set<String> _expandedChallengeIds = {};
+  // station id -> station number shown on the challenge tag
+  final Map<String, int> _stationNumberById = {};
 
   late final PageController _bannerPageCtrl;
   int _currentBannerIndex = 0;
@@ -36,6 +40,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     super.initState();
     _bannerPageCtrl = PageController(viewportFraction: 0.92);
     _startBannerAutoScroll();
+    challengeFocusRequest.addListener(_applyFocusRequest);
+    _applyFocusRequest();
+    _loadStationNumbers();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -60,8 +67,36 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     });
   }
 
+  Future<void> _loadStationNumbers() async {
+    try {
+      final stations = await HttpApiService().getStations();
+      if (!mounted) return;
+      setState(() {
+        for (final st in stations) {
+          final order = (st['orderIndex'] as num?)?.toInt();
+          final id = st['id']?.toString();
+          if (id != null && order != null) _stationNumberById[id] = order;
+        }
+      });
+    } catch (_) {}
+  }
+
+  /// A challenge tapped on the home page: open its category and expand it.
+  void _applyFocusRequest() {
+    final req = challengeFocusRequest.value;
+    if (req == null) return;
+    challengeFocusRequest.value = null;
+    setState(() {
+      _selectedCategoryIndex = req.category;
+      _expandedChallengeIds
+        ..clear()
+        ..add(req.id);
+    });
+  }
+
   @override
   void dispose() {
+    challengeFocusRequest.removeListener(_applyFocusRequest);
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
     super.dispose();
@@ -629,7 +664,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
                             fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w300,
                             fontFamily: AppTheme.fontFamily,
                           ),
                         ),
@@ -1635,7 +1670,28 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
                     const SizedBox(width: 8),
 
-                    // Left Group: Status Tag -> Reward Amount -> Chevron
+                    // Left Group: Station Tag -> Status Tag -> Reward Amount -> Chevron
+                    // 0. Station number tag (small)
+                    if (_stationNumberById[item['stationId']?.toString()] != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9292E2).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF9292E2).withValues(alpha: 0.4), width: 0.9),
+                        ),
+                        child: Text(
+                          'منزلگاه ${_stationNumberById[item['stationId']?.toString()]!.toPersianDigits()}',
+                          style: const TextStyle(
+                            color: Color(0xFFB9B8F0),
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w300,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                     // 1. Status Tag
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
@@ -1649,7 +1705,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 9.5,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w300,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),

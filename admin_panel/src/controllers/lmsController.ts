@@ -1202,25 +1202,17 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       }
     });
 
-    // Send notification
-    let notificationTitle = passed ? 'قبولی در آزمون کلاس 🎉' : 'نتیجه آزمون کلاس 📝';
-    let notificationMessage = passed
-      ? `تبریک! شما در آزمون "${session.title}" قبول شدید. نمره: ${correctCount}/${questionsList.length}. پاداش: +${rewardZarik} زریک`
-      : `شما در آزمون "${session.title}" نمره قبولی کسب نکردید. نمره: ${correctCount}/${questionsList.length}. مجدداً تلاش کنید.`;
-
-    if (submissionStatus === 'PENDING') {
-      notificationTitle = 'آزمون ثبت شد 📝';
-      notificationMessage = `پاسخ شما برای آزمون "${session.title}" با موفقیت ثبت شد و در انتظار بررسی راهبر است.`;
+    // Passing a quiz needs no notification; only the money it adds does, and it says why.
+    if (passed && isFirstPass && rewardZarik > 0) {
+      await prisma.notification.create({
+        data: {
+          userId,
+          title: 'افزوده شدن سرمایه 💰',
+          message: `${rewardZarik} زریک به سرمایه شما اضافه شد. علت: شرکت موفق در آزمون «${session.title}».`,
+          type: 'reward'
+        }
+      });
     }
-
-    await prisma.notification.create({
-      data: {
-        userId,
-        title: notificationTitle,
-        message: notificationMessage,
-        type: 'reward'
-      }
-    });
 
     res.json({
       score: correctCount,

@@ -27,6 +27,18 @@ import 'package:nopa_app/screens/mentor/profile/mentor_profile_screen.dart';
 final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
 final ValueNotifier<int> mainTabNotifier = ValueNotifier<int>(0);
 
+/// Set before opening the challenges tab to land on the right category (0: شخصی, 1: گروهی, 2: میان گروهی)
+/// and open that challenge.
+final ValueNotifier<({int category, String id})?> challengeFocusRequest = ValueNotifier(null);
+
+/// Category tab index of a challenge's raw category text.
+int challengeCategoryIndex(String? rawCategory) {
+  final raw = (rawCategory ?? '').toLowerCase();
+  if (raw.contains('inter') || raw.contains('میان')) return 2;
+  if (raw.contains('group') || raw.contains('گروهی')) return 1;
+  return 0;
+}
+
 void navigateToMainTab(int index) {
   mainTabNotifier.value = index;
   mainScreenKey.currentState?.setIndex(index);

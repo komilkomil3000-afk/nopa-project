@@ -263,7 +263,14 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
         ChallengeTabType.inProgress => status == 'pending' || status == 'rejected',
         ChallengeTabType.expired => status == 'expired' || status == 'completed',
       };
-      if (inTab) items.add(_ChallengeItemData(id: c.id, title: c.title, status: status));
+      if (inTab) {
+        items.add(_ChallengeItemData(
+          id: c.id,
+          title: c.title,
+          status: status,
+          category: challengeCategoryIndex(c.category),
+        ));
+      }
       if (items.length == 2) break;
     }
 
@@ -324,7 +331,10 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: TapExpander(child: InkWell(
           // Every challenge, even an expired or completed one, opens in the challenges page
-          onTap: () => context.findAncestorStateOfType<MainScreenState>()?.setIndex(2),
+          onTap: () {
+            challengeFocusRequest.value = (category: item.category, id: item.id);
+            context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
+          },
           borderRadius: BorderRadius.circular(13),
           child: Row(
             children: [
@@ -395,7 +405,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   child: Text(
                     switch (item.status) {
                       'expired' => 'تمام شده',
-                      'completed' => 'تکمیل',
+                      'completed' => 'مشاهده',
                       'rejected' => 'اصلاح',
                       _ => 'مشاهده',
                     },
@@ -421,10 +431,12 @@ class _ChallengeItemData {
   final String id;
   final String title;
   final String status;
+  final int category;
 
   const _ChallengeItemData({
     required this.id,
     required this.title,
     required this.status,
+    required this.category,
   });
 }

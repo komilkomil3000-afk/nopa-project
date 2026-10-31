@@ -28,6 +28,30 @@ const normalizePhone = (phone: any) => {
   return cleanPhone;
 };
 
+const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+
+/** Persian / Arabic digits -> English digits. */
+const toEnglishDigits = (str: string) =>
+  str.replace(/[۰-۹]/g, (d) => String(PERSIAN_DIGITS.indexOf(d))).replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)));
+
+/** English digits -> Persian digits. */
+const toPersianDigits = (str: string) => str.replace(/[0-9]/g, (d) => PERSIAN_DIGITS[Number(d)]);
+
+/**
+ * A password typed with Persian digits and one typed with English digits are the same password:
+ * the stored hash may come from either spelling, so both are tried.
+ */
+async function passwordMatches(hash: string | null, typed: string): Promise<boolean> {
+  if (!hash || !typed) return false;
+  const english = toEnglishDigits(typed);
+  const variants = Array.from(new Set([typed, english, toPersianDigits(english)]));
+  for (const v of variants) {
+    if (await bcrypt.compare(v, hash)) return true;
+  }
+  return false;
+}
+
 export async function verifyPhone(req: Request, res: Response) {
   try {
     const { phoneNumber } = req.body;
@@ -115,7 +139,7 @@ export async function login(req: Request, res: Response) {
     // Password verification: bcrypt only. There is no universal/master password.
     let isPasswordCorrect = false;
     if (rawPassword && user.passwordHash) {
-      isPasswordCorrect = await bcrypt.compare(rawPassword, user.passwordHash);
+      isPasswordCorrect = await passwordMatches(user.passwordHash, rawPassword);
     }
 
     if (!isPasswordCorrect) {
@@ -494,13 +518,52 @@ export async function logout(req: AuthRequest, res: Response) {
   }
 }
 
+// One-time codes for changing the password when the user forgot the old one (in memory, like the SMS cooldowns)
+const passwordResetCodes = new Map<string, { code: string; expires: number; attempts: number }>();
+
+// Sends a code by SMS to the logged-in user's own phone number.
+export async function requestPasswordResetCode(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user || !user.phoneNumber) return res.status(404).json({ error: 'کاربر یافت نشد' });
+
+    const code = String(Math.floor(10000 + Math.random() * 90000));
+    passwordResetCodes.set(user.id, { code, expires: Date.now() + 5 * 60 * 1000, attempts: 0 });
+    recordSmsDispatch(user.phoneNumber, getClientIp(req));
+    // Mock SMS provider (same as notificationController until a real provider is connected)
+    console.log(`[SMS MOCK] Sending password code to ${user.phoneNumber}: ${code}`);
+
+    res.json({ success: true, message: 'کد تایید برای شما پیامک شد' });
+  } catch (error) {
+    console.error('requestPasswordResetCode error:', error);
+    res.status(500).json({ error: 'ارسال پیامک انجام نشد' });
+  }
+}
+
+// Checks the user's current password (step 1 of changing it when it is remembered).
+export async function verifyCurrentPassword(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    const { currentPassword } = req.body || {};
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
+    const ok = await passwordMatches(user.passwordHash, String(currentPassword ?? '').trim());
+    if (!ok) return res.status(401).json({ error: 'رمز عبور فعلی نادرست است' });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('verifyCurrentPassword error:', error);
+    res.status(500).json({ error: 'بررسی رمز عبور انجام نشد' });
+  }
+}
+
 export async function changePassword(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
     }
 
-    const { currentPassword, newPassword } = req.body;
+    const { currentPassword, newPassword, smsCode } = req.body;
     if (!newPassword || newPassword.trim().length < 4) {
       return res.status(400).json({ error: 'رمز عبور جدید باید حداقل ۴ رقم یا کاراکتر باشد' });
     }
@@ -510,8 +573,23 @@ export async function changePassword(req: AuthRequest, res: Response) {
       return res.status(404).json({ error: 'کاربر یافت نشد' });
     }
 
+    // Forgot the old password: the code sent by SMS must match
+    if (smsCode !== undefined && smsCode !== null && String(smsCode).trim() !== '') {
+      const entry = passwordResetCodes.get(user.id);
+      if (!entry || entry.expires < Date.now()) {
+        passwordResetCodes.delete(user.id);
+        return res.status(400).json({ error: 'کد تایید منقضی شده است. دوباره درخواست دهید' });
+      }
+      if (entry.code !== String(smsCode).trim()) {
+        entry.attempts += 1;
+        if (entry.attempts >= 5) passwordResetCodes.delete(user.id);
+        return res.status(400).json({ error: 'کد تایید نادرست است' });
+      }
+      passwordResetCodes.delete(user.id);
+    }
+
     if (currentPassword && currentPassword.trim().length > 0 && user.passwordHash) {
-      const currentMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      const currentMatch = await passwordMatches(user.passwordHash, String(currentPassword).trim());
       if (!currentMatch) {
         const isDefault = await bcrypt.compare('123456', user.passwordHash);
         if (!isDefault) {
@@ -520,7 +598,8 @@ export async function changePassword(req: AuthRequest, res: Response) {
       }
     }
 
-    const newHash = await bcrypt.hash(newPassword.trim(), 10);
+    // Stored with English digits; login accepts Persian digits too
+    const newHash = await bcrypt.hash(toEnglishDigits(newPassword.trim()), 10);
     await prisma.user.update({
       where: { id: user.id },
       data: { passwordHash: newHash }

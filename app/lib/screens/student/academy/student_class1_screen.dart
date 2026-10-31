@@ -1,6 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/station_categories.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -312,11 +313,12 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
     // Check if selected station is locked
     // Locked by progress, or by the server (release time / manual lock)
-    final bool isLocked =
-        (_currentStationIndex > 0 &&
-            (_currentStationIndex + 1) > userLevelFrame &&
-            _currentStationIndex > user.completedStationsCount) ||
-        (_station?.isLocked ?? false);
+    final bool isLocked = StationState.resolve(
+      index: _currentStationIndex,
+      levelFrame: userLevelFrame,
+      completedStationsCount: user.completedStationsCount,
+      serverLocked: _station?.isLocked ?? false,
+    ).isLocked;
 
     // Dynamic counts from categories
     int skillSessionsCount = 0;
@@ -327,9 +329,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
     final String skillText = '${skillSessionsCount.toPersian()} جلسه';
     final String mediaText = '${mediaSessionsCount.toPersian()} جلسه';
-    final String animText = _allClips.isNotEmpty
-        ? '${_allClips.length.toPersian()} قسمت'
-        : '۰ قسمت';
+    // Photos added to the gallery are not animations
+    final int animCount = _allClips
+        .where((c) => !StationGalleryItem.isImageUrl(c['videoUrl']?.toString() ?? ''))
+        .length;
+    final String animText = '${animCount.toPersian()} قسمت';
     final String stayText = _station?.stayDuration?.isNotEmpty == true
         ? _station!.stayDuration!
         : '${((_currentStationIndex + 1) * 3 + 5).toPersian()} روز';

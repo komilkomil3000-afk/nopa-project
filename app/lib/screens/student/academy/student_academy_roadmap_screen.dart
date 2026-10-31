@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -163,10 +164,15 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
 
     // Station 1 (index == 0) is the initial station and is always unlocked!
     // Also locked by the server: release time or manual lock (the server never time-locks mentors)
-    bool isLocked = (index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount) ||
-        item['isLocked'] == true;
-    bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
-    bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
+    final stationState = StationState.resolve(
+      index: index,
+      levelFrame: userLevelFrame,
+      completedStationsCount: user.completedStationsCount,
+      serverLocked: item['isLocked'] == true,
+    );
+    final bool isLocked = stationState.isLocked;
+    final bool isCurrent = stationState.isCurrent;
+    final bool isCompleted = stationState.isCompleted;
 
     // Count categories and sessions
     final categoriesList = (item['categories'] as List?) ?? [];
@@ -401,7 +407,14 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              if (isCompleted)
+                              if (isLocked)
+                                SvgPicture.asset(
+                                  'assets/svg_icons/lock02.svg',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                )
+                              else if (isCompleted)
                                 SvgPicture.asset(
                                   'assets/svg_icons/lock01.svg',
                                   width: 24,
@@ -478,7 +491,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'قفل شده')}',
+                              'وضعیت منزلگاه: ${isLocked ? 'قفل شده' : (isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'باز'))}',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 color: isCurrent

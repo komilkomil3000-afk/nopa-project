@@ -46,6 +46,14 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   }
 
   void _handleBackAction() {
+    // In search mode, back only leaves the search
+    if (_isSearching) {
+      setState(() {
+        _isSearching = false;
+        _searchController.clear();
+      });
+      return;
+    }
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
@@ -122,6 +130,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     // A newly announced challenge: the user is expected to take part
     if (type == 'challenge') {
       return const _NotifAction('شرکت', _NotifTarget.challenges);
+    }
+    // Money added (e.g. after passing a quiz; older quiz-result messages too): the wallet is in the profile
+    if (title.contains('سرمایه') || title.contains('قبولی در آزمون') || title.contains('نتیجه آزمون')) {
+      return const _NotifAction('مشاهده', _NotifTarget.profile);
     }
     if (title.contains('کلاس')) {
       return const _NotifAction('مشاهده', _NotifTarget.academy);
@@ -367,7 +379,12 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
     final int unreadCount = repository.unreadNotificationsCount;
 
-    return AppScaffold(
+    return PopScope(
+      canPop: !_isSearching,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleBackAction();
+      },
+      child: AppScaffold(
       showBackButton: true,
       showNotificationIcon: false, // Messages screen: Hide the Messages/Notification icon
       showDrawerButton: true,
@@ -454,6 +471,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -792,8 +810,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: isRead ? const Color(0xFF9A9AA8) : Colors.white,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w400,
                           fontFamily: AppTheme.fontFamily,
                           fontFamilyFallback: AppTheme.fontFamilyFallback,
                         ),
@@ -808,7 +826,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                       style: const TextStyle(
                         color: Color(0xFF9D99B8),
                         fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                         fontFamily: AppTheme.fontFamily,
                       ),
                     ),
@@ -834,8 +852,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                             actionLabel,
                             style: const TextStyle(
                               color: Color(0xFFC7B299),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w300,
                               fontFamily: AppTheme.fontFamily,
                               fontFamilyFallback: AppTheme.fontFamilyFallback,
                             ),
@@ -889,47 +907,6 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                       fontFamily: AppTheme.fontFamily,
                       fontFamilyFallback: AppTheme.fontFamilyFallback,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TapExpander(child: GestureDetector(
-                      onTap: () => _handleActionClick(notify, repository),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: AppColors.strokeGradient,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(AppColors.borderWidth),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.darkSurfaceGradient,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                actionLabel,
-                                style: const TextStyle(
-                                  color: Color(0xFFDFB690),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Color(0xFFDFB690),
-                                size: 10,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )),
                   ),
                 ],
               ),

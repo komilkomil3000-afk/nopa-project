@@ -1976,3 +1976,142 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (from app/)
 - **Status:** Completed
+
+### [2026-10-31 22:56] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/authController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+- **Description of Changes:**
+  - class2 bottom bar: no background, shorter, gold chevrons, mentor button styled like quiz button
+  - calendar scrolls to today after load (education_calendar.dart)
+  - home challenge completed status label -> مشاهده
+  - student edit profile: name/phone read-only, password section with remember/forgot choice + SMS code flow, change-request ticket now reports failure (student_edit_profile_screen.dart, api_service.dart)
+  - backend: POST /auth/password-reset-code (SMS mock) and smsCode check in change-password (authController.ts, api.ts)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/); tsc not run (node_modules not installed here)
+- **Status:** Completed
+
+### [2026-10-31 23:03] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/authController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+- **Description of Changes:**
+  - Notifications: removed duplicate مشاهده button, regular smaller header font, back exits search only (PopScope)
+  - quiz dialog stays open after submit and marks correct/wrong with feedback texts (student_class2_screen.dart)
+  - home challenge tap opens the right category and expands the challenge via challengeFocusRequest (app_shell.dart, home_challenges_section.dart, student_challenges_screen.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/)
+- **Status:** Completed
+
+### [2026-10-31 23:09] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/authController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261040_user_email/` (Created)
+- **Description of Changes:**
+  - Profile: password change moved to a modal (remember: old password verify -> new x2
+  - forgot: SMS code -> new x2, must match)
+  - email now saved (User.email column + migration 20261040_user_email, getMe/completeProfile, UserModel.email) with validation
+  - Jalali birth-date wheel picker
+  - backend: POST /auth/verify-current-password, login/verify/change accept Persian or English digits in passwords (passwordMatches), new passwords stored with English digits. Files: student_edit_profile_screen.dart, api_service.dart, user_model.dart, authController.ts, userController.ts, api.ts, schema.prisma
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/); tsc/prisma generate not run here (node_modules missing)
+- **Status:** Completed
+
+### [2026-10-31 23:19] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/authController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261040_user_email/` (Created)
+  - `app/lib/core/station_state.dart` (Created)
+- **Description of Changes:**
+  - Quiz dialog title 'آزمون nام از پارت nام', plain-text feedback (no box), plain 'بستن' text button
+  - class2 mentor button raised from bottom bar
+  - new core/station_state.dart = single locked/completed/current rule used by home, roadmap and station page (fixes open station showing lock / 'قفل شده')
+  - challenge cards get small station-number tag, light-weight tags and reward. Challenge-completion gate was already removed from UI.
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/)
+- **Status:** Completed
+
+### [2026-10-31 23:24] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/authController.ts` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261040_user_email/` (Created)
+  - `app/lib/core/station_state.dart` (Created)
+- **Description of Changes:**
+  - Quiz: no pass/fail notification, only 'افزوده شدن سرمایه' with reason (lmsController.ts)
+  - notification routing: money/quiz-result messages open profile instead of academy, action button smaller w300 (student_notifications_screen.dart)
+  - stepper rail fill follows progress not selected station (station_progress_stepper.dart)
+  - station animation count ignores gallery images (student_class1_screen.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/); tsc not run
+- **Status:** Completed

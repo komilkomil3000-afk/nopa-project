@@ -761,6 +761,65 @@ class HttpApiService {
     }
   }
 
+  /// Asks the server to SMS a one-time code to the logged-in user's phone. Returns null on success, otherwise the error text.
+  Future<String?> requestPasswordResetCode(String phoneNumber) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/auth/password-reset-code'),
+        headers: _getHeaders(),
+        body: jsonEncode({'phoneNumber': phoneNumber}),
+      );
+      if (response.statusCode == 200) return null;
+      final data = await parseJsonAsync(response.body);
+      if (data is Map && data['error'] != null) return data['error'].toString();
+      return 'ارسال پیامک انجام نشد (${response.statusCode})';
+    } catch (e) {
+      debugPrint('requestPasswordResetCode error: $e');
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+    }
+  }
+
+  /// Checks the user's current password. Returns null when it is right, otherwise the error text.
+  Future<String?> verifyCurrentPassword(String currentPassword) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/auth/verify-current-password'),
+        headers: _getHeaders(),
+        body: jsonEncode({'currentPassword': currentPassword}),
+      );
+      if (response.statusCode == 200) return null;
+      final data = await parseJsonAsync(response.body);
+      if (data is Map && data['error'] != null) return data['error'].toString();
+      return 'بررسی رمز عبور انجام نشد (${response.statusCode})';
+    } catch (e) {
+      debugPrint('verifyCurrentPassword error: $e');
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+    }
+  }
+
+  /// Sets a new fixed password. [smsCode] is given when the user forgot the old one. Returns null on success,
+  /// otherwise the error text.
+  Future<String?> setNewPassword(String newPassword, {String? smsCode, String? currentPassword}) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/auth/change-password'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'newPassword': newPassword,
+          if (smsCode != null && smsCode.isNotEmpty) 'smsCode': smsCode,
+          if (currentPassword != null && currentPassword.isNotEmpty) 'currentPassword': currentPassword,
+        }),
+      );
+      if (response.statusCode == 200) return null;
+      final data = await parseJsonAsync(response.body);
+      if (data is Map && data['error'] != null) return data['error'].toString();
+      return 'تغییر رمز عبور انجام نشد (${response.statusCode})';
+    } catch (e) {
+      debugPrint('setNewPassword error: $e');
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
+    }
+  }
+
   /// Saves the profile fields. Returns null on success, otherwise the error message to show.
   Future<String?> completeProfile(Map<String, dynamic> payload) async {
     try {

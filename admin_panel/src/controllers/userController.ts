@@ -133,6 +133,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
       nationalId: user.nationalId,
       dateOfBirth: user.dateOfBirth,
+      email: user.email,
       city: user.city,
       mentorDocuments: user.mentorDocuments,
       certificates: user.certificates,
@@ -176,10 +177,15 @@ export async function completeProfile(req: AuthRequest, res: Response) {
     if (!newName) return res.status(400).json({ error: 'نام الزامی است' });
 
     const nationalId = pick('nationalId', user.nationalId);
+    const email = pick('email', user.email);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      return res.status(400).json({ error: 'آدرس ایمیل نامعتبر است' });
+    }
     const updateData: any = {
       name: newName,
       nationalId,
       dateOfBirth: pick('dateOfBirth', user.dateOfBirth),
+      email,
       city: pick('city', user.city),
       identityVerified: Boolean(nationalId),
     };

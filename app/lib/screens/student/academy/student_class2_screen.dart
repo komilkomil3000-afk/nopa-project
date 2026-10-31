@@ -8,6 +8,7 @@ import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
@@ -644,7 +645,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               ),
               // Fixed at the bottom: does not move when the number of lessons changes
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
                 child: _buildBottomActionBar(),
               ),
               ],
@@ -1232,98 +1233,68 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// 6. Bottom Action Bar (منزلگاه قبل در راست و منزلگاه بعد در چپ)
   Widget _buildBottomActionBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1A33).withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF473E67).withValues(alpha: 0.4),
-          width: 1.0,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // 1. Far Left: منزلگاه بعد (تعویض شده با قبل)
-          TapExpander(child: InkWell(
-            onTap: (_stationCount == 0 || _currentStationIndex < _stationCount - 1) ? () => _goToStation(1) : null,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(
-                  Icons.chevron_left_rounded,
-                  color: Color(0xFFDDD9EE),
-                  size: 18,
-                ),
-                Text(
-                  'منزلگاه بعد',
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 9.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-              ],
-            ),
-          )),
+    const gold = Color(0xFFC09268);
+    final canNext = _stationCount == 0 || _currentStationIndex < _stationCount - 1;
+    final canPrev = _currentStationIndex > 0;
+    final dim = gold.withValues(alpha: 0.35);
+    const textStyleBase = TextStyle(
+      fontSize: 9.5,
+      fontFamily: AppTheme.fontFamily,
+      fontFamilyFallback: AppTheme.fontFamilyFallback,
+    );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Left: next station
+        TapExpander(child: InkWell(
+          onTap: canNext ? () => _goToStation(1) : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.chevron_left_rounded, color: canNext ? gold : dim, size: 18),
+              Text('منزلگاه بعد', style: textStyleBase.copyWith(color: canNext ? const Color(0xFFDDD9EE) : const Color(0xFF6B5F94))),
+            ],
+          ),
+        )),
 
-          // 2. Middle Left: ارتباط با راهبر
-          ElevatedButton(
-            onPressed: () => contactMentor(
-              context,
-              Provider.of<AppRepository>(context, listen: false).currentUser,
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF241F3B),
-              foregroundColor: const Color(0xFFDDD9EE),
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(9),
-                side: const BorderSide(
-                  color: Color(0xFF5A4D80),
-                  width: 1.0,
-                ),
-              ),
+        // Middle: contact mentor (same look as the part quiz button)
+        TapExpander(child: GestureDetector(
+          onTap: () => contactMentor(
+            context,
+            Provider.of<AppRepository>(context, listen: false).currentUser,
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1B192A),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: gold, width: 0.85),
             ),
             child: Text(
               contactMentorLabel(Provider.of<AppRepository>(context, listen: false).currentUser),
               style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.bold,
+                color: Color(0xFFE1BC96),
+                fontWeight: FontWeight.normal,
                 fontFamily: AppTheme.fontFamily,
                 fontFamilyFallback: AppTheme.fontFamilyFallback,
+                fontSize: 10,
               ),
             ),
           ),
+        )),
 
-          // 4. Far Right: منزلگاه قبل (تعویض شده با بعد)
-          TapExpander(child: InkWell(
-            onTap: _currentStationIndex > 0 ? () => _goToStation(-1) : null,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'منزلگاه قبل',
-                  style: TextStyle(
-                    color: _currentStationIndex > 0 ? const Color(0xFFDDD9EE) : const Color(0xFF6B5F94),
-                    fontSize: 9.5,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: _currentStationIndex > 0 ? const Color(0xFFDDD9EE) : const Color(0xFF6B5F94),
-                  size: 18,
-                ),
-              ],
-            ),
-          )),
-        ],
-      ),
+        // Right: previous station
+        TapExpander(child: InkWell(
+          onTap: canPrev ? () => _goToStation(-1) : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('منزلگاه قبل', style: textStyleBase.copyWith(color: canPrev ? const Color(0xFFDDD9EE) : const Color(0xFF6B5F94))),
+              Icon(Icons.chevron_right_rounded, color: canPrev ? gold : dim, size: 18),
+            ],
+          ),
+        )),
+      ],
     );
   }
 
@@ -1372,9 +1343,11 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     final List<int> userAnswers = (reviewMode && stored != null && stored.length == quizQuestions.length)
         ? List<int>.from(stored)
         : List.filled(quizQuestions.length, -1);
-    final pageContext = context;
     String? feedbackMessage;
     bool isErrorFeedback = false;
+    // After submitting, the dialog stays open and marks the right / wrong options
+    bool submitted = false;
+    List<int>? revealCorrect;
 
     int correctIndexOf(dynamic q) =>
         q['correctIndex'] is int ? q['correctIndex'] : int.tryParse(q['correctIndex']?.toString() ?? '') ?? 0;
@@ -1387,6 +1360,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           builder: (context, setDialogState) {
             final question = quizQuestions[currentQuestionIndex];
             final selectedAns = userAnswers[currentQuestionIndex];
+            final bool showAnswers = reviewMode || submitted;
+            final int correctNow = (revealCorrect != null && currentQuestionIndex < revealCorrect!.length)
+                ? revealCorrect![currentQuestionIndex]
+                : correctIndexOf(question);
 
             return Dialog(
               backgroundColor: const Color(0xFF241F3B),
@@ -1406,7 +1383,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            reviewMode ? 'مشاهده آزمون پارت' : 'آزمون ارزیابی پارت',
+                            'آزمون ${_toFarsiDigit(partIndex + 1)}ام از پارت ${_toFarsiDigit(partIndex + 1)}ام',
                             style: const TextStyle(
                               color: Color(0xFFFBE4C8),
                               fontSize: 14,
@@ -1451,13 +1428,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                             const SizedBox(height: 12),
                             ...List.generate((question['options'] as List).length, (idx) {
                               bool isSel = selectedAns == idx;
-                              final bool isCorrectOpt = reviewMode && idx == correctIndexOf(question);
-                              final bool isWrongSel = reviewMode && isSel && !isCorrectOpt;
+                              final bool isCorrectOpt = showAnswers && idx == correctNow;
+                              final bool isWrongSel = showAnswers && isSel && !isCorrectOpt;
                               final Color accent = isCorrectOpt
                                   ? AppToast.successColor
                                   : (isWrongSel ? AppToast.errorColor : const Color(0xFFC09268));
                               return TapExpander(child: GestureDetector(
-                                onTap: reviewMode
+                                onTap: showAnswers
                                     ? null
                                     : () => setDialogState(() {
                                           userAnswers[currentQuestionIndex] = idx;
@@ -1506,15 +1483,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       ),
                       if (feedbackMessage != null) ...[
                         const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isErrorFeedback ? Colors.redAccent.withValues(alpha: 0.15) : const Color(0xFF10B981).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isErrorFeedback ? Colors.redAccent.withValues(alpha: 0.4) : const Color(0xFF10B981).withValues(alpha: 0.4),
-                            ),
-                          ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                           child: Text(
                             feedbackMessage!,
                             style: TextStyle(
@@ -1537,7 +1507,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 onPressed: () {
                                   setDialogState(() {
                                     currentQuestionIndex--;
-                                    feedbackMessage = null;
+                                    if (!submitted) feedbackMessage = null;
                                   });
                                 },
                                 style: OutlinedButton.styleFrom(
@@ -1551,19 +1521,38 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                 ),
                               ),
                             ),
+                          if (showAnswers && currentQuestionIndex == quizQuestions.length - 1)
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text(
+                                    'بستن',
+                                    style: TextStyle(
+                                      color: AppColors.buttonCancelPurple,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: AppTheme.fontFamily,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            )
+                          else
                           Expanded(
                             child: ElevatedButton(
-                              onPressed: (!reviewMode && selectedAns == -1)
+                              onPressed: (!showAnswers && selectedAns == -1)
                                   ? null
                                   : () async {
                                       if (currentQuestionIndex < quizQuestions.length - 1) {
                                         setDialogState(() {
                                           currentQuestionIndex++;
-                                          feedbackMessage = null;
+                                          if (!submitted) feedbackMessage = null;
                                         });
                                         return;
                                       }
-                                      if (reviewMode) {
+                                      if (reviewMode || submitted) {
                                         Navigator.pop(context);
                                         return;
                                       }
@@ -1617,34 +1606,25 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                         });
                                       }
 
-                                      if (context.mounted) Navigator.pop(context);
-                                      if (!pageContext.mounted) return;
-                                      if (awaitingReview) {
-                                        AppToast.info(pageContext, 'پاسخ شما ثبت شد و در انتظار بررسی راهبر است.');
-                                      } else if (passed) {
-                                        AppToast.success(
-                                          pageContext,
-                                          rewardZarik > 0
-                                              ? 'عالی بود! درست جواب دادید و ${_toFarsiDigit(rewardZarik)} زریک دریافت کردید.'
-                                              : 'عالی بود! درست جواب دادید.',
-                                        );
-                                      } else {
-                                        final wrong = <String>[];
-                                        for (int i = 0; i < quizQuestions.length; i++) {
-                                          final q = quizQuestions[i];
-                                          final c = (serverCorrect != null && i < serverCorrect.length) ? serverCorrect[i] : correctIndexOf(q);
-                                          if (userAnswers[i] == c) continue;
-                                          final opts = q['options'] as List;
-                                          final text = (c >= 0 && c < opts.length) ? opts[c].toString() : '';
-                                          wrong.add(quizQuestions.length == 1
-                                              ? '«$text»'
-                                              : 'سوال ${_toFarsiDigit(i + 1)}: «$text»');
+                                      // Stay in the dialog: mark right / wrong and show the feedback here
+                                      if (!context.mounted) return;
+                                      setDialogState(() {
+                                        submitted = true;
+                                        revealCorrect = serverCorrect;
+                                        currentQuestionIndex = 0;
+                                        if (awaitingReview) {
+                                          isErrorFeedback = false;
+                                          feedbackMessage = 'پاسخ شما ثبت شد و در انتظار بررسی راهبر است.';
+                                        } else if (passed) {
+                                          isErrorFeedback = false;
+                                          feedbackMessage = rewardZarik > 0
+                                              ? 'پاسخ شما درست بود آفرین\n${_toFarsiDigit(rewardZarik)} زریک دریافت کردید.'
+                                              : 'پاسخ شما درست بود آفرین';
+                                        } else {
+                                          isErrorFeedback = true;
+                                          feedbackMessage = 'آوووو اشکالی نداره بیشتر دقت کنید';
                                         }
-                                        AppToast.error(
-                                          pageContext,
-                                          'بیشتر دقت کنید. جواب درست ${wrong.join('، ')} بود.',
-                                        );
-                                      }
+                                      });
                                     },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFC09268),
@@ -1657,7 +1637,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               child: Text(
                                 currentQuestionIndex < quizQuestions.length - 1
                                     ? 'سوال بعدی'
-                                    : (reviewMode ? 'بستن' : 'ثبت و مشاهده نتیجه'),
+                                    : (showAnswers ? 'بستن' : 'ثبت و مشاهده نتیجه'),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,

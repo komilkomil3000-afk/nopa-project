@@ -181,9 +181,14 @@ class _EducationCalendarState extends State<EducationCalendar> {
           _events = loadedEvents;
           _isLoading = false;
         });
+        // The days strip only exists now: bring today into view
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay(animate: false));
       }
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelectedDay(animate: false));
+      }
     }
   }
 

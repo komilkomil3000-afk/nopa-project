@@ -89,6 +89,7 @@ class StationProgressStepper extends StatelessWidget {
                       index: i,
                       currentStationIndex: currentStationIndex,
                       userLevelFrame: effectiveLevelFrame,
+                      completedStationsCount: effectiveCompletedCount,
                       width: 12.0,
                     ),
                   ],
@@ -186,10 +187,13 @@ class StationProgressStepper extends StatelessWidget {
     required int index,
     required int currentStationIndex,
     required int userLevelFrame,
+    required int completedStationsCount,
     required double width,
   }) {
-    final bool isPassed = index < (userLevelFrame - 1);
-    final bool isGlowingSegment = index == currentStationIndex || isPassed;
+    // Filled up to the current station and a little past it; selecting another station does not change it
+    final int reached = (userLevelFrame - 1) > completedStationsCount ? (userLevelFrame - 1) : completedStationsCount;
+    final bool isPassed = index < reached;
+    final bool isGlowingSegment = index <= reached;
 
     return SizedBox(
       width: width,
