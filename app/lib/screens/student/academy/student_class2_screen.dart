@@ -172,6 +172,59 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   int _videoSessionToken = 0;
   bool _isMiniQuizShowing = false;
 
+  // After a part's quiz is answered, the next part starts by itself with a visible countdown.
+  static const int _nextPartCountdownSeconds = 10;
+  static const Duration _nextPartCountdownDelay = Duration(seconds: 3);
+  final ValueNotifier<NextPartCountdown?> _nextPartCountdown = ValueNotifier(null);
+  Timer? _nextPartTimer;
+
+  void _cancelNextPartCountdown() {
+    _nextPartTimer?.cancel();
+    _nextPartTimer = null;
+    _nextPartCountdown.value = null;
+  }
+
+  @override
+  void dispose() {
+    _nextPartTimer?.cancel();
+    _nextPartCountdown.dispose();
+    super.dispose();
+  }
+
+  /// Not shown when the lesson has no further part, or the next part is still locked (e.g. by schedule).
+  void _startNextPartCountdown(Map<String, dynamic> session, int partIndex) {
+    _cancelNextPartCountdown();
+    if (_activeSession?['id'] != session['id'] || _currentClipIndex != partIndex) return;
+    final clips = session['videoClips'] as List? ?? [];
+    final int next = partIndex + 1;
+    if (next >= clips.length || _isPartLocked(session, next)) return;
+    final String name = clips[next]['title']?.toString() ?? 'پارت ${_toFarsiDigit(next + 1)}';
+
+    _nextPartTimer = Timer(_nextPartCountdownDelay, () {
+      if (!mounted) return;
+      int left = _nextPartCountdownSeconds;
+      _nextPartCountdown.value = NextPartCountdown(left, name);
+      _nextPartTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+        // The student moved elsewhere meanwhile: drop the countdown
+        if (!mounted || _activeSession?['id'] != session['id'] || _currentClipIndex != partIndex) {
+          _cancelNextPartCountdown();
+          return;
+        }
+        left--;
+        if (left <= 0) {
+          _cancelNextPartCountdown();
+          setState(() {
+            _currentClipIndex = next;
+            _playRequested = true;
+          });
+          _initializeVideoForCurrentSession();
+          return;
+        }
+        _nextPartCountdown.value = NextPartCountdown(left, name);
+      });
+    });
+  }
+
   // The video starts only after the student taps a part; opening a lesson just shows it.
   bool _playRequested = false;
 
@@ -435,6 +488,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   }
 
   void _initializeVideoForCurrentSession() {
+    _cancelNextPartCountdown();
     setState(() {
       _videoSessionToken++;
       _isMiniQuizShowing = false;
@@ -663,6 +717,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       autoPlay: url.isNotEmpty && _playRequested,
       onProgress: _onVideoProgress,
       onEnded: _onVideoEnded,
+      nextPartCountdown: _nextPartCountdown,
     );
   }
 
@@ -1347,6 +1402,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     bool isErrorFeedback = false;
     // After submitting, the dialog stays open and marks the right / wrong options
     bool submitted = false;
+    // True only when this dialog itself submitted the answers (not when an old quiz is just reviewed)
+    bool newlySubmitted = false;
     List<int>? revealCorrect;
 
     int correctIndexOf(dynamic q) =>
@@ -1365,16 +1422,25 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ? revealCorrect![currentQuestionIndex]
                 : correctIndexOf(question);
 
+            // In landscape (e.g. the quiz opens over a fullscreen video) the screen is short and wide:
+            // keep the box compact and let it scroll instead of stretching it past the screen height
+            final bool landscape = MediaQuery.of(context).orientation == Orientation.landscape;
             return Dialog(
               backgroundColor: const Color(0xFF241F3B),
+              insetPadding: landscape
+                  ? const EdgeInsets.symmetric(horizontal: 40, vertical: 12)
+                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: landscape ? 460 : 560),
+                child: Padding(
+                padding: EdgeInsets.all(landscape ? 14 : 20),
                 child: Directionality(
                   textDirection: TextDirection.rtl,
+                  child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1610,6 +1676,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                       if (!context.mounted) return;
                                       setDialogState(() {
                                         submitted = true;
+                                        newlySubmitted = true;
                                         revealCorrect = serverCorrect;
                                         currentQuestionIndex = 0;
                                         if (awaitingReview) {
@@ -1651,7 +1718,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       ),
                     ],
                   ),
+                  ),
                 ),
+              ),
               ),
             );
           },
@@ -1660,6 +1729,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     ).then((_) {
       // Let the next video end (e.g. after a re-watch) open the quiz again
       if (mounted) setState(() => _isMiniQuizShowing = false);
+      if (mounted && newlySubmitted && session != null) _startNextPartCountdown(session, partIndex);
     });
   }
 

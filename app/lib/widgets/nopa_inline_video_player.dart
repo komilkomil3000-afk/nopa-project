@@ -10,6 +10,78 @@ import '../services/app_state_repository.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/api_constants.dart';
 
+/// "n seconds until the next part starts", shown on top of the player (inline and fullscreen).
+class NextPartCountdown {
+  final int seconds;
+  final String partName;
+  const NextPartCountdown(this.seconds, this.partName);
+}
+
+class _NextPartCountdownOverlay extends StatelessWidget {
+  final ValueNotifier<NextPartCountdown?> notifier;
+  final bool compact;
+  const _NextPartCountdownOverlay({required this.notifier, this.compact = false});
+
+  static String _fa(int n) {
+    const d = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    return n.toString().split('').map((c) => d[int.parse(c)]).join();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<NextPartCountdown?>(
+      valueListenable: notifier,
+      builder: (context, value, _) {
+        if (value == null) return const SizedBox.shrink();
+        return IgnorePointer(
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.6),
+            alignment: Alignment.center,
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _fa(value.seconds),
+                    style: TextStyle(
+                      color: const Color(0xFFE1BC96),
+                      fontSize: compact ? 30 : 40,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                  Text(
+                    '${_fa(value.seconds)} ثانیه تا شروع پارت بعدی',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: compact ? 10.5 : 13,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value.partName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: const Color(0xFF9D99B8),
+                      fontSize: compact ? 9 : 11,
+                      fontWeight: FontWeight.w300,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class NopaInlineVideoPlayer extends StatefulWidget {
   final String videoUrl;
   final String? title;
@@ -22,6 +94,9 @@ class NopaInlineVideoPlayer extends StatefulWidget {
   /// Called once when playback reaches the end of the video.
   final VoidCallback? onEnded;
 
+  /// Countdown to the next part, drawn over the player (also in fullscreen).
+  final ValueNotifier<NextPartCountdown?>? nextPartCountdown;
+
   const NopaInlineVideoPlayer({
     super.key,
     required this.videoUrl,
@@ -30,6 +105,7 @@ class NopaInlineVideoPlayer extends StatefulWidget {
     this.autoPlay = false,
     this.onProgress,
     this.onEnded,
+    this.nextPartCountdown,
   });
 
   @override
@@ -75,8 +151,20 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
     }
   }
 
+  // The fullscreen page shares this player's controller, so it must close when the player goes away
+  // (e.g. when the next part starts on its own)
+  NavigatorState? _fullscreenNavigator;
+  Route<dynamic>? _fullscreenRoute;
+
   @override
   void dispose() {
+    final nav = _fullscreenNavigator;
+    final route = _fullscreenRoute;
+    if (nav != null && route != null) {
+      scheduleMicrotask(() {
+        if (route.isActive && nav.mounted) nav.removeRoute(route);
+      });
+    }
     _controlsTimer?.cancel();
     _disposeController();
     super.dispose();
@@ -266,20 +354,24 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
     if (_controller == null) return;
     _controlsTimer?.cancel();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => _FullscreenVideoPage(
-          controller: _controller!,
-          aparatInfo: _aparatInfo,
-          selectedQuality: _selectedQuality,
-          playbackSpeed: _playbackSpeed,
-          title: widget.title ?? _aparatInfo?.title ?? 'ویدیو',
-          onQualityChanged: (q, u) => _changeQuality(q, u),
-          onSpeedChanged: (s) => _changeSpeed(s),
-        ),
+    final nav = Navigator.of(context);
+    final route = MaterialPageRoute<void>(
+      builder: (ctx) => _FullscreenVideoPage(
+        controller: _controller!,
+        aparatInfo: _aparatInfo,
+        selectedQuality: _selectedQuality,
+        playbackSpeed: _playbackSpeed,
+        title: widget.title ?? _aparatInfo?.title ?? 'ویدیو',
+        onQualityChanged: (q, u) => _changeQuality(q, u),
+        onSpeedChanged: (s) => _changeSpeed(s),
+        nextPartCountdown: widget.nextPartCountdown,
       ),
-    ).then((_) {
+    );
+    _fullscreenNavigator = nav;
+    _fullscreenRoute = route;
+    nav.push(route).then((_) {
+      _fullscreenNavigator = null;
+      _fullscreenRoute = null;
       if (mounted) {
         SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         setState(() {});
@@ -408,6 +500,10 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                 // 5. Video Overlay Controls
                 if (_isInitialized && _showControls && !_isLoading)
                   _buildControlsOverlay(),
+
+                // 6. Countdown to the next part
+                if (widget.nextPartCountdown != null)
+                  Positioned.fill(child: _NextPartCountdownOverlay(notifier: widget.nextPartCountdown!, compact: true)),
               ],
             ),
           ),
@@ -696,8 +792,10 @@ class _FullscreenVideoPage extends StatefulWidget {
   final String title;
   final Function(String, String) onQualityChanged;
   final Function(double) onSpeedChanged;
+  final ValueNotifier<NextPartCountdown?>? nextPartCountdown;
 
   const _FullscreenVideoPage({
+    this.nextPartCountdown,
     required this.controller,
     this.aparatInfo,
     this.selectedQuality,
@@ -793,6 +891,9 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                 child: VideoPlayer(widget.controller),
               ),
             ),
+
+            if (widget.nextPartCountdown != null)
+              Positioned.fill(child: _NextPartCountdownOverlay(notifier: widget.nextPartCountdown!)),
 
             if (_showControls)
               Container(

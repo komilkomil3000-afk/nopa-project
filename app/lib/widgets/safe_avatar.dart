@@ -15,6 +15,8 @@ class SafeAvatar extends StatelessWidget {
   final Color? backgroundColor;
   final String? gender;
   final bool isMentor;
+  /// Decode size in pixels; raise it when the avatar is shown enlarged.
+  final int cacheSize;
 
   const SafeAvatar({
     super.key,
@@ -24,6 +26,7 @@ class SafeAvatar extends StatelessWidget {
     this.backgroundColor,
     this.gender,
     this.isMentor = false,
+    this.cacheSize = 160,
   });
 
   @override
@@ -41,7 +44,7 @@ class SafeAvatar extends StatelessWidget {
             width: radius * 2,
             height: radius * 2,
             fit: BoxFit.cover,
-            cacheWidth: 160,
+            cacheWidth: cacheSize,
             errorBuilder: (_, _, _) => _buildFallback(initial),
           ),
         ),
@@ -64,8 +67,8 @@ class SafeAvatar extends StatelessWidget {
           width: radius * 2,
           height: radius * 2,
           fit: BoxFit.cover,
-          memCacheWidth: 160,
-          memCacheHeight: 160,
+          memCacheWidth: cacheSize,
+          memCacheHeight: cacheSize,
           placeholder: (context, url) => _buildFallback(initial),
           errorWidget: (context, url, error) => _buildFallback(initial),
         ),

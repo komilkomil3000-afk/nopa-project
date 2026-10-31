@@ -537,8 +537,8 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                   isLocked ? 'قفل' : (isCompleted ? 'تکمیل شده' : 'منزلگاه جاری'),
                   style: TextStyle(
                     color: isCurrent ? const Color(0xFF5A3114) : Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w300,
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),

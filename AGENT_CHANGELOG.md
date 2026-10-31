@@ -2115,3 +2115,83 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (from app/); tsc not run
 - **Status:** Completed
+
+### [2026-10-31 23:30] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+- **Description of Changes:**
+  - Challenges: only one challenge box expanded at a time (student_challenges_screen.dart)
+  - Notifications: challenge quiz results ('نتیجه آزمون'/'پاداش آزمون') now open Challenges tab instead of Profile (student_notifications_screen.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib/screens/student (from app/) - no issues
+- **Status:** Completed
+
+### [2026-10-31 23:40] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+- **Description of Changes:**
+  - Academy roadmap badge tags smaller w300 (student_academy_roadmap_screen.dart)
+  - part quiz dialog scrolls/compact in landscape (fullscreen) and a 10s next-part countdown overlay starts 3s after a newly submitted quiz when a next unlocked part exists, auto-playing it, shown inline and fullscreen (student_class2_screen.dart, nopa_inline_video_player.dart)
+  - challenge box reward font light/smaller and station tag shows number only
+  - opened challenge from home is scrolled into view (student_challenges_screen.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/)
+- **Status:** Completed
+
+### [2026-10-31 23:43] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+- **Description of Changes:**
+  - Profile avatar tap now opens enlarged picture, pencil badge opens edit profile (student_profile_screen.dart, safe_avatar.dart cacheSize)
+  - password flow: verifyCurrentPassword treats 404 from older server as pass-through (final change-password validates), clearer SMS 404 message (api_service.dart). Root cause of email-not-saved and 404s: deployed server predates commit 622274c (verified: POST /auth/verify-current-password and /auth/password-reset-code return 404 on nopa-app.ir)
+  - backend must be deployed with migration 20261040_user_email
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/); curl probes of live endpoints
+- **Status:** Completed
+
+### [2026-10-31 23:46] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+- **Description of Changes:**
+  - Report card (student_profile_screen.dart): certificates count now from user.certificates (was levelFrame-1)
+  - station completed/current/locked via shared StationState (incl. server lock)
+  - video/quiz counts distinct clips
+  - screen re-reads stations, progress and user from server on open
+  - no placeholder stations when data missing (loader/message)
+  - story dialog text replaced with light-weight text (student+mentor profile screens)
+  - final-station dialog text replaced with light-weight story text (station_progress_stepper.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/): no issues
+- **Status:** Completed

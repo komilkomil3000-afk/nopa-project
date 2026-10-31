@@ -92,7 +92,20 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
         ..clear()
         ..add(req.id);
     });
+    // The tab is switching at the same moment: once it is on screen, bring the opened card into view
+    for (final delay in const [150, 450]) {
+      Future.delayed(Duration(milliseconds: delay), () {
+        if (!mounted || !_expandedChallengeIds.contains(req.id)) return;
+        final ctx = _cardKeys[req.id]?.currentContext;
+        if (ctx != null && ctx.mounted) {
+          Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250), alignment: 0.1);
+        }
+      });
+    }
   }
+
+  // One key per challenge card, used to scroll the opened card into view
+  final Map<String, GlobalKey> _cardKeys = {};
 
   @override
   void dispose() {
@@ -1587,6 +1600,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     }
 
     return Directionality(
+      key: _cardKeys.putIfAbsent(id, () => GlobalKey()),
       textDirection: TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1595,10 +1609,13 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           TapExpander(child: GestureDetector(
             onTap: () {
               setState(() {
+                // Only one challenge box stays open: opening another closes the previous one
                 if (_expandedChallengeIds.contains(id)) {
-                  _expandedChallengeIds.remove(id);
+                  _expandedChallengeIds.clear();
                 } else {
-                  _expandedChallengeIds.add(id);
+                  _expandedChallengeIds
+                    ..clear()
+                    ..add(id);
                 }
               });
             },
@@ -1681,7 +1698,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           border: Border.all(color: const Color(0xFF9292E2).withValues(alpha: 0.4), width: 0.9),
                         ),
                         child: Text(
-                          'منزلگاه ${_stationNumberById[item['stationId']?.toString()]!.toPersianDigits()}',
+                          _stationNumberById[item['stationId']?.toString()]!.toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFFB9B8F0),
                             fontSize: 8.5,
@@ -1721,8 +1738,8 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
                           style: const TextStyle(
                             color: Color(0xFF9292E2),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w300,
                             fontFamily: AppTheme.fontFamily,
                           ),
                         ),

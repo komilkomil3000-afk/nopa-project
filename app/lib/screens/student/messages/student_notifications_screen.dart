@@ -131,8 +131,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     if (type == 'challenge') {
       return const _NotifAction('شرکت', _NotifTarget.challenges);
     }
-    // Money added (e.g. after passing a quiz; older quiz-result messages too): the wallet is in the profile
-    if (title.contains('سرمایه') || title.contains('قبولی در آزمون') || title.contains('نتیجه آزمون')) {
+    // A challenge quiz result ("نتیجه آزمون" / "ثبت پاداش آزمون") belongs to the challenges tab,
+    // even though it may mention a reward
+    if (title.contains('نتیجه آزمون') || title.contains('پاداش آزمون')) {
+      return const _NotifAction('مشاهده', _NotifTarget.challenges);
+    }
+    // Money added (e.g. after passing a class quiz): the wallet is in the profile
+    if (title.contains('سرمایه') || title.contains('قبولی در آزمون')) {
       return const _NotifAction('مشاهده', _NotifTarget.profile);
     }
     if (title.contains('کلاس')) {

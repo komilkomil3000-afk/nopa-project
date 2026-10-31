@@ -770,6 +770,7 @@ class HttpApiService {
         body: jsonEncode({'phoneNumber': phoneNumber}),
       );
       if (response.statusCode == 200) return null;
+      if (response.statusCode == 404) return 'سرویس بازیابی رمز با پیامک هنوز روی سرور فعال نشده است';
       final data = await parseJsonAsync(response.body);
       if (data is Map && data['error'] != null) return data['error'].toString();
       return 'ارسال پیامک انجام نشد (${response.statusCode})';
@@ -788,6 +789,9 @@ class HttpApiService {
         body: jsonEncode({'currentPassword': currentPassword}),
       );
       if (response.statusCode == 200) return null;
+      // A server that predates this check answers 404: let the user go on, because the final
+      // "change password" request validates the current password itself.
+      if (response.statusCode == 404) return null;
       final data = await parseJsonAsync(response.body);
       if (data is Map && data['error'] != null) return data['error'].toString();
       return 'بررسی رمز عبور انجام نشد (${response.statusCode})';

@@ -260,13 +260,15 @@ class StationProgressStepper extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'اینجا قرار یک ملاقات و اتمام انتظار شما برای رویارویی با دستیافتن شدن ارزوی ابادانی جهان نپاست. اینجا قرارگاه ماست. منتظرتان هستیم.',
+                  'داستان سفر به سرزمین نپا\n\n'
+                  'علاءالملک، حاکم سرزمین نپا با گنجینه‌ای حیرت‌آور و بی‌نظیر در انتظار زنان و مردانی است که شایستگی خود را برای کسب آن نشان دهند.\n\n'
+                  'تو در این مسیر، عضو کاروانی هستی که راهبری زبردست شما را به سوی سرزمین نپا می‌برد. مسیر مابین هر منزلگاه، عیار هر کس را می‌سنجد و توقف موقت هر کاروان در این منزلگاه‌ها، مقدمه‌ای برای طی کردن مسیرهای دشوار بعدی است.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 13,
                     height: 1.9,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w300,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
                   ),
