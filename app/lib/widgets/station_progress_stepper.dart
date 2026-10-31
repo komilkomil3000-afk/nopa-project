@@ -15,7 +15,7 @@ class StationProgressStepper extends StatelessWidget {
   final int currentStationIndex;
   final ValueChanged<int>? onStationSelected;
   final String? title;
-  final int totalNodes;
+  final int? totalNodes;
   final int? userLevelFrame;
   final int? completedStationsCount;
 
@@ -24,7 +24,7 @@ class StationProgressStepper extends StatelessWidget {
     required this.currentStationIndex,
     this.onStationSelected,
     this.title,
-    this.totalNodes = 5,
+    this.totalNodes,
     this.userLevelFrame,
     this.completedStationsCount,
   });
@@ -34,6 +34,7 @@ class StationProgressStepper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int totalNodes = this.totalNodes ?? StationNumbering.count;
     final repository = Provider.of<AppRepository>(context, listen: false);
     final user = repository.currentUser;
 
@@ -134,19 +135,20 @@ class StationProgressStepper extends StatelessWidget {
     required int completedStationsCount,
   }) {
     final int passedCount = (userLevelFrame - 1) > completedStationsCount ? (userLevelFrame - 1) : completedStationsCount;
-    final bool isPassed = index < passedCount;
+    // The current station (the first one not completed yet) is gold like the finished ones
+    final bool isGold = index <= passedCount;
 
     Color fill;
     List<BoxShadow>? boxShadow;
-    if (isPassed) {
+    if (isGold) {
       fill = _gold;
       boxShadow = [
         BoxShadow(color: const Color(0xFFFFB800).withValues(alpha: 0.65), blurRadius: 12, spreadRadius: 2),
         BoxShadow(color: const Color(0xFFEAA835).withValues(alpha: 0.45), blurRadius: 8, spreadRadius: 1),
       ];
     } else {
-      final int distance = index - passedCount + 1; // 1 = first station after the last completed one
-      double t = switch (distance) { 1 => 0.55, 2 => 0.34, 3 => 0.2, _ => 0.1 };
+      final int distance = index - passedCount; // 1 = first station after the current one
+      double t = switch (distance) { 1 => 0.34, 2 => 0.2, _ => 0.1 };
       if (isSelected && t < 0.6) t = 0.6; // keeps the black label readable on the selected node
       fill = Color.lerp(_locked, _gold, t)!;
     }

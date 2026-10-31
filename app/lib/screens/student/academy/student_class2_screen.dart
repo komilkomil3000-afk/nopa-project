@@ -1,5 +1,8 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/schedule_utils.dart';
+import 'package:nopa_app/core/station_categories.dart';
+import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/models/station.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -37,6 +40,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   int _currentClipIndex = 0;
   bool _isLoadingClasses = true;
 
+  List<Map<String, dynamic>> _stationsData = [];
+  // The station exactly as the opening screen showed it (the mentor's report); null = take it from the server list
+  Map<String, dynamic>? _stationDataArg;
   String _stationId = '';
   String _stationTitle = '';
   int _stationNumber = 0;
@@ -135,7 +141,29 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   /// A part (after the first) opens only after the previous part's quiz is answered.
   bool _isPartLocked(Map<String, dynamic> session, int clipIndex) =>
-      clipIndex > 0 && !_isAnswered(session, clipIndex - 1);
+      (clipIndex > 0 && !_isAnswered(session, clipIndex - 1)) || _clipUnlockTime(session, clipIndex) != null;
+
+  /// Mentors are not bound by the release schedule (the server does the same for stations).
+  bool get _isMentorUser {
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    return role == UserRole.mentor || role == UserRole.superMentor;
+  }
+
+  /// When a session that has not started yet opens; null when it is open (or has no schedule).
+  DateTime? _sessionOpensAt(Map<String, dynamic> session) {
+    if (_isMentorUser) return null;
+    final start = ScheduleUtils.sessionStart(session);
+    return ScheduleUtils.hasStarted(start) ? null : start;
+  }
+
+  /// When a part that is still waiting for its scheduled time opens; null when it is open.
+  DateTime? _clipUnlockTime(Map<String, dynamic> session, int clipIndex) {
+    if (_isMentorUser) return null;
+    final clips = session['videoClips'] as List? ?? [];
+    if (clipIndex < 0 || clipIndex >= clips.length || clips[clipIndex] is! Map) return null;
+    final unlock = ScheduleUtils.clipUnlockInstant(Map<String, dynamic>.from(clips[clipIndex] as Map));
+    return ScheduleUtils.hasStarted(unlock) ? null : unlock;
+  }
 
   /// Fraction of a video that must be watched before its quiz unlocks.
   static const double _quizUnlockThreshold = 0.90;
@@ -163,6 +191,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (args['stationIndex'] is int) {
         _currentStationIndex = args['stationIndex'];
       }
+      // Shown right away; replaced by the loaded station data
+      if (args['stationTitle'] is String) _stationTitle = args['stationTitle'];
+      if (args['stationNumber'] is int) _stationNumber = args['stationNumber'];
 
       if (args['initialTab'] is int) {
         _selectedTab = args['initialTab'];
@@ -183,31 +214,26 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
       final passedCategories = args['categories'] as Map<String, List<Map<String, dynamic>>>?;
       final passedClasses = args['classes'] as List?;
-
-      if (passedCategories != null && passedCategories.isNotEmpty) {
-        for (var entry in passedCategories.entries) {
-          final sessions = entry.value.map((s) {
-            final map = Map<String, dynamic>.from(s);
-            var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-            map['videoClips'] = clips;
-            return map;
-          }).toList();
-
-          if (entry.key.contains('مهارت')) {
-            _skillSessions = sessions;
-          } else if (entry.key.contains('رسانه')) {
-            _mediaSessions = sessions;
-          }
-        }
+      if (args['stationData'] is Map) {
+        _stationDataArg = Map<String, dynamic>.from(args['stationData'] as Map);
       }
 
-      if (_skillSessions.isEmpty && passedClasses != null && passedClasses.isNotEmpty) {
-        _skillSessions = passedClasses.map((c) {
-          final map = Map<String, dynamic>.from(c as Map);
-          var clips = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
-          map['videoClips'] = clips;
+      if (passedCategories != null && passedCategories.isNotEmpty) {
+        final split = StationCategories.splitByTitle(passedCategories);
+        _skillSessions = split[StationCategories.skill]!;
+        _mediaSessions = split[StationCategories.media]!;
+      } else if (passedClasses != null && passedClasses.isNotEmpty) {
+        // Only one class type is passed: put it under the tab that was asked for
+        final sessions = passedClasses.whereType<Map>().map((c) {
+          final map = Map<String, dynamic>.from(c);
+          map['videoClips'] = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
           return map;
         }).toList();
+        if (_selectedTab == 1) {
+          _mediaSessions = sessions;
+        } else {
+          _skillSessions = sessions;
+        }
       }
     }
 
@@ -227,34 +253,22 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       }
       if (stations.isNotEmpty) {
         final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
+        _stationsData = stations;
         final data = stations[sIndex];
-        _stationId = data['id']?.toString() ?? '';
+        final shown = _stationDataArg ?? data;
+        _stationId = shown['id']?.toString() ?? '';
         _stationCount = stations.length;
-        _stationTitle = data['title']?.toString() ?? '';
-        _stationNumber = (data['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
+        _stationTitle = shown['title']?.toString() ?? '';
+        _stationNumber = (shown['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
       }
 
       if (_skillSessions.isEmpty || _mediaSessions.isEmpty) {
-        if (stations.isNotEmpty) {
-          final currentStationData = stations[_currentStationIndex.clamp(0, stations.length - 1)];
-          final categories = currentStationData['categories'] as List? ?? [];
-          for (final cat in categories) {
-            if (cat is Map) {
-              final catTitle = cat['title']?.toString() ?? '';
-              final sessions = (cat['sessions'] as List?)?.map((s) {
-                final map = Map<String, dynamic>.from(s as Map);
-                var clips = (map['videoClips'] as List?)?.map((c) => Map<String, dynamic>.from(c as Map)).toList() ?? [];
-                map['videoClips'] = clips;
-                return map;
-              }).toList() ?? [];
-
-              if (catTitle.contains('مهارت')) {
-                _skillSessions = sessions;
-              } else if (catTitle.contains('رسانه')) {
-                _mediaSessions = sessions;
-              }
-            }
-          }
+        final Map<String, dynamic>? stationData = _stationDataArg ??
+            (stations.isNotEmpty ? stations[_currentStationIndex.clamp(0, stations.length - 1)] : null);
+        if (stationData != null) {
+          final split = StationCategories.split(stationData['categories'] as List? ?? []);
+          if (_skillSessions.isEmpty) _skillSessions = split[StationCategories.skill]!;
+          if (_mediaSessions.isEmpty) _mediaSessions = split[StationCategories.media]!;
         }
       }
 
@@ -319,6 +333,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// A station is open when the user's level reached it or the stations before it are completed.
   bool _isStationLocked(int index) {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    // The server also locks a station by its release time or manually
+    if (!_isMentorUser && index >= 0 && index < _stationsData.length && _stationsData[index]['isLocked'] == true) {
+      return true;
+    }
     final level = user.levelFrame < 1 ? 1 : user.levelFrame;
     return index > 0 && (index + 1) > level && index > user.completedStationsCount;
   }
@@ -335,6 +353,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       _expandedSessionIndex = 0;
       _currentClipIndex = 0;
       _targetSessionTitle = null; // the requested session belonged to the previous station
+      _stationDataArg = null;
       _isLoadingClasses = true;
     });
     await _fetchData(force: true);
@@ -442,6 +461,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// A lesson (after the first) is open only once every part quiz of the
   /// previous lesson has been answered.
   bool _isSessionLocked(List<Map<String, dynamic>> sessions, int sIndex) {
+    if (sIndex >= 0 && sIndex < sessions.length && _sessionOpensAt(sessions[sIndex]) != null) return true;
     if (sIndex <= 0 || sIndex >= sessions.length) return false;
     final prev = sessions[sIndex - 1];
     final prevClips = prev['videoClips'] as List? ?? [];
@@ -709,7 +729,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 TapExpander(child: InkWell(
                   onTap: () {
                     if (isLocked) {
-                      AppToast.info(context, 'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید');
+                      final opensAt = _sessionOpensAt(session);
+                      AppToast.info(
+                        context,
+                        opensAt != null
+                            ? 'این جلسه ${ScheduleUtils.describe(opensAt)} باز می‌شود'
+                            : 'برای باز شدن این درس، آزمون‌های درس قبل را بگذرانید',
+                      );
                       return;
                     }
                     setState(() {
@@ -799,7 +825,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         final bool isPartLocked = _isPartLocked(session, cIndex);
                         void selectPart() {
                           if (isPartLocked) {
-                            AppToast.info(context, 'برای باز شدن این پارت، ابتدا به آزمون پارت قبل پاسخ دهید');
+                            final opensAt = _clipUnlockTime(session, cIndex);
+                            AppToast.info(
+                              context,
+                              opensAt != null
+                                  ? 'این پارت ${ScheduleUtils.describe(opensAt)} باز می‌شود'
+                                  : 'برای باز شدن این پارت، ابتدا به آزمون پارت قبل پاسخ دهید',
+                            );
                             return;
                           }
                           setState(() {
@@ -808,7 +840,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                           _initializeVideoForCurrentSession();
                         }
 
-                        return Padding(
+                        final Widget partRow = Padding(
                           padding: const EdgeInsets.symmetric(vertical: 5.5),
                           child: Directionality(
                             textDirection: TextDirection.rtl,
@@ -933,6 +965,24 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                               ],
                             ),
                           ),
+                        );
+                        if (cIndex == 0) return partRow;
+                        return Column(
+                          children: [
+                            Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.0),
+                                    Colors.white.withValues(alpha: 0.12),
+                                    Colors.white.withValues(alpha: 0.0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            partRow,
+                          ],
                         );
                       }),
                     ),
@@ -1172,9 +1222,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                 ),
               ),
             ),
-            child: const Text(
-              'ارتباط با راهبر',
-              style: TextStyle(
+            child: Text(
+              contactMentorLabel(Provider.of<AppRepository>(context, listen: false).currentUser),
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
                 fontFamily: AppTheme.fontFamily,

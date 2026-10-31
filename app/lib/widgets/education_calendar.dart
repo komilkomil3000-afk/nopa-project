@@ -1,6 +1,11 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
+import '../core/schedule_utils.dart';
+import '../models/user_model.dart';
+import '../services/app_state_repository.dart';
+import 'app_toast.dart';
 import '../services/api_service.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
@@ -17,6 +22,7 @@ class CalendarEvent {
   final String time;
   final String? instructor;
   final String? id;
+  final String? stationId;
 
   CalendarEvent({
     required this.year,
@@ -27,6 +33,7 @@ class CalendarEvent {
     required this.time,
     this.instructor,
     this.id,
+    this.stationId,
   });
 }
 
@@ -77,15 +84,11 @@ class _EducationCalendarState extends State<EducationCalendar> {
     super.initState();
     _daysScrollController = ScrollController();
 
-    // Default to active curriculum semester (Mehr 1405) or current Jalali date
-    final now = Jalali.now();
-    final int initialYear = now.year >= 1403 ? now.year : 1405;
-    final int initialMonth = 7; // Mehr
-    final int initialDay = 7;
-
-    _selectedYear = initialYear;
-    _selectedMonth = initialMonth;
-    _selectedDay = initialDay;
+    // Opens on today's date in the Iranian calendar
+    final today = ScheduleUtils.todayJalali();
+    _selectedYear = today.year;
+    _selectedMonth = today.month;
+    _selectedDay = today.day;
 
     _fetchEvents();
 
@@ -165,94 +168,11 @@ class _EducationCalendarState extends State<EducationCalendar> {
             day: evDay,
             type: type,
             title: e['title'] ?? 'کلاس آموزشی',
-            time: e['time'] ?? 'ساعت ۱۸:۰۰',
+            time: e['time']?.toString() ?? '',
             instructor: e['instructor'],
             id: e['id']?.toString(),
+            stationId: e['stationId']?.toString(),
           ));
-        }
-      }
-
-      // Master Curriculum Schedule strictly synchronized with CRM Database (Sheet 03 & Sheet 05)
-      final List<CalendarEvent> masterCurriculum = [
-        // =====================================================================
-        // مهرماه (Month 7) - منزلگاه اول (شوک و اینشات) و منزلگاه دوم (خودشناسی و آدیشن)
-        // =====================================================================
-        CalendarEvent(year: _selectedYear, month: 7, day: 2, type: EventType.mediaClass, title: 'آشنایی با محیط اینشات', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 3, type: EventType.mediaClass, title: 'برش، ویرایش و موسیقی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 5, type: EventType.skillClass, title: 'تعریف شوک و انواع آن', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیراینه‌گر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 6, type: EventType.skillClass, title: 'خودشناسی: مفاهیم پایه', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 7, type: EventType.skillClass, title: 'راهکارهای تغییر نگرش', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیراینه‌گر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 8, type: EventType.skillClass, title: 'نقاط قوت و ضعف', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 9, type: EventType.mediaClass, title: 'آشنایی با نرم‌افزار آدیشن', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 10, type: EventType.mediaClass, title: 'ویرایش و برش صدا در آدیشن', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 13, type: EventType.skillClass, title: 'ارزش‌ها و باورها', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 15, type: EventType.skillClass, title: 'هدف‌گذاری در خودشناسی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 16, type: EventType.mediaClass, title: 'افکت‌ها و فیلترهای صوتی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 17, type: EventType.mediaClass, title: 'مولتی‌ترک و میکس اولیه', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 20, type: EventType.skillClass, title: 'مدیریت هیجانات', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 20, type: EventType.overdue, title: 'چالش ۳۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 22, type: EventType.skillClass, title: 'ارتباط مؤثر با خود و دیگران', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 22, type: EventType.overdue, title: 'چالش ۳۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 23, type: EventType.mediaClass, title: 'تکنیک‌های پیشرفته ضبط', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 24, type: EventType.mediaClass, title: 'مسترینگ و آماده‌سازی نهایی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 24, type: EventType.overdue, title: 'چالش ۴۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 26, type: EventType.overdue, title: 'چالش ۴۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 27, type: EventType.skillClass, title: 'مدیریت زمان و انرژی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 28, type: EventType.overdue, title: 'چالش ۵۰۱', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 29, type: EventType.skillClass, title: 'خودشناسی و سبک زندگی سالم', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرچهره‌تراش'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 30, type: EventType.mediaClass, title: 'تولید پادکست حرفه‌ای (بخش اول)', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 30, type: EventType.overdue, title: 'چالش ۵۰۲', time: 'مهلت تحویل تا ۲۳:۵۹'),
-        CalendarEvent(year: _selectedYear, month: 7, day: 31, type: EventType.mediaClass, title: 'تولید پادکست حرفه‌ای (بخش دوم و انتشار)', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'علیرضا خوشمنظر'),
-
-        // =====================================================================
-        // آبان‌ماه (Month 8) - منزلگاه سوم (همراهان و کنوا)
-        // =====================================================================
-        CalendarEvent(year: _selectedYear, month: 8, day: 3, type: EventType.skillClass, title: 'تعریف همراهان و دشمنان', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 5, type: EventType.skillClass, title: 'تأثیر دوستان و همکاران', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 6, type: EventType.mediaClass, title: 'آشنایی با اپلیکیشن کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 7, type: EventType.mediaClass, title: 'کار با قالب‌ها و المان‌ها', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 10, type: EventType.skillClass, title: 'شناخت مخالفان و رقبا', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 12, type: EventType.skillClass, title: 'راهکارهای عملی در تعاملات', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 13, type: EventType.mediaClass, title: 'طراحی پوستر و اینفوگرافی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 14, type: EventType.mediaClass, title: 'ویدئو و انیمیشن در کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 17, type: EventType.skillClass, title: 'رهبری و همراهی در تیم', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 19, type: EventType.skillClass, title: 'پایداری در مسیر همراهی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیردیده‌بان'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 20, type: EventType.mediaClass, title: 'طراحی محتوا برای شبکه‌های اجتماعی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 8, day: 21, type: EventType.mediaClass, title: 'پروژه نهایی و جمع‌بندی کنوا', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-
-        // =====================================================================
-        // آذرماه (Month 9) - منزلگاه چهارم (هستی‌شناسی و کنوا پیشرفته) و منزلگاه پنجم (هدف‌گذاری و فتوشاپ)
-        // =====================================================================
-        CalendarEvent(year: _selectedYear, month: 9, day: 1, type: EventType.skillClass, title: 'مفاهیم هستی‌شناسی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 3, type: EventType.skillClass, title: 'شناخت خدا در هستی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 4, type: EventType.mediaClass, title: 'کنوا پیشرفته: تکنیک‌های حرفه‌ای', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 5, type: EventType.mediaClass, title: 'طراحی هویت بصری کامل', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 8, type: EventType.skillClass, title: 'شناخت ولی و امامت', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 10, type: EventType.skillClass, title: 'تأثیر شناخت هستی و ولی در زندگی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرناخدا'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 11, type: EventType.mediaClass, title: 'انیمیشن و موشن گرافیک پیشرفته', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 12, type: EventType.mediaClass, title: 'پروژه نهایی: کمپین تبلیغاتی کامل', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'حیدری'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 15, type: EventType.skillClass, title: 'مبانی هدف‌گذاری', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 16, type: EventType.skillClass, title: 'هدف‌گذاری هوشمند (SMART)', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 17, type: EventType.skillClass, title: 'برنامه‌ریزی عملیاتی', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 18, type: EventType.mediaClass, title: 'آشنایی با فتوشاپ و محیط کار', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 19, type: EventType.mediaClass, title: 'ابزارهای انتخاب و برش', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 22, type: EventType.skillClass, title: 'انگیزه و پایداری', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 22, type: EventType.mediaClass, title: 'لایه‌ها و ماسک‌ها', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 23, type: EventType.mediaClass, title: 'رنگ و تنظیمات نور', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 24, type: EventType.skillClass, title: 'ارزیابی و بازنگری اهداف', time: '۱۶:۰۰ الی ۱۷:۳۰', instructor: 'پیرمنجم'),
-        CalendarEvent(year: _selectedYear, month: 9, day: 24, type: EventType.mediaClass, title: 'پروژه نهایی و خروجی', time: '۱۸:۰۰ الی ۱۹:۳۰', instructor: 'کمیل زاهدی'),
-      ];
-
-      // Merge loaded backend events with master curriculum
-      for (var ev in masterCurriculum) {
-        final exists = loadedEvents.any((e) =>
-            e.year == ev.year &&
-            e.month == ev.month &&
-            e.day == ev.day &&
-            e.type == ev.type &&
-            e.title == ev.title);
-        if (!exists) {
-          loadedEvents.add(ev);
         }
       }
 
@@ -471,6 +391,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
             final int weekDayIdx = (dayJalali.weekDay - 1) % 7;
             final String weekDayName = _persianWeekDays[weekDayIdx];
 
+            final today = ScheduleUtils.todayJalali();
+            final bool isToday = today.year == dayJalali.year && today.month == dayJalali.month && today.day == dayNum;
             final bool isSelected = (_selectedYear == dayJalali.year &&
                 _selectedMonth == dayJalali.month &&
                 _selectedDay == dayNum);
@@ -488,6 +410,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
               dayNum: dayNum,
               weekDayName: weekDayName,
               isSelected: isSelected,
+              isToday: isToday,
               hasMedia: hasMedia,
               hasSkill: hasSkill,
               hasOverdue: hasOverdue,
@@ -509,6 +432,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     required int dayNum,
     required String weekDayName,
     required bool isSelected,
+    required bool isToday,
     required bool hasMedia,
     required bool hasSkill,
     required bool hasOverdue,
@@ -521,6 +445,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
         height: 92,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
+          border: isToday && !isSelected ? Border.all(color: const Color(0xFFE5A86D), width: 1.6) : null,
           gradient: isSelected
               ? const LinearGradient(
                   begin: Alignment.topCenter,
@@ -643,22 +568,44 @@ class _EducationCalendarState extends State<EducationCalendar> {
   }
 
   /// Bottom 2-Column Class Details Card: Right is Skill Classes, Left is Media Classes (Overdue removed)
-  void _navigateToClass(CalendarEvent event) {
-    final int tab = event.type == EventType.mediaClass ? 1 : 0;
-    int stationIndex = 0;
-    if (event.month == 7) {
-      if (event.day >= 9) {
-        stationIndex = 1; // Station 2
-      } else {
-        stationIndex = 0; // Station 1
+  Future<void> _navigateToClass(CalendarEvent event) async {
+    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
+    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+
+    // A class that has not started yet only shows when it opens
+    if (!isMentor) {
+      final start = ScheduleUtils.startInstant('§{event.year}/§{event.month}/§{event.day}', event.time);
+      if (!ScheduleUtils.hasStarted(start)) {
+        AppToast.info(context, 'این کلاس هنوز باز نشده است و §{ScheduleUtils.describe(start!)} باز می‌شود.');
+        return;
       }
-    } else if (event.month == 8) {
-      stationIndex = 2; // Station 3
-    } else if (event.month == 9) {
-      if (event.day >= 15) {
-        stationIndex = 4; // Station 5
-      } else {
-        stationIndex = 3; // Station 4
+    }
+
+    final int tab = event.type == EventType.mediaClass ? 1 : 0;
+    final stations = await HttpApiService().getStations();
+    if (!mounted) return;
+
+    int stationIndex = stations.indexWhere((st) => st['id']?.toString() == event.stationId);
+    if (stationIndex < 0) stationIndex = 0;
+
+    if (!isMentor && stationIndex < stations.length) {
+      final int level = user.levelFrame < 1 ? 1 : user.levelFrame;
+      final bool progressLocked =
+          stationIndex > 0 && (stationIndex + 1) > level && stationIndex > user.completedStationsCount;
+      if (progressLocked || stations[stationIndex]['isLocked'] == true) {
+        AppToast.info(context, 'منزلگاه این کلاس هنوز باز نشده است.');
+        return;
+      }
+    }
+
+    // The earlier sessions of the same class type must be done first: the class is not even opened
+    if (stationIndex < stations.length && event.id != null) {
+      final progress = await HttpApiService().getUserProgress();
+      final answers = await HttpApiService().getMyQuizAnswers();
+      if (!mounted) return;
+      if (_hasUnfinishedEarlierSession(stations[stationIndex], event.id!, progress, answers)) {
+        AppToast.info(context, 'این جلسه قفل است. ابتدا جلسه‌های قبلی را ببینید و به آزمون‌هایشان پاسخ دهید.');
+        return;
       }
     }
 
@@ -675,6 +622,42 @@ class _EducationCalendarState extends State<EducationCalendar> {
         'instructor': event.instructor,
       },
     );
+  }
+
+  /// True when a session before [sessionId] in the same class type (skill / media) still has a part
+  /// that was neither watched nor answered, the same rule the class screen uses to lock a session.
+  bool _hasUnfinishedEarlierSession(
+    Map<String, dynamic> station,
+    String sessionId,
+    List<dynamic> progress,
+    List<Map<String, dynamic>> answers,
+  ) {
+    bool clipDone(String sessionId, String clipId, int clipIndex) {
+      final watched = progress.any((p) =>
+          p is Map && p['clipId']?.toString() == clipId && (p['isWatched'] == true || p['quizPassed'] == true));
+      if (watched) return true;
+      return answers.any((a) {
+        if (a['sessionId']?.toString() != sessionId) return false;
+        final answeredClip = a['clipId']?.toString();
+        if (answeredClip != null && answeredClip.isNotEmpty) return answeredClip == clipId;
+        return a['partIndex'] == clipIndex;
+      });
+    }
+
+    for (final cat in (station['categories'] as List? ?? []).whereType<Map>()) {
+      final sessions = (cat['sessions'] as List? ?? []).whereType<Map>().where((s) => s['isDeleted'] != true).toList();
+      final index = sessions.indexWhere((s) => s['id']?.toString() == sessionId);
+      if (index < 0) continue;
+      for (int i = 0; i < index; i++) {
+        final id = sessions[i]['id']?.toString() ?? '';
+        final clips = (sessions[i]['videoClips'] as List? ?? []).whereType<Map>().toList();
+        for (int c = 0; c < clips.length; c++) {
+          if (!clipDone(id, clips[c]['id']?.toString() ?? '', c)) return true;
+        }
+      }
+      return false;
+    }
+    return false;
   }
 
   Widget _buildEventColumnList({

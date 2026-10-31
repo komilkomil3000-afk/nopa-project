@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/models/user_model.dart';
+import 'package:nopa_app/widgets/support_message_dialog.dart';
+
+bool _isMentorRole(UserModel user) => user.role == UserRole.mentor || user.role == UserRole.superMentor;
+
+/// Label of the "contact" button: a mentor has no mentor above them, so they write to the support team.
+String contactMentorLabel(UserModel user) => _isMentorRole(user) ? 'پیام به پشتیبانی' : 'ارتباط با راهبر';
 
 /// Builds the chat link for a mentor from the platform and ID stored in the database.
 /// Returns null when the mentor has no usable ID.
@@ -35,6 +41,11 @@ Uri? buildMentorContactUri(String? platform, String? handle) {
 
 /// Opens the chat with the mentor using the ID registered in the database.
 Future<void> contactMentor(BuildContext context, UserModel user) async {
+  if (_isMentorRole(user)) {
+    await SupportMessageDialog.show(context);
+    return;
+  }
+
   void showMessage(String text) => AppToast.error(context, text);
 
   final uri = buildMentorContactUri(user.mentorSocialPlatform, user.mentorSocialHandle);

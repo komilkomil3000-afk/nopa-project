@@ -1,3 +1,4 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -637,43 +638,23 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     ));
   }
 
-  /// Section: Quick Access ("دسترسی سریع") with 5 Action Cards matching StationCard design
+  /// Section: Quick Access ("دسترسی سریع") with 3 icon + text tiles
   Widget _buildQuickAccessSection() {
     final List<Map<String, dynamic>> quickAccessItems = [
       {
-        'title': 'همه کلاس ها',
-        'subtitle': 'کلاس‌های مهارتی و رسانه‌ای',
-        'badge': 'سرفصل‌ها',
-        'image': 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400',
-        'onTap': () => Navigator.pushNamed(context, '/class2'),
-      },
-      {
-        'title': 'مدیریت منزلگاه',
-        'subtitle': 'گزارش آموزشی و پیشرفت',
-        'badge': 'منزلگاه‌ها',
-        'image': 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400',
+        'title': 'منزلگاه ها',
+        'icon': 'assets/svg_icons/qa_stations01.svg',
         'onTap': () => navigateToMainTab(1),
       },
       {
+        'title': 'اعضا و کاروان',
+        'icon': 'assets/svg_icons/qa_members01.svg',
+        'onTap': () => Navigator.pushNamed(context, '/mentor_members'),
+      },
+      {
         'title': 'چالش ها',
-        'subtitle': 'ماموریت‌ها و تصحیح پاسخ‌ها',
-        'badge': 'چالش‌ها',
-        'image': 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400',
+        'icon': 'assets/svg_icons/qa_challenges01.svg',
         'onTap': () => navigateToMainTab(2),
-      },
-      {
-        'title': 'پیام ها',
-        'subtitle': 'ارسال و دریافت اطلاعیه‌ها',
-        'badge': 'پیام‌ها',
-        'image': 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=400',
-        'onTap': () => Navigator.pushNamed(context, '/notifications'),
-      },
-      {
-        'title': 'مبادلات',
-        'subtitle': 'مدیریت سرمایه‌ها و مبادلات',
-        'badge': 'بازارچه',
-        'image': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400',
-        'onTap': () => navigateToMainTab(3),
       },
     ];
 
@@ -697,26 +678,23 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 230,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Directionality(
             textDirection: TextDirection.rtl,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: quickAccessItems.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final item = quickAccessItems[index];
-
-                return _buildQuickAccessCard(
-                  title: item['title'] as String,
-                  subtitle: item['subtitle'] as String,
-                  badge: item['badge'] as String,
-                  imageUrl: item['image'] as String,
-                  onTap: item['onTap'] as VoidCallback,
-                );
-              },
+            child: Row(
+              children: [
+                for (int i = 0; i < quickAccessItems.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickAccessCard(
+                      title: quickAccessItems[i]['title'] as String,
+                      iconPath: quickAccessItems[i]['icon'] as String,
+                      onTap: quickAccessItems[i]['onTap'] as VoidCallback,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
@@ -726,15 +704,13 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   Widget _buildQuickAccessCard({
     required String title,
-    required String subtitle,
-    required String badge,
-    required String imageUrl,
+    required String iconPath,
     required VoidCallback onTap,
   }) {
     return TapExpander(child: GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 164,
+        height: 104,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           gradient: const LinearGradient(
@@ -770,124 +746,22 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               ],
             ),
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Badge & Icon top row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1D34),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF5C578F), width: 0.9),
-                    ),
-                    child: Text(
-                      badge,
-                      style: const TextStyle(
-                        color: Color(0xFFDDD9EE),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF28274A),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Color(0xFFDEB58A),
-                      size: 14,
-                    ),
-                  ),
-                ],
-              ),
+              SvgPicture.asset(iconPath, height: 38, fit: BoxFit.contain),
               const SizedBox(height: 10),
-
-              // Thumbnail with smooth rounded corners
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  height: 78,
-                  width: double.infinity,
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: const Color(0xFF231C38),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.8,
-                          color: Color(0xFFCD8449),
-                        ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: const Color(0xFF231C38),
-                      child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white38),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Title
               Text(
                 title,
-                textAlign: TextAlign.right,
+                textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 13.5,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-              const SizedBox(height: 2),
-
-              // Subtitle
-              Text(
-                subtitle,
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF9D99B8),
-                  fontSize: 10,
-                  fontFamily: AppTheme.fontFamily,
-                ),
-              ),
-              const Spacer(),
-
-              // Action button at bottom
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: Text(
-                    'مشاهده و ورود',
-                    style: TextStyle(
-                      color: Color(0xFF2C1605),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
                 ),
               ),
             ],

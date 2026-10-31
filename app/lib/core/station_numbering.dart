@@ -10,6 +10,9 @@ class StationNumbering {
     if (orders.isNotEmpty) _orders = orders;
   }
 
+  /// How many stations exist (before the list is loaded: 6), the same for mentors and students.
+  static int get count => _orders.isNotEmpty ? _orders.length : 6;
+
   /// 0-based list index of a station number (before the list is loaded it assumes the numbers start at 1).
   static int indexOfNumber(int number) {
     final i = _orders.indexOf(number);

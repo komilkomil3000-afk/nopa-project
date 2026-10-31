@@ -2284,7 +2284,13 @@
           <button type="button" id="subtab-btn-news" onclick="window.switchJarchiSubTab('news')" style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
             <i class="fa-solid fa-newspaper"></i> اطلاعیه‌ها و اخبار جارچی
           </button>
+          <button type="button" id="subtab-btn-support" onclick="window.switchJarchiSubTab('support')" style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+            <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" style="display:none; background:#ef4444; color:#fff; border-radius:10px; padding:1px 7px; font-size:11px;"></span>
+          </button>
         </div>
+
+        <!-- SUBVIEW 3: SUPPORT MESSAGES (sent from the app's "ارسال پیام به پشتیبانی") -->
+        <div id="jarchi-support-view" style="display: none;"></div>
 
         <!-- SUBVIEW 1: BANNERS MANAGEMENT -->
         <div id="jarchi-banners-view">
@@ -3978,6 +3984,7 @@
     </script>
     <script src="safe.js"></script>
     <script src="app.js"></script>
+    <script src="support.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>
 </body>

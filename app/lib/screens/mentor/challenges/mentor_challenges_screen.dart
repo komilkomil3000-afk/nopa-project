@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
@@ -1968,9 +1969,12 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   void _showCreateMessageDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController(text: 'بیا یه پوستر خفن بزنیم');
-    final messageCtrl = TextEditingController(text: 'بچه بیاید توی گروه کلی صحبت باهاتون دارم گلای من');
+    final titleCtrl = TextEditingController();
+    final messageCtrl = TextEditingController();
     String selectedAudience = 'همه اعضا';
+    bool isSending = false;
+    final today = ScheduleUtils.todayJalali();
+    final todayText = '${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}'.toPersianDigits();
 
     showDialog(
       context: context,
@@ -2041,7 +2045,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     // Field 4: تاریخ
                     _buildContactDialogFieldRow(
                       label: 'تاریخ:',
-                      child: _buildContactDialogValueText('1405/05/05'),
+                      child: _buildContactDialogValueText(todayText),
                     ),
                     const SizedBox(height: 12),
 
@@ -2116,9 +2120,29 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                       children: [
                         // ارسال (Right in RTL)
                         TextButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            final title = titleCtrl.text.trim();
+                            final text = messageCtrl.text.trim();
+                            if (title.isEmpty || text.isEmpty) {
+                              AppToast.error(context, 'لطفاً تیتر و متن پیام را وارد کنید');
+                              return;
+                            }
+                            if (isSending) return;
+                            isSending = true;
+                            final repository = Provider.of<AppRepository>(context, listen: false);
+                            final sent = await HttpApiService().sendMentorMessage(
+                              title: title,
+                              message: text,
+                              caravanId: repository.activeCaravanId,
+                            );
+                            if (!ctx.mounted) return;
+                            if (sent == null) {
+                              isSending = false;
+                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
+                              return;
+                            }
                             Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️');
+                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد ✉️');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

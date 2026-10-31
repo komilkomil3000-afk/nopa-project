@@ -29,7 +29,8 @@ import {
   getChallengeSubmissions, 
   getMentorTicketDetails,
   replyMentorTicket,
-  getMentorCaravanProgress
+  getMentorCaravanProgress,
+  sendMentorMessage
 } from '../controllers/mentorWorkspaceController';
 import adminRouter from './admin';
 
@@ -138,6 +139,7 @@ router.get('/mentor/challenges', authenticateJWT as any, authorizeRoles('mentor'
 router.get('/mentor/challenges/:id/submissions', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getChallengeSubmissions as any);
 router.get('/mentor/tickets/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, getMentorTicketDetails as any);
 router.post('/mentor/tickets/:id/messages', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, replyMentorTicket as any);
+router.post('/mentor/messages', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, sendMentorMessage as any);
 router.get('/mentor/caravan-progress', authenticateJWT as any, authorizeRoles('mentor', 'SUPER_MENTOR', 'admin') as any, getMentorCaravanProgress as any);
 
 export default router;

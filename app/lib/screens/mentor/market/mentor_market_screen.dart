@@ -1981,7 +1981,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             children: [
                               Expanded(
                                 child: _buildInteractiveActionButton(
-                                  text: 'ارتباط با راهبر',
+                                  text: 'پیام به پشتیبانی',
                                   isActive: _activeActionButton == 2,
                                   strokeBorderColor: const Color(0xFF6E688E),
                                   onTap: _contactMentor,
@@ -2032,7 +2032,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 children: [
                                   Expanded(
                                     child: _buildInteractiveActionButton(
-                                      text: 'ارتباط با راهبر',
+                                      text: 'پیام به پشتیبانی',
                                       isActive: _activeActionButton == 2,
                                       strokeBorderColor: const Color(0xFF6E688E),
                                       onTap: _contactMentor,

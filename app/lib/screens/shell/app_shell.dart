@@ -128,7 +128,16 @@ class MainScreenState extends State<AppShell> {
           SystemNavigator.pop();
         }
       },
-      child: Scaffold(
+      child: Container(
+       // Painted behind the whole Scaffold so it also fills the area behind the bottom nav bar.
+       decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_bg.png'),
+          fit: BoxFit.cover,
+        ),
+       ),
+       child: Scaffold(
         backgroundColor: Colors.transparent,
         drawer: CustomDrawer(
           role: userRole,
@@ -137,16 +146,9 @@ class MainScreenState extends State<AppShell> {
             setIndex(index);
           },
         ),
-        body: Container(
+        body: SizedBox(
           width: double.infinity,
           height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            image: DecorationImage(
-              image: AssetImage('assets/images/login_bg.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
           child: SafeArea(
             child: Column(
               children: [
@@ -174,6 +176,7 @@ class MainScreenState extends State<AppShell> {
             setIndex(index);
           },
         ),
+       ),
       ),
     );
   }

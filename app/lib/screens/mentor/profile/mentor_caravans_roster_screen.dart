@@ -515,6 +515,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         builder: (context) => StudentReportCardAndEvaluationScreen(
           member: member,
           caravanName: caravan.name,
+          caravanId: caravan.id,
         ),
       ),
     );
@@ -1026,11 +1027,13 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 class StudentReportCardAndEvaluationScreen extends StatefulWidget {
   final CaravanMemberModel member;
   final String caravanName;
+  final String? caravanId;
 
   const StudentReportCardAndEvaluationScreen({
     super.key,
     required this.member,
     required this.caravanName,
+    this.caravanId,
   });
 
   @override
@@ -1039,61 +1042,116 @@ class StudentReportCardAndEvaluationScreen extends StatefulWidget {
 
 class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCardAndEvaluationScreen> {
   List<Map<String, dynamic>> _stations = [];
+  Map<String, dynamic>? _memberData;
+  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadStations();
+    _loadProgress();
   }
 
-  Future<void> _loadStations() async {
+  /// The member's real progress (watched parts with dates, quiz results, challenges) from the server.
+  Future<void> _loadProgress() async {
     try {
-      final stations = await HttpApiService().getStations();
-      if (mounted) {
+      final data = await HttpApiService().getMentorCaravanProgress(caravanId: widget.caravanId);
+      if (data != null && mounted) {
+        final members = List<Map<String, dynamic>>.from(data['members'] ?? []);
         setState(() {
-          _stations = List<Map<String, dynamic>>.from(stations);
+          _stations = List<Map<String, dynamic>>.from(data['stations'] ?? []);
+          _memberData = members.where((m) => m['id']?.toString() == widget.member.id).firstOrNull;
+          _loaded = true;
         });
+        StationNumbering.update(_stations);
+        return;
       }
     } catch (_) {}
+    if (mounted) setState(() => _loaded = true);
   }
 
   final Set<int> _expandedStationIndices = {0};
 
-  List<Map<String, dynamic>> _getStationSessions(int stationIndex, Map<String, dynamic>? stationData) {
-    if (stationData != null && stationData['categories'] != null) {
-      final categories = stationData['categories'] as List? ?? [];
-      final List<Map<String, dynamic>> sessions = [];
-      for (final cat in categories) {
-        if (cat is Map && cat['sessions'] is List) {
-          sessions.addAll((cat['sessions'] as List).whereType<Map<String, dynamic>>());
+  int get _levelFrame {
+    final v = (_memberData?['levelFrame'] as num?)?.toInt() ?? widget.member.levelFrame;
+    return v < 1 ? 1 : v;
+  }
+
+  int get _completedCount => (_memberData?['completedStationsCount'] as num?)?.toInt() ?? 0;
+
+  Map get _clipStatus => (_memberData?['clipStatus'] as Map?) ?? const {};
+
+  /// All sessions (skill, then media) of a station with their parts.
+  List<Map> _sessionsOf(Map<String, dynamic>? station) {
+    if (station == null) return [];
+    return [
+      ...((station['skillSessions'] as List?) ?? []).whereType<Map>(),
+      ...((station['mediaSessions'] as List?) ?? []).whereType<Map>(),
+    ];
+  }
+
+  bool _isClipWatched(dynamic clipId) {
+    final st = _clipStatus[clipId];
+    return st is Map && (st['isWatched'] == true || st['quizPassed'] == true);
+  }
+
+  int get _totalVideos {
+    int n = 0;
+    for (final st in _stations) {
+      for (final sess in _sessionsOf(st)) {
+        n += ((sess['clips'] as List?) ?? []).length;
+      }
+    }
+    return n;
+  }
+
+  int get _watchedVideos {
+    int n = 0;
+    for (final st in _stations) {
+      for (final sess in _sessionsOf(st)) {
+        for (final c in ((sess['clips'] as List?) ?? []).whereType<Map>()) {
+          final status = _clipStatus[c['id']];
+          if (status is Map && status['isWatched'] == true) n++;
         }
       }
-      if (sessions.isNotEmpty) return sessions;
     }
+    return n;
+  }
 
-    return [
-      {
-        'title': 'جلسه اول: شناخت مبانی و مهارت‌های فردی',
-        'subtitle': 'ویدیو آموزشی و بررسی مفاهیم',
-        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
-      },
-      {
-        'title': 'جلسه دوم: تحلیل چالش‌ها و کار تیمی کاروان',
-        'subtitle': 'تمرین عملی و سناریوهای حل مسئله',
-        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
-      },
-      {
-        'title': 'جلسه سوم: مهارت‌های رسانه‌ای و ارتباط موثر',
-        'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
-        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
-      },
-    ];
+  int get _totalQuizzes => _stations.fold(0, (sum, st) => sum + ((st['quizzes'] as List?) ?? []).length);
+
+  int get _takenQuizzes {
+    final results = (_memberData?['quizResults'] as Map?) ?? const {};
+    int n = 0;
+    for (final st in _stations) {
+      for (final q in ((st['quizzes'] as List?) ?? []).whereType<Map>()) {
+        if (results.containsKey(q['id'])) n++;
+      }
+    }
+    return n;
+  }
+
+  String _ofText(int part, int total) => '§{part.toPersian()} از §{total.toPersian()}';
+
+  /// Sessions of a station as shown in the accordion, from the member's real watch records.
+  List<Map<String, dynamic>> _getStationSessions(Map<String, dynamic>? stationData) {
+    return _sessionsOf(stationData).map((sess) {
+      final clips = ((sess['clips'] as List?) ?? []).whereType<Map>().toList();
+      final watched = clips.where((c) => _isClipWatched(c['id'])).length;
+      return <String, dynamic>{
+        'title': sess['title'],
+        'watched': watched,
+        'total': clips.length,
+        'done': clips.isNotEmpty && watched >= clips.length,
+      };
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     final member = widget.member;
-    final int certificatesCount = member.levelFrame > 1 ? (member.levelFrame - 1) : 0;
+    final int levelFrame = _levelFrame;
+    final int stationCount = _stations.isNotEmpty ? _stations.length : StationNumbering.count;
+    final bool hasData = _loaded && _memberData != null;
 
     return AppScaffold(
       showBackButton: true,
@@ -1111,9 +1169,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
             children: [
               // 1. Station Progress Stepper (استپر بالای منزلگاه)
               StationProgressStepper(
-                currentStationIndex: (member.levelFrame - 1).clamp(0, 5),
-                userLevelFrame: member.levelFrame,
-                completedStationsCount: member.levelFrame > 1 ? member.levelFrame - 1 : 0,
+                currentStationIndex: (levelFrame - 1).clamp(0, stationCount - 1),
+                totalNodes: stationCount,
+                userLevelFrame: levelFrame,
+                completedStationsCount: _completedCount,
                 title: 'منزلگاه‌های آموزشی کاربر',
               ),
 
@@ -1198,10 +1257,16 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(member.levelFrame).toPersian()),
-                        _buildStatBox('ویدیوها', ((member.levelFrame * 3) + 2).toPersian()),
-                        _buildStatBox('آزمون‌ها', (member.levelFrame * 2).toPersian()),
-                        _buildStatBox('گواهی‌نامه‌ها', certificatesCount.toPersian()),
+                        _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(levelFrame).toPersian()),
+                        _buildStatBox('ویدیوها', hasData ? _ofText(_watchedVideos, _totalVideos) : '—'),
+                        _buildStatBox('آزمون‌ها', hasData ? _ofText(_takenQuizzes, _totalQuizzes) : '—'),
+                        _buildStatBox(
+                          'چالش‌ها',
+                          hasData
+                              ? _ofText((_memberData!['challengesParticipated'] as num?)?.toInt() ?? 0,
+                                  (_memberData!['challengesTotal'] as num?)?.toInt() ?? 0)
+                              : '—',
+                        ),
                       ],
                     ),
                   ],
@@ -1255,15 +1320,22 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                       ),
                     ),
                     const SizedBox(height: 14),
-                    for (int i = 0; i < (_stations.isNotEmpty ? _stations.length : 6); i++) ...[
-                      _buildStationAccordionItem(
-                        index: i,
-                        stationData: i < _stations.length ? _stations[i] : null,
-                        userLevelFrame: member.levelFrame,
-                      ),
-                      if (i < (_stations.isNotEmpty ? _stations.length : 6) - 1)
-                        const SizedBox(height: 10),
-                    ],
+                    if (!_loaded)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(color: Color(0xFFDFB690)),
+                        ),
+                      )
+                    else
+                      for (int i = 0; i < _stations.length; i++) ...[
+                        _buildStationAccordionItem(
+                          index: i,
+                          stationData: _stations[i],
+                          userLevelFrame: levelFrame,
+                        ),
+                        if (i < _stations.length - 1) const SizedBox(height: 10),
+                      ],
                   ],
                 ),
               ),
@@ -1282,16 +1354,18 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     required Map<String, dynamic>? stationData,
     required int userLevelFrame,
   }) {
-    final bool isCompletedStation = (index + 1) < userLevelFrame;
-    final bool isCurrentStation = (index + 1) == userLevelFrame;
-    final bool isLocked = (index + 1) > userLevelFrame;
+    // Same rules as the member's own station list
+    final int completed = _completedCount;
+    final bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > completed;
+    final bool isCurrentStation = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
+    final bool isCompletedStation = (index + 1) < userLevelFrame || index < completed;
     final bool isExpanded = _expandedStationIndices.contains(index);
 
     final String stationTitle = stationData != null && stationData['title'] != null
         ? stationData['title'].toString()
         : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
 
-    final sessions = _getStationSessions(index, stationData);
+    final sessions = _getStationSessions(stationData);
 
     return Container(
       decoration: BoxDecoration(
@@ -1380,7 +1454,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   children: List.generate(sessions.length, (sIdx) {
                     final session = sessions[sIdx];
-                    final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
+                    final bool isSessionCompleted = session['done'] == true;
                     final isLastSession = sIdx == sessions.length - 1;
 
                     return Row(
@@ -1444,8 +1518,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
-                                      ? 'مشاهده‌شده و تایید شده ✓'
-                                      : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
+                                      ? 'همه پارت‌ها دیده شده ✓'
+                                      : (isLocked
+                                          ? 'قفل شده'
+                                          : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),
                                   style: TextStyle(
                                     color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
                                     fontSize: 10.5,
@@ -1513,12 +1589,17 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
   }
 
   static Widget _buildStatBox(String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
-      ],
+    return Expanded(
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+        ],
+      ),
     );
   }
 

@@ -2031,6 +2031,35 @@ class HttpApiService {
     }
   }
 
+  /// A mentor's message to the students of their caravan: all of them, or one when [userId] is given.
+  /// Returns how many students received it, or null when it could not be sent.
+  Future<int?> sendMentorMessage({
+    required String title,
+    required String message,
+    String? caravanId,
+    String? userId,
+  }) async {
+    try {
+      final response = await _post(
+        Uri.parse('$baseUrl/mentor/messages'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'title': title,
+          'message': message,
+          if (caravanId != null && caravanId.isNotEmpty) 'caravanId': caravanId,
+          if (userId != null && userId.isNotEmpty) 'userId': userId,
+        }),
+      );
+      if (response.statusCode == 201) {
+        final data = await parseJsonAsync(response.body);
+        return (data is Map ? (data['sent'] as num?)?.toInt() : null) ?? 0;
+      }
+    } catch (e) {
+      debugPrint('sendMentorMessage error: $e');
+    }
+    return null;
+  }
+
   // --- Mentor Caravan Progress API ---
   Future<Map<String, dynamic>?> getMentorCaravanProgress({String? caravanId}) async {
     try {

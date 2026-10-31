@@ -1,3 +1,4 @@
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -252,6 +253,8 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
         _buildProfileMenuItem(
           title: 'کارنامه و دستاوردها',
           svgAsset: 'assets/svg_icons/reazelt01.svg',
+          // Not available to mentors yet: shown grey
+          enabled: !isMentor,
           onTap: () {
             Navigator.push(
               context,
@@ -269,6 +272,8 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
           _buildProfileMenuItem(
             title: 'گواهی ها',
             svgAsset: 'assets/svg_icons/digree .svg',
+            // Certificates are not issued yet: shown grey
+            enabled: false,
             onTap: () {
               Navigator.push(
                 context,
@@ -317,11 +322,14 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
     required String svgAsset,
     IconData? fallbackIcon,
     required VoidCallback onTap,
+    bool enabled = true,
   }) {
+    const Color disabledColor = Color(0xFF6B6985);
+    final Color iconColor = enabled ? const Color(0xFF9E9CD6) : disabledColor;
     return Material(
       color: Colors.transparent,
       child: TapExpander(child: InkWell(
-        onTap: onTap,
+        onTap: enabled ? onTap : () => AppToast.info(context, 'این بخش به‌زودی فعال می‌شود'),
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 6),
@@ -340,19 +348,19 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                           width: 22,
                           height: 22,
                           fit: BoxFit.contain,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFF9E9CD6),
+                          colorFilter: ColorFilter.mode(
+                            iconColor,
                             BlendMode.srcIn,
                           ),
                           errorBuilder: (context, error, stackTrace) => Icon(
                             fallbackIcon ?? Icons.chevron_left_rounded,
-                            color: const Color(0xFF9E9CD6),
+                            color: iconColor,
                             size: 21,
                           ),
                         )
                       : Icon(
                           fallbackIcon ?? Icons.notifications_none_rounded,
-                          color: const Color(0xFF9E9CD6),
+                          color: iconColor,
                           size: 21,
                         ),
                 ),
@@ -362,8 +370,8 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFFE2E0F2),
+                    style: TextStyle(
+                      color: enabled ? const Color(0xFFE2E0F2) : disabledColor,
                       fontSize: 13.5,
                       fontWeight: FontWeight.w500,
                       fontFamily: AppTheme.fontFamily,
@@ -470,7 +478,8 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
             children: [
               // 1. Station Progress Stepper (استپر بالای منزلگاه)
               StationProgressStepper(
-                currentStationIndex: (user.levelFrame - 1).clamp(0, 5),
+                currentStationIndex: (user.levelFrame - 1).clamp(0, (stations.isNotEmpty ? stations.length : StationNumbering.count) - 1),
+                totalNodes: stations.isNotEmpty ? stations.length : StationNumbering.count,
                 userLevelFrame: user.levelFrame,
                 completedStationsCount: user.completedStationsCount,
                 title: 'منزلگاه‌های آموزشی مسافر',
@@ -553,13 +562,13 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                       ),
                     ),
                     const SizedBox(height: 14),
-                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++) ...[
+                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : StationNumbering.count); i++) ...[
                       _buildStationAccordionItem(
                         index: i,
                         stationData: i < stations.length ? stations[i] : null,
                         userLevelFrame: user.levelFrame,
                       ),
-                      if (i < (stations.isNotEmpty ? stations.length : 6) - 1)
+                      if (i < (stations.isNotEmpty ? stations.length : StationNumbering.count) - 1)
                         const SizedBox(height: 10),
                     ],
                   ],

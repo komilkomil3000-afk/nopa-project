@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -79,7 +80,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
+    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : StationNumbering.count;
 
     return RefreshIndicator(
       onRefresh: () => _fetchStationsData(force: true),
@@ -162,7 +163,9 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
 
     // Station 1 (index == 0) is the initial station and is always unlocked!
-    bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
+    // Also locked by the server: release time or manual lock (the server never time-locks mentors)
+    bool isLocked = (index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount) ||
+        item['isLocked'] == true;
     bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
     bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
 

@@ -20,9 +20,17 @@ class StudentNotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<StudentNotificationsScreen> {
-  // 0: همه, 1: خوانده‌نشده
+  // 0: خوانده‌نشده (opens first), 1: همه
   int _selectedFilterIndex = 0;
   final Set<String> _expandedItemIds = {};
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -224,10 +232,18 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
         .toList();
 
     List<Map<String, dynamic>> filteredList;
-    if (_selectedFilterIndex == 1) {
+    if (_selectedFilterIndex == 0) {
       filteredList = allList.where((n) => n['isRead'] != true).toList();
     } else {
       filteredList = allList;
+    }
+
+    final String query = _searchController.text.trim();
+    if (_isSearching && query.isNotEmpty) {
+      filteredList = allList.where((n) {
+        final text = '${n['title'] ?? ''} ${n['body'] ?? ''}';
+        return text.contains(query);
+      }).toList();
     }
 
     final int unreadCount = repository.unreadNotificationsCount;
@@ -254,12 +270,38 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               // Header Title & Mark All Read
               _buildSectionHeader(repository, unreadCount),
 
+              if (_isSearching) ...[
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  onChanged: (_) => setState(() {}),
+                  textDirection: TextDirection.rtl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                  decoration: InputDecoration(
+                    hintText: 'جستجو در پیام‌ها',
+                    hintStyle: const TextStyle(color: Color(0xFF9D99B8), fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+                    isDense: true,
+                    filled: true,
+                    fillColor: const Color(0xFF23223D),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: const Color(0xFF383556).withValues(alpha: 0.8)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: const Color(0xFF383556).withValues(alpha: 0.8)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFDE9959)),
+                    ),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 12),
-
-              // Action Button: ارسال پیام به پشتیبانی (Styled identically to ورود به کلاس‌ها)
-              _buildSupportActionButton(),
-
-              const SizedBox(height: 14),
 
               // Filter Pills Bar (Styled identically to Calendar day pill cards)
               _buildFilterPills(allList, unreadCount),
@@ -339,8 +381,11 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             ],
           ),
 
-          if (unreadCount > 0)
-            Material(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (unreadCount > 0)
+                Material(
               color: Colors.transparent,
               child: TapExpander(child: InkWell(
                 onTap: () => repository.markAllNotificationsAsRead(),
@@ -366,6 +411,24 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                 ),
               )),
             ),
+              TapExpander(
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  icon: Icon(
+                    _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                    color: const Color(0xFFDEB58A),
+                    size: 22,
+                  ),
+                  onPressed: () => setState(() {
+                    _isSearching = !_isSearching;
+                    if (!_isSearching) _searchController.clear();
+                  }),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -381,7 +444,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
           onTap: () => SupportMessageDialog.show(context),
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF2A2835),
               borderRadius: BorderRadius.circular(8),
@@ -399,20 +462,21 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             ),
             alignment: Alignment.center,
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
                 Icon(
                   Icons.support_agent_rounded,
                   color: Color(0xFFF4DCC5),
-                  size: 18,
+                  size: 15,
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 5),
                 Text(
                   'ارسال پیام به پشتیبانی',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Color(0xFFF4DCC5),
-                    fontSize: 12.5,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.bold,
                     fontFamily: AppTheme.fontFamily,
                     fontFamilyFallback: AppTheme.fontFamilyFallback,
@@ -428,9 +492,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
   /// Filter Tabs Bar: Text-only tabs matching the category tabs in Challenges screen
   Widget _buildFilterPills(List<Map<String, dynamic>> allList, int unreadCount) {
+    // Only the unread tab shows a count; "all" has none
     final filters = [
-      {'title': 'همه', 'count': allList.length},
       {'title': 'خوانده‌نشده', 'count': unreadCount},
+      {'title': 'همه', 'count': 0},
     ];
 
     return Directionality(
@@ -438,7 +503,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       child: Column(
         children: [
           Row(
-            children: List.generate(filters.length, (idx) {
+            children: [
+              ...List.generate(filters.length, (idx) {
               final isSelected = _selectedFilterIndex == idx;
               final item = filters[idx];
               final int count = item['count'] as int;
@@ -500,7 +566,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   ),
                 )),
               );
-            }),
+              }),
+              const Spacer(),
+              _buildSupportActionButton(),
+            ],
           ),
           const SizedBox(height: 8),
           Container(

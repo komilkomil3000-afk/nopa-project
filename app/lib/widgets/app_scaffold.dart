@@ -46,7 +46,16 @@ class AppScaffold extends StatelessWidget {
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) onBackTap?.call();
       },
-      child: Scaffold(
+      child: Container(
+       // Painted behind the whole Scaffold so it also fills the area behind the bottom nav bar.
+       decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_bg.png'),
+          fit: BoxFit.cover,
+        ),
+       ),
+       child: Scaffold(
         backgroundColor: Colors.transparent,
         drawer: drawer ??
             (showDrawerButton
@@ -72,16 +81,9 @@ class AppScaffold extends StatelessWidget {
                 },
               )
             : null,
-        body: Container(
+        body: SizedBox(
           width: double.infinity,
           height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: AppColors.screenBackgroundGradient,
-            image: DecorationImage(
-              image: AssetImage('assets/images/login_bg.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
           child: SafeArea(
             child: Column(
               children: [
@@ -97,6 +99,7 @@ class AppScaffold extends StatelessWidget {
             ),
           ),
         ),
+       ),
       ),
     );
   }

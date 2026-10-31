@@ -1566,3 +1566,172 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (clean); tsc not run
 - **Status:** Completed
+
+### [2026-10-31 11:31] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+- **Description of Changes:**
+  - Mentor home quick access reduced to 3 icon+text tiles (منزلگاه ها -> tab 1, اعضا و کاروان -> /mentor_members, چالش ها -> tab 2)
+  - removed images/subtitles/badges
+  - added qa_stations01.svg, qa_members01.svg, qa_challenges01.svg (duotone #9292E2 style) in app/assets/svg_icons
+  - files: app/lib/screens/mentor/home/mentor_home_screen.dart
+- **Verification / Checkpoints Executed:**
+  - flutter analyze on mentor_home_screen.dart: no issues
+- **Status:** Completed
+
+### [2026-10-31 11:39] - Flutter App Specialist (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+- **Description of Changes:**
+  - Background now painted behind the whole Scaffold (no black strip behind bottom nav) in app_scaffold.dart and app_shell.dart
+  - stepper: current station gold like finished ones
+  - class2: station number/name header also from route args, class1 now passes stationIndex/title/number to class2 (it showed station 1 data before)
+  - calendar: starts on today's Jalali date, removed hard-coded master curriculum, station resolved from event stationId, future classes show a toast with opening time while open/past ones go to the class
+  - new core/schedule_utils.dart (Iran-time session start)
+  - sessions and clips locked until sessionDate/sessionTime and clip scheduledUnlockTime for non-mentors
+  - ststations also locked by server isLocked in roadmap/class1/class2
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues
+- **Status:** Completed
+
+### [2026-10-31 11:51] - Flutter App + Backend Integration (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+- **Description of Changes:**
+  - class2: thin gradient divider between session parts
+  - mentor station report (گزارش آموزشی اعضا): removed fake members/scores, per-member parts watched with Jalali date and per-quiz result (درست/اشتباه/در انتظار/شرکت نکرده, score, date, per-question dots) for the selected station
+  - roster member report: real videos watched of total, quizzes taken of total, challenges participated of total (replaces certificates), real station progress and stepper using server levelFrame/completedStationsCount and real station count
+  - StationNumbering.count + stepper default nodes unify station count across mentor and student screens
+  - admin_panel mentorWorkspaceController getMentorCaravanProgress now returns per-member levelFrame, completedStationsCount, challengesTotal/Participated, clipStatus (watch dates), quizResults and quiz metadata (clipId, sessionTitle, totalQuestions from questionsJson)
+  - fake fallback quizzes/scores removed. Files: app/lib/screens/student/academy/student_class2_screen.dart, app/lib/screens/mentor/academy/mentor_station_class1_screen.dart, app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart, app/lib/screens/student/profile/student_profile_screen.dart, app/lib/screens/mentor/profile/mentor_profile_screen.dart, app/lib/screens/student/academy/student_academy_roadmap_screen.dart, app/lib/screens/student/academy/student_class1_screen.dart, app/lib/widgets/station_progress_stepper.dart, app/lib/core/station_numbering.dart, app/lib/core/schedule_utils.dart, admin_panel/src/controllers/mentorWorkspaceController.ts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; backend tsc NOT run (no node_modules on this machine) - must be type-checked and deployed
+- **Status:** Completed
+
+### [2026-10-31 11:58] - Flutter App + Admin Panel (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/public/support.js` (Created)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+  - `app/lib/widgets/zoomable_image.dart` (Created)
+- **Description of Changes:**
+  - Calendar: a class that has not started or whose earlier sessions are unfinished no longer opens
+  - a lock message is shown instead
+  - station picture on class1/mentor station pages: first tap dims + zoom icon, second tap opens full screen (new widgets/zoomable_image.dart)
+  - mentor station report collapsed behind a line + مشاهده کامل button
+  - notifications: unread tab first (right) with count, all tab without count, smaller support button aligned left on the tabs row
+  - admin_panel: new پیام‌های پشتیبانی sub tab in the Jarchi/news tab (public/support.js, index.html) to read, answer and resolve support tickets
+  - supportController notifies admins on a new ticket and returns sender role/phone/caravan
+  - adminController replyTicketAdmin notifies the sender. dart format was run on mentor_station_class1_screen.dart and student_class1_screen.dart, so their diffs include formatting changes.
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check support.js ok; backend tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-31 12:12] - Flutter App + Backend (Claude Code)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/core/station_numbering.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/public/support.js` (Created)
+  - `app/assets/svg_icons/qa_challenges01.svg` (Created)
+  - `app/assets/svg_icons/qa_members01.svg` (Created)
+  - `app/assets/svg_icons/qa_stations01.svg` (Created)
+  - `app/lib/core/schedule_utils.dart` (Created)
+  - `app/lib/core/station_categories.dart` (Created)
+  - `app/lib/widgets/zoomable_image.dart` (Created)
+- **Description of Changes:**
+  - Mentor class sync: new core/station_categories.dart classifies a station's categories into skill/media by title keyword, else by position (first=skill, second=media)
+  - used in class2, class1 and mentorWorkspaceController getMentorCaravanProgress (which also flattens multiple categories and drops deleted sessions)
+  - class2 now uses the station data the mentor screen passed (stationData) and no longer puts a passed media list under the skill tab
+  - mentors see 'پیام به پشتیبانی' instead of 'ارتباط با راهبر' (contactMentor opens the support dialog for mentors)
+  - mentor messages were fake toasts: new POST /mentor/messages (sendMentorMessage) creates notifications for the caravan's students (all or one) and app_service.sendMentorMessage is wired to the create-message dialog (removed placeholder text and fixed date) and the member follow-up dialog
+  - profile: کارنامه و دستاوردها disabled/grey for mentors and گواهی ها disabled/grey for students
+  - notifications: minimal search icon + field searching title/body. Files: app/lib/core/station_categories.dart, app/lib/utils/mentor_contact.dart, app/lib/screens/student/academy/student_class1_screen.dart, student_class2_screen.dart, app/lib/screens/mentor/academy/mentor_station_class1_screen.dart, app/lib/screens/mentor/challenges/mentor_challenges_screen.dart, app/lib/screens/mentor/market/mentor_market_screen.dart, app/lib/screens/mentor/profile/mentor_profile_screen.dart, app/lib/screens/student/profile/student_profile_screen.dart, app/lib/screens/student/messages/student_notifications_screen.dart, app/lib/services/api_service.dart, admin_panel/src/controllers/mentorWorkspaceController.ts, admin_panel/src/routes/api.ts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; backend tsc not run (no node_modules)
+- **Status:** Completed
