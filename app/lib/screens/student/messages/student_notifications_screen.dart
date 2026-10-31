@@ -23,6 +23,9 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   // 0: خوانده‌نشده (opens first), 1: همه
   int _selectedFilterIndex = 0;
   final Set<String> _expandedItemIds = {};
+  // Messages opened while the "unread" tab is shown stay in it until the user leaves the tab,
+  // so reading one does not make it jump to "all" at once
+  final Set<String> _keptInUnreadIds = {};
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
@@ -58,6 +61,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
         _expandedItemIds.add(id);
         // Mark as read automatically when opened
         if (notify['isRead'] != true && id.isNotEmpty) {
+          _keptInUnreadIds.add(id);
           repository.markNotificationAsRead(id);
         }
       }
@@ -95,6 +99,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   _NotifAction _classify(Map<String, dynamic> notify, {required bool isMentor}) {
     final String title = notify['title']?.toString() ?? '';
     final String type = notify['type']?.toString() ?? '';
+
+    if (_isSupport(notify)) {
+      return const _NotifAction('مشاهده چت', _NotifTarget.none);
+    }
 
     if (type == 'news' || title.startsWith('📢')) {
       return const _NotifAction('مشاهده', _NotifTarget.news);
@@ -136,6 +144,109 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     }
     // Informational only (e.g. a caravan leader's message): just open the text
     return const _NotifAction('مشاهده', _NotifTarget.none);
+  }
+
+  /// A reply from the support team (older rows were stored with type "alert" and this title).
+  bool _isSupport(Map<String, dynamic> notify) =>
+      notify['type']?.toString() == 'support' || (notify['title']?.toString() ?? '').contains('پاسخ پشتیبانی');
+
+  /// The whole conversation of the ticket this support reply belongs to, as chat bubbles.
+  Future<void> _showSupportChat(Map<String, dynamic> notify) async {
+    final body = (notify['body']?.toString() ?? '').trim();
+    final tickets = await HttpApiService().getTickets();
+    if (!mounted) return;
+
+    int ts(dynamic v) => DateTime.tryParse(v?.toString() ?? '')?.millisecondsSinceEpoch ?? 0;
+    Map<String, dynamic>? ticket;
+    for (final t in tickets) {
+      final replies = (t['replies'] is List) ? (t['replies'] as List) : const [];
+      if (replies.any((r) => body.isNotEmpty && (r['message']?.toString() ?? '').trim().startsWith(body))) {
+        if (ticket == null || ts(t['updatedAt']) > ts(ticket['updatedAt'])) ticket = t;
+      }
+    }
+    ticket ??= tickets.where((t) => (t['replies'] is List) && (t['replies'] as List).isNotEmpty).fold<Map<String, dynamic>?>(
+        null, (a, b) => a == null || ts(b['updatedAt']) > ts(a['updatedAt']) ? b : a);
+
+    final messages = <Map<String, dynamic>>[];
+    if (ticket != null) {
+      messages.add({'mine': true, 'text': ticket['subject']?.toString() ?? '', 'at': ticket['createdAt']});
+      final replies = List<Map<String, dynamic>>.from((ticket['replies'] as List?) ?? const [])
+        ..sort((a, b) => ts(a['createdAt']).compareTo(ts(b['createdAt'])));
+      for (final r in replies) {
+        messages.add({'mine': false, 'text': r['message']?.toString() ?? '', 'at': r['createdAt']});
+      }
+    } else {
+      messages.add({'mine': false, 'text': body, 'at': notify['createdAt']});
+    }
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+            padding: const EdgeInsets.all(16),
+            decoration: AppColors.loginDialogDecoration(radius: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'گفتگو با پشتیبانی',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: messages.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final m = messages[i];
+                      final mine = m['mine'] == true;
+                      return Align(
+                        alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 300),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: mine ? const Color(0xFF3D3C67) : const Color(0xFF4A3A2A),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(mine ? 'شما' : 'پشتیبانی',
+                                  style: const TextStyle(color: Color(0xFFDEB58A), fontSize: 10.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                              const SizedBox(height: 3),
+                              Text(m['text'] as String,
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.6, fontFamily: AppTheme.fontFamily)),
+                              const SizedBox(height: 3),
+                              Text(_formatDate(m['at'], null),
+                                  style: const TextStyle(color: Color(0xFF9D99B8), fontSize: 9.5, fontFamily: AppTheme.fontFamily)),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('بستن',
+                      style: TextStyle(color: Color(0xFF9E9CD6), fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   bool get _isMentor {
@@ -197,7 +308,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   Future<void> _handleActionClick(Map<String, dynamic> notify, AppRepository repository) async {
     final String notifId = notify['id']?.toString() ?? '';
     if (notifId.isNotEmpty) {
+      if (notify['isRead'] != true) setState(() => _keptInUnreadIds.add(notifId));
       await repository.markNotificationAsRead(notifId);
+    }
+
+    if (_isSupport(notify)) {
+      await _showSupportChat(notify);
+      return;
     }
 
     switch (_classify(notify, isMentor: _isMentor).target) {
@@ -233,7 +350,9 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
     List<Map<String, dynamic>> filteredList;
     if (_selectedFilterIndex == 0) {
-      filteredList = allList.where((n) => n['isRead'] != true).toList();
+      filteredList = allList
+          .where((n) => n['isRead'] != true || _keptInUnreadIds.contains(n['id']?.toString()))
+          .toList();
     } else {
       filteredList = allList;
     }
@@ -512,7 +631,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               return Padding(
                 padding: const EdgeInsets.only(left: 20.0),
                 child: TapExpander(child: GestureDetector(
-                  onTap: () => setState(() => _selectedFilterIndex = idx),
+                  onTap: () => setState(() {
+                    _selectedFilterIndex = idx;
+                    _keptInUnreadIds.clear();
+                  }),
                   behavior: HitTestBehavior.opaque,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -648,6 +770,19 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                 ),
                 child: Row(
                   children: [
+                    if (_isSupport(notify)) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDE9959).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFDE9959).withValues(alpha: 0.7), width: 0.8),
+                        ),
+                        child: const Text('پشتیبانی',
+                            style: TextStyle(color: Color(0xFFDEB58A), fontSize: 9.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     // Title on the right in RTL (smaller font size)
                     Expanded(
                       child: Text(

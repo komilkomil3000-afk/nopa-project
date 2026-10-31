@@ -284,7 +284,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Left Side: Previous Month (< شهریور)
-                  TapExpander(child: GestureDetector(
+                  Expanded(child: Align(alignment: Alignment.centerLeft, child: TapExpander(child: GestureDetector(
                     onTap: _goToPreviousMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
@@ -308,9 +308,10 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                       ],
                     ),
-                  )),
+                  )))),
 
-                  // Center: Current Month Title (مهرماه)
+                  // Center: Current Month Title (مهرماه) — centered on the full screen width
+                  // because both side slots are Expanded and therefore equally wide
                   Text(
                     currentMonthName,
                     style: const TextStyle(
@@ -323,7 +324,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                   ),
 
                   // Right Side: Next Month (آبان >)
-                  TapExpander(child: GestureDetector(
+                  Expanded(child: Align(alignment: Alignment.centerRight, child: TapExpander(child: GestureDetector(
                     onTap: _goToNextMonth,
                     behavior: HitTestBehavior.opaque,
                     child: Row(
@@ -347,7 +348,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         ),
                       ],
                     ),
-                  )),
+                  )))),
                 ],
               ),
             ),

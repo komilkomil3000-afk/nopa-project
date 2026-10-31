@@ -1735,3 +1735,21 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app): no issues; backend tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-31 17:31] - Claude Code (Flutter + Backend)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+- **Description of Changes:**
+  - Mentor create-message dialog: recipient picker (all members or one member), real server error shown, caravanId fallback on server and copy of each sent message saved to PrivateStudentNote
+  - Education calendar current-month title centered on full width (Expanded side slots)
+  - Messages screen: opened unread message stays in unread tab until tab change, support replies tagged 'پشتیبانی' (notification type 'support') with full-chat dialog from tickets
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (no issues); backend tsc not run (no node_modules)
+- **Status:** Completed

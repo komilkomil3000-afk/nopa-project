@@ -1337,7 +1337,7 @@ export async function replyTicketAdmin(req: AuthRequest, res: Response) {
         userId: ticket.studentId,
         title: 'پاسخ پشتیبانی',
         message: message.trim().slice(0, 300),
-        type: 'alert'
+        type: 'support'
       }
     });
 

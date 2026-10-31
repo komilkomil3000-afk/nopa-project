@@ -2039,6 +2039,7 @@ class HttpApiService {
     String? caravanId,
     String? userId,
   }) async {
+    lastMentorMessageError = null;
     try {
       final response = await _post(
         Uri.parse('$baseUrl/mentor/messages'),
@@ -2050,15 +2051,20 @@ class HttpApiService {
           if (userId != null && userId.isNotEmpty) 'userId': userId,
         }),
       );
-      if (response.statusCode == 201) {
-        final data = await parseJsonAsync(response.body);
+      final data = await parseJsonAsync(response.body);
+      if (response.statusCode == 201 || response.statusCode == 200) {
         return (data is Map ? (data['sent'] as num?)?.toInt() : null) ?? 0;
       }
+      lastMentorMessageError = data is Map ? data['error']?.toString() : null;
+      debugPrint('sendMentorMessage failed ${response.statusCode}: ${response.body}');
     } catch (e) {
       debugPrint('sendMentorMessage error: $e');
     }
     return null;
   }
+
+  /// Server-provided reason of the last failed [sendMentorMessage] (null when unknown).
+  String? lastMentorMessageError;
 
   // --- Mentor Caravan Progress API ---
   Future<Map<String, dynamic>?> getMentorCaravanProgress({String? caravanId}) async {

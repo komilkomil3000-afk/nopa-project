@@ -1971,15 +1971,28 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   void _showCreateMessageDialog(BuildContext context, UserModel user) {
     final titleCtrl = TextEditingController();
     final messageCtrl = TextEditingController();
-    String selectedAudience = 'همه اعضا';
+    String? selectedUserId; // null = all members
+    List<Map<String, dynamic>> members = [];
+    bool membersRequested = false;
     bool isSending = false;
     final today = ScheduleUtils.todayJalali();
     final todayText = '${today.year}/${today.month.toString().padLeft(2, '0')}/${today.day.toString().padLeft(2, '0')}'.toPersianDigits();
+    final caravanForMessage = Provider.of<AppRepository>(context, listen: false);
+    final messageCaravanId = caravanForMessage.selectedCaravanId.isNotEmpty ? caravanForMessage.selectedCaravanId : caravanForMessage.activeCaravanId;
 
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext ctx) {
+        return StatefulBuilder(builder: (ctx, setDialogState) {
+        if (!membersRequested) {
+          membersRequested = true;
+          HttpApiService().getMentorCaravanProgress(caravanId: messageCaravanId).then((data) {
+            if (data != null && data['members'] is List && ctx.mounted) {
+              setDialogState(() => members = List<Map<String, dynamic>>.from(data['members']));
+            }
+          });
+        }
         return Directionality(
           textDirection: TextDirection.rtl,
           child: Dialog(
@@ -2038,7 +2051,31 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                     // Field 3: دریافت کننده
                     _buildContactDialogFieldRow(
                       label: 'دریافت کننده:',
-                      child: _buildContactDialogValueText(selectedAudience),
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF7A709E), width: 1.1),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String?>(
+                            value: selectedUserId,
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF2A2550),
+                            iconEnabledColor: const Color(0xFF9E9CD6),
+                            style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13),
+                            items: [
+                              const DropdownMenuItem<String?>(value: null, child: Text('همه اعضا')),
+                              ...members.where((m) => m['id'] != null).map((m) => DropdownMenuItem<String?>(
+                                    value: m['id'].toString(),
+                                    child: Text(m['name']?.toString() ?? 'عضو', overflow: TextOverflow.ellipsis),
+                                  )),
+                            ],
+                            onChanged: (v) => setDialogState(() => selectedUserId = v),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -2129,16 +2166,17 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             }
                             if (isSending) return;
                             isSending = true;
-                            final repository = Provider.of<AppRepository>(context, listen: false);
-                            final sent = await HttpApiService().sendMentorMessage(
+                            final api = HttpApiService();
+                            final sent = await api.sendMentorMessage(
                               title: title,
                               message: text,
-                              caravanId: repository.activeCaravanId,
+                              caravanId: messageCaravanId,
+                              userId: selectedUserId,
                             );
                             if (!ctx.mounted) return;
                             if (sent == null) {
                               isSending = false;
-                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
+                              AppToast.error(context, api.lastMentorMessageError ?? 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
                               return;
                             }
                             Navigator.pop(ctx);
@@ -2182,6 +2220,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             ),
           ),
         );
+        });
       },
     );
   }

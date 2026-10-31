@@ -460,13 +460,15 @@ export async function sendMentorMessage(req: AuthRequest, res: Response) {
     }
 
     const isAdmin = String(req.user!.role || '').toLowerCase() === 'admin';
-    const caravans = await prisma.caravan.findMany({
-      where: {
-        ...(isAdmin ? {} : { mentorId: req.user!.id }),
-        ...(caravanId ? { id: String(caravanId) } : {})
-      },
+    const mentorScope = isAdmin ? {} : { mentorId: req.user!.id };
+    let caravans = await prisma.caravan.findMany({
+      where: { ...mentorScope, ...(caravanId ? { id: String(caravanId) } : {}) },
       select: { id: true, name: true }
     });
+    // A stale/foreign caravanId from the app must not block the message: fall back to the mentor's own caravans
+    if (caravans.length === 0 && caravanId) {
+      caravans = await prisma.caravan.findMany({ where: mentorScope, select: { id: true, name: true } });
+    }
     if (caravans.length === 0) {
       return res.status(400).json({ error: 'شما به کاروانی متصل نیستید' });
     }
@@ -491,6 +493,15 @@ export async function sendMentorMessage(req: AuthRequest, res: Response) {
         title: cleanTitle,
         message: cleanMessage,
         type: 'alert'
+      }))
+    });
+
+    // Keep a copy of every sent message in the mentor's private notes about each student
+    await prisma.privateStudentNote.createMany({
+      data: recipients.map(r => ({
+        mentorId: req.user!.id,
+        studentId: r.id,
+        noteText: `${cleanTitle}\n${cleanMessage}`
       }))
     });
 
