@@ -1855,3 +1855,20 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `prisma validate`; re-running the diff shows no remaining difference for these columns.
 - **Status:** Completed
+
+### [2026-10-31 23:30] - Claude Code (Admin Panel RBAC)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/utils/roles.ts`, `src/middleware/adminAccess.ts`, `src/middleware/auth.ts`, `src/controllers/adminController.ts`, `src/routes/admin.ts`, `src/routes/api.ts` (Modified)
+  - `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/index.html`, `public/app.js` (Modified)
+- **Description of Changes:**
+  - Four levels: admin (super admin), sub_admin (content admin), mentor, student. Login (authController) was NOT touched; the super admin branch of the /admin gate never reads the database.
+  - sub_admin: access only to sections granted on the role row (RolePermission.permissionsJson, view/edit per section; canLoginPanel + User.panelAccess decide panel entry). Unmapped routes (roles, security, settings, audit, export, role/password changes) stay super-admin only; a sub admin cannot modify admin/sub_admin accounts.
+  - Super admin only: PUT /users/:id/role (bumps tokenVersion, drops sessions, can't change own role or demote the last admin), PUT /users/:id/panel-access, role matrix with section grants. createUser/updateUser reject role changes by non-admins.
+  - authenticateJWT now puts the live DB role + panelAccess on req.user. GET /admin/panel/me for the UI.
+  - Panel: role options (4 levels), panel access select in user modal, "sub admin access" card in roles tab, sidebar hides ungranted tabs, 403 from permissions no longer logs the user out.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit` clean; `node --test tests/security.test.js` 9/9; `node --check public/app.js`. Not run against a live DB.
+- **Status:** Completed

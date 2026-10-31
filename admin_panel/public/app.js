@@ -99,6 +99,8 @@ function showDashboard() {
   document.getElementById('current-user-name').textContent = currentUser.name || 'مدیر سیستم';
   document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
 
+  if (typeof applyPanelPermissions === 'function') applyPanelPermissions();
+
   // Route according to current URL hash
   if (typeof handleHashRouting === 'function') {
     handleHashRouting();
@@ -638,6 +640,16 @@ async function request(url, options = {}) {
     'Authorization': `Bearer ${currentToken}`
   };
   const res = await fetch(url, options);
+  if (res.status === 403) {
+    // 403 from the permission layer (e.g. a sub admin without this section) is not an expired
+    // session: show the server's reason and keep the user signed in. Only a bad/expired token logs out.
+    let reason = '';
+    try { reason = (await res.clone().json()).error || ''; } catch (_) { /* not JSON */ }
+    if (reason && !/توکن|نشست|مسدود|IP/.test(reason)) {
+      showToast(reason, 'error');
+      return res;
+    }
+  }
   if (res.status === 401 || res.status === 403) {
     // Session expired or unauthorized: non-blocking toast, only if a token was actually sent
     if (currentToken) showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید', 'error');
@@ -2408,7 +2420,7 @@ async function loadUsers() {
     }
 
     data.users.forEach(u => {
-      let roleBadge = `<span class="badge badge-${u.role}">${u.role === 'admin' ? 'مدیر' : u.role === 'mentor' ? 'مربی' : 'دانش‌آموز'}</span>`;
+      let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
         roleBadge += ` <span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelName}</span>`;
@@ -2489,7 +2501,7 @@ async function viewUserDetails(userId) {
         <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
           <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
             <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${esc(user.name.substring(0,2))}</div>
-            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'مدیر' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
+            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
             <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
             <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
@@ -3729,6 +3741,7 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   document.getElementById('edit-user-id').value = userId;
   document.getElementById('modal-user-name').value = userName;
   document.getElementById('modal-user-role').value = userRole;
+  setupUserModalAccessControls(userRole, user?.panelAccess ?? null);
   document.getElementById('modal-user-level').value = userLevel;
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   document.getElementById('modal-user-national-id').value = userNationalId;
@@ -3834,6 +3847,7 @@ async function handleUserFormSubmit(e) {
 
   const data = await res.json();
   if (res.ok) {
+    await saveUserPanelAccess(id || data.userId);
     alert(data.message || 'مشخصات کاربر با موفقیت ذخیره شد');
     document.getElementById('user-modal-overlay').style.display = 'none';
     if (typeof loadUsers === 'function') loadUsers();
@@ -4042,6 +4056,7 @@ async function loadRolePermissions() {
   try {
     const res = await request('/api/v1/admin/roles');
     const roles = await res.json();
+    if (typeof renderSubAdminAccess === 'function') renderSubAdminAccess(roles);
 
     roles.forEach(role => {
       const phoneInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="maskPhoneNumbers"]`);
@@ -4494,7 +4509,7 @@ window.viewStudentDetails = async function(studentId) {
           <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
           <div><strong style="color:#94a3b8;">کد کاربری:</strong> <span style="font-family:monospace; color:#38bdf8;">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
           <div><strong style="color:#94a3b8;">کاروان عضو:</strong> <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
-          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'مدیر' : 'دانش‌آموز'}</div>
+          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
           <div><strong style="color:#94a3b8;">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
           <div><strong style="color:#94a3b8;">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
@@ -7415,7 +7430,7 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
 
   filtered.forEach(u => {
     const tr = document.createElement('tr');
-    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'مدیر' : 'دانش‌آموز');
+    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'سوپر ادمین' : u.role === 'sub_admin' ? 'ادمین' : 'دانش‌آموز');
     const displayCode = u.userCode ? `NP-${u.userCode}` : (u.phoneNumber || '-');
     const zarik = (u.zarikBalance ?? u.zarik ?? 0).toLocaleString('fa-IR');
     
@@ -10059,3 +10074,155 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
 
 
 
+
+
+// =========================================================================
+// FOUR USER LEVELS: super admin (admin), admin (sub_admin), mentor, student
+// =========================================================================
+function roleLabel(role) {
+  const r = String(role || '').toLowerCase().replace(/[\s-]/g, '_');
+  if (r === 'admin') return 'سوپر ادمین';
+  if (r === 'sub_admin') return 'ادمین (مدیر محتوایی)';
+  if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'مربی';
+  return 'دانش‌آموز';
+}
+window.roleLabel = roleLabel;
+
+const PANEL_SECTION_LABELS = {
+  users: 'کاربران، مخاطبان و سطوح',
+  rewards: 'کیف پول، زریک و دارایی‌ها',
+  mentors: 'راهبران و مدارک',
+  instructors: 'بانک اساتید',
+  caravans: 'کاروان‌ها',
+  lms: 'منزلگاه‌ها، کلاس‌ها و آزمون‌ها',
+  challenges: 'چالش‌ها و تکالیف',
+  support: 'تیکت‌ها، پیام‌ها و چت',
+  content: 'جارچی، بنر، رسانه و فرم‌ها',
+  notifications: 'اعلان‌ها و پیام‌رسانی',
+  analytics: 'آمار و لیگ'
+};
+
+// Sidebar tab -> panel section. Tabs not listed here are super-admin only.
+const TAB_SECTION = {
+  'users-tab': 'users', 'levels-tab': 'users', 'rewards-tab': 'rewards',
+  'mentors-profile-tab': 'mentors', 'mentors-docs-tab': 'mentors', 'mentors-tickets-tab': 'support',
+  'instructors-tab': 'instructors', 'caravans-tab': 'caravans', 'lms-tab': 'lms',
+  'form-builder-tab': 'content', 'news-tab': 'content', 'submissions-tab': 'challenges',
+  'notifications-tab': 'notifications', 'analytics-tab': 'analytics'
+};
+
+function isSuperAdminUser() {
+  return String((currentUser && currentUser.role) || '').toLowerCase() === 'admin';
+}
+
+// Hides the sidebar entries a sub admin was not granted (the server enforces it as well).
+async function applyPanelPermissions() {
+  try {
+    const role = String((currentUser && currentUser.role) || '').toLowerCase().replace(/[\s-]/g, '_');
+    if (role !== 'sub_admin') return;
+    const res = await request('/api/v1/admin/panel/me');
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || 'دسترسی شما به پنل فعال نشده است', 'error');
+      return;
+    }
+    const me = await res.json();
+    const sections = me.sections || {};
+    document.querySelectorAll('.menu-item[data-tab]').forEach(li => {
+      const section = TAB_SECTION[li.getAttribute('data-tab')];
+      li.style.display = (section && sections[section]) ? '' : 'none';
+    });
+    document.querySelectorAll('.accordion-item').forEach(acc => {
+      const visible = Array.from(acc.querySelectorAll('.menu-item')).some(li => li.style.display !== 'none');
+      acc.style.display = visible ? '' : 'none';
+    });
+  } catch (e) {
+    console.error('applyPanelPermissions error:', e);
+  }
+}
+window.applyPanelPermissions = applyPanelPermissions;
+
+// ---- user modal: role options and panel access (super admin only) ----
+function setupUserModalAccessControls(role, panelAccess) {
+  const superAdmin = isSuperAdminUser();
+  const roleSelect = document.getElementById('modal-user-role');
+  if (roleSelect) {
+    Array.from(roleSelect.options).forEach(opt => {
+      // Only a super admin may hand out admin levels
+      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin');
+    });
+    const refresh = () => {
+      const group = document.getElementById('panel-access-group');
+      const r = roleSelect.value;
+      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'mentor')) ? 'block' : 'none';
+    };
+    roleSelect.addEventListener('change', refresh);
+    refresh();
+  }
+  const sel = document.getElementById('modal-user-panel-access');
+  if (sel) sel.value = panelAccess === true ? 'true' : panelAccess === false ? 'false' : 'default';
+}
+
+async function saveUserPanelAccess(userId) {
+  const group = document.getElementById('panel-access-group');
+  if (!userId || !isSuperAdminUser() || !group || group.style.display === 'none') return;
+  const v = document.getElementById('modal-user-panel-access').value;
+  const panelAccess = v === 'true' ? true : v === 'false' ? false : null;
+  try {
+    const res = await request('/api/v1/admin/users/' + userId + '/panel-access', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ panelAccess })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || 'خطا در ذخیره دسترسی پنل', 'error');
+    }
+  } catch (e) {
+    console.error('saveUserPanelAccess error:', e);
+  }
+}
+
+// ---- roles tab: section grants for the sub admin role (super admin only) ----
+function renderSubAdminAccess(roles) {
+  const box = document.getElementById('sub-admin-sections');
+  const card = document.getElementById('sub-admin-access-card');
+  if (!box || !card) return;
+  card.style.display = isSuperAdminUser() ? '' : 'none';
+  const row = (roles || []).find(r => r.roleName === 'sub_admin') || {};
+  let grants = {};
+  try { grants = JSON.parse(row.permissionsJson || '{}') || {}; } catch (_) { grants = {}; }
+  document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
+  box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px;">
+      <span style="font-size:12.5px;">${PANEL_SECTION_LABELS[key]}</span>
+      <select class="select-ctrl sub-admin-section" data-section="${key}" style="min-width:120px;">
+        <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
+        <option value="view" ${grants[key] === 'view' ? 'selected' : ''}>فقط مشاهده</option>
+        <option value="edit" ${grants[key] === 'edit' ? 'selected' : ''}>مشاهده و ویرایش</option>
+      </select>
+    </div>`).join('');
+}
+
+async function saveSubAdminAccess() {
+  const permissions = {};
+  document.querySelectorAll('.sub-admin-section').forEach(sel => {
+    if (sel.value) permissions[sel.dataset.section] = sel.value;
+  });
+  try {
+    const res = await request('/api/v1/admin/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roleName: 'sub_admin',
+        canLoginPanel: document.getElementById('sub-admin-can-login').checked,
+        permissionsJson: permissions
+      })
+    });
+    const d = await res.json().catch(() => ({}));
+    showToast(res.ok ? 'دسترسی‌های ادمین ذخیره شد' : (d.error || 'خطا در ذخیره دسترسی‌ها'), res.ok ? 'success' : 'error');
+  } catch (e) {
+    console.error('saveSubAdminAccess error:', e);
+  }
+}
+window.saveSubAdminAccess = saveSubAdminAccess;

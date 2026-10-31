@@ -33,6 +33,8 @@ import {
   getLevelsAndCertificates,
   replyTicketAdmin,
   resolveTicketAdmin,
+  setUserRole,
+  setUserPanelAccess,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
@@ -66,17 +68,21 @@ import { getSystemSetting, setSystemSetting } from '../controllers/settingContro
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
-import { restrictNonAdmins } from '../middleware/adminAccess';
+import { restrictNonAdmins, getPanelMe } from '../middleware/adminAccess';
 
 const router = Router();
 
 // Apply JWT authentication and authorize only admin or mentor roles to the admin panel
 router.use(authenticateJWT as any);
-router.use(authorizeRoles('admin', 'mentor', 'SUPER_MENTOR') as any);
+router.use(authorizeRoles('admin', 'sub_admin', 'mentor', 'SUPER_MENTOR') as any);
 // Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
 router.use(restrictNonAdmins as any);
 
 // 1. High-Scale User & Contact Directory
+router.get('/panel/me', getPanelMe as any);
+router.put('/users/:id/role', setUserRole as any);
+router.put('/users/:id/panel-access', setUserPanelAccess as any);
+
 router.get('/users', getUsers as any);
 router.post('/users', createUser as any);
 router.put('/users/:id', updateUser as any);

@@ -9,6 +9,7 @@ export interface AuthRequest extends Request {
     role: string;
     phoneNumber: string;
     tokenVersion?: number;
+    panelAccess?: boolean | null;
   };
 }
 
@@ -33,7 +34,7 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
 
         try {
           const user = await prisma.user.findUnique({ where: { id: payload.id } });
-          const isAdmin = payload.role?.toLowerCase() === 'admin';
+          const isAdmin = String(user?.role || payload.role).toLowerCase() === 'admin';
 
           if (!user || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
             return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
@@ -64,7 +65,8 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
           return res.status(403).json({ error: 'دسترسی مسدود شده است (IP Blocked)' });
         }
 
-        req.user = payload;
+        // Use the live role from the database so a role change takes effect immediately
+        req.user = { ...payload, role: user.role, panelAccess: user.panelAccess };
         next();
       } catch (dbErr) {
         return res.status(500).json({ error: 'خطای سرور در اعتبارسنجی کاربر' });
