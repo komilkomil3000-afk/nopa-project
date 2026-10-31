@@ -1753,3 +1753,28 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (no issues); backend tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-31 12:00] - Claude Code (Admin Panel UI)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/app.js` (Modified)
+- **Description of Changes:**
+  - Replaced the blocking browser alert for expired session (401/403 in request()) with a non-blocking toast at the bottom-left, so the login form is usable immediately.
+  - Added showToastMessage/showToastWarning: red box for warnings, green for success, auto-hides after 10 seconds.
+- **Verification / Checkpoints Executed:**
+  - Manual code review only; node is not installed so no syntax check was run.
+- **Status:** Completed
+
+### [2026-10-31 13:00] - Claude Code (Local Setup)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/.env` (Created, git-ignored, placeholder DB URL + random JWT secrets)
+  - `admin_panel/node_modules/` (Created via npm install, git-ignored)
+- **Description of Changes:**
+  - Installed Node.js LTS (v26) via winget on the dev machine, ran npm install, patch-package and prisma generate.
+  - Created a local .env so the server can start; DATABASE_URL is a placeholder and must be replaced.
+- **Verification / Checkpoints Executed:**
+  - `npm run dev` started; GET /health returned 200; DB calls fail until a real DATABASE_URL is set.
+- **Status:** Completed

@@ -640,7 +640,7 @@ async function request(url, options = {}) {
   const res = await fetch(url, options);
   if (res.status === 401 || res.status === 403) {
     // Session expired or unauthorized
-    alert('نشست کاربری شما منقضی شده یا دسترسی ندارید');
+    showToastWarning('نشست کاربری شما منقضی شده یا دسترسی ندارید');
     localStorage.removeItem('nopa_admin_token');
     showLogin();
     throw new Error('Unauthorized');
@@ -9755,6 +9755,28 @@ function showToastSuccess(message) {
     setTimeout(() => toast.style.display = 'none', 300);
   }, 3500);
 }
+
+// Non-blocking toast at bottom-left: red = warning/error, green = success. Auto-hides after 10s.
+function showToastMessage(message, type = 'warning', duration = 10000) {
+  let box = document.getElementById('nopa-toast-stack');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'nopa-toast-stack';
+    box.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:1000001;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:90vw;';
+    document.body.appendChild(box);
+  }
+  const isSuccess = type === 'success';
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = 'pointer-events:auto;color:#fff;padding:12px 24px;border-radius:8px;font-weight:bold;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,0.4);transition:opacity 0.3s ease;opacity:1;' +
+    'background-color:' + (isSuccess ? '#10b981' : '#dc2626') + ';border:1px solid ' + (isSuccess ? '#059669' : '#991b1b') + ';';
+  box.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+function showToastWarning(message) { showToastMessage(message, 'warning'); }
 
 window.deleteNews = async function(id) {
   if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
