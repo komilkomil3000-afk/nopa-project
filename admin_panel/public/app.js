@@ -27,9 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
   const modal = document.getElementById('login-modal');
 
-  if (token && token !== 'dev-bypass') {
-    if (modal) modal.style.setProperty('display', 'none', 'important');
-  }
+  if (token && token !== 'dev-bypass' && modal) modal.style.visibility = 'hidden';
 
   const form = document.getElementById('admin-login-form');
   if (form) {
@@ -49,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber, password })
+          body: JSON.stringify({ phoneNumber, password, panel: true })
         });
         const data = await res.json();
         if (res.ok && data.token) {
@@ -57,13 +55,11 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('nopa_admin_token', data.token);
           localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin', identityVerified: true }));
           currentUser = JSON.parse(localStorage.getItem('nopa_admin_user') || '{}');
-          
-          const modal = document.getElementById('login-modal');
-          if (modal) modal.style.setProperty('display', 'none', 'important');
-          
+
+          // The login screen stays up until the server confirms panel access (see showDashboard)
           showDashboard();
         } else {
-          alert(data.error || 'اطلاعات ورود اشتباه است');
+          showToast(data.error || 'اطلاعات ورود اشتباه است', 'error');
         }
       } catch (err) {
         console.error('Login error:', err);
@@ -82,13 +78,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showLogin() {
   const modal = document.getElementById('login-modal');
-  if (modal) modal.style.display = 'flex';
+  if (modal) { modal.style.display = 'flex'; modal.style.visibility = ''; }
   const layout = document.getElementById('app-layout');
   if (layout) layout.style.display = 'none';
 }
 
-function showDashboard() {
-  if (typeof window.loadAssetNames === 'function') window.loadAssetNames();
+// Ask the server what this person may do in the panel. Nothing is shown until it says yes, so a
+// person without panel permission never sees the dashboard (not even for a moment).
+async function loadMyAccess() {
+  const t = localStorage.getItem('nopa_admin_token') || localStorage.getItem('token') || '';
+  try {
+    const res = await fetch('/api/v1/admin/me/access', { headers: { 'Authorization': `Bearer ${t}` } });
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* not JSON */ }
+    if (res.ok) return data;
+    // 401/403: no panel permission, or the session is over -> say why, forget the token, back to login
+    showToast(data.error || 'ورود به پنل امکان‌پذیر نیست', 'error');
+    localStorage.removeItem('token');
+    localStorage.removeItem('nopa_admin_token');
+    localStorage.removeItem('nopa_admin_user');
+    showLogin();
+    return null;
+  } catch (err) {
+    showToast('ارتباط با سرور برقرار نشد. دوباره تلاش کنید.', 'error');
+    showLogin();
+    return null;
+  }
+}
+
+async function showDashboard() {
+  const access = await loadMyAccess();
+  if (!access) return;
+  if (window.NopaRoles) NopaRoles.setAccess(access);
+  // The server's role is authoritative (it may have changed since the last login)
+  if (access.role && currentUser && currentUser.role !== access.role) {
+    currentUser.role = access.role;
+    try { localStorage.setItem('nopa_admin_user', JSON.stringify(currentUser)); } catch (_) {}
+  }
+
   const modal = document.getElementById('login-modal');
   if (modal) modal.style.setProperty('display', 'none', 'important');
   const layout = document.getElementById('app-layout');
@@ -97,7 +124,10 @@ function showDashboard() {
   // Set current user details
   document.getElementById('current-user-avatar').textContent = currentUser.name ? currentUser.name.substring(0, 2) : 'مد';
   document.getElementById('current-user-name').textContent = currentUser.name || 'مدیر سیستم';
-  document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
+  document.getElementById('current-user-role').textContent = `نقش: ${window.NopaRoles ? NopaRoles.label(currentUser.role) : currentUser.role}`;
+  if (window.NopaRoles) NopaRoles.applyMenu(currentUser.role);
+  // Admins (SUB_ADMIN) cannot read users / mentors, so don't fire those loads for them
+  const restrictedRole = !!(window.NopaRoles && NopaRoles.allowedTabs(currentUser.role));
 
   // Route according to current URL hash
   if (typeof handleHashRouting === 'function') {
@@ -108,9 +138,11 @@ function showDashboard() {
 
   // Load initial data
   if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
-  if (typeof window.loadUsersData === 'function') window.loadUsersData();
-  if (typeof window.loadAllUsersDropdown === 'function') window.loadAllUsersDropdown();
-  if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
+  if (!restrictedRole) {
+    if (typeof window.loadUsersData === 'function') window.loadUsersData();
+    if (typeof window.loadAllUsersDropdown === 'function') window.loadAllUsersDropdown();
+    if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
+  }
   if (typeof window.loadLmsStationsData === 'function') {
     window.loadLmsStationsData();
   }
@@ -131,27 +163,19 @@ window.handleAdminLogin = async function() {
     const res = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber, password })
+      body: JSON.stringify({ phoneNumber, password, panel: true })
     });
     const data = await res.json();
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('nopa_admin_token', data.token);
+      localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin' }));
       localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
-
-      const modal = document.getElementById('login-modal') || document.getElementById('login-overlay');
-      if (modal) modal.style.setProperty('display', 'none', 'important');
-      const screen = document.getElementById('login-screen');
-      if (screen) screen.style.display = 'none';
-      document.body.classList.remove('modal-open');
-
-      // Trigger initial dashboard load
-      if (typeof loadDashboardStats === 'function') loadDashboardStats();
-      if (typeof loadUsers === 'function') loadUsers();
-      if (typeof loadMentorsTab === 'function') loadMentorsTab();
+      // A fresh load opens the panel through showDashboard, which checks access first
       window.location.reload();
     } else {
-      alert(data.error || 'اطلاعات ورود نادرست است');
+      // Denied accounts (no panel permission) stay on this screen with the reason; no token was issued
+      showToast(data.error || 'اطلاعات ورود نادرست است', 'error');
     }
   } catch (err) {
     console.error('Login fetch failed:', err);
@@ -639,6 +663,15 @@ async function request(url, options = {}) {
   };
   const res = await fetch(url, options);
   if (res.status === 401 || res.status === 403) {
+    // 403 is also used for "your role may not do this" (e.g. an admin opening a super-admin-only
+    // action). That must NOT log the person out; only real session problems do.
+    let serverMsg = '';
+    try { serverMsg = (await res.clone().json()).error || ''; } catch (e) { /* not JSON */ }
+    const sessionProblem = res.status === 401 || !currentToken || /توکن|IP|مسدود|تعلیق|مجوز ورود/.test(serverMsg);
+    if (!sessionProblem) {
+      showToast(serverMsg || 'شما دسترسی لازم برای این عملیات را ندارید', 'error');
+      throw new Error('Forbidden');
+    }
     // Session expired or unauthorized: non-blocking toast, clear every stored token key
     // (a leftover 'token' key used to re-trigger this on every page load)
     // Only warn if a token was actually sent; pre-login background loads have none.
@@ -727,6 +760,10 @@ const TAB_REVERSE_HASH_MAP = {
 // Switch tabs with URL Hash updates
 function switchTab(tabId, updateUrl = true) {
   if (!tabId) tabId = 'users-tab';
+  // Role guard: a tab the role cannot use falls back to its first allowed tab
+  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, tabId)) {
+    tabId = NopaRoles.defaultTab(currentUser.role);
+  }
 
   // Automatically dismiss user detail drawer when navigating between pages/tabs
   if (typeof window.closeUserDetailDrawer === 'function') {
@@ -830,6 +867,7 @@ function switchTab(tabId, updateUrl = true) {
     if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
     if (typeof loadRewardRules === 'function') loadRewardRules();
   } else if (tabId === 'roles-tab') {
+    if (typeof window.loadAccessMatrix === 'function') window.loadAccessMatrix();
     loadRolePermissions();
   } else if (tabId === 'audit-tab') {
     loadAuditLogs();
@@ -2375,6 +2413,7 @@ async function loadCaravans() {
 
 // Load users (paginated)
 async function loadUsers() {
+  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'users-tab')) return; // role cannot read this data
   try {
     const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}&startDate=${encodeURIComponent(filterStartDateVal)}&endDate=${encodeURIComponent(filterEndDateVal)}`;
     const res = await request(url);
@@ -2413,7 +2452,7 @@ async function loadUsers() {
     }
 
     data.users.forEach(u => {
-      let roleBadge = `<span class="badge badge-${u.role}">${u.role === 'admin' ? 'مدیر' : u.role === 'mentor' ? 'مربی' : 'دانش‌آموز'}</span>`;
+      let roleBadge = `<span class="badge badge-${u.role}">${u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : u.role === 'mentor' ? 'مربی' : 'دانش‌آموز'}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
         roleBadge += ` <span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelName}</span>`;
@@ -2494,7 +2533,7 @@ async function viewUserDetails(userId) {
         <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
           <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
             <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${esc(user.name.substring(0,2))}</div>
-            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'مدیر' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
+            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'سوپر ادمین' : user.role === 'SUB_ADMIN' ? 'ادمین' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
             <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
             <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
@@ -3734,6 +3773,19 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   document.getElementById('edit-user-id').value = userId;
   document.getElementById('modal-user-name').value = userName;
   document.getElementById('modal-user-role').value = userRole;
+  // Per-user panel login switch (super admin only; the group is hidden for everyone else)
+  const paGroup = document.getElementById('panel-access-group');
+  const paSelect = document.getElementById('modal-user-panel-access');
+  if (paGroup && paSelect) {
+    paSelect.value = user?.panelAccess === true ? 'true' : user?.panelAccess === false ? 'false' : '';
+    const paNote = document.getElementById('panel-access-effective');
+    if (paNote) {
+      paNote.textContent = userId && user && user.canEnterPanel !== undefined
+        ? (user.canEnterPanel ? 'وضعیت فعلی: این کاربر می‌تواند وارد پنل شود.' : 'وضعیت فعلی: این کاربر نمی‌تواند وارد پنل شود.')
+        : '';
+    }
+    if (window.NopaRoles && NopaRoles.isSuper(currentUser && currentUser.role)) paGroup.style.display = '';
+  }
   document.getElementById('modal-user-level').value = userLevel;
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   document.getElementById('modal-user-national-id').value = userNationalId;
@@ -3818,6 +3870,10 @@ async function handleUserFormSubmit(e) {
   const academicDegree = document.getElementById('modal-user-degree')?.value;
   const academicCertificates = document.getElementById('modal-user-certificates')?.value;
   const phoneNumber = document.getElementById('modal-user-phone')?.value;
+  // Sent only when the switch is visible (super admin); '' = follow the role default
+  const paEl = document.getElementById('modal-user-panel-access');
+  const paGroupEl = document.getElementById('panel-access-group');
+  const panelAccess = (paEl && paGroupEl && paGroupEl.style.display !== 'none') ? paEl.value : undefined;
 
   let res;
   if (id) {
@@ -3825,7 +3881,7 @@ async function handleUserFormSubmit(e) {
     res = await request(`/api/v1/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, academicDegree, academicCertificates })
+      body: JSON.stringify({ name, phoneNumber, role, panelAccess, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, academicDegree, academicCertificates })
     });
   } else {
     // Create User
@@ -3833,7 +3889,7 @@ async function handleUserFormSubmit(e) {
     res = await request('/api/v1/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, password, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth })
+      body: JSON.stringify({ name, phoneNumber, password, role, panelAccess, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth })
     });
   }
 
@@ -3881,6 +3937,7 @@ async function loadLedger() {
 }
 
 async function loadAllUsersDropdown() {
+  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'users-tab')) return; // role cannot read this data
   try {
     const res = await request('/api/v1/admin/users?page=1&limit=500');
     const data = await res.json();
@@ -4499,7 +4556,7 @@ window.viewStudentDetails = async function(studentId) {
           <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
           <div><strong style="color:#94a3b8;">کد کاربری:</strong> <span style="font-family:monospace; color:#38bdf8;">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
           <div><strong style="color:#94a3b8;">کاروان عضو:</strong> <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
-          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'مدیر' : 'دانش‌آموز'}</div>
+          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : 'دانش‌آموز'}</div>
           <div><strong style="color:#94a3b8;">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
           <div><strong style="color:#94a3b8;">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
@@ -5493,6 +5550,7 @@ window.calculateMentorStars = function(ratings, evals) {
 };
 
 window.loadMentors = async function() {
+  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'mentors-profile-tab')) return; // role cannot read this data
   const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
   if (!tbody) return;
 
@@ -7420,7 +7478,7 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
 
   filtered.forEach(u => {
     const tr = document.createElement('tr');
-    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'مدیر' : 'دانش‌آموز');
+    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : 'دانش‌آموز');
     const displayCode = u.userCode ? `NP-${u.userCode}` : (u.phoneNumber || '-');
     const zarik = (u.zarikBalance ?? u.zarik ?? 0).toLocaleString('fa-IR');
     
@@ -9970,6 +10028,7 @@ window.loadLmsStationsData = async function() {
 
 // 3. Mentors Table Loader (#mentors-tbody)
 window.loadMentorsData = async function() {
+  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'mentors-profile-tab')) return; // role cannot read this data
   if (typeof window.loadMentors === 'function') {
     await window.loadMentors();
   }
@@ -10059,4 +10118,143 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   } finally {
     if (targetEl) targetEl.placeholder = origPlaceholder;
   }
+};
+
+
+
+
+
+
+// ===================== PERMISSION MATRIX (roles tab, super admin only) =====================
+// Rows = everything a role can be allowed to do, columns = roles. Saved per role; the server
+// validates every key and enforces them on each request (the super admin always has everything).
+window.loadAccessMatrix = async function () {
+  const box = document.getElementById('access-matrix-body');
+  if (!box) return;
+  box.textContent = 'در حال بارگذاری...';
+  let data;
+  try {
+    const res = await request('/api/v1/admin/roles/matrix');
+    data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'خطا');
+  } catch (err) {
+    box.textContent = 'بارگذاری دسترسی‌ها انجام نشد.';
+    return;
+  }
+
+  // Working copy per role; saved only when the person presses "ذخیره"
+  const roles = data.roles;
+  const state = {};
+  roles.forEach(r => { state[r.roleName] = { login: !!r.canLoginPanel, keys: new Set(r.permissions), isDefault: r.isDefault }; });
+
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+  function checkbox(roleName, key, isLogin) {
+    const c = document.createElement('input');
+    c.type = 'checkbox';
+    c.checked = isLogin ? state[roleName].login : state[roleName].keys.has(key);
+    c.addEventListener('change', () => {
+      if (isLogin) state[roleName].login = c.checked;
+      else if (c.checked) state[roleName].keys.add(key); else state[roleName].keys.delete(key);
+      markDirty(roleName);
+    });
+    return c;
+  }
+
+  const dirty = new Set();
+  function markDirty(roleName) {
+    dirty.add(roleName);
+    const b = box.querySelector(`[data-save="${roleName}"]`);
+    if (b) b.classList.add('dirty');
+  }
+
+  const table = el('table', 'data-table access-matrix');
+  const thead = el('thead');
+  const hr = el('tr');
+  hr.appendChild(el('th', 'am-name', 'دسترسی'));
+  roles.forEach(r => hr.appendChild(el('th', '', r.label)));
+  hr.appendChild(el('th', '', 'سوپر ادمین'));
+  thead.appendChild(hr);
+  table.appendChild(thead);
+
+  const tbody = el('tbody');
+
+  // Row 0: entering the site at all
+  const loginRow = el('tr', 'am-login-row');
+  const loginName = el('td', 'am-name');
+  loginName.appendChild(el('strong', '', 'مجوز ورود به سایت (پنل مدیریت)'));
+  loginName.appendChild(el('div', 'am-sub', 'اگر خاموش باشد، اعضای این نقش نمی‌توانند وارد پنل شوند، مگر برای یک نفر خاص مجوز جداگانه داده شود.'));
+  loginRow.appendChild(loginName);
+  roles.forEach(r => { const td = el('td', 'am-cell'); td.appendChild(checkbox(r.roleName, null, true)); loginRow.appendChild(td); });
+  const superLogin = el('td', 'am-cell'); const sl = document.createElement('input'); sl.type = 'checkbox'; sl.checked = true; sl.disabled = true; superLogin.appendChild(sl);
+  loginRow.appendChild(superLogin);
+  tbody.appendChild(loginRow);
+
+  let lastGroup = null;
+  data.catalog.forEach(p => {
+    if (p.group !== lastGroup) {
+      lastGroup = p.group;
+      const gr = el('tr', 'am-group');
+      const gt = el('td', '', p.group);
+      gt.colSpan = roles.length + 2;
+      gr.appendChild(gt);
+      tbody.appendChild(gr);
+    }
+    const tr = el('tr');
+    const name = el('td', 'am-name');
+    name.appendChild(document.createTextNode(p.label));
+    if (p.sensitive) { const w = el('span', 'am-warn', ' ⚠'); w.title = 'دسترسی حساس'; name.appendChild(w); }
+    tr.appendChild(name);
+    roles.forEach(r => { const td = el('td', 'am-cell'); td.appendChild(checkbox(r.roleName, p.key, false)); tr.appendChild(td); });
+    const sc = el('td', 'am-cell'); const sb = document.createElement('input'); sb.type = 'checkbox'; sb.checked = true; sb.disabled = true; sc.appendChild(sb);
+    tr.appendChild(sc);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  // Footer: save / reset per role
+  const tfoot = el('tfoot');
+  const fr = el('tr');
+  fr.appendChild(el('td', 'am-name', 'عملیات'));
+  roles.forEach(r => {
+    const td = el('td', 'am-actions');
+    const save = el('button', 'btn-primary am-save', 'ذخیره'); save.type = 'button'; save.dataset.save = r.roleName;
+    const reset = el('button', 'btn-action am-reset', 'پیش‌فرض'); reset.type = 'button';
+    const tag = el('div', 'am-tag', state[r.roleName].isDefault ? 'پیش‌فرض' : 'سفارشی');
+    save.addEventListener('click', async () => {
+      try {
+        const res = await request(`/api/v1/admin/roles/matrix/${encodeURIComponent(r.roleName)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ canLoginPanel: state[r.roleName].login, permissions: Array.from(state[r.roleName].keys) })
+        });
+        const out = await res.json();
+        if (!res.ok) return showToast(out.error || 'ذخیره انجام نشد', 'error');
+        showToast(`دسترسی‌های «${r.label}» ذخیره شد`, 'success');
+        window.loadAccessMatrix();
+      } catch (e) { /* request() already told the person */ }
+    });
+    reset.addEventListener('click', async () => {
+      if (!confirm(`دسترسی‌های «${r.label}» به حالت پیش‌فرض برگردد؟`)) return;
+      try {
+        const res = await request(`/api/v1/admin/roles/matrix/${encodeURIComponent(r.roleName)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reset: true })
+        });
+        const out = await res.json();
+        if (!res.ok) return showToast(out.error || 'بازگشت به پیش‌فرض انجام نشد', 'error');
+        showToast(`«${r.label}» به حالت پیش‌فرض برگشت`, 'success');
+        window.loadAccessMatrix();
+      } catch (e) { /* handled */ }
+    });
+    td.appendChild(tag); td.appendChild(save); td.appendChild(reset);
+    fr.appendChild(td);
+  });
+  fr.appendChild(el('td', 'am-actions', ''));
+  tfoot.appendChild(fr);
+  table.appendChild(tfoot);
+
+  box.textContent = '';
+  box.appendChild(table);
 };

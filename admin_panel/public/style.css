@@ -945,6 +945,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .badge-student { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
 .badge-mentor { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 .badge-admin { background: rgba(16, 217, 129, 0.15); color: #34d399; }
+.badge-SUB_ADMIN { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
 .badge-blocked { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 .badge-active { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 

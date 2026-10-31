@@ -3,6 +3,7 @@ import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { isAnyAdmin } from '../utils/roles';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -132,7 +133,8 @@ export async function submitTask(req: AuthRequest, res: Response) {
 
 export async function getPendingSubmissions(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    // Read-only listing: admins (both levels) may monitor; reviewing stays mentor / super admin
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
     }
 
@@ -275,7 +277,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
             id: creator.id,
             name: creator.name,
             phoneNumber: creator.phoneNumber,
-            isByAdmin: creator.role === 'admin'
+            isByAdmin: isAnyAdmin(creator.role)
           } : (s.challenge.createdByMentorId?.toLowerCase().includes('admin') ? {
             id: 'admin',
             name: 'مدیر سیستم',
@@ -294,7 +296,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
 
 export async function reviewSubmission(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
     }
 
@@ -438,7 +440,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
           data: {
             userId: caravan.mentorId,
             title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
-            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' ' + assetLabel + ')' : 'رد شد'}.`,
+            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${isAnyAdmin(req.user?.role) ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
             type: 'alert'
           }
         });
@@ -449,45 +451,5 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
   } catch (error) {
     console.error('reviewSubmission error:', error);
     res.status(500).json({ error: 'خطایی در ثبت ارزیابی تکلیف رخ داد' });
-  }
-}
-
-/** Full timeline of one submission: answers, rejections (with the mentor's message) and the approval. */
-export async function getSubmissionHistory(req: AuthRequest, res: Response) {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
-    }
-    const { id } = req.params;
-    const submission = await prisma.submission.findUnique({
-      where: { id },
-      include: { challenge: true, student: { select: { caravanId: true } } }
-    });
-    if (!submission) {
-      return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
-    }
-
-    if (req.user.role === 'student') {
-      if (submission.studentId !== req.user.id) {
-        return res.status(403).json({ error: 'دسترسی غیرمجاز' });
-      }
-    } else if (req.user.role === 'mentor') {
-      const caravans = await prisma.caravan.findMany({ where: { mentorId: req.user.id }, select: { id: true } });
-      const caravanIds = caravans.map(c => c.id);
-      const isOwner = submission.challenge.createdByMentorId === req.user.id ||
-        (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId));
-      if (!isOwner) {
-        return res.status(403).json({ error: 'شما فقط به سابقه‌ی اعضای کاروان خود دسترسی دارید' });
-      }
-    }
-
-    const events = await prisma.submissionEvent.findMany({
-      where: { submissionId: id },
-      orderBy: { createdAt: 'asc' }
-    });
-    res.json(events);
-  } catch (error) {
-    console.error('getSubmissionHistory error:', error);
-    res.status(500).json({ error: 'خطایی در دریافت تاریخچه رخ داد' });
   }
 }

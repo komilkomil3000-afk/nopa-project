@@ -490,7 +490,7 @@ export const exportData = async (req: Request, res: Response) => {
         return [
           rankStr,
           u.name || 'بدون نام',
-          u.role === 'mentor' ? 'راهبر' : (u.role === 'admin' ? 'مدیر' : 'دانش‌آموز'),
+          u.role === 'mentor' ? 'راهبر' : (u.role === 'admin' ? 'سوپر ادمین' : (u.role === 'SUB_ADMIN' ? 'ادمین' : 'دانش‌آموز')),
           u.phoneNumber || '-',
           u.caravanName,
           u.zarik,
