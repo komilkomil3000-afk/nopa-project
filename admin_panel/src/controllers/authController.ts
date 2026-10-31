@@ -5,6 +5,8 @@ import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { recordSmsDispatch, getClientIp } from '../middleware/smsProtection';
 import { getJwtSecret, getJwtRefreshSecret } from '../config/secrets';
+import { canEnterPanel } from '../utils/access';
+import { PANEL_DENIED_MESSAGE } from '../middleware/adminAccess';
 
 const normalizePhone = (phone: any) => {
   if (!phone) return '';
@@ -136,6 +138,15 @@ export async function login(req: Request, res: Response) {
         });
       }
       return res.status(401).json({ error: 'رمز عبور وارد شده نادرست است' });
+    }
+
+    // The admin panel signs in with panel:true. The mobile app does not, so its login is unaffected.
+    // Checked after the password so only the real owner of the account learns the reason.
+    if (req.body?.panel === true) {
+      const allowed = await canEnterPanel(user.role, (user as any).panelAccess);
+      if (!allowed) {
+        return res.status(403).json({ error: PANEL_DENIED_MESSAGE });
+      }
     }
 
     // Reset attempts on success

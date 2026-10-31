@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/db';
 import { sendSystemNotification } from './notificationController';
+import { guardPrivilegedTarget } from '../utils/access';
 
 export async function getMentors(req: AuthRequest, res: Response) {
   try {
@@ -49,6 +50,8 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
       socialPlatform,
       assignedCaravanIds
     } = req.body;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     let user;
     if (id) {
@@ -313,4 +316,3 @@ export async function getPrivateNotes(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
-

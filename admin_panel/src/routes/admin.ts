@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { authenticateJWT, authorizeRoles } from '../middleware/auth';
+import { authenticateJWT } from '../middleware/auth';
+import { getMyAccess, getAccessMatrix, updateRoleAccess } from '../controllers/accessController';
 import {
   getUsers,
   getUserById,
@@ -64,15 +65,20 @@ import { getSystemSetting, setSystemSetting } from '../controllers/settingContro
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
-import { restrictNonAdmins } from '../middleware/adminAccess';
+import { enforcePermissions, requirePanelAccess } from '../middleware/adminAccess';
 
 const router = Router();
 
-// Apply JWT authentication and authorize only admin or mentor roles to the admin panel
+// 1) signed in  2) admin accounts whose panel login is switched off are stopped here
 router.use(authenticateJWT as any);
-router.use(authorizeRoles('admin', 'mentor', 'SUPER_MENTOR') as any);
-// Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
-router.use(restrictNonAdmins as any);
+router.use(requirePanelAccess as any);
+
+// What the signed-in person may do in the panel (the panel calls this right after login)
+router.get('/me/access', getMyAccess as any);
+
+// 3) Default-deny: everyone except the super admin only reaches the requests unlocked by the
+//    permission keys of their role (utils/permissions.ts, edited by the super admin in the panel)
+router.use(enforcePermissions as any);
 
 // 1. High-Scale User & Contact Directory
 router.get('/users', getUsers as any);
@@ -100,6 +106,8 @@ router.get('/zarik/economy-hub', getEconomyHub as any);
 router.get('/wallet/economy-hub-analytics', getEconomyHubAnalytics as any);
 
 // 3. Role-Based Access Control (RBAC) & Security
+router.get('/roles/matrix', getAccessMatrix as any);
+router.put('/roles/matrix/:roleName', updateRoleAccess as any);
 router.get('/roles', getRolePermissions as any);
 router.post('/roles', updateRolePermissions as any);
 router.post('/security/revoke', revokeAllSessions as any);
@@ -283,4 +291,3 @@ router.put('/instructors/:id', createOrUpdateInstructor as any);
 router.delete('/instructors/:id', deleteInstructor as any);
 
 export default router;
-

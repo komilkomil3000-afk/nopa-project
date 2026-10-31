@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { isAnyAdmin } from '../utils/roles';
 
 export async function createTicket(req: AuthRequest, res: Response) {
   try {
@@ -37,7 +38,7 @@ export async function getTickets(req: AuthRequest, res: Response) {
       adminWhere.studentId = { in: usersInCaravan.map(u => u.id) };
     }
 
-    if (req.user!.role === 'admin') {
+    if (isAnyAdmin(req.user!.role)) {
       tickets = await prisma.supportTicket.findMany({
         where: adminWhere,
         include: { replies: true, student: { select: { name: true, avatarUrl: true } } },

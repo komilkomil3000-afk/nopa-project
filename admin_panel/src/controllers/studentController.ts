@@ -2,11 +2,14 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 import bcrypt from 'bcryptjs';
+import { guardPrivilegedTarget } from '../utils/access';
 
 
 export async function createOrUpdateStudent(req: AuthRequest, res: Response) {
   try {
     const { id, name, phoneNumber, nationalId, dateOfBirth, city, caravanId, mentorId } = req.body;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     // Check if CRM verified this number. If it exists as another student, it's a family sub-profile.
     let user;

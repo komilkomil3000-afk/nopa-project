@@ -51,6 +51,7 @@ async function seedDirectAdmin() {
   await prisma.rolePermission.upsert({
     where: { roleName: 'admin' },
     update: {
+      canLoginPanel: true,
       manageContent: true,
       manageMentors: true,
       manageStudents: true,
@@ -62,6 +63,7 @@ async function seedDirectAdmin() {
     },
     create: {
       roleName: 'admin',
+      canLoginPanel: true,
       manageContent: true,
       manageMentors: true,
       manageStudents: true,

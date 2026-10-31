@@ -1,79 +1,73 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth';
+import { canEnterPanel, isRequestAllowed } from '../utils/access';
+import { DEFAULT_ROLE_PERMISSIONS, matches, rulesForKeys, configKey } from '../utils/permissions';
+import { isAnyAdmin, isSuperAdmin } from '../utils/roles';
 
 /**
- * Default-deny gate for the /admin router.
+ * Access control for the /admin router.
  *
- * - role "admin": unrestricted (same as before).
- * - mentor / SUPER_MENTOR: may only call the explicit allowlist below. Anything that
- *   mints currency, changes roles, deletes or exports users, rewrites RBAC, edits system
- *   settings or content, or broadcasts globally is admin-only simply because it is not listed.
+ *   super admin (stored 'admin')  everything, always
+ *   everyone else                 only the requests unlocked by the permission keys their role holds
+ *                                 (utils/permissions.ts). The super admin edits those keys in the panel;
+ *                                 until edited, each role has what it could do before the editor existed.
  *
- * New admin routes are therefore admin-only until someone deliberately adds them here.
- *
- * Paths are matched against req.path, i.e. relative to the router mount (/api/v1/admin).
+ * Default-deny: a route that is not in the permission catalog (role management, the permission
+ * matrix, ...) is super-admin-only. Paths are matched relative to the router mount (/api/v1/admin).
  */
-interface Rule {
-  methods: string[];
-  path: RegExp;
+
+export const PANEL_DENIED_MESSAGE = 'مجوز ورود به پنل برای حساب شما فعال نیست. با مدیر سیستم تماس بگیرید.';
+
+/**
+ * Hard stop for admin / super admin accounts whose panel login has been switched off, on every
+ * request (a token issued earlier stops working immediately). Mentors and students are not blocked
+ * here: the mobile app also calls a few /admin routes with their tokens, and what they can reach is
+ * already limited by the permission keys of their role. They are kept out of the panel UI itself at
+ * login and by GET /me/access.
+ */
+export async function requirePanelAccess(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'توکن اعتبارسنجی ارسال نشده است' });
+    if (isAnyAdmin(req.user.role) && !(await canEnterPanel(req.user.role, req.user.panelAccess))) {
+      return res.status(403).json({ error: PANEL_DENIED_MESSAGE });
+    }
+    next();
+  } catch (e) {
+    console.error('requirePanelAccess error:', e);
+    res.status(500).json({ error: 'خطای سرور در بررسی دسترسی' });
+  }
 }
 
-const GET = ['GET'];
+export async function enforcePermissions(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const role = req.user?.role;
+    if (isSuperAdmin(role)) return next();
+    if (await isRequestAllowed(role, req.method, req.path)) return next();
+    return res.status(403).json({
+      error: isAnyAdmin(role) || configKey(role) === 'mentor'
+        ? 'این بخش برای نقش شما فعال نشده است. برای دریافت دسترسی با سوپر ادمین تماس بگیرید'
+        : 'این عملیات فقط برای سوپر ادمین مجاز است',
+    });
+  } catch (e) {
+    console.error('enforcePermissions error:', e);
+    res.status(500).json({ error: 'خطای سرور در بررسی دسترسی' });
+  }
+}
 
-const MENTOR_ALLOWED: Rule[] = [
-  // Read-only operational views
-  { methods: GET, path: /^\/users$/i },
-  { methods: GET, path: /^\/users\/metrics$/i },
-  { methods: GET, path: /^\/users\/(?!export$)[^/]+$/i },
-  { methods: GET, path: /^\/users\/[^/]+\/analytics$/i },
-  { methods: GET, path: /^\/caravans(\/[^/]+)?$/i },
-  { methods: GET, path: /^\/asset-conversions$/i },
-  { methods: GET, path: /^\/tickets$/i },
-  { methods: GET, path: /^\/challenges$/i },
-  { methods: GET, path: /^\/submissions$/i },
-  { methods: GET, path: /^\/analytics$/i },
-  { methods: GET, path: /^\/leaderboard\/(assets|individuals|caravans)$/i },
-  { methods: GET, path: /^\/rewards\/ledger$/i },
-  { methods: GET, path: /^\/chat$/i },
-  { methods: GET, path: /^\/messages$/i },
-  { methods: GET, path: /^\/lms\/(stations|classes|sessions|clips|quizzes)$/i },
-  { methods: GET, path: /^\/courses\/hierarchy$/i },
-  { methods: GET, path: /^\/mentors\/(scorecards|evaluations)$/i },
-  { methods: GET, path: /^\/levels-and-certificates$/i },
-  { methods: GET, path: /^\/forms$/i },
-  { methods: GET, path: /^\/news$/i },
-  { methods: GET, path: /^\/banners$/i },
+// ---- Built-in defaults, synchronous, no database (kept for tests and as documentation) ----
+const MENTOR_ALLOWED = rulesForKeys(DEFAULT_ROLE_PERMISSIONS.mentor);
+const SUB_ADMIN_ALLOWED = rulesForKeys(DEFAULT_ROLE_PERMISSIONS.SUB_ADMIN);
 
-  // Day-to-day mentor actions
-  { methods: ['POST'], path: /^\/tickets\/[^/]+\/(reply|resolve)$/i },
-  { methods: ['POST', 'PATCH'], path: /^\/submissions\/[^/]+\/review$/i },
-  { methods: ['POST'], path: /^\/challenges$/i },
-  { methods: ['PUT', 'PATCH'], path: /^\/challenges\/[^/]+$/i },
-  { methods: ['POST'], path: /^\/messages$/i },
-  { methods: ['POST'], path: /^\/messages\/[^/]+\/reply$/i },
-  { methods: ['POST'], path: /^\/caravans\/[^/]+\/broadcast$/i },
-];
-
+/** Legacy synchronous gate using only the built-in defaults. The router uses enforcePermissions. */
 export function restrictNonAdmins(req: AuthRequest, res: Response, next: NextFunction) {
   const role = req.user?.role?.toLowerCase();
-  if (role === 'admin') {
-    return next();
-  }
-
-  // Defence in depth: only mentor roles get the allowlist; any other role is rejected here too
-  if (role !== 'mentor' && role !== 'super_mentor') {
-    return res.status(403).json({ error: 'این عملیات فقط برای مدیر سیستم مجاز است' });
-  }
-
-  const method = req.method.toUpperCase();
-  const path = req.path;
-  const allowed = MENTOR_ALLOWED.some(rule => rule.methods.includes(method) && rule.path.test(path));
-  if (allowed) {
-    return next();
-  }
-
-  return res.status(403).json({ error: 'این عملیات فقط برای مدیر سیستم مجاز است' });
+  if (role === 'admin') return next();
+  const rules = role === 'sub_admin' ? SUB_ADMIN_ALLOWED
+    : (role === 'mentor' || role === 'super_mentor') ? MENTOR_ALLOWED : null;
+  if (rules && matches(rules, req.method, req.path)) return next();
+  return res.status(403).json({ error: 'این عملیات فقط برای سوپر ادمین مجاز است' });
 }
 
 // Exposed for tests
 export const __MENTOR_ALLOWED_FOR_TESTS = MENTOR_ALLOWED;
+export const __SUB_ADMIN_ALLOWED_FOR_TESTS = SUB_ADMIN_ALLOWED;

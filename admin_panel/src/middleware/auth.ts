@@ -9,6 +9,8 @@ export interface AuthRequest extends Request {
     role: string;
     phoneNumber: string;
     tokenVersion?: number;
+    /** per-user panel login override (null/undefined = follow the role) */
+    panelAccess?: boolean | null;
   };
 }
 
@@ -64,7 +66,9 @@ export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunct
           return res.status(403).json({ error: 'دسترسی مسدود شده است (IP Blocked)' });
         }
 
-        req.user = payload;
+        // The role always comes from the database, never from the token: when a super admin
+        // changes someone's role (or demotes an admin) it applies on their very next request.
+        req.user = { ...payload, role: user.role, panelAccess: (user as any).panelAccess ?? null };
         next();
       } catch (dbErr) {
         return res.status(500).json({ error: 'خطای سرور در اعتبارسنجی کاربر' });

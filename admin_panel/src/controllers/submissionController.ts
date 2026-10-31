@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { isAnyAdmin } from '../utils/roles';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -90,7 +91,8 @@ export async function submitTask(req: AuthRequest, res: Response) {
 
 export async function getPendingSubmissions(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    // Read-only listing: admins (both levels) may monitor; reviewing stays mentor / super admin
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
     }
 
@@ -233,7 +235,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
             id: creator.id,
             name: creator.name,
             phoneNumber: creator.phoneNumber,
-            isByAdmin: creator.role === 'admin'
+            isByAdmin: isAnyAdmin(creator.role)
           } : (s.challenge.createdByMentorId?.toLowerCase().includes('admin') ? {
             id: 'admin',
             name: 'مدیر سیستم',
@@ -252,7 +254,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
 
 export async function reviewSubmission(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
     }
 
@@ -365,7 +367,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
           data: {
             userId: caravan.mentorId,
             title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
-            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
+            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${isAnyAdmin(req.user?.role) ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
             type: 'alert'
           }
         });

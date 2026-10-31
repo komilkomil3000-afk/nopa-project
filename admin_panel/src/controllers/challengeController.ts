@@ -3,10 +3,11 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { stripAnswerKeys } from '../utils/answerKeys';
 import prisma from '../config/db';
+import { isAnyAdmin, isSuperAdmin } from '../utils/roles';
 
 export async function createChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها مربی‌ها و مدیران می‌توانند چالش ایجاد کنند' });
     }
 
@@ -29,8 +30,9 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       }
       assignedCaravanId = mentorCaravan.id;
       creatorId = req.user.id;
-    } else if (req.user.role === 'admin') {
-      if (targetMentorId) {
+    } else if (isAnyAdmin(req.user.role)) {
+      // Only the super admin may create a challenge in another person's name
+      if (targetMentorId && isSuperAdmin(req.user.role)) {
         creatorId = targetMentorId;
       }
       if (caravanId && caravanId !== 'all') {
@@ -57,8 +59,8 @@ export async function createChallenge(req: AuthRequest, res: Response) {
     });
 
     // Notify: "ایجاد و نتیجه هر چالش باید درون برنامه به فرد و راهبر اطلاع داده شود و اعلان داده شود."
-    const isByAdmin = req.user.role === 'admin';
-    const creatorName = isByAdmin ? 'مدیر سیستم' : ((req.user as any).name || 'راهبر');
+    const isByAdmin = isAnyAdmin(req.user.role);
+    const creatorName = isSuperAdmin(req.user.role) ? 'مدیر سیستم' : (isByAdmin ? 'ادمین' : ((req.user as any).name || 'راهبر'));
 
     let targetStudents: { id: string }[] = [];
     if (assignedCaravanId) {
@@ -121,7 +123,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
 export async function updateChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
+    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند چالش‌ها را ویرایش کنند' });
     }
 
@@ -151,8 +153,8 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
     if (rewardZarik !== undefined) updateData.rewardZarik = Number(rewardZarik);
     if (stationId !== undefined) updateData.stationId = stationId || null;
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
-    if (req.user.role === 'admin') {
-      if (targetMentorId) {
+    if (isAnyAdmin(req.user.role)) {
+      if (targetMentorId && isSuperAdmin(req.user.role)) {
         updateData.createdByMentorId = targetMentorId;
       }
       if (caravanId !== undefined) {
@@ -174,7 +176,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
 
 export async function deleteChallenge(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'mentor')) {
+    if (!req.user || (!isAnyAdmin(req.user.role) && req.user.role !== 'mentor')) {
       return res.status(403).json({ error: 'دسترسی غیرمجاز' });
     }
 
@@ -271,7 +273,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
 
         // Find admin IDs for general challenges
         const adminUsers = await prisma.user.findMany({
-          where: { role: 'admin' },
+          where: { role: { in: ['admin', 'SUB_ADMIN'] } },
           select: { id: true }
         });
         const adminIds = adminUsers.map(a => a.id);
@@ -323,7 +325,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
             ...(mentorCaravanIds.length > 0 ? [{ caravanId: { in: mentorCaravanIds } }] : [])
           ]
         };
-      } else if (user.role === 'admin') {
+      } else if (isAnyAdmin(user.role)) {
         const { caravanId, mentorId } = req.query;
         if (caravanId && caravanId !== 'all') {
           whereClause.caravanId = caravanId as string;
@@ -402,7 +404,7 @@ export async function getChallenges(req: AuthRequest, res: Response) {
       const approvedSubmissions = c.submissions.filter(s => s.status === 'approved').length;
 
       const creator = creatorMap.get(c.createdByMentorId);
-      const isByAdmin = creator?.role === 'admin' || (!creator && c.createdByMentorId.toLowerCase().includes('admin'));
+      const isByAdmin = isAnyAdmin(creator?.role) || (!creator && c.createdByMentorId.toLowerCase().includes('admin'));
       
       const directCaravan = c.caravan;
       const mentorCaravan = creator ? mentorCaravanMap.get(creator.id) : null;

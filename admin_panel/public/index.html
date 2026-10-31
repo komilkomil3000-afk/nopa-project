@@ -245,7 +245,8 @@
               <option value="">نقش (همه)</option>
               <option value="student">دانش‌آموز</option>
               <option value="mentor">مربی</option>
-              <option value="admin">مدیر</option>
+              <option value="SUB_ADMIN">ادمین</option>
+              <option value="admin">سوپر ادمین</option>
             </select>
             <select id="filter-caravan-ctrl" class="select-ctrl">
               <option value="">کاروان (همه)</option>
@@ -712,6 +713,15 @@
 
       <!-- TAB 3: RBAC MATRIX -->
       <section id="roles-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass" id="access-matrix-card" style="margin-bottom: 20px;">
+          <div class="panel-title"><i class="fa-solid fa-user-shield"></i> دسترسی هر نقش به بخش‌های پنل و مجوز ورود به سایت</div>
+          <p class="access-matrix-hint">
+            سطوح: سوپر ادمین ← ادمین ← راهبر ← دانش‌آموز. سوپر ادمین همیشه به همه‌چیز دسترسی دارد و فقط او می‌تواند این صفحه را ببیند.
+            «ورود به پنل» تعیین می‌کند اعضای هر نقش اصلاً بتوانند وارد این سایت شوند؛ برای یک نفر خاص هم می‌توانید در فرم ویرایش کاربر، مجوز ورود را جداگانه روشن یا خاموش کنید.
+            موارد علامت‌دار ⚠ حساس هستند. تغییرات تا فشردن «ذخیره» اعمال نمی‌شوند.
+          </p>
+          <div id="access-matrix-body" class="access-matrix-wrap">در حال بارگذاری...</div>
+        </div>
         <div class="panel-card glass">
           <div class="panel-title">ماتریس سطوح دسترسی مدیران (RBAC Security)</div>
           <div class="rbac-matrix">
@@ -2501,8 +2511,18 @@
           <select id="modal-user-role" class="select-ctrl" style="width: 100%;" required>
             <option value="student">دانش‌آموز</option>
             <option value="mentor">مربی</option>
-            <option value="admin">مدیر</option>
+            <option value="SUB_ADMIN">ادمین (نظارت بر محتوا، پیام عمومی، چالش میان‌گروهی)</option>
+            <option value="admin">سوپر ادمین (دسترسی کامل)</option>
           </select>
+        </div>
+        <div class="form-group" id="panel-access-group" data-super-only style="display:none;">
+          <label>مجوز ورود به سایت (پنل مدیریت)</label>
+          <select id="modal-user-panel-access" class="select-ctrl" style="width: 100%;">
+            <option value="">پیش‌فرض نقش (ادمین و سوپر ادمین: فعال — راهبر و دانش‌آموز: غیرفعال)</option>
+            <option value="true">مجاز — این کاربر می‌تواند وارد پنل شود</option>
+            <option value="false">ممنوع — ورود این کاربر به پنل بسته است</option>
+          </select>
+          <small id="panel-access-effective" style="display:block; margin-top:6px; color:#94a3b8; font-size:12px;"></small>
         </div>
         <div class="form-group" id="mentor-level-group" style="display:none;">
           <label>سطح مربی (ویژه مربیان)</label>
@@ -3915,6 +3935,7 @@
     </script>
     <script src="safe.js"></script>
     <script src="toast.js"></script>
+    <script src="roles.js"></script>
     <script src="app.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>

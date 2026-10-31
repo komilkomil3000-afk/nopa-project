@@ -5,11 +5,22 @@ import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
+import { checkRoleChange, isSuperAdmin, normalizeRole, roleLabelFa } from '../utils/roles';
+import { canEnterPanel, guardPrivilegedTarget } from '../utils/access';
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
 let zarikAnalyticsCache: { data: any; expiry: number } | null = null;
 const CACHE_TTL = 30000; // 30 seconds
+
+/** panelAccess from a request body: undefined = not sent, null = follow the role, true / false = explicit. */
+function parsePanelAccess(v: any): boolean | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === '' || v === 'default') return null;
+  if (v === true || v === 'true') return true;
+  if (v === false || v === 'false') return false;
+  return undefined;
+}
 
 // Utility function to log to AuditLog
 export async function logAdminAction(
@@ -123,7 +134,8 @@ export async function getUsers(req: AuthRequest, res: Response) {
     });
     const shouldMask = permission?.maskPhoneNumbers ?? false;
 
-    const sanitizedUsers = users.map((u) => {
+    const entryFlags = await Promise.all(users.map((u) => canEnterPanel(u.role, (u as any).panelAccess)));
+    const sanitizedUsers = users.map((u, idx) => {
       const completionRate =
         u.submissions.length > 0
           ? Math.round(
@@ -143,6 +155,8 @@ export async function getUsers(req: AuthRequest, res: Response) {
         caravanName: u.caravan?.name || 'فاقد کاروان',
         caravanId: u.caravanId,
         blocked: u.blocked,
+        panelAccess: (u as any).panelAccess ?? null,
+        canEnterPanel: entryFlags[idx],
         createdAt: u.createdAt,
         completionRate,
       };
@@ -184,11 +198,14 @@ export async function getUserById(req: AuthRequest, res: Response) {
     });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
 
+    const userCanEnterPanel = await canEnterPanel(user.role, (user as any).panelAccess);
     res.json({
       id: user.id,
       name: user.name,
       phoneNumber: user.phoneNumber,
       role: user.role,
+      panelAccess: (user as any).panelAccess ?? null,
+      canEnterPanel: userCanEnterPanel,
       caravanId: user.caravanId,
       caravanName: user.caravan?.name || null,
       levelFrame: user.levelFrame || 1,
@@ -432,10 +449,21 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
 
 export async function createUser(req: AuthRequest, res: Response) {
   try {
-    const { name, phoneNumber, password, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
+    const { name, phoneNumber, password, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
+    const role = normalizeRole(req.body.role);
+    const panelAccess = parsePanelAccess(req.body.panelAccess);
+    if (panelAccess !== undefined && panelAccess !== null && !isSuperAdmin(req.user?.role)) {
+      return res.status(403).json({ error: 'فقط سوپر ادمین می‌تواند مجوز ورود به پنل را تعیین کند' });
+    }
 
     if (!name || !phoneNumber || !password || !role) {
       return res.status(400).json({ error: 'وارد کردن تمامی فیلدهای اجباری الزامی است' });
+    }
+
+    // Only a super admin may create admins / super admins
+    const denied = checkRoleChange(req.user?.role, null, role);
+    if (denied) {
+      return res.status(403).json({ error: denied });
     }
     
     // Sanitize phone number
@@ -469,6 +497,7 @@ export async function createUser(req: AuthRequest, res: Response) {
         dateOfBirth: dateOfBirth || null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
+        panelAccess: panelAccess ?? null,
         userCode: nextUserCode
       },
     });
@@ -479,8 +508,9 @@ export async function createUser(req: AuthRequest, res: Response) {
       'CREATE_USER',
       'User',
       user.id,
-      `ایجاد کاربر جدید: ${name} با نقش ${role}`,
-      req.ip || '127.0.0.1'
+      `ایجاد کاربر جدید: ${name} با نقش ${roleLabelFa(role)} (${role})`,
+      req.ip || '127.0.0.1',
+      req.user?.role || 'admin'
     );
 
     res.status(201).json({ message: 'کاربر با موفقیت ایجاد شد', userId: user.id });
@@ -492,15 +522,69 @@ export async function createUser(req: AuthRequest, res: Response) {
 export async function updateUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber, academicDegree, academicCertificates } = req.body;
+    const { name, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber, academicDegree, academicCertificates } = req.body;
+    const role = req.body.role !== undefined && req.body.role !== null && req.body.role !== ''
+      ? normalizeRole(req.body.role)
+      : undefined;
 
     const prevUser = await prisma.user.findUnique({ where: { id } });
+    if (!prevUser) {
+      return res.status(404).json({ error: 'کاربر یافت نشد' });
+    }
+
+    const roleChanged = role !== undefined && role !== prevUser.role;
+
+    // Panel login override: only a super admin sets it, never on their own account,
+    // and the system must always keep one super admin who can still sign in.
+    const panelAccess = parsePanelAccess(req.body.panelAccess);
+    const panelAccessChanged = panelAccess !== undefined && panelAccess !== ((prevUser as any).panelAccess ?? null);
+    if (panelAccessChanged) {
+      if (!isSuperAdmin(req.user?.role)) {
+        return res.status(403).json({ error: 'فقط سوپر ادمین می‌تواند مجوز ورود به پنل را تعیین کند' });
+      }
+      if (panelAccess === false) {
+        if (id === req.user?.id) {
+          return res.status(400).json({ error: 'نمی‌توانید ورود خودتان به پنل را غیرفعال کنید' });
+        }
+        if (isSuperAdmin(prevUser.role)) {
+          const otherSuperAdmins = await prisma.user.count({
+            where: { role: 'admin', id: { not: id }, isDeleted: false, blocked: false, NOT: { panelAccess: false } } as any
+          });
+          if (otherSuperAdmins < 1) {
+            return res.status(400).json({ error: 'حداقل یک سوپر ادمین فعال با مجوز ورود باید باقی بماند' });
+          }
+        }
+      }
+    }
+
+    // Role rules: only a super admin touches admin / super admin accounts or grants those roles
+    const denied = checkRoleChange(req.user?.role, prevUser.role, role ?? prevUser.role);
+    if (denied) {
+      return res.status(403).json({ error: denied });
+    }
+    if (roleChanged) {
+      if (id === req.user?.id) {
+        return res.status(400).json({ error: 'تغییر نقش حساب خودتان مجاز نیست' });
+      }
+      // Never leave the system without a super admin
+      if (isSuperAdmin(prevUser.role)) {
+        const otherSuperAdmins = await prisma.user.count({
+          where: { role: 'admin', id: { not: id }, isDeleted: false, blocked: false }
+        });
+        if (otherSuperAdmins < 1) {
+          return res.status(400).json({ error: 'حداقل یک سوپر ادمین فعال باید در سیستم باقی بماند' });
+        }
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id },
       data: {
         name,
         role,
+        // A role change signs the person out everywhere so tokens and the panel UI pick up the new role
+        ...(roleChanged ? { tokenVersion: { increment: 1 } } : {}),
+        ...(panelAccessChanged ? { panelAccess } : {}),
         phoneNumber: phoneNumber || undefined,
         caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
         levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
@@ -511,6 +595,32 @@ export async function updateUser(req: AuthRequest, res: Response) {
         academicCertificates: academicCertificates !== undefined ? (academicCertificates || null) : undefined,
       },
     });
+
+    if (panelAccessChanged) {
+      await logAdminAction(
+        req.user?.id || 'system',
+        req.user?.phoneNumber || 'Admin',
+        'CHANGE_PANEL_ACCESS',
+        'User',
+        id,
+        `مجوز ورود به پنل برای ${user.name}: ${panelAccess === null ? 'پیش‌فرض نقش' : panelAccess ? 'مجاز' : 'ممنوع'}`,
+        req.ip || '127.0.0.1',
+        req.user?.role || 'admin'
+      );
+    }
+    if (roleChanged) {
+      await prisma.userSession.deleteMany({ where: { userId: id } }).catch(() => {});
+      await logAdminAction(
+        req.user?.id || 'system',
+        req.user?.phoneNumber || 'Admin',
+        'CHANGE_USER_ROLE',
+        'User',
+        id,
+        `تغییر نقش ${user.name} از ${roleLabelFa(prevUser.role)} (${prevUser.role}) به ${roleLabelFa(user.role)} (${user.role})`,
+        req.ip || '127.0.0.1',
+        req.user?.role || 'admin'
+      );
+    }
 
     // Update caravan member counts if caravan changed
     if (prevUser && prevUser.caravanId && prevUser.caravanId !== user.caravanId) {
@@ -551,6 +661,8 @@ export async function toggleBlockUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { blocked } = req.body;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     const user = await prisma.user.update({
       where: { id },
@@ -576,6 +688,8 @@ export async function toggleBlockUser(req: AuthRequest, res: Response) {
 export async function deleteUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     // Check custom permissions first
     const actorRole = req.user?.role || 'admin';
@@ -614,6 +728,8 @@ export async function overridePasswordOrOtp(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { password } = req.body;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     if (!password) {
       return res.status(400).json({ error: 'رمز عبور جدید الزامی است' });
@@ -1360,6 +1476,8 @@ export async function moderateMentor(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { action, suspendedUntil } = req.body; // action: 'activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     if (!['activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
       return res.status(400).json({ error: 'عملیات نامعتبر است' });
@@ -1421,6 +1539,8 @@ export async function moderateMentor(req: AuthRequest, res: Response) {
 export async function updateMentor(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
     const {
       name,
       nationalId,
@@ -1513,7 +1633,8 @@ export async function createGlobalAnnouncement(req: AuthRequest, res: Response) 
       'Notification',
       'global',
       `ارسال اطلاعیه: ${title} به ${targetUsers.length} کاربر`,
-      req.ip || '127.0.0.1'
+      req.ip || '127.0.0.1',
+      req.user?.role || 'admin'
     );
 
     res.json({ message: 'اطلاعیه با موفقیت برای کاربران ارسال شد' });
@@ -1668,6 +1789,8 @@ export async function setAccountStatus(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { status, reason } = req.body;
+    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
+    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
     const user = await prisma.user.update({
       where: { id },
       data: { accountStatus: status }
@@ -1712,4 +1835,3 @@ export const getLevelsAndCertificates = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
-
