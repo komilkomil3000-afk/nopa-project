@@ -1814,3 +1814,20 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/) clean except 1 pre-existing info; flutter test; backend tsc not run (no node_modules)
 - **Status:** Completed
+
+### [2026-10-31 21:30] - Claude Code (Admin Panel UI)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/toast.js` (Created)
+  - `admin_panel/public/style.css` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/sw.js` (Modified)
+- **Description of Changes:**
+  - Added shared toast system (toast.js + CSS): bottom-left, icon, close button, progress bar, 10s auto-hide with pause on hover, de-duplication; window.alert is routed through it so nothing blocks the UI.
+  - Removed the old inline showToastSuccess/showToastMessage/showToastWarning from app.js (toast.js provides them, plus compatible aliases); session-expired handler now uses showToast and also clears the legacy `token` key.
+  - Bumped service worker cache to nopa-admin-v2 so the new files load.
+- **Verification / Checkpoints Executed:**
+  - Manual review only; node is not on PATH so no syntax check was run.
+- **Status:** Completed
