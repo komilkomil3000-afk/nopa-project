@@ -6,6 +6,7 @@ import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, parseSectionGrants } from '../utils/roles';
+import { avatarFor, normalizeGender } from '../utils/avatar';
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
@@ -177,6 +178,7 @@ export async function getUsers(req: AuthRequest, res: Response) {
         levelFrame: u.levelFrame,
         caravanName: u.caravan?.name || 'فاقد کاروان',
         caravanId: u.caravanId,
+        gender: u.gender,
         blocked: u.blocked,
         createdAt: u.createdAt,
         completionRate,
@@ -231,6 +233,7 @@ export async function getUserById(req: AuthRequest, res: Response) {
       nationalId: user.nationalId || '',
       dateOfBirth: user.dateOfBirth || '',
       city: user.city || '',
+      gender: user.gender || '',
       bio: user.bio || '',
       academicDegree: user.academicDegree || '',
       academicCertificates: user.academicCertificates || '',
@@ -415,6 +418,7 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
         nationalId: user.nationalId,
         dateOfBirth: user.dateOfBirth,
         city: user.city,
+        gender: user.gender,
         role: user.role,
         isDualRole: user.isDualRole,
         caravanId: user.caravanId,
@@ -470,6 +474,7 @@ export async function createUser(req: AuthRequest, res: Response) {
   try {
     const { name, phoneNumber, password, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
     const role = canonicalRole(req.body.role);
+    const gender = normalizeGender(req.body.gender) ?? null;
 
     if (!name || !phoneNumber || !password || !role) {
       return res.status(400).json({ error: 'وارد کردن تمامی فیلدهای اجباری الزامی است' });
@@ -511,6 +516,8 @@ export async function createUser(req: AuthRequest, res: Response) {
         mentorLevel: mentorLevel || 1,
         nationalId: nationalId || null,
         dateOfBirth: dateOfBirth || null,
+        gender,
+        avatarUrl: avatarFor(role, gender, null) ?? null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
         userCode: nextUserCode
@@ -539,6 +546,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
     const { name, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber, academicDegree, academicCertificates } = req.body;
 
     const prevUser = await prisma.user.findUnique({ where: { id } });
+    const genderInput = normalizeGender(req.body.gender);
 
     // The role is only touched when it really changes, and only a super admin may change it.
     let roleToSet: string | undefined;
@@ -549,10 +557,16 @@ export async function updateUser(req: AuthRequest, res: Response) {
       roleToSet = requestedRole;
     }
 
+    // Gender is set here (admin panel); the matching profile picture follows from role + gender.
+    const finalGender = genderInput !== undefined ? genderInput : prevUser?.gender as any;
+    const newAvatar = avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
+
     const user = await prisma.user.update({
       where: { id },
       data: {
         name,
+        ...(genderInput !== undefined ? { gender: genderInput } : {}),
+        ...(newAvatar !== undefined ? { avatarUrl: newAvatar } : {}),
         ...(roleToSet ? { role: roleToSet, tokenVersion: { increment: 1 } } : {}),
         phoneNumber: phoneNumber || undefined,
         caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
@@ -1412,6 +1426,7 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
         isDeleted: mentor.isDeleted,
         suspendedUntil: mentor.suspendedUntil,
         city: mentor.city,
+        gender: mentor.gender,
         socialMessengerHandle: mentor.socialMessengerHandle,
         socialPlatform: mentor.socialPlatform,
         identityVerified: mentor.identityVerified,
@@ -1579,6 +1594,7 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       mentorLevel,
       caravanIds
     } = req.body;
+    const mentorGender = normalizeGender(req.body.gender);
 
     const mentor = await prisma.user.findUnique({ where: { id } });
     if (!mentor || !['mentor', 'SUPER_MENTOR'].includes(mentor.role)) {
@@ -1591,11 +1607,15 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       phoneNumber,
       dateOfBirth,
       city,
+      ...(mentorGender !== undefined ? { gender: mentorGender } : {}),
       socialMessengerHandle,
       socialPlatform,
       accountStatus,
       mentorLevel: parseInt(mentorLevel) || 1
     };
+
+    const mentorAvatar = avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
+    if (mentorAvatar !== undefined) data.avatarUrl = mentorAvatar;
 
     if (Array.isArray(caravanIds)) {
       data.mentoredCaravans = {

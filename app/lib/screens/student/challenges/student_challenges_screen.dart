@@ -1462,12 +1462,12 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
               final bool isSelected = _selectedCategoryIndex == idx;
 
               return Expanded(
-                child: Center(
-                  child: TapExpander(child: GestureDetector(
+                child: GestureDetector(
                     onTap: () => setState(() => _selectedCategoryIndex = idx),
                     behavior: HitTestBehavior.opaque,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text(
                         tab['title'] as String,
                         style: TextStyle(
@@ -1487,7 +1487,6 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                       ),
                     ),
-                  )),
                 ),
               );
             }).toList(),

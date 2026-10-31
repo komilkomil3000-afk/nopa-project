@@ -299,12 +299,18 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
 
     try {
       final api = HttpApiService();
-      await api.completeProfile({
+      final saveError = await api.completeProfile({
         'name': combinedName,
         'nationalId': _nationalIdCtrl.text.trim(),
         'dateOfBirth': _dobCtrl.text.trim(),
         'city': _addressCtrl.text.trim(),
       });
+      if (saveError != null) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        AppToast.error(context, saveError);
+        return;
+      }
 
       if (newPassword.isNotEmpty) {
         await api.changePassword(null, newPassword);

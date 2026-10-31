@@ -3,7 +3,6 @@ import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/core/station_categories.dart';
 import 'package:nopa_app/models/user_model.dart';
-import 'package:nopa_app/models/station.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
@@ -581,7 +580,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFC09268)),
             )
-          : SingleChildScrollView(
+          : Column(
+              children: [
+              Expanded(
+              child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -593,7 +595,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                       child: Directionality(
                         textDirection: TextDirection.rtl,
                         child: Text(
-                          'منزلگاه ${_toFarsiDigit(_stationNumber)}: ${Station.getPureName(_stationNumber, _stationTitle)}',
+                          'منزلگاه ${_toFarsiDigit(_stationNumber)}',
                           textAlign: TextAlign.right,
                           style: const TextStyle(
                             color: Color(0xFFEDE8F5),
@@ -636,12 +638,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                     _buildSessionsAccordion(),
 
                   const SizedBox(height: 14),
-
-                  // Action Buttons (جای منزلگاه قبل و بعد عوض شده)
-                  _buildBottomActionBar(),
-                  const SizedBox(height: 10),
                 ],
               ),
+            ),
+              ),
+              // Fixed at the bottom: does not move when the number of lessons changes
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                child: _buildBottomActionBar(),
+              ),
+              ],
             ),
     );
   }
@@ -666,7 +672,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         Directionality(
           textDirection: TextDirection.rtl,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildTabItem(title: 'مهارتی', index: 0),
               _buildTabItem(title: 'رسانه ای', index: 1),
@@ -685,7 +690,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   Widget _buildTabItem({required String title, required int index}) {
     final isSelected = _selectedTab == index;
-    return TapExpander(child: GestureDetector(
+    return Expanded(child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         setState(() {
           _selectedTab = index;
@@ -696,8 +702,9 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           _initializeVideoForCurrentSession();
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
         child: Text(
           title,
           style: TextStyle(

@@ -2432,7 +2432,7 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${blockBadge}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge" style="background:#2563eb; color:white; font-size:10px;">مرد</span>' : u.gender === 'female' ? '<span class="badge" style="background:#db2777; color:white; font-size:10px;">زن</span>' : ''} ${blockBadge}</td>
         <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
@@ -2532,6 +2532,7 @@ async function viewUserDetails(userId) {
                   <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
                   <p><strong>شماره تماس:</strong> ${esc(user.phoneNumber)}</p>
                   <p><strong>تاریخ تولد:</strong> ${esc(user.dateOfBirth || 'ثبت نشده')}</p>
+                  <p><strong>جنسیت:</strong> ${user.gender === 'male' ? 'مرد' : user.gender === 'female' ? 'زن' : 'ثبت نشده'}</p>
                   <p><strong>شهر/استان:</strong> ${esc(user.city || 'ثبت نشده')}</p>
                   <p><strong>رده سنی:</strong> ${ageGroup}</p>
                   <p><strong>سطح فریم:</strong> ${user.levelFrame}</p>
@@ -3746,6 +3747,8 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   document.getElementById('modal-user-national-id').value = userNationalId;
   document.getElementById('modal-user-dob').value = userDob;
+  const genderSel = document.getElementById('modal-user-gender');
+  if (genderSel) genderSel.value = user?.gender || '';
   if (document.getElementById('modal-user-degree')) {
     document.getElementById('modal-user-degree').value = user?.academicDegree || '';
   }
@@ -3823,6 +3826,7 @@ async function handleUserFormSubmit(e) {
   const mentorLevel = parseInt(document.getElementById('modal-user-mentor-level').value) || 1;
   const nationalId = document.getElementById('modal-user-national-id').value;
   const dateOfBirth = document.getElementById('modal-user-dob').value;
+  const gender = document.getElementById('modal-user-gender')?.value ?? '';
   const academicDegree = document.getElementById('modal-user-degree')?.value;
   const academicCertificates = document.getElementById('modal-user-certificates')?.value;
   const phoneNumber = document.getElementById('modal-user-phone')?.value;
@@ -3833,7 +3837,7 @@ async function handleUserFormSubmit(e) {
     res = await request(`/api/v1/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, academicDegree, academicCertificates })
+      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender, academicDegree, academicCertificates })
     });
   } else {
     // Create User
@@ -3841,7 +3845,7 @@ async function handleUserFormSubmit(e) {
     res = await request('/api/v1/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, password, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth })
+      body: JSON.stringify({ name, phoneNumber, password, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender })
     });
   }
 
@@ -6312,6 +6316,7 @@ window.editMentor = async function(mentorId) {
   document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
   document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
   document.getElementById('modal-mentor-city').value = m.city || '';
+  { const g = document.getElementById('modal-mentor-gender'); if (g) g.value = m.gender || ''; }
   document.getElementById('modal-mentor-academic-degree').value = m.academicDegree || m.education || '';
   document.getElementById('modal-mentor-level').value = String(m.mentorLevel || 1);
   document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
@@ -6443,6 +6448,7 @@ window.handleMentorFormSubmit = async function(e) {
     nationalId: nationalId || null,
     dateOfBirth: dateOfBirth || null,
     city: city || null,
+    gender: document.getElementById('modal-mentor-gender')?.value ?? '',
     academicDegree: academicDegree || null,
     mentorLevel,
     accountStatus,

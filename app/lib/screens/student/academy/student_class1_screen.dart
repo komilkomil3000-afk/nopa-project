@@ -352,7 +352,8 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             totalNodes: totalStationNodes,
             userLevelFrame: userLevelFrame,
             completedStationsCount: user.completedStationsCount,
-            title: _station?.title,
+            title:
+                'منزلگاه ${(_station?.orderIndex ?? StationNumbering.numberAt(_currentStationIndex + 1)).toPersian()}',
             onStationSelected: _switchStation,
           ),
 

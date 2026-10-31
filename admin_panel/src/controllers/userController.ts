@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { STUDENT_AVATARS, isMentorRole } from '../utils/avatar';
 
 /**
  * Number of leading stations (in station order) the user has completed: every video clip of the station is
@@ -159,37 +160,37 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       }
     });
 
-    const isEligibleForReward = !existingReward;
+    const isEligibleForReward = !existingReward && Boolean(req.body?.nationalId && String(req.body.nationalId).trim());
     let rewardAmount = isEligibleForReward ? 100 : 0;
 
-    let updateData: any = {};
+    // Every field that was sent is saved (an empty value clears it); fields that were not sent stay untouched.
+    const pick = (key: string, current: string | null): string | null => {
+      const v = req.body?.[key];
+      if (v === undefined || v === null) return current;
+      const t = String(v).trim();
+      return t === '' ? null : t;
+    };
 
-    if (user.role === 'student') {
-      const { nationalId, name, city, dateOfBirth } = req.body;
-      if (!nationalId || !name) return res.status(400).json({ error: 'نام و کد ملی الزامی است' });
+    const isMentorAccount = user.role === 'mentor' || user.role === 'SUPER_MENTOR' || user.role === 'admin';
+    const newName = req.body?.name !== undefined ? String(req.body.name).trim() : user.name;
+    if (!newName) return res.status(400).json({ error: 'نام الزامی است' });
 
-      updateData = {
-        name,
-        nationalId,
-        dateOfBirth: dateOfBirth || user.dateOfBirth,
-        city: city || user.city,
-        identityVerified: true,
-      };
-    } else if (user.role === 'mentor') {
-      const { nationalId, dateOfBirth, city, academicDegree, bio } = req.body;
-      updateData = {
-        nationalId: nationalId || user.nationalId,
-        dateOfBirth: dateOfBirth || user.dateOfBirth,
-        city: city || user.city,
-        academicDegree: academicDegree || user.academicDegree,
-        bio: bio || user.bio,
-        identityVerified: true,
-      };
+    const nationalId = pick('nationalId', user.nationalId);
+    const updateData: any = {
+      name: newName,
+      nationalId,
+      dateOfBirth: pick('dateOfBirth', user.dateOfBirth),
+      city: pick('city', user.city),
+      identityVerified: Boolean(nationalId),
+    };
 
-      if (!user.identityVerified) {
+    if (isMentorAccount) {
+      updateData.academicDegree = pick('academicDegree', user.academicDegree);
+      updateData.bio = pick('bio', user.bio);
+      if (!user.identityVerified && nationalId && user.role !== 'admin') {
         updateData.mentorLevel = { increment: 1 };
       }
-    } else {
+    } else if (user.role !== 'student') {
       return res.status(400).json({ error: 'نقش کاربری نامعتبر' });
     }
 
@@ -300,34 +301,28 @@ export async function getMentorById(req: AuthRequest, res: Response) {
 }
 
 
-const AVATAR_KEYS: Record<string, string[]> = {
-  male: ['boy_1', 'boy_2', 'boy_3', 'boy_4'],
-  female: ['girl_1', 'girl_2', 'girl_3', 'girl_4'],
-};
-
-/** PATCH /users/me/avatar { gender: 'male'|'female', avatarKey?: string } – picks one of the bundled avatars. */
+/**
+ * PATCH /users/me/avatar { avatarKey } – a student picks one of the bundled pictures of the gender that the admin
+ * panel set for them. Mentors cannot choose: they always have the mentor picture of their gender.
+ */
 export async function updateMyAvatar(req: AuthRequest, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
-    const gender = String(req.body?.gender || '');
-    if (gender !== 'male' && gender !== 'female') {
-      return res.status(400).json({ error: 'جنسیت نامعتبر است' });
-    }
-    const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { role: true, isDualRole: true } });
+    const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { role: true, gender: true } });
     if (!me) return res.status(404).json({ error: 'کاربر یافت نشد' });
-
-    const isMentor = me.role !== 'student' && me.role !== 'member';
-    const key = req.body?.avatarKey ? String(req.body.avatarKey) : '';
-    let avatarUrl: string | null;
-    if (isMentor) {
-      avatarUrl = null; // mentors always show the default mentor picture of their gender
-    } else if (AVATAR_KEYS[gender].includes(key)) {
-      avatarUrl = `asset:${key}`;
-    } else {
+    if (me.gender !== 'male' && me.gender !== 'female') {
+      return res.status(400).json({ error: 'جنسیت شما هنوز توسط مدیریت ثبت نشده است' });
+    }
+    if (isMentorRole(me.role)) {
+      return res.status(403).json({ error: 'تصویر راهبر بر اساس جنسیت تعیین می‌شود' });
+    }
+    const key = String(req.body?.avatarKey || '');
+    if (!STUDENT_AVATARS[me.gender].includes(key)) {
       return res.status(400).json({ error: 'آواتار نامعتبر است' });
     }
-    await prisma.user.update({ where: { id: req.user.id }, data: { gender, avatarUrl } });
-    res.json({ gender, avatarUrl });
+    const avatarUrl = `asset:${key}`;
+    await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl } });
+    res.json({ gender: me.gender, avatarUrl });
   } catch (error) {
     console.error('updateMyAvatar error:', error);
     res.status(500).json({ error: 'خطا در ذخیره آواتار' });

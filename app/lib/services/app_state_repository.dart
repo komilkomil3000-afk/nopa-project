@@ -124,10 +124,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Saves gender / avatar on the server; the app updates immediately on success.
-  Future<bool> updateAvatar({required String gender, String? avatarKey}) async {
-    final res = await _apiService.updateMyAvatar(gender: gender, avatarKey: avatarKey);
+  Future<bool> updateAvatar({required String avatarKey}) async {
+    final res = await _apiService.updateMyAvatar(avatarKey: avatarKey);
     if (res == null) return false;
-    currentUser = currentUser.copyWith(gender: res['gender']?.toString() ?? gender, avatarUrl: res['avatarUrl']?.toString() ?? '');
+    currentUser = currentUser.copyWith(avatarUrl: res['avatarUrl']?.toString() ?? '');
     notifyListeners();
     return true;
   }

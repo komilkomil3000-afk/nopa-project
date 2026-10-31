@@ -71,7 +71,9 @@ class _HomeScreenState extends State<StudentHomeScreen> {
 
   /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned & Tap-to-expand
   Widget _buildUserInfoStrip(UserModel? user) {
-    final int levelPosition = (user?.levelFrame ?? 1) < 1 ? 1 : user!.levelFrame;
+    // Latest station reached: the furthest of the level and the completed stations (same rule as the stepper)
+    final int levelPosition = [(user?.levelFrame ?? 1), (user?.completedStationsCount ?? 0) + 1, 1]
+        .reduce((a, b) => a > b ? a : b);
     final Map<String, dynamic>? levelStation =
         _stations.isNotEmpty ? _stations[(levelPosition - 1).clamp(0, _stations.length - 1)] : null;
     final int levelNumber = (levelStation?['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(levelPosition);

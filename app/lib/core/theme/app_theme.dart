@@ -33,6 +33,8 @@ class AppTheme {
       fontFamily: fontFamily,
       fontFamilyFallback: fontFamilyFallback,
       brightness: Brightness.light,
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
       primaryColor: AppColors.purple,
       scaffoldBackgroundColor: const Color(0xFFF8F9FA),
       textTheme: buildTextTheme(ThemeData.light().textTheme, fontScale).apply(
@@ -70,6 +72,8 @@ class AppTheme {
       fontFamily: fontFamily,
       fontFamilyFallback: fontFamilyFallback,
       brightness: Brightness.dark,
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: Colors.transparent,
       primaryColor: AppColors.purple,
       scaffoldBackgroundColor: AppColors.background,
       textTheme: buildTextTheme(ThemeData.dark().textTheme, fontScale).apply(

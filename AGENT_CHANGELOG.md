@@ -1889,3 +1889,90 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib/screens/student/academy (from app/)
 - **Status:** Completed
+
+### [2026-10-31 21:53] - Integration & Sync Auditor (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `admin_panel/src/utils/avatar.ts` (Created)
+- **Description of Changes:**
+  - Admin panel: gender select in user modal + mentor modal, shown in users list/drawer
+  - backend adminController/mentorController save gender and set avatarUrl (mentor => asset:mentor_male/female, student => asset:boy_1/girl_1 unless valid choice)
+  - new src/utils/avatar.ts
+  - PATCH /users/me/avatar now only takes avatarKey (gender fixed by admin, mentors cannot choose)
+  - complete-profile fixed: saves every sent field (previously empty national id returned 400 and mentors' name was ignored, SUPER_MENTOR/admin rejected), app now shows server errors instead of silently reporting success
+  - picker no longer chooses gender
+- **Verification / Checkpoints Executed:**
+  - flutter analyze clean; node --check public/app.js; backend tsc not run (no node_modules)
+- **Status:** Completed
+
+### [2026-10-31 22:20] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `admin_panel/src/utils/avatar.ts` (Created)
+- **Description of Changes:**
+  - Global NoSplash/transparent highlight in app_theme.dart (removes colored tap frame)
+  - class1 header shows 'منزلگاه N'
+  - video player title smaller w300 (nopa_inline_video_player.dart)
+  - home current station uses max(levelFrame, completed+1) (student_home_screen.dart)
+  - challenge category tabs hit area fills whole cell (student_challenges_screen.dart)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/)
+- **Status:** Completed
+
+### [2026-10-31 22:38] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/core/theme/app_theme.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `admin_panel/src/utils/avatar.ts` (Created)
+- **Description of Changes:**
+  - class2: header shows 'منزلگاه N' only
+  - bottom action bar fixed below scroll area
+  - tabs (مهارتی/رسانه‌ای/مشخصات) fill whole cell with opaque hit area. File: app/lib/screens/student/academy/student_class2_screen.dart
+- **Verification / Checkpoints Executed:**
+  - flutter analyze lib (from app/)
+- **Status:** Completed

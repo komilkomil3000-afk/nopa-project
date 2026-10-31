@@ -483,8 +483,8 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w300,
                       fontFamily: AppTheme.fontFamily,
                     ),
                   ),

@@ -761,25 +761,33 @@ class HttpApiService {
     }
   }
 
-  Future<void> completeProfile(Map<String, dynamic> payload) async {
+  /// Saves the profile fields. Returns null on success, otherwise the error message to show.
+  Future<String?> completeProfile(Map<String, dynamic> payload) async {
     try {
-      await _post(
+      final response = await _post(
         Uri.parse('$baseUrl/users/complete-profile'),
         headers: _getHeaders(),
         body: jsonEncode(payload),
       );
+      if (response.statusCode == 200) return null;
+      try {
+        final data = await parseJsonAsync(response.body);
+        if (data is Map && data['error'] != null) return data['error'].toString();
+      } catch (_) {}
+      return 'ذخیره اطلاعات انجام نشد (${response.statusCode})';
     } catch (e) {
       debugPrint('completeProfile error: $e');
+      return 'ارتباط با سرور برقرار نشد. اتصال اینترنت را بررسی کنید.';
     }
   }
 
   /// Saves the chosen gender / bundled avatar. Returns the server's {gender, avatarUrl} or null on failure.
-  Future<Map<String, dynamic>?> updateMyAvatar({required String gender, String? avatarKey}) async {
+  Future<Map<String, dynamic>?> updateMyAvatar({required String avatarKey}) async {
     try {
       final response = await _patch(
         Uri.parse('$baseUrl/users/me/avatar'),
         headers: _getHeaders(),
-        body: jsonEncode({'gender': gender, if (avatarKey != null) 'avatarKey': avatarKey}),
+        body: jsonEncode({'avatarKey': avatarKey}),
       );
       if (response.statusCode == 200) {
         final data = await parseJsonAsync(response.body);
