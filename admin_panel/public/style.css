@@ -1948,3 +1948,68 @@ button, select, input, a, .menu-item, .accordion-header {
     height: 38px !important;
   }
 }
+
+/* ==================== Toast notifications (toast.js) ==================== */
+#nopa-toast-container {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 2147483000; /* above login modal and every overlay */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(380px, calc(100vw - 32px));
+  pointer-events: none; /* never block clicks on the page behind it */
+}
+.nopa-toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  direction: rtl;
+  padding: 12px 14px 14px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.7;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.nopa-toast.show { opacity: 1; transform: translateY(0); }
+.nopa-toast-error   { background: #dc2626; border-color: #f87171; }
+.nopa-toast-success { background: #059669; border-color: #34d399; }
+.nopa-toast-info    { background: #1e293b; border-color: #475569; }
+.nopa-toast-icon { font-size: 18px; margin-top: 2px; flex-shrink: 0; }
+.nopa-toast-body { flex: 1; word-break: break-word; white-space: pre-line; }
+.nopa-toast-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.nopa-toast-close:hover { opacity: 1; }
+.nopa-toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.55);
+  transform-origin: left;
+  animation: nopa-toast-progress linear forwards;
+}
+@keyframes nopa-toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (max-width: 600px) {
+  #nopa-toast-container { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+}

@@ -639,9 +639,15 @@ async function request(url, options = {}) {
   };
   const res = await fetch(url, options);
   if (res.status === 401 || res.status === 403) {
-    // Session expired or unauthorized
-    alert('نشست کاربری شما منقضی شده یا دسترسی ندارید');
+    // Session expired or unauthorized: non-blocking toast, clear every stored token key
+    // (a leftover 'token' key used to re-trigger this on every page load)
+    // Only warn if a token was actually sent; pre-login background loads have none.
+    if (currentToken) {
+      showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید. لطفاً دوباره وارد شوید.', 'error');
+    }
+    localStorage.removeItem('token');
     localStorage.removeItem('nopa_admin_token');
+    localStorage.removeItem('nopa_admin_user');
     showLogin();
     throw new Error('Unauthorized');
   }
@@ -9727,34 +9733,7 @@ window.previewNewsImage = function(event) {
   }
 };
 
-function showToastSuccess(message) {
-  let toast = document.getElementById('nopa-toast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'nopa-toast';
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '20px';
-    toast.style.backgroundColor = '#10b981';
-    toast.style.color = 'white';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '8px';
-    toast.style.zIndex = '1000000';
-    toast.style.boxShadow = '0 4px 14px rgba(0,0,0,0.4)';
-    toast.style.fontWeight = 'bold';
-    toast.style.fontSize = '13px';
-    toast.style.transition = 'opacity 0.3s ease';
-    document.body.appendChild(toast);
-  }
-  toast.innerHTML = message;
-  toast.style.opacity = '1';
-  toast.style.display = 'block';
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    setTimeout(() => toast.style.display = 'none', 300);
-  }, 3500);
-}
+// showToastSuccess is defined in toast.js (shared bottom-left toast system)
 
 window.deleteNews = async function(id) {
   if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
@@ -10081,7 +10060,3 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
     if (targetEl) targetEl.placeholder = origPlaceholder;
   }
 };
-
-
-
-
