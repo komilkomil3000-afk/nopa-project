@@ -1,6 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/services/api_service.dart';
@@ -33,7 +31,16 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
         setState(() {
           _isDownloading = false;
         });
-        AppToast.info(context, 'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد 📥');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد 📥',
+              style: const TextStyle(fontFamily: AppTheme.fontFamily),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     });
   }
@@ -128,9 +135,15 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ? null
                                 : () async {
                                     if (nameCtrl.text.isEmpty || addressCtrl.text.isEmpty) {
-                                      AppToast.error(context, 'لطفاً همه فیلدهای آدرس را تکمیل فرمایید');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('لطفاً همه فیلدهای آدرس را تکمیل فرمایید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
                                       return;
                                     }
+                                    final messenger = ScaffoldMessenger.of(context);
                                     setModalState(() => isProcessing = true);
                                     try {
                                       final api = HttpApiService();
@@ -139,7 +152,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         subject: 'درخواست نسخه چاپی ${widget.certificate['title']} - گیرنده: ${nameCtrl.text} - آدرس: ${addressCtrl.text}',
                                       );
                                       if (ctx.mounted) Navigator.pop(ctx);
-                                      if (context.mounted) AppToast.success(context, 'درخواست نسخه چاپی با موفقیت ثبت شد ✅');
+                                      messenger.showSnackBar(
+                                        const SnackBar(
+                                          content: Text('درخواست نسخه چاپی با موفقیت ثبت شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Color(0xFF10B981),
+                                        ),
+                                      );
                                     } catch (_) {
                                       setModalState(() => isProcessing = false);
                                     }
@@ -523,7 +541,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                         const SizedBox(height: 24),
 
                         // Action 1: دانلود مستقیم گواهی Button (Matching ثبت تغییرات Style)
-                        TapExpander(child: InkWell(
+                        InkWell(
                           onTap: _isDownloading ? null : _downloadCertificate,
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -570,11 +588,11 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     ),
                             ),
                           ),
-                        )),
+                        ),
                         const SizedBox(height: 12),
 
                         // Action 2: درخواست نسخه فیزیکی گواهی Button
-                        TapExpander(child: InkWell(
+                        InkWell(
                           onTap: _showPhysicalOrderModal,
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -605,7 +623,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                               ],
                             ),
                           ),
-                        )),
+                        ),
                         const SizedBox(height: 20),
                       ],
                     ),

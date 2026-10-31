@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
-import { isMentorRole } from '../utils/roles';
 
 export const getStations = async (req: Request, res: Response) => {
   try {
@@ -34,8 +33,6 @@ export const getStations = async (req: Request, res: Response) => {
     }
 
     const now = new Date();
-    // Mentors are not bound by the release schedule (the order of content still applies)
-    const isMentor = isMentorRole((req as any).user?.role);
     const mapped = stations.map(st => {
       let instructors = null;
       let schedule = null;
@@ -56,7 +53,7 @@ export const getStations = async (req: Request, res: Response) => {
       }
 
       // Check scheduled unlock time
-      const isTimeLocked = !isMentor && st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
+      const isTimeLocked = st.scheduledUnlockTime ? (now < new Date(st.scheduledUnlockTime)) : false;
       const isLocked = Boolean(st.isLocked || st.status === 'locked' || isTimeLocked);
 
       // Parse multiple animations
@@ -191,16 +188,14 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
     const result = await prisma.$transaction(async (tx) => {
       let station;
       const releaseDateVal = (releaseDate && String(releaseDate).trim() !== '') ? new Date(releaseDate) : null;
-      // -1 = no number given (keep / assign automatically); 0 is a real station number
-      const parsedOrder = parseInt(orderIndex);
-      let orderIndexVal = Number.isNaN(parsedOrder) || parsedOrder < 0 ? -1 : parsedOrder;
+      let orderIndexVal = parseInt(orderIndex) || 0;
 
       const parsedUnlockTime = (scheduledUnlockTime && String(scheduledUnlockTime).trim() !== '') ? new Date(scheduledUnlockTime) : undefined;
       const lockedVal = typeof isLocked === 'boolean' ? isLocked : (status === 'locked' ? true : (status === 'active' ? false : undefined));
 
       if (id && !id.startsWith('new_')) {
         // When updating, ensure orderIndex is not duplicated with another station
-        if (orderIndexVal >= 0) {
+        if (orderIndexVal > 0) {
           const duplicate = await tx.station.findFirst({
             where: { orderIndex: orderIndexVal, id: { not: id } }
           });
@@ -243,7 +238,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
         const maxOrderAgg = await tx.station.aggregate({ _max: { orderIndex: true } });
         const nextAutoOrder = (maxOrderAgg._max.orderIndex || 0) + 1;
 
-        if (orderIndexVal < 0) {
+        if (orderIndexVal <= 0) {
           orderIndexVal = nextAutoOrder;
         } else {
           const existingWithSameOrder = await tx.station.findFirst({
@@ -976,8 +971,8 @@ export const heartbeatSessionWatch = async (req: any, res: Response) => {
       quizUnlocked: record.watchedPercentage >= 70.0
     });
     
-    // Evaluate progress asynchronously (mentors have no personal progress/levels)
-    if (!isMentorRole(req.user?.role)) evaluateStudentProgress(userId);
+    // Evaluate progress asynchronously
+    evaluateStudentProgress(userId);
   } catch (error) {
     console.error('heartbeatSessionWatch error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -1066,12 +1061,10 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       ? (typeof validQuiz.questionsJson === 'string' ? JSON.parse(validQuiz.questionsJson) : validQuiz.questionsJson) 
       : [];
     let correctCount = 0;
-    const correctAnswers: number[] = [];
 
     for (let i = 0; i < questionsList.length; i++) {
       const q = questionsList[i];
       const expectedCorrect = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : q.correctAnswer);
-      correctAnswers.push(Number(expectedCorrect));
       if (Number(answers[i]) === Number(expectedCorrect) || String(answers[i]) === String(expectedCorrect)) {
         correctCount++;
       }
@@ -1085,48 +1078,13 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
     const rewardNakh = validQuiz.rewardNakh || 0;
     const rewardFarsh = validQuiz.rewardFarsh || 0;
 
-    const quizType = String(validQuiz.type || '').toUpperCase();
-    if (quizType !== 'TEXT' && quizType !== 'FILE') {
+    if (validQuiz.type === 'MULTIPLE_CHOICE' || !validQuiz.type) {
       passed = correctCount >= (totalQuestions === 1 ? 1 : requiredCorrect);
       submissionStatus = passed ? 'APPROVED' : 'FAILED';
     } else {
       // For TEXT and FILE, it awaits mentor review
       passed = false;
       submissionStatus = 'PENDING';
-    }
-
-    // Mentors follow the same content order but earn nothing: no submission row (it would land in
-    // review queues), no rewards, no notification. Only the per-clip progress is kept, which is
-    // what unlocks the next part.
-    if (isMentorRole(req.user?.role)) {
-      if (passed) {
-        const clip = await prisma.videoClip.findFirst({
-          where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
-        });
-        if (clip) {
-          await prisma.userProgress.upsert({
-            where: { userId_clipId: { userId, clipId: clip.id } },
-            update: { quizPassed: true },
-            create: {
-              userId,
-              clipId: clip.id,
-              trackType: session.category?.title?.includes('مهارت') ? 'skill' : 'media',
-              stationId: session.category?.stationId || 'unknown',
-              sessionId: session.id,
-              quizPassed: true
-            }
-          });
-        }
-      }
-      return res.json({
-        score: correctCount,
-        total: questionsList.length,
-        passed,
-        status: submissionStatus,
-        correctAnswers,
-        rewardZarik: 0,
-        submissionId: null
-      });
     }
 
     // Check if student has already passed this quiz to prevent double rewards
@@ -1176,7 +1134,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
           where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
-          const trackType = session.category?.title?.includes('مهارت') ? 'skill' : 'media';
+          const trackType = session.category?.title?.includes('مهارتی') ? 'skill' : 'media';
           const stationId = session.category?.stationId || 'unknown';
           let progress = await tx.userProgress.findUnique({
              where: { userId_clipId: { userId, clipId: clip.id } }
@@ -1226,8 +1184,6 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       score: correctCount,
       total: questionsList.length,
       passed,
-      status: submissionStatus,
-      correctAnswers,
       rewardZarik: isFirstPass ? rewardZarik : 0,
       submissionId: submission?.id
     });
@@ -1264,72 +1220,6 @@ export const getUserProgress = async (req: any, res: Response) => {
     res.json(progress);
   } catch (error) {
     console.error('getUserProgress error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
-
-/**
- * The signed-in user's answered quizzes (latest submission per quiz) with the answers they gave, so another
- * device can show them as answered / reviewable. clipId is the clip the quiz belongs to.
- */
-export const getMyQuizAnswers = async (req: any, res: Response) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-
-    const subs = await prisma.quizSubmission.findMany({
-      where: { studentId: userId },
-      orderBy: { submittedAt: 'desc' },
-      include: { quiz: { select: { id: true, sessionId: true, clipId: true, orderIndex: true } } }
-    });
-
-    // Quizzes that are not linked to a clip are matched to the clip with the same order in their session
-    const sessionIds = Array.from(new Set(subs.filter(x => !x.quiz.clipId).map(x => x.quiz.sessionId)));
-    const clips = sessionIds.length
-      ? await prisma.videoClip.findMany({ where: { sessionId: { in: sessionIds } }, select: { id: true, sessionId: true, clipOrder: true } })
-      : [];
-    const clipByOrder = new Map(clips.map(c => [`${c.sessionId}|${c.clipOrder}`, c.id]));
-
-    const seen = new Set<string>();
-    const out: any[] = [];
-    for (const sub of subs) {
-      if (seen.has(sub.quizId)) continue;
-      seen.add(sub.quizId);
-      let answers: any[] = [];
-      try { const parsed = sub.answersJson ? JSON.parse(sub.answersJson) : []; if (Array.isArray(parsed)) answers = parsed; } catch (_) {}
-      out.push({
-        quizId: sub.quizId,
-        sessionId: sub.quiz.sessionId,
-        clipId: sub.quiz.clipId || clipByOrder.get(`${sub.quiz.sessionId}|${sub.quiz.orderIndex}`) || null,
-        partIndex: Math.max(0, sub.quiz.orderIndex - 1),
-        status: sub.status,
-        score: sub.score,
-        answers
-      });
-    }
-    res.json(out);
-  } catch (error) {
-    console.error('getMyQuizAnswers error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
-
-/** The app reports the real length of a clip once its player knows it (replaces a missing/wrong stored duration). */
-export const reportClipDuration = async (req: any, res: Response) => {
-  try {
-    const { clipId } = req.params;
-    const seconds = Math.round(Number(req.body?.durationSeconds));
-    if (!Number.isFinite(seconds) || seconds < 1 || seconds > 6 * 3600) {
-      return res.status(400).json({ error: 'مدت ویدیو نامعتبر است' });
-    }
-    const clip = await prisma.videoClip.findUnique({ where: { id: clipId }, select: { duration: true } });
-    if (!clip) return res.status(404).json({ error: 'کلیپ یافت نشد' });
-    if (clip.duration === null || Math.abs(clip.duration - seconds) > 2) {
-      await prisma.videoClip.update({ where: { id: clipId }, data: { duration: seconds } });
-    }
-    res.json({ duration: seconds });
-  } catch (error) {
-    console.error('reportClipDuration error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

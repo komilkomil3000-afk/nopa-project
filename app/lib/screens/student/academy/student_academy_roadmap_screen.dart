@@ -1,7 +1,4 @@
-import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -43,9 +40,9 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     super.dispose();
   }
 
-  Future<void> _fetchStationsData({bool force = false}) async {
+  Future<void> _fetchStationsData() async {
     try {
-      final stations = await HttpApiService().getStations(forceRefresh: force);
+      final stations = await HttpApiService().getStations();
       final userProgress = await HttpApiService().getUserProgress();
       if (mounted) {
         setState(() {
@@ -80,10 +77,10 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : StationNumbering.count;
+    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
 
     return RefreshIndicator(
-      onRefresh: () => _fetchStationsData(force: true),
+      onRefresh: _fetchStationsData,
       color: const Color(0xFFCD8449),
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -163,9 +160,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
 
     // Station 1 (index == 0) is the initial station and is always unlocked!
-    // Also locked by the server: release time or manual lock (the server never time-locks mentors)
-    bool isLocked = (index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount) ||
-        item['isLocked'] == true;
+    bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
     bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
     bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
 
@@ -256,18 +251,29 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   children: [
-                    TapExpander(child: GestureDetector(
+                    GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (isLocked) {
-                          AppToast.info(context, 'این منزلگاه هنوز باز نشده است و قفل می‌باشد');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('این منزلگاه هنوز باز نشده است و قفل می‌باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                              backgroundColor: Colors.grey,
+                            ),
+                          );
                           return;
                         }
 
                         final isNewStation = index > 0 && !isCompleted;
                         final appState = Provider.of<AppRepository>(context, listen: false);
                         if (isNewStation && appState.hasPendingChallenges) {
-                          AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+                              backgroundColor: Colors.redAccent,
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
                           PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
                           return;
                         }
@@ -430,7 +436,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   fit: BoxFit.contain,
                                 ),
                               const SizedBox(height: 12),
-                              TapExpander(child: GestureDetector(
+                              GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   setState(() {
@@ -449,12 +455,12 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                     size: 19,
                                   ),
                                 ),
-                              )),
+                              ),
                             ],
                           ),
                         ],
                       ),
-                    )),
+                    ),
 
                     // Expandable Panel with summary info (Right-aligned in RTL, No dark background box, clean small text, no emojis)
                     AnimatedCrossFade(

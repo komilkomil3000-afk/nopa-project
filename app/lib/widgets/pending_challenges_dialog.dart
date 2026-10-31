@@ -35,7 +35,7 @@ class PendingChallengesDialog extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close, color: Colors.white70, size: 20),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                  constraints: const BoxConstraints(),
                 ),
                 Row(
                   children: [

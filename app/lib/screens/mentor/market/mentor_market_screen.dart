@@ -1,7 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -12,7 +9,6 @@ import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/utils/constants.dart';
-import 'package:nopa_app/utils/mentor_contact.dart';
 
 class MentorMarketScreen extends StatefulWidget {
   const MentorMarketScreen({super.key});
@@ -25,33 +21,33 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   // 5 Standard Market Rate Items matching screenshot
   final List<Map<String, dynamic>> _rateItems = const [
     {
-      'title': 'کلاف',
+      'title': 'نخ',
       'priceText': '500 زریک',
-      'assetKey': 'کلاف',
+      'assetKey': 'نخ',
       'zarikCost': 500,
     },
     {
-      'title': 'قالیچه',
-      'priceText': '5 کلاف',
-      'assetKey': 'قالیچه',
+      'title': 'فرش',
+      'priceText': '5 نخ',
+      'assetKey': 'فرش',
       'zarikCost': 2500,
     },
     {
-      'title': 'درفش برنزی',
-      'priceText': '5 کلاف',
-      'assetKey': 'درفش برنزی',
+      'title': 'بیرق مسی',
+      'priceText': '5 نخ',
+      'assetKey': 'بیرق مسی',
       'zarikCost': 2500,
     },
     {
-      'title': 'درفش نقره ای',
-      'priceText': '3 قالیچه',
-      'assetKey': 'درفش نقره ای',
+      'title': 'بیرق نقره ای',
+      'priceText': '3 فرش',
+      'assetKey': 'بیرق نقره ای',
       'zarikCost': 7500,
     },
     {
-      'title': 'درفش طلایی',
+      'title': 'بیرق طلایی',
       'priceText': 'غیر قابل خرید',
-      'assetKey': 'درفش طلایی',
+      'assetKey': 'بیرق طلایی',
       'zarikCost': 22500,
     },
   ];
@@ -62,22 +58,16 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   // Selected tab for "برترین ها (لیگ)" (0: برترین شرکت کننده ها, 1: برترین کاروان ها)
   int _selectedLeaderboardTab = 0;
 
-  // Leaderboard data (from /leagues/*)
-  List<Map<String, String>> _topMembers = [];
-  List<Map<String, String>> _topCaravans = [];
-  List<String> _memberIds = [];
-  List<String> _caravanIds = [];
-
   // Exchange calculator states
   String _sourceAsset = 'زریک';
-  String _targetAsset = 'کلاف';
+  String _targetAsset = 'نخ';
   final TextEditingController _amountController = TextEditingController(text: '500');
   double _calculatedResult = 1.0;
 
   // Interactive button selection states (0: none, 1: submit active, 2: mentor active)
   int _activeActionButton = 1; // Default: 'ثبت درخواست' is active/colored
 
-  final List<String> _availableAssets = ['زریک', 'کلاف', 'قالیچه', 'درفش برنزی', 'درفش نقره ای', 'درفش طلایی'];
+  final List<String> _availableAssets = ['زریک', 'نخ', 'فرش', 'بیرق مسی', 'بیرق نقره ای', 'بیرق طلایی'];
 
   // Mentor Market States
   int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
@@ -104,8 +94,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
 
   Future<void> _loadMarketData() async {
     try {
-      final caravanId = Provider.of<AppRepository>(context, listen: false).selectedCaravanId;
-      final progressData = await HttpApiService().getMentorCaravanProgress(caravanId: caravanId);
+      final progressData = await HttpApiService().getMentorCaravanProgress();
       final exchangeData = await HttpApiService().getCaravanAssetConversions();
 
       if (mounted) {
@@ -130,8 +119,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                 'studentId': req['requestedBy']?.toString() ?? '',
                 'title': title,
                 'date': date,
-                'status': req['status']?.toString() ?? 'completed',
-                'createdAt': req['createdAt']?.toString() ?? '',
+                'status': req['status']?.toString() ?? 'pending',
               };
             }).toList();
           }
@@ -148,7 +136,6 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     _amountController.addListener(_recalculateExchange);
     _recalculateExchange();
     _loadMarketData();
-    _loadLeaderboards();
   }
 
   @override
@@ -161,15 +148,15 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     switch (asset) {
       case 'زریک':
         return 1.0;
-      case 'کلاف':
+      case 'نخ':
         return 500.0;
-      case 'قالیچه':
-      case 'درفش برنزی':
+      case 'فرش':
+      case 'بیرق مسی':
         return 2500.0; // 5 Nakh * 500
-      case 'درفش نقره ای':
-      case 'درفش نقره‌ای':
+      case 'بیرق نقره ای':
+      case 'بیرق نقره‌ای':
         return 7500.0; // 3 Carpet * 2500
-      case 'درفش طلایی':
+      case 'بیرق طلایی':
         return 22500.0; // 3 Silver * 7500
       default:
         return 1.0;
@@ -194,36 +181,13 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     setState(() => _activeActionButton = 1);
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
     if (amount <= 0 || _calculatedResult <= 0) {
-      AppToast.error(context, 'لطفاً مقدار معتبری برای مبادله وارد کنید.');
-      return;
-    }
-
-    // Conversion path rules (flag rules are defined separately)
-    const capitals = ['زریک', 'کلاف', 'قالیچه'];
-    if (capitals.contains(_sourceAsset) &&
-        capitals.contains(_targetAsset) &&
-        !((_sourceAsset == 'زریک' && _targetAsset == 'کلاف') ||
-            (_sourceAsset == 'کلاف' && _targetAsset == 'قالیچه'))) {
-      AppToast.error(context, 'تبدیل $_sourceAsset به $_targetAsset امکان‌پذیر نیست.');
-      return;
-    }
-
-    final int rate = _sourceAsset == 'زریک' ? 500 : 5;
-    if (amount % rate != 0) {
-      AppToast.error(context, 'مقدار $_sourceAsset باید مضربی از ${rate.toString().toPersianDigits()} باشد.');
-      return;
-    }
-
-    // Balance check: amount must not exceed the user's holdings
-    final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    final double? balance = switch (_sourceAsset) {
-      'زریک' => user.zarik.toDouble(),
-      'کلاف' => user.nakh.toDouble(),
-      'قالیچه' => user.farsh.toDouble(),
-      _ => null,
-    };
-    if (balance != null && amount > balance) {
-      AppToast.error(context, 'دارایی شما کافی نیست.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لطفاً مقدار معتبری برای مبادله وارد کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -403,20 +367,30 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                       TextButton(
                         onPressed: () async {
                           Navigator.pop(ctx);
-                          final repository = Provider.of<AppRepository>(context, listen: false);
-                          final error = await HttpApiService().submitStudentAssetConversion(
+                          final success = await HttpApiService().submitStudentAssetConversion(
                             sourceAsset: _sourceAsset,
                             targetAsset: _targetAsset,
                             sourceAmount: amount,
                             targetAmount: _calculatedResult,
                           );
                           if (mounted) {
-                            if (error == null) {
-                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد ✅');
-                              repository.refreshUser();
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('درخواست مبادله با موفقیت برای راهبر ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                  backgroundColor: Color(0xFF10B981),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                               _loadMarketData();
                             } else {
-                              AppToast.error(context, error);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                  backgroundColor: Color(0xFFEF4444),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
                           }
                         },
@@ -455,37 +429,9 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     );
   }
 
-  String _formatScore(dynamic value) {
-    final n = (value is num) ? value.round() : (int.tryParse(value?.toString() ?? '') ?? 0);
-    return n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
-  }
-
-  Future<void> _loadLeaderboards() async {
-    try {
-      final api = HttpApiService();
-      final members = await api.getWealthiestLeague();
-      final caravans = await api.getCaravanLeague(sortBy: 'wealth');
-      if (!mounted) return;
-      setState(() {
-        _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
-        _topMembers = members.take(3).map((m) => {
-              'name': m['name']?.toString() ?? '-',
-              'zarik': '${_formatScore(m['zarikBalance'])} زریک',
-            }).toList();
-        _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
-        _topCaravans = caravans.take(3).map((c) => {
-              'name': c['name']?.toString() ?? '-',
-              'zarik': '${_formatScore(c['totalWealth'])} زریک',
-            }).toList();
-      });
-    } catch (e) {
-      debugPrint('Error loading leaderboards: $e');
-    }
-  }
-
   void _contactMentor() {
     setState(() => _activeActionButton = 2);
-    contactMentor(context, Provider.of<AppRepository>(context, listen: false).currentUser);
+    Navigator.pushNamed(context, '/tickets');
   }
 
   @override
@@ -661,7 +607,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        AssetNames.labelFor(item['title'] as String),
+                        item['title'] as String,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         style: const TextStyle(
@@ -727,19 +673,20 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   Widget _buildAssetsSection(UserModel? user, {bool isMentor = false}) {
     final title = isMentor ? 'مجموع سرمایه های کاروان' : 'سرمایه های شما';
 
-    // A mentor holds no capital of their own: show the caravan total (0 until it loads)
-    int totalZarik = isMentor ? 0 : (user?.zarik ?? 0);
-    int totalNakh = isMentor ? 0 : (user?.nakh ?? 0);
-    int totalFarsh = isMentor ? 0 : (user?.farsh ?? 0);
+    int totalZarik = user?.zarik ?? 0;
+    int totalBeyragh = user?.beyragh ?? 0;
+    int totalNakh = user?.nakh ?? 0;
+    int totalFarsh = user?.farsh ?? 0;
 
     if (isMentor && _mentorMembersAssets.isNotEmpty) {
       totalZarik = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['zarik'] as num?)?.toInt() ?? (m['zarikBalance'] as num?)?.toInt() ?? 0));
+      totalBeyragh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['beyragh'] as num?)?.toInt() ?? 0));
       totalNakh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['nakh'] as num?)?.toInt() ?? 0));
       totalFarsh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['farsh'] as num?)?.toInt() ?? 0));
     }
 
     final zarikVal = totalZarik.toPersian();
-    final beyrahVal = Provider.of<AppRepository>(context).caravanBannerTotal.toPersian();
+    final beyrahVal = totalBeyragh.toPersian();
     final nakhVal = totalNakh.toPersian();
     final farshVal = totalFarsh.toPersian();
 
@@ -773,7 +720,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: AssetNames.labelFor('زریک'),
+                  label: 'زریک',
                   value: zarikVal,
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
@@ -781,7 +728,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: AssetNames.labelFor('درفش'),
+                  label: 'درفش',
                   value: beyrahVal,
                   isGold: _selectedAssetIndex == 1,
                   onTap: () => setState(() => _selectedAssetIndex = 1),
@@ -789,7 +736,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: AssetNames.labelFor('کلاف'),
+                  label: 'نخ',
                   value: nakhVal,
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
@@ -797,7 +744,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: AssetNames.labelFor('قالیچه'),
+                  label: 'فرش',
                   value: farshVal,
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
@@ -860,7 +807,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   Widget _buildMentorTabButton(String title, int tabIndex) {
     final bool isSelected = _selectedMentorMarketTab == tabIndex;
 
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: () {
         setState(() {
           _selectedMentorMarketTab = tabIndex;
@@ -884,7 +831,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
   /// List of Member Assets for Mentor
@@ -964,7 +911,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
                 Text(
-                  '${AssetNames.labelFor('قالیچه')}: ${totalFarsh.toString().toPersian()}',
+                  'فرش: ${totalFarsh.toString().toPersian()}',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 10.5,
@@ -973,7 +920,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
                 Text(
-                  '${AssetNames.labelFor('درفش')}: ${totalBeyragh.toString().toPersian()}',
+                  'درفش: ${totalBeyragh.toString().toPersian()}',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 10.5,
@@ -1024,7 +971,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Member Header (Capsule gradient surface matching Mentor Station)
-            TapExpander(child: InkWell(
+            InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1104,7 +1051,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          TapExpander(child: GestureDetector(
+                          GestureDetector(
                             onTap: () {
                               Navigator.pushNamed(context, '/tickets');
                             },
@@ -1132,7 +1079,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 ),
                               ),
                             ),
-                          )),
+                          ),
                           const SizedBox(width: 8),
                           Icon(
                             isExpanded
@@ -1147,7 +1094,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
               ),
-            )),
+            ),
 
             // Expanded Asset Values Row (Matching Dark Body style)
             if (isExpanded)
@@ -1162,10 +1109,10 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildMemberAssetChip(AssetNames.labelFor('زریک'), zarik),
-                      _buildMemberAssetChip(AssetNames.labelFor('درفش'), derafsh),
-                      _buildMemberAssetChip(AssetNames.labelFor('کلاف'), nakh),
-                      _buildMemberAssetChip(AssetNames.labelFor('قالیچه'), farsh),
+                      _buildMemberAssetChip('زریک', zarik),
+                      _buildMemberAssetChip('درفش', derafsh),
+                      _buildMemberAssetChip('نخ', nakh),
+                      _buildMemberAssetChip('فرش', farsh),
                     ],
                   ),
                 ),
@@ -1218,7 +1165,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
-            'هیچ مبادله‌ای ثبت نشده است',
+            'هیچ درخواست مبادله‌ای در انتظار نیست',
             style: TextStyle(
               fontFamily: AppTheme.fontFamily,
               color: Colors.white.withValues(alpha: 0.6),
@@ -1247,12 +1194,6 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     final studentName = request['studentName'] as String;
     final title = request['title'] as String;
     final date = request['date'] as String;
-    final status = request['status'] as String;
-    // Mentor may cancel a completed exchange only within 24h of its creation
-    final createdAt = DateTime.tryParse(request['createdAt'] as String? ?? '');
-    final canCancel = status == 'completed' &&
-        createdAt != null &&
-        DateTime.now().difference(createdAt) < const Duration(hours: 24);
 
     return Container(
       decoration: BoxDecoration(
@@ -1282,7 +1223,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header Row (مبادله سمت راست، نام فرد سمت چپ)
-            TapExpander(child: InkWell(
+            InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1404,7 +1345,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
               ),
-            )),
+            ),
 
             // Expanded Body: تاریخ سمت راست، تایید و رد و توضیح سمت چپ
             if (isExpanded)
@@ -1446,76 +1387,100 @@ class _MarketScreenState extends State<MentorMarketScreen> {
 
                       const Spacer(),
 
-                      // 2. Left side in RTL: وضعیت مبادله و دکمه لغو (فقط مشاهده؛ تایید لازم نیست)
+                      // 2. Left side in RTL: قسمت تایید و رد و توضیح
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (status == 'cancelled')
-                            Text(
-                              'لغو شد',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.redAccent.withValues(alpha: 0.9),
-                              ),
-                            )
-                          else ...[
-                            Text(
-                              'انجام شد',
-                              style: TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.greenAccent.withValues(alpha: 0.85),
-                              ),
-                            ),
-                            if (canCancel) ...[
-                              const SizedBox(width: 10),
-                              TapExpander(child: GestureDetector(
-                                onTap: () {
-                                  _showRejectExplanationDialog(
-                                    memberName: studentName,
-                                    requestDate: date,
-                                    requestSubject: 'لغو مبادله: $title',
-                                    onConfirmReject: (reason) async {
-                                      final error = await HttpApiService().cancelCaravanAssetConversion(reqId, reason: reason);
-                                      if (!mounted) return;
-                                      if (error == null) {
-                                        AppToast.success(context, 'مبادله لغو و سرمایه‌ها به دانش‌آموز بازگردانده شد.');
-                                      } else {
-                                        AppToast.error(context, error);
-                                      }
-                                      _loadMarketData();
-                                    },
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                                  decoration: BoxDecoration(
-                                    color: Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
-                                      width: 1,
+                          // تایید (Approve)
+                          GestureDetector(
+                            onTap: () async {
+                              final success = await HttpApiService().approveCaravanAssetConversion(reqId, true);
+                              if (mounted) {
+                                setState(() {
+                                  _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'درخواست مبادله برای $studentName تایید شد ✅'
+                                          : 'خطا در ثبت تایید در سرور',
+                                      style: const TextStyle(fontFamily: AppTheme.fontFamily),
                                     ),
+                                    backgroundColor: success ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    behavior: SnackBarBehavior.floating,
                                   ),
-                                  child: const Text(
-                                    'لغو مبادله',
-                                    style: TextStyle(
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFFDCD7F5),
-                                    ),
+                                );
+                                _loadMarketData();
+                              }
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.strokeGradient,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.all(AppColors.borderWidth),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.darkSurfaceGradient,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: const Text(
+                                  'تایید',
+                                  style: TextStyle(
+                                    color: Color(0xFFC7B299),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: AppTheme.fontFamily,
+                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
                                   ),
                                 ),
-                              )),
-                            ],
-                          ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+
+                          // رد و توضیح (Reject & Explain)
+                          GestureDetector(
+                            onTap: () {
+                              _showRejectExplanationDialog(
+                                memberName: studentName,
+                                requestDate: date,
+                                requestSubject: 'رد درخواست مبادله',
+                                onConfirmReject: () async {
+                                  await HttpApiService().approveCaravanAssetConversion(reqId, false);
+                                  if (mounted) {
+                                    setState(() {
+                                      _mentorExchangeRequests.removeWhere((r) => r['id'] == reqId);
+                                    });
+                                    _loadMarketData();
+                                  }
+                                },
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: const Color(0xFF7B75AF).withValues(alpha: 0.8),
+                                  width: 1,
+                                ),
+                              ),
+                              child: const Text(
+                                'رد و توضیح',
+                                style: TextStyle(
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDCD7F5),
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -1533,7 +1498,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     required String memberName,
     required String requestDate,
     required String requestSubject,
-    required void Function(String reason) onConfirmReject,
+    required VoidCallback onConfirmReject,
   }) {
     final TextEditingController explanationController = TextEditingController();
 
@@ -1688,7 +1653,17 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          onConfirmReject(explanationController.text.trim());
+                          onConfirmReject();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'درخواست رد شد و پیام توضیح برای دانش‌آموز ارسال گردید.',
+                                style: TextStyle(fontFamily: AppTheme.fontFamily),
+                              ),
+                              backgroundColor: Color(0xFFEF4444),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
                         },
                         child: const Text(
                           'ارسال',
@@ -1774,7 +1749,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -1879,7 +1854,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
   /// Section 3: مبادله - Purple Box based on Station Card with black selector boxes and responsive layout
@@ -1981,7 +1956,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             children: [
                               Expanded(
                                 child: _buildInteractiveActionButton(
-                                  text: 'پیام به پشتیبانی',
+                                  text: 'ارتباط با راهبر',
                                   isActive: _activeActionButton == 2,
                                   strokeBorderColor: const Color(0xFF6E688E),
                                   onTap: _contactMentor,
@@ -2032,7 +2007,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 children: [
                                   Expanded(
                                     child: _buildInteractiveActionButton(
-                                      text: 'پیام به پشتیبانی',
+                                      text: 'ارتباط با راهبر',
                                       isActive: _activeActionButton == 2,
                                       strokeBorderColor: const Color(0xFF6E688E),
                                       onTap: _contactMentor,
@@ -2197,7 +2172,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
             items: _availableAssets.map((asset) {
               return DropdownMenuItem<String>(
                 value: asset,
-                child: Text(AssetNames.labelFor(asset), style: const TextStyle(fontSize: 12, color: Colors.white)),
+                child: Text(asset, style: const TextStyle(fontSize: 12, color: Colors.white)),
               );
             }).toList(),
             onChanged: onChanged,
@@ -2281,7 +2256,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   }) {
     return Material(
       color: Colors.transparent,
-      child: TapExpander(child: InkWell(
+      child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
@@ -2320,37 +2295,71 @@ class _MarketScreenState extends State<MentorMarketScreen> {
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 
   /// Section 4: برترین ها (لیگ) - Top 3 Podium & Leaderboard Switcher
   Widget _buildLeaderboardSection(UserModel? user) {
-    // Top 3 of the selected tab, read from the leaderboard API (padded when fewer than 3 exist)
-    const podiumColors = [Color(0xFFFFD580), Color(0xFFCBD5E1), Color(0xFFC8824C)];
-    const podiumSizes = [92.0, 78.0, 72.0];
-    final bool isMembersTab = _selectedLeaderboardTab == 0;
-    final source = isMembersTab ? _topMembers : _topCaravans;
-    final currentList = List<Map<String, dynamic>>.generate(3, (i) {
-      final bool hasItem = i < source.length;
-      return {
-        'rank': i + 1,
-        'name': hasItem ? source[i]['name'] : '-',
-        'zarik': hasItem ? source[i]['zarik'] : '',
-        'color': podiumColors[i],
-        'borderColor': podiumColors[i],
-        'size': podiumSizes[i],
-      };
-    });
+    // Top 3 Data based on selected tab
+    final List<Map<String, dynamic>> topMembers = [
+      {
+        'rank': 1,
+        'name': 'حسینعلی فقیه',
+        'zarik': '5500 زریک',
+        'color': const Color(0xFFFFD580),
+        'borderColor': const Color(0xFFFFD580),
+        'size': 92.0,
+      },
+      {
+        'rank': 2,
+        'name': 'رضا شفیعی',
+        'zarik': '4100 زریک',
+        'color': const Color(0xFFCBD5E1),
+        'borderColor': const Color(0xFFCBD5E1),
+        'size': 78.0,
+      },
+      {
+        'rank': 3,
+        'name': 'مسلم عارف',
+        'zarik': '4000 زریک',
+        'color': const Color(0xFFC8824C),
+        'borderColor': const Color(0xFFC8824C),
+        'size': 72.0,
+      },
+    ];
+
+    final List<Map<String, dynamic>> topCaravans = [
+      {
+        'rank': 1,
+        'name': 'کاروان پنجم',
+        'zarik': '18,500 زریک',
+        'color': const Color(0xFFFFD580),
+        'borderColor': const Color(0xFFFFD580),
+        'size': 92.0,
+      },
+      {
+        'rank': 2,
+        'name': 'کاروان سوم',
+        'zarik': '14,200 زریک',
+        'color': const Color(0xFFCBD5E1),
+        'borderColor': const Color(0xFFCBD5E1),
+        'size': 78.0,
+      },
+      {
+        'rank': 3,
+        'name': 'کاروان هفتم',
+        'zarik': '11,800 زریک',
+        'color': const Color(0xFFC8824C),
+        'borderColor': const Color(0xFFC8824C),
+        'size': 72.0,
+      },
+    ];
+
+    final currentList = _selectedLeaderboardTab == 0 ? topMembers : topCaravans;
     final firstPlace = currentList[0];
     final secondPlace = currentList[1];
     final thirdPlace = currentList[2];
-
-    final List<String> rankedIds = isMembersTab ? _memberIds : _caravanIds;
-    final String? myId = isMembersTab ? user?.id : user?.caravanId;
-    final int myIndex = myId == null ? -1 : rankedIds.indexOf(myId);
-    final String totalText = rankedIds.length.toString();
-    final String myRankText = myIndex >= 0 ? (myIndex + 1).toString() : '-';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2395,7 +2404,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   children: [
                     // Tab 0: برترین شرکت کننده ها
                     Expanded(
-                      child: TapExpander(child: GestureDetector(
+                      child: GestureDetector(
                         onTap: () => setState(() => _selectedLeaderboardTab = 0),
                         behavior: HitTestBehavior.opaque,
                         child: AnimatedContainer(
@@ -2418,14 +2427,14 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             ),
                           ),
                         ),
-                      )),
+                      ),
                     ),
 
                     const SizedBox(width: 4),
 
                     // Tab 1: برترین کاروان ها
                     Expanded(
-                      child: TapExpander(child: GestureDetector(
+                      child: GestureDetector(
                         onTap: () => setState(() => _selectedLeaderboardTab = 1),
                         behavior: HitTestBehavior.opaque,
                         child: AnimatedContainer(
@@ -2448,7 +2457,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             ),
                           ),
                         ),
-                      )),
+                      ),
                     ),
                   ],
                 ),
@@ -2526,7 +2535,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                     children: [
                       const TextSpan(text: 'تعداد کل: '),
                       TextSpan(
-                        text: totalText.toPersianDigits(),
+                        text: '150'.toPersianDigits(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -2550,7 +2559,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                     children: [
                       const TextSpan(text: 'رتبه شما: '),
                       TextSpan(
-                        text: myRankText.toPersianDigits(),
+                        text: '10'.toPersianDigits(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

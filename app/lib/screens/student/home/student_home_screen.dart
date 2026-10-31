@@ -1,7 +1,3 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/core/asset_names.dart';
-import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,12 +32,12 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     _fetchData();
   }
 
-  Future<void> _fetchData({bool force = false}) async {
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        HttpApiService().getStations(forceRefresh: force),
-        HttpApiService().getBanners(position: 'home_top', forceRefresh: force),
+        HttpApiService().getStations(),
+        HttpApiService().getBanners(position: 'home_top'),
       ]);
       if (mounted) {
         setState(() {
@@ -71,12 +67,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
 
   /// 4-Column User & Caravan Summary Strip (مسافر, کاروان, راهبر, منزلگاه کنونی) - Right-aligned & Tap-to-expand
   Widget _buildUserInfoStrip(UserModel? user) {
-    final int levelPosition = (user?.levelFrame ?? 1) < 1 ? 1 : user!.levelFrame;
-    final Map<String, dynamic>? levelStation =
-        _stations.isNotEmpty ? _stations[(levelPosition - 1).clamp(0, _stations.length - 1)] : null;
-    final int levelNumber = (levelStation?['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(levelPosition);
-    final String currentStationTitle =
-        '${levelNumber.toString().toPersianDigits()}. ${Station.resolveTitle(levelStation?['title']?.toString(), levelNumber)}';
+    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -113,11 +104,11 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               Container(height: 24, width: 1, color: const Color(0xFF3E3B5C)),
               const SizedBox(width: 6),
               Expanded(
-                child: TapExpander(child: GestureDetector(
+                child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
-                    final currentStationMap = levelStation;
-                    final stationOrder = levelNumber;
+                    final currentStationMap = _stations.isNotEmpty ? _stations.first : null;
+                    final stationOrder = (currentStationMap?['orderIndex'] as num?)?.toInt() ?? 1;
                     final station = Station(
                       id: currentStationMap?['id'] ?? '1',
                       title: Station.resolveTitle(currentStationMap?['title']?.toString(), stationOrder),
@@ -134,7 +125,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                     title: 'منزلگاه کنونی',
                     value: currentStationTitle,
                   ),
-                )),
+                ),
               ),
             ],
           ),
@@ -146,7 +137,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
   Widget _buildInfoColumn({required String title, required String value}) {
     final bool isExpanded = _expandedInfoTitles.contains(title);
 
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: () {
         setState(() {
           if (isExpanded) {
@@ -188,7 +179,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           ),
         ],
       ),
-    ));
+    );
   }
 
   int _selectedAssetIndex = 0;
@@ -225,7 +216,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: AssetNames.labelFor('زریک'),
+                  label: 'زریک',
                   value: (user?.zarik ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
@@ -233,18 +224,15 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: AssetNames.labelFor('درفش'),
-                  value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
+                  label: 'بیرق',
+                  value: (user?.beyragh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 1,
-                  onTap: () {
-                    setState(() => _selectedAssetIndex = 1);
-                    CaravanBannersDialog.show(context, Provider.of<AppRepository>(context, listen: false).caravanBanners);
-                  },
+                  onTap: () => setState(() => _selectedAssetIndex = 1),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: AssetNames.labelFor('کلاف'),
+                  label: 'نخ',
                   value: (user?.nakh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
@@ -252,7 +240,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: AssetNames.labelFor('قالیچه'),
+                  label: 'فرش',
                   value: (user?.farsh ?? 0).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
@@ -272,7 +260,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -348,7 +336,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Middle: Label (زریک, درفش, نخ, فرش)
+                // Middle: Label (زریک, بیرق, نخ, فرش)
                 Text(
                   label,
                   style: const TextStyle(
@@ -377,7 +365,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
   @override
@@ -414,7 +402,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => _fetchData(force: true),
+      onRefresh: _fetchData,
       color: const Color(0xFFCD8449),
       backgroundColor: const Color(0xFF231C38),
       child: SingleChildScrollView(
@@ -463,7 +451,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(40, 30),
-                          tapTargetSize: MaterialTapTargetSize.padded,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: const Text(
                           'همه',

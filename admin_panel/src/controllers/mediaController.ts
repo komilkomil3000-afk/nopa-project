@@ -84,12 +84,6 @@ export const uploadMedia = async (req: AuthRequest, res: Response) => {
     const url = `/uploads/${file.filename}`;
     const { assetType, title, instructor, duration, category } = req.body;
 
-    const MAX_SUBMISSION_BYTES = 20 * 1024 * 1024;
-    if (assetType === 'challenge_submission' && file.size > MAX_SUBMISSION_BYTES) {
-      fs.unlink(file.path, () => {});
-      return res.status(400).json({ error: 'حجم فایل پیوست نباید بیشتر از ۲۰ مگابایت باشد' });
-    }
-
     const mediaAsset = await prisma.mediaAsset.create({
       data: {
         filename: file.filename,

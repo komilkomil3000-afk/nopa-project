@@ -1,8 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -307,7 +303,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         child: ElevatedButton(
                           onPressed: () async {
                             if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
-                              AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('لطفاً نام و شماره همراه را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily))),
+                              );
                               return;
                             }
                             Navigator.pop(ctx);
@@ -318,7 +316,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                               );
                             } catch (_) {}
                             if (mounted) {
-                              AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+                                  backgroundColor: Color(0xFF10B981),
+                                ),
+                              );
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -397,7 +400,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                             setState(() {
                               caravan.members.removeWhere((m) => m.id == member.id);
                             });
-                            AppToast.info(context, 'درخواست حذف «${member.name}» با موفقیت ثبت شد');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('درخواست حذف «${member.name}» با موفقیت ثبت شد', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                                backgroundColor: const Color(0xFFDE9959),
+                              ),
+                            );
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -470,7 +478,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: member.phoneNumber));
                           Navigator.pop(ctx);
-                          AppToast.info(context, 'شماره تماس کپی شد');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('شماره تماس کپی شد', style: TextStyle(fontFamily: AppTheme.fontFamily))),
+                          );
                         },
                         icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 16),
                         label: const Text('کپی شماره', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
@@ -515,7 +525,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         builder: (context) => StudentReportCardAndEvaluationScreen(
           member: member,
           caravanName: caravan.name,
-          caravanId: caravan.id,
         ),
       ),
     );
@@ -583,7 +592,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       minimumSize: const Size(0, 32),
-                      tapTargetSize: MaterialTapTargetSize.padded,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: const Text(
                       'درخواست اضافه کردن کاربر',
@@ -641,7 +650,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
     return Material(
       color: Colors.transparent,
-      child: TapExpander(child: InkWell(
+      child: InkWell(
         onTap: () => _showCaravanSelectionBottomSheet(context, appState),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -745,7 +754,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 
@@ -805,7 +814,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: TapExpander(child: InkWell(
+                    child: InkWell(
                       onTap: () {
                         appState.setSelectedCaravan(c.id, c.name);
                         Navigator.pop(ctx);
@@ -871,7 +880,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                           ],
                         ),
                       ),
-                    )),
+                    ),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -887,7 +896,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   Widget _buildMemberCard(CaravanMemberModel member, CaravanModel caravan) {
     return Material(
       color: Colors.transparent,
-      child: TapExpander(child: InkWell(
+      child: InkWell(
         onTap: () => _openMemberReportCard(member, caravan),
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -968,7 +977,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         minimumSize: const Size(0, 26),
-                        tapTargetSize: MaterialTapTargetSize.padded,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: const Text(
                         'درخواست حذف',
@@ -990,7 +999,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         minimumSize: const Size(0, 26),
-                        tapTargetSize: MaterialTapTargetSize.padded,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: const Text(
                         'تماس',
@@ -1016,7 +1025,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 }
@@ -1027,13 +1036,11 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
 class StudentReportCardAndEvaluationScreen extends StatefulWidget {
   final CaravanMemberModel member;
   final String caravanName;
-  final String? caravanId;
 
   const StudentReportCardAndEvaluationScreen({
     super.key,
     required this.member,
     required this.caravanName,
-    this.caravanId,
   });
 
   @override
@@ -1042,116 +1049,66 @@ class StudentReportCardAndEvaluationScreen extends StatefulWidget {
 
 class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCardAndEvaluationScreen> {
   List<Map<String, dynamic>> _stations = [];
-  Map<String, dynamic>? _memberData;
-  bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+    _loadStations();
   }
 
-  /// The member's real progress (watched parts with dates, quiz results, challenges) from the server.
-  Future<void> _loadProgress() async {
+  Future<void> _loadStations() async {
     try {
-      final data = await HttpApiService().getMentorCaravanProgress(caravanId: widget.caravanId);
-      if (data != null && mounted) {
-        final members = List<Map<String, dynamic>>.from(data['members'] ?? []);
+      final stations = await HttpApiService().getStations();
+      if (mounted) {
         setState(() {
-          _stations = List<Map<String, dynamic>>.from(data['stations'] ?? []);
-          _memberData = members.where((m) => m['id']?.toString() == widget.member.id).firstOrNull;
-          _loaded = true;
+          _stations = List<Map<String, dynamic>>.from(stations);
         });
-        StationNumbering.update(_stations);
-        return;
       }
     } catch (_) {}
-    if (mounted) setState(() => _loaded = true);
   }
 
   final Set<int> _expandedStationIndices = {0};
 
-  int get _levelFrame {
-    final v = (_memberData?['levelFrame'] as num?)?.toInt() ?? widget.member.levelFrame;
-    return v < 1 ? 1 : v;
-  }
-
-  int get _completedCount => (_memberData?['completedStationsCount'] as num?)?.toInt() ?? 0;
-
-  Map get _clipStatus => (_memberData?['clipStatus'] as Map?) ?? const {};
-
-  /// All sessions (skill, then media) of a station with their parts.
-  List<Map> _sessionsOf(Map<String, dynamic>? station) {
-    if (station == null) return [];
-    return [
-      ...((station['skillSessions'] as List?) ?? []).whereType<Map>(),
-      ...((station['mediaSessions'] as List?) ?? []).whereType<Map>(),
-    ];
-  }
-
-  bool _isClipWatched(dynamic clipId) {
-    final st = _clipStatus[clipId];
-    return st is Map && (st['isWatched'] == true || st['quizPassed'] == true);
-  }
-
-  int get _totalVideos {
-    int n = 0;
-    for (final st in _stations) {
-      for (final sess in _sessionsOf(st)) {
-        n += ((sess['clips'] as List?) ?? []).length;
-      }
-    }
-    return n;
-  }
-
-  int get _watchedVideos {
-    int n = 0;
-    for (final st in _stations) {
-      for (final sess in _sessionsOf(st)) {
-        for (final c in ((sess['clips'] as List?) ?? []).whereType<Map>()) {
-          final status = _clipStatus[c['id']];
-          if (status is Map && status['isWatched'] == true) n++;
+  List<Map<String, dynamic>> _getStationSessions(int stationIndex, Map<String, dynamic>? stationData) {
+    if (stationData != null && stationData['categories'] != null) {
+      final categories = stationData['categories'] as List? ?? [];
+      final List<Map<String, dynamic>> sessions = [];
+      for (final cat in categories) {
+        if (cat is Map && cat['sessions'] is List) {
+          sessions.addAll((cat['sessions'] as List).whereType<Map<String, dynamic>>());
         }
       }
+      if (sessions.isNotEmpty) return sessions;
     }
-    return n;
-  }
 
-  int get _totalQuizzes => _stations.fold(0, (sum, st) => sum + ((st['quizzes'] as List?) ?? []).length);
-
-  int get _takenQuizzes {
-    final results = (_memberData?['quizResults'] as Map?) ?? const {};
-    int n = 0;
-    for (final st in _stations) {
-      for (final q in ((st['quizzes'] as List?) ?? []).whereType<Map>()) {
-        if (results.containsKey(q['id'])) n++;
-      }
-    }
-    return n;
-  }
-
-  String _ofText(int part, int total) => '§{part.toPersian()} از §{total.toPersian()}';
-
-  /// Sessions of a station as shown in the accordion, from the member's real watch records.
-  List<Map<String, dynamic>> _getStationSessions(Map<String, dynamic>? stationData) {
-    return _sessionsOf(stationData).map((sess) {
-      final clips = ((sess['clips'] as List?) ?? []).whereType<Map>().toList();
-      final watched = clips.where((c) => _isClipWatched(c['id'])).length;
-      return <String, dynamic>{
-        'title': sess['title'],
-        'watched': watched,
-        'total': clips.length,
-        'done': clips.isNotEmpty && watched >= clips.length,
-      };
-    }).toList();
+    return [
+      {
+        'title': 'جلسه اول: شناخت مبانی و مهارت‌های فردی',
+        'subtitle': 'ویدیو آموزشی و بررسی مفاهیم',
+        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
+      },
+      {
+        'title': 'جلسه دوم: تحلیل چالش‌ها و کار تیمی کاروان',
+        'subtitle': 'تمرین عملی و سناریوهای حل مسئله',
+        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
+      },
+      {
+        'title': 'جلسه سوم: مهارت‌های رسانه‌ای و ارتباط موثر',
+        'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
+        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
+      },
+      {
+        'title': 'جلسه چهارم: آزمون پایانی و ارزیابی منزلگاه',
+        'subtitle': 'آزمون جامع و دریافت پاداش زریک',
+        'isCompleted': (stationIndex + 1) < widget.member.levelFrame,
+      },
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final member = widget.member;
-    final int levelFrame = _levelFrame;
-    final int stationCount = _stations.isNotEmpty ? _stations.length : StationNumbering.count;
-    final bool hasData = _loaded && _memberData != null;
+    final int certificatesCount = member.levelFrame > 1 ? (member.levelFrame - 1) : 0;
 
     return AppScaffold(
       showBackButton: true,
@@ -1169,10 +1126,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
             children: [
               // 1. Station Progress Stepper (استپر بالای منزلگاه)
               StationProgressStepper(
-                currentStationIndex: (levelFrame - 1).clamp(0, stationCount - 1),
-                totalNodes: stationCount,
-                userLevelFrame: levelFrame,
-                completedStationsCount: _completedCount,
+                currentStationIndex: (member.levelFrame - 1).clamp(0, 5),
+                userLevelFrame: member.levelFrame,
+                completedStationsCount: member.levelFrame > 1 ? member.levelFrame - 1 : 0,
                 title: 'منزلگاه‌های آموزشی کاربر',
               ),
 
@@ -1257,16 +1213,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(levelFrame).toPersian()),
-                        _buildStatBox('ویدیوها', hasData ? _ofText(_watchedVideos, _totalVideos) : '—'),
-                        _buildStatBox('آزمون‌ها', hasData ? _ofText(_takenQuizzes, _totalQuizzes) : '—'),
-                        _buildStatBox(
-                          'چالش‌ها',
-                          hasData
-                              ? _ofText((_memberData!['challengesParticipated'] as num?)?.toInt() ?? 0,
-                                  (_memberData!['challengesTotal'] as num?)?.toInt() ?? 0)
-                              : '—',
-                        ),
+                        _buildStatBox('منزلگاه کنونی', member.levelFrame.toPersian()),
+                        _buildStatBox('ویدیوها', ((member.levelFrame * 3) + 2).toPersian()),
+                        _buildStatBox('آزمون‌ها', (member.levelFrame * 2).toPersian()),
+                        _buildStatBox('گواهی‌نامه‌ها', certificatesCount.toPersian()),
                       ],
                     ),
                   ],
@@ -1293,10 +1243,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAssetBox(AssetNames.labelFor('زریک'), member.zarikBalance.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox(AssetNames.labelFor('درفش'), member.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('کلاف'), member.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox(AssetNames.labelFor('قالیچه'), member.farsh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox('زریک', member.zarikBalance.toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox('درفش', member.beyragh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox('نخ', member.nakh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox('فرش', member.farsh.toPersian(), const Color(0xFF9292E2)),
                       ],
                     ),
                   ],
@@ -1320,22 +1270,15 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                       ),
                     ),
                     const SizedBox(height: 14),
-                    if (!_loaded)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: CircularProgressIndicator(color: Color(0xFFDFB690)),
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < _stations.length; i++) ...[
-                        _buildStationAccordionItem(
-                          index: i,
-                          stationData: _stations[i],
-                          userLevelFrame: levelFrame,
-                        ),
-                        if (i < _stations.length - 1) const SizedBox(height: 10),
-                      ],
+                    for (int i = 0; i < (_stations.isNotEmpty ? _stations.length : 6); i++) ...[
+                      _buildStationAccordionItem(
+                        index: i,
+                        stationData: i < _stations.length ? _stations[i] : null,
+                        userLevelFrame: member.levelFrame,
+                      ),
+                      if (i < (_stations.isNotEmpty ? _stations.length : 6) - 1)
+                        const SizedBox(height: 10),
+                    ],
                   ],
                 ),
               ),
@@ -1354,18 +1297,16 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     required Map<String, dynamic>? stationData,
     required int userLevelFrame,
   }) {
-    // Same rules as the member's own station list
-    final int completed = _completedCount;
-    final bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > completed;
-    final bool isCurrentStation = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
-    final bool isCompletedStation = (index + 1) < userLevelFrame || index < completed;
+    final bool isCompletedStation = (index + 1) < userLevelFrame;
+    final bool isCurrentStation = (index + 1) == userLevelFrame;
+    final bool isLocked = (index + 1) > userLevelFrame;
     final bool isExpanded = _expandedStationIndices.contains(index);
 
     final String stationTitle = stationData != null && stationData['title'] != null
         ? stationData['title'].toString()
-        : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
+        : 'منزلگاه ${index + 1}';
 
-    final sessions = _getStationSessions(stationData);
+    final sessions = _getStationSessions(index, stationData);
 
     return Container(
       decoration: BoxDecoration(
@@ -1383,7 +1324,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         child: Column(
           children: [
             // Station Header Row (Tap to expand/collapse)
-            TapExpander(child: InkWell(
+            InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -1422,7 +1363,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     // Station Title
                     Expanded(
                       child: Text(
-                        'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
+                        'منزلگاه ${(index + 1).toPersian()}: $stationTitle',
                         style: TextStyle(
                           color: isLocked ? Colors.white54 : Colors.white,
                           fontSize: 13,
@@ -1441,7 +1382,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                   ],
                 ),
               ),
-            )),
+            ),
 
             // Expanded Sessions Stepper List
             if (isExpanded) ...[
@@ -1454,7 +1395,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   children: List.generate(sessions.length, (sIdx) {
                     final session = sessions[sIdx];
-                    final bool isSessionCompleted = session['done'] == true;
+                    final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
                     final isLastSession = sIdx == sessions.length - 1;
 
                     return Row(
@@ -1518,10 +1459,8 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
-                                      ? 'همه پارت‌ها دیده شده ✓'
-                                      : (isLocked
-                                          ? 'قفل شده'
-                                          : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),
+                                      ? 'مشاهده‌شده و تایید شده ✓'
+                                      : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
                                   style: TextStyle(
                                     color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
                                     fontSize: 10.5,
@@ -1589,17 +1528,12 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
   }
 
   static Widget _buildStatBox(String label, String value) {
-    return Expanded(
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
-        ],
-      ),
+    return Column(
+      children: [
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+      ],
     );
   }
 

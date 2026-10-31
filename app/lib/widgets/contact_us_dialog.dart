@@ -1,6 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
@@ -40,7 +38,17 @@ class ContactUsDialog extends StatelessWidget {
 
   void _copyToClipboard(BuildContext context, String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
-    AppToast.info(context, '$label کپی شد: $text');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$label کپی شد: $text',
+          style: const TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -207,7 +215,7 @@ class ContactUsDialog extends StatelessWidget {
     required VoidCallback onTap,
     bool isAddress = false,
   }) {
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Row(
@@ -253,7 +261,7 @@ class ContactUsDialog extends StatelessWidget {
           ),
         ],
       ),
-    ));
+    );
   }
 
   /// Location Row: Label Pill on RIGHT (First child in RTL) and Map/Pin Button on LEFT (Second child in RTL)
@@ -287,7 +295,7 @@ class ContactUsDialog extends StatelessWidget {
 
         // 2. Location button on LEFT (Second child in RTL)
         Expanded(
-          child: TapExpander(child: GestureDetector(
+          child: GestureDetector(
             onTap: () => _launch(context, 'https://maps.google.com/?q=34.6416,50.8746'),
             child: Container(
               height: 48,
@@ -317,7 +325,7 @@ class ContactUsDialog extends StatelessWidget {
                 ],
               ),
             ),
-          )),
+          ),
         ),
       ],
     );
