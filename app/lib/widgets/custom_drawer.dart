@@ -1,4 +1,3 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -68,7 +67,7 @@ class CustomDrawer extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                      constraints: const BoxConstraints(),
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
@@ -195,7 +194,7 @@ class CustomDrawer extends StatelessWidget {
                           Positioned(
                             bottom: 0,
                             left: 0,
-                            child: TapExpander(child: GestureDetector(
+                            child: GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
                                 CompleteProfileDialog.show(context, currentUser);
@@ -219,7 +218,7 @@ class CustomDrawer extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                            )),
+                            ),
                           ),
                         ],
                       ),
@@ -441,7 +440,7 @@ class CustomDrawer extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: TapExpander(child: InkWell(
+      child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         hoverColor: Colors.white.withValues(alpha: 0.04),
@@ -486,7 +485,7 @@ class CustomDrawer extends StatelessWidget {
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 }

@@ -1,11 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:nopa_app/widgets/station_gallery_item.dart';
-import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/core/station_categories.dart';
-import 'dart:math' as math;
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -16,10 +9,10 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
+import 'package:nopa_app/widgets/nopa_inline_video_player.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
-import 'package:nopa_app/widgets/zoomable_image.dart';
 import 'package:nopa_app/main.dart';
-import 'package:nopa_app/utils/mentor_contact.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Class 1 Screen (صفحه اطلاعات و توضیحات منزلگاه)
 class StudentClass1Screen extends StatefulWidget {
@@ -52,52 +45,14 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   final Set<String> _expandedStatKeys = {};
   final PageController _videoPageController = PageController();
 
-  /// Fraction of an animation that must be watched to unlock the classes.
-  static const double _animUnlockThreshold = 0.90;
-  final Set<String> _watchedAnimations = {};
-  bool _watchedLoaded = false;
-
-  String get _watchedPrefsKey =>
-      'watched_animations_${Provider.of<AppRepository>(context, listen: false).currentUser.id}';
-
-  Future<void> _loadWatchedAnimations() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final saved = prefs.getStringList(_watchedPrefsKey) ?? [];
-      if (mounted) setState(() => _watchedAnimations.addAll(saved));
-    } catch (e) {
-      debugPrint('Load watched animations error: $e');
-    }
-  }
-
-  void _onAnimationProgress(String key, Duration position, Duration duration) {
-    if (duration.inMilliseconds <= 0 || _watchedAnimations.contains(key)) {
-      return;
-    }
-    if (position.inMilliseconds <
-        duration.inMilliseconds * _animUnlockThreshold) {
-      return;
-    }
-    setState(() => _watchedAnimations.add(key));
-    SharedPreferences.getInstance()
-        .then((prefs) {
-          prefs.setStringList(_watchedPrefsKey, _watchedAnimations.toList());
-        })
-        .catchError((e) {
-          debugPrint('Save watched animations error: $e');
-        });
-  }
-
-  String _animKey(Map<String, dynamic> clip) => '${clip['id']}';
-
   @override
   void initState() {
     super.initState();
     if (widget.initialStation != null) {
       _station = widget.initialStation;
-      _currentStationIndex = StationNumbering.indexOfNumber(
-        widget.initialStation!.orderIndex,
-      );
+      _currentStationIndex = widget.initialStation!.orderIndex > 0
+          ? widget.initialStation!.orderIndex - 1
+          : 0;
       _loadClassCategories();
     }
   }
@@ -105,12 +60,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   @override
   void didUpdateWidget(covariant Class1Screen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialStation != null &&
-        widget.initialStation != oldWidget.initialStation) {
+    if (widget.initialStation != null && widget.initialStation != oldWidget.initialStation) {
       _station = widget.initialStation;
-      _currentStationIndex = StationNumbering.indexOfNumber(
-        widget.initialStation!.orderIndex,
-      );
+      _currentStationIndex = widget.initialStation!.orderIndex > 0
+          ? widget.initialStation!.orderIndex - 1
+          : 0;
       _loadClassCategories();
     }
   }
@@ -126,16 +80,12 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_watchedLoaded) {
-      _watchedLoaded = true;
-      _loadWatchedAnimations();
-    }
     if (!_isInitialized && _station == null && widget.initialStation == null) {
       _isInitialized = true;
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Station) {
         _station = args;
-        _currentStationIndex = StationNumbering.indexOfNumber(args.orderIndex);
+        _currentStationIndex = args.orderIndex > 0 ? args.orderIndex - 1 : 0;
       } else {
         _currentStationIndex = 0;
       }
@@ -149,25 +99,20 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       _allStationsData = List<Map<String, dynamic>>.from(stations);
 
       Map<String, dynamic> stationData = {};
-      final int targetOrder = StationNumbering.numberAt(
-        _currentStationIndex + 1,
-      );
+      final int targetOrder = _currentStationIndex + 1;
       if (_allStationsData.isNotEmpty) {
         stationData = _allStationsData.firstWhere(
           (s) => (s['orderIndex'] == targetOrder),
           orElse: () => (_station?.id != null && _station!.id.isNotEmpty)
               ? _allStationsData.firstWhere(
                   (s) => s['id'] == _station!.id,
-                  orElse: () =>
-                      (_currentStationIndex >= 0 &&
-                          _currentStationIndex < _allStationsData.length)
+                  orElse: () => (_currentStationIndex >= 0 && _currentStationIndex < _allStationsData.length)
                       ? _allStationsData[_currentStationIndex]
                       : _allStationsData.first,
                 )
-              : ((_currentStationIndex >= 0 &&
-                        _currentStationIndex < _allStationsData.length)
-                    ? _allStationsData[_currentStationIndex]
-                    : _allStationsData.first),
+              : ((_currentStationIndex >= 0 && _currentStationIndex < _allStationsData.length)
+                  ? _allStationsData[_currentStationIndex]
+                  : _allStationsData.first),
         );
       }
 
@@ -178,19 +123,19 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       final Map<String, List<Map<String, dynamic>>> map = {};
       final List<Map<String, dynamic>> clipsList = [];
 
-      if (stationData.containsKey('categories') &&
-          stationData['categories'] != null) {
+      if (stationData.containsKey('categories') && stationData['categories'] != null) {
         final categoriesList = stationData['categories'] as List? ?? [];
         for (final item in categoriesList) {
           if (item is Map) {
             final cat = item as Map<String, dynamic>;
             final catTitle = cat['title']?.toString() ?? 'کلاس‌ها';
-            final sessions =
-                (cat['sessions'] as List?)
-                    ?.map((s) => s as Map<String, dynamic>)
-                    .toList() ??
-                [];
+            final sessions = (cat['sessions'] as List?)?.map((s) => s as Map<String, dynamic>).toList() ?? [];
             map[catTitle] = sessions;
+
+            for (final sess in sessions) {
+              final clips = (sess['videoClips'] as List?)?.map((c) => c as Map<String, dynamic>).toList() ?? [];
+              clipsList.addAll(clips);
+            }
           }
         }
       }
@@ -207,8 +152,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             });
           }
         }
-      } else if (_station?.animationUrl != null &&
-          _station!.animationUrl!.isNotEmpty) {
+      } else if (_station?.animationUrl != null && _station!.animationUrl!.isNotEmpty) {
         animClips.add({
           'id': 'anim_${_station!.id}',
           'title': _station?.animationTitle ?? 'انیمیشن معرفی منزلگاه',
@@ -216,8 +160,13 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         });
       }
 
-      // Only the station's animations belong here; class/session videos are shown in their own screens.
-      clipsList.addAll(animClips);
+      if (animClips.isNotEmpty) {
+        if (clipsList.isEmpty) {
+          clipsList.addAll(animClips);
+        } else {
+          clipsList.insertAll(0, animClips);
+        }
+      }
 
       if (mounted) {
         setState(() {
@@ -236,7 +185,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   void _switchStation(int index) {
     if (index == _currentStationIndex && _station != null) return;
-    final int targetOrder = StationNumbering.numberAt(index + 1);
+    final int targetOrder = index + 1;
     setState(() {
       _currentStationIndex = index;
       _isDescriptionExpanded = false;
@@ -260,11 +209,14 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final appState = Provider.of<AppRepository>(context, listen: false);
     final isNewStation = _currentStationIndex > 0 && !_station!.isCompleted;
     if (isNewStation && appState.hasPendingChallenges) {
-      AppToast.error(context, 'شما باید چالش‌هایتان را تکمیل کنید');
-      PendingChallengesDialog.show(
-        context,
-        appState.uncompletedChallengesCount,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.redAccent,
+          duration: Duration(seconds: 3),
+        ),
       );
+      PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
       return false;
     }
     return true;
@@ -273,14 +225,24 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   void _navigateToClass(String categoryKeyword) {
     if (!_checkCanAccessContent(context)) return;
 
-    final split = StationCategories.splitByTitle(_classCategories);
-    final List<Map<String, dynamic>> targetSessions =
-        split[categoryKeyword.contains('رسانه') ? StationCategories.media : StationCategories.skill]!;
+    List<Map<String, dynamic>> targetSessions = [];
+    for (var entry in _classCategories.entries) {
+      if (entry.key.contains(categoryKeyword)) {
+        targetSessions = entry.value;
+        break;
+      }
+    }
+
+    if (targetSessions.isEmpty && _classCategories.isNotEmpty) {
+      targetSessions = _classCategories.values.first;
+    }
 
     if (targetSessions.isEmpty) {
-      AppToast.info(
-        context,
-        'جلسات $categoryKeyword برای این منزلگاه به زودی منتشر می‌شود.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('جلسات $categoryKeyword برای این منزلگاه به زودی منتشر می‌شود.', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: const Color(0xFF28274A),
+        ),
       );
       return;
     }
@@ -291,17 +253,45 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       arguments: {
         'classes': targetSessions,
         'initialIndex': 0,
-        'stationIndex': _currentStationIndex,
-        'stationNumber': _station?.orderIndex,
-        'stationTitle': _station?.title,
-        'type': categoryKeyword.contains('رسانه') ? 'media' : 'skill',
       },
     );
   }
 
   Future<void> _contactMentor() async {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    await contactMentor(context, user);
+    String targetUrl = (user.socialGroupLink != null && user.socialGroupLink!.trim().isNotEmpty)
+        ? user.socialGroupLink!.trim()
+        : 'https://eitaa.com/komeilgraph';
+
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      if (targetUrl.startsWith('@')) {
+        targetUrl = 'https://eitaa.com/${targetUrl.substring(1)}';
+      } else if (targetUrl.contains('eitaa.com') || targetUrl.contains('t.me') || targetUrl.contains('rubika.ir') || targetUrl.contains('bale.ai')) {
+        targetUrl = 'https://$targetUrl';
+      } else {
+        targetUrl = 'https://eitaa.com/$targetUrl';
+      }
+    }
+
+    try {
+      final uri = Uri.parse(targetUrl);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'خطا در باز کردن لینک راهبر: $targetUrl',
+              style: const TextStyle(fontFamily: AppTheme.fontFamily),
+            ),
+            backgroundColor: const Color(0xFFE11D48),
+          ),
+        );
+      }
+    }
   }
 
   void _handleBackAction() {
@@ -318,39 +308,33 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final int totalStationNodes = _allStationsData.isNotEmpty
-        ? _allStationsData.length
-        : StationNumbering.count;
+    final int totalStationNodes = _allStationsData.isNotEmpty ? _allStationsData.length : 5;
 
     // Check if selected station is locked
-    // Locked by progress, or by the server (release time / manual lock)
-    final bool isLocked =
-        (_currentStationIndex > 0 &&
-            (_currentStationIndex + 1) > userLevelFrame &&
-            _currentStationIndex > user.completedStationsCount) ||
-        (_station?.isLocked ?? false);
+    final bool isLocked = _currentStationIndex > 0 &&
+        (_currentStationIndex + 1) > userLevelFrame &&
+        _currentStationIndex > user.completedStationsCount;
 
     // Dynamic counts from categories
     int skillSessionsCount = 0;
     int mediaSessionsCount = 0;
-    final splitSessions = StationCategories.splitByTitle(_classCategories);
-    skillSessionsCount = splitSessions[StationCategories.skill]!.length;
-    mediaSessionsCount = splitSessions[StationCategories.media]!.length;
+    for (var entry in _classCategories.entries) {
+      if (entry.key.contains('مهارت')) {
+        skillSessionsCount += entry.value.length;
+      } else if (entry.key.contains('رسانه')) {
+        mediaSessionsCount += entry.value.length;
+      }
+    }
 
     final String skillText = '${skillSessionsCount.toPersian()} جلسه';
     final String mediaText = '${mediaSessionsCount.toPersian()} جلسه';
-    final String animText = _allClips.isNotEmpty
-        ? '${_allClips.length.toPersian()} قسمت'
-        : '۰ قسمت';
+    final String animText = _allClips.isNotEmpty ? '${_allClips.length.toPersian()} قسمت' : '۱ قسمت';
     final String stayText = _station?.stayDuration?.isNotEmpty == true
         ? _station!.stayDuration!
         : '${((_currentStationIndex + 1) * 3 + 5).toPersian()} روز';
 
-    final String currentClipTitle =
-        _allClips.isNotEmpty && _currentClipIndex < _allClips.length
-        ? (_allClips[_currentClipIndex]['title'] ??
-              _station?.animationTitle ??
-              'انیمیشن منزلگاه')
+    final String currentClipTitle = _allClips.isNotEmpty && _currentClipIndex < _allClips.length
+        ? (_allClips[_currentClipIndex]['title'] ?? _station?.animationTitle ?? 'انیمیشن منزلگاه')
         : (_station?.animationTitle ?? 'انیمیشن معرفی منزلگاه');
 
     final Widget scrollableContent = SingleChildScrollView(
@@ -390,10 +374,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             const SizedBox(height: 20),
 
             // 5. Animation / Video Clip Preview with Full Bleed Swipeable Carousel
-            if (_allClips.isNotEmpty) ...[
-              _buildAnimationCarouselSection(currentClipTitle),
-              const SizedBox(height: 22),
-            ],
+            _buildAnimationCarouselSection(currentClipTitle),
+
+            const SizedBox(height: 22),
 
             // 6. Action Buttons
             _buildActionButtonsRow(),
@@ -467,21 +450,17 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     );
   }
 
+
+
   /// 3. Station Lore Header: Text on Left & Station Image Box on Right (No shadow, no bottom text, Home gradient border)
   Widget _buildStationLoreHeader() {
     const double cardWidth = 105.0;
     const double cardHeight = 138.0;
     final String stationImage = _station?.imageUrl ?? '';
-    final bool hasValidImg =
-        stationImage.isNotEmpty &&
-        stationImage.startsWith('http') &&
-        !stationImage.contains('placeholder');
-    final String ordinalTitle =
-        (_station?.title != null && _station!.title.trim().isNotEmpty)
+    final bool hasValidImg = stationImage.isNotEmpty && stationImage.startsWith('http') && !stationImage.contains('placeholder');
+    final String ordinalTitle = (_station?.title != null && _station!.title.trim().isNotEmpty)
         ? _station!.title
-        : Station.getOrdinalName(
-            StationNumbering.numberAt(_currentStationIndex + 1),
-          );
+        : Station.getOrdinalName(_currentStationIndex);
     final String fullDescription = _station?.description?.isNotEmpty == true
         ? _station!.description!
         : 'توضیحات و محتوای آموزشی این منزلگاه در این بخش نمایش داده می‌شود.';
@@ -514,37 +493,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                 borderRadius: BorderRadius.circular(14.8),
                 color: const Color(0xFF2E2E50),
               ),
-              child: ZoomableImage(
-                enabled: hasValidImg,
-                imageUrl: ApiConstants.resolveImageUrl(stationImage),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14.8),
-                  child: hasValidImg
-                      ? CachedNetworkImage(
-                          imageUrl: ApiConstants.resolveImageUrl(stationImage),
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: const Color(0xFF2E2E50),
-                            alignment: Alignment.center,
-                            child: SvgPicture.asset(
-                              'assets/svg_icons/imagenot01.svg',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
-                            color: const Color(0xFF2E2E50),
-                            alignment: Alignment.center,
-                            child: SvgPicture.asset(
-                              'assets/svg_icons/imagenot01.svg',
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        )
-                      : Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14.8),
+                child: hasValidImg
+                    ? CachedNetworkImage(
+                        imageUrl: ApiConstants.resolveImageUrl(stationImage),
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: const Color(0xFF2E2E50),
+                          alignment: Alignment.center,
                           child: SvgPicture.asset(
                             'assets/svg_icons/imagenot01.svg',
                             width: 40,
@@ -552,7 +509,25 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                             fit: BoxFit.contain,
                           ),
                         ),
-                ),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFF2E2E50),
+                          alignment: Alignment.center,
+                          child: SvgPicture.asset(
+                            'assets/svg_icons/imagenot01.svg',
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: SvgPicture.asset(
+                          'assets/svg_icons/imagenot01.svg',
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -616,20 +591,16 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          TapExpander(
-                            child: GestureDetector(
-                              onTap: () => setState(
-                                () => _isDescriptionExpanded = false,
-                              ),
-                              child: const Text(
-                                'بستن (کمتر)',
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Color(0xFFFFD574),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                          GestureDetector(
+                            onTap: () => setState(() => _isDescriptionExpanded = false),
+                            child: const Text(
+                              'بستن (کمتر)',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: Color(0xFFFFD574),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: AppTheme.fontFamily,
                               ),
                             ),
                           ),
@@ -668,20 +639,17 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        TapExpander(
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _isDescriptionExpanded = true),
-                            child: const Text(
-                              'بیشتر...',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: Color(0xFFF4DCC5),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                decoration: TextDecoration.underline,
-                              ),
+                        GestureDetector(
+                          onTap: () => setState(() => _isDescriptionExpanded = true),
+                          child: const Text(
+                            'بیشتر...',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Color(0xFFF4DCC5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: AppTheme.fontFamily,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
@@ -728,53 +696,51 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final bool isExpanded = _expandedStatKeys.contains(title);
 
     return Expanded(
-      child: TapExpander(
-        child: InkWell(
-          onTap: () {
-            setState(() {
-              if (_expandedStatKeys.contains(title)) {
-                _expandedStatKeys.remove(title);
-              } else {
-                _expandedStatKeys.add(title);
-              }
-            });
-          },
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (_expandedStatKeys.contains(title)) {
+              _expandedStatKeys.remove(title);
+            } else {
+              _expandedStatKeys.add(title);
+            }
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.right,
-                  maxLines: isExpanded ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB3B0C7),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                textAlign: TextAlign.right,
+                maxLines: isExpanded ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFFB3B0C7),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.normal,
+                  fontFamily: AppTheme.fontFamily,
+                  fontFamilyFallback: AppTheme.fontFamilyFallback,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -798,7 +764,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       children: [
         // Heading
         const Text(
-          'گالری منزلگاه',
+          'انیمیشن هایی که باید ببینید',
           textAlign: TextAlign.right,
           style: TextStyle(
             color: Colors.white,
@@ -816,29 +782,27 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
           child: PageView.builder(
             clipBehavior: Clip.none,
             controller: _videoPageController,
-            itemCount: _allClips.length,
+            itemCount: _allClips.isNotEmpty ? _allClips.length : 1,
             onPageChanged: (idx) {
               setState(() {
                 _currentClipIndex = idx;
               });
             },
             itemBuilder: (context, index) {
-              final clip = _allClips[index];
-              final String videoUrl = clip['videoUrl'].toString().trim();
-              final String title = clip['title']?.toString() ?? clipTitle;
-              final String? poster =
-                  clip['thumbnail']?.toString() ??
-                  clip['coverImageUrl']?.toString();
+              final clip = _allClips.isNotEmpty && index < _allClips.length ? _allClips[index] : null;
+              final String videoUrl = (clip != null && clip['videoUrl'] != null && clip['videoUrl'].toString().trim().isNotEmpty)
+                  ? clip['videoUrl'].toString().trim()
+                  : 'https://www.aparat.com/v/dbjk750';
+              final String title = clip?['title']?.toString() ?? clipTitle;
+              final String? poster = clip?['thumbnail']?.toString() ?? clip?['coverImageUrl']?.toString();
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: StationGalleryItem(
+                child: NopaInlineVideoPlayer(
                   key: ValueKey('clip_${_currentStationIndex}_$index'),
-                  url: videoUrl,
+                  videoUrl: videoUrl,
                   title: title,
                   coverImageUrl: poster,
-                  onProgress: (pos, dur) =>
-                      _onAnimationProgress(_animKey(clip), pos, dur),
                 ),
               );
             },
@@ -878,41 +842,35 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                     // 1. Next Button (On right in RTL: moves to next clip)
                     Material(
                       color: Colors.transparent,
-                      child: TapExpander(
-                        child: InkWell(
-                          onTap: _currentClipIndex < _allClips.length - 1
-                              ? () {
-                                  _videoPageController.nextPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              : null,
-                          borderRadius: BorderRadius.circular(15),
-                          child: Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _currentClipIndex < _allClips.length - 1
-                                    ? const Color(0xFFC09268)
-                                    : const Color(
-                                        0xFFC09268,
-                                      ).withValues(alpha: 0.3),
-                                width: 1.0,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
+                      child: InkWell(
+                        onTap: _currentClipIndex < _allClips.length - 1
+                            ? () {
+                                _videoPageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
                               color: _currentClipIndex < _allClips.length - 1
-                                  ? const Color(0xFFDEB58A)
-                                  : const Color(
-                                      0xFFDEB58A,
-                                    ).withValues(alpha: 0.3),
-                              size: 19,
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
                             ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_left_rounded,
+                            color: _currentClipIndex < _allClips.length - 1
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
                           ),
                         ),
                       ),
@@ -922,41 +880,35 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                     // 2. Previous Button (On left in RTL: moves to previous clip)
                     Material(
                       color: Colors.transparent,
-                      child: TapExpander(
-                        child: InkWell(
-                          onTap: _currentClipIndex > 0
-                              ? () {
-                                  _videoPageController.previousPage(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
-                                  );
-                                }
-                              : null,
-                          borderRadius: BorderRadius.circular(15),
-                          child: Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _currentClipIndex > 0
-                                    ? const Color(0xFFC09268)
-                                    : const Color(
-                                        0xFFC09268,
-                                      ).withValues(alpha: 0.3),
-                                width: 1.0,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.chevron_right_rounded,
+                      child: InkWell(
+                        onTap: _currentClipIndex > 0
+                            ? () {
+                                _videoPageController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            : null,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
                               color: _currentClipIndex > 0
-                                  ? const Color(0xFFDEB58A)
-                                  : const Color(
-                                      0xFFDEB58A,
-                                    ).withValues(alpha: 0.3),
-                              size: 19,
+                                  ? const Color(0xFFC09268)
+                                  : const Color(0xFFC09268).withValues(alpha: 0.3),
+                              width: 1.0,
                             ),
+                          ),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: _currentClipIndex > 0
+                                ? const Color(0xFFDEB58A)
+                                : const Color(0xFFDEB58A).withValues(alpha: 0.3),
+                            size: 19,
                           ),
                         ),
                       ),
@@ -981,8 +933,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
             flex: 3,
             child: _buildActionButton(
               title: 'ورود به کلاس‌ها',
-              enabled: true,
-              animatedStroke: true,
               onTap: () => _navigateToClass('مهارت'),
             ),
           ),
@@ -1004,136 +954,48 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
   Widget _buildActionButton({
     required String title,
     required VoidCallback onTap,
-    bool enabled = true,
-    bool animatedStroke = false,
   }) {
-    const gold = Color(0xFFC09268);
-    final rotating = animatedStroke && enabled;
-    final box = Container(
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
-      decoration: BoxDecoration(
-        color: enabled ? const Color(0xFF2A2835) : const Color(0xFF26252B),
-        borderRadius: BorderRadius.circular(8),
-        border: rotating
-            ? null
-            : Border.all(
-                color: enabled
-                    ? gold.withValues(alpha: 0.85)
-                    : const Color(0xFF55535C),
-                width: 1.0,
-              ),
-        boxShadow: enabled
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        title,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: enabled ? const Color(0xFFF4DCC5) : const Color(0xFF8C8A93),
-          fontSize: 10.5,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
-          fontFamilyFallback: AppTheme.fontFamilyFallback,
-        ),
-      ),
-    );
     return Material(
       color: Colors.transparent,
-      child: TapExpander(
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: rotating ? _RotatingStroke(color: gold, child: box) : box,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2835),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFFC09268).withValues(alpha: 0.85),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFFF4DCC5),
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+              fontFamilyFallback: AppTheme.fontFamilyFallback,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// Slowly rotating highlight running around the border of its child.
-class _RotatingStroke extends StatefulWidget {
-  final Color color;
-  final Widget child;
-  const _RotatingStroke({required this.color, required this.child});
-
-  @override
-  State<_RotatingStroke> createState() => _RotatingStrokeState();
-}
-
-class _RotatingStrokeState extends State<_RotatingStroke>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 4),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, child) => CustomPaint(
-        foregroundPainter: _StrokePainter(color: widget.color, turn: _c.value),
-        child: child,
-      ),
-      child: widget.child,
-    );
-  }
-}
-
-class _StrokePainter extends CustomPainter {
-  final Color color;
-  final double turn;
-  _StrokePainter({required this.color, required this.turn});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = (Offset.zero & size).deflate(0.75);
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
-    // Dim base ring
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = color.withValues(alpha: 0.35),
-    );
-    // Bright arc travelling around the ring
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8
-        ..shader = SweepGradient(
-          colors: [
-            color.withValues(alpha: 0),
-            color,
-            color.withValues(alpha: 0),
-          ],
-          stops: const [0.0, 0.15, 0.3],
-          transform: GradientRotation(turn * 2 * math.pi),
-        ).createShader(rect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StrokePainter old) =>
-      old.turn != turn || old.color != color;
-}
 
 typedef Class1Screen = StudentClass1Screen;

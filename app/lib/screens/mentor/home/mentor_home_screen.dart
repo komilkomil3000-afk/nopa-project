@@ -1,8 +1,3 @@
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:nopa_app/core/station_numbering.dart';
-import 'package:nopa_app/core/asset_names.dart';
-import 'package:nopa_app/widgets/caravan_banners_dialog.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -36,12 +31,12 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     _fetchData();
   }
 
-  Future<void> _fetchData({bool force = false}) async {
+  Future<void> _fetchData() async {
     setState(() => _isLoading = true);
     try {
       final results = await Future.wait([
-        HttpApiService().getStations(forceRefresh: force),
-        HttpApiService().getBanners(position: 'home_top', forceRefresh: force),
+        HttpApiService().getStations(),
+        HttpApiService().getBanners(position: 'home_top'),
         Provider.of<AppRepository>(context, listen: false).fetchCaravans(),
       ]);
       if (mounted) {
@@ -72,7 +67,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   /// 4-Column Summary Strip (راهبر, کاروان, اعضا, منزلگاه کنونی)
   Widget _buildUserInfoStrip(UserModel? user, AppRepository appState) {
-    final String currentStationTitle = '${StationNumbering.numberAt(1).toString().toPersianDigits()}. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
+    final String currentStationTitle = '۱. ${Station.resolveTitle(_stations.isNotEmpty ? _stations[0]['title']?.toString() : null, 1)}';
     final String caravanName = (user?.caravanName != null && user!.caravanName!.isNotEmpty)
         ? user.caravanName!
         : appState.selectedCaravanName;
@@ -133,7 +128,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
   Widget _buildInfoColumn({required String title, required String value}) {
     final bool isExpanded = _expandedInfoTitles.contains(title);
 
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: () {
         setState(() {
           if (isExpanded) {
@@ -175,7 +170,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ],
       ),
-    ));
+    );
   }
 
   /// Caravan Selector Action Card styled like "ورود به صفحه کلاس ها"
@@ -184,7 +179,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
-      child: TapExpander(child: GestureDetector(
+      child: GestureDetector(
         onTap: () => _showCaravanSelectionBottomSheet(context, appState),
         child: Container(
           decoration: BoxDecoration(
@@ -310,7 +305,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 
@@ -370,7 +365,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: TapExpander(child: InkWell(
+                    child: InkWell(
                       onTap: () {
                         appState.setSelectedCaravan(c.id, c.name);
                         Navigator.pop(ctx);
@@ -436,7 +431,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                           ],
                         ),
                       ),
-                    )),
+                    ),
                   );
                 }),
                 const SizedBox(height: 8),
@@ -450,9 +445,8 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   int _selectedAssetIndex = 0;
 
-  /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4).
-  /// Shows the caravan's total capital; the mentor earns no personal capital.
-  Widget _buildAssetsSection(CaravanModel? caravan) {
+  /// Assets Strip: Horizontal scrollable pills with badge numbers (1, 2, 3, 4)
+  Widget _buildAssetsSection(UserModel? user) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -483,35 +477,32 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               children: [
                 _buildAssetPill(
                   badgeNumber: '۱',
-                  label: AssetNames.labelFor('زریک'),
-                  value: (caravan?.totalZarik ?? 0).toPersian(),
+                  label: 'زریک',
+                  value: (user?.zarik ?? 3500).toPersian(),
                   isGold: _selectedAssetIndex == 0,
                   onTap: () => setState(() => _selectedAssetIndex = 0),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۲',
-                  label: AssetNames.labelFor('درفش'),
-                  value: Provider.of<AppRepository>(context).caravanBannerTotal.toPersian(),
+                  label: 'بیرق',
+                  value: (user?.beyragh ?? 8).toPersian(),
                   isGold: _selectedAssetIndex == 1,
-                  onTap: () {
-                    setState(() => _selectedAssetIndex = 1);
-                    CaravanBannersDialog.show(context, Provider.of<AppRepository>(context, listen: false).caravanBanners);
-                  },
+                  onTap: () => setState(() => _selectedAssetIndex = 1),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۳',
-                  label: AssetNames.labelFor('کلاف'),
-                  value: (caravan?.totalNakh ?? 0).toPersian(),
+                  label: 'نخ',
+                  value: (user?.nakh ?? 45).toPersian(),
                   isGold: _selectedAssetIndex == 2,
                   onTap: () => setState(() => _selectedAssetIndex = 2),
                 ),
                 const SizedBox(width: 10),
                 _buildAssetPill(
                   badgeNumber: '۴',
-                  label: AssetNames.labelFor('قالیچه'),
-                  value: (caravan?.totalFarsh ?? 0).toPersian(),
+                  label: 'فرش',
+                  value: (user?.farsh ?? 3).toPersian(),
                   isGold: _selectedAssetIndex == 3,
                   onTap: () => setState(() => _selectedAssetIndex = 3),
                 ),
@@ -530,7 +521,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     required bool isGold,
     required VoidCallback onTap,
   }) {
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minWidth: 130),
@@ -635,26 +626,46 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
-  /// Section: Quick Access ("دسترسی سریع") with 3 icon + text tiles
+  /// Section: Quick Access ("دسترسی سریع") with 5 Action Cards matching StationCard design
   Widget _buildQuickAccessSection() {
     final List<Map<String, dynamic>> quickAccessItems = [
       {
-        'title': 'منزلگاه ها',
-        'icon': 'assets/svg_icons/qa_stations01.svg',
+        'title': 'همه کلاس ها',
+        'subtitle': 'کلاس‌های مهارتی و رسانه‌ای',
+        'badge': 'سرفصل‌ها',
+        'image': 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400',
+        'onTap': () => Navigator.pushNamed(context, '/class2'),
+      },
+      {
+        'title': 'مدیریت منزلگاه',
+        'subtitle': 'گزارش آموزشی و پیشرفت',
+        'badge': 'منزلگاه‌ها',
+        'image': 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400',
         'onTap': () => navigateToMainTab(1),
       },
       {
-        'title': 'اعضا و کاروان',
-        'icon': 'assets/svg_icons/qa_members01.svg',
-        'onTap': () => Navigator.pushNamed(context, '/mentor_members'),
+        'title': 'چالش ها',
+        'subtitle': 'ماموریت‌ها و تصحیح پاسخ‌ها',
+        'badge': 'چالش‌ها',
+        'image': 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=400',
+        'onTap': () => navigateToMainTab(2),
       },
       {
-        'title': 'چالش ها',
-        'icon': 'assets/svg_icons/qa_challenges01.svg',
-        'onTap': () => navigateToMainTab(2),
+        'title': 'پیام ها',
+        'subtitle': 'ارسال و دریافت اطلاعیه‌ها',
+        'badge': 'پیام‌ها',
+        'image': 'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?w=400',
+        'onTap': () => Navigator.pushNamed(context, '/notifications'),
+      },
+      {
+        'title': 'مبادلات',
+        'subtitle': 'مدیریت سرمایه‌ها و مبادلات',
+        'badge': 'بازارچه',
+        'image': 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400',
+        'onTap': () => navigateToMainTab(3),
       },
     ];
 
@@ -678,23 +689,26 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        SizedBox(
+          height: 230,
           child: Directionality(
             textDirection: TextDirection.rtl,
-            child: Row(
-              children: [
-                for (int i = 0; i < quickAccessItems.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildQuickAccessCard(
-                      title: quickAccessItems[i]['title'] as String,
-                      iconPath: quickAccessItems[i]['icon'] as String,
-                      onTap: quickAccessItems[i]['onTap'] as VoidCallback,
-                    ),
-                  ),
-                ],
-              ],
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: quickAccessItems.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final item = quickAccessItems[index];
+
+                return _buildQuickAccessCard(
+                  title: item['title'] as String,
+                  subtitle: item['subtitle'] as String,
+                  badge: item['badge'] as String,
+                  imageUrl: item['image'] as String,
+                  onTap: item['onTap'] as VoidCallback,
+                );
+              },
             ),
           ),
         ),
@@ -704,13 +718,15 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
 
   Widget _buildQuickAccessCard({
     required String title,
-    required String iconPath,
+    required String subtitle,
+    required String badge,
+    required String imageUrl,
     required VoidCallback onTap,
   }) {
-    return TapExpander(child: GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 104,
+        width: 164,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           gradient: const LinearGradient(
@@ -746,29 +762,131 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
               ],
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+          padding: const EdgeInsets.all(12),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SvgPicture.asset(iconPath, height: 38, fit: BoxFit.contain),
+              // Badge & Icon top row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1D34),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF5C578F), width: 0.9),
+                    ),
+                    child: Text(
+                      badge,
+                      style: const TextStyle(
+                        color: Color(0xFFDDD9EE),
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF28274A),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Color(0xFFDEB58A),
+                      size: 14,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 10),
+
+              // Thumbnail with smooth rounded corners
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 78,
+                  width: double.infinity,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: const Color(0xFF231C38),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.8,
+                          color: Color(0xFFCD8449),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: const Color(0xFF231C38),
+                      child: const Icon(Icons.dashboard_customize_rounded, color: Colors.white38),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Title
               Text(
                 title,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.right,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 13,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.bold,
                   fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+              const SizedBox(height: 2),
+
+              // Subtitle
+              Text(
+                subtitle,
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF9D99B8),
+                  fontSize: 10,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+              const Spacer(),
+
+              // Action button at bottom
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Text(
+                    'مشاهده و ورود',
+                    style: TextStyle(
+                      color: Color(0xFF2C1605),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-    ));
+    );
   }
 
   @override
@@ -805,7 +923,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => _fetchData(force: true),
+      onRefresh: _fetchData,
       color: const Color(0xFFCD8449),
       backgroundColor: const Color(0xFF231C38),
       child: SingleChildScrollView(
@@ -830,7 +948,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             const SizedBox(height: 18),
 
             // 4. Assets Section (سرمایه‌های کاروان)
-            _buildAssetsSection(appState.selectedCaravan),
+            _buildAssetsSection(user),
 
             const SizedBox(height: 22),
 

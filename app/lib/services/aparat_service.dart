@@ -18,8 +18,6 @@ class AparatVideoInfo {
 
 class AparatService {
   static final Map<String, AparatVideoInfo> _cache = {};
-  static final Map<String, DateTime> _cacheAt = {};
-  static const Duration _cacheTtl = Duration(minutes: 20); // resolved stream links are time-limited
 
   /// Extract video hash from various Aparat URL patterns:
   /// - https://www.aparat.com/v/dbjk750
@@ -46,8 +44,7 @@ class AparatService {
     final hash = extractHash(urlOrHash);
     if (hash == null) return null;
 
-    final at = _cacheAt[hash];
-    if (_cache.containsKey(hash) && at != null && DateTime.now().difference(at) < _cacheTtl) {
+    if (_cache.containsKey(hash)) {
       return _cache[hash];
     }
 
@@ -94,7 +91,6 @@ class AparatService {
             defaultUrl: defaultUrl,
           );
           _cache[hash] = info;
-          _cacheAt[hash] = DateTime.now();
           return info;
         }
       }

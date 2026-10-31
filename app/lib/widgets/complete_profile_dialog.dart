@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
@@ -155,12 +154,28 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
     final nationalId = _nationalIdCtrl.text.trim();
 
     if (name.isEmpty || nationalId.isEmpty) {
-      AppToast.error(context, 'لطفاً نام و کد ملی را وارد نمایید');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'لطفاً نام و کد ملی را وارد نمایید',
+            style: TextStyle(fontFamily: AppTheme.fontFamily),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
     if (nationalId.length < 10) {
-      AppToast.error(context, 'کد ملی باید ۱۰ رقم باشد');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'کد ملی باید ۱۰ رقم باشد',
+            style: TextStyle(fontFamily: AppTheme.fontFamily),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
@@ -185,11 +200,36 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
 
-      AppToast.success(context, '🎉 پروفایل شما با موفقیت تکمیل شد و ۱۰۰ زریک به حساب شما افزوده گردید!');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.stars_rounded, color: Color(0xFFFFD54F)),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '🎉 پروفایل شما با موفقیت تکمیل شد و ۱۰۰ زریک به حساب شما افزوده گردید!',
+                  style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Color(0xFF10B981),
+          duration: Duration(seconds: 4),
+        ),
+      );
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
-      AppToast.error(context, 'خطایی رخ داده است. خطا در ذخیره مشخصات');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'خطا در ذخیره مشخصات: $e',
+            style: const TextStyle(fontFamily: AppTheme.fontFamily),
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 

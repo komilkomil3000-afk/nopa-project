@@ -1,4 +1,3 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -66,7 +65,7 @@ class AppTopBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 if (showBackButton)
-                  TapExpander(child: GestureDetector(
+                  GestureDetector(
                     onTap: onBackTap ?? () => Navigator.of(context).maybePop(),
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
@@ -81,7 +80,7 @@ class AppTopBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ))
+                  )
                 else
                   const SizedBox(height: 26),
               ],
@@ -103,7 +102,7 @@ class AppTopBar extends StatelessWidget {
 
                           return Material(
                             color: Colors.transparent,
-                            child: TapExpander(child: InkWell(
+                            child: InkWell(
                               onTap: () {
                                 repository.fetchNotifications();
                                 Navigator.pushNamed(context, '/notifications');
@@ -155,7 +154,7 @@ class AppTopBar extends StatelessWidget {
                                     ),
                                 ],
                               ),
-                            )),
+                            ),
                           );
                         },
                       ),
@@ -165,7 +164,7 @@ class AppTopBar extends StatelessWidget {
                       Builder(
                         builder: (ctx) => Material(
                           color: Colors.transparent,
-                          child: TapExpander(child: InkWell(
+                          child: InkWell(
                             onTap: () => Scaffold.of(ctx).openDrawer(),
                             borderRadius: BorderRadius.circular(22),
                             child: Container(
@@ -183,7 +182,7 @@ class AppTopBar extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          )),
+                          ),
                         ),
                       ),
                   ],

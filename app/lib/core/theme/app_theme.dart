@@ -43,20 +43,6 @@ class AppTheme {
         brightness: Brightness.light,
         surface: Colors.white,
       ),
-      materialTapTargetSize: MaterialTapTargetSize.padded,
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          minimumSize: const Size(56, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          tapTargetSize: MaterialTapTargetSize.padded,
-        ),
-      ),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          minimumSize: const Size(44, 44),
-          tapTargetSize: MaterialTapTargetSize.padded,
-        ),
-      ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(fontFamily: fontFamily),
         labelStyle: TextStyle(fontFamily: fontFamily),
@@ -79,20 +65,6 @@ class AppTheme {
         seedColor: AppColors.purple,
         brightness: Brightness.dark,
         surface: AppColors.cardBackground,
-      ),
-      materialTapTargetSize: MaterialTapTargetSize.padded,
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          minimumSize: const Size(56, 44),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          tapTargetSize: MaterialTapTargetSize.padded,
-        ),
-      ),
-      iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          minimumSize: const Size(44, 44),
-          tapTargetSize: MaterialTapTargetSize.padded,
-        ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(fontFamily: fontFamily),
@@ -117,17 +89,6 @@ extension PersianNumberExtension on String {
 
   /// Short alias for toPersianDigits()
   String toPersian() => toPersianDigits();
-
-  /// Converts Persian (۰-۹) and Arabic-Indic (٠-٩) digits to English digits, e.g. before int.tryParse
-  String toEnglishDigits() {
-    const farsi = '۰۱۲۳۴۵۶۷۸۹';
-    const arabic = '٠١٢٣٤٥٦٧٨٩';
-    String result = this;
-    for (int i = 0; i < 10; i++) {
-      result = result.replaceAll(farsi[i], '$i').replaceAll(arabic[i], '$i');
-    }
-    return result;
-  }
 }
 
 extension PersianNumExtension on num {

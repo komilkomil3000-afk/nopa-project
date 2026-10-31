@@ -1,6 +1,4 @@
-import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:io' as io;
-import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -144,7 +142,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TapExpander(child: GestureDetector(
+                  GestureDetector(
                     onTap: isUploading
                         ? null
                         : () async {
@@ -198,7 +196,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                         ],
                       ),
                     ),
-                  )),
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -230,16 +228,29 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     }
                                     if (context.mounted) {
                                       final isSuccess = res != null;
-                                      if (isSuccess) {
-      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎');
-    } else {
-      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
-    }
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            isSuccess
+                                                ? 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎'
+                                                : 'خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.',
+                                            style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                                          ),
+                                          backgroundColor: isSuccess ? const Color(0xFF10B981) : Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
                                     }
                                   } catch (e) {
                                     setDialogState(() => isUploading = false);
                                     if (context.mounted) {
-                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('خطا در ارتباط با سرور: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
                                     }
                                   }
                                 },
@@ -274,7 +285,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final combinedName = [first, last].where((s) => s.isNotEmpty).join(' ');
 
     if (combinedName.isEmpty) {
-      AppToast.error(context, 'لطفاً نام خود را وارد کنید');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لطفاً نام خود را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
@@ -284,11 +300,21 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
 
     if (newPassword.isNotEmpty) {
       if (newPassword.length < 4) {
-        AppToast.error(context, 'رمز عبور باید حداقل ۴ کاراکتر باشد');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('رمز عبور باید حداقل ۴ کاراکتر باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
         return;
       }
       if (newPassword != confirmPassword) {
-        AppToast.error(context, 'رمز عبور جدید و تکرار آن مطابقت ندارند');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('رمز عبور جدید و تکرار آن مطابقت ندارند', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
         return;
       }
     }
@@ -312,12 +338,22 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تغییرات با موفقیت ذخیره شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
-      AppToast.error(context, 'خطایی رخ داده است. خطا در ذخیره تغییرات');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطا در ذخیره تغییرات: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -494,7 +530,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                           children: [
                             // 1. ثبت تغییرات Button (English NOPA Gold Gradient Style)
                             Expanded(
-                              child: TapExpander(child: InkWell(
+                              child: InkWell(
                                 onTap: _isSaving ? null : _saveChanges,
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -534,13 +570,13 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                           ),
                                   ),
                                 ),
-                              )),
+                              ),
                             ),
                             const SizedBox(width: 14),
 
                             // 2. لغو Button (Purple border & text)
                             Expanded(
-                              child: TapExpander(child: InkWell(
+                              child: InkWell(
                                 onTap: () => Navigator.pop(context),
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -571,7 +607,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     ),
                                   ),
                                 ),
-                              )),
+                              ),
                             ),
                           ],
                         ),
@@ -786,7 +822,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
               ),
 
               // Embedded Change Request Button (matching ثبت تغییرات style)
-              TapExpander(child: GestureDetector(
+              GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
@@ -808,7 +844,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -871,7 +907,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              TapExpander(child: GestureDetector(
+              GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   margin: EdgeInsets.only(bottom: maxLines > 1 ? 4 : 0),
@@ -894,7 +930,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -984,14 +1020,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                             ),
                           ),
                         ),
-                        TapExpander(child: GestureDetector(
+                        GestureDetector(
                           onTap: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
                           child: Icon(
                             _isNewPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             color: const Color(0xFF8E889D),
                             size: 18,
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -1042,14 +1078,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                             ),
                           ),
                         ),
-                        TapExpander(child: GestureDetector(
+                        GestureDetector(
                           onTap: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
                           child: Icon(
                             _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
                             color: const Color(0xFF8E889D),
                             size: 18,
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -1090,7 +1126,12 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
   Future<void> _submitRequest() async {
     final text = _descCtrl.text.trim();
     if (text.isEmpty) {
-      AppToast.error(context, 'لطفاً شرح درخواست خود را بنویسید');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لطفاً شرح درخواست خود را بنویسید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
@@ -1106,11 +1147,21 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       if (!mounted) return;
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;
-      AppToast.error(context, 'خطایی رخ داده است. خطا در ارسال درخواست');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطا در ارسال درخواست: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 

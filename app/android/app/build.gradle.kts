@@ -4,11 +4,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-base {
-    // The built file is called Nopa-<variant>.apk
-    archivesName.set("Nopa")
-}
-
 android {
     namespace = "com.example.nopa_app"
     compileSdk = 36

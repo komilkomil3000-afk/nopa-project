@@ -126,7 +126,6 @@ model Caravan {
   chatMessages    ChatMessage[]
   assetConversions AssetConversionRequest[]
   challenges      Challenge[]
-  banners         CaravanBanner[]
 }
 
 model SystemSetting {
@@ -139,13 +138,7 @@ model AssetConversionRequest {
   id              String   @id @default(uuid())
   caravanId       String
   requestedBy     String
-  status          String   @default("completed") // "completed" | "cancelled" (legacy: "pending" | "approved" | "rejected")
-  sourceAsset     String?
-  targetAsset     String?
-  sourceAmount    Int?
-  targetAmount    Int?
-  cancelledBy     String?
-  cancelledAt     DateTime?
+  status          String   @default("pending") // "pending" | "approved" | "rejected"
   note            String?
   rejectionReason String?
   reviewedAt      DateTime?
@@ -167,16 +160,9 @@ model Challenge {
   type              String       // "quiz" | "skill" | "file"
   questions         String?      // JSON string representation of questions
   rewardZarik       Int          @default(0)
-  rewardAssetType   String       @default("zarik") // "zarik" | "nakh": what an approved answer pays out
-  rewardMin         Int          @default(0)       // range the reviewing mentor picks from; 0/0 = fixed rewardZarik
-  rewardMax         Int          @default(0)
-  category          String       @default("intra_group") // "intra_group" | "inter_group" | "individual"
-  recipientIds      String[]     @default([])             // empty = every member of the caravan; else only these students
   createdByMentorId String
   caravanId         String?
   stationId         String?
-  rankingFinalizedAt DateTime?                              // inter-group: when the admin confirmed the caravans' ranking
-  startDate         DateTime?                                // challenge opens at this moment (null = already open)
   dueDate           DateTime?
   createdAt         DateTime     @default(now())
 
@@ -204,56 +190,10 @@ model Submission {
   // Relations
   challenge      Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   student        User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  events         SubmissionEvent[]
 
   @@unique([challengeId, studentId])
   @@index([studentId])
   @@index([status])
-}
-
-// Every answer, rejection (with the mentor's message) and approval of a submission, kept after the row is overwritten by a re-submit
-model SubmissionEvent {
-  id           String     @id @default(uuid())
-  submissionId String
-  challengeId  String
-  studentId    String
-  action       String     // "submitted" | "rejected" | "approved"
-  answerText   String?
-  fileUrl      String?
-  feedback     String?
-  score        Int?
-  actorId      String?
-  actorName    String?
-  createdAt    DateTime   @default(now())
-
-  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-
-  @@index([submissionId, createdAt])
-  @@index([challengeId])
-}
-
-// Display names of the assets (editable from the admin panel); the app reads them at start
-model AssetType {
-  key       String   @id // "zarik" | "nakh" | "farsh" | "derafsh" | "derafsh_gold" | "derafsh_silver" | "derafsh_bronze" | "derafsh_cloth"
-  nameFa    String
-  sortOrder Int      @default(0)
-  updatedAt DateTime @updatedAt
-}
-
-// Banner (درفش) won by a caravan in an inter-group challenge; the caravan owns them, not its members
-model CaravanBanner {
-  id          String   @id @default(uuid())
-  caravanId   String
-  tier        String   // "gold" | "silver" | "bronze" | "cloth"
-  rank        Int?     // 1..3 for the medals, null for cloth
-  challengeId String?
-  awardedBy   String?
-  createdAt   DateTime @default(now())
-
-  caravan     Caravan  @relation(fields: [caravanId], references: [id], onDelete: Cascade)
-
-  @@unique([challengeId, caravanId])
-  @@index([caravanId])
 }
 
 model MentorRating {

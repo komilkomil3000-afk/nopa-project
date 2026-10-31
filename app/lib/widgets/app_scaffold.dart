@@ -38,24 +38,13 @@ class AppScaffold extends StatelessWidget {
     final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
 
     return PopScope(
-      // A custom back handler takes over only when the user asks to go back.
-      // It must not run after a pop that already happened (bottom nav popUntil,
-      // another screen's pop): handlers like `Navigator.pop` would then pop a
-      // second, unrelated route (the main shell) and leave an empty stack.
-      canPop: onBackTap == null,
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) onBackTap?.call();
+        if (didPop) {
+          onBackTap?.call();
+        }
       },
-      child: Container(
-       // Painted behind the whole Scaffold so it also fills the area behind the bottom nav bar.
-       decoration: const BoxDecoration(
-        gradient: AppColors.screenBackgroundGradient,
-        image: DecorationImage(
-          image: AssetImage('assets/images/login_bg.png'),
-          fit: BoxFit.cover,
-        ),
-       ),
-       child: Scaffold(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
         drawer: drawer ??
             (showDrawerButton
@@ -81,9 +70,16 @@ class AppScaffold extends StatelessWidget {
                 },
               )
             : null,
-        body: SizedBox(
+        body: Container(
           width: double.infinity,
           height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: AppColors.screenBackgroundGradient,
+            image: DecorationImage(
+              image: AssetImage('assets/images/login_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
           child: SafeArea(
             child: Column(
               children: [
@@ -99,7 +95,6 @@ class AppScaffold extends StatelessWidget {
             ),
           ),
         ),
-       ),
       ),
     );
   }
