@@ -15,6 +15,7 @@ model User {
   role                         String         // "student" | "mentor" | "admin"
   name                         String
   avatarUrl                    String?
+  gender                       String?        // "male" | "female"
   zarikBalance                 Int            @default(0)
   levelFrame                   Int            @default(1)
   mentorLevel                  Int            @default(1) // 1: Junior, 2: Senior, 3: Master

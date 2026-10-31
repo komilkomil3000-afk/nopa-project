@@ -11,6 +11,8 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
+import 'package:nopa_app/widgets/avatar_picker_sheet.dart';
 
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
@@ -608,13 +610,23 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 color: Color(0xFF4A467D),
               ),
               child: ClipOval(
-                child: widget.user.avatarUrl != null && widget.user.avatarUrl!.isNotEmpty
-                    ? Image.network(
-                        widget.user.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildAvatarPlaceholder(),
-                      )
-                    : _buildAvatarPlaceholder(),
+                child: ListenableBuilder(
+                  listenable: AppRepository(),
+                  builder: (context, _) {
+                    final u = AppRepository().currentUser;
+                    final hasPic = (u.avatarUrl != null && u.avatarUrl!.isNotEmpty);
+                    return hasPic
+                        ? SafeAvatar(
+                            radius: 43,
+                            imageUrl: u.avatarUrl,
+                            name: u.name,
+                            gender: u.gender,
+                            isMentor: false,
+                            backgroundColor: Colors.transparent,
+                          )
+                        : _buildAvatarPlaceholder();
+                  },
+                ),
               ),
             ),
           ),
@@ -623,7 +635,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           Positioned(
             bottom: 2,
             left: 2,
-            child: Container(
+            child: GestureDetector(
+             onTap: () => showAvatarPicker(context),
+             child: Container(
               width: 26,
               height: 26,
               decoration: BoxDecoration(
@@ -645,6 +659,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 size: 13,
               ),
             ),
+           ),
           ),
         ],
       ),

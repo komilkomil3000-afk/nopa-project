@@ -1778,3 +1778,39 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `npm run dev` started; GET /health returned 200; DB calls fail until a real DATABASE_URL is set.
 - **Status:** Completed
+
+### [2026-10-31 20:47] - Flutter App & LMS Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `app/lib/main.dart` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/pubspec.yaml` (Modified)
+  - `admin_panel/prisma/migrations/20261038_user_gender/` (Created)
+  - `app/assets/avatars/` (Created)
+  - `app/lib/core/avatar_catalog.dart` (Created)
+  - `app/lib/services/local_cache.dart` (Created)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Created)
+- **Description of Changes:**
+  - Added offline cache layer (LocalCache: server snapshots of profile/challenges/notifications + DraftTextController drafts for challenge answers, support message, mentor messages)
+  - live sync every 3s with in-flight guard, foreground-only, change detection
+  - bundled compressed avatars (assets/avatars) with gender-based picker (AvatarCatalog, SafeAvatar, avatar_picker_sheet)
+  - backend: User.gender column + migration 20261038_user_gender, PATCH /users/me/avatar, gender in GET /users/me
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/) clean except 1 pre-existing info; flutter test; backend tsc not run (no node_modules)
+- **Status:** Completed

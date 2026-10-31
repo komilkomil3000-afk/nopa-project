@@ -21,6 +21,7 @@ class UserModel {
   final int mentorLevel;
   final int levelFrame;
   final String? avatarUrl;
+  final String? gender; // 'male' | 'female'
   final String? nationalId;
   final String? dateOfBirth;
   final bool identityVerified;
@@ -58,6 +59,7 @@ class UserModel {
     this.mentorLevel = 1,
     this.levelFrame = 1,
     this.avatarUrl,
+    this.gender,
     this.nationalId,
     this.dateOfBirth,
     this.identityVerified = false,
@@ -98,6 +100,7 @@ class UserModel {
     int? mentorLevel,
     int? levelFrame,
     String? avatarUrl,
+    String? gender,
     String? nationalId,
     String? dateOfBirth,
     bool? identityVerified,
@@ -135,6 +138,7 @@ class UserModel {
       mentorLevel: mentorLevel ?? this.mentorLevel,
       levelFrame: levelFrame ?? this.levelFrame,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      gender: gender ?? this.gender,
       nationalId: nationalId ?? this.nationalId,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       identityVerified: identityVerified ?? this.identityVerified,
@@ -184,6 +188,7 @@ class UserModel {
       mentorLevel: json['mentorLevel'] ?? 1,
       levelFrame: json['levelFrame'] ?? 1,
       avatarUrl: json['avatarUrl'],
+      gender: json['gender']?.toString(),
       nationalId: json['nationalId'],
       dateOfBirth: json['dateOfBirth'],
       identityVerified: json['identityVerified'] ?? false,

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'utils/constants.dart';
 import 'services/api_service.dart';
+import 'services/local_cache.dart';
 import 'services/app_state_repository.dart';
 import 'core/theme/app_theme.dart';
 import 'services/theme_provider.dart';
@@ -27,6 +28,7 @@ void main() async {
   PaintingBinding.instance.imageCache.maximumSize = 100;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB ceiling
   GoogleFonts.config.allowRuntimeFetching = false;
+  await LocalCache.instance.init();
 
   // Setup automatic 401 unauthorized token invalidation & safe login redirect
   HttpApiService.onUnauthorized = () {

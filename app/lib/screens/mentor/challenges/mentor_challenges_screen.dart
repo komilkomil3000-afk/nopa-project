@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
+import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/models/models.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -1969,8 +1970,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   }
 
   void _showCreateMessageDialog(BuildContext context, UserModel user) {
-    final titleCtrl = TextEditingController();
-    final messageCtrl = TextEditingController();
+    final titleCtrl = DraftTextController(draftKey: 'mentor_message.title');
+    final messageCtrl = DraftTextController(draftKey: 'mentor_message.body');
     String? selectedUserId; // null = all members
     List<Map<String, dynamic>> members = [];
     bool membersRequested = false;
@@ -2179,6 +2180,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               AppToast.error(context, api.lastMentorMessageError ?? 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
                               return;
                             }
+                            titleCtrl.clearDraft();
+                            messageCtrl.clearDraft();
                             Navigator.pop(ctx);
                             AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد ✉️');
                           },

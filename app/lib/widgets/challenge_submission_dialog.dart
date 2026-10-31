@@ -8,6 +8,7 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/api_service.dart';
+import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 
@@ -58,7 +59,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
   // The submit flow appends "\nفایل: <name>" to the typed answer; it is shown as a file tile instead.
   static const _fileMarker = '\nفایل: ';
 
-  late final TextEditingController _textCtrl;
+  late final DraftTextController _textCtrl;
   // Quiz: one entry per question; _answers[i] is the chosen option (-1 = unanswered).
   int _step = 0;
   late final List<int> _answers;
@@ -113,7 +114,8 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       fileName = answer.substring(markerAt + _fileMarker.length).trim();
       answer = answer.substring(0, markerAt);
     }
-    _textCtrl = TextEditingController(text: answer);
+    // The typed answer survives leaving the page / losing connection; it is cleared once the answer was sent.
+    _textCtrl = DraftTextController(draftKey: 'challenge_answer.${c['id']}', text: answer);
 
     final rawUrl = c['myFileUrl']?.toString() ?? '';
     _existingFileUrl = rawUrl.isNotEmpty ? ApiConstants.resolveImageUrl(rawUrl) : null;
@@ -249,6 +251,8 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       AppToast.error(context, error);
       return;
     }
+    await _textCtrl.clearDraft();
+    if (!mounted) return;
     Navigator.pop(context, ChallengeSubmissionResult(answerText: answer, isQuiz: false));
   }
 

@@ -4,6 +4,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/local_cache.dart';
 import 'nopa_dialog_container.dart';
 
 class SupportMessageDialog extends StatefulWidget {
@@ -24,15 +25,15 @@ class SupportMessageDialog extends StatefulWidget {
 }
 
 class _SupportMessageDialogState extends State<SupportMessageDialog> {
-  late final TextEditingController _subjectCtrl;
-  final TextEditingController _descCtrl = TextEditingController();
+  late final DraftTextController _subjectCtrl;
+  final DraftTextController _descCtrl = DraftTextController(draftKey: 'support_message.desc');
   bool _isSubmitting = false;
   late final String _currentDateStr;
 
   @override
   void initState() {
     super.initState();
-    _subjectCtrl = TextEditingController(text: widget.initialSubject ?? '');
+    _subjectCtrl = DraftTextController(draftKey: 'support_message.subject', text: widget.initialSubject ?? '');
     final now = Jalali.now();
     final y = now.year.toString().padLeft(4, '0');
     final m = now.month.toString().padLeft(2, '0');
@@ -70,6 +71,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
         subject: '$subject: $text',
       );
 
+      await Future.wait([_subjectCtrl.clearDraft(), _descCtrl.clearDraft()]);
       if (!mounted) return;
       Navigator.pop(context);
 

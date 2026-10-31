@@ -178,6 +178,8 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                       child: SafeAvatar(
                         radius: 36,
                         imageUrl: user.avatarUrl,
+                        gender: user.gender,
+                        isMentor: false,
                         name: displayName,
                         backgroundColor: Colors.transparent,
                       ),

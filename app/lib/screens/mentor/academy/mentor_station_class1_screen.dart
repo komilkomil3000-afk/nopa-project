@@ -13,6 +13,7 @@ import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/models/station.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
+import 'package:nopa_app/services/local_cache.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/widgets/zoomable_image.dart';
 import 'package:nopa_app/screens/student/academy/student_class2_screen.dart';
@@ -1795,7 +1796,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   void _openFollowUpDialog(Map<String, dynamic> member) {
     final name = member['name']?.toString() ?? 'دانش‌آموز کاروان';
     final phone = member['phoneNumber']?.toString() ?? '';
-    final controller = TextEditingController();
+    final controller = DraftTextController(draftKey: 'mentor_followup.${member['id']}');
 
     showDialog(
       context: context,
@@ -1984,6 +1985,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                               AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
                               return;
                             }
+                            controller.clearDraft();
                             Navigator.pop(dialogCtx);
                             AppToast.info(
                               context,

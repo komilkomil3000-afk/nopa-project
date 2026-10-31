@@ -1,14 +1,14 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'safe_avatar.dart';
+import 'avatar_picker_sheet.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state_repository.dart';
 import '../models/user_model.dart';
 import '../core/theme/app_theme.dart';
 import 'contact_us_dialog.dart';
 import 'logout_dialog.dart';
-import 'complete_profile_dialog.dart';
 
 class CustomDrawer extends StatelessWidget {
   final Function(int) onTabSelected;
@@ -181,11 +181,15 @@ class CustomDrawer extends StatelessWidget {
                               ],
                             ),
                             child: ClipOval(
-                              child: (currentUser.avatarUrl != null && currentUser.avatarUrl!.isNotEmpty)
-                                  ? CachedNetworkImage(
-                                      imageUrl: currentUser.avatarUrl!,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                              child: (currentUser.avatarUrl != null && currentUser.avatarUrl!.isNotEmpty) ||
+                                      (isMentor && currentUser.gender != null)
+                                  ? SafeAvatar(
+                                      radius: 31,
+                                      imageUrl: currentUser.avatarUrl,
+                                      name: currentUser.name,
+                                      gender: currentUser.gender,
+                                      isMentor: isMentor,
+                                      backgroundColor: Colors.transparent,
                                     )
                                   : _buildAvatarPlaceholder(),
                             ),
@@ -198,7 +202,7 @@ class CustomDrawer extends StatelessWidget {
                             child: TapExpander(child: GestureDetector(
                               onTap: () {
                                 Navigator.pop(context);
-                                CompleteProfileDialog.show(context, currentUser);
+                                showAvatarPicker(context);
                               },
                               child: Container(
                                 width: 20,

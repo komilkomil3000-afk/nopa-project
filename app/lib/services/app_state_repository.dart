@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import 'api_service.dart';
 import 'auth_service.dart';
+import 'local_cache.dart';
 
 
 class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
@@ -70,25 +71,71 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     recordActivity();
   }
 
+  /// Live-sync interval: profile, challenges and notifications are re-requested this often while the app is open.
+  static const Duration pollInterval = Duration(seconds: 3);
+  bool _pollInFlight = false;
+  bool _appInForeground = true;
+
   void _startPeriodicNotificationSync() {
     _notificationPollTimer?.cancel();
     var tick = 0;
-    _notificationPollTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
+    _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
+      // One request round at a time (a slow network must not pile up requests) and none while in background.
+      if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
+      _pollInFlight = true;
       try {
-        if (_apiService.isAuthenticated) {
-          await fetchNotifications();
-          // A new / updated challenge shows up without reopening the page (about every 90 seconds)
-          if (++tick % 2 == 0) await syncChallenges();
-        }
+        await _pollOnce(heavy: ++tick % 10 == 0);
       } catch (e) {
-        debugPrint('Periodic notification sync caught: $e');
+        debugPrint('Periodic sync caught: $e');
+      } finally {
+        _pollInFlight = false;
       }
     });
+  }
+
+  /// One light refresh round. Only data that really changed notifies the UI. Stations, caravans and banners
+  /// (rarely changing, heavier) are refreshed every 10th round (about every 30 seconds).
+  Future<void> _pollOnce({required bool heavy}) async {
+    final user = await _apiService.getMe();
+    if (user != null && !_apiService.isUnchanged('me')) {
+      _applyUser(user);
+      notifyListeners();
+    }
+    await Future.wait([
+      syncChallenges(onlyIfChanged: true),
+      fetchNotifications(onlyIfChanged: true),
+    ]);
+    if (heavy) {
+      _apiService.getStations().then((_) => notifyListeners()).catchError((e) => debugPrint('getStations error: $e'));
+      fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
+      fetchCaravans().catchError((e) => debugPrint('fetchCaravans error: $e'));
+    }
+  }
+
+  /// Keeps the role the user switched to when the account has both roles.
+  void _applyUser(UserModel user) {
+    final existingRole = currentUser.role;
+    if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
+      currentUser = user.copyWith(role: existingRole);
+    } else {
+      currentUser = user;
+    }
+    if (user.id.isNotEmpty) LocalCache.instance.scope = user.id;
+  }
+
+  /// Saves gender / avatar on the server; the app updates immediately on success.
+  Future<bool> updateAvatar({required String gender, String? avatarKey}) async {
+    final res = await _apiService.updateMyAvatar(gender: gender, avatarKey: avatarKey);
+    if (res == null) return false;
+    currentUser = currentUser.copyWith(gender: res['gender']?.toString() ?? gender, avatarUrl: res['avatarUrl']?.toString() ?? '');
+    notifyListeners();
+    return true;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     try {
+      _appInForeground = state == AppLifecycleState.resumed;
       if (state == AppLifecycleState.resumed) {
         recordActivity();
         if (_apiService.isAuthenticated) {
@@ -142,12 +189,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       loadAssetNames().catchError((e) => debugPrint('loadAssetNames error: $e'));
       _apiService.getStations().then((_) => notifyListeners()).catchError((e) => debugPrint('getStations error: $e'));
       fetchCaravanBanners().catchError((e) => debugPrint('fetchCaravanBanners error: $e'));
-      final existingRole = currentUser.role;
-      if (user.isDualRole && (existingRole == UserRole.mentor || existingRole == UserRole.member)) {
-        currentUser = user.copyWith(role: existingRole);
-      } else {
-        currentUser = user;
-      }
+      _applyUser(user);
       final apiChallenges = await _apiService.getChallenges();
       if (apiChallenges != null) {
         challenges.clear();
@@ -288,6 +330,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     } catch (_) {}
 
     await _apiService.logout();
+    await LocalCache.instance.clearScope();
+    LocalCache.instance.scope = 'anon';
     _resetSessionData();
     currentUser = UserModel(
       id: 'guest',
@@ -429,9 +473,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   // Notifications collections
   final List<Map<String, dynamic>> notifications = [];
 
-  Future<void> fetchNotifications() async {
+  Future<void> fetchNotifications({bool onlyIfChanged = false}) async {
     try {
       final data = await _apiService.getNotifications();
+      if (onlyIfChanged && _apiService.isUnchanged('notifications')) return;
       if (data != null && data['notifications'] is List) {
         final List notifs = data['notifications'];
         final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
@@ -519,9 +564,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Reloads the challenge list only (no notification fetch); a failed load keeps the current list.
-  Future<void> syncChallenges() async {
+  Future<void> syncChallenges({bool onlyIfChanged = false}) async {
     final apiChallenges = await _apiService.getChallenges();
     if (apiChallenges == null) return;
+    if (onlyIfChanged && _apiService.isUnchanged('challenges')) return;
     challenges.clear();
     challenges.addAll(apiChallenges);
     submissions.removeWhere((s) => challenges.any((c) => c.id == s.challengeId && c.myStatus != null && c.myStatus != 'none'));

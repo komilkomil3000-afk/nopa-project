@@ -8,6 +8,7 @@ import '../models/models.dart';
 import '../core/constants/api_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'local_cache.dart';
 
 class HttpApiService {
   static const String _cachedHostKey = 'cached_backend_host';
@@ -329,6 +330,42 @@ class HttpApiService {
   /// Internal HTTP wrappers with automatic silent refresh & crash resilience
   Future<http.Response> _get(Uri url, {Map<String, String>? headers, bool checkAuth = true}) async {
     return _sendWithAuthRetry('GET', url, headers: headers, checkAuth: checkAuth);
+  }
+
+  final Set<String> _liveKeys = <String>{};
+  final Map<String, String> _lastSignature = {};
+  final Set<String> _unchanged = {};
+
+  /// True when the last live answer for [cacheKey] was identical to the one before it (lets the 3-second
+  /// poll skip rebuilding the UI when nothing changed on the server).
+  bool isUnchanged(String cacheKey) => _unchanged.contains(cacheKey);
+
+  /// GET + JSON decode with an offline fallback: a successful answer is stored under [cacheKey]; if the first
+  /// request of this app run fails (no connection), the last stored answer is returned so the app opens with
+  /// its last known data. Once live data was received, failures return null (callers keep their in-memory data).
+  Future<dynamic> _getJsonCached(String cacheKey, Uri uri) async {
+    try {
+      final response = await _get(uri, headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final data = await parseJsonAsync(response.body);
+        if (data != null) {
+          _liveKeys.add(cacheKey);
+          final sig = '${LocalCache.instance.scope}|${response.body}';
+          if (_lastSignature[cacheKey] == sig) {
+            _unchanged.add(cacheKey);
+          } else {
+            _unchanged.remove(cacheKey);
+            _lastSignature[cacheKey] = sig;
+            unawaited(LocalCache.instance.saveJson(cacheKey, data));
+          }
+          return data;
+        }
+      }
+    } catch (e) {
+      debugPrint('HTTP $cacheKey error: $e');
+    }
+    if (_liveKeys.contains(cacheKey)) return null;
+    return LocalCache.instance.loadJson(cacheKey);
   }
 
   Future<http.Response> _post(Uri url, {Map<String, String>? headers, Object? body, bool checkAuth = true}) async {
@@ -736,6 +773,24 @@ class HttpApiService {
     }
   }
 
+  /// Saves the chosen gender / bundled avatar. Returns the server's {gender, avatarUrl} or null on failure.
+  Future<Map<String, dynamic>?> updateMyAvatar({required String gender, String? avatarKey}) async {
+    try {
+      final response = await _patch(
+        Uri.parse('$baseUrl/users/me/avatar'),
+        headers: _getHeaders(),
+        body: jsonEncode({'gender': gender, if (avatarKey != null) 'avatarKey': avatarKey}),
+      );
+      if (response.statusCode == 200) {
+        final data = await parseJsonAsync(response.body);
+        if (data is Map<String, dynamic>) return data;
+      }
+    } catch (e) {
+      debugPrint('updateMyAvatar error: $e');
+    }
+    return null;
+  }
+
   Future<http.Response> authenticatedPost(String path, Map<String, dynamic> body) async {
     return await _post(
       Uri.parse('$baseUrl$path'),
@@ -747,17 +802,8 @@ class HttpApiService {
   // Get Me
   Future<UserModel?> getMe() async {
     try {
-      final response = await _get(
-        Uri.parse('$baseUrl/users/me'),
-        headers: _getHeaders(),
-      );
-
-      if (response.statusCode == 200) {
-        final data = await parseJsonAsync(response.body);
-        if (data != null) {
-          return UserModel.fromJson(data);
-        }
-      }
+      final data = await _getJsonCached('me', Uri.parse('$baseUrl/users/me'));
+      if (data is Map<String, dynamic>) return UserModel.fromJson(data);
       return null;
     } catch (e) {
       debugPrint('HTTP getMe error: $e');
@@ -778,13 +824,11 @@ class HttpApiService {
           ? Uri.parse('$baseUrl/challenges').replace(queryParameters: queryParams)
           : Uri.parse('$baseUrl/challenges');
 
-      final response = await _get(
+      final dynamic data = await _getJsonCached(
+        (limit == null && page == null) ? 'challenges' : 'challenges.$limit.$page',
         uri,
-        headers: _getHeaders(),
       );
-
-      if (response.statusCode == 200) {
-        final dynamic data = await parseJsonAsync(response.body);
+      {
         if (data is List) {
           final result = <ChallengeModel>[];
           for (final json in data) {
@@ -2005,13 +2049,8 @@ class HttpApiService {
   // --- Notifications API ---
   Future<Map<String, dynamic>?> getNotifications() async {
     try {
-      final response = await _get(
-        Uri.parse('$baseUrl/notifications'),
-        headers: _getHeaders(),
-      );
-      if (response.statusCode == 200) {
-        return (await parseJsonAsync(response.body)) as Map<String, dynamic>?;
-      }
+      final data = await _getJsonCached('notifications', Uri.parse('$baseUrl/notifications'));
+      if (data is Map<String, dynamic>) return data;
     } catch (e) {
       debugPrint('getNotifications error: $e');
     }

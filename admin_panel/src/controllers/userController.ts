@@ -128,6 +128,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       levelFrame: user.levelFrame,
       identityVerified: user.identityVerified,
       avatarUrl: user.avatarUrl,
+      gender: user.gender,
       hasEvaluatedMentorThisSeason: user.hasEvaluatedMentorThisSeason,
       nationalId: user.nationalId,
       dateOfBirth: user.dateOfBirth,
@@ -298,3 +299,37 @@ export async function getMentorById(req: AuthRequest, res: Response) {
   }
 }
 
+
+const AVATAR_KEYS: Record<string, string[]> = {
+  male: ['boy_1', 'boy_2', 'boy_3', 'boy_4'],
+  female: ['girl_1', 'girl_2', 'girl_3', 'girl_4'],
+};
+
+/** PATCH /users/me/avatar { gender: 'male'|'female', avatarKey?: string } – picks one of the bundled avatars. */
+export async function updateMyAvatar(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    const gender = String(req.body?.gender || '');
+    if (gender !== 'male' && gender !== 'female') {
+      return res.status(400).json({ error: 'جنسیت نامعتبر است' });
+    }
+    const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { role: true, isDualRole: true } });
+    if (!me) return res.status(404).json({ error: 'کاربر یافت نشد' });
+
+    const isMentor = me.role !== 'student' && me.role !== 'member';
+    const key = req.body?.avatarKey ? String(req.body.avatarKey) : '';
+    let avatarUrl: string | null;
+    if (isMentor) {
+      avatarUrl = null; // mentors always show the default mentor picture of their gender
+    } else if (AVATAR_KEYS[gender].includes(key)) {
+      avatarUrl = `asset:${key}`;
+    } else {
+      return res.status(400).json({ error: 'آواتار نامعتبر است' });
+    }
+    await prisma.user.update({ where: { id: req.user.id }, data: { gender, avatarUrl } });
+    res.json({ gender, avatarUrl });
+  } catch (error) {
+    console.error('updateMyAvatar error:', error);
+    res.status(500).json({ error: 'خطا در ذخیره آواتار' });
+  }
+}
