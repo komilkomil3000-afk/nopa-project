@@ -123,7 +123,7 @@ async function loadUsers() {
         <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
-        <td><strong style="color: var(--color-neon-blue);">${u.zarikBalance.toLocaleString()}</strong></td>
+        <td><strong style="color: var(--color-neon-blue);">${(u.zarikBalance || 0).toLocaleString()}</strong></td>
         <td style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${regDate}</td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -931,15 +931,14 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   const userDob = user?.dateOfBirth || dateOfBirth || '';
 
   document.getElementById('edit-user-id').value = userId;
-  document.getElementById('modal-user-name').value = userName;
+  // identity fields (js/ui/person-fields.js) — remembers the loaded phone so an untouched one is not re-sent
+  NopaPersonFields.fill('modal-user', {
+    name: userName, phoneNumber: userId ? userPhone : '', nationalId: userNationalId, dateOfBirth: userDob, gender: user?.gender || ''
+  });
   document.getElementById('modal-user-role').value = userRole;
   setupUserModalAccessControls(userRole, user?.panelAccess ?? null);
   document.getElementById('modal-user-level').value = userLevel;
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
-  document.getElementById('modal-user-national-id').value = userNationalId;
-  document.getElementById('modal-user-dob').value = userDob;
-  const genderSel = document.getElementById('modal-user-gender');
-  if (genderSel) genderSel.value = user?.gender || '';
   if (document.getElementById('modal-user-degree')) {
     document.getElementById('modal-user-degree').value = user?.academicDegree || '';
   }
@@ -1006,17 +1005,15 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
 async function handleUserFormSubmit(e) {
   e.preventDefault();
   const id = document.getElementById('edit-user-id').value;
-  const name = document.getElementById('modal-user-name').value;
+  if (!NopaPersonFields.validate('modal-user', { requirePhone: !id })) return;
+  // normalised (Latin digits, 09…); phoneNumber is undefined when an edit left it untouched
+  const { name, phoneNumber, nationalId, dateOfBirth, gender } = NopaPersonFields.read('modal-user');
   const role = document.getElementById('modal-user-role').value;
   const caravanId = document.getElementById('modal-user-caravan').value;
   const levelFrame = parseInt(document.getElementById('modal-user-level').value) || 1;
   const mentorLevel = parseInt(document.getElementById('modal-user-mentor-level').value) || 1;
-  const nationalId = document.getElementById('modal-user-national-id').value;
-  const dateOfBirth = document.getElementById('modal-user-dob').value;
-  const gender = document.getElementById('modal-user-gender')?.value ?? '';
   const academicDegree = document.getElementById('modal-user-degree')?.value;
   const academicCertificates = document.getElementById('modal-user-certificates')?.value;
-  const phoneNumber = document.getElementById('modal-user-phone')?.value;
 
   let res;
   if (id) {
@@ -1049,69 +1046,3 @@ async function handleUserFormSubmit(e) {
     showToast(data.error || 'خطا در ثبت اطلاعات', 'error');
   }
 }
-
-// ===============================
-// MODULE B: STUDENTS LOGIC
-// ===============================
-
-// 1. Students / Family Accounts (Tab B1)
-// We already have `loadUsers` for the main users-table. Let's add the student modal logic:
-document.getElementById('btn-close-student-modal')?.addEventListener('click', () => {
-  document.getElementById('student-modal-overlay').style.display = 'none';
-});
-
-document.getElementById('student-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = document.getElementById('modal-student-id').value;
-  const name = document.getElementById('modal-student-name').value;
-  const phoneNumber = document.getElementById('modal-student-phone').value;
-  const nationalId = document.getElementById('modal-student-national-id').value;
-  const dateOfBirth = document.getElementById('modal-student-dob').value;
-  const caravanId = document.getElementById('modal-student-caravan').value;
-  
-  try {
-    const res = await request('/api/v1/admin/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name, phoneNumber, nationalId, dateOfBirth, caravanId })
-    });
-    const data = await res.json();
-    if(res.ok) {
-      document.getElementById('student-modal-overlay').style.display = 'none';
-      if (typeof loadUsers === 'function') loadUsers(); // refresh list
-      showToast('مخاطب با موفقیت ثبت/ویرایش شد', 'success');
-    } else {
-      showToast(data.error || 'خطا در ثبت مخاطب', 'error');
-    }
-  } catch(e) {
-    showToast('خطا در ثبت مخاطب', 'error');
-  }
-});
-
-window.editStudent = async function(id) {
-  // Use existing users array if possible, or fetch
-  try {
-    const res = await request(`/api/v1/admin/users?role=student`);
-    const data = await res.json();
-    const users = data.users || [];
-    const u = users.find(x => x.id === id);
-    if(u) {
-      document.getElementById('modal-student-id').value = u.id;
-      document.getElementById('modal-student-name').value = u.name;
-      document.getElementById('modal-student-phone').value = u.phoneNumber;
-      document.getElementById('modal-student-national-id').value = u.nationalId || '';
-      document.getElementById('modal-student-dob').value = u.dateOfBirth || '';
-      document.getElementById('modal-student-caravan').value = u.caravanId || '';
-      document.getElementById('student-modal-overlay').style.display = 'flex';
-      document.getElementById('student-modal-title').innerText = 'ویرایش مخاطب';
-    }
-  } catch(e) {
-    console.error(e);
-  }
-}
-
-// Ensure the main users table edits students
-// Overriding existing editUser function if it exists or hooking it up
-window.editUser = function(id) {
-  editStudent(id); 
-};

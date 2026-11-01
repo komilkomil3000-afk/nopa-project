@@ -48,3 +48,31 @@
   color: #fff;
 }
 .msg-pane[hidden] { display: none; }
+
+/* ---------- Shared person fields (js/ui/person-fields.js) ---------- */
+/* The wrapper is transparent to layout: its fields join the surrounding grid / stack */
+.person-fields { display: contents; }
+.person-field { margin-bottom: 14px; }
+.person-field label { display: block; margin-bottom: 6px; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); }
+.person-field .req { color: var(--danger-text); }
+.person-field .input-ctrl,
+.person-field .select-ctrl { width: 100%; }
+.person-field [dir="ltr"] { text-align: right; }
+.input-ctrl.is-invalid,
+.select-ctrl.is-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgb(var(--danger-rgb) / 0.15) !important;
+}
+.field-error {
+  display: block;
+  min-height: 0;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--danger-text);
+}
+.field-error:empty { display: none; }
+/* the mentor modal lays its identity fields out in a grid with its own gap */
+#mentor-form .person-field { margin: 0; }
+/* match the mentor modal's other inputs (inline inset background) until its inline styles are removed */
+#mentor-form .person-field .input-ctrl,
+#mentor-form .person-field .select-ctrl { background: var(--surface-inset); }

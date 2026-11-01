@@ -748,7 +748,8 @@ window.cachedCaravansForMentorModal = [];
 window.showMentorModal = async function() {
   const form = document.getElementById('mentor-form');
   if (form) form.reset();
-  
+  NopaPersonFields.fill('modal-mentor', {}); // also forgets a previously loaded phone and clears field errors
+
   document.getElementById('modal-mentor-id').value = '';
   document.getElementById('mentor-modal-form-title').innerHTML = '<i class="fa-solid fa-user-plus"></i> ثبت راهبر جدید در سامانه';
   const certsSection = document.getElementById('modal-mentor-certs-section');
@@ -775,12 +776,9 @@ window.editMentor = async function(mentorId) {
   }
 
   document.getElementById('modal-mentor-id').value = m.id;
-  document.getElementById('modal-mentor-name').value = m.name || '';
-  document.getElementById('modal-mentor-phone').value = m.phoneNumber || '';
-  document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
-  document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
-  document.getElementById('modal-mentor-city').value = m.city || '';
-  { const g = document.getElementById('modal-mentor-gender'); if (g) g.value = m.gender || ''; }
+  NopaPersonFields.fill('modal-mentor', {
+    name: m.name, phoneNumber: m.phoneNumber, nationalId: m.nationalId, dateOfBirth: m.dateOfBirth, gender: m.gender, city: m.city
+  });
   document.getElementById('modal-mentor-academic-degree').value = m.academicDegree || m.education || '';
   document.getElementById('modal-mentor-level').value = String(m.mentorLevel || 1);
   document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
@@ -887,11 +885,10 @@ window.handleMentorFormSubmit = async function(e) {
   if (e) e.preventDefault();
 
   const id = document.getElementById('modal-mentor-id').value;
-  const name = document.getElementById('modal-mentor-name').value.trim();
-  const phoneNumber = document.getElementById('modal-mentor-phone').value.trim();
-  const nationalId = document.getElementById('modal-mentor-national-id').value.trim();
-  const dateOfBirth = document.getElementById('modal-mentor-dob').value.trim();
-  const city = document.getElementById('modal-mentor-city').value.trim();
+  // a new mentor logs in with this phone, so it is required on create
+  if (!NopaPersonFields.validate('modal-mentor', { requirePhone: !id })) return;
+  // normalised (Latin digits, 09…); phoneNumber is undefined when an edit left it untouched
+  const { name, phoneNumber, nationalId, dateOfBirth, city, gender } = NopaPersonFields.read('modal-mentor');
   const academicDegree = document.getElementById('modal-mentor-academic-degree').value.trim();
   const mentorLevel = parseInt(document.getElementById('modal-mentor-level').value) || 1;
   const accountStatus = document.getElementById('modal-mentor-status').value;
@@ -906,10 +903,10 @@ window.handleMentorFormSubmit = async function(e) {
     id: id || undefined,
     name,
     phoneNumber,
-    nationalId: nationalId || null,
-    dateOfBirth: dateOfBirth || null,
-    city: city || null,
-    gender: document.getElementById('modal-mentor-gender')?.value ?? '',
+    nationalId,
+    dateOfBirth,
+    city,
+    gender,
     academicDegree: academicDegree || null,
     mentorLevel,
     accountStatus,

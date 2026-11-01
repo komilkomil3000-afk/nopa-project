@@ -2569,3 +2569,23 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 32 modal/drawer openers across modules with 0 errors; 11 messaging/adjustment checks; Phase 3 (13), 4 (18), 5 (18), 6 (25) suites and smoke test green.
   - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** In Progress (Phase 7 steps 3+ pending)
+
+### [2026-11-02 06:30] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 3 (Shared person fields)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/person-fields.js` (Created)
+  - `admin_panel/public/index.html` (Modified — person-field containers in user + mentor modals, student modal removed)
+  - `admin_panel/public/js/features/users.js` (Modified — user modal uses NopaPersonFields; dead student modal code removed; zarik balance guard)
+  - `admin_panel/public/js/features/mentors.js` (Modified — mentor modal uses NopaPersonFields)
+  - `admin_panel/public/css/components.css` (Modified — person fields, inline field errors)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v11)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - One shared identity-field component (name, phone, national id, birth date, gender, city) for the user and mentor modals with inline validation and normalisation that mirrors the server's normalizePhone.
+  - Fixes: users created with Persian-digit phones could not log in (create path stored the raw text); editing with phone masking on overwrote the real phone with the masked one — untouched phones are now omitted from updates.
+  - Removed the unreachable student modal and its handlers (the user modal covers students).
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 9 person-field checks pass; open-everything (32 openers), Phase 3–7 suites and smoke test green.
+  - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 steps 4–5 pending)

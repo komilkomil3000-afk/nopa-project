@@ -2531,14 +2531,8 @@
       </div>
       <form id="user-modal-form">
         <input type="hidden" id="edit-user-id">
-        <div class="form-group">
-          <label>نام و نام خانوادگی</label>
-          <input type="text" id="modal-user-name" class="input-ctrl" required>
-        </div>
-        <div class="form-group" id="phone-field-group">
-          <label>شماره همراه</label>
-          <input type="text" id="modal-user-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
-        </div>
+        <!-- name / phone / national id / birth date / gender: js/ui/person-fields.js -->
+        <div data-person-fields="modal-user" data-phone-group-id="phone-field-group"></div>
         <div class="form-group" id="password-field-group">
           <label>رمز عبور</label>
           <input type="password" id="modal-user-password" class="input-ctrl" required>
@@ -2579,18 +2573,6 @@
           </select>
         </div>
         <div class="form-group">
-          <label>کد ملی</label>
-          <input type="text" id="modal-user-national-id" class="input-ctrl" placeholder="اختیاری">
-        </div>
-        <div class="form-group">
-          <label>تاریخ تولد (شمسی)</label>
-          <input type="text" id="modal-user-dob" class="input-ctrl" placeholder="۱۳۸۰/۰۵/۱۲">
-        </div>
-        <div class="form-group">
-          <label>جنسیت (تعیین‌کننده تصاویر پروفایل در اپ)</label>
-          <select id="modal-user-gender" class="input-ctrl"><option value="">تعیین نشده</option><option value="male">مرد</option><option value="female">زن</option></select>
-        </div>
-        <div class="form-group">
           <label>سطح فریم (۱ تا ۵)</label>
           <input type="number" id="modal-user-level" class="input-ctrl" min="1" max="5" value="1" required>
         </div>
@@ -2618,30 +2600,8 @@
           <div class="panel-card" style="background: rgb(var(--surface-2-rgb) / 0.5); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 16px;">
             <h4 style="color: var(--primary-text); margin: 0 0 14px 0; font-size: 14px;"><i class="fa-solid fa-address-card"></i> اطلاعات هویتی و ارتباطی</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">نام و نام خانوادگی <span style="color: var(--danger-text);">*</span></label>
-                <input type="text" id="modal-mentor-name" class="input-ctrl" required placeholder="مثال: رضا جلالی" style="background: var(--surface-inset); color: var(--text);">
-              </div>
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">شماره موبایل <span style="color: var(--danger-text);">*</span></label>
-                <input type="text" id="modal-mentor-phone" class="input-ctrl" required placeholder="۰۹۱۲۰۰۰۰۰۰۱" style="background: var(--surface-inset); color: var(--text); direction: ltr; text-align: right;">
-              </div>
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">کد ملی (اختیاری)</label>
-                <input type="text" id="modal-mentor-national-id" class="input-ctrl" placeholder="۰۰۱۲۳۴۵۶۷۸" style="background: var(--surface-inset); color: var(--text); direction: ltr; text-align: right;">
-              </div>
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">تاریخ تولد (شمسی)</label>
-                <input type="text" id="modal-mentor-dob" class="input-ctrl" placeholder="۱۳۷۰/۰۵/۱۵" style="background: var(--surface-inset); color: var(--text);">
-              </div>
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">شهر محل سکونت</label>
-                <input type="text" id="modal-mentor-city" class="input-ctrl" placeholder="تهران، اصفهان، ..." style="background: var(--surface-inset); color: var(--text);">
-              </div>
-              <div class="form-group" style="margin: 0;">
-                <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">جنسیت (تعیین‌کننده عکس پروفایل راهبر)</label>
-                <select id="modal-mentor-gender" class="input-ctrl" style="background: var(--surface-inset); color: var(--text);"><option value="">تعیین نشده</option><option value="male">مرد</option><option value="female">زن</option></select>
-              </div>
+              <!-- name / phone / national id / birth date / gender / city: js/ui/person-fields.js -->
+              <div data-person-fields="modal-mentor" data-extra="city"></div>
               <div class="form-group" style="margin: 0;">
                 <label style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px; display: block;">مدرک و رشته تحصیلی</label>
                 <input type="text" id="modal-mentor-academic-degree" class="input-ctrl" placeholder="کارشناسی ارشد مدیریت، علوم تربیتی، ..." style="background: var(--surface-inset); color: var(--text);">
@@ -2739,39 +2699,6 @@
     </div>
   </div>
 
-  <!-- ADD STUDENT MODAL -->
-  <div class="modal-overlay" id="student-modal-overlay">
-    <div class="modal-content glass">
-      <div class="modal-header">
-        <h3 id="student-modal-title">ثبت / ویرایش مخاطب</h3>
-        <button class="modal-close" id="btn-close-student-modal">&times;</button>
-      </div>
-      <form id="student-form" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px;">
-        <input type="hidden" id="modal-student-id">
-        <div class="form-group">
-          <label>نام و نام خانوادگی</label>
-          <input type="text" id="modal-student-name" class="input-ctrl" required>
-        </div>
-        <div class="form-group">
-          <label>شماره موبایل (اکانت اصلی خانواده)</label>
-          <input type="text" id="modal-student-phone" class="input-ctrl" required>
-        </div>
-        <div class="form-group">
-          <label>کد ملی</label>
-          <input type="text" id="modal-student-national-id" class="input-ctrl">
-        </div>
-        <div class="form-group">
-          <label>تاریخ تولد</label>
-          <input type="text" id="modal-student-dob" class="input-ctrl" placeholder="مثال: ۱۳۸۰/۰۱/۰۱">
-        </div>
-        <div class="form-group">
-          <label>شناسه کاروان (اختیاری)</label>
-          <input type="text" id="modal-student-caravan" class="input-ctrl">
-        </div>
-        <button type="submit" class="btn-primary" style="margin-top: 15px;">ذخیره اطلاعات مخاطب</button>
-      </form>
-    </div>
-  </div>
 
   <!-- METRICS MODAL -->
   <div class="modal-overlay" id="metrics-modal-overlay">
@@ -3921,6 +3848,7 @@
     <script src="js/ui/modal.js"></script>
     <script src="js/ui/confirm.js"></script>
     <script src="js/ui/table.js"></script>
+    <script src="js/ui/person-fields.js"></script>
     <script src="js/core/attention.js"></script>
     <script src="js/layout/topnav.js"></script>
     <script src="js/layout/landing.js"></script>
