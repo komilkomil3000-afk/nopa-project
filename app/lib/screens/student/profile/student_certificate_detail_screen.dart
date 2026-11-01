@@ -34,7 +34,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
         setState(() {
           _isDownloading = false;
         });
-        AppToast.info(context, 'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد 📥');
+        AppToast.info(context, 'گواهی «${widget.certificate['title']}» با موفقیت دانلود و در گالری ذخیره شد');
       }
     });
   }
@@ -140,7 +140,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         subject: 'درخواست نسخه چاپی ${widget.certificate['title']} - گیرنده: ${nameCtrl.text} - آدرس: ${addressCtrl.text}',
                                       );
                                       if (ctx.mounted) Navigator.pop(ctx);
-                                      if (context.mounted) AppToast.success(context, 'درخواست نسخه چاپی با موفقیت ثبت شد ✅');
+                                      if (context.mounted) AppToast.success(context, 'درخواست نسخه چاپی با موفقیت ثبت شد');
                                     } catch (_) {
                                       setModalState(() => isProcessing = false);
                                     }
@@ -296,7 +296,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                               Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 18),
                               SizedBox(width: 8),
                               Text(
-                                'گواهی معتبر دیجیتال شما با موفقیت صادر شد ✨',
+                                'گواهی معتبر دیجیتال شما با موفقیت صادر شد',
                                 style: TextStyle(
                                   color: Color(0xFF10B981),
                                   fontSize: 12.5,

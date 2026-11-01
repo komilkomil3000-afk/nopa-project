@@ -125,7 +125,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
       const recipients = new Set<string>(students.filter(m => m.caravanId === r.caravanId).map(m => m.id));
       const mentorId = caravanRows.find(c => c.id === r.caravanId)?.mentorId;
       if (mentorId) recipients.add(mentorId);
-      for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان 🚩`, message: msg, type: 'reward' });
+      for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
 

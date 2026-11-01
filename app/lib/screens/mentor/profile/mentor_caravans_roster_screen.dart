@@ -1519,7 +1519,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
-                                      ? 'همه پارت‌ها دیده شده ✓'
+                                      ? 'همه پارت‌ها دیده شده'
                                       : (isLocked
                                           ? 'قفل شده'
                                           : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),

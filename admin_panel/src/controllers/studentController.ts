@@ -97,7 +97,7 @@ export async function adjustBalance(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: id,
-        title: amount > 0 ? 'پاداش جدید 🎁' : 'کسر موجودی ⚖️',
+        title: amount > 0 ? 'پاداش جدید' : 'کسر موجودی',
         message: `موجودی ${assetType} شما به میزان ${Math.abs(amount)} تغییر کرد. بابت: ${note}`,
         type: 'alert'
       }
@@ -135,7 +135,7 @@ export async function adjustLevelFrame(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: id,
-        title: 'ارتقای سطح 🚀',
+        title: 'ارتقای سطح',
         message: `سطح فریم شما به ${levelFrame} ارتقا یافت!`,
         type: 'alert'
       }

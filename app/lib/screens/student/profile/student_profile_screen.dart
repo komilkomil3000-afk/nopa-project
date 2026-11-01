@@ -861,7 +861,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
-                                      ? 'مشاهده‌شده و تایید شده ✓'
+                                      ? 'مشاهده‌شده و تایید شده'
                                       : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
                                   style: TextStyle(
                                     color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),

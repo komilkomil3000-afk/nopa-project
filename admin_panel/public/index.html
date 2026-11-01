@@ -1289,9 +1289,9 @@
               </label>
               <select id="mentor-filter-status" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
                 <option value="all">همه وضعیت‌ها</option>
-                <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
-                <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی</option>
-                <option value="SUSPENDED">🔴 مسدود / تعلیق</option>
+                <option value="ACTIVE">فعال (ACTIVE)</option>
+                <option value="PENDING_VERIFICATION">در انتظار بررسی</option>
+                <option value="SUSPENDED">مسدود / تعلیق</option>
               </select>
             </div>
 
@@ -1300,8 +1300,8 @@
                 <i class="fa-solid fa-arrow-down-wide-short" style="color: #38bdf8;"></i> مرتب‌سازی:
               </label>
               <select id="mentor-filter-sort" class="input-ctrl" onchange="window.filterMentorsList()" style="background: #0f172a; border-color: rgba(255,255,255,0.12); color: white; padding: 7px 10px; font-size: 12.5px;">
-                <option value="caravans_desc">👥 بیشترین تعداد کاروان</option>
-                <option value="name_asc">🔤 الفبایی نام راهبر</option>
+                <option value="caravans_desc">بیشترین تعداد کاروان</option>
+                <option value="name_asc">الفبایی نام راهبر</option>
               </select>
             </div>
           </div>
@@ -1466,10 +1466,10 @@
                 <div class="form-group">
                   <label style="font-size: 12px; color: #cbd5e1;">وضعیت حساب کاربری:</label>
                   <select id="modal-mentor-status" class="input-ctrl" style="background:#1e293b; color:white;">
-                    <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
-                    <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی</option>
-                    <option value="SUSPENDED">🔴 تعلیق شده (SUSPENDED)</option>
-                    <option value="RESTRICTED">⛔ محدود شده</option>
+                    <option value="ACTIVE">فعال (ACTIVE)</option>
+                    <option value="PENDING_VERIFICATION">در انتظار بررسی</option>
+                    <option value="SUSPENDED">تعلیق شده (SUSPENDED)</option>
+                    <option value="RESTRICTED">محدود شده</option>
                   </select>
                 </div>
               </div>
@@ -1545,19 +1545,19 @@
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #34d399;">
                     <input type="radio" name="mod_action" value="activate" checked onchange="window.toggleTempSuspendDate(false)">
-                    <span>🟢 فعال‌سازی مجدد و رفع تعلیق حساب (ACTIVE)</span>
+                    <span>فعال‌سازی مجدد و رفع تعلیق حساب (ACTIVE)</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #fbbf24;">
                     <input type="radio" name="mod_action" value="temp_suspend" onchange="window.toggleTempSuspendDate(true)">
-                    <span>🟡 تعلیق موقت حساب تا تاریخ مشخص</span>
+                    <span>تعلیق موقت حساب تا تاریخ مشخص</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #f87171;">
                     <input type="radio" name="mod_action" value="permanent_suspend" onchange="window.toggleTempSuspendDate(false)">
-                    <span>🔴 مسدودسازی دائمی حساب کاربری راهبر (SUSPENDED)</span>
+                    <span>مسدودسازی دائمی حساب کاربری راهبر (SUSPENDED)</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #ef4444;">
                     <input type="radio" name="mod_action" value="soft_delete" onchange="window.toggleTempSuspendDate(false)">
-                    <span>🗑️ حذف کامل راهبر از سیستم (Soft Delete)</span>
+                    <span>حذف کامل راهبر از سیستم (Soft Delete)</span>
                   </label>
                 </div>
               </div>
@@ -1825,7 +1825,7 @@
                 <h3 style="margin: 0; color: #34d399; font-size: 17px; display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-arrow-down-1-9"></i> مرتب‌سازی و اصلاح ترتیب منزلگاه‌ها
                 </h3>
-                <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">با دکمه‌های بالا 🔼 و پایین 🔽 ترتیب منزلگاه‌ها را تغییر دهید. شماره‌ها بدون تکرار و به ترتیب (۱ تا N) ذخیره می‌شوند.</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">با دکمه‌های بالا و پایین ترتیب منزلگاه‌ها را تغییر دهید. شماره‌ها بدون تکرار و به ترتیب (۱ تا N) ذخیره می‌شوند.</div>
               </div>
               <button type="button" class="modal-close" onclick="document.getElementById('lms-station-reorder-modal').style.display='none'" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 22px; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
             </div>
@@ -2164,14 +2164,14 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <!-- Caravan Filter -->
               <select id="filter-challenges-caravan" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">
-                <option value="all">🏢 همه کاروان‌ها و راهبران</option>
+                <option value="all">همه کاروان‌ها و راهبران</option>
               </select>
 
               <!-- Creator Filter (Admin vs Mentor) -->
               <select id="filter-challenges-creator" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px; cursor: pointer;">
-                <option value="all">👤 همه سازندگان (مدیر و راهبر)</option>
-                <option value="admin">🛡️ فقط ایجاد شده توسط مدیر</option>
-                <option value="mentor">🎓 فقط ایجاد شده توسط راهبران</option>
+                <option value="all">همه سازندگان (مدیر و راهبر)</option>
+                <option value="admin">فقط ایجاد شده توسط مدیر</option>
+                <option value="mentor">فقط ایجاد شده توسط راهبران</option>
               </select>
 
               <!-- Search -->
@@ -2221,37 +2221,37 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <!-- Search Filter -->
               <div style="flex: 2 1 220px; position: relative;">
-                <input type="text" id="filter-submissions-search" placeholder="🔍 جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." oninput="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; box-sizing: border-box;">
+                <input type="text" id="filter-submissions-search" placeholder="جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." oninput="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; box-sizing: border-box;">
               </div>
 
               <!-- Student Filter -->
               <div style="flex: 1 1 150px;">
                 <select id="filter-submissions-student" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
-                  <option value="all">👤 همه دانش‌آموزان</option>
+                  <option value="all">همه دانش‌آموزان</option>
                 </select>
               </div>
 
               <!-- Caravan Filter -->
               <div style="flex: 1 1 150px;">
                 <select id="filter-submissions-caravan" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
-                  <option value="all">🏢 همه کاروان‌ها</option>
+                  <option value="all">همه کاروان‌ها</option>
                 </select>
               </div>
 
               <!-- Mentor Filter -->
               <div style="flex: 1 1 150px;">
                 <select id="filter-submissions-mentor" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
-                  <option value="all">🎓 همه راهبران</option>
+                  <option value="all">همه راهبران</option>
                 </select>
               </div>
 
               <!-- Status Filter -->
               <div style="flex: 1 1 140px;">
                 <select id="filter-submissions-status" onchange="window.loadAdminSubmissionsData()" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12px; cursor: pointer; box-sizing: border-box;">
-                  <option value="pending">⏳ در انتظار بررسی</option>
-                  <option value="all">📑 کلیه وضعیت‌ها</option>
-                  <option value="approved">✅ تایید شده</option>
-                  <option value="rejected">❌ رد شده</option>
+                  <option value="pending">در انتظار بررسی</option>
+                  <option value="all">کلیه وضعیت‌ها</option>
+                  <option value="approved">تایید شده</option>
+                  <option value="rejected">رد شده</option>
                 </select>
               </div>
 
@@ -2684,9 +2684,9 @@
               <div class="form-group" style="margin: 0;">
                 <label style="font-size: 12px; color: #94a3b8; margin-bottom: 4px; display: block;">وضعیت اکانت</label>
                 <select id="modal-mentor-status" class="select-ctrl" style="background: #0b132b; color: white;">
-                  <option value="ACTIVE">🟢 فعال (ACTIVE)</option>
-                  <option value="PENDING_VERIFICATION">🟡 در انتظار بررسی مدارک (PENDING)</option>
-                  <option value="SUSPENDED">🔴 مسدود / معلق (SUSPENDED)</option>
+                  <option value="ACTIVE">فعال (ACTIVE)</option>
+                  <option value="PENDING_VERIFICATION">در انتظار بررسی مدارک (PENDING)</option>
+                  <option value="SUSPENDED">مسدود / معلق (SUSPENDED)</option>
                 </select>
               </div>
             </div>
@@ -2701,7 +2701,7 @@
 
             <div class="form-group" style="margin-bottom: 10px;">
               <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
-                <input type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="🔍 جستجوی نام کاروان..." oninput="window.filterMentorCaravansChecklist(this.value)" style="padding: 7px 12px; font-size: 12px; flex: 1; background: #0b132b; color: white;">
+                <input type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="جستجوی نام کاروان..." oninput="window.filterMentorCaravansChecklist(this.value)" style="padding: 7px 12px; font-size: 12px; flex: 1; background: #0b132b; color: white;">
                 <button type="button" class="btn-action" onclick="window.uncheckAllMentorCaravans()" style="padding: 7px 14px; font-size: 11.5px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; cursor: pointer; white-space: nowrap;" title="پاک کردن همه تیک‌ها">
                   <i class="fa-solid fa-ban"></i> بدون کاروان (لغو همه)
                 </button>
@@ -3547,8 +3547,8 @@
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
                 <select id="new-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
-                  <option value="zarik">🪙 زریک</option>
-                  <option value="nakh">🧵 کلاف</option>
+                  <option value="zarik">زریک</option>
+                  <option value="nakh">کلاف</option>
                 </select>
               </div>
             </div>
@@ -3569,28 +3569,28 @@
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف *</label>
                 <select id="new-chal-caravan-id" required onchange="window.handleChallengeAudienceChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
+                  <option value="inter_group">عمومی (میان‌گروهی)</option>
                 </select>
                 <div id="new-chal-mentor-notice" style="display: none; font-size: 11px; color: #38bdf8; margin-top: 5px; background: rgba(56, 189, 248, 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.25); line-height: 1.5;"></div>
               </div>
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="new-chal-type" onchange="window.handleChallengeTypeChange('new')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
+                  <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📍 منزلگاه مرتبط (اختیاری):</label>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">منزلگاه مرتبط (اختیاری):</label>
                 <select id="new-chal-station-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">تاریخ شروع و پایان چالش (اختیاری):</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   <input type="date" id="new-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <input type="date" id="new-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
@@ -3665,8 +3665,8 @@
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع پاداش *</label>
                 <select id="edit-chal-asset" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: #fbbf24; font-weight: bold; font-size: 13px;">
-                  <option value="zarik">🪙 زریک</option>
-                  <option value="nakh">🧵 کلاف</option>
+                  <option value="zarik">زریک</option>
+                  <option value="nakh">کلاف</option>
                 </select>
               </div>
             </div>
@@ -3687,27 +3687,27 @@
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف</label>
                 <select id="edit-chal-caravan-id" onchange="window.handleChallengeAudienceChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="inter_group">🌍 عمومی (میان‌گروهی)</option>
+                  <option value="inter_group">عمومی (میان‌گروهی)</option>
                 </select>
               </div>
               <div>
                 <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
                 <select id="edit-chal-type" onchange="window.handleChallengeTypeChange('edit')" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
-                  <option value="quiz">📋 کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="text">📝 تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
+                  <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                  <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">📍 منزلگاه مرتبط (اختیاری):</label>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">منزلگاه مرتبط (اختیاری):</label>
                 <select id="edit-chal-station-id" style="width: 100%; padding: 8px 12px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
                 </select>
               </div>
               <div>
-                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">🗓️ تاریخ شروع و پایان چالش (اختیاری):</label>
+                <label style="display: block; color: #cbd5e1; font-size: 12px; font-weight: bold; margin-bottom: 5px;">تاریخ شروع و پایان چالش (اختیاری):</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                   <input type="date" id="edit-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
                   <input type="date" id="edit-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; color: white; font-size: 12.5px;">
@@ -3811,7 +3811,7 @@
               <input type="text" id="view-sub-feedback-input" placeholder="مثال: پاسخ شما کامل و با خلاقیت بالا انجام شده است." style="width: 100%; padding: 7px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
             </div>
             <div>
-              <label style="display: block; color: #94a3b8; font-size: 11.5px; margin-bottom: 4px;">پاداش زریک اهدایی (🪙):</label>
+              <label style="display: block; color: #94a3b8; font-size: 11.5px; margin-bottom: 4px;">پاداش زریک اهدایی ():</label>
               <input type="number" id="view-sub-reward-input" min="0" max="5000" style="width: 100%; padding: 7px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: #fbbf24; font-weight: bold; font-size: 12.5px;">
             </div>
           </div>
@@ -3880,8 +3880,8 @@
               اعمال وضعیت برای کاروان‌ها:
             </div>
             <select id="sam-caravan-scope" class="select-ctrl" style="width: 100%; background: #1e293b; color: white; border: 1px solid #475569; border-radius: 8px; padding: 8px 10px; font-size: 13px;" onchange="window.handleSamScopeChange()">
-              <option value="all">🌐 همه کاروان‌ها (سراسری)</option>
-              <option value="custom">🎯 کاروان‌های انتخاب‌شده...</option>
+              <option value="all">همه کاروان‌ها (سراسری)</option>
+              <option value="custom">کاروان‌های انتخاب‌شده...</option>
             </select>
             <div id="sam-caravans-custom-box" style="display: none; margin-top: 10px; max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px;">
               <!-- Populated with checkboxes of caravans -->

@@ -981,16 +981,16 @@ function populateCaravanDropdowns(caravans) {
 
   if (filterSelect) {
     const currentVal = filterSelect.value;
-    filterSelect.innerHTML = `<option value="all">🏢 همه کاروان‌ها و راهبران</option>` + optionsHtml;
+    filterSelect.innerHTML = `<option value="all">همه کاروان‌ها و راهبران</option>` + optionsHtml;
     filterSelect.value = currentVal || 'all';
   }
 
   if (newChalSelect) {
-    newChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
+    newChalSelect.innerHTML = `<option value="inter_group">عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (editChalSelect) {
-    editChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
+    editChalSelect.innerHTML = `<option value="inter_group">عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (typeof populateSubmissionsFilterDropdowns === 'function') {
@@ -1220,7 +1220,7 @@ window.handleChallengeAudienceChange = function(mode) {
     note = document.createElement('div');
     note.id = `${mode}-chal-banner-note`;
     note.style.cssText = 'font-size: 12px; color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
-    note.innerHTML = '🚩 پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
+    note.innerHTML = 'پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
     rangeRow.parentElement.insertBefore(note, rangeRow);
   }
   if (note) note.style.display = inter ? 'block' : 'none';
@@ -1433,7 +1433,7 @@ window.populateStationDropdownForChallenges = function(selectId, selectedId) {
     const num = st.orderIndex ?? (idx + 1);
     const title = st.title || `منزلگاه ${num}`;
     const isSel = (selectedId && (st.id === selectedId || st.id == selectedId)) ? 'selected' : '';
-    html += `<option value="${st.id}" ${isSel}>📍 ${esc(title)} (منزلگاه ${num})</option>`;
+    html += `<option value="${st.id}" ${isSel}>${esc(title)} (منزلگاه ${num})</option>`;
   });
   sel.innerHTML = html;
 };
@@ -1777,7 +1777,7 @@ window.openChallengeStepsModal = function(challengeId) {
   if (!modal || !bodyEl) return;
 
   if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${esc(c.title)}`;
-  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} 🪙 | نوع: ${c.type}`;
+  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
 
@@ -1881,7 +1881,7 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
       }
     });
 
-    let options = '<option value="all">🏢 همه کاروان‌ها</option>';
+    let options = '<option value="all">همه کاروان‌ها</option>';
     caravanMap.forEach((name, id) => {
       options += `<option value="${id}">${esc(name)}</option>`;
     });
@@ -1917,7 +1917,7 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
       }
     });
 
-    let options = '<option value="all">🎓 همه راهبران</option>';
+    let options = '<option value="all">همه راهبران</option>';
     mentorMap.forEach((name, id) => {
       options += `<option value="${id}">${esc(name)}</option>`;
     });
@@ -1942,7 +1942,7 @@ function populateSubmissionsFilterDropdowns(submissions = []) {
       }
     });
 
-    let options = '<option value="all">👤 همه دانش‌آموزان</option>';
+    let options = '<option value="all">همه دانش‌آموزان</option>';
     studentMap.forEach((name, id) => {
       options += `<option value="${id}">${name}</option>`;
     });
@@ -2578,7 +2578,7 @@ async function viewUserDetails(userId) {
                     <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('challenges')" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
                   </div>
                   <div style="position:relative; flex: 1 1 150px; max-width: 220px;">
-                    <input type="text" id="drawer-class-search-input" placeholder="🔍 جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:11.5px; box-sizing:border-box;">
+                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:11.5px; box-sizing:border-box;">
                   </div>
                 </div>
 
@@ -3000,7 +3000,7 @@ window.renderDrawerClassProgressTable = function() {
             <i class="fa-solid fa-circle-play" style="margin-left:3px;"></i>${r.clips.length} پارت
           </span>
           <div style="font-size:10.5px; color:${r.isWatched ? '#34d399' : '#94a3b8'};">
-            ${r.isWatched ? '✓ کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
+            ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
@@ -5571,7 +5571,7 @@ window.calculateMentorStars = function(ratings, evals) {
     return { score: null, count: 0, text: 'فاقد ارزیابی (۰ نظر)', avgNumeric: 0 };
   }
   const avg = (sum / count).toFixed(1);
-  return { score: avg, count: count, text: `⭐ ${avg} (${count} نظر)`, avgNumeric: parseFloat(avg) };
+  return { score: avg, count: count, text: `${avg} (${count} نظر)`, avgNumeric: parseFloat(avg) };
 };
 
 window.loadMentors = async function() {
@@ -5709,7 +5709,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
 
     // Status indicator
     const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
-    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="color:#ef4444;">🔴</span>' : '<span title="فعال" style="color:#10b981;">🟢</span>';
+    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;"></span>' : '<span title="فعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#10b981;"></span>';
 
     // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
@@ -5765,7 +5765,7 @@ window.quickUpdateMentorLevel = async function(mentorId, newLevel) {
     if (res.ok) {
       const m = window.mentorsMasterList.find(x => x.id === mentorId);
       if (m) m.mentorLevel = parseInt(newLevel);
-      alert(`✅ سطح راهبری با موفقیت به سطح ${newLevel} بروزرسانی شد.`);
+      alert(`سطح راهبری با موفقیت به سطح ${newLevel} بروزرسانی شد.`);
       window.filterMentorsList();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -5821,7 +5821,7 @@ window.viewMentorDossier = async function(mentorId) {
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
     const students = dossier?.supervisedStudents || [];
     const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const scoreTitle = starsInfo.score !== null ? `⭐ ${starsInfo.score} <span style="font-size:12px; color:#94a3b8;">/ ۵</span>` : `<span style="font-size:15px; color:#94a3b8;">فاقد ارزیابی</span>`;
+    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span style="font-size:12px; color:#94a3b8;">/ ۵</span>` : `<span style="font-size:15px; color:#94a3b8;">فاقد ارزیابی</span>`;
     const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
@@ -5858,7 +5858,7 @@ window.viewMentorDossier = async function(mentorId) {
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
           <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${esc(mentor?.city || 'ثبت نشده')}</span></div>
           <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? '✅ تایید شده' : '🟡 در انتظار بررسی'}</span></div>
+          <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
         </div>
       </div>
 
@@ -5968,7 +5968,7 @@ window.renderDossierStudents = function(students, mentorId) {
                 <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; gap:12px; font-family:monospace;">
                   <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
                   <span>کد: ${s.userCode || '-'}</span>
-                  <span style="color:#fbbf24;">🪙 ${s.zarikBalance || 0} زریک</span>
+                  <span style="color:#fbbf24;">${s.zarikBalance || 0} زریک</span>
                 </div>
               </div>
             </div>
@@ -6044,11 +6044,11 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
     body.innerHTML = tickets.map(t => {
       let statusBadge = '';
       if (t.status === 'resolved') {
-        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🟢 حل‌شده</span>';
+        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">حل‌شده</span>';
       } else if (t.status === 'answered') {
-        statusBadge = '<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🔵 پاسخ داده شده</span>';
+        statusBadge = '<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">پاسخ داده شده</span>';
       } else {
-        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">🟡 در انتظار پاسخ</span>';
+        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">در انتظار پاسخ</span>';
       }
 
       const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : '';
@@ -6210,11 +6210,11 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
     body.innerHTML = submissions.map(sub => {
       let statusBadge = '';
       if (sub.status === 'approved' || sub.status === 'APPROVED') {
-        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">✅ تایید شده</span>';
+        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">تایید شده</span>';
       } else if (sub.status === 'rejected' || sub.status === 'REJECTED') {
-        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">❌ نیاز به اصلاح / رد شده</span>';
+        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">نیاز به اصلاح / رد شده</span>';
       } else {
-        statusBadge = '<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">🟡 در انتظار بررسی راهبر</span>';
+        statusBadge = '<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">در انتظار بررسی راهبر</span>';
       }
 
       const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('fa-IR') : '';
@@ -6410,8 +6410,8 @@ window.editMentor = async function(mentorId) {
     if (m.mentorDocuments && m.mentorDocuments.length > 0) {
       certsSection.style.display = 'block';
       certsTbody.innerHTML = m.mentorDocuments.map(doc => {
-        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:#10b981;color:white;">🟢 تایید شده</span>' :
-                        (doc.status === 'rejected' ? '<span class="badge" style="background:#ef4444;color:white;">🔴 رد شده</span>' : '<span class="badge" style="background:#f59e0b;color:white;">🟡 در انتظار</span>');
+        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:#10b981;color:white;">تایید شده</span>' :
+                        (doc.status === 'rejected' ? '<span class="badge" style="background:#ef4444;color:white;">رد شده</span>' : '<span class="badge" style="background:#f59e0b;color:white;">در انتظار</span>');
         return `
           <tr>
             <td>${esc(doc.filename || 'مدرک پیوست')}</td>
@@ -6539,8 +6539,8 @@ window.handleMentorFormSubmit = async function(e) {
 
     if (res.ok) {
       const msg = assignedCaravanIds.length > 0 
-        ? `✅ راهبر «${name}» با موفقیت همراه با ${assignedCaravanIds.length} کاروان ثبت و ذخیره شد.`
-        : `✅ راهبر «${name}» با موفقیت به عنوان راهبر مستقل (بدون کاروان) ثبت و ذخیره شد.`;
+        ? `راهبر «${name}» با موفقیت همراه با ${assignedCaravanIds.length} کاروان ثبت و ذخیره شد.`
+        : `راهبر «${name}» با موفقیت به عنوان راهبر مستقل (بدون کاروان) ثبت و ذخیره شد.`;
       alert(msg);
       document.getElementById('mentor-modal-overlay').style.display = 'none';
       await window.loadMentors();
@@ -6596,7 +6596,7 @@ window.executeMentorModeration = async function(e) {
     });
 
     if (res.ok) {
-      alert('✅ اقدام مدیریتی با موفقیت بر روی حساب کاربری راهبر اعمال شد.');
+      alert('اقدام مدیریتی با موفقیت بر روی حساب کاربری راهبر اعمال شد.');
       document.getElementById('mentor-moderation-modal').style.display = 'none';
       await window.loadMentors();
     } else {
@@ -6935,8 +6935,8 @@ window.loadAssetConversions = async function() {
           <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
         </td>
         <td>
-          ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ انجام شده</span>' :
-            r.status === 'cancelled' ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">↩️ لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
+          ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">انجام شده</span>' :
+            r.status === 'cancelled' ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
             '<span class="badge" style="background:rgba(148,163,184,0.2); color:#94a3b8; border:1px solid rgba(148,163,184,0.4);">قدیمی (بدون اثر)</span>'}
         </td>
         <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
@@ -9373,7 +9373,7 @@ window.toggleBannerStatus = async function(id, currentActive) {
     });
     if (res.ok) {
       if (typeof showToastSuccess === 'function') {
-        showToastSuccess(newActive ? '✅ بنر فعال شد' : 'بنر غیرفعال شد');
+        showToastSuccess(newActive ? 'بنر فعال شد' : 'بنر غیرفعال شد');
       }
       loadBannersTab();
     }
@@ -9480,7 +9480,7 @@ window.saveBannerItem = async function(e) {
     });
     if (res.ok) {
       if (typeof showToastSuccess === 'function') {
-        showToastSuccess(id ? '✅ بنر با موفقیت ویرایش شد' : '✅ بنر جدید با موفقیت بارگذاری شد');
+        showToastSuccess(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
       } else {
         alert(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
       }
@@ -9506,7 +9506,7 @@ window.deleteBanner = async function(id) {
     });
     if (res.ok) {
       if (typeof showToastSuccess === 'function') {
-        showToastSuccess('✅ بنر با موفقیت حذف شد');
+        showToastSuccess('بنر با موفقیت حذف شد');
       }
       loadBannersTab();
     } else {
@@ -9787,10 +9787,10 @@ window.saveNewsArticle = async function(e) {
     if (res.ok) {
       window.closeNewsModal();
       await window.loadNewsTab();
-      showToastSuccess('✅ خبر با موفقیت در تابلوی اعلانات جارچی ذخیره و منتشر شد!');
+      showToastSuccess('خبر با موفقیت در تابلوی اعلانات جارچی ذخیره و منتشر شد!');
       
       if (document.getElementById('news-push')?.checked) {
-        showToastSuccess('📢 نوتیفیکیشن خبر برای مخاطبان هدف ارسال گردید.');
+        showToastSuccess('نوتیفیکیشن خبر برای مخاطبان هدف ارسال گردید.');
       }
     } else {
       const err = await res.json();
@@ -9828,7 +9828,7 @@ window.deleteNews = async function(id) {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
     });
     if (res.ok) {
-      showToastSuccess('✅ خبر با موفقیت حذف شد.');
+      showToastSuccess('خبر با موفقیت حذف شد.');
       await window.loadNewsTab();
     } else {
       const d = await res.json();
@@ -10117,7 +10117,7 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   const targetEl = document.getElementById(targetInputId);
   const origPlaceholder = targetEl ? targetEl.placeholder : '';
-  if (targetEl) targetEl.placeholder = '⏳ در حال آپلود فایل...';
+  if (targetEl) targetEl.placeholder = 'در حال آپلود فایل...';
 
   try {
     const res = await fetch('/api/v1/media/upload', {
@@ -10133,7 +10133,7 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
       if (targetEl) {
         targetEl.value = fileUrl;
       }
-      alert('✅ فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
+      alert('فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
     } else {
       alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
     }

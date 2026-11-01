@@ -234,7 +234,7 @@ window.saveInstructorForm = async function(event) {
     });
 
     if (res.ok) {
-      alert('✅ اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.');
+      alert('اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.');
       document.getElementById('instructor-form-modal').style.display = 'none';
       await window.fetchInstructorsList();
 
@@ -272,7 +272,7 @@ window.deleteInstructorRecord = async function(id) {
     });
 
     if (res.ok) {
-      alert('✅ استاد با موفقیت حذف شد.');
+      alert('استاد با موفقیت حذف شد.');
       await window.fetchInstructorsList();
     } else {
       const d = await res.json();

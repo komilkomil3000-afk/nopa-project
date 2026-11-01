@@ -413,7 +413,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                           );
                           if (mounted) {
                             if (error == null) {
-                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد ✅');
+                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد');
                               repository.refreshUser();
                               _loadMarketData();
                             } else {

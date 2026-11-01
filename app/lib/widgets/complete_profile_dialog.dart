@@ -186,7 +186,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
       if (!mounted) return;
       Navigator.of(context).pop();
 
-      AppToast.success(context, '🎉 پروفایل شما با موفقیت تکمیل شد و ۱۰۰ زریک به حساب شما افزوده گردید!');
+      AppToast.success(context, 'پروفایل شما با موفقیت تکمیل شد و ۱۰۰ زریک به حساب شما افزوده گردید!');
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
@@ -260,7 +260,7 @@ class _CompleteProfileDialogState extends State<CompleteProfileDialog> {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'با تکمیل مشخصات هویتی، ۱۰۰ سکه زریک بلافاصله به کیف پول شما واریز می‌شود! 🪙',
+                        'با تکمیل مشخصات هویتی، ۱۰۰ سکه زریک بلافاصله به کیف پول شما واریز می‌شود!',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 11.5,

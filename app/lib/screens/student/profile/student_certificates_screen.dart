@@ -113,7 +113,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
       ),
     );
 
-    AppToast.success(context, 'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد ✅');
+    AppToast.success(context, 'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد');
   }
 
   @override

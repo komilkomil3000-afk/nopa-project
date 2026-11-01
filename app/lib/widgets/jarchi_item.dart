@@ -103,7 +103,7 @@ class JarchiItem extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          AppToast.info(context, 'در حال باز کردن لینک: $link 🔗');
+                          AppToast.info(context, 'در حال باز کردن لینک: $link');
                         },
                         icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
                         label: const Text(

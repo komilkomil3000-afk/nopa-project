@@ -226,7 +226,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     if (context.mounted) {
                                       final isSuccess = res != null;
                                       if (isSuccess) {
-      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎');
+      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
     } else {
       AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
     }
@@ -301,7 +301,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
+      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد');
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
@@ -1171,7 +1171,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       }
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;
@@ -1522,7 +1522,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
       return;
     }
     Navigator.pop(context);
-    AppToast.info(context, 'رمز عبور با موفقیت تغییر کرد ✅');
+    AppToast.info(context, 'رمز عبور با موفقیت تغییر کرد');
   }
 
   Widget _field(String label, TextEditingController c,

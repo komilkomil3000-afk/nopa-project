@@ -127,7 +127,7 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
             targetAsset,
             sourceAmount,
             targetAmount,
-            note: `تبدیل ${sourceAmount} ${sourceAsset} ➔ ${targetAmount} ${targetAsset}`,
+            note: `تبدیل ${sourceAmount} ${sourceAsset} به ${targetAmount} ${targetAsset}`,
           },
         });
       });
@@ -143,7 +143,7 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'مبادله سرمایه 🔄',
+            title: 'مبادله سرمایه',
             message: `${user.name}: ${reqRecord.note}`,
             type: 'alert',
           },
@@ -222,7 +222,7 @@ export async function cancelAssetConversion(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: conversion.requestedBy,
-        title: 'مبادله لغو شد ↩️',
+        title: 'مبادله لغو شد',
         message: `مبادله «${conversion.note}» توسط راهبر لغو شد و سرمایه‌های شما بازگردانده شد.${reason ? ` علت: ${reason}` : ''}`,
         type: 'alert',
       },

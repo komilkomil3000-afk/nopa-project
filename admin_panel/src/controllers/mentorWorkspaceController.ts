@@ -38,7 +38,7 @@ export async function createMentorChallenge(req: AuthRequest, res: Response) {
       await prisma.notification.createMany({
         data: targetStudents.map(s => ({
           userId: s.id,
-          title: 'چالش جدید کاروان ابلاغ شد 🏆',
+          title: 'چالش جدید کاروان ابلاغ شد',
           message: `چالش جدید "${title}" توسط راهبر کاروان (${mentorCaravan.name}) برای شما ابلاغ گردید.`,
           type: 'challenge'
         }))

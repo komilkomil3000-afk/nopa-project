@@ -1759,7 +1759,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               });
             } else {
               Navigator.pop(context);
-              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد! 📂✅');
+              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد!');
             }
           });
 

@@ -234,7 +234,7 @@ export async function completeProfile(req: AuthRequest, res: Response) {
         await tx.notification.create({
           data: {
             userId: user.id,
-            title: 'پاداش تکمیل پروفایل واریز شد 🎉',
+            title: 'پاداش تکمیل پروفایل واریز شد',
             message: 'مشخصات شما با موفقیت ثبت شد و ۱۰۰ زریک به کیف پول شما افزوده گردید.',
             type: 'reward'
           }
@@ -247,7 +247,7 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       rewardZarik: rewardAmount,
       zarikBalance: updatedUser.zarikBalance,
       message: isEligibleForReward
-        ? 'پروفایل با موفقیت تایید شد و ۱۰۰ زریک هدیه دریافت کردید! 🎉'
+        ? 'پروفایل با موفقیت تایید شد و ۱۰۰ زریک هدیه دریافت کردید!'
         : 'پروفایل با موفقیت بروزرسانی شد'
     });
   } catch (error) {

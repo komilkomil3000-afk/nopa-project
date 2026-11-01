@@ -1131,7 +1131,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆');
+                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد');
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1328,7 +1328,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️');
+                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

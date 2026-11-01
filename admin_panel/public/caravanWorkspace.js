@@ -59,7 +59,7 @@ async function initCaravanWorkspace(targetCaravanId = null) {
         </div>
         <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 text-center">
           <div class="text-xs text-gray-400 mb-1">مجموع ثروت (زریک)</div>
-          <div class="text-lg font-bold text-yellow-400">${totalZarik} 🟡</div>
+          <div class="text-lg font-bold text-yellow-400">${totalZarik} زریک</div>
         </div>
         <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/60 text-center">
           <div class="text-xs text-gray-400 mb-1">تعداد اعضای فعال</div>
@@ -87,7 +87,7 @@ async function initCaravanWorkspace(targetCaravanId = null) {
                   <td class="p-3 font-mono text-xs text-gray-400">${esc(m.customId || m.id)}</td>
                   <td class="p-3 font-bold text-slate-100">${esc(m.name)}</td>
                   <td class="p-3 text-gray-300 font-mono">${esc(m.phoneNumber || m.phone || '-')}</td>
-                  <td class="p-3 text-yellow-400 font-semibold">${m.zarikBalance || 0} 🟡</td>
+                  <td class="p-3 text-yellow-400 font-semibold">${m.zarikBalance || 0} زریک</td>
                   <td class="p-3 flex gap-2">
                     <button onclick="window.editMemberZarikPrompt('${m.id}', ${m.zarikBalance || 0})" class="px-3 py-1 bg-amber-600/80 hover:bg-amber-600 text-white rounded text-xs">تغییر زریک</button>
                     <button onclick="window.removeUserFromCaravanAction('${m.id}')" class="px-3 py-1 bg-red-600/80 hover:bg-red-600 text-white rounded text-xs">حذف از کاروان</button>

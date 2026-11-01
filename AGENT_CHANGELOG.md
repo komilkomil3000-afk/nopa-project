@@ -2348,3 +2348,52 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app): no issues; node --check app.js; backend tsc not run (node_modules missing)
 - **Status:** Completed
+
+### [2026-11-01 15:57] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/caravanWorkspace.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/toast.js` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanBannerController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/certificateController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/evaluationController.ts` (Modified)
+  - `admin_panel/src/controllers/exportController.ts` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/newsController.ts` (Modified)
+  - `admin_panel/src/controllers/notificationController.ts` (Modified)
+  - `admin_panel/src/controllers/studentController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Removed emojis from all user-facing text, titles, toasts, alerts, select options and server notification titles in app/lib, admin_panel/public (app.js, lms.js, index.html, instructors.js, caravanWorkspace.js) and admin_panel/src controllers
+  - status dots and icon-only emojis replaced by CSS dots / Font Awesome icons
+  - toast.js type-detection regex no longer relies on emoji
+  - news notifications no longer get the 📢 prefix (client still strips it from old records). Kept: country flags in login picker, arrow/triangle button glyphs
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check on panel JS
+- **Status:** Completed

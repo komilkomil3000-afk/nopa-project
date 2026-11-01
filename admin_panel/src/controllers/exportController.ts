@@ -115,7 +115,7 @@ export const exportData = async (req: Request, res: Response) => {
 
         let avgRatingText = 'فاقد ارزیابی (۰ نظر)';
         if (totalRatingCount > 0) {
-          avgRatingText = `${(totalRatingSum / totalRatingCount).toFixed(1)} ⭐ (${totalRatingCount} نظر)`;
+          avgRatingText = `${(totalRatingSum / totalRatingCount).toFixed(1)} (${totalRatingCount} نظر)`;
         }
 
         let levelStr = 'سطح ۱ (مقدماتی)';

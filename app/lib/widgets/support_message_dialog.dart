@@ -76,7 +76,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
       if (!mounted) return;
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;

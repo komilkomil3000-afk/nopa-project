@@ -36,7 +36,7 @@ export async function evaluateMentor(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: mentorId,
-        title: 'ارزیابی راهبری جدید ثبت شد ⭐️',
+        title: 'ارزیابی راهبری جدید ثبت شد',
         message: 'یکی از اعضای کاروان عملکرد شما در این فصل را ارزیابی نمود.',
         type: 'alert'
       }

@@ -611,7 +611,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: id,
-        title: 'بروزرسانی حساب کاربری 🔄',
+        title: 'بروزرسانی حساب کاربری',
         message: 'مدیریت اطلاعات حساب کاربری شما را ویرایش کرد.',
         type: 'alert'
       }
@@ -896,7 +896,7 @@ export async function adjustZarik(req: AuthRequest, res: Response) {
       prisma.notification.create({
         data: {
           userId,
-          title: 'تراکنش زریک 💰',
+          title: 'تراکنش زریک',
           message: `موجودی شما تغییر کرد. مقدار: ${amount > 0 ? '+' : ''}${amount} زریک. بابت: ${reason}`,
           type: 'reward'
         }
@@ -1818,7 +1818,7 @@ export async function grantUserLevel(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: targetUserId,
-        title: 'ارتقا سطح کاربری 🌟',
+        title: 'ارتقا سطح کاربری',
         message: `سطح کاربری شما به قاب ${levelFrame} ارتقا یافت!${zarikBonus ? ` و ${zarikBonus} زریک پاداش گرفتید.` : ''}`,
         type: 'reward'
       }

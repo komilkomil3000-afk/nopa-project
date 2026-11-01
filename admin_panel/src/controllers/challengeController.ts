@@ -157,7 +157,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'ابلاغ چالش جدید در کاروان 🚩',
+            title: 'ابلاغ چالش جدید در کاروان',
             message: `چالش جدید "${title}" توسط ${creatorName} برای اعضای کاروان "${caravan.name}" ثبت گردید.`,
             type: 'challenge'
           }
@@ -178,7 +178,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         await prisma.notification.createMany({
           data: mentors.map(m => ({
             userId: m.id,
-            title: 'چالش عمومی جدید ابلاغ شد 🏆',
+            title: 'چالش عمومی جدید ابلاغ شد',
             message: `چالش جدید "${title}" توسط ${creatorName} برای تمامی کاروان‌ها منتشر گردید.`,
             type: 'challenge'
           }))
@@ -195,8 +195,8 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       await prisma.notification.createMany({
         data: targetStudents.map(s => ({
           userId: s.id,
-          title: 'چالش جدید ابلاغ شد 🏆',
-          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText} 🪙`,
+          title: 'چالش جدید ابلاغ شد',
+          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText}`,
           type: 'challenge'
         }))
       });
@@ -730,7 +730,7 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: req.user.id,
-        title: calculatedReward > 0 ? 'ثبت پاداش آزمون 💰' : 'نتیجه آزمون',
+        title: calculatedReward > 0 ? 'ثبت پاداش آزمون' : 'نتیجه آزمون',
         message: `آزمون "${challenge.title}" بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}.` +
           (calculatedReward > 0 ? ` مقدار پاداش: +${calculatedReward} ${assetLabel} به حساب شما اضافه شد.` : ''),
         type: 'reward'

@@ -2184,7 +2184,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             titleCtrl.clearDraft();
                             messageCtrl.clearDraft();
                             Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد ✉️');
+                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

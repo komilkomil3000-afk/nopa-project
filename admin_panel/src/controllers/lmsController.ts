@@ -1216,7 +1216,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       await prisma.notification.create({
         data: {
           userId,
-          title: 'افزوده شدن سرمایه 💰',
+          title: 'افزوده شدن سرمایه',
           message: `${rewardZarik} زریک به سرمایه شما اضافه شد. علت: شرکت موفق در آزمون «${session.title}».`,
           type: 'reward'
         }

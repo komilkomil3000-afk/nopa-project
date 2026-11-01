@@ -183,7 +183,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد 📎');
+                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFC09268),
@@ -252,7 +252,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
+      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد');
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
@@ -1059,7 +1059,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       if (!mounted) return;
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;

@@ -235,24 +235,24 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       categoryBadgeHtml = `<span class="badge" style="background:#0284c7; color:white; font-size:11px; padding:4px 10px; border-radius:6px;">دسته ۱: مهارتی (${skillSessCount} جلسه | ${skillPartsCount} پارت)</span>`;
       sessionsDisplayHtml = `
         <div style="font-weight:bold; color:#38bdf8; font-size:13px;">${skillSessCount} جلسه مهارتی</div>
-        <div style="font-size:11px; color:#34d399; margin-top:2px;">🎬 ${skillPartsCount} پارت ویدیو</div>
+        <div style="font-size:11px; color:#34d399; margin-top:2px;">${skillPartsCount} پارت ویدیو</div>
         <div style="font-size:10px; color:#f59e0b; margin-top:2px;"><i class="fa-solid fa-file-signature"></i> ${skillQuizzesCount} آزمونک</div>
       `;
     } else if (isMediaOnly) {
       categoryBadgeHtml = `<span class="badge" style="background:#7c3aed; color:white; font-size:11px; padding:4px 10px; border-radius:6px;">دسته ۲: رسانه‌ای (${mediaSessCount} جلسه | ${mediaPartsCount} پارت)</span>`;
       sessionsDisplayHtml = `
         <div style="font-weight:bold; color:#a78bfa; font-size:13px;">${mediaSessCount} جلسه رسانه‌ای</div>
-        <div style="font-size:11px; color:#34d399; margin-top:2px;">🎬 ${mediaPartsCount} پارت ویدیو</div>
+        <div style="font-size:11px; color:#34d399; margin-top:2px;">${mediaPartsCount} پارت ویدیو</div>
         <div style="font-size:10px; color:#f59e0b; margin-top:2px;"><i class="fa-solid fa-file-signature"></i> ${mediaQuizzesCount} آزمونک</div>
       `;
     } else {
       categoryBadgeHtml = `
         <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
           <span class="badge" style="background:rgba(2,132,199,0.25); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
-            🏃‍♂️ دسته ۱ (${skillSessCount} جلسه)
+            دسته ۱ (${skillSessCount} جلسه)
           </span>
           <span class="badge" style="background:rgba(124,58,237,0.25); color:#c4b5fd; border:1px solid rgba(167,139,250,0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
-            🎬 دسته ۲ (${mediaSessCount} جلسه)
+            دسته ۲ (${mediaSessCount} جلسه)
           </span>
         </div>
       `;
@@ -286,7 +286,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
         <td style="text-align:center; font-family:monospace; font-weight:bold; color:var(--color-neon-blue);">MZ${idx}</td>
         <td>
           <strong style="color:white; font-size:14px; display:flex; align-items:center; gap:6px;">
-            <span style="color:#fbbf24;">📍</span> ${simpleStationName}
+            <i class="fa-solid fa-location-dot" style="color:#fbbf24;"></i> ${simpleStationName}
           </strong>
           ${st.stayDuration ? `<div style="font-size:11px; color:#38bdf8; margin-top:2px;"><i class="fa-solid fa-hourglass-half"></i> اقامت: ${st.stayDuration}</div>` : ''}
           ${st.animationTitle ? `<div style="font-size:10px; color:#a78bfa; margin-top:2px;"><i class="fa-solid fa-film"></i> ${esc(st.animationTitle)}</div>` : ''}
@@ -979,7 +979,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
                       ${opts.map((opt, oIdx) => `
                         <div style="background:${oIdx === correctIdx ? 'rgba(16, 185, 129, 0.15)' : 'rgba(15, 23, 42, 0.5)'}; border:1px solid ${oIdx === correctIdx ? '#10b981' : 'rgba(255, 255, 255, 0.06)'}; color:${oIdx === correctIdx ? '#34d399' : '#cbd5e1'}; padding:5px 8px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-                          <span style="font-size:12px;">${oIdx === correctIdx ? '✅' : '⚪'}</span>
+                          <i class="fa-solid ${oIdx === correctIdx ? 'fa-circle-check' : 'fa-circle'}" style="font-size:12px;"></i>
                           <span><strong>گزینه ${oIdx + 1}:</strong> ${esc(opt || '-')}</span>
                           ${oIdx === correctIdx ? '<span style="color:#10b981; font-weight:bold; margin-right:auto; font-size:10px;">(پاسخ صحیح)</span>' : ''}
                         </div>
@@ -1265,7 +1265,7 @@ window.saveCategoryTitle = async function(categoryId, stationId) {
     });
 
     if (res.ok) {
-      alert('✅ عنوان دسته کلاس با موفقیت ذخیره شد.');
+      alert('عنوان دسته کلاس با موفقیت ذخیره شد.');
       await window.fetchLiveLmsStations();
     } else {
       const d = await res.json();
@@ -1319,10 +1319,10 @@ window.openFinalLmsSaveConfirmationModal = function() {
   if (summaryEl) {
     summaryEl.innerHTML = `
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-        <div><strong>📌 نام منزلگاه:</strong> <span style="color:#38bdf8; font-weight:bold;">${esc(stTitle)}</span></div>
-        <div><strong>📅 تاریخ انتشار:</strong> <span style="color:#fbbf24; font-weight:bold;">${stDate || 'تعیین‌نشده'}</span></div>
-        <div><strong>🎬 پارت‌های ویدیویی:</strong> <span style="color:#10b981; font-weight:bold;">${clipCount} پارت</span></div>
-        <div><strong>⚡ وضعیت اعمال:</strong> <span style="color:#a78bfa; font-weight:bold;">ذخیره‌سازی یکجا و آنی</span></div>
+        <div><strong>نام منزلگاه:</strong> <span style="color:#38bdf8; font-weight:bold;">${esc(stTitle)}</span></div>
+        <div><strong>تاریخ انتشار:</strong> <span style="color:#fbbf24; font-weight:bold;">${stDate || 'تعیین‌نشده'}</span></div>
+        <div><strong>پارت‌های ویدیویی:</strong> <span style="color:#10b981; font-weight:bold;">${clipCount} پارت</span></div>
+        <div><strong>وضعیت اعمال:</strong> <span style="color:#a78bfa; font-weight:bold;">ذخیره‌سازی یکجا و آنی</span></div>
       </div>
     `;
   }
@@ -1424,7 +1424,7 @@ window.executeFinalLmsSave = async function() {
       document.getElementById('lms-final-confirm-modal').style.display = 'none';
       document.getElementById('lms-content-manager-modal').style.display = 'none';
 
-      alert('✅ کلیه تغییرات منزلگاه، دسته‌های کلاس و پارت‌های ویدیو با موفقیت ثبت نهایی و در پایگاه‌داده ذخیره شد.');
+      alert('کلیه تغییرات منزلگاه، دسته‌های کلاس و پارت‌های ویدیو با موفقیت ثبت نهایی و در پایگاه‌داده ذخیره شد.');
       await window.fetchLiveLmsStations();
     } else {
       const d = await res.json();
@@ -1713,7 +1713,7 @@ window.saveSessionDetails = async function(sessionId, stationId) {
     });
 
     if (res.ok) {
-      alert(`✅ مشخصات، نام مدرس و تاریخ جلسه (${sessionDate || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد و در تقویم اپلیکیشن به‌روزرسانی گردید.`);
+      alert(`مشخصات، نام مدرس و تاریخ جلسه (${sessionDate || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد و در تقویم اپلیکیشن به‌روزرسانی گردید.`);
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);
@@ -1754,7 +1754,7 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
 
     if (res.ok) {
       const data = await res.json();
-      alert(`✅ ${data.message || 'نام مدرس برای تمامی جلسات با موفقیت به‌روزرسانی شد.'}`);
+      alert(`${data.message || 'نام مدرس برای تمامی جلسات با موفقیت به‌روزرسانی شد.'}`);
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);
@@ -2461,7 +2461,7 @@ window.saveCompleteStation = async function(e) {
     });
 
     if (res.ok) {
-      alert('✅ مشخصات منزلگاه، نگارستان و دسته‌ها با موفقیت ذخیره شد.');
+      alert('مشخصات منزلگاه، نگارستان و دسته‌ها با موفقیت ذخیره شد.');
       document.getElementById('lms-station-creator-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
     } else {
@@ -2483,7 +2483,7 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   const targetEl = document.getElementById(targetInputId);
   const origPlaceholder = targetEl ? targetEl.placeholder : '';
-  if (targetEl) targetEl.placeholder = '⏳ در حال آپلود فایل...';
+  if (targetEl) targetEl.placeholder = 'در حال آپلود فایل...';
 
   try {
     const res = await fetch('/api/v1/media/upload', {
@@ -2499,7 +2499,7 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
       if (targetEl) {
         targetEl.value = fileUrl;
       }
-      alert('✅ فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
+      alert('فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
     } else {
       alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
     }

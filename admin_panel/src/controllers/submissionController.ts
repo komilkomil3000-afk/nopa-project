@@ -115,7 +115,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'پاسخ جدید دریافت شد 📝',
+            title: 'پاسخ جدید دریافت شد',
             message: `دانش‌آموز "${student.name}" پاسخی برای چالش "${challenge?.title || 'تکلیف'}" ثبت کرد.`,
             type: 'alert'
           }
@@ -418,7 +418,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: submission.studentId,
-        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف نیاز به اصلاح دارد ✍️',
+        title: status === 'approved' ? 'تکلیف تایید شد' : 'تکلیف نیاز به اصلاح دارد',
         message: status === 'approved'
             ? (bannerOnly
               ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد. ${assetNames.derafsh} بر اساس رتبه‌بندی نهایی کاروان‌ها اعطا می‌شود.`
@@ -437,7 +437,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
+            title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان' : 'نتیجه تکلیف دانش‌آموز کاروان',
             message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' ' + assetLabel + ')' : 'رد شد'}.`,
             type: 'alert'
           }
