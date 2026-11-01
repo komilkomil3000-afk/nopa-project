@@ -136,3 +136,18 @@ test('section grants parser drops unknown sections and levels', () => {
   assert.deepEqual(parseSectionGrants('not json'), {});
   assert.deepEqual(parseSectionGrants(null), {});
 });
+
+test('admin panel CSP: no inline scripts or handlers, stylesheets same-origin only', () => {
+  const { cspDirectives, cspHeader } = load('config/csp.js');
+  assert.deepEqual(cspDirectives.scriptSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.scriptSrcAttr, ["'none'"]);
+  assert.deepEqual(cspDirectives.styleSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.connectSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.objectSrc, ["'none'"]);
+  const header = cspHeader();
+  assert.match(header, /(^|;)script-src 'self'(;|$)/);
+  assert.match(header, /(^|;)script-src-attr 'none'(;|$)/);
+  // 'unsafe-inline' only for style attributes, nowhere else
+  assert.deepEqual(header.split(';').filter(d => d.includes('unsafe-inline')), ["style-src-attr 'unsafe-inline'"]);
+  assert.ok(!header.includes('unsafe-eval'));
+});

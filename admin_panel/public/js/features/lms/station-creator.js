@@ -157,7 +157,7 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
         <div class="form-group inst-picker-wrapper u-relative">
           <div class="u-flex u-justify-between u-items-center u-mb-4">
             <label class="u-fs-11_5 u-c-text-soft"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> استاد / اساتید دوره:</label>
-            <a href="javascript:void(0)" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-fs-10 u-c-primary-text u-no-underline u-flex u-items-center u-gap-3" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
+            <a href="#" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-fs-10 u-c-primary-text u-no-underline u-flex u-items-center u-gap-3" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
           </div>
           <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}" style="display:none;">
           <div id="inst-picker-box-${blockId}" class="inst-picker-box u-bg-surface-2 u-bd-primary-35 u-r-6 u-p-6-10 u-minh-38 u-pointer u-flex u-wrap u-gap-4 u-items-center" data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}">

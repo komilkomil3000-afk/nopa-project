@@ -7,7 +7,6 @@
 //   after login the router takes the user to that tab.
 (function () {
   const $ = id => document.getElementById(id);
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function openLogin() {
     if (window.NopaModal) NopaModal.open('login-modal');
@@ -47,7 +46,7 @@
 
   function watchReveal() {
     const items = document.querySelectorAll('#landing-view [data-reveal]');
-    if (reduceMotion || !('IntersectionObserver' in window)) return; // content simply stays visible
+    if (NopaMotion.reduced() || !('IntersectionObserver' in window)) return; // content simply stays visible
     document.documentElement.classList.add('landing-reveal'); // hidden-until-visible only from here on
     const io = new IntersectionObserver(entries => {
       entries.forEach(e => {
@@ -72,7 +71,7 @@
       if (jump) {
         e.preventDefault();
         const target = $(jump.dataset.scrollTo);
-        if (target) target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        if (target) target.scrollIntoView({ behavior: NopaMotion.scrollBehavior(), block: 'start' });
       }
     });
     watchHeader();

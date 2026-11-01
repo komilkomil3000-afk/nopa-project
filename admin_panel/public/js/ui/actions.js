@@ -37,6 +37,8 @@
   function run(el, type, event) {
     const name = el.getAttribute(`data-${type}`);
     const fn = resolve(name);
+    // <a href="#" data-click="…"> is a keyboard-reachable button: never navigate to "#" (the router listens to the hash)
+    if (type === 'click' && el.matches('a[href="#"]')) event.preventDefault();
     if (!fn) { console.error(`data-${type}: "${name}" is not a function`); return; }
     const result = fn.apply(window, args(el, type, event));
     if (result === false) event.preventDefault();

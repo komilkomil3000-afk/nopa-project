@@ -246,7 +246,7 @@ window.selectCaravanForManagement = function(id) {
     }
     const detailsSection = picker.closest('.panel-card');
     if (detailsSection) {
-      detailsSection.scrollIntoView({ behavior: 'smooth' });
+      detailsSection.scrollIntoView({ behavior: NopaMotion.scrollBehavior() });
     }
   }
 };

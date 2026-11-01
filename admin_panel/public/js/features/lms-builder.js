@@ -334,7 +334,7 @@ function editLmsStation(stationId) {
     });
   }
   
-  document.getElementById('lms-builder-card').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('lms-builder-card').scrollIntoView({ behavior: NopaMotion.scrollBehavior() });
 }
 
 async function deleteLmsStation(stationId) {

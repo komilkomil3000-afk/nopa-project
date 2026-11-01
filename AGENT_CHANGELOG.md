@@ -2629,3 +2629,27 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: new step 5 suite 5/5 (utilities loaded last, state rows span the table, empty and error states, no hand-written state rows), Phase 3–7 suites, open-everything (32), smoke, handler static check — all green, no page errors.
   - `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed (Phase 7 done; Phase 8 pending)
+
+### [2026-11-01 23:30] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 1 (Strict CSP + reduced motion)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/config/csp.ts` (Created — CSP directives + header helper)
+  - `admin_panel/src/app.ts` (Modified — helmet uses config/csp.ts)
+  - `admin_panel/tests/security.test.js` (Modified — CSP test)
+  - `admin_panel/public/js/app/sw-register.js` (Created — was an inline script)
+  - `admin_panel/public/index.html` (Modified — inline script removed, javascript: links → href="#")
+  - `admin_panel/public/js/ui/actions.js` (Modified — no navigation for a[href="#"] handlers)
+  - `admin_panel/public/theme.js` (Modified — NopaMotion; Chart.js animations off with reduced motion)
+  - `admin_panel/public/css/components.css` (Modified — global reduced-motion rule)
+  - `admin_panel/public/js/features/{caravans,lms-builder,rewards}.js`, `admin_panel/public/js/features/lms/station-creator.js`, `admin_panel/public/js/layout/landing.js` (Modified — scrolling via NopaMotion, javascript: link)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v14)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - CSP: `script-src 'self'`, `script-src-attr 'none'`, `style-src 'self'`; 'unsafe-inline' only for style attributes. Injected inline scripts/handlers are blocked.
+  - Reduced motion respected in CSS, JS scrolling and charts.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome under the real header: Phase 8 suite 8/8 (no violations over all tabs, a click sweep and 14 modals; injection blocked; export links; reduced/normal motion); Phase 3–7 suites, open-everything, smoke green.
+  - helmet output equals `cspHeader()`; `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`.
+  - Deploy: rebuild needed on the server for the new header.
+- **Status:** In Progress (Phase 8 steps 2–3 pending: accessibility, typography/spacing/states)

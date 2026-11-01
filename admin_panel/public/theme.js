@@ -81,6 +81,14 @@
     syncCharts: syncCharts
   };
 
+  // Reduced motion (OS setting): CSS handles transitions/animations (css/components.css);
+  // JS scrolling and Chart.js animations ask here.
+  var motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  window.NopaMotion = {
+    reduced: function () { return !!(motionQuery && motionQuery.matches); },
+    scrollBehavior: function () { return this.reduced() ? 'auto' : 'smooth'; }
+  };
+
   apply(preferred(), false);
 
   // Signed in or not, decided before first paint so neither the landing page nor the panel flashes.
@@ -93,6 +101,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     syncChrome(window.NopaTheme.get());
+    if (window.Chart && window.NopaMotion.reduced()) window.Chart.defaults.animation = false;
     syncCharts();
     document.addEventListener('click', function (e) {
       if (e.target.closest && e.target.closest('[data-theme-toggle]')) window.NopaTheme.toggle();

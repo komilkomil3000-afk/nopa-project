@@ -561,6 +561,6 @@ window.pickZarikTarget = function(userId) {
   const select = document.getElementById('zarik-target-user');
   if (select) select.value = userId;
   const form = document.getElementById('zarik-adjust-form');
-  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  if (form) form.scrollIntoView({ behavior: NopaMotion.scrollBehavior(), block: 'center' });
+  else window.scrollTo({ top: document.body.scrollHeight, behavior: NopaMotion.scrollBehavior() });
 };
