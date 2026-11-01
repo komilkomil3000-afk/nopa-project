@@ -5,21 +5,46 @@ import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
-import { checkRoleChange, isSuperAdmin, normalizeRole, roleLabelFa } from '../utils/roles';
-import { canEnterPanel, guardPrivilegedTarget } from '../utils/access';
+import { ASSIGNABLE_ROLES, ROLE_ADMIN, ROLE_STUDENT, parseSectionGrants } from '../utils/roles';
+import { avatarFor, normalizeGender } from '../utils/avatar';
 
 
 // Memory Cache for Zarik Analytics (invalidated upon adjustments)
 let zarikAnalyticsCache: { data: any; expiry: number } | null = null;
 const CACHE_TTL = 30000; // 30 seconds
 
-/** panelAccess from a request body: undefined = not sent, null = follow the role, true / false = explicit. */
-function parsePanelAccess(v: any): boolean | null | undefined {
-  if (v === undefined) return undefined;
-  if (v === null || v === '' || v === 'default') return null;
-  if (v === true || v === 'true') return true;
-  if (v === false || v === 'false') return false;
-  return undefined;
+// ---- Role management (super admin only) ----
+
+/** 'Sub-Admin' / 'sub admin' / 'SUB_ADMIN' -> 'sub_admin'. */
+function canonicalRole(role: any): string {
+  return String(role ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+/**
+ * Checks a role change. Only a super admin may change roles; nobody can change their own role,
+ * and the last active super admin can never be demoted. Returns an error message or null.
+ */
+async function validateRoleChange(
+  actor: AuthRequest['user'],
+  target: { id: string; role: string },
+  newRole: string
+): Promise<string | null> {
+  if (canonicalRole(actor?.role) !== ROLE_ADMIN) {
+    return 'تغییر نقش کاربران فقط برای سوپر ادمین مجاز است';
+  }
+  if (!ASSIGNABLE_ROLES.includes(newRole)) {
+    return 'نقش انتخاب‌شده نامعتبر است';
+  }
+  if (actor?.id === target.id) {
+    return 'امکان تغییر نقش حساب خودتان وجود ندارد';
+  }
+  if (canonicalRole(target.role) === ROLE_ADMIN && newRole !== ROLE_ADMIN) {
+    const otherAdmins = await prisma.user.count({
+      where: { role: ROLE_ADMIN, isDeleted: false, blocked: false, NOT: { id: target.id } },
+    });
+    if (otherAdmins < 1) return 'حداقل یک سوپر ادمین فعال باید در سیستم باقی بماند';
+  }
+  return null;
 }
 
 // Utility function to log to AuditLog
@@ -134,8 +159,7 @@ export async function getUsers(req: AuthRequest, res: Response) {
     });
     const shouldMask = permission?.maskPhoneNumbers ?? false;
 
-    const entryFlags = await Promise.all(users.map((u) => canEnterPanel(u.role, (u as any).panelAccess)));
-    const sanitizedUsers = users.map((u, idx) => {
+    const sanitizedUsers = users.map((u) => {
       const completionRate =
         u.submissions.length > 0
           ? Math.round(
@@ -154,9 +178,8 @@ export async function getUsers(req: AuthRequest, res: Response) {
         levelFrame: u.levelFrame,
         caravanName: u.caravan?.name || 'فاقد کاروان',
         caravanId: u.caravanId,
+        gender: u.gender,
         blocked: u.blocked,
-        panelAccess: (u as any).panelAccess ?? null,
-        canEnterPanel: entryFlags[idx],
         createdAt: u.createdAt,
         completionRate,
       };
@@ -198,14 +221,11 @@ export async function getUserById(req: AuthRequest, res: Response) {
     });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
 
-    const userCanEnterPanel = await canEnterPanel(user.role, (user as any).panelAccess);
     res.json({
       id: user.id,
       name: user.name,
       phoneNumber: user.phoneNumber,
       role: user.role,
-      panelAccess: (user as any).panelAccess ?? null,
-      canEnterPanel: userCanEnterPanel,
       caravanId: user.caravanId,
       caravanName: user.caravan?.name || null,
       levelFrame: user.levelFrame || 1,
@@ -213,10 +233,12 @@ export async function getUserById(req: AuthRequest, res: Response) {
       nationalId: user.nationalId || '',
       dateOfBirth: user.dateOfBirth || '',
       city: user.city || '',
+      gender: user.gender || '',
       bio: user.bio || '',
       academicDegree: user.academicDegree || '',
       academicCertificates: user.academicCertificates || '',
       userCode: user.userCode,
+      panelAccess: user.panelAccess ?? null,
       zarikBalance: user.zarikBalance || 0,
       nakh: user.nakh || 0,
       beyragh: user.beyragh || 0,
@@ -396,6 +418,7 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
         nationalId: user.nationalId,
         dateOfBirth: user.dateOfBirth,
         city: user.city,
+        gender: user.gender,
         role: user.role,
         isDualRole: user.isDualRole,
         caravanId: user.caravanId,
@@ -450,20 +473,18 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
 export async function createUser(req: AuthRequest, res: Response) {
   try {
     const { name, phoneNumber, password, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth } = req.body;
-    const role = normalizeRole(req.body.role);
-    const panelAccess = parsePanelAccess(req.body.panelAccess);
-    if (panelAccess !== undefined && panelAccess !== null && !isSuperAdmin(req.user?.role)) {
-      return res.status(403).json({ error: 'فقط سوپر ادمین می‌تواند مجوز ورود به پنل را تعیین کند' });
-    }
+    const role = canonicalRole(req.body.role);
+    const gender = normalizeGender(req.body.gender) ?? null;
 
     if (!name || !phoneNumber || !password || !role) {
       return res.status(400).json({ error: 'وارد کردن تمامی فیلدهای اجباری الزامی است' });
     }
-
-    // Only a super admin may create admins / super admins
-    const denied = checkRoleChange(req.user?.role, null, role);
-    if (denied) {
-      return res.status(403).json({ error: denied });
+    if (!ASSIGNABLE_ROLES.includes(role) && role !== 'dual') {
+      return res.status(400).json({ error: 'نقش انتخاب‌شده نامعتبر است' });
+    }
+    // Only a super admin can create admin / sub admin accounts
+    if ((role === ROLE_ADMIN || role === 'sub_admin') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
+      return res.status(403).json({ error: 'ایجاد حساب مدیر فقط برای سوپر ادمین مجاز است' });
     }
     
     // Sanitize phone number
@@ -495,9 +516,10 @@ export async function createUser(req: AuthRequest, res: Response) {
         mentorLevel: mentorLevel || 1,
         nationalId: nationalId || null,
         dateOfBirth: dateOfBirth || null,
+        gender,
+        avatarUrl: avatarFor(role, gender, null) ?? null,
         identityVerified: true,
         isDualRole: role === 'dual' ? true : false,
-        panelAccess: panelAccess ?? null,
         userCode: nextUserCode
       },
     });
@@ -508,9 +530,8 @@ export async function createUser(req: AuthRequest, res: Response) {
       'CREATE_USER',
       'User',
       user.id,
-      `ایجاد کاربر جدید: ${name} با نقش ${roleLabelFa(role)} (${role})`,
-      req.ip || '127.0.0.1',
-      req.user?.role || 'admin'
+      `ایجاد کاربر جدید: ${name} با نقش ${role}`,
+      req.ip || '127.0.0.1'
     );
 
     res.status(201).json({ message: 'کاربر با موفقیت ایجاد شد', userId: user.id });
@@ -523,68 +544,30 @@ export async function updateUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { name, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth, phoneNumber, academicDegree, academicCertificates } = req.body;
-    const role = req.body.role !== undefined && req.body.role !== null && req.body.role !== ''
-      ? normalizeRole(req.body.role)
-      : undefined;
 
     const prevUser = await prisma.user.findUnique({ where: { id } });
-    if (!prevUser) {
-      return res.status(404).json({ error: 'کاربر یافت نشد' });
+    const genderInput = normalizeGender(req.body.gender);
+
+    // The role is only touched when it really changes, and only a super admin may change it.
+    let roleToSet: string | undefined;
+    const requestedRole = canonicalRole(req.body.role);
+    if (requestedRole && prevUser && requestedRole !== canonicalRole(prevUser.role)) {
+      const roleError = await validateRoleChange(req.user, prevUser, requestedRole);
+      if (roleError) return res.status(403).json({ error: roleError });
+      roleToSet = requestedRole;
     }
 
-    const roleChanged = role !== undefined && role !== prevUser.role;
-
-    // Panel login override: only a super admin sets it, never on their own account,
-    // and the system must always keep one super admin who can still sign in.
-    const panelAccess = parsePanelAccess(req.body.panelAccess);
-    const panelAccessChanged = panelAccess !== undefined && panelAccess !== ((prevUser as any).panelAccess ?? null);
-    if (panelAccessChanged) {
-      if (!isSuperAdmin(req.user?.role)) {
-        return res.status(403).json({ error: 'فقط سوپر ادمین می‌تواند مجوز ورود به پنل را تعیین کند' });
-      }
-      if (panelAccess === false) {
-        if (id === req.user?.id) {
-          return res.status(400).json({ error: 'نمی‌توانید ورود خودتان به پنل را غیرفعال کنید' });
-        }
-        if (isSuperAdmin(prevUser.role)) {
-          const otherSuperAdmins = await prisma.user.count({
-            where: { role: 'admin', id: { not: id }, isDeleted: false, blocked: false, NOT: { panelAccess: false } } as any
-          });
-          if (otherSuperAdmins < 1) {
-            return res.status(400).json({ error: 'حداقل یک سوپر ادمین فعال با مجوز ورود باید باقی بماند' });
-          }
-        }
-      }
-    }
-
-    // Role rules: only a super admin touches admin / super admin accounts or grants those roles
-    const denied = checkRoleChange(req.user?.role, prevUser.role, role ?? prevUser.role);
-    if (denied) {
-      return res.status(403).json({ error: denied });
-    }
-    if (roleChanged) {
-      if (id === req.user?.id) {
-        return res.status(400).json({ error: 'تغییر نقش حساب خودتان مجاز نیست' });
-      }
-      // Never leave the system without a super admin
-      if (isSuperAdmin(prevUser.role)) {
-        const otherSuperAdmins = await prisma.user.count({
-          where: { role: 'admin', id: { not: id }, isDeleted: false, blocked: false }
-        });
-        if (otherSuperAdmins < 1) {
-          return res.status(400).json({ error: 'حداقل یک سوپر ادمین فعال باید در سیستم باقی بماند' });
-        }
-      }
-    }
+    // Gender is set here (admin panel); the matching profile picture follows from role + gender.
+    const finalGender = genderInput !== undefined ? genderInput : prevUser?.gender as any;
+    const newAvatar = avatarFor(roleToSet || prevUser?.role, finalGender, prevUser?.avatarUrl);
 
     const user = await prisma.user.update({
       where: { id },
       data: {
         name,
-        role,
-        // A role change signs the person out everywhere so tokens and the panel UI pick up the new role
-        ...(roleChanged ? { tokenVersion: { increment: 1 } } : {}),
-        ...(panelAccessChanged ? { panelAccess } : {}),
+        ...(genderInput !== undefined ? { gender: genderInput } : {}),
+        ...(newAvatar !== undefined ? { avatarUrl: newAvatar } : {}),
+        ...(roleToSet ? { role: roleToSet, tokenVersion: { increment: 1 } } : {}),
         phoneNumber: phoneNumber || undefined,
         caravanId: caravanId !== undefined ? (caravanId || null) : undefined,
         levelFrame: levelFrame ? parseInt(levelFrame) : undefined,
@@ -596,29 +579,12 @@ export async function updateUser(req: AuthRequest, res: Response) {
       },
     });
 
-    if (panelAccessChanged) {
+    if (roleToSet) {
+      // tokenVersion was bumped above; drop the live sessions so the new role applies on next login
+      await prisma.userSession.deleteMany({ where: { userId: id } });
       await logAdminAction(
-        req.user?.id || 'system',
-        req.user?.phoneNumber || 'Admin',
-        'CHANGE_PANEL_ACCESS',
-        'User',
-        id,
-        `مجوز ورود به پنل برای ${user.name}: ${panelAccess === null ? 'پیش‌فرض نقش' : panelAccess ? 'مجاز' : 'ممنوع'}`,
-        req.ip || '127.0.0.1',
-        req.user?.role || 'admin'
-      );
-    }
-    if (roleChanged) {
-      await prisma.userSession.deleteMany({ where: { userId: id } }).catch(() => {});
-      await logAdminAction(
-        req.user?.id || 'system',
-        req.user?.phoneNumber || 'Admin',
-        'CHANGE_USER_ROLE',
-        'User',
-        id,
-        `تغییر نقش ${user.name} از ${roleLabelFa(prevUser.role)} (${prevUser.role}) به ${roleLabelFa(user.role)} (${user.role})`,
-        req.ip || '127.0.0.1',
-        req.user?.role || 'admin'
+        req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'CHANGE_USER_ROLE', 'User', id,
+        `تغییر نقش کاربر ${user.name || id} از ${prevUser?.role} به ${roleToSet}`, req.ip || '127.0.0.1'
       );
     }
 
@@ -661,8 +627,6 @@ export async function toggleBlockUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { blocked } = req.body;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     const user = await prisma.user.update({
       where: { id },
@@ -688,8 +652,6 @@ export async function toggleBlockUser(req: AuthRequest, res: Response) {
 export async function deleteUser(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     // Check custom permissions first
     const actorRole = req.user?.role || 'admin';
@@ -728,8 +690,6 @@ export async function overridePasswordOrOtp(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { password } = req.body;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     if (!password) {
       return res.status(400).json({ error: 'رمز عبور جدید الزامی است' });
@@ -1037,6 +997,65 @@ export async function getEconomyHub(req: AuthRequest, res: Response) {
   }
 }
 
+// PUT /users/:id/role  { role }   (super admin only)
+export async function setUserRole(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const newRole = canonicalRole(req.body?.role);
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target || target.isDeleted) return res.status(404).json({ error: 'کاربر یافت نشد' });
+
+    const error = await validateRoleChange(req.user, target, newRole);
+    if (error) return res.status(403).json({ error });
+
+    if (canonicalRole(target.role) === newRole) {
+      return res.json({ message: 'نقش کاربر تغییری نکرد', role: newRole });
+    }
+
+    await prisma.user.update({ where: { id }, data: { role: newRole, tokenVersion: { increment: 1 } } });
+    await prisma.userSession.deleteMany({ where: { userId: id } });
+    await logAdminAction(
+      req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'CHANGE_USER_ROLE', 'User', id,
+      `تغییر نقش کاربر ${target.name || id} از ${target.role} به ${newRole}`, req.ip || '127.0.0.1'
+    );
+    res.json({ message: 'نقش کاربر با موفقیت تغییر کرد', role: newRole });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// PUT /users/:id/panel-access  { panelAccess: true | false | null }   (super admin only)
+// null = follow the role default, true/false = force allow/deny for this user.
+export async function setUserPanelAccess(req: AuthRequest, res: Response) {
+  try {
+    if (canonicalRole(req.user?.role) !== ROLE_ADMIN) {
+      return res.status(403).json({ error: 'اعطای دسترسی پنل فقط برای سوپر ادمین مجاز است' });
+    }
+    const { id } = req.params;
+    const value = req.body?.panelAccess;
+    if (value !== true && value !== false && value !== null) {
+      return res.status(400).json({ error: 'مقدار panelAccess باید true، false یا null باشد' });
+    }
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target || target.isDeleted) return res.status(404).json({ error: 'کاربر یافت نشد' });
+    if (canonicalRole(target.role) === ROLE_ADMIN) {
+      return res.status(400).json({ error: 'دسترسی سوپر ادمین قابل تغییر نیست' });
+    }
+    if (canonicalRole(target.role) === ROLE_STUDENT) {
+      return res.status(400).json({ error: 'دانش‌آموز به پنل مدیریت دسترسی ندارد' });
+    }
+
+    await prisma.user.update({ where: { id }, data: { panelAccess: value } });
+    await logAdminAction(
+      req.user?.id || 'system', req.user?.phoneNumber || 'Admin', 'SET_PANEL_ACCESS', 'User', id,
+      `دسترسی پنل کاربر ${target.name || id}: ${value === null ? 'طبق نقش' : value ? 'فعال' : 'غیرفعال'}`, req.ip || '127.0.0.1'
+    );
+    res.json({ message: 'دسترسی پنل بروزرسانی شد', panelAccess: value });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 // 3. ROLE-BASED ACCESS CONTROL (RBAC)
 export async function getRolePermissions(req: AuthRequest, res: Response) {
   try {
@@ -1053,10 +1072,25 @@ export async function updateRolePermissions(req: AuthRequest, res: Response) {
       roleName, maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent,
       manageMentors, manageStudents, manageCaravans, manageSystem,
       canSendMessage, canJoinClasses, canScoreAndEvaluate, canConvertAssets,
-      canCreateChallenges, canViewGlobalAnalytics, canManageUsers
+      canCreateChallenges, canViewGlobalAnalytics, canManageUsers, canLoginPanel
     } = req.body;
 
+    if (!roleName || typeof roleName !== 'string') {
+      return res.status(400).json({ error: 'نام نقش الزامی است' });
+    }
+    if (canonicalRole(roleName) === ROLE_ADMIN) {
+      return res.status(400).json({ error: 'دسترسی‌های سوپر ادمین قابل ویرایش نیست' });
+    }
+    // Section grants: only known sections and view/edit levels are stored
+    let permissionsJson: string | undefined;
+    if (req.body.permissionsJson !== undefined) {
+      const raw = typeof req.body.permissionsJson === 'string' ? req.body.permissionsJson : JSON.stringify(req.body.permissionsJson);
+      permissionsJson = JSON.stringify(parseSectionGrants(raw));
+    }
+
     const data = {
+      canLoginPanel: typeof canLoginPanel === 'boolean' ? canLoginPanel : undefined,
+      permissionsJson,
       maskPhoneNumbers, restrictZarik, lockUserDeletions, manageContent,
       manageMentors, manageStudents, manageCaravans, manageSystem,
       canSendMessage, canJoinClasses, canScoreAndEvaluate, canConvertAssets,
@@ -1392,6 +1426,7 @@ export async function getMentorDossier(req: AuthRequest, res: Response) {
         isDeleted: mentor.isDeleted,
         suspendedUntil: mentor.suspendedUntil,
         city: mentor.city,
+        gender: mentor.gender,
         socialMessengerHandle: mentor.socialMessengerHandle,
         socialPlatform: mentor.socialPlatform,
         identityVerified: mentor.identityVerified,
@@ -1447,6 +1482,16 @@ export async function replyTicketAdmin(req: AuthRequest, res: Response) {
       data: { status: 'answered', updatedAt: new Date() }
     });
 
+    // The sender is told in the app that the support team answered
+    await prisma.notification.create({
+      data: {
+        userId: ticket.studentId,
+        title: 'پاسخ پشتیبانی',
+        message: message.trim().slice(0, 300),
+        type: 'support'
+      }
+    });
+
     res.json({ success: true, reply });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -1476,8 +1521,6 @@ export async function moderateMentor(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { action, suspendedUntil } = req.body; // action: 'activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     if (!['activate', 'soft_delete', 'permanent_suspend', 'temp_suspend'].includes(action)) {
       return res.status(400).json({ error: 'عملیات نامعتبر است' });
@@ -1539,8 +1582,6 @@ export async function moderateMentor(req: AuthRequest, res: Response) {
 export async function updateMentor(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
     const {
       name,
       nationalId,
@@ -1553,6 +1594,7 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       mentorLevel,
       caravanIds
     } = req.body;
+    const mentorGender = normalizeGender(req.body.gender);
 
     const mentor = await prisma.user.findUnique({ where: { id } });
     if (!mentor || !['mentor', 'SUPER_MENTOR'].includes(mentor.role)) {
@@ -1565,11 +1607,15 @@ export async function updateMentor(req: AuthRequest, res: Response) {
       phoneNumber,
       dateOfBirth,
       city,
+      ...(mentorGender !== undefined ? { gender: mentorGender } : {}),
       socialMessengerHandle,
       socialPlatform,
       accountStatus,
       mentorLevel: parseInt(mentorLevel) || 1
     };
+
+    const mentorAvatar = avatarFor(mentor.role, mentorGender !== undefined ? mentorGender : (mentor.gender as any), mentor.avatarUrl);
+    if (mentorAvatar !== undefined) data.avatarUrl = mentorAvatar;
 
     if (Array.isArray(caravanIds)) {
       data.mentoredCaravans = {
@@ -1633,8 +1679,7 @@ export async function createGlobalAnnouncement(req: AuthRequest, res: Response) 
       'Notification',
       'global',
       `ارسال اطلاعیه: ${title} به ${targetUsers.length} کاربر`,
-      req.ip || '127.0.0.1',
-      req.user?.role || 'admin'
+      req.ip || '127.0.0.1'
     );
 
     res.json({ message: 'اطلاعیه با موفقیت برای کاربران ارسال شد' });
@@ -1789,8 +1834,6 @@ export async function setAccountStatus(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { status, reason } = req.body;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
     const user = await prisma.user.update({
       where: { id },
       data: { accountStatus: status }
@@ -1835,3 +1878,4 @@ export const getLevelsAndCertificates = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+

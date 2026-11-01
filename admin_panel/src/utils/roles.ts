@@ -1,73 +1,65 @@
-/**
- * Role hierarchy (highest first):
- *   super admin  >  admin  >  mentor  >  student
- *
- * Storage note: the existing "admin" accounts ARE the super admins, so the stored value
- * 'admin' keeps meaning super admin and every existing `role === 'admin'` check keeps working
- * (and fails closed for the new role). The new, limited admin is stored as 'SUB_ADMIN'.
- */
-export const ROLE_SUPER_ADMIN = 'admin';
-export const ROLE_ADMIN = 'SUB_ADMIN';
+// Mentors (and super mentors) can browse all LMS content but never earn personal rewards.
+export function isMentorRole(role?: string | null): boolean {
+  const r = String(role || '').toLowerCase().replace(/[\s_-]/g, '');
+  return r === 'mentor' || r === 'supermentor';
+}
 
-const RANK: Record<string, number> = {
-  admin: 4,        // super admin
-  sub_admin: 3,    // admin
-  super_mentor: 2,
-  mentor: 2,
-  dual: 2,
-  student: 1,
+/**
+ * The four user levels:
+ *   admin      - super admin, unrestricted in the panel (can change roles and grant access)
+ *   sub_admin  - content admin, limited to the panel sections a super admin granted
+ *   mentor     - mentor (legacy value SUPER_MENTOR is treated as a mentor)
+ *   student
+ */
+export const ROLE_ADMIN = 'admin';
+export const ROLE_SUB_ADMIN = 'sub_admin';
+export const ROLE_MENTOR = 'mentor';
+export const ROLE_STUDENT = 'student';
+
+/** Roles a super admin may assign from the panel. */
+export const ASSIGNABLE_ROLES = [ROLE_ADMIN, ROLE_SUB_ADMIN, ROLE_MENTOR, ROLE_STUDENT];
+
+export function isSuperAdminRole(role?: string | null): boolean {
+  return String(role || '').toLowerCase() === ROLE_ADMIN;
+}
+
+export function isSubAdminRole(role?: string | null): boolean {
+  return String(role || '').toLowerCase().replace(/[\s-]/g, '_') === ROLE_SUB_ADMIN;
+}
+
+/** Panel sections a super admin can grant to a sub admin. */
+export const PANEL_SECTIONS: Record<string, string> = {
+  users: 'کاربران، مخاطبان و سطوح',
+  rewards: 'کیف پول، زریک و دارایی‌ها',
+  mentors: 'راهبران و مدارک',
+  instructors: 'بانک اساتید',
+  caravans: 'کاروان‌ها',
+  lms: 'منزلگاه‌ها، کلاس‌ها و آزمون‌ها',
+  challenges: 'چالش‌ها و تکالیف',
+  support: 'تیکت‌ها، پیام‌ها و چت',
+  content: 'جارچی، بنر، رسانه و فرم‌ها',
+  notifications: 'اعلان‌ها و پیام‌رسانی',
+  analytics: 'آمار و لیگ',
 };
 
-const norm = (role?: string | null) => String(role || '').toLowerCase();
+export type SectionLevel = 'view' | 'edit';
+export type SectionGrants = Record<string, SectionLevel>;
 
-export function roleRank(role?: string | null): number {
-  return RANK[norm(role)] ?? 0;
-}
-
-export function isSuperAdmin(role?: string | null): boolean {
-  return norm(role) === 'admin';
-}
-
-export function isSubAdmin(role?: string | null): boolean {
-  return norm(role) === 'sub_admin';
-}
-
-/** Super admin or admin. */
-export function isAnyAdmin(role?: string | null): boolean {
-  return isSuperAdmin(role) || isSubAdmin(role);
-}
-
-/** Canonical stored spelling for a role coming from a request body. */
-export function normalizeRole(role?: string | null): string {
-  const r = norm(role);
-  if (r === 'sub_admin') return ROLE_ADMIN;
-  if (r === 'admin') return ROLE_SUPER_ADMIN;
-  if (r === 'super_mentor') return 'SUPER_MENTOR';
-  return String(role || '').trim();
-}
-
-export function roleLabelFa(role?: string | null): string {
-  switch (norm(role)) {
-    case 'admin': return 'سوپر ادمین';
-    case 'sub_admin': return 'ادمین';
-    case 'mentor':
-    case 'super_mentor': return 'راهبر';
-    default: return 'دانش‌آموز';
+/** Parses RolePermission.permissionsJson, dropping unknown sections/levels. Never throws. */
+export function parseSectionGrants(raw?: string | null): SectionGrants {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    const out: SectionGrants = {};
+    if (parsed && typeof parsed === 'object') {
+      for (const [key, level] of Object.entries(parsed)) {
+        if (key in PANEL_SECTIONS && (level === 'view' || level === 'edit')) {
+          out[key] = level as SectionLevel;
+        }
+      }
+    }
+    return out;
+  } catch {
+    return {};
   }
-}
-
-/**
- * Only a super admin may grant or remove the admin / super admin roles, or edit someone who
- * already holds one. Returns an error message, or null when allowed.
- */
-export function checkRoleChange(
-  actorRole: string | undefined,
-  targetCurrentRole: string | undefined | null,
-  newRole: string | undefined | null
-): string | null {
-  const touchesPrivileged = isAnyAdmin(targetCurrentRole) || isAnyAdmin(newRole);
-  if (touchesPrivileged && !isSuperAdmin(actorRole)) {
-    return 'فقط سوپر ادمین می‌تواند نقش ادمین یا سوپر ادمین را تعریف یا تغییر دهد';
-  }
-  return null;
 }

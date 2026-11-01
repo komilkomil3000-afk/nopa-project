@@ -3,7 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/db';
 import { sendSystemNotification } from './notificationController';
-import { guardPrivilegedTarget } from '../utils/access';
+import { avatarFor, normalizeGender } from '../utils/avatar';
 
 export async function getMentors(req: AuthRequest, res: Response) {
   try {
@@ -50,8 +50,6 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
       socialPlatform,
       assignedCaravanIds
     } = req.body;
-    const privilegedErr = await guardPrivilegedTarget(req.user?.role, id);
-    if (privilegedErr) return res.status(403).json({ error: privilegedErr });
 
     let user;
     if (id) {
@@ -69,6 +67,14 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
       if (mentorLevel !== undefined) data.mentorLevel = Number(mentorLevel) || 1;
       if (dateOfBirth !== undefined) data.dateOfBirth = dateOfBirth;
       if (city !== undefined) data.city = city;
+      const genderIn = normalizeGender(req.body.gender);
+      if (genderIn !== undefined) data.gender = genderIn;
+      {
+        const prev = await prisma.user.findUnique({ where: { id }, select: { gender: true, avatarUrl: true, role: true } });
+        const roleNow = data.role || prev?.role;
+        const av = avatarFor(roleNow, genderIn !== undefined ? genderIn : (prev?.gender as any), prev?.avatarUrl);
+        if (av !== undefined) data.avatarUrl = av;
+      }
       if (accountStatus !== undefined) data.accountStatus = accountStatus;
       if (socialMessengerHandle !== undefined) data.socialMessengerHandle = socialMessengerHandle;
       if (socialPlatform !== undefined) data.socialPlatform = socialPlatform;
@@ -112,6 +118,8 @@ export async function createOrUpdateMentor(req: AuthRequest, res: Response) {
           mentorLevel: Number(mentorLevel) || 1,
           dateOfBirth: dateOfBirth || null,
           city: city || null,
+          gender: normalizeGender(req.body.gender) ?? null,
+          avatarUrl: avatarFor(isSuperMentor ? 'SUPER_MENTOR' : 'mentor', normalizeGender(req.body.gender) ?? null, null) ?? null,
           accountStatus: accountStatus || 'ACTIVE',
           socialMessengerHandle: socialMessengerHandle || null,
           socialPlatform: socialPlatform || null
@@ -316,3 +324,4 @@ export async function getPrivateNotes(req: AuthRequest, res: Response) {
     res.status(500).json({ error: error.message });
   }
 }
+

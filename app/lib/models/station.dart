@@ -68,7 +68,9 @@ class Station {
     this.orderIndex = 0,
   });
 
+  // All three lists are indexed by the station number (the rank set in the admin panel), so station 0 is index 0.
   static const List<String> defaultStationTitles = [
+    'منزلگاه صفر (آغاز راه)',
     'منزلگاه اول (کاروانسرای غبارگرفته)',
     'منزلگاه دوم (معدن زیرزمینی)',
     'منزلگاه سوم (قلعه)',
@@ -77,6 +79,7 @@ class Station {
   ];
 
   static const List<String> pureStationNames = [
+    'آغاز راه',
     'کاروانسرای غبارگرفته',
     'معدن زیرزمینی',
     'قلعه',
@@ -85,6 +88,7 @@ class Station {
   ];
 
   static const List<String> ordinalNames = [
+    'منزلگاه صفر',
     'منزلگاه اول',
     'منزلگاه دوم',
     'منزلگاه سوم',
@@ -92,38 +96,28 @@ class Station {
     'منزلگاه پنجم',
   ];
 
-  static String getOrdinalName(int index) {
-    // Supports both 0-based (0..4) and 1-based (1..5) indexing
-    final int idx = (index >= 1 && index <= ordinalNames.length) ? (index - 1) : index;
-    if (idx >= 0 && idx < ordinalNames.length) {
-      return ordinalNames[idx];
-    }
-    return 'منزلگاه ${index > 0 ? index : index + 1}';
+  static String getOrdinalName(int number) {
+    if (number >= 0 && number < ordinalNames.length) return ordinalNames[number];
+    return 'منزلگاه $number';
   }
 
-  static String getPureName(int index, [String? originalTitle]) {
+  static String getPureName(int number, [String? originalTitle]) {
     if (originalTitle != null && originalTitle.trim().isNotEmpty) {
       String clean = originalTitle.replaceAll(RegExp(r'منزلگاه\s+[\u0600-\u06FF\d]+\s*[\(\:–\-]?\s*'), '');
       clean = clean.replaceAll(RegExp(r'[\(\)]'), '').trim();
       if (clean.isNotEmpty) return clean;
       return originalTitle.trim();
     }
-    final int idx = (index >= 1 && index <= pureStationNames.length) ? (index - 1) : index;
-    if (idx >= 0 && idx < pureStationNames.length) {
-      return pureStationNames[idx];
-    }
-    return 'ایستگاه ${index > 0 ? index : index + 1}';
+    if (number >= 0 && number < pureStationNames.length) return pureStationNames[number];
+    return 'ایستگاه $number';
   }
 
-  static String resolveTitle(String? originalTitle, int index) {
+  static String resolveTitle(String? originalTitle, int number) {
     if (originalTitle != null && originalTitle.trim().isNotEmpty) {
       return originalTitle.trim();
     }
-    final int idx = (index >= 1 && index <= defaultStationTitles.length) ? (index - 1) : index;
-    if (idx >= 0 && idx < defaultStationTitles.length) {
-      return defaultStationTitles[idx];
-    }
-    return 'منزلگاه ${index > 0 ? index : index + 1}';
+    if (number >= 0 && number < defaultStationTitles.length) return defaultStationTitles[number];
+    return 'منزلگاه $number';
   }
 
   bool get isCompleted => progress >= 1.0;

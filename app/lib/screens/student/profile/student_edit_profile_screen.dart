@@ -1,4 +1,7 @@
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:io' as io;
+import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPicker;
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,6 +12,8 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/widgets/safe_avatar.dart';
+import 'package:nopa_app/widgets/avatar_picker_sheet.dart';
 
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/nopa_dialog_container.dart';
@@ -37,11 +42,6 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
   late TextEditingController _resumeCtrl;
 
   // Password fields
-  late TextEditingController _newPasswordCtrl;
-  late TextEditingController _confirmPasswordCtrl;
-  bool _isNewPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
-
   bool _isSaving = false;
 
   @override
@@ -59,7 +59,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     }
 
     _phoneCtrl = TextEditingController(text: widget.user.phoneNumber);
-    _emailCtrl = TextEditingController(text: '');
+    _emailCtrl = TextEditingController(text: widget.user.email ?? '');
     _dobCtrl = TextEditingController(text: widget.user.dateOfBirth ?? '');
     _nationalIdCtrl = TextEditingController(text: widget.user.nationalId ?? '');
     _addressCtrl = TextEditingController(text: widget.user.city ?? '');
@@ -68,8 +68,6 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     _jobCtrl = TextEditingController(text: 'مدرس و راهبر کاروان');
     _resumeCtrl = TextEditingController(text: 'دارای سابقه فعالیت و راهبری در حوزه‌های آموزشی و مهارتی');
 
-    _newPasswordCtrl = TextEditingController();
-    _confirmPasswordCtrl = TextEditingController();
   }
 
   @override
@@ -84,8 +82,6 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     _educationCtrl.dispose();
     _jobCtrl.dispose();
     _resumeCtrl.dispose();
-    _newPasswordCtrl.dispose();
-    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -142,7 +138,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  GestureDetector(
+                  TapExpander(child: GestureDetector(
                     onTap: isUploading
                         ? null
                         : () async {
@@ -196,7 +192,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  )),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -228,29 +224,16 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     }
                                     if (context.mounted) {
                                       final isSuccess = res != null;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            isSuccess
-                                                ? 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎'
-                                                : 'خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.',
-                                            style: const TextStyle(fontFamily: AppTheme.fontFamily),
-                                          ),
-                                          backgroundColor: isSuccess ? const Color(0xFF10B981) : Colors.redAccent,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
+                                      if (isSuccess) {
+      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎');
+    } else {
+      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
+    }
                                     }
                                   } catch (e) {
                                     setDialogState(() => isUploading = false);
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('خطا در ارتباط با سرور: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-                                          backgroundColor: Colors.redAccent,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
+                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
                                     }
                                   }
                                 },
@@ -285,75 +268,44 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final combinedName = [first, last].where((s) => s.isNotEmpty).join(' ');
 
     if (combinedName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفاً نام خود را وارد کنید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'لطفاً نام خود را وارد کنید');
       return;
     }
 
-    // Password validation if entered
-    final newPassword = _newPasswordCtrl.text.trim();
-    final confirmPassword = _confirmPasswordCtrl.text.trim();
-
-    if (newPassword.isNotEmpty) {
-      if (newPassword.length < 4) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('رمز عبور باید حداقل ۴ کاراکتر باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
-      if (newPassword != confirmPassword) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('رمز عبور جدید و تکرار آن مطابقت ندارند', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-        return;
-      }
+    final email = _emailCtrl.text.trim();
+    if (email.isNotEmpty && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(email)) {
+      AppToast.error(context, 'آدرس ایمیل معتبر نیست');
+      return;
     }
 
     setState(() => _isSaving = true);
 
     try {
       final api = HttpApiService();
-      await api.completeProfile({
+      final saveError = await api.completeProfile({
         'name': combinedName,
         'nationalId': _nationalIdCtrl.text.trim(),
         'dateOfBirth': _dobCtrl.text.trim(),
+        'email': email,
         'city': _addressCtrl.text.trim(),
       });
-
-      if (newPassword.isNotEmpty) {
-        await api.changePassword(null, newPassword);
+      if (saveError != null) {
+        if (!mounted) return;
+        setState(() => _isSaving = false);
+        AppToast.error(context, saveError);
+        return;
       }
 
       if (!mounted) return;
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('تغییرات با موفقیت ذخیره شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطا در ذخیره تغییرات: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'خطایی رخ داده است. خطا در ذخیره تغییرات');
     }
   }
 
@@ -392,6 +344,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                 label: 'نام',
                                 controller: _firstNameCtrl,
                                 hintText: 'کمیل',
+                                readOnly: true,
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -400,6 +353,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                 label: 'نام خانوادگی',
                                 controller: _lastNameCtrl,
                                 hintText: 'عباس',
+                                readOnly: true,
                               ),
                             ),
                           ],
@@ -415,6 +369,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                 controller: _phoneCtrl,
                                 hintText: '09120000000',
                                 keyboardType: TextInputType.phone,
+                                readOnly: true,
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -437,7 +392,8 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                               child: _buildFormField(
                                 label: 'تاریخ تولد',
                                 controller: _dobCtrl,
-                                hintText: '۱۳۸۵/۰۱/۰۱',
+                                hintText: 'انتخاب تاریخ',
+                                onTap: _pickBirthDate,
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -530,7 +486,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                           children: [
                             // 1. ثبت تغییرات Button (English NOPA Gold Gradient Style)
                             Expanded(
-                              child: InkWell(
+                              child: TapExpander(child: InkWell(
                                 onTap: _isSaving ? null : _saveChanges,
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -570,13 +526,13 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                           ),
                                   ),
                                 ),
-                              ),
+                              )),
                             ),
                             const SizedBox(width: 14),
 
                             // 2. لغو Button (Purple border & text)
                             Expanded(
-                              child: InkWell(
+                              child: TapExpander(child: InkWell(
                                 onTap: () => Navigator.pop(context),
                                 borderRadius: BorderRadius.circular(10),
                                 child: Container(
@@ -607,7 +563,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     ),
                                   ),
                                 ),
-                              ),
+                              )),
                             ),
                           ],
                         ),
@@ -644,13 +600,23 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 color: Color(0xFF4A467D),
               ),
               child: ClipOval(
-                child: widget.user.avatarUrl != null && widget.user.avatarUrl!.isNotEmpty
-                    ? Image.network(
-                        widget.user.avatarUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildAvatarPlaceholder(),
-                      )
-                    : _buildAvatarPlaceholder(),
+                child: ListenableBuilder(
+                  listenable: AppRepository(),
+                  builder: (context, _) {
+                    final u = AppRepository().currentUser;
+                    final hasPic = (u.avatarUrl != null && u.avatarUrl!.isNotEmpty);
+                    return hasPic
+                        ? SafeAvatar(
+                            radius: 43,
+                            imageUrl: u.avatarUrl,
+                            name: u.name,
+                            gender: u.gender,
+                            isMentor: false,
+                            backgroundColor: Colors.transparent,
+                          )
+                        : _buildAvatarPlaceholder();
+                  },
+                ),
               ),
             ),
           ),
@@ -659,7 +625,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           Positioned(
             bottom: 2,
             left: 2,
-            child: Container(
+            child: GestureDetector(
+             onTap: () => showAvatarPicker(context),
+             child: Container(
               width: 26,
               height: 26,
               decoration: BoxDecoration(
@@ -681,6 +649,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 size: 13,
               ),
             ),
+           ),
           ),
         ],
       ),
@@ -732,6 +701,8 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     required TextEditingController controller,
     required String hintText,
     TextInputType keyboardType = TextInputType.text,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,8 +726,11 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           child: TextField(
             controller: controller,
             keyboardType: keyboardType,
-            style: const TextStyle(
-              color: Color(0xFFEAE8F8),
+            readOnly: readOnly || onTap != null,
+            onTap: onTap,
+            enableInteractiveSelection: !readOnly && onTap == null,
+            style: TextStyle(
+              color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8),
               fontSize: 13,
               fontFamily: AppTheme.fontFamily,
             ),
@@ -822,7 +796,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
               ),
 
               // Embedded Change Request Button (matching ثبت تغییرات style)
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5.5),
@@ -844,7 +818,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
         ),
@@ -907,7 +881,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
+              TapExpander(child: GestureDetector(
                 onTap: onButtonPressed,
                 child: Container(
                   margin: EdgeInsets.only(bottom: maxLines > 1 ? 4 : 0),
@@ -930,7 +904,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ],
           ),
         ),
@@ -938,12 +912,172 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     );
   }
 
-  /// Section for creating/updating fixed password
+  static const List<String> _monthNames = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند',
+  ];
+
+  static String _fa(int n) {
+    const d = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    return n.toString().split('').map((c) => d[int.parse(c)]).join();
+  }
+
+  static String _enDigits(String s) {
+    const fa = '۰۱۲۳۴۵۶۷۸۹';
+    const ar = '٠١٢٣٤٥٦٧٨٩';
+    final b = StringBuffer();
+    for (final ch in s.split('')) {
+      final i = fa.indexOf(ch);
+      final j = ar.indexOf(ch);
+      b.write(i >= 0 ? i : (j >= 0 ? j : ch));
+    }
+    return b.toString();
+  }
+
+  /// Birth date chosen from year / month / day wheels (Iranian calendar), saved as yyyy/mm/dd.
+  Future<void> _pickBirthDate() async {
+    final nowYear = Jalali.now().year;
+    int year = nowYear - 18;
+    int month = 1;
+    int day = 1;
+    final parts = _enDigits(_dobCtrl.text.trim()).split(RegExp(r'[/\-]'));
+    if (parts.length == 3) {
+      final y = int.tryParse(parts[0]);
+      final m = int.tryParse(parts[1]);
+      final d = int.tryParse(parts[2]);
+      if (y != null && m != null && d != null && y >= nowYear - 100 && y <= nowYear && m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        year = y;
+        month = m;
+        day = d;
+      }
+    }
+    final firstYear = nowYear - 100;
+    final yearCtrl = FixedExtentScrollController(initialItem: year - firstYear);
+    final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
+    var dayCtrl = FixedExtentScrollController(initialItem: day - 1);
+
+    final picked = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: const Color(0xFF1E1A33),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          final maxDay = Jalali(year, month, 1).monthLength;
+          if (day > maxDay) day = maxDay;
+
+          Widget wheel(FixedExtentScrollController c, int count, String Function(int) label, ValueChanged<int> onChanged, {Key? key}) {
+            return Expanded(
+              child: CupertinoPicker(
+                key: key,
+                scrollController: c,
+                itemExtent: 36,
+                magnification: 1.1,
+                useMagnifier: true,
+                selectionOverlay: Container(
+                  decoration: BoxDecoration(
+                    border: Border.symmetric(
+                      horizontal: BorderSide(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
+                    ),
+                  ),
+                ),
+                onSelectedItemChanged: onChanged,
+                children: List.generate(
+                  count,
+                  (i) => Center(
+                    child: Text(
+                      label(i),
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: AppTheme.fontFamily),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return SafeArea(
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'تاریخ تولد',
+                      style: TextStyle(color: Color(0xFFE1BC96), fontSize: 14, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+                    ),
+                    SizedBox(
+                      height: 170,
+                      child: Row(
+                        children: [
+                          wheel(yearCtrl, 101, (i) => _fa(firstYear + i), (i) => setSheet(() => year = firstYear + i)),
+                          wheel(monthCtrl, 12, (i) => _monthNames[i], (i) => setSheet(() => month = i + 1)),
+                          wheel(dayCtrl, maxDay, (i) => _fa(i + 1), (i) => day = i + 1, key: ValueKey('day$maxDay')),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildPwActionButton('تایید', () => Navigator.pop(ctx, true)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildPwActionButton('انصراف', () => Navigator.pop(ctx, false)),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    yearCtrl.dispose();
+    monthCtrl.dispose();
+    dayCtrl.dispose();
+    if (picked == true && mounted) {
+      final maxDay = Jalali(year, month, 1).monthLength;
+      if (day > maxDay) day = maxDay;
+      setState(() {
+        _dobCtrl.text = '$year/${month.toString().padLeft(2, '0')}/${day.toString().padLeft(2, '0')}';
+      });
+    }
+  }
+
+  Widget _buildPwActionButton(String label, VoidCallback? onTap) {
+    return TapExpander(child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B192A),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFC09268), width: 1.0),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFFE1BC96),
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            fontFamily: AppTheme.fontFamily,
+          ),
+        ),
+      ),
+    ));
+  }
+
+  /// Section for creating/updating the fixed password: one button that opens a dialog.
   Widget _buildPasswordSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
@@ -974,125 +1108,14 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
             ],
           ),
         ),
-
-        // Password Inputs Row
-        Row(
-          children: [
-            // New Password Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 6, right: 4),
-                    child: Text(
-                      'رمز عبور جدید',
-                      style: TextStyle(
-                        color: Color(0xFF9E9BB8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-                  _buildDecoratedInputBox(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _newPasswordCtrl,
-                            obscureText: !_isNewPasswordVisible,
-                            style: const TextStyle(
-                              color: Color(0xFFEAE8F8),
-                              fontSize: 13,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: InputBorder.none,
-                              hintText: 'رمز عبور جدید',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(() => _isNewPasswordVisible = !_isNewPasswordVisible),
-                          child: Icon(
-                            _isNewPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: const Color(0xFF8E889D),
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-
-            // Confirm Password Field
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 6, right: 4),
-                    child: Text(
-                      'تکرار رمز عبور',
-                      style: TextStyle(
-                        color: Color(0xFF9E9BB8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                  ),
-                  _buildDecoratedInputBox(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _confirmPasswordCtrl,
-                            obscureText: !_isConfirmPasswordVisible,
-                            style: const TextStyle(
-                              color: Color(0xFFEAE8F8),
-                              fontSize: 13,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              border: InputBorder.none,
-                              hintText: 'تکرار رمز عبور',
-                              hintStyle: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-                          child: Icon(
-                            _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                            color: const Color(0xFF8E889D),
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 6),
+        _buildPwActionButton(
+          'تغییر رمز عبور',
+          () => showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (_) => _PasswordChangeDialog(phoneNumber: widget.user.phoneNumber),
+          ),
         ),
       ],
     );
@@ -1126,12 +1149,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
   Future<void> _submitRequest() async {
     final text = _descCtrl.text.trim();
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('لطفاً شرح درخواست خود را بنویسید', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'لطفاً شرح درخواست خود را بنویسید');
       return;
     }
 
@@ -1139,29 +1157,24 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
 
     try {
       final api = HttpApiService();
-      await api.createTicket(
+      final ticket = await api.createTicket(
         category: 'تغییر کاروان/راهبر',
         subject: '${widget.requestType} - $text',
       );
 
       if (!mounted) return;
+      if (ticket == null) {
+        setState(() => _isSubmitting = false);
+        AppToast.error(context, 'ارسال درخواست انجام نشد. دوباره تلاش کنید');
+        return;
+      }
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Color(0xFF10B981),
-        ),
-      );
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطا در ارسال درخواست: $e', style: const TextStyle(fontFamily: AppTheme.fontFamily)),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      AppToast.error(context, 'خطایی رخ داده است. خطا در ارسال درخواست');
     }
   }
 
@@ -1403,3 +1416,276 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
 
 
 typedef EditProfileScreen = StudentEditProfileScreen;
+
+/// Modal for changing the fixed password.
+/// Remembers the old one: old password -> confirm -> new password twice.
+/// Forgot it: SMS code -> new password twice.
+class _PasswordChangeDialog extends StatefulWidget {
+  final String phoneNumber;
+  const _PasswordChangeDialog({required this.phoneNumber});
+
+  @override
+  State<_PasswordChangeDialog> createState() => _PasswordChangeDialogState();
+}
+
+enum _PwStep { choose, oldPassword, smsCode, newPassword }
+
+class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
+  _PwStep _step = _PwStep.choose;
+  bool _forgot = false;
+  bool _busy = false;
+  String? _error;
+
+  final _oldCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
+  final _newCtrl = TextEditingController();
+  final _repeatCtrl = TextEditingController();
+  bool _showOld = false;
+  bool _showNew = false;
+  bool _showRepeat = false;
+
+  @override
+  void dispose() {
+    _oldCtrl.dispose();
+    _codeCtrl.dispose();
+    _newCtrl.dispose();
+    _repeatCtrl.dispose();
+    super.dispose();
+  }
+
+  void _fail(String msg) => setState(() {
+        _busy = false;
+        _error = msg;
+      });
+
+  Future<void> _sendSms() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await HttpApiService().requestPasswordResetCode(widget.phoneNumber);
+    if (!mounted) return;
+    if (err != null) return _fail(err);
+    setState(() {
+      _busy = false;
+      _forgot = true;
+      _step = _PwStep.smsCode;
+    });
+  }
+
+  Future<void> _verifyOld() async {
+    final old = _oldCtrl.text.trim();
+    if (old.isEmpty) return _fail('رمز قبلی را وارد کنید');
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await HttpApiService().verifyCurrentPassword(old);
+    if (!mounted) return;
+    if (err != null) return _fail(err);
+    setState(() {
+      _busy = false;
+      _step = _PwStep.newPassword;
+    });
+  }
+
+  void _acceptCode() {
+    if (_codeCtrl.text.trim().isEmpty) return _fail('کد ارسال‌شده به پیامک را وارد کنید');
+    setState(() {
+      _error = null;
+      _step = _PwStep.newPassword;
+    });
+  }
+
+  Future<void> _submitNew() async {
+    final pass = _newCtrl.text.trim();
+    if (pass.length < 4) return _fail('رمز عبور باید حداقل ۴ کاراکتر باشد');
+    if (pass != _repeatCtrl.text.trim()) return _fail('رمز جدید و تکرار آن یکسان نیستند');
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final err = await HttpApiService().setNewPassword(
+      pass,
+      smsCode: _forgot ? _codeCtrl.text.trim() : null,
+      currentPassword: _forgot ? null : _oldCtrl.text.trim(),
+    );
+    if (!mounted) return;
+    if (err != null) {
+      // A wrong / expired SMS code is fixed on the code step
+      setState(() {
+        _busy = false;
+        _error = err;
+        if (_forgot && err.contains('کد')) _step = _PwStep.smsCode;
+      });
+      return;
+    }
+    Navigator.pop(context);
+    AppToast.info(context, 'رمز عبور با موفقیت تغییر کرد ✅');
+  }
+
+  Widget _field(String label, TextEditingController c,
+      {bool obscure = false, VoidCallback? toggle, bool visible = false, TextInputType? keyboard}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6, right: 4),
+          child: Text(label,
+              style: const TextStyle(color: Color(0xFF9E9BB8), fontSize: 12, fontFamily: AppTheme.fontFamily)),
+        ),
+        Container(
+          decoration: BoxDecoration(gradient: AppColors.strokeGradient, borderRadius: BorderRadius.circular(10)),
+          padding: const EdgeInsets.all(AppColors.borderWidth),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            decoration: BoxDecoration(gradient: AppColors.darkSurfaceGradient, borderRadius: BorderRadius.circular(9)),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: c,
+                    obscureText: obscure && !visible,
+                    keyboardType: keyboard,
+                    style: const TextStyle(color: Color(0xFFEAE8F8), fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    decoration: const InputDecoration(isDense: true, border: InputBorder.none),
+                  ),
+                ),
+                if (obscure)
+                  TapExpander(
+                    child: GestureDetector(
+                      onTap: toggle,
+                      child: Icon(
+                        visible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        color: const Color(0xFF8E889D),
+                        size: 18,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _button(String label, VoidCallback? onTap, {bool primary = true}) {
+    return TapExpander(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _busy ? null : onTap,
+        child: Container(
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1B192A),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: primary ? const Color(0xFFC09268) : const Color(0xFF5A4D80), width: 1.0),
+          ),
+          child: _busy && primary
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)))
+              : Text(label,
+                  style: TextStyle(
+                    color: primary ? const Color(0xFFE1BC96) : const Color(0xFFB5B0D8),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                  )),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _body() {
+    switch (_step) {
+      case _PwStep.choose:
+        return [
+          const Text('رمز قبلی خود را به یاد دارید؟',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFFE2E0F0), fontSize: 13, fontFamily: AppTheme.fontFamily)),
+          const SizedBox(height: 16),
+          _button('بله، یادم هست', () => setState(() {
+                _forgot = false;
+                _error = null;
+                _step = _PwStep.oldPassword;
+              })),
+          const SizedBox(height: 10),
+          _button('نه، یادم نیست (ارسال پیامک)', _sendSms),
+        ];
+      case _PwStep.oldPassword:
+        return [
+          _field('رمز قبلی', _oldCtrl, obscure: true, visible: _showOld, toggle: () => setState(() => _showOld = !_showOld)),
+          const SizedBox(height: 14),
+          _button('تایید', _verifyOld),
+        ];
+      case _PwStep.smsCode:
+        return [
+          const Text('کد تایید برای شماره شما پیامک شد',
+              style: TextStyle(color: Color(0xFF9E9BB8), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+          const SizedBox(height: 10),
+          _field('کد پیامک‌شده', _codeCtrl, keyboard: TextInputType.number),
+          const SizedBox(height: 6),
+          TapExpander(
+            child: GestureDetector(
+              onTap: _busy ? null : _sendSms,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                child: Text('ارسال دوباره کد',
+                    style: TextStyle(color: Color(0xFFC09268), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _button('تایید', _acceptCode),
+        ];
+      case _PwStep.newPassword:
+        return [
+          _field('رمز جدید', _newCtrl, obscure: true, visible: _showNew, toggle: () => setState(() => _showNew = !_showNew)),
+          const SizedBox(height: 12),
+          _field('تکرار رمز جدید', _repeatCtrl,
+              obscure: true, visible: _showRepeat, toggle: () => setState(() => _showRepeat = !_showRepeat)),
+          const SizedBox(height: 14),
+          _button('ثبت رمز جدید', _submitNew),
+        ];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: NopaDialogContainer(
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.all(20),
+          radius: 20,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('تغییر رمز عبور',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                const SizedBox(height: 18),
+                ..._body(),
+                if (_error != null) ...[
+                  const SizedBox(height: 10),
+                  Text(_error!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                ],
+                const SizedBox(height: 12),
+                _button('انصراف', () => Navigator.pop(context), primary: false),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

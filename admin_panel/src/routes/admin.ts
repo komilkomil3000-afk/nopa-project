@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { authenticateJWT } from '../middleware/auth';
-import { getMyAccess, getAccessMatrix, updateRoleAccess } from '../controllers/accessController';
+import { authenticateJWT, authorizeRoles } from '../middleware/auth';
 import {
   getUsers,
   getUserById,
@@ -34,6 +33,8 @@ import {
   getLevelsAndCertificates,
   replyTicketAdmin,
   resolveTicketAdmin,
+  setUserRole,
+  setUserPanelAccess,
 } from '../controllers/adminController';
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
@@ -41,11 +42,13 @@ import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteFi
 import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
-import { toggleCaravanStatus, bulkTransferMembers, approveAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
+import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
 import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, createMentorRewardRule, deleteMentorRewardRule } from '../controllers/rewardController';
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
+import { listAssetTypes, updateAssetType } from '../controllers/assetController';
+import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -65,22 +68,21 @@ import { getSystemSetting, setSystemSetting } from '../controllers/settingContro
 import { createCaravan, addMemberToCaravan, removeMemberFromCaravan, transferMember, broadcastToCaravan, getCaravanDetails, updateCaravan, bulkAddMembersToCaravan, deleteCaravan, blockCaravanMembers } from '../controllers/caravanController';
 import { getCaravanLeague, getIndividualsLeaderboard, getCaravansLeaderboardDetailed } from '../controllers/leagueController';
 
-import { enforcePermissions, requirePanelAccess } from '../middleware/adminAccess';
+import { restrictNonAdmins, getPanelMe } from '../middleware/adminAccess';
 
 const router = Router();
 
-// 1) signed in  2) admin accounts whose panel login is switched off are stopped here
+// Apply JWT authentication and authorize only admin or mentor roles to the admin panel
 router.use(authenticateJWT as any);
-router.use(requirePanelAccess as any);
-
-// What the signed-in person may do in the panel (the panel calls this right after login)
-router.get('/me/access', getMyAccess as any);
-
-// 3) Default-deny: everyone except the super admin only reaches the requests unlocked by the
-//    permission keys of their role (utils/permissions.ts, edited by the super admin in the panel)
-router.use(enforcePermissions as any);
+router.use(authorizeRoles('admin', 'sub_admin', 'mentor', 'SUPER_MENTOR') as any);
+// Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
+router.use(restrictNonAdmins as any);
 
 // 1. High-Scale User & Contact Directory
+router.get('/panel/me', getPanelMe as any);
+router.put('/users/:id/role', setUserRole as any);
+router.put('/users/:id/panel-access', setUserPanelAccess as any);
+
 router.get('/users', getUsers as any);
 router.post('/users', createUser as any);
 router.put('/users/:id', updateUser as any);
@@ -106,8 +108,6 @@ router.get('/zarik/economy-hub', getEconomyHub as any);
 router.get('/wallet/economy-hub-analytics', getEconomyHubAnalytics as any);
 
 // 3. Role-Based Access Control (RBAC) & Security
-router.get('/roles/matrix', getAccessMatrix as any);
-router.put('/roles/matrix/:roleName', updateRoleAccess as any);
 router.get('/roles', getRolePermissions as any);
 router.post('/roles', updateRolePermissions as any);
 router.post('/security/revoke', revokeAllSessions as any);
@@ -138,7 +138,7 @@ router.delete('/caravans/:id', deleteCaravan as any);
 router.put('/caravans/:id/block-members', blockCaravanMembers as any);
 
 router.get('/asset-conversions', getAssetConversionsAdmin as any);
-router.post('/asset-conversions/:id/approve', approveAssetConversion as any);
+router.post('/asset-conversions/:id/cancel', cancelAssetConversion as any);
 router.get('/tickets', getTickets as any);
 router.post('/tickets/:id/reply', replyTicketAdmin as any);
 router.post('/tickets/:id/resolve', resolveTicketAdmin as any);
@@ -147,6 +147,10 @@ router.post('/challenges', createChallenge as any);
 router.put('/challenges/:id', updateChallenge as any);
 router.patch('/challenges/:id', updateChallenge as any);
 router.delete('/challenges/:id', deleteChallenge as any);
+router.get('/challenges/:id/ranking', getChallengeRanking as any);
+router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
+router.get('/assets', listAssetTypes as any);
+router.put('/assets/:key', updateAssetType as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
 router.patch('/submissions/:id/review', reviewSubmission as any);
@@ -291,3 +295,4 @@ router.put('/instructors/:id', createOrUpdateInstructor as any);
 router.delete('/instructors/:id', deleteInstructor as any);
 
 export default router;
+

@@ -1,4 +1,8 @@
+import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/station_state.dart';
+import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
+import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,7 +12,6 @@ import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
-import 'package:nopa_app/widgets/pending_challenges_dialog.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
 import 'package:nopa_app/main.dart';
 
@@ -40,9 +43,9 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     super.dispose();
   }
 
-  Future<void> _fetchStationsData() async {
+  Future<void> _fetchStationsData({bool force = false}) async {
     try {
-      final stations = await HttpApiService().getStations();
+      final stations = await HttpApiService().getStations(forceRefresh: force);
       final userProgress = await HttpApiService().getUserProgress();
       if (mounted) {
         setState(() {
@@ -77,10 +80,10 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
-    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : 6;
+    final int totalStationNodes = _stations.isNotEmpty ? _stations.length : StationNumbering.count;
 
     return RefreshIndicator(
-      onRefresh: _fetchStationsData,
+      onRefresh: () => _fetchStationsData(force: true),
       color: const Color(0xFFCD8449),
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -160,9 +163,16 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
     final int userLevelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
 
     // Station 1 (index == 0) is the initial station and is always unlocked!
-    bool isLocked = index > 0 && (index + 1) > userLevelFrame && index > user.completedStationsCount;
-    bool isCurrent = (index + 1) == userLevelFrame || (index == 0 && userLevelFrame <= 1);
-    bool isCompleted = (index + 1) < userLevelFrame || index < user.completedStationsCount;
+    // Also locked by the server: release time or manual lock (the server never time-locks mentors)
+    final stationState = StationState.resolve(
+      index: index,
+      levelFrame: userLevelFrame,
+      completedStationsCount: user.completedStationsCount,
+      serverLocked: item['isLocked'] == true,
+    );
+    final bool isLocked = stationState.isLocked;
+    final bool isCurrent = stationState.isCurrent;
+    final bool isCompleted = stationState.isCompleted;
 
     // Count categories and sessions
     final categoriesList = (item['categories'] as List?) ?? [];
@@ -251,32 +261,16 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: Column(
                   children: [
-                    GestureDetector(
+                    TapExpander(child: GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: () async {
                         if (isLocked) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('این منزلگاه هنوز باز نشده است و قفل می‌باشد', style: TextStyle(fontFamily: AppTheme.fontFamily)),
-                              backgroundColor: Colors.grey,
-                            ),
-                          );
+                          AppToast.info(context, 'این منزلگاه هنوز باز نشده است و قفل می‌باشد');
                           return;
                         }
 
-                        final isNewStation = index > 0 && !isCompleted;
-                        final appState = Provider.of<AppRepository>(context, listen: false);
-                        if (isNewStation && appState.hasPendingChallenges) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('شما باید چالش‌هایتان را تکمیل کنید', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                              backgroundColor: Colors.redAccent,
-                              duration: Duration(seconds: 3),
-                            ),
-                          );
-                          PendingChallengesDialog.show(context, appState.uncompletedChallengesCount);
-                          return;
-                        }
+                        // Leaving this page closes any open box
+                        setState(() => _expandedIndices.clear());
 
                         final result = await Navigator.pushNamed(
                           context,
@@ -413,7 +407,14 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              if (isCompleted)
+                              if (isLocked)
+                                SvgPicture.asset(
+                                  'assets/svg_icons/lock02.svg',
+                                  width: 24,
+                                  height: 24,
+                                  fit: BoxFit.contain,
+                                )
+                              else if (isCompleted)
                                 SvgPicture.asset(
                                   'assets/svg_icons/lock01.svg',
                                   width: 24,
@@ -436,15 +437,13 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   fit: BoxFit.contain,
                                 ),
                               const SizedBox(height: 12),
-                              GestureDetector(
+                              TapExpander(child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   setState(() {
-                                    if (isExpanded) {
-                                      _expandedIndices.remove(index);
-                                    } else {
-                                      _expandedIndices.add(index);
-                                    }
+                                    // Only one box open at a time
+                                    _expandedIndices.clear();
+                                    if (!isExpanded) _expandedIndices.add(index);
                                   });
                                 },
                                 child: Padding(
@@ -455,12 +454,12 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                     size: 19,
                                   ),
                                 ),
-                              ),
+                              )),
                             ],
                           ),
                         ],
                       ),
-                    ),
+                    )),
 
                     // Expandable Panel with summary info (Right-aligned in RTL, No dark background box, clean small text, no emojis)
                     AnimatedCrossFade(
@@ -492,7 +491,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'وضعیت منزلگاه: ${isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'قفل شده')}',
+                              'وضعیت منزلگاه: ${isLocked ? 'قفل شده' : (isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'باز'))}',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 color: isCurrent
@@ -538,8 +537,8 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                   isLocked ? 'قفل' : (isCompleted ? 'تکمیل شده' : 'منزلگاه جاری'),
                   style: TextStyle(
                     color: isCurrent ? const Color(0xFF5A3114) : Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w300,
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),

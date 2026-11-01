@@ -1,12 +1,18 @@
+import { isMentorRole } from '../utils/roles';
+import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
-import { isAnyAdmin } from '../utils/roles';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
     if (!req.user) {
       return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+
+    // Mentors and admins only manage challenges; they do not take part in them
+    if (isMentorRole(req.user.role) || req.user.role === 'admin') {
+      return res.status(403).json({ error: 'راهبر و مدیر در چالش شرکت نمی‌کنند و فقط آن را مدیریت می‌کنند' });
     }
 
     const { challengeId, answerText, fileUrl } = req.body;
@@ -31,8 +37,30 @@ export async function submitTask(req: AuthRequest, res: Response) {
       where: { challengeId, studentId: req.user.id }
     });
 
+    if (challenge.type === 'quiz') {
+      return res.status(400).json({ error: 'پاسخ آزمون‌های تستی از مسیر آزمون ثبت می‌شود' });
+    }
+
     if (existingSubmission && existingSubmission.status === 'approved') {
       return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن دریافت گردیده است' });
+    }
+
+    // Awaiting the mentor's verdict: the answer is locked until it is approved or sent back for correction
+    if (existingSubmission && ['pending', 'PENDING_REVIEW'].includes(existingSubmission.status)) {
+      return res.status(409).json({ error: 'پاسخ شما در انتظار بررسی راهبر است و تا اعلام نتیجه قابل ویرایش نیست' });
+    }
+
+    if (challenge.startDate && new Date() < challenge.startDate) {
+      return res.status(400).json({ error: 'این چالش هنوز شروع نشده است' });
+    }
+
+    // A new participation closes with the deadline (a correction requested by the mentor is still allowed)
+    if (!existingSubmission && challenge.dueDate && new Date() > challenge.dueDate) {
+      return res.status(400).json({ error: 'مهلت شرکت در این چالش به پایان رسیده است' });
+    }
+
+    if (challenge.recipientIds.length > 0 && !challenge.recipientIds.includes(req.user.id)) {
+      return res.status(403).json({ error: 'این چالش برای شما تعیین نشده است' });
     }
 
     // Validate caravan isolation: student can only submit to their own caravan's challenge unless it's a re-submission
@@ -47,7 +75,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
         data: {
           answerText,
           fileUrl,
-          status: 'PENDING_REVIEW',
+          status: 'pending',
           score: 0,
           submittedAt: new Date()
         }
@@ -59,10 +87,23 @@ export async function submitTask(req: AuthRequest, res: Response) {
           studentId: req.user.id,
           answerText,
           fileUrl,
-          status: 'PENDING_REVIEW'
+          status: 'pending'
         }
       });
     }
+
+    await prisma.submissionEvent.create({
+      data: {
+        submissionId: submission.id,
+        challengeId,
+        studentId: req.user.id,
+        action: 'submitted',
+        answerText: answerText ?? null,
+        fileUrl: fileUrl ?? null,
+        actorId: req.user.id,
+        actorName: student?.name ?? null
+      }
+    });
 
     // Notify caravan mentor
     if (student?.caravanId) {
@@ -91,8 +132,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
 
 export async function getPendingSubmissions(req: AuthRequest, res: Response) {
   try {
-    // Read-only listing: admins (both levels) may monitor; reviewing stays mentor / super admin
-    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
+    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران به این بخش دسترسی دارند' });
     }
 
@@ -235,7 +275,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
             id: creator.id,
             name: creator.name,
             phoneNumber: creator.phoneNumber,
-            isByAdmin: isAnyAdmin(creator.role)
+            isByAdmin: creator.role === 'admin'
           } : (s.challenge.createdByMentorId?.toLowerCase().includes('admin') ? {
             id: 'admin',
             name: 'مدیر سیستم',
@@ -254,7 +294,7 @@ export async function getPendingSubmissions(req: AuthRequest, res: Response) {
 
 export async function reviewSubmission(req: AuthRequest, res: Response) {
   try {
-    if (!req.user || (req.user.role !== 'mentor' && !isAnyAdmin(req.user.role))) {
+    if (!req.user || (req.user.role !== 'mentor' && req.user.role !== 'admin')) {
       return res.status(403).json({ error: 'تنها راهبران و مدیران می‌توانند تکالیف را تصحیح کنند' });
     }
 
@@ -296,9 +336,24 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
     }
 
-    const reward = score !== undefined ? Number(score) : (submission.challenge.rewardZarik || 200);
+    // The challenge decides what an approval pays (zarik or nakh) and between which bounds the reviewer may choose
+    const assetType = submission.challenge.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+    const assetNames = await getAssetNames();
+    const assetLabel = assetType === 'nakh' ? assetNames.nakh : assetNames.zarik;
+    // Inter-group answers pay nothing to the student: the caravan gets a banner from the admin's ranking
+    const bannerOnly = submission.challenge.category === 'inter_group';
+    const rewardMin = submission.challenge.rewardMin || 0;
+    const rewardMax = submission.challenge.rewardMax || 0;
+    const hasRange = rewardMax > 0;
+    const allowedMin = bannerOnly ? 0 : (hasRange ? rewardMin : (submission.challenge.rewardZarik || 0));
+    const allowedMax = bannerOnly ? 0 : (hasRange ? rewardMax : allowedMin);
+
+    const reward = bannerOnly ? 0 : (score !== undefined ? Number(score) : (hasRange ? rewardMax : (submission.challenge.rewardZarik || 200)));
     if (status === 'approved' && (!Number.isFinite(reward) || reward < 0)) {
       return res.status(400).json({ error: 'مقدار پاداش نامعتبر است' });
+    }
+    if (status === 'approved' && req.user.role === 'mentor' && (!Number.isInteger(reward) || reward < allowedMin || reward > allowedMax)) {
+      return res.status(400).json({ error: allowedMin === allowedMax ? `مقدار پاداش این چالش ${allowedMin} ${assetLabel} است` : `مقدار پاداش باید بین ${allowedMin} و ${allowedMax} ${assetLabel} باشد` });
     }
 
     let updatedSubmission;
@@ -318,24 +373,24 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
-        // Credit student wallet and increment assets
+        // Credit the asset the challenge pays in
         await tx.user.update({
           where: { id: submission.studentId },
-          data: {
-            zarikBalance: { increment: reward }
-          }
+          data: assetType === 'nakh' ? { nakh: { increment: reward } } : { zarikBalance: { increment: reward } }
         });
 
-        // Log transaction in ZarikTransaction
-        await tx.zarikTransaction.create({
-          data: {
-            userId: submission.studentId,
-            amount: reward,
-            category: 'Skill Tasks',
-            reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
-            createdBy: req.user!.id
-          }
-        });
+        // Zarik movements are ledgered; nakh has no ledger table
+        if (assetType === 'zarik' && reward > 0) {
+          await tx.zarikTransaction.create({
+            data: {
+              userId: submission.studentId,
+              amount: reward,
+              category: 'Skill Tasks',
+              reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
+              createdBy: req.user!.id
+            }
+          });
+        }
       }
     });
     } catch (e: any) {
@@ -345,14 +400,30 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       throw e;
     }
 
+    const reviewer = await prisma.user.findUnique({ where: { id: req.user.id }, select: { name: true } });
+    await prisma.submissionEvent.create({
+      data: {
+        submissionId: id,
+        challengeId: submission.challengeId,
+        studentId: submission.studentId,
+        action: status === 'approved' ? 'approved' : 'rejected',
+        feedback: mentorFeedback ?? null,
+        score: status === 'approved' ? reward : 0,
+        actorId: req.user.id,
+        actorName: req.user.role === 'admin' ? 'مدیر سیستم' : (reviewer?.name ?? 'راهبر')
+      }
+    });
+
     // Trigger notification
     await prisma.notification.create({
       data: {
         userId: submission.studentId,
-        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف رد شد ❌',
+        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف نیاز به اصلاح دارد ✍️',
         message: status === 'approved'
-            ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} زریک به ولت شما اضافه گردید.`
-            : `پاسخ شما به چالش "${submission.challenge.title}" رد شد. فیدبک: ${mentorFeedback || 'اصلاح و مجدداً ارسال کنید.'}`,
+            ? (bannerOnly
+              ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد. ${assetNames.derafsh} بر اساس رتبه‌بندی نهایی کاروان‌ها اعطا می‌شود.`
+              : `پاسخ شما به چالش "${submission.challenge.title}" تایید شد و +${reward} ${assetLabel} به حساب شما اضافه گردید.`)
+            : `پاسخ شما به چالش "${submission.challenge.title}" نیاز به اصلاح دارد. پیام راهبر: ${mentorFeedback || '-'}. از بخش چالش‌ها پاسخ را اصلاح و دوباره ارسال کنید.`,
         type: 'alert'
       }
     });
@@ -367,7 +438,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
           data: {
             userId: caravan.mentorId,
             title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
-            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${isAnyAdmin(req.user?.role) ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' زریک)' : 'رد شد'}.`,
+            message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' ' + assetLabel + ')' : 'رد شد'}.`,
             type: 'alert'
           }
         });
@@ -378,5 +449,45 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
   } catch (error) {
     console.error('reviewSubmission error:', error);
     res.status(500).json({ error: 'خطایی در ثبت ارزیابی تکلیف رخ داد' });
+  }
+}
+
+/** Full timeline of one submission: answers, rejections (with the mentor's message) and the approval. */
+export async function getSubmissionHistory(req: AuthRequest, res: Response) {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'کاربر احراز هویت نشده است' });
+    }
+    const { id } = req.params;
+    const submission = await prisma.submission.findUnique({
+      where: { id },
+      include: { challenge: true, student: { select: { caravanId: true } } }
+    });
+    if (!submission) {
+      return res.status(404).json({ error: 'پاسخ مورد نظر یافت نشد' });
+    }
+
+    if (req.user.role === 'student') {
+      if (submission.studentId !== req.user.id) {
+        return res.status(403).json({ error: 'دسترسی غیرمجاز' });
+      }
+    } else if (req.user.role === 'mentor') {
+      const caravans = await prisma.caravan.findMany({ where: { mentorId: req.user.id }, select: { id: true } });
+      const caravanIds = caravans.map(c => c.id);
+      const isOwner = submission.challenge.createdByMentorId === req.user.id ||
+        (submission.student?.caravanId && caravanIds.includes(submission.student.caravanId));
+      if (!isOwner) {
+        return res.status(403).json({ error: 'شما فقط به سابقه‌ی اعضای کاروان خود دسترسی دارید' });
+      }
+    }
+
+    const events = await prisma.submissionEvent.findMany({
+      where: { submissionId: id },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json(events);
+  } catch (error) {
+    console.error('getSubmissionHistory error:', error);
+    res.status(500).json({ error: 'خطایی در دریافت تاریخچه رخ داد' });
   }
 }

@@ -27,7 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('token');
   const modal = document.getElementById('login-modal');
 
-  if (token && token !== 'dev-bypass' && modal) modal.style.visibility = 'hidden';
+  if (token && token !== 'dev-bypass') {
+    if (modal) modal.style.setProperty('display', 'none', 'important');
+  }
 
   const form = document.getElementById('admin-login-form');
   if (form) {
@@ -47,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch('/api/v1/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber, password, panel: true })
+          body: JSON.stringify({ phoneNumber, password })
         });
         const data = await res.json();
         if (res.ok && data.token) {
@@ -55,11 +57,13 @@ document.addEventListener('DOMContentLoaded', () => {
           localStorage.setItem('nopa_admin_token', data.token);
           localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin', identityVerified: true }));
           currentUser = JSON.parse(localStorage.getItem('nopa_admin_user') || '{}');
-
-          // The login screen stays up until the server confirms panel access (see showDashboard)
+          
+          const modal = document.getElementById('login-modal');
+          if (modal) modal.style.setProperty('display', 'none', 'important');
+          
           showDashboard();
         } else {
-          showToast(data.error || 'اطلاعات ورود اشتباه است', 'error');
+          alert(data.error || 'اطلاعات ورود اشتباه است');
         }
       } catch (err) {
         console.error('Login error:', err);
@@ -78,44 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showLogin() {
   const modal = document.getElementById('login-modal');
-  if (modal) { modal.style.display = 'flex'; modal.style.visibility = ''; }
+  if (modal) modal.style.display = 'flex';
   const layout = document.getElementById('app-layout');
   if (layout) layout.style.display = 'none';
 }
 
-// Ask the server what this person may do in the panel. Nothing is shown until it says yes, so a
-// person without panel permission never sees the dashboard (not even for a moment).
-async function loadMyAccess() {
-  const t = localStorage.getItem('nopa_admin_token') || localStorage.getItem('token') || '';
-  try {
-    const res = await fetch('/api/v1/admin/me/access', { headers: { 'Authorization': `Bearer ${t}` } });
-    let data = {};
-    try { data = await res.json(); } catch (_) { /* not JSON */ }
-    if (res.ok) return data;
-    // 401/403: no panel permission, or the session is over -> say why, forget the token, back to login
-    showToast(data.error || 'ورود به پنل امکان‌پذیر نیست', 'error');
-    localStorage.removeItem('token');
-    localStorage.removeItem('nopa_admin_token');
-    localStorage.removeItem('nopa_admin_user');
-    showLogin();
-    return null;
-  } catch (err) {
-    showToast('ارتباط با سرور برقرار نشد. دوباره تلاش کنید.', 'error');
-    showLogin();
-    return null;
-  }
-}
-
-async function showDashboard() {
-  const access = await loadMyAccess();
-  if (!access) return;
-  if (window.NopaRoles) NopaRoles.setAccess(access);
-  // The server's role is authoritative (it may have changed since the last login)
-  if (access.role && currentUser && currentUser.role !== access.role) {
-    currentUser.role = access.role;
-    try { localStorage.setItem('nopa_admin_user', JSON.stringify(currentUser)); } catch (_) {}
-  }
-
+function showDashboard() {
+  if (typeof window.loadAssetNames === 'function') window.loadAssetNames();
   const modal = document.getElementById('login-modal');
   if (modal) modal.style.setProperty('display', 'none', 'important');
   const layout = document.getElementById('app-layout');
@@ -124,10 +97,9 @@ async function showDashboard() {
   // Set current user details
   document.getElementById('current-user-avatar').textContent = currentUser.name ? currentUser.name.substring(0, 2) : 'مد';
   document.getElementById('current-user-name').textContent = currentUser.name || 'مدیر سیستم';
-  document.getElementById('current-user-role').textContent = `نقش: ${window.NopaRoles ? NopaRoles.label(currentUser.role) : currentUser.role}`;
-  if (window.NopaRoles) NopaRoles.applyMenu(currentUser.role);
-  // Admins (SUB_ADMIN) cannot read users / mentors, so don't fire those loads for them
-  const restrictedRole = !!(window.NopaRoles && NopaRoles.allowedTabs(currentUser.role));
+  document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
+
+  if (typeof applyPanelPermissions === 'function') applyPanelPermissions();
 
   // Route according to current URL hash
   if (typeof handleHashRouting === 'function') {
@@ -138,11 +110,9 @@ async function showDashboard() {
 
   // Load initial data
   if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
-  if (!restrictedRole) {
-    if (typeof window.loadUsersData === 'function') window.loadUsersData();
-    if (typeof window.loadAllUsersDropdown === 'function') window.loadAllUsersDropdown();
-    if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
-  }
+  if (typeof window.loadUsersData === 'function') window.loadUsersData();
+  if (typeof window.loadAllUsersDropdown === 'function') window.loadAllUsersDropdown();
+  if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
   if (typeof window.loadLmsStationsData === 'function') {
     window.loadLmsStationsData();
   }
@@ -163,19 +133,27 @@ window.handleAdminLogin = async function() {
     const res = await fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber, password, panel: true })
+      body: JSON.stringify({ phoneNumber, password })
     });
     const data = await res.json();
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('nopa_admin_token', data.token);
-      localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin' }));
       localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
-      // A fresh load opens the panel through showDashboard, which checks access first
+
+      const modal = document.getElementById('login-modal') || document.getElementById('login-overlay');
+      if (modal) modal.style.setProperty('display', 'none', 'important');
+      const screen = document.getElementById('login-screen');
+      if (screen) screen.style.display = 'none';
+      document.body.classList.remove('modal-open');
+
+      // Trigger initial dashboard load
+      if (typeof loadDashboardStats === 'function') loadDashboardStats();
+      if (typeof loadUsers === 'function') loadUsers();
+      if (typeof loadMentorsTab === 'function') loadMentorsTab();
       window.location.reload();
     } else {
-      // Denied accounts (no panel permission) stay on this screen with the reason; no token was issued
-      showToast(data.error || 'اطلاعات ورود نادرست است', 'error');
+      alert(data.error || 'اطلاعات ورود نادرست است');
     }
   } catch (err) {
     console.error('Login fetch failed:', err);
@@ -662,25 +640,21 @@ async function request(url, options = {}) {
     'Authorization': `Bearer ${currentToken}`
   };
   const res = await fetch(url, options);
+  if (res.status === 403) {
+    // 403 from the permission layer (e.g. a sub admin without this section) is not an expired
+    // session: show the server's reason and keep the user signed in. Only a bad/expired token logs out.
+    let reason = '';
+    try { reason = (await res.clone().json()).error || ''; } catch (_) { /* not JSON */ }
+    if (reason && !/توکن|نشست|مسدود|IP/.test(reason)) {
+      showToast(reason, 'error');
+      return res;
+    }
+  }
   if (res.status === 401 || res.status === 403) {
-    // 403 is also used for "your role may not do this" (e.g. an admin opening a super-admin-only
-    // action). That must NOT log the person out; only real session problems do.
-    let serverMsg = '';
-    try { serverMsg = (await res.clone().json()).error || ''; } catch (e) { /* not JSON */ }
-    const sessionProblem = res.status === 401 || !currentToken || /توکن|IP|مسدود|تعلیق|مجوز ورود/.test(serverMsg);
-    if (!sessionProblem) {
-      showToast(serverMsg || 'شما دسترسی لازم برای این عملیات را ندارید', 'error');
-      throw new Error('Forbidden');
-    }
-    // Session expired or unauthorized: non-blocking toast, clear every stored token key
-    // (a leftover 'token' key used to re-trigger this on every page load)
-    // Only warn if a token was actually sent; pre-login background loads have none.
-    if (currentToken) {
-      showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید. لطفاً دوباره وارد شوید.', 'error');
-    }
+    // Session expired or unauthorized: non-blocking toast, only if a token was actually sent
+    if (currentToken) showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید', 'error');
     localStorage.removeItem('token');
     localStorage.removeItem('nopa_admin_token');
-    localStorage.removeItem('nopa_admin_user');
     showLogin();
     throw new Error('Unauthorized');
   }
@@ -690,6 +664,8 @@ async function request(url, options = {}) {
 const HASH_TAB_MAP = {
   '#users': 'users-tab',
   '#users-tab': 'users-tab',
+  '#assets': 'assets-tab',
+  '#assets-tab': 'assets-tab',
   '#rewards': 'rewards-tab',
   '#rewards-tab': 'rewards-tab',
   '#levels': 'levels-tab',
@@ -735,6 +711,7 @@ const HASH_TAB_MAP = {
 
 const TAB_REVERSE_HASH_MAP = {
   'users-tab': 'users',
+  'assets-tab': 'assets',
   'rewards-tab': 'rewards',
   'levels-tab': 'levels',
   'mentors-profile-tab': 'mentors',
@@ -757,10 +734,6 @@ const TAB_REVERSE_HASH_MAP = {
 // Switch tabs with URL Hash updates
 function switchTab(tabId, updateUrl = true) {
   if (!tabId) tabId = 'users-tab';
-  // Role guard: a tab the role cannot use falls back to its first allowed tab
-  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, tabId)) {
-    tabId = NopaRoles.defaultTab(currentUser.role);
-  }
 
   // Automatically dismiss user detail drawer when navigating between pages/tabs
   if (typeof window.closeUserDetailDrawer === 'function') {
@@ -804,6 +777,7 @@ function switchTab(tabId, updateUrl = true) {
     'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا' },
     'levels-tab': { title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه' },
     'analytics-tab': { title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران' },
+    'assets-tab': { title: 'نام دارایی‌ها', desc: 'تغییر نام زریک، کلاف، قالیچه و درفش در اپ، پنل و پیام‌ها' },
     'rewards-tab': { title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک' },
     'roles-tab': { title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا' },
     'caravans-tab': { title: 'کاروان‌ها و مربیان', desc: 'گزارش پیشرفت گروهی کاروان‌ها و ارزیابی مربیان' },
@@ -855,13 +829,14 @@ function switchTab(tabId, updateUrl = true) {
   } else if (tabId === 'lms-tab' || tabId === 'stations-tab') {
     if (typeof window.fetchLiveLmsStations === 'function') window.fetchLiveLmsStations();
     else if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
+  } else if (tabId === 'assets-tab') {
+    window.loadAssetNames();
   } else if (tabId === 'rewards-tab') {
     loadLedger();
     loadZarikAnalytics();
     if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
     if (typeof loadRewardRules === 'function') loadRewardRules();
   } else if (tabId === 'roles-tab') {
-    if (typeof window.loadAccessMatrix === 'function') window.loadAccessMatrix();
     loadRolePermissions();
   } else if (tabId === 'audit-tab') {
     loadAuditLogs();
@@ -1011,11 +986,11 @@ function populateCaravanDropdowns(caravans) {
   }
 
   if (newChalSelect) {
-    newChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+    newChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (editChalSelect) {
-    editChalSelect.innerHTML = `<option value="all">🌐 عمومی (همه کاروان‌ها و راهبران)</option>` + optionsHtml;
+    editChalSelect.innerHTML = `<option value="inter_group">🌍 عمومی (میان‌گروهی)</option>` + optionsHtml;
   }
 
   if (typeof populateSubmissionsFilterDropdowns === 'function') {
@@ -1089,12 +1064,12 @@ function renderAdminChallenges(challenges) {
 
     // Type badge
     let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
-    if (c.type === 'quiz' || c.type === 'step_by_step_quiz') {
+    if (c.type === 'quiz') {
       typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
-    } else if (c.type === 'skill') {
-      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-lightbulb"></i> چالش مهارتی</span>`;
+    } else if (c.type === 'skill' || c.type === 'text') {
+      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     } else if (c.type === 'file') {
-      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-file-arrow-up"></i> ارسال فایل</span>`;
+      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     }
 
     // Submissions participation
@@ -1119,7 +1094,7 @@ function renderAdminChallenges(challenges) {
         <td>${creatorBadge}</td>
         <td style="white-space: nowrap;">
           <div style="margin-bottom: 6px;">${typeBadge}</div>
-          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid fa-coins"></i> ${c.rewardZarik || 50} زریک</div>
+          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
         </td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
@@ -1127,6 +1102,7 @@ function renderAdminChallenges(challenges) {
             <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-list-check"></i> مراحل
             </button>
+            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" onclick="window.openChallengeRanking('${c.id}')" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
             <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
@@ -1186,11 +1162,231 @@ window.handleChallengeTypeChange = function(mode) {
   const section = document.getElementById(`${mode}-chal-questions-section`);
   if (!typeSelect || !section) return;
 
-  if (typeSelect.value === 'step_by_step_quiz') {
+  if (typeSelect.value === 'quiz') {
     section.style.display = 'block';
   } else {
     section.style.display = 'none';
   }
+};
+
+// Reward of a challenge as "min تا max نخ/زریک" (fixed amount when no range is set).
+window.formatChallengeReward = function(c) {
+  const unit = c.rewardAssetType === 'nakh' ? 'کلاف' : 'زریک';
+  const min = Number(c.rewardMin) || 0;
+  const max = Number(c.rewardMax) || 0;
+  if (max > 0) return min === max ? `${max} ${unit}` : `${min} تا ${max} ${unit}`;
+  return `${c.rewardZarik || 50} ${unit}`;
+};
+
+// Reads + validates the reward fields of the create ('new') / edit ('edit') form. Returns null after alerting.
+window.readChallengeReward = function(mode) {
+  if (document.getElementById(`${mode}-chal-caravan-id`)?.value === 'inter_group') {
+    return { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0, rewardZarik: 0 };
+  }
+  const rewardAssetType = document.getElementById(`${mode}-chal-asset`)?.value === 'nakh' ? 'nakh' : 'zarik';
+  const rewardMin = Number(document.getElementById(`${mode}-chal-reward-min`)?.value);
+  const rewardMax = Number(document.getElementById(`${mode}-chal-reward-max`)?.value);
+  if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax <= 0) {
+    alert('حداقل و حداکثر پاداش را به صورت عدد صحیح وارد کنید (حداکثر بزرگ‌تر از صفر).');
+    return null;
+  }
+  if (rewardMin > rewardMax) {
+    alert('حداقل پاداش نمی‌تواند از حداکثر بیشتر باشد.');
+    return null;
+  }
+  return { rewardAssetType, rewardMin, rewardMax, rewardZarik: rewardMax };
+};
+
+// Shows the length of the challenge computed from its start and end dates (read-only).
+window.updateChallengeDuration = function(mode) {
+  const el = document.getElementById(`${mode}-chal-duration`);
+  if (!el) return;
+  const start = document.getElementById(`${mode}-chal-start-date`)?.value;
+  const due = document.getElementById(`${mode}-chal-due-date`)?.value;
+  if (!due) { el.textContent = 'مهلت: -'; return; }
+  const from = start ? new Date(`${start}T00:00:00`) : new Date(new Date().toDateString());
+  const days = Math.round((new Date(`${due}T00:00:00`) - from) / 86400000) + 1;
+  el.textContent = days > 0 ? `مهلت: ${days} روز` : 'تاریخ پایان قبل از شروع است';
+};
+
+// Inter-group challenges pay no zarik/kalaf: the only reward is the caravan banner (derafsh) given by the admin's ranking.
+window.handleChallengeAudienceChange = function(mode) {
+  const inter = document.getElementById(`${mode}-chal-caravan-id`)?.value === 'inter_group';
+  const assetBox = document.getElementById(`${mode}-chal-asset`)?.parentElement;
+  const rangeRow = document.getElementById(`${mode}-chal-reward-min`)?.parentElement?.parentElement;
+  [assetBox, rangeRow].forEach(el => { if (el) el.style.display = inter ? 'none' : ''; });
+  let note = document.getElementById(`${mode}-chal-banner-note`);
+  if (!note && rangeRow) {
+    note = document.createElement('div');
+    note.id = `${mode}-chal-banner-note`;
+    note.style.cssText = 'font-size: 12px; color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
+    note.innerHTML = '🚩 پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
+    rangeRow.parentElement.insertBefore(note, rangeRow);
+  }
+  if (note) note.style.display = inter ? 'block' : 'none';
+};
+
+// ---- Ranking of the caravans in an inter-group challenge ----
+window.openChallengeRanking = async function(challengeId) {
+  const modal = document.getElementById('ranking-modal');
+  const body = document.getElementById('ranking-body');
+  if (!modal || !body) return;
+  body.innerHTML = '<div style="color:#94a3b8;">در حال بارگذاری...</div>';
+  modal.style.display = 'flex';
+  try {
+    const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`);
+    const data = await res.json();
+    if (!res.ok) { body.innerHTML = `<div style="color:#f87171;">${esc(data.error || 'خطا')}</div>`; return; }
+    document.getElementById('ranking-title').textContent = `رتبه‌بندی کاروان‌ها: ${data.challenge.title}`;
+    const names = window.assetNamesMap || {};
+    const tierName = { gold: names.derafsh_gold || 'درفش طلایی', silver: names.derafsh_silver || 'درفش نقره‌ای', bronze: names.derafsh_bronze || 'درفش برنزی', cloth: names.derafsh_cloth || 'درفش پارچه‌ای' };
+    const tierColor = { gold: '#fbbf24', silver: '#cbd5e1', bronze: '#d97706', cloth: '#94a3b8' };
+
+    if (data.challenge.finalized) {
+      body.innerHTML = '<div style="margin-bottom:10px; color:#34d399;"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
+        data.result.map(r => `<div style="display:flex; justify-content:space-between; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.04); border-radius:8px;"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
+      return;
+    }
+    if (!data.caravans.length) {
+      body.innerHTML = '<div style="color:#94a3b8;">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
+      return;
+    }
+    const places = Math.min(3, data.caravans.length);
+    const placeLabel = ['رتبه‌ی اول (' + tierName.gold + ')', 'رتبه‌ی دوم (' + tierName.silver + ')', 'رتبه‌ی سوم (' + tierName.bronze + ')'];
+    const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
+    let html = `<div style="margin-bottom:12px; color:#94a3b8;">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
+    for (let i = 0; i < places; i++) {
+      html += `<label style="display:block; font-size:12px; font-weight:bold; margin:10px 0 4px; color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]};">${placeLabel[i]}</label>
+        <select class="ranking-select" style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:white;">${options}</select>`;
+    }
+    html += `<button type="button" onclick="window.submitChallengeRanking('${challengeId}', ${places})" style="margin-top:16px; width:100%; padding:10px; background:#fbbf24; color:#1e293b; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div style="color:#f87171;">خطا در ارتباط با سرور</div>';
+  }
+};
+
+window.submitChallengeRanking = async function(challengeId, places) {
+  const ranking = Array.from(document.querySelectorAll('#ranking-body .ranking-select')).map(s => s.value);
+  if (ranking.length !== places || ranking.some(v => !v) || new Set(ranking).size !== places) {
+    alert('برای هر رتبه یک کاروان متفاوت انتخاب کنید.');
+    return;
+  }
+  if (!confirm('رتبه‌بندی نهایی می‌شود و قابل ویرایش نیست. ادامه می‌دهید؟')) return;
+  const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ranking })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(data.error || 'خطا در ثبت رتبه‌بندی'); return; }
+  await window.openChallengeRanking(challengeId);
+};
+
+// ---- Editable asset names ----
+// The panel's texts are written with the default names. Once the server's names are loaded every text node
+// (and placeholder/title) that contains a default name is rewritten to the current one, and a MutationObserver
+// does the same for content rendered later. Names change on page refresh, not live.
+const DEFAULT_ASSET_NAMES = {
+  zarik: 'زریک', nakh: 'کلاف', farsh: 'قالیچه', derafsh: 'درفش',
+  derafsh_gold: 'درفش طلایی', derafsh_silver: 'درفش نقره‌ای', derafsh_bronze: 'درفش برنزی', derafsh_cloth: 'درفش پارچه‌ای'
+};
+const ASSET_REPLACE_ORDER = ['derafsh_gold', 'derafsh_silver', 'derafsh_bronze', 'derafsh_cloth', 'derafsh', 'zarik', 'nakh', 'farsh'];
+window.assetNamesMap = { ...DEFAULT_ASSET_NAMES };
+window.assetName = key => (window.assetNamesMap && window.assetNamesMap[key]) || DEFAULT_ASSET_NAMES[key] || key;
+
+(function() {
+  let activeRules = [];
+  const processed = new WeakMap();
+  let observer = null;
+
+  function convert(text) {
+    if (!text || !activeRules.length) return text;
+    let out = text;
+    // default -> token first, so a new name containing another default word is never replaced twice
+    activeRules.forEach((r, i) => { out = out.split(r.from).join(`\u0001${i}\u0001`); });
+    activeRules.forEach((r, i) => { out = out.split(`\u0001${i}\u0001`).join(r.to); });
+    return out;
+  }
+
+  function processTextNode(node) {
+    const value = node.nodeValue;
+    if (!value || processed.get(node) === value) return;
+    const next = convert(value);
+    processed.set(node, next);
+    if (next !== value) node.nodeValue = next;
+  }
+
+  function processElement(el) {
+    if (el.nodeType === 3) { processTextNode(el); return; }
+    if (el.nodeType !== 1 || /^(SCRIPT|STYLE|TEXTAREA)$/.test(el.tagName)) return;
+    ['placeholder', 'title'].forEach(attr => {
+      const v = el.getAttribute && el.getAttribute(attr);
+      if (v) { const n = convert(v); if (n !== v) el.setAttribute(attr, n); }
+    });
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let node = walker.nextNode();
+    while (node) {
+      if (node.nodeType === 3) {
+        if (!/^(SCRIPT|STYLE|TEXTAREA)$/.test(node.parentNode.tagName)) processTextNode(node);
+      } else if (node.getAttribute) {
+        ['placeholder', 'title'].forEach(attr => {
+          const v = node.getAttribute(attr);
+          if (v) { const n = convert(v); if (n !== v) node.setAttribute(attr, n); }
+        });
+      }
+      node = walker.nextNode();
+    }
+  }
+
+  window.applyAssetNames = function() {
+    activeRules = ASSET_REPLACE_ORDER
+      .map(k => ({ from: DEFAULT_ASSET_NAMES[k], to: window.assetName(k) }))
+      .filter(r => r.from !== r.to);
+    if (!activeRules.length) return;
+    processElement(document.body);
+    if (!observer) {
+      observer = new MutationObserver(muts => {
+        muts.forEach(m => {
+          if (m.type === 'characterData') processTextNode(m.target);
+          else m.addedNodes.forEach(n => processElement(n));
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+  };
+})();
+
+window.loadAssetNames = async function() {
+  const box = document.getElementById('asset-names-list');
+  try {
+    const res = await request('/api/v1/admin/assets');
+    const rows = await res.json();
+    if (!res.ok) return;
+    window.assetNamesMap = Object.fromEntries(rows.map(r => [r.key, r.nameFa]));
+    window.applyAssetNames();
+    if (!box) return;
+    box.innerHTML = rows.map(r => `
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px; color:#94a3b8; min-width:78px;">${esc(r.key)}</span>
+        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:12.5px;">
+        <button type="button" onclick="window.saveAssetName('${r.key}')" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
+      </div>`).join('');
+  } catch (e) { console.error('loadAssetNames error', e); }
+};
+
+window.saveAssetName = async function(key) {
+  const nameFa = document.getElementById(`asset-name-${key}`)?.value.trim();
+  if (!nameFa) { alert('نام دارایی نمی‌تواند خالی باشد.'); return; }
+  const res = await request(`/api/v1/admin/assets/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nameFa })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(data.error || 'خطا در ذخیره'); return; }
+  window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
+  alert('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.');
 };
 
 window.addQuestionRow = function(mode, initialData = null) {
@@ -1198,9 +1394,9 @@ window.addQuestionRow = function(mode, initialData = null) {
   if (!container) return;
 
   const qIndex = container.children.length + 1;
-  const qText = initialData ? (initialData.question || initialData.q || '') : '';
+  const qText = initialData ? (initialData.q || initialData.question || '') : '';
   const opts = initialData && Array.isArray(initialData.options) ? initialData.options : ['', '', '', ''];
-  const correctIdx = initialData && initialData.correctIndex !== undefined ? initialData.correctIndex : 0;
+  const correctIdx = initialData && initialData.correct !== undefined ? initialData.correct : 0;
 
   const card = document.createElement('div');
   card.className = 'challenge-q-card';
@@ -1213,7 +1409,7 @@ window.addQuestionRow = function(mode, initialData = null) {
       </button>
     </div>
     <div style="margin-bottom: 8px;">
-      <input type="text" class="chal-q-title" required placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+      <input type="text" class="chal-q-title" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
     </div>
     <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
@@ -1234,7 +1430,7 @@ window.populateStationDropdownForChallenges = function(selectId, selectedId) {
   const stations = window.lmsStationsMasterList || [];
   let html = '<option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>';
   stations.forEach((st, idx) => {
-    const num = st.orderIndex || (idx + 1);
+    const num = st.orderIndex ?? (idx + 1);
     const title = st.title || `منزلگاه ${num}`;
     const isSel = (selectedId && (st.id === selectedId || st.id == selectedId)) ? 'selected' : '';
     html += `<option value="${st.id}" ${isSel}>📍 ${esc(title)} (منزلگاه ${num})</option>`;
@@ -1254,8 +1450,9 @@ window.openCreateChallengeModal = function() {
   const form = document.getElementById('create-challenge-form');
   if (form) form.reset();
 
-  const rewardInput = document.getElementById('new-chal-reward');
-  if (rewardInput) rewardInput.value = '50';
+  document.getElementById('new-chal-asset').value = 'zarik';
+  document.getElementById('new-chal-reward-min').value = '10';
+  document.getElementById('new-chal-reward-max').value = '50';
 
   const caravanSelect = document.getElementById('new-chal-caravan-id');
   const mentorNotice = document.getElementById('new-chal-mentor-notice');
@@ -1278,7 +1475,7 @@ window.openCreateChallengeModal = function() {
   } else {
     if (caravanSelect) {
       caravanSelect.disabled = false;
-      caravanSelect.value = 'all';
+      caravanSelect.value = 'inter_group';
     }
     if (mentorNotice) {
       mentorNotice.style.display = 'none';
@@ -1286,6 +1483,7 @@ window.openCreateChallengeModal = function() {
   }
 
   window.populateStationDropdownForChallenges('new-chal-station-id', '');
+  window.handleChallengeAudienceChange('new');
 
   const qContainer = document.getElementById('new-chal-questions-list');
   if (qContainer) {
@@ -1313,8 +1511,9 @@ window.submitCreateChallenge = async function(event) {
   event.preventDefault();
 
   const title = document.getElementById('new-chal-title')?.value.trim();
-  const rewardZarik = Number(document.getElementById('new-chal-reward')?.value || 50);
-  let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'all';
+  const reward = window.readChallengeReward('new');
+  if (!reward) return;
+  let caravanId = document.getElementById('new-chal-caravan-id')?.value || 'inter_group';
   if (currentUser && currentUser.role === 'mentor') {
     const myCaravan = (window.cachedAdminCaravans || []).find(cv => 
       cv.mentorId === currentUser.id || cv.mentor?.id === currentUser.id || cv.id === currentUser.caravanId
@@ -1323,19 +1522,24 @@ window.submitCreateChallenge = async function(event) {
       caravanId = myCaravan.id;
     }
   }
-  const type = document.getElementById('new-chal-type')?.value || 'step_by_step_quiz';
+  const type = document.getElementById('new-chal-type')?.value || 'quiz';
   const description = document.getElementById('new-chal-desc')?.value.trim();
   const stationId = document.getElementById('new-chal-station-id')?.value || null;
   const dueDate = document.getElementById('new-chal-due-date')?.value || null;
+  const startDate = document.getElementById('new-chal-start-date')?.value || null;
+  if (startDate && dueDate && startDate > dueDate) {
+    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    return;
+  }
 
   if (!title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
     return;
   }
 
-  // Parse questions if step_by_step_quiz
+  // Parse questions if quiz
   let questions = [];
-  if (type === 'step_by_step_quiz') {
+  if (type === 'quiz') {
     const cards = document.querySelectorAll('#new-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
@@ -1346,9 +1550,9 @@ window.submitCreateChallenge = async function(event) {
 
       questions.push({
         step: idx + 1,
-        question: qTitle,
+        q: qTitle,
         options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
-        correctIndex: correctIndex
+        correct: correctIndex
       });
     });
   }
@@ -1358,9 +1562,10 @@ window.submitCreateChallenge = async function(event) {
       title,
       description,
       type,
-      rewardZarik,
+      ...reward,
       stationId: stationId || undefined,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+      startDate: startDate ? new Date(`${startDate}T00:00:00+03:30`).toISOString() : undefined,
+      dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : undefined,
       caravanId: caravanId === 'all' ? undefined : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };
@@ -1397,13 +1602,15 @@ window.openEditChallengeModal = function(challengeId) {
 
   document.getElementById('edit-chal-id').value = c.id;
   document.getElementById('edit-chal-title').value = c.title || '';
-  document.getElementById('edit-chal-reward').value = c.rewardZarik || 50;
+  document.getElementById('edit-chal-asset').value = c.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+  document.getElementById('edit-chal-reward-min').value = c.rewardMin || 0;
+  document.getElementById('edit-chal-reward-max').value = c.rewardMax || c.rewardZarik || 50;
   document.getElementById('edit-chal-desc').value = c.description || '';
-  document.getElementById('edit-chal-type').value = c.type || 'step_by_step_quiz';
+  document.getElementById('edit-chal-type').value = c.type === 'quiz' ? 'quiz' : 'text';
 
   const caravanSelect = document.getElementById('edit-chal-caravan-id');
   if (caravanSelect) {
-    caravanSelect.value = c.caravanInfo?.id || c.caravanId || 'all';
+    caravanSelect.value = c.category === 'inter_group' ? 'inter_group' : (c.caravanInfo?.id || c.caravanId || 'inter_group');
     if (currentUser && currentUser.role === 'mentor') {
       caravanSelect.disabled = true;
     } else {
@@ -1416,6 +1623,11 @@ window.openEditChallengeModal = function(challengeId) {
   if (editDueDate) {
     editDueDate.value = c.dueDate ? new Date(c.dueDate).toISOString().split('T')[0] : '';
   }
+  const editStartDate = document.getElementById('edit-chal-start-date');
+  if (editStartDate) {
+    editStartDate.value = c.startDate ? new Date(c.startDate).toISOString().split('T')[0] : '';
+  }
+  window.updateChallengeDuration('edit');
 
   // Creator badge
   const badgeEl = document.getElementById('edit-chal-creator-badge');
@@ -1444,6 +1656,7 @@ window.openEditChallengeModal = function(challengeId) {
   }
 
   window.handleChallengeTypeChange('edit');
+  window.handleChallengeAudienceChange('edit');
   modal.style.display = 'flex';
 };
 
@@ -1457,12 +1670,18 @@ window.submitEditChallenge = async function(event) {
 
   const id = document.getElementById('edit-chal-id')?.value;
   const title = document.getElementById('edit-chal-title')?.value.trim();
-  const rewardZarik = Number(document.getElementById('edit-chal-reward')?.value || 50);
-  const type = document.getElementById('edit-chal-type')?.value || 'step_by_step_quiz';
+  const reward = window.readChallengeReward('edit');
+  if (!reward) return;
+  const type = document.getElementById('edit-chal-type')?.value || 'quiz';
   const description = document.getElementById('edit-chal-desc')?.value.trim();
   const caravanId = document.getElementById('edit-chal-caravan-id')?.value;
   const stationId = document.getElementById('edit-chal-station-id')?.value || null;
   const dueDate = document.getElementById('edit-chal-due-date')?.value || null;
+  const startDate = document.getElementById('edit-chal-start-date')?.value || null;
+  if (startDate && dueDate && startDate > dueDate) {
+    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    return;
+  }
 
   if (!id || !title || !description) {
     alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
@@ -1470,7 +1689,7 @@ window.submitEditChallenge = async function(event) {
   }
 
   let questions = [];
-  if (type === 'step_by_step_quiz') {
+  if (type === 'quiz') {
     const cards = document.querySelectorAll('#edit-chal-questions-list .challenge-q-card');
     cards.forEach((card, idx) => {
       const qTitle = card.querySelector('.chal-q-title')?.value.trim() || `مرحله ${idx + 1}`;
@@ -1481,9 +1700,9 @@ window.submitEditChallenge = async function(event) {
 
       questions.push({
         step: idx + 1,
-        question: qTitle,
+        q: qTitle,
         options: options.length > 0 ? options : ['گزینه ۱', 'گزینه ۲', 'گزینه ۳', 'گزینه ۴'],
-        correctIndex: correctIndex
+        correct: correctIndex
       });
     });
   }
@@ -1493,9 +1712,10 @@ window.submitEditChallenge = async function(event) {
       title,
       description,
       type,
-      rewardZarik,
+      ...reward,
       stationId: stationId || null,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+      startDate: startDate ? new Date(`${startDate}T00:00:00+03:30`).toISOString() : null,
+      dueDate: dueDate ? new Date(`${dueDate}T23:59:59+03:30`).toISOString() : null,
       caravanId: caravanId === 'all' ? null : caravanId,
       questions: questions.length > 0 ? questions : undefined
     };
@@ -1521,7 +1741,7 @@ window.submitEditChallenge = async function(event) {
 };
 
 window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
-  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف و پاسخ‌های ثبت‌شده برای این چالش نیز حذف خواهند شد.`)) {
+  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف، پاسخ‌ها و تاریخچه‌ی ثبت‌شده برای این چالش نیز حذف می‌شوند. پاداش‌هایی که قبلاً پرداخت شده برگردانده نمی‌شود.`)) {
     return;
   }
 
@@ -1557,7 +1777,7 @@ window.openChallengeStepsModal = function(challengeId) {
   if (!modal || !bodyEl) return;
 
   if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${esc(c.title)}`;
-  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${c.rewardZarik || 50} زریک 🪙 | نوع: ${c.type}`;
+  if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} 🪙 | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
 
@@ -1571,9 +1791,9 @@ window.openChallengeStepsModal = function(challengeId) {
     `;
 
     qList.forEach((q, idx) => {
-      const qText = q.question || q.q || q.title || `مرحله شماره ${idx + 1}`;
+      const qText = q.q || q.question || q.title || `مرحله شماره ${idx + 1}`;
       const opts = Array.isArray(q.options) ? q.options : (Array.isArray(q.opts) ? q.opts : []);
-      const correctIdx = q.correctIndex !== undefined ? q.correctIndex : (q.correct !== undefined ? q.correct : -1);
+      const correctIdx = q.correct !== undefined ? q.correct : -1;
 
       html += `
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
@@ -1957,7 +2177,7 @@ window.openViewSubmissionModal = function(submissionId) {
   const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
 
   document.getElementById('view-sub-chal-title').textContent = chalTitle;
-  document.getElementById('view-sub-chal-reward').innerHTML = `<i class="fa-solid fa-coins"></i> پاداش پایه چالش: ${defaultReward} زریک`;
+  document.getElementById('view-sub-chal-reward').innerHTML = `<i class="fa-solid fa-coins"></i> پاداش چالش: ${window.formatChallengeReward(s.challenge || {})}`;
   document.getElementById('view-sub-date').textContent = `تاریخ ارسال: ${dateStr}`;
 
   // Status Badge
@@ -1971,7 +2191,7 @@ window.openViewSubmissionModal = function(submissionId) {
     } else if (s.status === 'approved') {
       metaBadge.style.background = 'rgba(16, 185, 129, 0.2)';
       metaBadge.style.color = '#34d399';
-      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} زریک)`;
+      metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} ${s.challenge?.rewardAssetType === 'nakh' ? 'کلاف' : 'زریک'})`;
     } else {
       metaBadge.style.background = 'rgba(239, 68, 68, 0.2)';
       metaBadge.style.color = '#f87171';
@@ -2025,6 +2245,11 @@ window.openViewSubmissionModal = function(submissionId) {
 
   const rewardInput = document.getElementById('view-sub-reward-input');
   if (rewardInput) {
+    const ch = s.challenge || {};
+    if (Number(ch.rewardMax) > 0) {
+      rewardInput.min = ch.rewardMin || 0;
+      rewardInput.max = ch.rewardMax;
+    }
     rewardInput.value = s.score || defaultReward;
   }
 
@@ -2157,7 +2382,6 @@ async function loadCaravans() {
 
 // Load users (paginated)
 async function loadUsers() {
-  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'users-tab')) return; // role cannot read this data
   try {
     const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}&startDate=${encodeURIComponent(filterStartDateVal)}&endDate=${encodeURIComponent(filterEndDateVal)}`;
     const res = await request(url);
@@ -2196,7 +2420,7 @@ async function loadUsers() {
     }
 
     data.users.forEach(u => {
-      let roleBadge = `<span class="badge badge-${u.role}">${u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : u.role === 'mentor' ? 'مربی' : 'دانش‌آموز'}</span>`;
+      let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
         roleBadge += ` <span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelName}</span>`;
@@ -2208,7 +2432,7 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${blockBadge}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge" style="background:#2563eb; color:white; font-size:10px;">مرد</span>' : u.gender === 'female' ? '<span class="badge" style="background:#db2777; color:white; font-size:10px;">زن</span>' : ''} ${blockBadge}</td>
         <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
@@ -2277,15 +2501,15 @@ async function viewUserDetails(userId) {
         <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
           <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
             <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${esc(user.name.substring(0,2))}</div>
-            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${user.role === 'admin' ? 'سوپر ادمین' : user.role === 'SUB_ADMIN' ? 'ادمین' : user.role === 'mentor' ? 'مربی' : 'مخاطب'}</span></div>
+            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
             <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
             <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
             <div style="text-align: right; font-size: 13px;">
               <p><strong>زریک:</strong> <span style="color:var(--color-neon-blue);">${payload.balances.zarik.toLocaleString()}</span></p>
               <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
-              <p><strong>بیرق:</strong> ${payload.balances.beyragh}</p>
-              <p><strong>فرش:</strong> ${payload.balances.farsh}</p>
+              <p><strong>درفش:</strong> ${payload.balances.beyragh}</p>
+              <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
             </div>
             <div style="margin-top:15px; display:flex; gap:5px; flex-wrap:wrap; justify-content:space-between;">
               <button class="btn-primary" style="flex:1; font-size:11px;" onclick="openPasswordOverride('${user.id}')">تغییر رمز</button>
@@ -2308,6 +2532,7 @@ async function viewUserDetails(userId) {
                   <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
                   <p><strong>شماره تماس:</strong> ${esc(user.phoneNumber)}</p>
                   <p><strong>تاریخ تولد:</strong> ${esc(user.dateOfBirth || 'ثبت نشده')}</p>
+                  <p><strong>جنسیت:</strong> ${user.gender === 'male' ? 'مرد' : user.gender === 'female' ? 'زن' : 'ثبت نشده'}</p>
                   <p><strong>شهر/استان:</strong> ${esc(user.city || 'ثبت نشده')}</p>
                   <p><strong>رده سنی:</strong> ${ageGroup}</p>
                   <p><strong>سطح فریم:</strong> ${user.levelFrame}</p>
@@ -2451,7 +2676,7 @@ async function viewUserDetails(userId) {
         window.drawerRadarChart = new Chart(ctx, {
           type: 'radar',
           data: {
-            labels: ['زریک', 'نخ', 'بیرق', 'فرش', 'فعالیت کلاسی', 'نمره آزمون'],
+            labels: [window.assetName('zarik'), window.assetName('nakh'), window.assetName('derafsh'), window.assetName('farsh'), 'فعالیت کلاسی', 'نمره آزمون'],
             datasets: [{
               label: 'سطح پیشرفت',
               data: [
@@ -3517,23 +3742,13 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   document.getElementById('edit-user-id').value = userId;
   document.getElementById('modal-user-name').value = userName;
   document.getElementById('modal-user-role').value = userRole;
-  // Per-user panel login switch (super admin only; the group is hidden for everyone else)
-  const paGroup = document.getElementById('panel-access-group');
-  const paSelect = document.getElementById('modal-user-panel-access');
-  if (paGroup && paSelect) {
-    paSelect.value = user?.panelAccess === true ? 'true' : user?.panelAccess === false ? 'false' : '';
-    const paNote = document.getElementById('panel-access-effective');
-    if (paNote) {
-      paNote.textContent = userId && user && user.canEnterPanel !== undefined
-        ? (user.canEnterPanel ? 'وضعیت فعلی: این کاربر می‌تواند وارد پنل شود.' : 'وضعیت فعلی: این کاربر نمی‌تواند وارد پنل شود.')
-        : '';
-    }
-    if (window.NopaRoles && NopaRoles.isSuper(currentUser && currentUser.role)) paGroup.style.display = '';
-  }
+  setupUserModalAccessControls(userRole, user?.panelAccess ?? null);
   document.getElementById('modal-user-level').value = userLevel;
   document.getElementById('modal-user-mentor-level').value = userMentorLevel;
   document.getElementById('modal-user-national-id').value = userNationalId;
   document.getElementById('modal-user-dob').value = userDob;
+  const genderSel = document.getElementById('modal-user-gender');
+  if (genderSel) genderSel.value = user?.gender || '';
   if (document.getElementById('modal-user-degree')) {
     document.getElementById('modal-user-degree').value = user?.academicDegree || '';
   }
@@ -3611,13 +3826,10 @@ async function handleUserFormSubmit(e) {
   const mentorLevel = parseInt(document.getElementById('modal-user-mentor-level').value) || 1;
   const nationalId = document.getElementById('modal-user-national-id').value;
   const dateOfBirth = document.getElementById('modal-user-dob').value;
+  const gender = document.getElementById('modal-user-gender')?.value ?? '';
   const academicDegree = document.getElementById('modal-user-degree')?.value;
   const academicCertificates = document.getElementById('modal-user-certificates')?.value;
   const phoneNumber = document.getElementById('modal-user-phone')?.value;
-  // Sent only when the switch is visible (super admin); '' = follow the role default
-  const paEl = document.getElementById('modal-user-panel-access');
-  const paGroupEl = document.getElementById('panel-access-group');
-  const panelAccess = (paEl && paGroupEl && paGroupEl.style.display !== 'none') ? paEl.value : undefined;
 
   let res;
   if (id) {
@@ -3625,7 +3837,7 @@ async function handleUserFormSubmit(e) {
     res = await request(`/api/v1/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, role, panelAccess, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, academicDegree, academicCertificates })
+      body: JSON.stringify({ name, phoneNumber, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender, academicDegree, academicCertificates })
     });
   } else {
     // Create User
@@ -3633,12 +3845,13 @@ async function handleUserFormSubmit(e) {
     res = await request('/api/v1/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phoneNumber, password, role, panelAccess, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth })
+      body: JSON.stringify({ name, phoneNumber, password, role, caravanId: caravanId || null, levelFrame, mentorLevel, nationalId, dateOfBirth, gender })
     });
   }
 
   const data = await res.json();
   if (res.ok) {
+    await saveUserPanelAccess(id || data.userId);
     alert(data.message || 'مشخصات کاربر با موفقیت ذخیره شد');
     document.getElementById('user-modal-overlay').style.display = 'none';
     if (typeof loadUsers === 'function') loadUsers();
@@ -3681,7 +3894,6 @@ async function loadLedger() {
 }
 
 async function loadAllUsersDropdown() {
-  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'users-tab')) return; // role cannot read this data
   try {
     const res = await request('/api/v1/admin/users?page=1&limit=500');
     const data = await res.json();
@@ -3848,6 +4060,7 @@ async function loadRolePermissions() {
   try {
     const res = await request('/api/v1/admin/roles');
     const roles = await res.json();
+    if (typeof renderSubAdminAccess === 'function') renderSubAdminAccess(roles);
 
     roles.forEach(role => {
       const phoneInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="maskPhoneNumbers"]`);
@@ -4300,7 +4513,7 @@ window.viewStudentDetails = async function(studentId) {
           <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
           <div><strong style="color:#94a3b8;">کد کاربری:</strong> <span style="font-family:monospace; color:#38bdf8;">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
           <div><strong style="color:#94a3b8;">کاروان عضو:</strong> <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
-          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${u.role === 'mentor' ? 'مربی' : u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : 'دانش‌آموز'}</div>
+          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
           <div><strong style="color:#94a3b8;">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
           <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
           <div><strong style="color:#94a3b8;">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
@@ -4312,9 +4525,9 @@ window.viewStudentDetails = async function(studentId) {
       assetsEl.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:8px;">
           <div><strong style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span style="font-size:16px; font-weight:bold; color:#fbbf24;">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
-          <div><strong style="color:#a78bfa;"><i class="fa-solid fa-layer-group"></i> نخ:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
-          <div><strong style="color:#38bdf8;"><i class="fa-solid fa-flag"></i> بیرق:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
-          <div><strong style="color:#10b981;"><i class="fa-solid fa-rug"></i> فرش:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
+          <div><strong style="color:#a78bfa;"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
+          <div><strong style="color:#38bdf8;"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
+          <div><strong style="color:#10b981;"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
           <div><strong style="color:#94a3b8;">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
         </div>
       `;
@@ -5294,7 +5507,6 @@ window.calculateMentorStars = function(ratings, evals) {
 };
 
 window.loadMentors = async function() {
-  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'mentors-profile-tab')) return; // role cannot read this data
   const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
   if (!tbody) return;
 
@@ -6104,6 +6316,7 @@ window.editMentor = async function(mentorId) {
   document.getElementById('modal-mentor-national-id').value = m.nationalId || '';
   document.getElementById('modal-mentor-dob').value = m.dateOfBirth || '';
   document.getElementById('modal-mentor-city').value = m.city || '';
+  { const g = document.getElementById('modal-mentor-gender'); if (g) g.value = m.gender || ''; }
   document.getElementById('modal-mentor-academic-degree').value = m.academicDegree || m.education || '';
   document.getElementById('modal-mentor-level').value = String(m.mentorLevel || 1);
   document.getElementById('modal-mentor-status').value = m.accountStatus || 'ACTIVE';
@@ -6235,6 +6448,7 @@ window.handleMentorFormSubmit = async function(e) {
     nationalId: nationalId || null,
     dateOfBirth: dateOfBirth || null,
     city: city || null,
+    gender: document.getElementById('modal-mentor-gender')?.value ?? '',
     academicDegree: academicDegree || null,
     mentorLevel,
     accountStatus,
@@ -6650,21 +6864,18 @@ window.loadAssetConversions = async function() {
         </td>
         <td>${esc(r.caravan?.name || 'عمومی')}</td>
         <td>
-          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف نخ به ۱ فرش')}</span>
+          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
         </td>
         <td>
-          ${r.status === 'pending' ? '<span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; border:1px solid rgba(245,158,11,0.4);">⏳ در انتظار بررسی</span>' : 
-            r.status === 'approved' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ تایید شده</span>' : 
-            `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">❌ رد شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}`}
+          ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">✅ انجام شده</span>' :
+            r.status === 'cancelled' ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">↩️ لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
+            '<span class="badge" style="background:rgba(148,163,184,0.2); color:#94a3b8; border:1px solid rgba(148,163,184,0.4);">قدیمی (بدون اثر)</span>'}
         </td>
         <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
         <td style="text-align:center;">
-          ${r.status === 'pending' ? `
-            <div style="display:inline-flex; gap:6px;">
-              <button type="button" class="btn-icon" style="color:#22c55e; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', true)" title="تایید درخواست"><i class="fa-solid fa-check"></i> تایید</button>
-              <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="approveAssetConversion('${r.id}', false)" title="رد درخواست"><i class="fa-solid fa-xmark"></i> رد</button>
-            </div>
-          ` : '<span style="color:#64748b; font-size:11px;">بررسی شده</span>'}
+          ${r.status === 'completed' ? `
+            <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="cancelAssetConversion('${r.id}')" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
+          ` : '<span style="color:#64748b; font-size:11px;">-</span>'}
         </td>
       </tr>
     `).join('');
@@ -6673,36 +6884,25 @@ window.loadAssetConversions = async function() {
   }
 };
 
-window.approveAssetConversion = async function(id, approve) {
-  let note = '';
-  let rejectionReason = '';
-
-  if (approve) {
-    const entered = prompt('یادداشت تایید (اختیاری):', 'درخواست شما تایید و تبدیل دارایی انجام شد.');
-    if (entered === null) return;
-    note = entered;
-  } else {
-    const enteredReason = prompt('لطفاً علت رد درخواست را وارد فرمایید:', 'عدم تطابق موجودی یا عدم احراز شرایط');
-    if (enteredReason === null) return;
-    rejectionReason = enteredReason;
-    note = enteredReason;
-  }
+window.cancelAssetConversion = async function(id) {
+  const reason = prompt('علت لغو مبادله را وارد کنید (اختیاری):', 'مبادله به اشتباه انجام شده است.');
+  if (reason === null) return;
 
   try {
-    const res = await fetch(`/api/v1/admin/asset-conversions/${id}/approve`, {
+    const res = await fetch(`/api/v1/admin/asset-conversions/${id}/cancel`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ approve, note, rejectionReason })
+      body: JSON.stringify({ reason })
     });
     const d = await res.json();
     if(res.ok) {
-      alert('عملیات با موفقیت انجام شد');
+      alert('مبادله لغو و سرمایه‌ها بازگردانده شد');
       window.loadAssetConversions();
     } else {
       alert(d.error || 'خطا در عملیات');
     }
   } catch(e) {
-    console.error('approveAssetConversion error:', e);
+    console.error('cancelAssetConversion error:', e);
   }
 };
 
@@ -7236,7 +7436,7 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
 
   filtered.forEach(u => {
     const tr = document.createElement('tr');
-    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'سوپر ادمین' : u.role === 'SUB_ADMIN' ? 'ادمین' : 'دانش‌آموز');
+    const roleLabel = (u.role === 'mentor' || u.role === 'superMentor') ? 'راهبر' : (u.role === 'admin' ? 'سوپر ادمین' : u.role === 'sub_admin' ? 'ادمین' : 'دانش‌آموز');
     const displayCode = u.userCode ? `NP-${u.userCode}` : (u.phoneNumber || '-');
     const zarik = (u.zarikBalance ?? u.zarik ?? 0).toLocaleString('fa-IR');
     
@@ -7737,6 +7937,21 @@ function addClassUI(catEl, classData = null) {
   }
 }
 
+// Reads the real length of the clip's video (metadata only) and writes it, in seconds, into the duration field.
+window.detectClipDuration = function(urlInput) {
+  const url = (urlInput.value || '').trim();
+  const durInput = urlInput.closest('.builder-clip-item')?.querySelector('.clip-duration-input');
+  if (!url || !durInput) return;
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  video.onloadedmetadata = () => {
+    if (Number.isFinite(video.duration) && video.duration > 0) durInput.value = Math.round(video.duration);
+    video.removeAttribute('src');
+  };
+  video.onerror = () => {};
+  video.src = url;
+};
+
 window.uploadClipMediaDirect = async function(input) {
   if (!input.files || input.files.length === 0) return;
   const file = input.files[0];
@@ -7746,7 +7961,7 @@ window.uploadClipMediaDirect = async function(input) {
   
   const parent = input.parentElement;
   const statusEl = parent.querySelector('.clip-upload-status');
-  const urlInput = parent.querySelector('.clip-url-input');
+  const urlInput = input.closest('.builder-clip-item').querySelector('.clip-url-input');
   
   statusEl.innerText = 'در حال آپلود...';
   statusEl.style.color = '#10B981';
@@ -7761,6 +7976,7 @@ window.uploadClipMediaDirect = async function(input) {
     if (data.url) {
       urlInput.value = data.url;
       statusEl.innerText = 'آپلود موفق!';
+      window.detectClipDuration(urlInput);
     } else {
       statusEl.innerText = 'خطا در آپلود';
       statusEl.style.color = 'red';
@@ -7787,8 +8003,8 @@ function addClipUI(classEl, clipData = null) {
   clipDiv.innerHTML = `
     <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">پارت/کلیپ:</span>
     <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
-    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" style="flex:2; min-width:150px; height:28px; font-size:11px;">
-    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه)" style="width:75px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" onchange="window.detectClipDuration(this)" style="flex:2; min-width:150px; height:28px; font-size:11px;">
+    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو" style="width:75px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
     <div style="display: flex; align-items: center; gap: 5px;">
       <input type="file" onchange="uploadClipMediaDirect(this)" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
@@ -8579,9 +8795,9 @@ window.openCaravanStudentDetails = async function(userId) {
 
     document.getElementById('csd-assets').innerHTML = `
       <strong>موجودی زریک:</strong> ${data.zarikBalance || 0}<br>
-      <strong>موجودی نخ:</strong> ${data.nakhBalance || 0}<br>
-      <strong>موجودی بیرق:</strong> ${data.beyraghBalance || 0}<br>
-      <strong>موجودی فرش:</strong> ${data.farshBalance || 0}
+      <strong>موجودی کلاف:</strong> ${data.nakhBalance || 0}<br>
+      <strong>موجودی درفش:</strong> ${data.beyraghBalance || 0}<br>
+      <strong>موجودی قالیچه:</strong> ${data.farshBalance || 0}
     `;
 
     let progHtml = '';
@@ -9533,7 +9749,7 @@ window.previewNewsImage = function(event) {
   }
 };
 
-// showToastSuccess is defined in toast.js (shared bottom-left toast system)
+// showToastSuccess / showToastError / showToastInfo are defined in toast.js (shared bottom-left toast system)
 
 window.deleteNews = async function(id) {
   if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
@@ -9770,7 +9986,6 @@ window.loadLmsStationsData = async function() {
 
 // 3. Mentors Table Loader (#mentors-tbody)
 window.loadMentorsData = async function() {
-  if (window.NopaRoles && !NopaRoles.canOpenTab(currentUser && currentUser.role, 'mentors-profile-tab')) return; // role cannot read this data
   if (typeof window.loadMentors === 'function') {
     await window.loadMentors();
   }
@@ -9867,136 +10082,153 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
 
 
 
-// ===================== PERMISSION MATRIX (roles tab, super admin only) =====================
-// Rows = everything a role can be allowed to do, columns = roles. Saved per role; the server
-// validates every key and enforces them on each request (the super admin always has everything).
-window.loadAccessMatrix = async function () {
-  const box = document.getElementById('access-matrix-body');
-  if (!box) return;
-  box.textContent = 'در حال بارگذاری...';
-  let data;
-  try {
-    const res = await request('/api/v1/admin/roles/matrix');
-    data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'خطا');
-  } catch (err) {
-    box.textContent = 'بارگذاری دسترسی‌ها انجام نشد.';
-    return;
-  }
+// =========================================================================
+// FOUR USER LEVELS: super admin (admin), admin (sub_admin), mentor, student
+// =========================================================================
+function roleLabel(role) {
+  const r = String(role || '').toLowerCase().replace(/[\s-]/g, '_');
+  if (r === 'admin') return 'سوپر ادمین';
+  if (r === 'sub_admin') return 'ادمین (مدیر محتوایی)';
+  if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'مربی';
+  return 'دانش‌آموز';
+}
+window.roleLabel = roleLabel;
 
-  // Working copy per role; saved only when the person presses "ذخیره"
-  const roles = data.roles;
-  const state = {};
-  roles.forEach(r => { state[r.roleName] = { login: !!r.canLoginPanel, keys: new Set(r.permissions), isDefault: r.isDefault }; });
-
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-
-  function checkbox(roleName, key, isLogin) {
-    const c = document.createElement('input');
-    c.type = 'checkbox';
-    c.checked = isLogin ? state[roleName].login : state[roleName].keys.has(key);
-    c.addEventListener('change', () => {
-      if (isLogin) state[roleName].login = c.checked;
-      else if (c.checked) state[roleName].keys.add(key); else state[roleName].keys.delete(key);
-      markDirty(roleName);
-    });
-    return c;
-  }
-
-  const dirty = new Set();
-  function markDirty(roleName) {
-    dirty.add(roleName);
-    const b = box.querySelector(`[data-save="${roleName}"]`);
-    if (b) b.classList.add('dirty');
-  }
-
-  const table = el('table', 'data-table access-matrix');
-  const thead = el('thead');
-  const hr = el('tr');
-  hr.appendChild(el('th', 'am-name', 'دسترسی'));
-  roles.forEach(r => hr.appendChild(el('th', '', r.label)));
-  hr.appendChild(el('th', '', 'سوپر ادمین'));
-  thead.appendChild(hr);
-  table.appendChild(thead);
-
-  const tbody = el('tbody');
-
-  // Row 0: entering the site at all
-  const loginRow = el('tr', 'am-login-row');
-  const loginName = el('td', 'am-name');
-  loginName.appendChild(el('strong', '', 'مجوز ورود به سایت (پنل مدیریت)'));
-  loginName.appendChild(el('div', 'am-sub', 'اگر خاموش باشد، اعضای این نقش نمی‌توانند وارد پنل شوند، مگر برای یک نفر خاص مجوز جداگانه داده شود.'));
-  loginRow.appendChild(loginName);
-  roles.forEach(r => { const td = el('td', 'am-cell'); td.appendChild(checkbox(r.roleName, null, true)); loginRow.appendChild(td); });
-  const superLogin = el('td', 'am-cell'); const sl = document.createElement('input'); sl.type = 'checkbox'; sl.checked = true; sl.disabled = true; superLogin.appendChild(sl);
-  loginRow.appendChild(superLogin);
-  tbody.appendChild(loginRow);
-
-  let lastGroup = null;
-  data.catalog.forEach(p => {
-    if (p.group !== lastGroup) {
-      lastGroup = p.group;
-      const gr = el('tr', 'am-group');
-      const gt = el('td', '', p.group);
-      gt.colSpan = roles.length + 2;
-      gr.appendChild(gt);
-      tbody.appendChild(gr);
-    }
-    const tr = el('tr');
-    const name = el('td', 'am-name');
-    name.appendChild(document.createTextNode(p.label));
-    if (p.sensitive) { const w = el('span', 'am-warn', ' ⚠'); w.title = 'دسترسی حساس'; name.appendChild(w); }
-    tr.appendChild(name);
-    roles.forEach(r => { const td = el('td', 'am-cell'); td.appendChild(checkbox(r.roleName, p.key, false)); tr.appendChild(td); });
-    const sc = el('td', 'am-cell'); const sb = document.createElement('input'); sb.type = 'checkbox'; sb.checked = true; sb.disabled = true; sc.appendChild(sb);
-    tr.appendChild(sc);
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-
-  // Footer: save / reset per role
-  const tfoot = el('tfoot');
-  const fr = el('tr');
-  fr.appendChild(el('td', 'am-name', 'عملیات'));
-  roles.forEach(r => {
-    const td = el('td', 'am-actions');
-    const save = el('button', 'btn-primary am-save', 'ذخیره'); save.type = 'button'; save.dataset.save = r.roleName;
-    const reset = el('button', 'btn-action am-reset', 'پیش‌فرض'); reset.type = 'button';
-    const tag = el('div', 'am-tag', state[r.roleName].isDefault ? 'پیش‌فرض' : 'سفارشی');
-    save.addEventListener('click', async () => {
-      try {
-        const res = await request(`/api/v1/admin/roles/matrix/${encodeURIComponent(r.roleName)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ canLoginPanel: state[r.roleName].login, permissions: Array.from(state[r.roleName].keys) })
-        });
-        const out = await res.json();
-        if (!res.ok) return showToast(out.error || 'ذخیره انجام نشد', 'error');
-        showToast(`دسترسی‌های «${r.label}» ذخیره شد`, 'success');
-        window.loadAccessMatrix();
-      } catch (e) { /* request() already told the person */ }
-    });
-    reset.addEventListener('click', async () => {
-      if (!confirm(`دسترسی‌های «${r.label}» به حالت پیش‌فرض برگردد؟`)) return;
-      try {
-        const res = await request(`/api/v1/admin/roles/matrix/${encodeURIComponent(r.roleName)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reset: true })
-        });
-        const out = await res.json();
-        if (!res.ok) return showToast(out.error || 'بازگشت به پیش‌فرض انجام نشد', 'error');
-        showToast(`«${r.label}» به حالت پیش‌فرض برگشت`, 'success');
-        window.loadAccessMatrix();
-      } catch (e) { /* handled */ }
-    });
-    td.appendChild(tag); td.appendChild(save); td.appendChild(reset);
-    fr.appendChild(td);
-  });
-  fr.appendChild(el('td', 'am-actions', ''));
-  tfoot.appendChild(fr);
-  table.appendChild(tfoot);
-
-  box.textContent = '';
-  box.appendChild(table);
+const PANEL_SECTION_LABELS = {
+  users: 'کاربران، مخاطبان و سطوح',
+  rewards: 'کیف پول، زریک و دارایی‌ها',
+  mentors: 'راهبران و مدارک',
+  instructors: 'بانک اساتید',
+  caravans: 'کاروان‌ها',
+  lms: 'منزلگاه‌ها، کلاس‌ها و آزمون‌ها',
+  challenges: 'چالش‌ها و تکالیف',
+  support: 'تیکت‌ها، پیام‌ها و چت',
+  content: 'جارچی، بنر، رسانه و فرم‌ها',
+  notifications: 'اعلان‌ها و پیام‌رسانی',
+  analytics: 'آمار و لیگ'
 };
+
+// Sidebar tab -> panel section. Tabs not listed here are super-admin only.
+const TAB_SECTION = {
+  'users-tab': 'users', 'levels-tab': 'users', 'rewards-tab': 'rewards',
+  'mentors-profile-tab': 'mentors', 'mentors-docs-tab': 'mentors', 'mentors-tickets-tab': 'support',
+  'instructors-tab': 'instructors', 'caravans-tab': 'caravans', 'lms-tab': 'lms',
+  'form-builder-tab': 'content', 'news-tab': 'content', 'submissions-tab': 'challenges',
+  'notifications-tab': 'notifications', 'analytics-tab': 'analytics'
+};
+
+function isSuperAdminUser() {
+  return String((currentUser && currentUser.role) || '').toLowerCase() === 'admin';
+}
+
+// Hides the sidebar entries a sub admin was not granted (the server enforces it as well).
+async function applyPanelPermissions() {
+  try {
+    const role = String((currentUser && currentUser.role) || '').toLowerCase().replace(/[\s-]/g, '_');
+    if (role !== 'sub_admin') return;
+    const res = await request('/api/v1/admin/panel/me');
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || 'دسترسی شما به پنل فعال نشده است', 'error');
+      return;
+    }
+    const me = await res.json();
+    const sections = me.sections || {};
+    document.querySelectorAll('.menu-item[data-tab]').forEach(li => {
+      const section = TAB_SECTION[li.getAttribute('data-tab')];
+      li.style.display = (section && sections[section]) ? '' : 'none';
+    });
+    document.querySelectorAll('.accordion-item').forEach(acc => {
+      const visible = Array.from(acc.querySelectorAll('.menu-item')).some(li => li.style.display !== 'none');
+      acc.style.display = visible ? '' : 'none';
+    });
+  } catch (e) {
+    console.error('applyPanelPermissions error:', e);
+  }
+}
+window.applyPanelPermissions = applyPanelPermissions;
+
+// ---- user modal: role options and panel access (super admin only) ----
+function setupUserModalAccessControls(role, panelAccess) {
+  const superAdmin = isSuperAdminUser();
+  const roleSelect = document.getElementById('modal-user-role');
+  if (roleSelect) {
+    Array.from(roleSelect.options).forEach(opt => {
+      // Only a super admin may hand out admin levels
+      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin');
+    });
+    const refresh = () => {
+      const group = document.getElementById('panel-access-group');
+      const r = roleSelect.value;
+      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'mentor')) ? 'block' : 'none';
+    };
+    roleSelect.addEventListener('change', refresh);
+    refresh();
+  }
+  const sel = document.getElementById('modal-user-panel-access');
+  if (sel) sel.value = panelAccess === true ? 'true' : panelAccess === false ? 'false' : 'default';
+}
+
+async function saveUserPanelAccess(userId) {
+  const group = document.getElementById('panel-access-group');
+  if (!userId || !isSuperAdminUser() || !group || group.style.display === 'none') return;
+  const v = document.getElementById('modal-user-panel-access').value;
+  const panelAccess = v === 'true' ? true : v === 'false' ? false : null;
+  try {
+    const res = await request('/api/v1/admin/users/' + userId + '/panel-access', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ panelAccess })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      showToast(d.error || 'خطا در ذخیره دسترسی پنل', 'error');
+    }
+  } catch (e) {
+    console.error('saveUserPanelAccess error:', e);
+  }
+}
+
+// ---- roles tab: section grants for the sub admin role (super admin only) ----
+function renderSubAdminAccess(roles) {
+  const box = document.getElementById('sub-admin-sections');
+  const card = document.getElementById('sub-admin-access-card');
+  if (!box || !card) return;
+  card.style.display = isSuperAdminUser() ? '' : 'none';
+  const row = (roles || []).find(r => r.roleName === 'sub_admin') || {};
+  let grants = {};
+  try { grants = JSON.parse(row.permissionsJson || '{}') || {}; } catch (_) { grants = {}; }
+  document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
+  box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px;">
+      <span style="font-size:12.5px;">${PANEL_SECTION_LABELS[key]}</span>
+      <select class="select-ctrl sub-admin-section" data-section="${key}" style="min-width:120px;">
+        <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
+        <option value="view" ${grants[key] === 'view' ? 'selected' : ''}>فقط مشاهده</option>
+        <option value="edit" ${grants[key] === 'edit' ? 'selected' : ''}>مشاهده و ویرایش</option>
+      </select>
+    </div>`).join('');
+}
+
+async function saveSubAdminAccess() {
+  const permissions = {};
+  document.querySelectorAll('.sub-admin-section').forEach(sel => {
+    if (sel.value) permissions[sel.dataset.section] = sel.value;
+  });
+  try {
+    const res = await request('/api/v1/admin/roles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roleName: 'sub_admin',
+        canLoginPanel: document.getElementById('sub-admin-can-login').checked,
+        permissionsJson: permissions
+      })
+    });
+    const d = await res.json().catch(() => ({}));
+    showToast(res.ok ? 'دسترسی‌های ادمین ذخیره شد' : (d.error || 'خطا در ذخیره دسترسی‌ها'), res.ok ? 'success' : 'error');
+  } catch (e) {
+    console.error('saveSubAdminAccess error:', e);
+  }
+}
+window.saveSubAdminAccess = saveSubAdminAccess;

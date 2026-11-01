@@ -45,8 +45,7 @@ export function stripAnswerKeys(raw: any): any {
 }
 
 export function isAdminRole(role?: string | null): boolean {
-  const r = String(role || '').toLowerCase();
-  return r === 'admin' || r === 'sub_admin';
+  return String(role || '').toLowerCase() === 'admin';
 }
 
 function stripQuiz(quiz: any) {

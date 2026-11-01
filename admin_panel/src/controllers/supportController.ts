@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
-import { isAnyAdmin } from '../utils/roles';
 
 export async function createTicket(req: AuthRequest, res: Response) {
   try {
@@ -17,6 +16,18 @@ export async function createTicket(req: AuthRequest, res: Response) {
         attachmentUrl
       }
     });
+    // Let the admins know: the support inbox in the panel is the only place these messages are answered
+    const admins = await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } });
+    if (admins.length > 0) {
+      await prisma.notification.createMany({
+        data: admins.map(a => ({
+          userId: a.id,
+          title: 'پیام جدید به پشتیبانی',
+          message: String(subject).slice(0, 140),
+          type: 'alert'
+        }))
+      });
+    }
     res.json(ticket);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -38,10 +49,13 @@ export async function getTickets(req: AuthRequest, res: Response) {
       adminWhere.studentId = { in: usersInCaravan.map(u => u.id) };
     }
 
-    if (isAnyAdmin(req.user!.role)) {
+    if (req.user!.role === 'admin') {
       tickets = await prisma.supportTicket.findMany({
         where: adminWhere,
-        include: { replies: true, student: { select: { name: true, avatarUrl: true } } },
+        include: {
+          replies: { orderBy: { createdAt: 'asc' } },
+          student: { select: { name: true, avatarUrl: true, phoneNumber: true, role: true, caravan: { select: { name: true } } } }
+        },
         orderBy: { createdAt: 'desc' }
       });
     } else if (isMentor) {

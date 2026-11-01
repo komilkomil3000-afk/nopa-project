@@ -102,6 +102,9 @@
   window.showToastError = function (m, o) { return showToast(m, 'error', o); };
   window.showToastSuccess = function (m, o) { return showToast(m, 'success', o); };
   window.showToastInfo = function (m, o) { return showToast(m, 'info', o); };
+  // Kept for existing callers (previous toast API)
+  window.showToastWarning = window.showToastError;
+  window.showToastMessage = function (m, type, d) { return showToast(m, type === 'warning' ? 'error' : type, d ? { duration: d } : undefined); };
 
   // Route every legacy alert() through the toast (alert returns undefined either way,
   // so callers behave the same, just without blocking the page).

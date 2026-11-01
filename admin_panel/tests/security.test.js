@@ -22,7 +22,7 @@ test('mentor allowlist: default deny', () => {
   // forbidden for mentors
   for (const [m, p] of [
     ['POST', '/users/u1/zarik'], ['DELETE', '/users/u1'], ['GET', '/users/export'],
-    ['PUT', '/rbac/permissions'], ['POST', '/asset-conversions/x/approve'],
+    ['PUT', '/rbac/permissions'], ['POST', '/asset-conversions/x/cancel'],
     ['DELETE', '/challenges/c1'], ['POST', '/settings'], ['GET', '/unknown-new-route'],
   ]) {
     const r = runMiddleware(restrictNonAdmins, 'mentor', m, p);
@@ -107,4 +107,32 @@ test('admin SPA escaping helpers (safe.js)', () => {
   assert.ok(!/[<>"']/.test(ctx.esc('<b onclick="x">')));
   const js = ctx.escJs("');alert(1);//");
   assert.ok(!js.includes("'") && !js.includes('"'));
+});
+
+test('four-level roles: super admin always passes, sub admin routes map to sections', () => {
+  const { restrictNonAdmins, sectionForPath } = load('middleware/adminAccess.js');
+  // Super admin never depends on any DB lookup
+  assert.ok(runMiddleware(restrictNonAdmins, 'admin', 'PUT', '/users/u1/role').passed);
+  assert.ok(runMiddleware(restrictNonAdmins, 'admin', 'PUT', '/roles').passed);
+  // students never reach the panel
+  assert.equal(runMiddleware(restrictNonAdmins, 'student', 'GET', '/panel/me').passed, false);
+  // a mentor switched off by the super admin is rejected
+  const off = { user: { role: 'mentor', panelAccess: false }, method: 'GET', path: '/users' };
+  let st = 200; restrictNonAdmins(off, { status(c) { st = c; return this; }, json() { return this; } }, () => { st = 'passed'; });
+  assert.equal(st, 403);
+  // section mapping: sensitive routes are never mapped (super admin only)
+  assert.equal(sectionForPath('/lms/stations'), 'lms');
+  assert.equal(sectionForPath('/news/1'), 'content');
+  assert.equal(sectionForPath('/levels-and-certificates'), 'users');
+  for (const p of ['/roles', '/security/revoke', '/settings/x', '/audit/logs', '/export', '/users/export',
+                   '/users/u1/role', '/users/u1/panel-access', '/users/u1/override-password', '/unknown-new-route']) {
+    assert.equal(sectionForPath(p), undefined, `${p} must be super-admin only`);
+  }
+});
+
+test('section grants parser drops unknown sections and levels', () => {
+  const { parseSectionGrants } = load('utils/roles.js');
+  assert.deepEqual(parseSectionGrants('{"lms":"edit","users":"view","roles":"edit","news":"root"}'), { lms: 'edit', users: 'view' });
+  assert.deepEqual(parseSectionGrants('not json'), {});
+  assert.deepEqual(parseSectionGrants(null), {});
 });

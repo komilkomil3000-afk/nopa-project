@@ -34,11 +34,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
 
   assets:
+    - assets/avatars/
     - assets/images/
     - assets/images/banners/
     - assets/svg_icons/
@@ -59,3 +61,11 @@ flutter:
     - family: ChochoAura
       fonts:
         - asset: assets/fonts/ChochoAuraDemo.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon/app_icon.jpg"
+  adaptive_icon_background: "#2D2848"
+  adaptive_icon_foreground: "assets/icon/app_icon.jpg"

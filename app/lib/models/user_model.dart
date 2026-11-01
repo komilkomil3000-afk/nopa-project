@@ -21,8 +21,10 @@ class UserModel {
   final int mentorLevel;
   final int levelFrame;
   final String? avatarUrl;
+  final String? gender; // 'male' | 'female'
   final String? nationalId;
   final String? dateOfBirth;
+  final String? email;
   final bool identityVerified;
   final int totalTransactions;
   final int totalZarikPurchases;
@@ -34,6 +36,8 @@ class UserModel {
   final String? caravanName;
   final String? caravanMentor;
   final String? mentorPhone;
+  final String? mentorSocialPlatform;
+  final String? mentorSocialHandle;
   final int completedStationsCount;
   final int completedSessionsCount;
   final List<dynamic>? certificates;
@@ -56,8 +60,10 @@ class UserModel {
     this.mentorLevel = 1,
     this.levelFrame = 1,
     this.avatarUrl,
+    this.gender,
     this.nationalId,
     this.dateOfBirth,
+    this.email,
     this.identityVerified = false,
     this.totalTransactions = 0,
     this.totalZarikPurchases = 0,
@@ -69,6 +75,8 @@ class UserModel {
     this.caravanName,
     this.caravanMentor,
     this.mentorPhone,
+    this.mentorSocialPlatform,
+    this.mentorSocialHandle,
     this.completedStationsCount = 0,
     this.completedSessionsCount = 0,
     this.certificates,
@@ -94,8 +102,10 @@ class UserModel {
     int? mentorLevel,
     int? levelFrame,
     String? avatarUrl,
+    String? gender,
     String? nationalId,
     String? dateOfBirth,
+    String? email,
     bool? identityVerified,
     int? totalTransactions,
     int? totalZarikPurchases,
@@ -107,6 +117,8 @@ class UserModel {
     String? caravanName,
     String? caravanMentor,
     String? mentorPhone,
+    String? mentorSocialPlatform,
+    String? mentorSocialHandle,
     int? completedStationsCount,
     int? completedSessionsCount,
     List<dynamic>? certificates,
@@ -129,8 +141,10 @@ class UserModel {
       mentorLevel: mentorLevel ?? this.mentorLevel,
       levelFrame: levelFrame ?? this.levelFrame,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      gender: gender ?? this.gender,
       nationalId: nationalId ?? this.nationalId,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      email: email ?? this.email,
       identityVerified: identityVerified ?? this.identityVerified,
       totalTransactions: totalTransactions ?? this.totalTransactions,
       totalZarikPurchases: totalZarikPurchases ?? this.totalZarikPurchases,
@@ -142,6 +156,8 @@ class UserModel {
       caravanName: caravanName ?? this.caravanName,
       caravanMentor: caravanMentor ?? this.caravanMentor,
       mentorPhone: mentorPhone ?? this.mentorPhone,
+      mentorSocialPlatform: mentorSocialPlatform ?? this.mentorSocialPlatform,
+      mentorSocialHandle: mentorSocialHandle ?? this.mentorSocialHandle,
       completedStationsCount: completedStationsCount ?? this.completedStationsCount,
       completedSessionsCount: completedSessionsCount ?? this.completedSessionsCount,
       certificates: certificates ?? this.certificates,
@@ -176,8 +192,10 @@ class UserModel {
       mentorLevel: json['mentorLevel'] ?? 1,
       levelFrame: json['levelFrame'] ?? 1,
       avatarUrl: json['avatarUrl'],
+      gender: json['gender']?.toString(),
       nationalId: json['nationalId'],
       dateOfBirth: json['dateOfBirth'],
+      email: json['email']?.toString(),
       identityVerified: json['identityVerified'] ?? false,
       totalTransactions: json['totalTransactions'] ?? 0,
       totalZarikPurchases: json['totalZarikPurchases'] ?? 0,
@@ -189,6 +207,15 @@ class UserModel {
       caravanName: json['caravanName'] ?? json['caravan']?['name'] ?? 'فاقد کاروان',
       caravanMentor: json['caravanMentor'] ?? json['caravan']?['mentor']?['name'] ?? 'تعیین نشده',
       mentorPhone: json['mentorPhone'] ?? json['caravan']?['mentor']?['phoneNumber'],
+      // Mentors are rows of the User table; contact fields are User.socialPlatform / User.socialMessengerHandle.
+      mentorSocialPlatform: _firstNonEmpty([
+        json['caravan']?['mentor']?['socialPlatform'],
+        json['mentorSocialPlatform'],
+      ]),
+      mentorSocialHandle: _firstNonEmpty([
+        json['caravan']?['mentor']?['socialMessengerHandle'],
+        json['mentorSocialHandle'],
+      ]),
       completedStationsCount: json['completedStationsCount'] ?? 0,
       completedSessionsCount: json['completedSessionsCount'] ?? 0,
       certificates: json['certificates'] ?? [],
@@ -196,5 +223,13 @@ class UserModel {
       managedMembersCount: json['managedMembersCount'] ?? 0,
       satisfactionScore: (json['satisfactionScore'] ?? 0.0).toDouble(),
     );
+  }
+
+  static String? _firstNonEmpty(List<dynamic> values) {
+    for (final v in values) {
+      final s = v?.toString().trim() ?? '';
+      if (s.isNotEmpty) return s;
+    }
+    return null;
   }
 }

@@ -233,7 +233,6 @@ async function main() {
   await prisma.rolePermission.create({
     data: {
       roleName: 'admin',
-      canLoginPanel: true,
       manageContent: true,
       manageMentors: true,
       manageStudents: true,

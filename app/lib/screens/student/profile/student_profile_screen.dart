@@ -1,3 +1,8 @@
+import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/station_state.dart';
+import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -133,6 +138,36 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
+  /// Shows the profile picture large; tap anywhere to close.
+  void _showEnlargedAvatar(UserModel user, String displayName) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(ctx).pop(),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF6B68A8).withValues(alpha: 0.8), width: 2),
+            ),
+            child: SafeAvatar(
+              radius: MediaQuery.of(ctx).size.width * 0.38,
+              imageUrl: user.avatarUrl,
+              gender: user.gender,
+              isMentor: false,
+              name: displayName,
+              cacheSize: 800,
+              backgroundColor: const Color(0xFF6462A2),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// User Info Card: Avatar with edit pencil badge on right, Name & Subtitle on left
   Widget _buildUserHeaderCard(UserModel user, {bool isMentor = false}) {
     final String displayName = user.name.isNotEmpty ? user.name : (isMentor ? 'رضا جلالی' : 'کمیل عباس');
@@ -148,8 +183,9 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // 1. Right: Circular Avatar with Double Ring and Pencil Edit Badge
-          GestureDetector(
-            onTap: () => _openEditProfile(user),
+          TapExpander(child: GestureDetector(
+            // Tapping the picture enlarges it; the pencil badge opens the edit screen
+            onTap: () => _showEnlargedAvatar(user, displayName),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -174,6 +210,8 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                       child: SafeAvatar(
                         radius: 36,
                         imageUrl: user.avatarUrl,
+                        gender: user.gender,
+                        isMentor: false,
                         name: displayName,
                         backgroundColor: Colors.transparent,
                       ),
@@ -183,28 +221,35 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
 
                 // Pencil Edit Badge at bottom-left in RTL
                 Positioned(
-                  bottom: 2,
-                  left: 2,
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDE9959),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF28274A), width: 1.5),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.edit_rounded,
-                        color: Colors.white,
-                        size: 12,
+                  bottom: -6,
+                  left: -6,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _openEditProfile(user),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDE9959),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFF28274A), width: 1.5),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 12,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
+          )),
 
           const SizedBox(width: 16),
 
@@ -249,6 +294,8 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
         _buildProfileMenuItem(
           title: 'کارنامه و دستاوردها',
           svgAsset: 'assets/svg_icons/reazelt01.svg',
+          // Not available to mentors yet: shown grey
+          enabled: !isMentor,
           onTap: () {
             Navigator.push(
               context,
@@ -266,6 +313,8 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
           _buildProfileMenuItem(
             title: 'گواهی ها',
             svgAsset: 'assets/svg_icons/digree .svg',
+            // Certificates are not issued yet: shown grey
+            enabled: false,
             onTap: () {
               Navigator.push(
                 context,
@@ -314,11 +363,14 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
     required String svgAsset,
     IconData? fallbackIcon,
     required VoidCallback onTap,
+    bool enabled = true,
   }) {
+    const Color disabledColor = Color(0xFF6B6985);
+    final Color iconColor = enabled ? const Color(0xFF9E9CD6) : disabledColor;
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+      child: TapExpander(child: InkWell(
+        onTap: enabled ? onTap : () => AppToast.info(context, 'این بخش به‌زودی فعال می‌شود'),
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 6),
@@ -337,19 +389,19 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                           width: 22,
                           height: 22,
                           fit: BoxFit.contain,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFF9E9CD6),
+                          colorFilter: ColorFilter.mode(
+                            iconColor,
                             BlendMode.srcIn,
                           ),
                           errorBuilder: (context, error, stackTrace) => Icon(
                             fallbackIcon ?? Icons.chevron_left_rounded,
-                            color: const Color(0xFF9E9CD6),
+                            color: iconColor,
                             size: 21,
                           ),
                         )
                       : Icon(
                           fallbackIcon ?? Icons.notifications_none_rounded,
-                          color: const Color(0xFF9E9CD6),
+                          color: iconColor,
                           size: 21,
                         ),
                 ),
@@ -359,8 +411,8 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      color: Color(0xFFE2E0F2),
+                    style: TextStyle(
+                      color: enabled ? const Color(0xFFE2E0F2) : disabledColor,
                       fontSize: 13.5,
                       fontWeight: FontWeight.w500,
                       fontFamily: AppTheme.fontFamily,
@@ -372,7 +424,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -417,6 +469,41 @@ class _ReportCardAndAchievementsScreen extends StatefulWidget {
 class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievementsScreen> {
   final Set<int> _expandedStationIndices = {0};
 
+  // Start from what the profile already loaded, then re-read everything from the server so the
+  // report card never shows stale numbers.
+  late List<Map<String, dynamic>> _stations = widget.stations;
+  late List<Map<String, dynamic>> _progress = widget.progressList;
+  bool _refreshing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final api = HttpApiService();
+      final repo = Provider.of<AppRepository>(context, listen: false);
+      final results = await Future.wait([
+        api.getStations(forceRefresh: true),
+        api.getUserProgress(),
+        repo.refreshUser(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        final stations = results[0] as List;
+        final progress = results[1] as List;
+        if (stations.isNotEmpty) _stations = stations.cast<Map<String, dynamic>>();
+        _progress = progress.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      });
+    } catch (_) {}
+    if (mounted) setState(() => _refreshing = false);
+  }
+
+  bool _isClipDone(dynamic clipId) => _progress.any(
+      (p) => p['clipId'] == clipId && (p['isWatched'] == true || p['quizPassed'] == true));
+
   List<Map<String, dynamic>> _getStationSessions(int stationIndex, Map<String, dynamic>? stationData) {
     if (stationData != null && stationData['categories'] != null) {
       final categories = stationData['categories'] as List? ?? [];
@@ -429,40 +516,33 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       if (sessions.isNotEmpty) return sessions;
     }
 
-    // Default structured mock sessions per station
-    return [
-      {
-        'title': 'جلسه اول: شناخت مبانی و مهارت‌های فردی',
-        'subtitle': 'ویدیو آموزشی و بررسی مفاهیم',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه دوم: تحلیل چالش‌ها و کار تیمی کاروان',
-        'subtitle': 'تمرین عملی و سناریوهای حل مسئله',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه سوم: مهارت‌های رسانه‌ای و ارتباط موثر',
-        'subtitle': 'کلاس تخصصی و دستاوردهای رسانه‌ای',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-      {
-        'title': 'جلسه چهارم: آزمون پایانی و ارزیابی منزلگاه',
-        'subtitle': 'آزمون جامع و دریافت پاداش زریک',
-        'isCompleted': (stationIndex + 1) < widget.user.levelFrame,
-      },
-    ];
+    return [];
+  }
+
+  /// A session is done once every one of its clips was watched or its quiz passed (from the database).
+  bool _isSessionDone(Map<String, dynamic> session) {
+    final clips = (session['videoClips'] as List?) ?? [];
+    if (clips.isEmpty) return false;
+    return clips.every((clip) => clip is Map && _isClipDone(clip['id']));
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = widget.user;
-    final stations = widget.stations;
-    final progressList = widget.progressList;
+    // Live user from the repository (balances, level, certificates come from the database)
+    final user = Provider.of<AppRepository>(context).currentUser;
+    final stations = _stations;
+    final progressList = _progress;
 
-    int watchedClipsCount = progressList.where((p) => p['isWatched'] == true).length;
-    int passedQuizzesCount = progressList.where((p) => p['quizPassed'] == true).length;
-    int certificatesCount = user.levelFrame > 1 ? (user.levelFrame - 1) : 0;
+    // Distinct clips, so a clip with several progress rows is counted once
+    final int watchedClipsCount =
+        progressList.where((p) => p['isWatched'] == true).map((p) => p['clipId']).toSet().length;
+    final int passedQuizzesCount =
+        progressList.where((p) => p['quizPassed'] == true).map((p) => p['clipId']).toSet().length;
+    final int certificatesCount = user.certificates?.length ?? 0;
+    final int levelFrame = user.levelFrame < 1 ? 1 : user.levelFrame;
+    // 0-based furthest station reached: the same rule the academy map uses
+    final int reachedIndex = (levelFrame - 1) > user.completedStationsCount ? (levelFrame - 1) : user.completedStationsCount;
+    final int stationsTotal = stations.isNotEmpty ? stations.length : StationNumbering.count;
 
     return AppScaffold(
       showBackButton: true,
@@ -480,8 +560,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
             children: [
               // 1. Station Progress Stepper (استپر بالای منزلگاه)
               StationProgressStepper(
-                currentStationIndex: (user.levelFrame - 1).clamp(0, 5),
-                userLevelFrame: user.levelFrame,
+                currentStationIndex: reachedIndex.clamp(0, stationsTotal - 1),
+                totalNodes: stationsTotal,
+                userLevelFrame: levelFrame,
                 completedStationsCount: user.completedStationsCount,
                 title: 'منزلگاه‌های آموزشی مسافر',
               ),
@@ -506,7 +587,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildStatBox('منزلگاه کنونی', user.levelFrame.toPersian()),
+                        _buildStatBox('منزلگاه کنونی', StationNumbering.numberAt(reachedIndex + 1).toPersian()),
                         _buildStatBox('ویدیوها', watchedClipsCount.toPersian()),
                         _buildStatBox('آزمون‌ها', passedQuizzesCount.toPersian()),
                         _buildStatBox('گواهی‌نامه‌ها', certificatesCount.toPersian()),
@@ -536,10 +617,10 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildAssetBox('زریک', user.zarik.toPersian(), const Color(0xFFE5A66B)),
-                        _buildAssetBox('درفش', user.beyragh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('نخ', user.nakh.toPersian(), const Color(0xFF9292E2)),
-                        _buildAssetBox('فرش', user.farsh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('زریک'), user.zarik.toPersian(), const Color(0xFFE5A66B)),
+                        _buildAssetBox(AssetNames.labelFor('درفش'), user.beyragh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('کلاف'), user.nakh.toPersian(), const Color(0xFF9292E2)),
+                        _buildAssetBox(AssetNames.labelFor('قالیچه'), user.farsh.toPersian(), const Color(0xFF9292E2)),
                       ],
                     ),
                   ],
@@ -563,15 +644,33 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                       ),
                     ),
                     const SizedBox(height: 14),
-                    for (int i = 0; i < (stations.isNotEmpty ? stations.length : 6); i++) ...[
-                      _buildStationAccordionItem(
-                        index: i,
-                        stationData: i < stations.length ? stations[i] : null,
-                        userLevelFrame: user.levelFrame,
-                      ),
-                      if (i < (stations.isNotEmpty ? stations.length : 6) - 1)
-                        const SizedBox(height: 10),
-                    ],
+                    if (_refreshing && stations.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator(color: Color(0xFFC09268), strokeWidth: 2.5)),
+                      )
+                    else if (stations.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'اطلاعات منزلگاه‌ها دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره وارد این صفحه شوید.',
+                          style: TextStyle(color: Color(0xFFB5B3C8), fontSize: 12, height: 1.6, fontFamily: AppTheme.fontFamily),
+                        ),
+                      )
+                    else
+                      for (int i = 0; i < stations.length; i++) ...[
+                        _buildStationAccordionItem(
+                          index: i,
+                          stationData: stations[i],
+                          state: StationState.resolve(
+                            index: i,
+                            levelFrame: levelFrame,
+                            completedStationsCount: user.completedStationsCount,
+                            serverLocked: stations[i]['isLocked'] == true,
+                          ),
+                        ),
+                        if (i < stations.length - 1) const SizedBox(height: 10),
+                      ],
                   ],
                 ),
               ),
@@ -588,16 +687,16 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
   Widget _buildStationAccordionItem({
     required int index,
     required Map<String, dynamic>? stationData,
-    required int userLevelFrame,
+    required StationState state,
   }) {
-    final bool isCompletedStation = (index + 1) < userLevelFrame;
-    final bool isCurrentStation = (index + 1) == userLevelFrame;
-    final bool isLocked = (index + 1) > userLevelFrame;
+    final bool isCompletedStation = state.isCompleted;
+    final bool isCurrentStation = state.isCurrent;
+    final bool isLocked = state.isLocked;
     final bool isExpanded = _expandedStationIndices.contains(index);
 
     final String stationTitle = stationData != null && stationData['title'] != null
         ? stationData['title'].toString()
-        : 'منزلگاه ${index + 1}';
+        : 'منزلگاه ${StationNumbering.numberAt(index + 1)}';
 
     final sessions = _getStationSessions(index, stationData);
 
@@ -617,7 +716,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
         child: Column(
           children: [
             // Station Header Row (Tap to expand/collapse)
-            InkWell(
+            TapExpander(child: InkWell(
               onTap: () {
                 setState(() {
                   if (isExpanded) {
@@ -656,7 +755,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     // Station Title
                     Expanded(
                       child: Text(
-                        'منزلگاه ${(index + 1).toPersian()}: $stationTitle',
+                        'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
                         style: TextStyle(
                           color: isLocked ? Colors.white54 : Colors.white,
                           fontSize: 13,
@@ -675,7 +774,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                   ],
                 ),
               ),
-            ),
+            )),
 
             // Expanded Sessions Stepper List
             if (isExpanded) ...[
@@ -688,8 +787,8 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   children: List.generate(sessions.length, (sIdx) {
                     final session = sessions[sIdx];
-                    final bool isSessionCompleted = isCompletedStation || (isCurrentStation && sIdx == 0);
-                    final bool isSessionCurrent = isCurrentStation && sIdx == 1;
+                    final bool isSessionCompleted = _isSessionDone(session);
+                    final bool isSessionCurrent = !isSessionCompleted && (sIdx == 0 || _isSessionDone(sessions[sIdx - 1]));
                     final isLastSession = sIdx == sessions.length - 1;
 
                     return Row(
@@ -885,25 +984,25 @@ class _StoryDialog {
                   children: [
                     const Center(
                       child: Text(
-                        'داستان سفر کاروان نپا 🌟',
+                        'داستان سفر به سرزمین نپا',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 17,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w300,
                           fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'نپا سفری شگفت‌انگیز در دل منزلگاه‌های یادگیری و رشد فردی و گروهی است.\n\n'
-                      'در این مسیر، مسافران با همراهی راهبر کاروان از منزلگاه‌های آموزشی عبور کرده، چالش‌های مختلف را حل می‌کنند، مهارت‌های کاربردی کسب می‌نمایند و با دریافت زریک و سرمایه‌های کاروان به اوج تعالی و موفقیت می‌رسند.\n\n'
-                      'با همت و تلاش مستمر، گام به گام تا منزلگاه نهایی پیش خواهیم رفت!',
+                      'علاءالملک، حاکم سرزمین نپا با گنجینه‌ای حیرت‌آور و بی‌نظیر در انتظار زنان و مردانی است که شایستگی خود را برای کسب آن نشان دهند.\n\n'
+                      'تو در این مسیر، عضو کاروانی هستی که راهبری زبردست شما را به سوی سرزمین نپا می‌برد. مسیر مابین هر منزلگاه، عیار هر کس را می‌سنجد و توقف موقت هر کاروان در این منزلگاه‌ها، مقدمه‌ای برای طی کردن مسیرهای دشوار بعدی است.',
                       textAlign: TextAlign.justify,
                       style: TextStyle(
                         color: Color(0xFFD6D3E6),
                         fontSize: 12.5,
                         height: 1.6,
+                        fontWeight: FontWeight.w300,
                         fontFamily: AppTheme.fontFamily,
                       ),
                     ),
