@@ -2397,3 +2397,29 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app): no issues; node --check on panel JS
 - **Status:** Completed
+
+### [2026-11-01 18:48] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 1 (Cleanup & Dedupe)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/REDESIGN_ROADMAP.md` (Created — local working roadmap, git-ignored)
+  - `admin_panel/.gitignore` (Modified — ignore REDESIGN_ROADMAP.md)
+  - `admin_panel/public/auth.js` (Created)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v4)
+  - `admin_panel/public/news.js` (Deleted — not loaded anywhere)
+  - `admin_panel/public/caravanWorkspace.js` (Deleted — not loaded anywhere)
+- **Description of Changes:**
+  - New `auth.js` session store (`NopaAuth`): single `nopa_admin_token` / `nopa_admin_user` keys, one-time migration from legacy `token` / `adminToken` / `user`, logout and 401 clear everything; global `token` is now a live getter (was stale after login until reload).
+  - Removed duplicate/dead code in app.js: unused `handleAdminLogin`, `fetchWithFallback`, a second DOMContentLoaded that loaded data before login, a corrupted duplicated block (form builder + caravan functions), and ~20 redefined functions (kept the copy that actually won at runtime). lms.js: duplicate `openQuizModalForClip`; instructors.js / lms.js no longer fetch before login (moved into showDashboard).
+  - index.html: removed duplicate `roles-tab`, `notifications-tab`, `audit-tab` sections and duplicate mentor / moderation / legacy dossier modals (24 duplicate IDs -> 0). The live mentor modal is now the complete one (gender, caravan search) with RESTRICTED status and free-text messenger platform preserved; the full RBAC matrix (#roles-table) is shown in the roles tab; audit tab merged (role buttons incl. "all", search, action filter, header matches rows).
+  - Routing: added #media, #chat, #content; #mentors-league now opens the mentors profile.
+  - Bug fixes: Levels tab crash (functions pasted inside setupEventListeners moved to top level); setAccountStatus used PUT but route is PATCH; audit tab only showed student logs; certificate approve/reject buttons in mentor modal called undefined functions (added inlineApproveCert / inlineRejectCert); create-challenge modal opened twice.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on all panel scripts; static check that every inline handler resolves to a defined function.
+  - Headless Chrome smoke test (stubbed API) on HEAD vs new: all 17 nav tabs open with 0 page errors (HEAD: levels-tab threw), 0 API calls before login, form login works, legacy token migrated.
+  - `npx tsc --noEmit` and `npm test` (9/9) in `admin_panel/` after `npx prisma generate` (local Prisma client was stale; no repo change).
+- **Status:** Completed

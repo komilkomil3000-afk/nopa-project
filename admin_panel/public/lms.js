@@ -6,7 +6,7 @@ window.fetchLiveLmsStations = async function() {
   if (!tbody) return;
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const headers = {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -1030,7 +1030,7 @@ window.saveStationBasicInfoFromContentModal = async function(stationId) {
   const animationTitle = animations.length ? animations[0].title : '';
   const animationUrl = animations.length ? animations[0].url : '';
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/stations/${stationId}`, {
       method: 'PUT',
@@ -1072,7 +1072,7 @@ window.moveClipInSession = async function(sessionId, fromIdx, toIdx) {
   clips.splice(toIdx, 0, moved);
 
   const clipIds = clips.map(c => c.id);
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
 
   try {
     const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}/clips/reorder`, {
@@ -1095,7 +1095,7 @@ window.addNewClipToSession = async function(sessionId) {
   const title = prompt('عنوان پارت جدید را وارد نمایید:', 'پارت جدید');
   if (!title) return;
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/lms/clips', {
       method: 'POST',
@@ -1118,7 +1118,7 @@ window.addNewClipToSession = async function(sessionId) {
 
 window.deleteClipRecord = async function(clipId, sessionId) {
   if (!confirm('آیا از حذف این پارت ویدیو و تمام آزمونک‌های متصل به آن اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/clips/${clipId}`, {
       method: 'DELETE',
@@ -1223,7 +1223,7 @@ window.saveClipVideoUrl = async function(sessionId, clipId) {
     unlockTime: unlockTime
   };
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/lms/clips', {
       method: 'POST',
@@ -1253,7 +1253,7 @@ window.saveCategoryTitle = async function(categoryId, stationId) {
     return;
   }
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/lms/classes', {
       method: 'POST',
@@ -1410,7 +1410,7 @@ window.executeFinalLmsSave = async function() {
       clips: clipsPayload
     };
 
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch(`/api/v1/admin/lms/stations/${stationId}/batch-content`, {
       method: 'POST',
       headers: {
@@ -1462,29 +1462,6 @@ window.openQuizModalForClip = function(sessionId, clipId) {
   document.getElementById('quiz-opt-3').value = 'گزینه نادرست سوم';
   document.getElementById('opt-radio-0').checked = true;
 
-  modal.style.display = 'flex';
-  modal.style.zIndex = '1000000';
-};
-
-window.openQuizModalForClip = function(sessionId, clipId) {
-  const modal = document.getElementById('lms-quiz-editor-modal');
-  if (!modal) return;
-
-  document.getElementById('lms-quiz-form').reset();
-  document.getElementById('quiz-modal-id').value = '';
-  document.getElementById('quiz-modal-session-id').value = sessionId;
-  document.getElementById('quiz-modal-clip-id').value = clipId;
-
-  document.getElementById('quiz-modal-title-input').value = 'آزمونک پارت ویدیو';
-  document.getElementById('quiz-modal-zarik').value = 10;
-  document.getElementById('quiz-modal-q-text').value = 'مفهوم اصلی مطرح‌شده در این پارت کدام است؟';
-
-  document.getElementById('quiz-opt-0').value = 'گزینه صحیح (پاسخ درست)';
-  document.getElementById('quiz-opt-1').value = 'گزینه نادرست اول';
-  document.getElementById('quiz-opt-2').value = 'گزینه نادرست دوم';
-  document.getElementById('quiz-opt-3').value = 'گزینه نادرست سوم';
-  document.getElementById('opt-radio-0').checked = true;
-
   document.getElementById('quiz-modal-title').innerHTML = '<i class="fa-solid fa-circle-question"></i> طراحی آزمونک جدید برای پارت';
   modal.style.display = 'flex';
   modal.style.zIndex = '9999999';
@@ -1512,7 +1489,7 @@ window.editQuizRecord = async function(quizId) {
 
   // 2. Fallback fetch from API if not found
   if (!foundQuiz) {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     try {
       const res = await fetch(`/api/v1/admin/lms/quizzes`, {
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
@@ -1605,7 +1582,7 @@ window.saveQuizFromModal = async function(e) {
     questionsJson
   };
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/lms/quizzes', {
       method: 'POST',
@@ -1634,7 +1611,7 @@ window.saveQuizFromModal = async function(e) {
 
 window.deleteQuizRecord = async function(quizId) {
   if (!confirm('آیا از حذف این آزمونک اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/quizzes/${quizId}`, {
       method: 'DELETE',
@@ -1662,7 +1639,7 @@ window.applyBatchZarikToCategory = async function(categoryId, stationId) {
     return;
   }
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-zarik`, {
       method: 'POST',
@@ -1701,7 +1678,7 @@ window.saveSessionDetails = async function(sessionId, stationId) {
     return;
   }
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}`, {
       method: 'PUT',
@@ -1741,7 +1718,7 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
     return;
   }
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-instructor`, {
       method: 'POST',
@@ -1773,7 +1750,7 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
 
 window.deleteStationRecord = async function(id) {
   if (!confirm('آیا از حذف این منزلگاه اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     await fetch(`/api/v1/admin/lms/stations/${id}`, {
       method: 'DELETE',
@@ -1908,7 +1885,7 @@ window.saveStationsReorder = async function() {
   if (!window.lmsReorderList || window.lmsReorderList.length === 0) return;
 
   const orderedIds = window.lmsReorderList.map(s => s.id);
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
 
   try {
     const res = await fetch('/api/v1/admin/lms/stations/reorder', {
@@ -2449,7 +2426,7 @@ window.saveCompleteStation = async function(e) {
     categories
   };
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/stations', {
       method: 'POST',
@@ -2480,7 +2457,7 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   const formData = new FormData();
   formData.append('file', file);
   
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   const targetEl = document.getElementById(targetInputId);
   const origPlaceholder = targetEl ? targetEl.placeholder : '';
   if (targetEl) targetEl.placeholder = 'در حال آپلود فایل...';
@@ -2511,11 +2488,8 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   }
 };
 
-// Automatic load bindings
+// Loaded by showDashboard() (app.js) once the user is signed in
 window.loadLmsStationsData = window.fetchLiveLmsStations;
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.fetchLiveLmsStations) window.fetchLiveLmsStations();
-});
 
 // ==========================================
 // STATION ACCESS & LOCK CONTROL MODAL LOGIC
@@ -2762,7 +2736,7 @@ window.saveStationAccessSettings = async function() {
     const condCheckbox = document.getElementById('sam-condition-enable');
     const requirePreviousComplete = Boolean(condCheckbox && condCheckbox.checked && !condCheckbox.disabled);
 
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch(`/api/v1/lms/stations/${stationId}/access`, {
       method: 'PUT',
       headers: {

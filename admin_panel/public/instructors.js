@@ -5,7 +5,7 @@ window.globalInstructorsList = [];
 // Fetch instructors list from backend
 window.fetchInstructorsList = async function() {
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch('/api/v1/instructors', {
       headers: {
         ...(token ? { 'Authorization': 'Bearer ' + token } : {})
@@ -218,7 +218,7 @@ window.saveInstructorForm = async function(event) {
     description
   };
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
 
   try {
     const url = id ? `/api/v1/admin/instructors/${id}` : '/api/v1/admin/instructors';
@@ -260,7 +260,7 @@ window.deleteInstructorRecord = async function(id) {
 
   if (!confirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`)) return;
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
 
   try {
     const res = await fetch(`/api/v1/admin/instructors/${id}`, {
@@ -451,9 +451,4 @@ window.refreshAllInstructorPickers = function() {
   });
 };
 
-// Initial load of instructors data on script execution
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', window.fetchInstructorsList);
-} else {
-  window.fetchInstructorsList();
-}
+// Initial load happens in showDashboard() (app.js), i.e. only once the user is signed in

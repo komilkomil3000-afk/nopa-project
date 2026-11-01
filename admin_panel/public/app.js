@@ -1,6 +1,5 @@
-// State Management
-let token = localStorage.getItem('nopa_admin_token') || '';
-let currentUser = JSON.parse(localStorage.getItem('nopa_admin_user') || '{}');
+// State Management (the session token is read live via window.token / NopaAuth, see auth.js)
+let currentUser = NopaAuth.getUser();
 let activeTab = 'users-tab';
 
 // Pagination and filters state
@@ -24,10 +23,10 @@ let analyticsEngagementChart = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
+  const token = NopaAuth.getToken();
   const modal = document.getElementById('login-modal');
 
-  if (token && token !== 'dev-bypass') {
+  if (token) {
     if (modal) modal.style.setProperty('display', 'none', 'important');
   }
 
@@ -53,10 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (res.ok && data.token) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('nopa_admin_token', data.token);
-          localStorage.setItem('nopa_admin_user', JSON.stringify(data.user || { role: 'admin', identityVerified: true }));
-          currentUser = JSON.parse(localStorage.getItem('nopa_admin_user') || '{}');
+          NopaAuth.setSession(data.token, data.user || { role: 'admin', identityVerified: true });
+          currentUser = NopaAuth.getUser();
           
           const modal = document.getElementById('login-modal');
           if (modal) modal.style.setProperty('display', 'none', 'important');
@@ -72,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (token && token !== 'dev-bypass') {
+  if (token) {
     showDashboard();
   }
   setupEventListeners();
@@ -116,115 +113,11 @@ function showDashboard() {
   if (typeof window.loadLmsStationsData === 'function') {
     window.loadLmsStationsData();
   }
+  // Instructor list feeds the LMS instructor pickers, so load it up front
+  if (typeof window.fetchInstructorsList === 'function') window.fetchInstructorsList();
 }
 
-window.handleAdminLogin = async function() {
-  const phoneInput = document.getElementById('login-phone') || document.querySelector('input[type="text"]');
-  const passInput = document.getElementById('login-password') || document.querySelector('input[type="password"]');
-
-  const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
-  const password = passInput ? passInput.value.trim() : '';
-  if (!phoneNumber || !password) {
-    alert('شماره همراه و گذرواژه را وارد کنید');
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/v1/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phoneNumber, password })
-    });
-    const data = await res.json();
-    if (res.ok && data.token) {
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('nopa_admin_token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user || { role: 'admin' }));
-
-      const modal = document.getElementById('login-modal') || document.getElementById('login-overlay');
-      if (modal) modal.style.setProperty('display', 'none', 'important');
-      const screen = document.getElementById('login-screen');
-      if (screen) screen.style.display = 'none';
-      document.body.classList.remove('modal-open');
-
-      // Trigger initial dashboard load
-      if (typeof loadDashboardStats === 'function') loadDashboardStats();
-      if (typeof loadUsers === 'function') loadUsers();
-      if (typeof loadMentorsTab === 'function') loadMentorsTab();
-      window.location.reload();
-    } else {
-      alert(data.error || 'اطلاعات ورود نادرست است');
-    }
-  } catch (err) {
-    console.error('Login fetch failed:', err);
-    alert('عدم برقراری ارتباط با سرور. مطمئن شوید سرور بکاند فعال است.');
-  }
-};
-
-function setupEventListeners() {
-  // Logout Ctrl
-  document.getElementById('btn-logout-ctrl').addEventListener('click', async () => {
-    // Revoke the server-side session first; otherwise the token stays valid until it expires
-    try {
-      const t = localStorage.getItem('nopa_admin_token') || localStorage.getItem('token');
-      if (t) {
-        await fetch('/api/v1/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
-      }
-    } catch (_) { /* offline: still clear the local copy */ }
-    localStorage.removeItem('token');
-    localStorage.removeItem('nopa_admin_token');
-    localStorage.removeItem('nopa_admin_user');
-    window.location.reload();
-  });
-
-  // Tab switching
-  const menuItems = document.querySelectorAll('.menu-item');
-  menuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      if (typeof window.closeUserDetailDrawer === 'function') {
-        window.closeUserDetailDrawer();
-      }
-      const tabId = item.getAttribute('data-tab');
-      switchTab(tabId, true);
-    });
-  });
-
-  // Add Member Modal Trigger
-  const addMemberBtn = document.getElementById('btn-open-add-member-modal');
-  if (addMemberBtn) {
-    addMemberBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (typeof window.openAddMemberToCaravanModal === 'function') {
-        window.openAddMemberToCaravanModal();
-      }
-    });
-  }
-
-  // Change Mentor Modal Trigger
-  const changeMentorBtn = document.getElementById('btn-change-caravan-mentor');
-  if (changeMentorBtn) {
-    changeMentorBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (typeof window.openChangeCaravanMentorModal === 'function') {
-        window.openChangeCaravanMentorModal();
-      }
-    });
-  }
-
-  // Accordion Toggle Logic
-  window.toggleAccordion = function(headerEl) {
-    const item = headerEl.parentElement;
-    // Close other accordions
-    document.querySelectorAll('.accordion-item').forEach(accItem => {
-      if(accItem !== item) {
-        accItem.classList.remove('open');
-      }
-    });
-    // Toggle current
-    item.classList.toggle('open');
-  };
-
-  // 8. Toggle Dark/Light Mode
+// 8. Toggle Dark/Light Mode
 function toggleTheme() {
   document.body.classList.toggle('light-theme');
 }
@@ -320,6 +213,67 @@ window.promptLevelOverride = async function(userId, currentLevel) {
     alert('خطای شبکه');
   }
 };
+
+function setupEventListeners() {
+  // Logout Ctrl
+  document.getElementById('btn-logout-ctrl').addEventListener('click', async () => {
+    // Revoke the server-side session first; otherwise the token stays valid until it expires
+    try {
+      const t = NopaAuth.getToken();
+      if (t) {
+        await fetch('/api/v1/auth/logout', { method: 'POST', headers: { 'Authorization': `Bearer ${t}` } });
+      }
+    } catch (_) { /* offline: still clear the local copy */ }
+    NopaAuth.clear();
+    window.location.reload();
+  });
+
+  // Tab switching
+  const menuItems = document.querySelectorAll('.menu-item');
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      if (typeof window.closeUserDetailDrawer === 'function') {
+        window.closeUserDetailDrawer();
+      }
+      const tabId = item.getAttribute('data-tab');
+      switchTab(tabId, true);
+    });
+  });
+
+  // Add Member Modal Trigger
+  const addMemberBtn = document.getElementById('btn-open-add-member-modal');
+  if (addMemberBtn) {
+    addMemberBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof window.openAddMemberToCaravanModal === 'function') {
+        window.openAddMemberToCaravanModal();
+      }
+    });
+  }
+
+  // Change Mentor Modal Trigger
+  const changeMentorBtn = document.getElementById('btn-change-caravan-mentor');
+  if (changeMentorBtn) {
+    changeMentorBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof window.openChangeCaravanMentorModal === 'function') {
+        window.openChangeCaravanMentorModal();
+      }
+    });
+  }
+
+  // Accordion Toggle Logic
+  window.toggleAccordion = function(headerEl) {
+    const item = headerEl.parentElement;
+    // Close other accordions
+    document.querySelectorAll('.accordion-item').forEach(accItem => {
+      if(accItem !== item) {
+        accItem.classList.remove('open');
+      }
+    });
+    // Toggle current
+    item.classList.toggle('open');
+  };
 
   // Filters & Search
   document.getElementById('user-search-input').addEventListener('input', debounce(() => {
@@ -634,7 +588,7 @@ function debounce(func, delay) {
 }
 
 async function request(url, options = {}) {
-  const currentToken = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+  const currentToken = NopaAuth.getToken();
   options.headers = {
     ...options.headers,
     'Authorization': `Bearer ${currentToken}`
@@ -653,8 +607,7 @@ async function request(url, options = {}) {
   if (res.status === 401 || res.status === 403) {
     // Session expired or unauthorized: non-blocking toast, only if a token was actually sent
     if (currentToken) showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید', 'error');
-    localStorage.removeItem('token');
-    localStorage.removeItem('nopa_admin_token');
+    NopaAuth.clear();
     showLogin();
     throw new Error('Unauthorized');
   }
@@ -678,8 +631,9 @@ const HASH_TAB_MAP = {
   '#mentors-tickets-tab': 'mentors-tickets-tab',
   '#mentors-docs': 'mentors-docs-tab',
   '#mentors-docs-tab': 'mentors-docs-tab',
-  '#mentors-league': 'mentors-league-tab',
-  '#mentors-league-tab': 'mentors-league-tab',
+  // There is no mentors league section; keep old links working by opening the mentors profile
+  '#mentors-league': 'mentors-profile-tab',
+  '#mentors-league-tab': 'mentors-profile-tab',
   '#instructors': 'instructors-tab',
   '#instructors-tab': 'instructors-tab',
 
@@ -703,6 +657,12 @@ const HASH_TAB_MAP = {
   '#news': 'news-tab',
   '#news-tab': 'news-tab',
   '#jarchi': 'news-tab',
+  '#media': 'media-tab',
+  '#media-tab': 'media-tab',
+  '#chat': 'chat-tab',
+  '#chat-tab': 'chat-tab',
+  '#content': 'content-tab',
+  '#content-tab': 'content-tab',
   '#audit': 'audit-tab',
   '#audit-tab': 'audit-tab',
   '#analytics': 'analytics-tab',
@@ -717,7 +677,6 @@ const TAB_REVERSE_HASH_MAP = {
   'mentors-profile-tab': 'mentors',
   'mentors-tickets-tab': 'mentors-tickets',
   'mentors-docs-tab': 'mentors-docs',
-  'mentors-league-tab': 'mentors-league',
   'instructors-tab': 'instructors',
   'caravans-tab': 'caravans',
   'caravan-league-tab': 'caravan-league',
@@ -725,6 +684,9 @@ const TAB_REVERSE_HASH_MAP = {
   'form-builder-tab': 'form-builder',
   'submissions-tab': 'submissions',
   'news-tab': 'news',
+  'media-tab': 'media',
+  'chat-tab': 'chat',
+  'content-tab': 'content',
   'roles-tab': 'roles',
   'notifications-tab': 'notifications',
   'audit-tab': 'audit',
@@ -786,6 +748,7 @@ function switchTab(tabId, updateUrl = true) {
     'notifications-tab': { title: 'مدیریت اعلان‌ها', desc: 'ارسال و پیگیری پیامک، ایمیل و پوش‌نوتیفیکیشن' },
     'media-tab': { title: 'مدیریت رسانه‌ها', desc: 'آپلود و دسته‌بندی فایل‌های ویدیویی و تصویری جهت استریم در اپلیکیشن' },
     'audit-tab': { title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی' },
+    'chat-tab': { title: 'مدیریت گفتگوها', desc: 'نظارت بر گفتگوهای کاروان‌ها و پیام‌های کاربران' },
     'banners-tab': { title: 'مدیریت بنرها', desc: 'مدیریت بنرها و تبلیغات نمایشی اپلیکیشن' },
     'news-tab': { title: 'اخبار جارچی', desc: 'مدیریت تابلوی اعلانات جارچی و رویدادها' },
     'mentors-profile-tab': { title: 'پروفایل و شناسنامه راهبران', desc: 'مرکز ارزیابی راهبران و مربیان' },
@@ -887,10 +850,6 @@ async function openCaravanDrawer(caravanId) {
   if (typeof window.viewCaravanDetails === 'function') {
     return window.viewCaravanDetails(caravanId);
   }
-}
-
-function closeCaravanDrawer() {
-  document.getElementById('caravan-drawer-modal').style.display = 'none';
 }
 
 // Tickets
@@ -3273,26 +3232,6 @@ async function toggleBlockUser(userId, blockStatus) {
   }
 }
 
-// Set Account Status (Moderation)
-window.setAccountStatus = async function(id, status) {
-  if(!confirm(`آیا از تغییر وضعیت حساب به ${status} اطمینان دارید؟`)) return;
-  try {
-    const res = await request(`/api/v1/admin/users/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    if (res.ok) {
-      alert('وضعیت حساب با موفقیت تغییر کرد');
-      loadUsers();
-    } else {
-      const d = await res.json(); alert(d.error || 'خطا در تغییر وضعیت');
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
 let currentLeagueTab = 'caravans';
 let leagueSearchTimeout = null;
 
@@ -3719,7 +3658,7 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   let user = null;
   if (id) {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+      const token = NopaAuth.getToken();
       const res = await fetch(`/api/v1/admin/users/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -3811,10 +3750,6 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
     modal.style.zIndex = '999999';
   }
 };
-
-function openUserModal(id = '', name = '', role = 'student', caravanId = '', levelFrame = 1, mentorLevel = 1, nationalId = '', dateOfBirth = '') {
-  return window.openUserModal(id, name, role, caravanId, levelFrame, mentorLevel, nationalId, dateOfBirth);
-}
 
 async function handleUserFormSubmit(e) {
   e.preventDefault();
@@ -4061,6 +3996,7 @@ async function loadRolePermissions() {
     const res = await request('/api/v1/admin/roles');
     const roles = await res.json();
     if (typeof renderSubAdminAccess === 'function') renderSubAdminAccess(roles);
+    loadRoles(); // full role matrix (#roles-table)
 
     roles.forEach(role => {
       const phoneInput = document.querySelector(`.role-perm-toggle[data-role="${esc(role.roleName)}"][data-perm="maskPhoneNumbers"]`);
@@ -4299,7 +4235,7 @@ window.saveNewCaravanName = async function() {
 };
 
 window.executeRenameCaravan = async function(id, newName) {
-  const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/caravans/${id}`, {
       method: 'PATCH',
@@ -4359,10 +4295,6 @@ window.selectCaravanForManagement = function(id) {
   }
 };
 
-function selectCaravanForManagement(id) {
-  return window.selectCaravanForManagement(id);
-}
-
 window.openChangeCaravanMentorModalForCaravan = function(id) {
   window.selectCaravanForManagement(id);
   if (window.openChangeCaravanMentorModal) {
@@ -4370,16 +4302,12 @@ window.openChangeCaravanMentorModalForCaravan = function(id) {
   }
 };
 
-function openChangeCaravanMentorModalForCaravan(id) {
-  return window.openChangeCaravanMentorModalForCaravan(id);
-}
-
 window.deleteCaravanRecord = async function(caravanId, caravanName) {
   if (!confirm(`آیا از حذف کاروان "${caravanName || ''}" اطمینان دارید؟ اعضای این کاروان آزاد خواهند شد.`)) {
     return;
   }
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch(`/api/v1/admin/caravans/${caravanId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
@@ -4399,17 +4327,13 @@ window.deleteCaravanRecord = async function(caravanId, caravanName) {
   }
 };
 
-function deleteCaravanRecord(caravanId, caravanName) {
-  return window.deleteCaravanRecord(caravanId, caravanName);
-}
-
 window.removeMemberFromCaravan = async function(caravanId, studentId, memberName) {
   const nameText = memberName ? `«${memberName}»` : 'این فرد';
   if (!confirm(`آیا می‌خواهید ${nameText} را از این کاروان حذف کنید؟`)) {
     return;
   }
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
@@ -4436,10 +4360,6 @@ window.removeMemberFromCaravan = async function(caravanId, studentId, memberName
   }
 };
 
-function removeMemberFromCaravan(caravanId, studentId, memberName) {
-  return window.removeMemberFromCaravan(caravanId, studentId, memberName);
-}
-
 window.viewStudentDetails = async function(studentId) {
   const modal = document.getElementById('caravan-student-detail-modal');
   if (!modal) return;
@@ -4458,7 +4378,7 @@ window.viewStudentDetails = async function(studentId) {
   modal.style.zIndex = '999999';
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    const token = NopaAuth.getToken();
     let data = {};
     let u = null;
     let balances = {};
@@ -4667,29 +4587,23 @@ window.viewStudentDetails = async function(studentId) {
   }
 };
 
-function viewStudentDetails(studentId) {
-  return window.viewStudentDetails(studentId);
-}
-
 window.setAccountStatus = async function(userId, status) {
   if (!confirm(`آیا از تغییر وضعیت حساب این کاربر اطمینان دارید؟`)) return;
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
-    const res = await fetch(`/api/v1/admin/users/${userId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+    // The server route is PATCH /admin/users/:id/status (a PUT here used to 404)
+    const res = await request(`/api/v1/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
     if (res.ok) {
       alert('وضعیت حساب کاربر با موفقیت تغییر کرد');
+      if (activeTab === 'users-tab' && typeof loadUsers === 'function') loadUsers();
       if (typeof window.loadSelectedCaravanDetails === 'function') {
         window.loadSelectedCaravanDetails();
       }
     } else {
-      const err = await res.json();
+      const err = await res.json().catch(() => ({}));
       alert(err.error || 'خطا در تغییر وضعیت کاربر');
     }
   } catch(e) {
@@ -4697,10 +4611,6 @@ window.setAccountStatus = async function(userId, status) {
     alert('خطا در ارتباط با سرور');
   }
 };
-
-function setAccountStatus(userId, status) {
-  return window.setAccountStatus(userId, status);
-}
 
 
 
@@ -5305,7 +5215,7 @@ window.setupScrollHeader = setupScrollHeader;
 
 // 2. Universal Export Function
 window.exportData = async function(type, format) {
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     let url = `/api/v1/admin/export?type=${encodeURIComponent(type)}&format=${encodeURIComponent(format)}`;
     
@@ -5580,7 +5490,7 @@ window.loadMentors = async function() {
 
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/mentors', {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
@@ -5752,7 +5662,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
 };
 
 window.quickUpdateMentorLevel = async function(mentorId, newLevel) {
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/users/${mentorId}`, {
       method: 'PUT',
@@ -5791,7 +5701,7 @@ window.viewMentorDossier = async function(mentorId) {
   modal.style.zIndex = '999999';
   body.innerHTML = '<div style="text-align:center; padding:30px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
 
   try {
@@ -6131,7 +6041,7 @@ window.sendTicketReply = async function(ticketId, mentorId, studentId) {
     return;
   }
   const message = input.value.trim();
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
 
   try {
     const res = await fetch(`/api/v1/admin/tickets/${ticketId}/reply`, {
@@ -6158,7 +6068,7 @@ window.sendTicketReply = async function(ticketId, mentorId, studentId) {
 
 window.resolveStudentTicket = async function(ticketId, mentorId, studentId) {
   if (!confirm('آیا از تغییر وضعیت این تیکت به «حل‌شده» اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/tickets/${ticketId}/resolve`, {
       method: 'POST',
@@ -6300,7 +6210,7 @@ window.submitSubmissionReview = async function(submissionId, mentorId, studentId
   const score = scoreEl ? parseInt(scoreEl.value, 10) || 0 : 0;
   const mentorFeedback = feedbackEl ? feedbackEl.value.trim() : '';
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/submissions/${submissionId}/review`, {
       method: 'POST',
@@ -6325,7 +6235,7 @@ window.submitSubmissionReview = async function(submissionId, mentorId, studentId
 };
 
 window.refreshDossierData = async function(mentorId) {
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
@@ -6444,7 +6354,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
 
   container.innerHTML = '<span style="font-size:11px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
   
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/caravans', {
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
@@ -6526,7 +6436,7 @@ window.handleMentorFormSubmit = async function(e) {
     caravanId: assignedCaravanIds.length > 0 ? assignedCaravanIds[0] : null
   };
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch('/api/v1/admin/mentors', {
       method: 'POST',
@@ -6584,7 +6494,7 @@ window.executeMentorModeration = async function(e) {
   const action = document.querySelector('input[name="mod_action"]:checked')?.value || 'activate';
   const suspendedUntil = document.getElementById('mod-suspended-until')?.value;
 
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/mentors/${id}/moderate`, {
       method: 'POST',
@@ -7131,62 +7041,6 @@ window.updateRole = async function(roleName, field, value) {
   }
 }
 
-document.querySelector('[data-tab="roles-tab"]')?.addEventListener('click', loadRoles);
-
-// 2. Notifications (Tab E2)
-document.getElementById('broadcast-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const title = document.getElementById('bc-title').value;
-  const message = document.getElementById('bc-message').value;
-  const target = document.getElementById('bc-target').value; // all, students, mentors
-
-  try {
-    const res = await fetch('/api/v1/admin/notifications/broadcast', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, message, userIds: [] }) // Note: our broadcast Notification currently requires userIds. In a real system, you'd fetch userIds by role or update the backend.
-    });
-    // For now, let's just use the global announcement endpoint if we want broad cast, but we already wrote the form.
-    const res2 = await fetch('/api/v1/admin/announcements/broadcast', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, message, targetRole: target })
-    });
-    if(res2.ok) {
-      alert('پیام گروهی با موفقیت ارسال شد');
-      document.getElementById('broadcast-form').reset();
-    } else {
-      alert('خطا در ارسال پیام');
-    }
-  } catch(e) {
-    alert('خطای سیستمی');
-  }
-});
-
-// 3. Audit Logs (Tab E3)
-async function loadAuditLogs() {
-  try {
-    const res = await fetch('/api/v1/admin/audit/logs', { headers: { 'Authorization': `Bearer ${token}` } });
-    const logs = await res.json();
-    const tbody = document.querySelector('#audit-logs-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = logs.map(l => `
-      <tr>
-        <td><span style="font-size:0.8rem">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
-        <td>${esc(l.actorName)}</td>
-        <td>${esc(l.action)}</td>
-        <td>${esc(l.targetEntity)}</td>
-        <td><span style="font-size:0.8rem">${esc(l.details)}</span></td>
-        <td>${esc(l.ipAddress || '-')}</td>
-      </tr>
-    `).join('');
-  } catch(e) {
-    console.error(e);
-  }
-}
-
-document.querySelector('[data-tab="audit-tab"]')?.addEventListener('click', loadAuditLogs);
-
 // ===============================
 // MODULE A (CONT.) : MENTOR DOCUMENTS QUEUE
 // ===============================
@@ -7306,6 +7160,41 @@ document.getElementById('btn-reject-mentor-doc')?.addEventListener('click', asyn
     }
   } catch(e) { console.error(e); alert('خطا'); }
 });
+
+// Approve / reject a certificate from inside the mentor modal (buttons rendered by editMentor).
+// Only the row is updated so unsaved edits in the mentor form are kept.
+async function decideMentorCertInline(docId, decision) {
+  let note = 'تایید شد';
+  if (decision === 'reject') {
+    note = prompt('علت رد مدرک را وارد کنید (حداقل ۳ کاراکتر):') || '';
+    if (note.trim().length < 3) return;
+  }
+  try {
+    const res = await request(`/api/v1/admin/mentors/documents/${encodeURIComponent(docId)}/${decision}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      return alert(d.error || 'خطا در ثبت وضعیت مدرک');
+    }
+    const row = Array.from(document.querySelectorAll('#modal-mentor-certs-tbody tr'))
+      .find(tr => tr.innerHTML.includes(docId));
+    if (row && row.cells.length >= 4) {
+      row.cells[2].innerHTML = decision === 'approve'
+        ? '<span class="badge" style="background:#10b981;color:white;">تایید شده</span>'
+        : '<span class="badge" style="background:#ef4444;color:white;">رد شده</span>';
+      row.cells[3].innerHTML = '';
+    }
+    showToast(decision === 'approve' ? 'مدرک تایید شد' : 'مدرک رد شد', 'success');
+    if (typeof window.loadMentorDocs === 'function') window.loadMentorDocs();
+  } catch (e) {
+    console.error(e);
+  }
+}
+window.inlineApproveCert = (docId) => decideMentorCertInline(docId, 'approve');
+window.inlineRejectCert = (docId) => decideMentorCertInline(docId, 'reject');
 
 // Hook refresh button
 document.getElementById('btn-refresh-mentor-docs')?.addEventListener('click', loadMentorDocs);
@@ -7604,7 +7493,6 @@ window.closeCaravanDrawer = function() {
   const modal = document.getElementById('caravan-drawer-modal');
   if (modal) modal.style.display = 'none';
 };
-function closeCaravanDrawer() { window.closeCaravanDrawer(); }
 
 window.editCaravanCapacity = async function(caravanId) {
   const cId = caravanId || currentDrawerCaravanId;
@@ -7629,27 +7517,6 @@ window.editCaravanCapacity = async function(caravanId) {
       alert(d.error || 'خطا در ویرایش ظرفیت');
     }
   } catch(e) { console.error(e); alert('خطا در ارتباط با سرور'); }
-};
-
-window.removeFromCaravan = async function(caravanId, studentId) {
-  const cId = caravanId || currentDrawerCaravanId;
-  if (!cId || !studentId) return;
-  if (confirm('آیا از حذف این کاربر از کاروان مطمئن هستید؟')) {
-    try {
-      const res = await request(`/api/v1/admin/caravans/${cId}/members/${studentId}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert('کاربر با موفقیت از کاروان حذف شد');
-        if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
-          window.viewCaravanDetails(currentDrawerCaravanId);
-        }
-        if (typeof loadCaravanMembersRoster === 'function') loadCaravanMembersRoster();
-        if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
-      } else {
-        const err = await res.json();
-        alert(err.error || 'خطا در حذف عضو');
-      }
-    } catch(e) { console.error(e); alert('خطا در ارتباط با سرور'); }
-  }
 };
 
 async function sendCaravanBroadcast() {
@@ -7796,26 +7663,6 @@ window.loadCaravanDetails = async function(caravanId) {
     }
   } catch (err) {
     console.error(err);
-  }
-};
-
-window.editMember = async function(userId) {
-  const nameInput = document.getElementById(`edit-name-${userId}`);
-  if (!nameInput) return;
-  const newName = nameInput.value;
-  try {
-    const res = await request(`/api/v1/admin/users/${userId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName })
-    });
-    if (res.ok) {
-      alert('نام کاربر با موفقیت ویرایش شد');
-    } else {
-      alert('خطا در ذخیره نام');
-    }
-  } catch (e) {
-    console.error(e);
   }
 };
 
@@ -8419,119 +8266,6 @@ async function submitDynamicForm(e) {
       method: 'POST', body: JSON.stringify({ id, title, purpose, placement, targetAudience })
     });
     if(res.ok) { alert('فرم با موفقیت ذخیره شد'); document.getElementById('dyn-form-builder').reset(); loadDynForms(); }
-    tbody.innerHTML = '';
-    users.forEach(u => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${esc(u.name)}</td>
-        <td>${esc(u.phoneNumber)}</td>
-        <td>${u.caravanId || 'بدون کاروان'}</td>
-        <td>-</td>
-        <td>
-           <button class="page-btn" onclick="removeFromCaravan('${u.caravanId}', '${u.id}')" ${!u.caravanId ? 'disabled' : ''}><i class="fa-solid fa-unlink"></i> حذف از کاروان</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-    
-    // Load default capacity if available
-    try {
-      const setRes = await request('/api/v1/admin/settings/DEFAULT_CARAVAN_CAPACITY');
-      if (setRes.ok) {
-        const setJson = await setRes.json();
-        if (setJson.value) document.getElementById('global-capacity-input').value = setJson.value;
-      }
-    } catch(e) {}
-  } catch(e) { console.error(e); }
-}
-
-function filterCaravanMembers() {
-   clearTimeout(window.rosterTimeout);
-   window.rosterTimeout = setTimeout(loadCaravanMembersRoster, 500);
-}
-
-async function removeFromCaravan(caravanId, studentId) {
-  if(!caravanId) return;
-  if(confirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟')) {
-     try {
-       const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' });
-       if(res.ok) { alert('با موفقیت حذف شد'); loadCaravanMembersRoster(); }
-     } catch(e) { console.error(e); }
-  }
-}
-
-async function saveGlobalCapacity(e) {
-  e.preventDefault();
-  const val = document.getElementById('global-capacity-input').value;
-  try {
-    const res = await request('/api/v1/admin/settings/DEFAULT_CARAVAN_CAPACITY', {
-      method: 'POST', body: JSON.stringify({ value: val })
-    });
-    if(res.ok) alert('ظرفیت پیش‌فرض ذخیره شد');
-  } catch(err) { console.error(err); }
-}
-
-async function loadCaravanLeague() {
-  const sortBy = document.getElementById('caravan-league-sort')?.value || 'progress';
-  try {
-    const res = await request(`/api/v1/admin/caravans/league?sortBy=${sortBy}`);
-    const caravans = await res.json();
-    const tbody = document.querySelector('#caravan-league-table tbody');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    caravans.forEach((c, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${index + 1}</strong></td>
-        <td>${esc(c.name)}</td>
-        <td>${esc(c.mentorName)}</td>
-        <td>${c.memberCount} / ${c.capacityLimit}</td>
-        <td>${c.overallProgress}%</td>
-        <td>${c.totalWealth.toLocaleString()}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch(e) { console.error(e); }
-}
-
-// Deprecated legacy LMS functions replaced by Unified Visual Form Builder
-
-// FORM BUILDER LOGIC
-async function loadDynForms() {
-  try {
-    const res = await request('/api/v1/admin/forms');
-    const forms = await res.json();
-    const tbody = document.querySelector('#dyn-forms-table tbody');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    forms.forEach(f => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${esc(f.title)}</td>
-        <td>${esc(f.placement)}</td>
-        <td>${esc(f.targetAudience)}</td>
-        <td>
-           <button class="page-btn btn-danger" onclick="deleteDynForm('${f.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch(e) { console.error(e); }
-}
-
-async function submitDynamicForm(e) {
-  e.preventDefault();
-  const id = document.getElementById('dyn-form-id').value;
-  const title = document.getElementById('dyn-form-title').value;
-  const purpose = document.getElementById('dyn-form-purpose').value;
-  const placement = document.getElementById('dyn-form-placement').value;
-  const targetAudience = document.getElementById('dyn-form-audience').value;
-  
-  try {
-    const res = await request('/api/v1/admin/forms', {
-      method: 'POST', body: JSON.stringify({ id, title, purpose, placement, targetAudience })
-    });
-    if(res.ok) { alert('فرم با موفقیت ذخیره شد'); document.getElementById('dyn-form-builder').reset(); loadDynForms(); }
   } catch(e) { console.error(e); }
 }
 
@@ -8543,20 +8277,20 @@ async function deleteDynForm(id) {
   } catch(e) { console.error(e); }
 }
 
-// Override loadAuditLogs
+// Audit logs: role buttons pass a role ('all' clears the filter); the tab itself calls it with no args
 window.loadAuditLogs = async function(role = null) {
   try {
     if(role) {
       const activeRoleInput = document.getElementById('audit-active-role');
-      if (activeRoleInput) activeRoleInput.value = role;
+      if (activeRoleInput) activeRoleInput.value = role === 'all' ? '' : role;
     }
     const activeRole = document.getElementById('audit-active-role')?.value || '';
     const action = document.getElementById('audit-action-filter')?.value || '';
     const search = document.getElementById('audit-search')?.value || '';
     
-    let url = `/api/v1/admin/audit/logs?actorRole=${activeRole}`;
-    if (action) url += `&action=${action}`;
-    if (search) url += `&search=${search}`;
+    let url = `/api/v1/admin/audit/logs?actorRole=${encodeURIComponent(activeRole)}`;
+    if (action) url += `&action=${encodeURIComponent(action)}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
 
     const res = await request(url);
     const data = await res.json();
@@ -8949,22 +8683,10 @@ window.openAddMemberToCaravanModal = async function(preSelectedCaravanId, initia
   window.searchCandidateMembers(initialSearch);
 };
 
-function openAddMemberToCaravanModal(preSelectedCaravanId, initialSearch = '') {
-  if (typeof window.openAddMemberToCaravanModal === 'function') {
-    return window.openAddMemberToCaravanModal(preSelectedCaravanId, initialSearch);
-  }
-}
-
 window.closeAddMemberToCaravanModal = function() {
   const modal = document.getElementById('add-member-to-caravan-modal');
   if (modal) modal.style.display = 'none';
 };
-
-function closeAddMemberToCaravanModal() {
-  if (typeof window.closeAddMemberToCaravanModal === 'function') {
-    return window.closeAddMemberToCaravanModal();
-  }
-}
 
 window.toggleCandidateSelection = function(checkbox, userId) {
   if (checkbox.checked) {
@@ -9088,12 +8810,6 @@ window.confirmBulkAddUsersToCaravan = async function() {
   }
 };
 
-function confirmBulkAddUsersToCaravan() {
-  if (typeof window.confirmBulkAddUsersToCaravan === 'function') {
-    return window.confirmBulkAddUsersToCaravan();
-  }
-}
-
 window.openChangeCaravanMentorModal = async function() {
   const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
   if (!currentCaravanId) {
@@ -9115,7 +8831,7 @@ window.openChangeCaravanMentorModal = async function() {
   const currentMentorId = caravan?.mentorId || caravan?.mentor?.id || '';
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    const token = NopaAuth.getToken();
     let mentors = [];
     
     // Fetch mentors
@@ -9146,22 +8862,10 @@ window.openChangeCaravanMentorModal = async function() {
   }
 };
 
-function openChangeCaravanMentorModal() {
-  if (typeof window.openChangeCaravanMentorModal === 'function') {
-    return window.openChangeCaravanMentorModal();
-  }
-}
-
 window.closeChangeCaravanMentorModal = function() {
   const modal = document.getElementById('change-caravan-mentor-modal');
   if (modal) modal.style.display = 'none';
 };
-
-function closeChangeCaravanMentorModal() {
-  if (typeof window.closeChangeCaravanMentorModal === 'function') {
-    return window.closeChangeCaravanMentorModal();
-  }
-}
 
 window.updateCaravanMentor = async function() {
   const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
@@ -9172,7 +8876,7 @@ window.updateCaravanMentor = async function() {
   const mentorId = document.getElementById('cw-mentor-select')?.value || null;
   
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch(`/api/v1/admin/caravans/${currentCaravanId}`, {
       method: 'PATCH',
       headers: {
@@ -9277,7 +8981,7 @@ window.loadBannersTab = async function() {
   }
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch('/api/v1/admin/banners', { 
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
     });
@@ -9361,7 +9065,7 @@ window.loadBannersTab = async function() {
 };
 
 window.toggleBannerStatus = async function(id, currentActive) {
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   const newActive = !currentActive;
   try {
     const formData = new FormData();
@@ -9414,7 +9118,7 @@ window.editBanner = async function(id) {
   try {
     let b = (window.cachedBannerList || []).find(x => x.id === id);
     if (!b) {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+      const token = NopaAuth.getToken();
       const res = await fetch('/api/v1/admin/banners', { 
         headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
       });
@@ -9470,7 +9174,7 @@ window.saveBannerItem = async function(e) {
   
   const url = id ? `/api/v1/admin/banners/${id}` : '/api/v1/admin/banners';
   const method = id ? 'PUT' : 'POST';
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   
   try {
     const res = await fetch(url, {
@@ -9498,7 +9202,7 @@ window.saveBannerItem = async function(e) {
 
 window.deleteBanner = async function(id) {
   if (!confirm('آیا از حذف این بنر اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/banners/${id}`, {
       method: 'DELETE',
@@ -9526,7 +9230,7 @@ window.loadNewsTab = async function() {
   }
 
   try {
-    const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+    const token = NopaAuth.getToken();
     const res = await fetch('/api/v1/admin/news', { 
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
     });
@@ -9700,7 +9404,7 @@ window.editNews = async function(id) {
   try {
     let n = (window.cachedNewsList || []).find(x => x.id === id);
     if (!n) {
-      const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+      const token = NopaAuth.getToken();
       const res = await fetch('/api/v1/admin/news', { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } });
       const news = await res.json();
       n = news.find(x => x.id === id);
@@ -9776,7 +9480,7 @@ window.saveNewsArticle = async function(e) {
   const url = id ? `/api/v1/admin/news/${id}` : '/api/v1/admin/news';
   const method = id ? 'PUT' : 'POST';
   
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(url, {
       method,
@@ -9821,7 +9525,7 @@ window.previewNewsImage = function(event) {
 
 window.deleteNews = async function(id) {
   if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
+  const token = NopaAuth.getToken();
   try {
     const res = await fetch(`/api/v1/admin/news/${id}`, {
       method: 'DELETE',
@@ -9915,7 +9619,7 @@ window.closeCaravanEditModal = function() {
 
 window.refreshCaravanEditData = async function() {
   if (!window.activeCaravanId) return;
-  const token = localStorage.getItem('token');
+  const token = NopaAuth.getToken();
   const res = await fetch('/api/v1/caravans', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
   const caravans = res.data || res || [];
   
@@ -9937,7 +9641,7 @@ window.saveCaravanEdits = async function() {
   try {
     const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${NopaAuth.getToken()}` },
       body: JSON.stringify({ name, title: name, capacityLimit: Number(capacity), notes, adminNotes: notes })
     });
     if (res.ok) {
@@ -9971,7 +9675,7 @@ window.confirmSuspendCaravan = async function() {
   try {
     const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/status', {
       method: 'PUT',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
     });
     if(res.ok) {
       alert('وضعیت کاروان تغییر کرد.');
@@ -9986,7 +9690,7 @@ window.confirmBlockCaravan = async function() {
   try {
     const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/block-members', {
       method: 'PUT',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
     });
     if(res.ok) {
       alert('تمامی اعضا مسدود شدند.');
@@ -10000,7 +9704,7 @@ window.confirmDeleteCaravan = async function() {
   try {
     const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
     });
     if(res.ok) {
       alert('کاروان با موفقیت حذف شد.');
@@ -10008,48 +9712,6 @@ window.confirmDeleteCaravan = async function() {
       if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
     }
   } catch(e) { console.error(e); }
-};
-
-// =========================================================================
-// UNIVERSAL ROBUST API FETCHING & DOM TABLE INJECTION (v2.0.1)
-// =========================================================================
-
-async function fetchWithFallback(primaryUrl, fallbackUrl) {
-  const token = localStorage.getItem('token') || localStorage.getItem('nopa_admin_token') || localStorage.getItem('adminToken') || '';
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  try {
-    let res = await fetch(primaryUrl, { headers });
-    if (!res.ok && (res.status === 401 || res.status === 404 || res.status === 403)) {
-      console.warn(`[Fallback] ${primaryUrl} (${res.status}) -> trying ${fallbackUrl}`);
-      res = await fetch(fallbackUrl, { headers });
-    }
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    console.warn(`[Fetch Error] ${primaryUrl}:`, err.message);
-    try {
-      if (fallbackUrl && fallbackUrl !== primaryUrl) {
-        const res2 = await fetch(fallbackUrl, { headers });
-        if (res2.ok) return await res2.json();
-      }
-    } catch (e) {
-      console.error(`[Fallback Error] ${fallbackUrl}:`, e);
-    }
-    return null;
-  }
-}
-
-// 1. User Directory Loader (#users-tbody)
-
-
-// 2. LMS Stations Management Table Loader (#lms-directory-tbody / #stations-tbody)
-window.loadLmsStationsData = async function() {
-  if (typeof window.fetchLiveLmsStations === 'function') {
-    await window.fetchLiveLmsStations();
-  }
 };
 
 // 3. Mentors Table Loader (#mentors-tbody)
@@ -10065,27 +9727,6 @@ window.loadCaravansData = async function() {
     await loadCaravansTab();
   }
 };
-
-// 5. Automatic Event Binding On Load
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    if (window.loadUsersData) window.loadUsersData();
-    if (window.loadLmsStationsData) window.loadLmsStationsData();
-    if (window.loadMentorsData) window.loadMentorsData();
-    if (window.loadCaravansData) window.loadCaravansData();
-
-    // Bind Create Challenge button directly
-    const btnCreate = document.getElementById('btn-open-create-challenge');
-    if (btnCreate) {
-      btnCreate.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (typeof window.openCreateChallengeModal === 'function') {
-          window.openCreateChallengeModal();
-        }
-      });
-    }
-  }, 300);
-});
 
 // 6. Universal Dropdown Toggle Handler (for export menus and dropdowns)
 document.addEventListener('click', (e) => {
@@ -10107,43 +9748,6 @@ document.addEventListener('click', (e) => {
     document.querySelectorAll('.dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
   }
 });
-
-window.handleDirectFileUpload = async function(inputElement, targetInputId) {
-  if (!inputElement.files || inputElement.files.length === 0) return;
-  const file = inputElement.files[0];
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
-  const targetEl = document.getElementById(targetInputId);
-  const origPlaceholder = targetEl ? targetEl.placeholder : '';
-  if (targetEl) targetEl.placeholder = 'در حال آپلود فایل...';
-
-  try {
-    const res = await fetch('/api/v1/media/upload', {
-      method: 'POST',
-      headers: {
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-      },
-      body: formData
-    });
-    const data = await res.json();
-    if (res.ok && (data.url || data.media?.url)) {
-      const fileUrl = data.url || data.media.url;
-      if (targetEl) {
-        targetEl.value = fileUrl;
-      }
-      alert('فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
-    } else {
-      alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
-    }
-  } catch (err) {
-    console.error('Direct Upload Error:', err);
-    alert('خطا در ارتباط با سرور برای آپلود فایل');
-  } finally {
-    if (targetEl) targetEl.placeholder = origPlaceholder;
-  }
-};
 
 
 
