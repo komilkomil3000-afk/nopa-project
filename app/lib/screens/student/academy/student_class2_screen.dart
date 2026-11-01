@@ -510,6 +510,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return url.trim();
   }
 
+  /// Preview picture of the clip being shown (set per part in the admin panel), if any.
+  String? get _currentCoverUrl {
+    final session = _activeSession;
+    if (session == null) return null;
+    final clips = session['videoClips'] as List? ?? [];
+    if (clips.isEmpty || _currentClipIndex >= clips.length) return null;
+    final cover = clips[_currentClipIndex]['coverImageUrl']?.toString().trim();
+    return (cover == null || cover.isEmpty) ? null : cover;
+  }
+
   void _onVideoProgress(Duration position, Duration duration) {
     final pos = position.inMilliseconds;
     final dur = duration.inMilliseconds;
@@ -713,6 +723,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return NopaInlineVideoPlayer(
       key: ValueKey('class2_video_${_videoSessionToken}_$url'),
       videoUrl: url,
+      coverImageUrl: _currentCoverUrl,
       title: _currentPlayingTitle,
       autoPlay: url.isNotEmpty && _playRequested,
       onProgress: _onVideoProgress,

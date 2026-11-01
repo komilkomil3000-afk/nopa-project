@@ -500,6 +500,7 @@ model VideoClip {
   sessionId           String
   title               String
   videoUrl            String
+  coverImageUrl       String?      // preview picture shown before the video plays
   clipOrder           Int          @default(0)
   duration            Int?
   unlockDate          String?

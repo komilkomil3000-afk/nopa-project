@@ -2218,3 +2218,46 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/): no issues; node --check lms.js; tsc not run (node_modules not installed)
 - **Status:** Completed
+
+### [2026-11-01 13:11] - Claude Code (Flutter + CRM)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/class_model.dart` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261041_clip_cover_image/` (Created)
+- **Description of Changes:**
+  - Added video cover (preview) link: VideoClip.coverImageUrl column (schema.prisma + migration 20261041_clip_cover_image)
+  - lmsController clip create/update/batch/station-save persist it
+  - lms.js clip rows get cover URL field with preview and upload, and gallery cards get an optional cover
+  - app: VideoClipModel/StationAnimation parse coverImageUrl, class2 player and class1/mentor gallery pass it to the video player
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): no issues; node --check lms.js; prisma migrate/tsc not run
+- **Status:** Completed
+
+### [2026-11-01 13:38] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/class_model.dart` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261041_clip_cover_image/` (Created)
+- **Description of Changes:**
+  - Trophy (cup) dialog after the last station now shows its own text (final destination), separate from the story dialog (station_progress_stepper.dart)
+- **Verification / Checkpoints Executed:**
+  - text-only change
+- **Status:** Completed

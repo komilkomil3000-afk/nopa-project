@@ -840,6 +840,17 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <label style="font-size:11px; color:#38bdf8; display:block; margin-bottom:3px;"><i class="fa-solid fa-video"></i> لینک ویدیو (آپارات یا URL مستقیم):</label>
                     <input type="text" id="clip-url-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:#0f172a;" value="${esc(clip.videoUrl || '')}" placeholder="https://www.aparat.com/v/...">
                   </div>
+                  <div>
+                    <label style="font-size:11px; color:#a78bfa; display:block; margin-bottom:3px;"><i class="fa-solid fa-image"></i> لینک کاور (پیش‌نمایش ویدیو در اپلیکیشن):</label>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" style="width:46px; height:30px; object-fit:cover; border-radius:4px; border:1px solid #475569; background:#0f172a; ${clip.coverImageUrl ? '' : 'visibility:hidden;'}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'">
+                      <input type="text" id="clip-cover-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:#0f172a; flex:1;" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" oninput="document.getElementById('clip-cover-preview-${clip.id}').src = this.value">
+                      <label style="background:rgba(167,139,250,0.18); border:1px solid #a78bfa; color:#a78bfa; padding:5px 9px; border-radius:6px; cursor:pointer; font-size:11px; white-space:nowrap;" title="آپلود تصویر کاور">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
+                        <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'clip-cover-${clip.id}')">
+                      </label>
+                    </div>
+                  </div>
                   <div style="display:flex; gap:6px; align-items:flex-end; padding-top:16px;">
                     <button type="button" style="background:#0284c7; color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" onclick="window.saveClipVideoUrl('${sess.id}', '${clip.id}')" title="ذخیره ترتیب، عنوان و لینک ویدیو">
                       <i class="fa-solid fa-save"></i> ذخیره
@@ -1196,6 +1207,7 @@ window.setClipScheduleFromSession = function(clipId, sessId) {
 window.saveClipVideoUrl = async function(sessionId, clipId) {
   const title = document.getElementById(`clip-title-${clipId}`)?.value;
   const videoUrl = document.getElementById(`clip-url-${clipId}`)?.value;
+  const coverImageUrl = document.getElementById(`clip-cover-${clipId}`)?.value?.trim() || '';
   const clipOrder = parseInt(document.getElementById(`clip-order-${clipId}`)?.value) || undefined;
   const unlockDate = document.getElementById(`clip-unlock-date-${clipId}`)?.value || '';
   const unlockTime = document.getElementById(`clip-unlock-time-${clipId}`)?.value || '';
@@ -1205,6 +1217,7 @@ window.saveClipVideoUrl = async function(sessionId, clipId) {
     sessionId: sessionId,
     title: title || 'پارت ویدیو',
     videoUrl: videoUrl || '',
+    coverImageUrl,
     clipOrder: clipOrder,
     unlockDate: unlockDate,
     unlockTime: unlockTime
@@ -1356,12 +1369,14 @@ window.executeFinalLmsSave = async function() {
       const clipOrder = parseInt(input.value) || 1;
       const title = document.getElementById(`clip-title-${clipId}`)?.value || '';
       const videoUrl = document.getElementById(`clip-url-${clipId}`)?.value || '';
+      const coverImageUrl = document.getElementById(`clip-cover-${clipId}`)?.value?.trim() || '';
       const unlockDate = document.getElementById(`clip-unlock-date-${clipId}`)?.value || '';
       const unlockTime = document.getElementById(`clip-unlock-time-${clipId}`)?.value || '';
       clipsPayload.push({
         id: clipId,
         title,
         videoUrl,
+        coverImageUrl,
         clipOrder,
         unlockDate,
         unlockTime
@@ -2120,6 +2135,13 @@ window.addGalleryItemCard = function(containerId, data = null) {
               <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputId}')">
             </label>
           </div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="${inputId}-cover" class="modal-anim-cover input-ctrl" value="${esc(data?.coverImageUrl || '')}" placeholder="لینک کاور (فقط برای ویدیو، اختیاری)" style="background:#1e293b; direction:ltr; text-align:left; flex:1;">
+            <label style="background:rgba(167,139,250,0.18); border:1px solid #a78bfa; color:#a78bfa; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود کاور
+              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputId}-cover')">
+            </label>
+          </div>
           <textarea class="modal-anim-desc input-ctrl" rows="1" placeholder="توضیح (اختیاری)" style="background:#1e293b;">${esc(desc)}</textarea>
         </div>
       </div>
@@ -2168,6 +2190,7 @@ window.collectGalleryItems = function(containerId) {
       title: card.querySelector('.modal-anim-title')?.value?.trim() || `تصویر ${idx + 1}`,
       url,
       videoUrl: url,
+      coverImageUrl: card.querySelector('.modal-anim-cover')?.value?.trim() || '',
       description: card.querySelector('.modal-anim-desc')?.value?.trim() || '',
       orderIndex: items.length + 1
     });

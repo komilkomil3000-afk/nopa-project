@@ -72,6 +72,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               'title': anim['title'] ?? 'انیمیشن منزلگاه',
               'videoUrl': anim['videoUrl'] ?? anim['url'],
               'description': anim['description'],
+              'coverImageUrl': anim['coverImageUrl'],
             });
           }
         }

@@ -6,12 +6,14 @@ class StationAnimation {
   final String title;
   final String videoUrl;
   final String? description;
+  final String? coverImageUrl;
 
   StationAnimation({
     required this.id,
     required this.title,
     required this.videoUrl,
     this.description,
+    this.coverImageUrl,
   });
 
   factory StationAnimation.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class StationAnimation {
       title: json['title']?.toString() ?? 'انیمیشن منزلگاه',
       videoUrl: json['videoUrl']?.toString() ?? json['url']?.toString() ?? '',
       description: json['description']?.toString(),
+      coverImageUrl: (json['coverImageUrl']?.toString().trim().isNotEmpty ?? false) ? json['coverImageUrl'].toString().trim() : null,
     );
   }
 
@@ -28,6 +31,7 @@ class StationAnimation {
     'title': title,
     'videoUrl': videoUrl,
     'description': description,
+    'coverImageUrl': coverImageUrl,
   };
 }
 

@@ -411,6 +411,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
               const clipData = {
                 title: clip.title || `پارت ${k + 1}`,
                 videoUrl: clip.videoUrl || '',
+                ...(clip.coverImageUrl !== undefined ? { coverImageUrl: clip.coverImageUrl || null } : {}),
                 clipOrder: parseInt(clip.clipOrder) || (k + 1),
                 duration: parseInt(clip.duration) || 0
               };
@@ -546,7 +547,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
   try {
     const { id: paramId } = req.params;
     const {
-      id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, duration,
+      id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, coverImageUrl, duration,
       unlockDate, unlockTime, scheduledUnlockTime, isLocked
     } = req.body;
     const finalSessionId = sessionId || paramId;
@@ -574,6 +575,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
         data: {
           ...(title ? { title } : {}),
           ...(videoUrl !== undefined ? { videoUrl } : {}),
+          ...(coverImageUrl !== undefined ? { coverImageUrl: coverImageUrl || null } : {}),
           ...(clipOrder !== undefined ? { clipOrder: Number(clipOrder) } : {}),
           ...(duration !== undefined ? { duration: Number(duration) } : {}),
           ...(unlockDate !== undefined ? { unlockDate: unlockDate || null } : {}),
@@ -588,6 +590,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
           sessionId: finalSessionId,
           title: title || 'پارت جدید',
           videoUrl: videoUrl || '',
+          coverImageUrl: coverImageUrl || null,
           clipOrder: Number(clipOrder || 1),
           duration: Number(duration || 0),
           unlockDate: unlockDate || null,
@@ -645,6 +648,7 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
             const clipUpdate: any = {};
             if (clip.title) clipUpdate.title = clip.title;
             if (clip.videoUrl !== undefined) clipUpdate.videoUrl = clip.videoUrl;
+            if (clip.coverImageUrl !== undefined) clipUpdate.coverImageUrl = clip.coverImageUrl || null;
             if (clip.clipOrder !== undefined) clipUpdate.clipOrder = Number(clip.clipOrder);
             if (clip.unlockDate !== undefined) clipUpdate.unlockDate = clip.unlockDate || null;
             if (clip.unlockTime !== undefined) clipUpdate.unlockTime = clip.unlockTime || null;

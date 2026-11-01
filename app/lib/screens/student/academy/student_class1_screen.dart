@@ -204,6 +204,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               'title': anim.title,
               'videoUrl': anim.videoUrl,
               'description': anim.description,
+              'coverImageUrl': anim.coverImageUrl,
             });
           }
         }
