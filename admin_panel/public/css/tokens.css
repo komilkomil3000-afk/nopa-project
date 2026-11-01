@@ -1,0 +1,153 @@
+/* Design tokens for the Nopa admin panel.
+   Brand comes from the Flutter app (app/lib/core/theme/app_colors.dart): purple #8B5CF6 + gold #EAB308.
+   Every colour in style.css, index.html and the JS templates resolves to these variables, so switching
+   <html data-theme="dark|light"> re-themes the whole panel. The *-rgb triplets are for translucent
+   tints: rgb(var(--primary-rgb) / 0.15). Use *-text for text on surfaces (contrast-safe in both themes)
+   and the plain token for fills, borders and gradients. */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg: #120C1F;
+  --bg-rgb: 18 12 31;
+  --surface: #1E1633;
+  --surface-rgb: 30 22 51;
+  --surface-2: #2A2140;
+  --surface-2-rgb: 42 33 64;
+  --surface-inset: #150F26;
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: #3B3155;
+  --fg-rgb: 255 255 255;      /* light-on-dark overlays (hover, hairlines) */
+  --shade-rgb: 0 0 0;         /* darkening overlays */
+  --muted-rgb: 164 156 184;
+  --backdrop: rgb(8 5 16 / 0.78);
+
+  /* Text */
+  --text: #F1EEF8;
+  --text-soft: #D3CDE3;
+  --text-muted: #A49CB8;
+  --text-faint: #6F6787;
+  --on-fill: #FFFFFF;         /* text on saturated fills (buttons, badges) */
+
+  /* Brand */
+  --primary: #8B5CF6;
+  --primary-strong: #7C3AED;
+  --primary-text: #C4B5FD;
+  --primary-rgb: 139 92 246;
+  --accent: #EAB308;
+  --accent-strong: #CA8A04;
+  --accent-text: #FACC15;
+  --accent-rgb: 234 179 8;
+  --brand-gradient: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+  --gold-gradient: linear-gradient(135deg, #CD8449 0%, #E1BC96 100%);
+
+  /* Status */
+  --success: #10B981;
+  --success-strong: #059669;
+  --success-text: #34D399;
+  --success-rgb: 16 185 129;
+  --danger: #EF4444;
+  --danger-strong: #DC2626;
+  --danger-text: #F87171;
+  --danger-rgb: 239 68 68;
+  --info: #3B82F6;
+  --info-strong: #2563EB;
+  --info-text: #93C5FD;
+  --info-rgb: 59 130 246;
+
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.25);
+  --shadow-lg: 0 25px 50px -12px rgb(0 0 0 / 0.8);
+  --page-glow-1: rgb(139 92 246 / 0.16);
+  --page-glow-2: rgb(234 179 8 / 0.07);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #F7F5FC;
+  --bg-rgb: 247 245 252;
+  --surface: #FFFFFF;
+  --surface-rgb: 255 255 255;
+  --surface-2: #F1EDFA;
+  --surface-2-rgb: 241 237 250;
+  --surface-inset: #FAF8FE;
+  --border: rgb(40 24 80 / 0.1);
+  --border-strong: #D9D2EA;
+  --fg-rgb: 40 24 80;
+  --shade-rgb: 130 110 185;   /* lighter than dark mode's black: "darkening" tints read as soft lavender */
+  --muted-rgb: 107 99 128;
+  --backdrop: rgb(26 19 40 / 0.45);
+
+  --text: #1A1328;
+  --text-soft: #3D3452;
+  --text-muted: #6B6380;
+  --text-faint: #9A93AD;
+  --on-fill: #FFFFFF;
+
+  --primary: #7C3AED;
+  --primary-strong: #6D28D9;
+  --primary-text: #6D28D9;
+  --primary-rgb: 124 58 237;
+  --accent: #EAB308;
+  --accent-strong: #CA8A04;
+  --accent-text: #A16207;      /* plain #EAB308 fails text contrast on white */
+  --accent-rgb: 202 138 4;
+  --brand-gradient: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+
+  --success: #059669;
+  --success-strong: #047857;
+  --success-text: #047857;
+  --success-rgb: 5 150 105;
+  --danger: #DC2626;
+  --danger-strong: #B91C1C;
+  --danger-text: #B91C1C;
+  --danger-rgb: 220 38 38;
+  --info: #2563EB;
+  --info-strong: #1D4ED8;
+  --info-text: #1D4ED8;
+  --info-rgb: 37 99 235;
+
+  --shadow-sm: 0 2px 8px rgb(60 40 110 / 0.08);
+  --shadow-lg: 0 25px 50px -12px rgb(60 40 110 / 0.25);
+  --page-glow-1: rgb(124 58 237 / 0.08);
+  --page-glow-2: rgb(234 179 8 / 0.08);
+}
+
+/* Scales shared by both themes */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+
+  /* Stacking order (lowest to highest). Values keep the relative order the old hard-coded
+     numbers had, so nested modals still open above their parent. */
+  --z-base-overlay: 1000;
+  --z-panel: 1100;
+  --z-panel-raised: 1200;
+  --z-drawer-backdrop: 1300;
+  --z-drawer: 1400;
+  --z-mobile-nav: 1500;
+  --z-mobile-nav-raised: 1600;
+  --z-modal: 2000;
+  --z-modal-stacked: 2100;
+  --z-modal-nested: 2200;
+  --z-modal-confirm: 2300;
+  --z-toast: 9000;
+}

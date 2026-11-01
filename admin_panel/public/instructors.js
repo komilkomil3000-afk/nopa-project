@@ -53,40 +53,40 @@ window.renderInstructorsTable = function(list = null) {
   let html = '';
   instructors.forEach((inst, index) => {
     const avatar = inst.avatarUrl 
-      ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #38bdf8;">`
-      : `<div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #0369a1); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:15px; border:2px solid #38bdf8;"><i class="fa-solid fa-chalkboard-user"></i></div>`;
+      ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">`
+      : `<div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary-strong)); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:15px; border:2px solid var(--primary);"><i class="fa-solid fa-chalkboard-user"></i></div>`;
 
     const degreeBadge = inst.degree 
-      ? `<span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-size:11px; padding:2px 8px; border-radius:6px;">${esc(inst.degree)}</span>`
-      : `<span style="color:#64748b; font-size:11px;">-</span>`;
+      ? `<span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11px; padding:2px 8px; border-radius:6px;">${esc(inst.degree)}</span>`
+      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
 
     const phoneDisplay = inst.phoneNumber 
-      ? `<span style="font-family:monospace; direction:ltr; display:inline-block; color:#cbd5e1;"><i class="fa-solid fa-phone" style="font-size:10px; color:#38bdf8;"></i> ${esc(inst.phoneNumber)}</span>`
-      : `<span style="color:#64748b; font-size:11px;">-</span>`;
+      ? `<span style="font-family:monospace; direction:ltr; display:inline-block; color:var(--text-soft);"><i class="fa-solid fa-phone" style="font-size:10px; color:var(--primary-text);"></i> ${esc(inst.phoneNumber)}</span>`
+      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
 
     const nationalIdDisplay = inst.nationalId
-      ? `<span style="font-family:monospace; color:#cbd5e1;"><i class="fa-solid fa-id-card" style="font-size:10px; color:#a78bfa;"></i> ${esc(inst.nationalId)}</span>`
-      : `<span style="color:#64748b; font-size:11px;">-</span>`;
+      ? `<span style="font-family:monospace; color:var(--text-soft);"><i class="fa-solid fa-id-card" style="font-size:10px; color:var(--primary-text);"></i> ${esc(inst.nationalId)}</span>`
+      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
 
     const classesDisplay = inst.classes
-      ? `<div style="max-width:220px; font-size:12px; color:#e2e8f0; line-height:1.4;">${esc(inst.classes)}</div>`
-      : `<span style="color:#64748b; font-size:11px;">تعریف‌نشده</span>`;
+      ? `<div style="max-width:220px; font-size:12px; color:var(--text); line-height:1.4;">${esc(inst.classes)}</div>`
+      : `<span style="color:var(--text-faint); font-size:11px;">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume
-      ? `<div style="max-width:240px; font-size:11.5px; color:#94a3b8; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
-      : `<span style="color:#64748b; font-size:11px;">-</span>`;
+      ? `<div style="max-width:240px; font-size:11.5px; color:var(--text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
+      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
 
     html += `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 12px; text-align:center; color:#94a3b8; font-size:12px;">${index + 1}</td>
+      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition: background 0.2s;" onmouseover="this.style.background = 'rgb(var(--fg-rgb) / 0.03)'" onmouseout="this.style.background = 'transparent'">
+        <td style="padding: 12px; text-align:center; color:var(--text-muted); font-size:12px;">${index + 1}</td>
         <td style="padding: 12px;">
           <div style="display:flex; align-items:center; gap:12px;">
             ${avatar}
             <div>
-              <div style="font-weight:bold; color:white; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+              <div style="font-weight:bold; color:var(--text); font-size:13.5px; display:flex; align-items:center; gap:6px;">
                 ${esc(inst.name)}
               </div>
-              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">
+              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
                 ${degreeBadge}
               </div>
             </div>
@@ -102,10 +102,10 @@ window.renderInstructorsTable = function(list = null) {
         <td style="padding: 12px;">${resumeDisplay}</td>
         <td style="padding: 12px; text-align:center;">
           <div style="display:flex; gap:6px; justify-content:center;">
-            <button type="button" class="btn-action" onclick="window.openInstructorModal('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); border-radius:6px; cursor:pointer;" title="ویرایش مشخصات استاد">
+            <button type="button" class="btn-action" onclick="window.openInstructorModal('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="ویرایش مشخصات استاد">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" onclick="window.deleteInstructorRecord('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:6px; cursor:pointer;" title="حذف استاد">
+            <button type="button" class="btn-action" onclick="window.deleteInstructorRecord('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="حذف استاد">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -176,7 +176,7 @@ window.openInstructorModal = function(instructorId = null) {
   }
 
   modal.style.display = 'flex';
-  modal.style.zIndex = '999999';
+  modal.style.zIndex = 'var(--z-modal)';
 };
 
 // Target block tracking for quick instructor addition from station category card
@@ -332,17 +332,17 @@ window.renderSelectedInstructorBadges = function(blockId) {
     .filter(s => s.length > 0);
 
   if (selectedNames.length === 0) {
-    box.innerHTML = `<span style="color:#64748b; font-size:12px; user-select:none;">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
+    box.innerHTML = `<span style="color:var(--text-faint); font-size:12px; user-select:none;">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
     return;
   }
 
   let html = '';
   selectedNames.forEach(name => {
     html += `
-      <span class="inst-selected-tag" style="background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.45); color: #38bdf8; font-size: 11.5px; font-weight: bold; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
+      <span class="inst-selected-tag" style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid rgb(var(--primary-rgb) / 0.45); color: var(--primary-text); font-size: 11.5px; font-weight: bold; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
         <i class="fa-solid fa-user-check" style="font-size:10px;"></i>
         <span>${esc(name)}</span>
-        <span class="inst-tag-remove-btn" onclick="window.removeInstructorFromBlock('${blockId}', '${escJs(name)}', event)" style="cursor:pointer; color:#ef4444; font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
+        <span class="inst-tag-remove-btn" onclick="window.removeInstructorFromBlock('${blockId}', '${escJs(name)}', event)" style="cursor:pointer; color:var(--danger-text); font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
       </span>
     `;
   });
@@ -371,9 +371,9 @@ window.populateInstructorDropdownOptions = function(blockId) {
 
   if (instructors.length === 0) {
     dropdown.innerHTML = `
-      <div style="padding:10px; text-align:center; color:#94a3b8; font-size:11.5px;">
+      <div style="padding:10px; text-align:center; color:var(--text-muted); font-size:11.5px;">
         <div>هیچ استادی در بانک اساتید ثبت نشده است.</div>
-        <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="margin-top:6px; background:#0284c7; color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+        <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="margin-top:6px; background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
           <i class="fa-solid fa-plus"></i> ثبت اولین استاد
         </button>
       </div>
@@ -382,9 +382,9 @@ window.populateInstructorDropdownOptions = function(blockId) {
   }
 
   let html = `
-    <div style="padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 11px; color: #94a3b8;"><i class="fa-solid fa-database" style="color:#38bdf8;"></i> اساتید ثبت‌شده در بانک:</span>
-      <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+    <div style="padding: 4px 6px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.08); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-database" style="color:var(--primary-text);"></i> اساتید ثبت‌شده در بانک:</span>
+      <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
         <i class="fa-solid fa-plus"></i> افزودن جدید
       </button>
     </div>
@@ -394,12 +394,12 @@ window.populateInstructorDropdownOptions = function(blockId) {
   instructors.forEach(inst => {
     const isChecked = selectedNames.has(inst.name);
     html += `
-      <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'};" onmouseover="this.style.background='rgba(56, 189, 248, 0.12)'" onmouseout="this.style.background='${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'}'">
+      <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'};" onmouseover="this.style.background = 'rgb(var(--primary-rgb) / 0.12)'" onmouseout="this.style.background = '${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'}'">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.selectInstructorForBlock('${blockId}', '${escJs(inst.name)}', this.checked)" style="cursor: pointer; width: 15px; height: 15px; accent-color: #0284c7;">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.selectInstructorForBlock('${blockId}', '${escJs(inst.name)}', this.checked)" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);">
           <div>
-            <div style="font-size: 12.5px; font-weight: bold; color: white;">${esc(inst.name)}</div>
-            <div style="font-size: 10.5px; color: #94a3b8;">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
+            <div style="font-size: 12.5px; font-weight: bold; color: var(--text);">${esc(inst.name)}</div>
+            <div style="font-size: 10.5px; color: var(--text-muted);">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
           </div>
         </div>
         ${inst.avatarUrl ? `<img src="${esc(inst.avatarUrl)}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">` : ''}

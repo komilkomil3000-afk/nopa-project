@@ -6,7 +6,7 @@
 (function () {
   const SUPPORT_CATEGORY = 'پیام به پشتیبانی';
   const STATUS_LABEL = { open: 'باز', answered: 'پاسخ داده شده', resolved: 'حل شده' };
-  const STATUS_COLOR = { open: '#f59e0b', answered: '#38bdf8', resolved: '#10b981' };
+  const STATUS_FAMILY = { open: 'accent', answered: 'info', resolved: 'success' };
 
   let allTickets = [];
   let currentTicketId = null;
@@ -24,8 +24,10 @@
 
   function statusBadge(status) {
     const key = String(status || 'open').toLowerCase();
-    const color = STATUS_COLOR[key] || '#94a3b8';
-    return `<span style="background:${color}22; color:${color}; border:1px solid ${color}66; padding:2px 9px; border-radius:8px; font-size:11.5px; font-weight:bold;">${esc(STATUS_LABEL[key] || key)}</span>`;
+    const fam = STATUS_FAMILY[key];
+    const tint = fam ? `rgb(var(--${fam}-rgb) / ` : 'rgb(var(--muted-rgb) / ';
+    const text = fam ? `var(--${fam}-text)` : 'var(--text-muted)';
+    return `<span style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4); padding:2px 9px; border-radius:8px; font-size:11.5px; font-weight:bold;">${esc(STATUS_LABEL[key] || key)}</span>`;
   }
 
   function ensureView() {
@@ -34,8 +36,8 @@
     view.dataset.ready = '1';
     view.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-        <h4 style="margin:0; color:#f8fafc; font-size:15px; display:flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-headset" style="color:#38bdf8;"></i> صندوق پیام‌های پشتیبانی
+        <h4 style="margin:0; color:var(--text); font-size:15px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-headset" style="color:var(--primary-text);"></i> صندوق پیام‌های پشتیبانی
         </h4>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <select id="support-filter-scope" class="input-ctrl" style="min-width:170px;">
@@ -70,8 +72,8 @@
         </table>
       </div>
       <div id="support-ticket-modal" class="modal-overlay" style="display:none; align-items:center; justify-content:center;">
-        <div class="modal-content glass" style="max-width:760px; width:92%; display:flex; flex-direction:column; background:rgba(30,41,59,0.97);">
-          <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div class="modal-content glass" style="max-width:760px; width:92%; display:flex; flex-direction:column; background:rgb(var(--surface-2-rgb) / 0.97);">
+          <div class="modal-header" style="border-bottom:1px solid rgb(var(--fg-rgb) / 0.1);">
             <h3 id="support-modal-title" style="margin:0;">پیام پشتیبانی</h3>
             <button type="button" class="modal-close" id="support-modal-close">&times;</button>
           </div>
@@ -136,15 +138,15 @@
     });
 
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:24px;">پیامی یافت نشد</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:24px;">پیامی یافت نشد</td></tr>';
       return;
     }
 
     tbody.innerHTML = rows.map(t => `
       <tr>
-        <td>${esc(t.student?.name || 'ناشناس')}<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${esc(t.student?.phoneNumber || '')}</div></td>
+        <td>${esc(t.student?.name || 'ناشناس')}<div style="font-size:11px; color:var(--text-muted); direction:ltr; text-align:right;">${esc(t.student?.phoneNumber || '')}</div></td>
         <td>${esc(roleLabel(t.student?.role))}${t.student?.caravan?.name ? ' • ' + esc(t.student.caravan.name) : ''}</td>
-        <td style="max-width:320px;">${t.category !== SUPPORT_CATEGORY ? `<span style="color:#94a3b8; font-size:11px;">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
+        <td style="max-width:320px;">${t.category !== SUPPORT_CATEGORY ? `<span style="color:var(--text-muted); font-size:11px;">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
         <td>${statusBadge(t.status)}</td>
         <td>${fmtDate(t.createdAt)}</td>
         <td><button type="button" class="page-btn btn-view" data-support-open="${esc(t.id)}"><i class="fa-solid fa-eye"></i></button></td>
@@ -156,14 +158,14 @@
 
   function messageCard(author, role, text, when, voiceUrl, attachmentUrl) {
     return `
-      <div style="padding:12px 14px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px;">
+      <div style="padding:12px 14px; background:rgb(var(--fg-rgb) / 0.05); border-radius:12px; margin-bottom:10px;">
         <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <strong>${esc(author)} <span style="font-size:11px; color:#9ca3af; font-weight:normal;">${esc(role)}</span></strong>
-          <span style="font-size:11px; color:#9ca3af;">${esc(when)}</span>
+          <strong>${esc(author)} <span style="font-size:11px; color:var(--text-muted); font-weight:normal;">${esc(role)}</span></strong>
+          <span style="font-size:11px; color:var(--text-muted);">${esc(when)}</span>
         </div>
         <p style="margin:8px 0 0; font-size:13px; line-height:1.8; white-space:pre-wrap;">${text ? esc(text) : '<em>بدون متن</em>'}</p>
         ${voiceUrl ? `<audio controls style="width:100%; margin-top:8px;" src="${esc(voiceUrl)}"></audio>` : ''}
-        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; color:#10b981; font-size:12px;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
+        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; color:var(--success-text); font-size:12px;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
       </div>`;
   }
 
@@ -234,9 +236,9 @@
     if (subtab !== 'support') {
       if (supportView) supportView.style.display = 'none';
       if (supportBtn) {
-        supportBtn.style.background = 'rgba(255,255,255,0.06)';
-        supportBtn.style.color = '#94a3b8';
-        supportBtn.style.border = '1px solid rgba(255,255,255,0.1)';
+        supportBtn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+        supportBtn.style.color = 'var(--text-muted)';
+        supportBtn.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
         supportBtn.style.boxShadow = 'none';
       }
       if (typeof originalSwitch === 'function') originalSwitch(subtab);
@@ -250,16 +252,16 @@
     ['subtab-btn-banners', 'subtab-btn-news'].forEach(id => {
       const b = document.getElementById(id);
       if (!b) return;
-      b.style.background = 'rgba(255,255,255,0.06)';
-      b.style.color = '#94a3b8';
+      b.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+      b.style.color = 'var(--text-muted)';
       b.style.boxShadow = 'none';
-      b.style.border = '1px solid rgba(255,255,255,0.1)';
+      b.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
     });
     if (supportBtn) {
-      supportBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+      supportBtn.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-strong))';
       supportBtn.style.color = 'white';
       supportBtn.style.border = 'none';
-      supportBtn.style.boxShadow = '0 4px 12px rgba(2, 132, 199, 0.35)';
+      supportBtn.style.boxShadow = '0 4px 12px rgb(var(--primary-rgb) / 0.35)';
     }
     ensureView();
     if (supportView) supportView.style.display = 'block';

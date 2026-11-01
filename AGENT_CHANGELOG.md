@@ -2423,3 +2423,29 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome smoke test (stubbed API) on HEAD vs new: all 17 nav tabs open with 0 page errors (HEAD: levels-tab threw), 0 API calls before login, form login works, legacy token migrated.
   - `npx tsc --noEmit` and `npm test` (9/9) in `admin_panel/` after `npx prisma generate` (local Prisma client was stale; no repo change).
 - **Status:** Completed
+
+### [2026-11-01 20:10] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 2 (Design Tokens & Dark/Light Theme)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Created)
+  - `admin_panel/public/theme.js` (Created)
+  - `admin_panel/public/style.css` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/support.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v5)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Design tokens for dark and light themes using the app brand (purple #8B5CF6 + gold #EAB308): surfaces, text, brand, status families with *-text (contrast-safe) and *-rgb (tints) variants, spacing/radius/type scales and an ordered z-index scale.
+  - theme.js: theme applied in <head> before paint, follows prefers-color-scheme until the user chooses, choice stored in localStorage `nopa_theme`, updates meta theme-color, recolours Chart.js on change, `nopa:themechange` event. Toggle button in the top bar and on the login card.
+  - ~2,500 hard-coded colours in style.css, index.html inline styles, JS template styles and el.style assignments rewritten to tokens (property-aware; white text kept only on solid fills); legacy CSS variables now alias the tokens; modal overlay/close-button chrome moved from inline styles to classes; inline z-index values mapped to the scale.
+  - Charts use theme colours via NopaTheme.cssVar/rgba; fixed wealth chart border (`var()` is not valid on canvas) and missing chart fonts. support.js status badges use token families instead of hex+alpha concatenation.
+  - Fixes: closed user drawer shadow leaking on the page edge, login screen on a dim backdrop, unstyled `.btn-icon` buttons, low-contrast open accordion header.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome screenshots, dark + light, 1280px and 390px, for login, users, caravans, LMS, roles, audit, news, rewards, submissions and the mentor modal (0 page errors).
+  - Smoke test: theme toggle flips + persists + charts recolour; all Phase 1 checks still pass (17 tabs, routes, 0 duplicate IDs, 0 API calls before login).
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed

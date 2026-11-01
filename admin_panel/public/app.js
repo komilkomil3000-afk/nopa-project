@@ -119,7 +119,7 @@ function showDashboard() {
 
 // 8. Toggle Dark/Light Mode
 function toggleTheme() {
-  document.body.classList.toggle('light-theme');
+  if (window.NopaTheme) window.NopaTheme.toggle();
 }
 
 async function loadMentorsTab() {
@@ -165,13 +165,13 @@ async function loadLevelsAndCertificatesTab() {
 
     data.data.forEach(user => {
       const levelNames = { 1: 'تازه وارد', 2: 'نقره‌ای', 3: 'طلایی' };
-      const levelBadge = `<span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
+      const levelBadge = `<span class="badge" style="background:var(--primary); color:white; font-size:10px;">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
       
       const lastCert = user.certificates && user.certificates.length > 0 ? user.certificates[0].title : 'بدون گواهینامه';
       
       let physicalReqs = 'ندارد';
       if (user.physicalOrders && user.physicalOrders.length > 0) {
-        physicalReqs = user.physicalOrders.map(o => `<span class="badge" style="background:${o.status === 'PENDING_PRINT' ? '#fbbf24' : '#10b981'}; color:black;">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
+        physicalReqs = user.physicalOrders.map(o => `<span class="badge" style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}; color:black;">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
       }
 
       const tr = document.createElement('tr');
@@ -973,17 +973,17 @@ function renderAdminChallenges(challenges) {
     let creatorBadge = '';
     if (isByAdmin) {
       creatorBadge = `
-        <span class="badge" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+        <span class="badge" style="background: linear-gradient(135deg, rgb(var(--primary-rgb) / 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
           <i class="fa-solid fa-shield-halved"></i> توسط مدیر سیستم
         </span>
       `;
     } else {
       creatorBadge = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+          <span class="badge" style="background: rgb(var(--info-rgb) / 0.2); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
             <i class="fa-solid fa-user-tie"></i> توسط راهبر
           </span>
-          <span style="font-size: 11.5px; color: #cbd5e1; font-weight: 600;">${esc(creatorName)}</span>
+          <span style="font-size: 11.5px; color: var(--text-soft); font-weight: 600;">${esc(creatorName)}</span>
         </div>
       `;
     }
@@ -994,78 +994,78 @@ function renderAdminChallenges(challenges) {
     if (audience && audience.type === 'caravan') {
       caravanDisplay = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+          <span class="badge" style="background: rgb(var(--primary-rgb) / 0.18); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
             <i class="fa-solid fa-users"></i> کاروان: ${esc(audience.name)}
           </span>
-          <span style="font-size: 11px; color: #94a3b8;">
-            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${esc(audience.mentorName || 'نامشخص')}
+          <span style="font-size: 11px; color: var(--text-muted);">
+            <i class="fa-solid fa-user-tie" style="color: var(--text-faint);"></i> راهبر: ${esc(audience.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
     } else if (c.caravanInfo) {
       caravanDisplay = `
         <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgba(14, 165, 233, 0.18); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+          <span class="badge" style="background: rgb(var(--primary-rgb) / 0.18); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
             <i class="fa-solid fa-users"></i> کاروان: ${esc(c.caravanInfo.name)}
           </span>
-          <span style="font-size: 11px; color: #94a3b8;">
-            <i class="fa-solid fa-user-tie" style="color: #64748b;"></i> راهبر: ${esc(c.caravanInfo.mentorName || 'نامشخص')}
+          <span style="font-size: 11px; color: var(--text-muted);">
+            <i class="fa-solid fa-user-tie" style="color: var(--text-faint);"></i> راهبر: ${esc(c.caravanInfo.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
     } else {
       caravanDisplay = `
-        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+        <span class="badge" style="background: rgb(var(--muted-rgb) / 0.15); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.25); font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
           <i class="fa-solid fa-globe"></i> عمومی (همه کاروان‌ها)
         </span>
       `;
     }
 
     // Type badge
-    let typeBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
+    let typeBadge = `<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-soft); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
     if (c.type === 'quiz') {
-      typeBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
+      typeBadge = `<span class="badge" style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
     } else if (c.type === 'skill' || c.type === 'text') {
-      typeBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
+      typeBadge = `<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     } else if (c.type === 'file') {
-      typeBadge = `<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
+      typeBadge = `<span class="badge" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     }
 
     // Submissions participation
     const approved = c.approvedSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'approved').length : 0);
     const pending = c.pendingSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length : 0);
     const participation = `<div style="font-size: 11.5px; display: flex; justify-content: center; gap: 6px;">
-      <span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved}</span>
-      <span style="color: #64748b;">|</span>
-      <span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending}</span>
+      <span style="color: var(--success-text); font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved}</span>
+      <span style="color: var(--text-faint);">|</span>
+      <span style="color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending}</span>
     </div>`;
 
     const escapedTitle = escJs(c.title || '');
 
     return `
       <tr>
-        <td><span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
+        <td><span class="badge" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
         <td>
-          <div style="font-weight: bold; color: white; font-size: 13px;">${esc(c.title)}</div>
-          <div style="font-size: 11.5px; color: #94a3b8; margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(c.description || '')}</div>
+          <div style="font-weight: bold; color: var(--text); font-size: 13px;">${esc(c.title)}</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(c.description || '')}</div>
         </td>
         <td>${caravanDisplay}</td>
         <td>${creatorBadge}</td>
         <td style="white-space: nowrap;">
           <div style="margin-bottom: 6px;">${typeBadge}</div>
-          <div style="color: #fbbf24; font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
+          <div style="color: var(--accent-text); font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
         </td>
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-            <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-list-check"></i> مراحل
             </button>
-            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" onclick="window.openChallengeRanking('${c.id}')" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
-            <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" onclick="window.openChallengeRanking('${c.id}')" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
+            <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgb(var(--info-rgb) / 0.15); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" onclick="window.deleteChallengeAdmin('${c.id}', '${escapedTitle}')" title="حذف چالش" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <button type="button" class="btn-action" onclick="window.deleteChallengeAdmin('${c.id}', '${escapedTitle}')" title="حذف چالش" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-trash"></i> حذف
             </button>
           </div>
@@ -1178,7 +1178,7 @@ window.handleChallengeAudienceChange = function(mode) {
   if (!note && rangeRow) {
     note = document.createElement('div');
     note.id = `${mode}-chal-banner-note`;
-    note.style.cssText = 'font-size: 12px; color: #fbbf24; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
+    note.style.cssText = 'font-size: 12px; color: var(--accent-text); background: rgb(var(--accent-rgb) / 0.1); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.7;';
     note.innerHTML = 'پاداش چالش میان‌گروهی فقط <b>درفش</b> است: پس از پاسخ کاروان‌ها، در بخش «رتبه‌بندی» کاروان‌های اول تا سوم را تایید کنید؛ به ترتیب درفش طلایی، نقره‌ای و برنزی می‌گیرند و بقیه‌ی کاروان‌های شرکت‌کننده درفش پارچه‌ای.';
     rangeRow.parentElement.insertBefore(note, rangeRow);
   }
@@ -1190,38 +1190,38 @@ window.openChallengeRanking = async function(challengeId) {
   const modal = document.getElementById('ranking-modal');
   const body = document.getElementById('ranking-body');
   if (!modal || !body) return;
-  body.innerHTML = '<div style="color:#94a3b8;">در حال بارگذاری...</div>';
+  body.innerHTML = '<div style="color:var(--text-muted);">در حال بارگذاری...</div>';
   modal.style.display = 'flex';
   try {
     const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`);
     const data = await res.json();
-    if (!res.ok) { body.innerHTML = `<div style="color:#f87171;">${esc(data.error || 'خطا')}</div>`; return; }
+    if (!res.ok) { body.innerHTML = `<div style="color:var(--danger-text);">${esc(data.error || 'خطا')}</div>`; return; }
     document.getElementById('ranking-title').textContent = `رتبه‌بندی کاروان‌ها: ${data.challenge.title}`;
     const names = window.assetNamesMap || {};
     const tierName = { gold: names.derafsh_gold || 'درفش طلایی', silver: names.derafsh_silver || 'درفش نقره‌ای', bronze: names.derafsh_bronze || 'درفش برنزی', cloth: names.derafsh_cloth || 'درفش پارچه‌ای' };
-    const tierColor = { gold: '#fbbf24', silver: '#cbd5e1', bronze: '#d97706', cloth: '#94a3b8' };
+    const tierColor = { gold: 'var(--accent-text)', silver: 'var(--text-soft)', bronze: 'var(--accent-strong)', cloth: 'var(--text-muted)' };
 
     if (data.challenge.finalized) {
-      body.innerHTML = '<div style="margin-bottom:10px; color:#34d399;"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
-        data.result.map(r => `<div style="display:flex; justify-content:space-between; padding:8px 12px; margin-bottom:6px; background:rgba(255,255,255,0.04); border-radius:8px;"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
+      body.innerHTML = '<div style="margin-bottom:10px; color:var(--success-text);"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
+        data.result.map(r => `<div style="display:flex; justify-content:space-between; padding:8px 12px; margin-bottom:6px; background:rgb(var(--fg-rgb) / 0.04); border-radius:8px;"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
       return;
     }
     if (!data.caravans.length) {
-      body.innerHTML = '<div style="color:#94a3b8;">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
+      body.innerHTML = '<div style="color:var(--text-muted);">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
       return;
     }
     const places = Math.min(3, data.caravans.length);
     const placeLabel = ['رتبه‌ی اول (' + tierName.gold + ')', 'رتبه‌ی دوم (' + tierName.silver + ')', 'رتبه‌ی سوم (' + tierName.bronze + ')'];
     const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
-    let html = `<div style="margin-bottom:12px; color:#94a3b8;">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
+    let html = `<div style="margin-bottom:12px; color:var(--text-muted);">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
     for (let i = 0; i < places; i++) {
       html += `<label style="display:block; font-size:12px; font-weight:bold; margin:10px 0 4px; color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]};">${placeLabel[i]}</label>
-        <select class="ranking-select" style="width:100%; padding:8px 12px; background:#1e293b; border:1px solid #475569; border-radius:8px; color:white;">${options}</select>`;
+        <select class="ranking-select" style="width:100%; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; color:var(--text);">${options}</select>`;
     }
-    html += `<button type="button" onclick="window.submitChallengeRanking('${challengeId}', ${places})" style="margin-top:16px; width:100%; padding:10px; background:#fbbf24; color:#1e293b; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
+    html += `<button type="button" onclick="window.submitChallengeRanking('${challengeId}', ${places})" style="margin-top:16px; width:100%; padding:10px; background:var(--accent); color:var(--text-soft); font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = '<div style="color:#f87171;">خطا در ارتباط با سرور</div>';
+    body.innerHTML = '<div style="color:var(--danger-text);">خطا در ارتباط با سرور</div>';
   }
 };
 
@@ -1327,8 +1327,8 @@ window.loadAssetNames = async function() {
     if (!box) return;
     box.innerHTML = rows.map(r => `
       <div style="display:flex; gap:6px; align-items:center;">
-        <span style="font-size:11px; color:#94a3b8; min-width:78px;">${esc(r.key)}</span>
-        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:12.5px;">
+        <span style="font-size:11px; color:var(--text-muted); min-width:78px;">${esc(r.key)}</span>
+        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:12.5px;">
         <button type="button" onclick="window.saveAssetName('${r.key}')" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
       </div>`).join('');
   } catch (e) { console.error('loadAssetNames error', e); }
@@ -1359,23 +1359,23 @@ window.addQuestionRow = function(mode, initialData = null) {
 
   const card = document.createElement('div');
   card.className = 'challenge-q-card';
-  card.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; position: relative;';
+  card.style.cssText = 'background: rgb(var(--fg-rgb) / 0.04); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 8px; padding: 12px; position: relative;';
   card.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-      <span style="font-weight: bold; color: #c4b5fd; font-size: 12px;">سوال / گام شماره ${qIndex}</span>
-      <button type="button" onclick="this.closest('.challenge-q-card').remove()" style="background: rgba(239,68,68,0.2); color: #f87171; border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
+      <span style="font-weight: bold; color: var(--primary-text); font-size: 12px;">سوال / گام شماره ${qIndex}</span>
+      <button type="button" onclick="this.closest('.challenge-q-card').remove()" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
         <i class="fa-solid fa-trash"></i> حذف
       </button>
     </div>
     <div style="margin-bottom: 8px;">
-      <input type="text" class="chal-q-title" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: #1e293b; border: 1px solid #475569; border-radius: 6px; color: white; font-size: 12px;">
+      <input type="text" class="chal-q-title" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px;">
     </div>
-    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
+    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
       ${[0, 1, 2, 3].map(i => `
-        <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 6px;">
-          <input type="radio" name="${mode}-correct-${qIndex}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''} style="cursor: pointer; accent-color: #10b981;">
-          <input type="text" class="chal-q-opt" placeholder="گزینه ${i + 1}" value="${(opts[i] || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; background: transparent; border: 1px solid #334155; border-radius: 4px; color: white; font-size: 11.5px;">
+        <div style="display: flex; align-items: center; gap: 6px; background: rgb(var(--shade-rgb) / 0.2); padding: 4px 8px; border-radius: 6px;">
+          <input type="radio" name="${mode}-correct-${qIndex}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''} style="cursor: pointer; accent-color: var(--success);">
+          <input type="text" class="chal-q-opt" placeholder="گزینه ${i + 1}" value="${(opts[i] || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; background: transparent; border: 1px solid var(--border-strong); border-radius: 4px; color: var(--text); font-size: 11.5px;">
         </div>
       `).join('')}
     </div>
@@ -1593,11 +1593,11 @@ window.openEditChallengeModal = function(challengeId) {
   if (badgeEl) {
     if (c.creatorInfo?.isByAdmin) {
       badgeEl.className = 'badge';
-      badgeEl.style.cssText = 'background: rgba(168, 85, 247, 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.4);';
+      badgeEl.style.cssText = 'background: rgb(var(--primary-rgb) / 0.2); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.4);';
       badgeEl.innerHTML = '<i class="fa-solid fa-shield-halved"></i> ایجاد شده توسط: مدیر سیستم';
     } else {
       badgeEl.className = 'badge';
-      badgeEl.style.cssText = 'background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);';
+      badgeEl.style.cssText = 'background: rgb(var(--info-rgb) / 0.2); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.4);';
       badgeEl.innerHTML = `<i class="fa-solid fa-user-tie"></i> ایجاد شده توسط راهبر: ${esc(c.creatorInfo?.name || 'راهبر')}`;
     }
   }
@@ -1735,7 +1735,7 @@ window.openChallengeStepsModal = function(challengeId) {
   const bodyEl = document.getElementById('modal-challenge-body');
   if (!modal || !bodyEl) return;
 
-  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: #f59e0b;"></i> ${esc(c.title)}`;
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: var(--accent-text);"></i> ${esc(c.title)}`;
   if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
@@ -1743,9 +1743,9 @@ window.openChallengeStepsModal = function(challengeId) {
   let html = '';
   if (qList.length > 0) {
     html += `
-      <div style="margin-bottom: 16px; padding: 12px 16px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 10px;">
-        <div style="font-weight: bold; color: #c4b5fd; font-size: 13px; margin-bottom: 4px;"><i class="fa-solid fa-info-circle"></i> ساختار مرحله‌ای چالش در اپلیکیشن نپا:</div>
-        <div style="color: #94a3b8; font-size: 12px;">این چالش شامل ${qList.length} مرحله یا سوال متوالی است که دانش‌آموز در اپلیکیشن قدم به قدم به آن پاسخ می‌دهد.</div>
+      <div style="margin-bottom: 16px; padding: 12px 16px; background: rgb(var(--primary-rgb) / 0.1); border: 1px solid rgb(var(--primary-rgb) / 0.25); border-radius: 10px;">
+        <div style="font-weight: bold; color: var(--primary-text); font-size: 13px; margin-bottom: 4px;"><i class="fa-solid fa-info-circle"></i> ساختار مرحله‌ای چالش در اپلیکیشن نپا:</div>
+        <div style="color: var(--text-muted); font-size: 12px;">این چالش شامل ${qList.length} مرحله یا سوال متوالی است که دانش‌آموز در اپلیکیشن قدم به قدم به آن پاسخ می‌دهد.</div>
       </div>
     `;
 
@@ -1755,49 +1755,49 @@ window.openChallengeStepsModal = function(challengeId) {
       const correctIdx = q.correct !== undefined ? q.correct : -1;
 
       html += `
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+        <div style="background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span class="badge" style="background: rgba(139, 92, 246, 0.25); color: #c4b5fd; font-weight: bold; font-size: 12px;">
+            <span class="badge" style="background: rgb(var(--primary-rgb) / 0.25); color: var(--primary-text); font-weight: bold; font-size: 12px;">
               گام ${idx + 1} از ${qList.length}
             </span>
-            <span style="font-size: 11px; color: #94a3b8;">سوال چهارگزینه‌ای</span>
+            <span style="font-size: 11px; color: var(--text-muted);">سوال چهارگزینه‌ای</span>
           </div>
-          <h4 style="color: white; font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${esc(qText)}</h4>
+          <h4 style="color: var(--text); font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${esc(qText)}</h4>
           ${opts.length > 0 ? `
             <div style="display: flex; flex-direction: column; gap: 8px;">
               ${opts.map((opt, oIdx) => {
                 const isCorrect = (oIdx === correctIdx);
                 return `
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: ${isCorrect ? 'rgba(16, 185, 129, 0.15)' : 'rgba(0,0,0,0.2)'}; border: 1px solid ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.06)'}; color: ${isCorrect ? '#6ee7b7' : '#cbd5e1'}; font-size: 12.5px;">
-                    <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: ${isCorrect ? '#10b981' : 'rgba(255,255,255,0.1)'}; color: white; font-weight: bold;">${oIdx + 1}</span>
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: ${isCorrect ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--shade-rgb) / 0.2)'}; border: 1px solid ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color: ${isCorrect ? 'var(--success-text)' : 'var(--border-strong)'}; font-size: 12.5px;">
+                    <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.1)'}; color: white; font-weight: bold;">${oIdx + 1}</span>
                     <span style="flex: 1;">${esc(opt)}</span>
-                    ${isCorrect ? '<span style="color: #10b981; font-weight: bold; font-size: 11px;"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
+                    ${isCorrect ? '<span style="color: var(--success-text); font-weight: bold; font-size: 11px;"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
                   </div>
                 `;
               }).join('')}
             </div>
           ` : `
-            <div style="color: #94a3b8; font-size: 12px;">بدون گزینه‌های چهارگزینه‌ای (پاسخ تشریحی)</div>
+            <div style="color: var(--text-muted); font-size: 12px;">بدون گزینه‌های چهارگزینه‌ای (پاسخ تشریحی)</div>
           `}
         </div>
       `;
     });
   } else {
     html += `
-      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 18px; margin-bottom: 14px;">
+      <div style="background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 18px; margin-bottom: 14px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; font-weight: bold; font-size: 12px;">
+          <span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); font-weight: bold; font-size: 12px;">
             مرحله ۱: اجرای تکلیف مهارتی
           </span>
-          <span style="font-size: 11px; color: #94a3b8;">پاسخ متنی و پیوست فایل</span>
+          <span style="font-size: 11px; color: var(--text-muted);">پاسخ متنی و پیوست فایل</span>
         </div>
-        <h4 style="color: white; font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${esc(c.title)}</h4>
-        <div style="background: rgba(0, 0, 0, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; color: #cbd5e1; font-size: 13px; line-height: 1.7; border-right: 3px solid #f59e0b;">
+        <h4 style="color: var(--text); font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${esc(c.title)}</h4>
+        <div style="background: rgb(var(--shade-rgb) / 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; color: var(--text-soft); font-size: 13px; line-height: 1.7; border-right: 3px solid var(--accent);">
           ${esc(c.description)}
         </div>
-        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 10px 14px;">
-          <div style="color: #10b981; font-size: 12px; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
-          <div style="color: #94a3b8; font-size: 12px; line-height: 1.6;">دانش‌آموز متن پاسخ خود را در فیلد مربوطه تایپ کرده و در صورت تمایل فایل صوتی، عکس یا پوستر طراحی‌شده را ضمیمه می‌نماید. راهبر یا مدیر در بخش ارزیابی زیر می‌تواند آن را بررسی و پاداش زریک را ثبت کند.</div>
+        <div style="background: rgb(var(--success-rgb) / 0.08); border: 1px solid rgb(var(--success-rgb) / 0.2); border-radius: 8px; padding: 10px 14px;">
+          <div style="color: var(--success-text); font-size: 12px; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
+          <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6;">دانش‌آموز متن پاسخ خود را در فیلد مربوطه تایپ کرده و در صورت تمایل فایل صوتی، عکس یا پوستر طراحی‌شده را ضمیمه می‌نماید. راهبر یا مدیر در بخش ارزیابی زیر می‌تواند آن را بررسی و پاداش زریک را ثبت کند.</div>
         </div>
       </div>
     `;
@@ -2036,8 +2036,8 @@ function renderAdminSubmissions(submissions) {
     const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
     const answer = s.answerText || 'بدون متن (فایل ارسالی)';
     const fileLink = s.fileUrl
-      ? `<a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
-      : '<span style="color: #64748b;">-</span>';
+      ? `<a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
+      : '<span style="color: var(--text-faint);">-</span>';
 
     const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
     const rewardVal = s.challenge?.rewardZarik || 50;
@@ -2046,24 +2046,24 @@ function renderAdminSubmissions(submissions) {
     let statusBadge = '';
     const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
     if (isPending) {
-      statusBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">در انتظار ارزیابی</span>`;
+      statusBadge = `<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4);">در انتظار ارزیابی</span>`;
     } else if (s.status === 'approved') {
-      statusBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
+      statusBadge = `<span class="badge" style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
     } else {
-      statusBadge = `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">رد شده</span>`;
+      statusBadge = `<span class="badge" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.4);">رد شده</span>`;
     }
 
     // Actions Column with dedicated "مشاهده پاسخ"
     const actionCell = `
       <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-        <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
+        <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
           <i class="fa-solid fa-eye"></i> مشاهده پاسخ
         </button>
         ${isPending ? `
           <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
           <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
         ` : `
-          <span style="font-size: 10.5px; color: #94a3b8; align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
+          <span style="font-size: 10.5px; color: var(--text-muted); align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
         `}
       </div>
     `;
@@ -2071,34 +2071,34 @@ function renderAdminSubmissions(submissions) {
     return `
       <tr>
         <td>
-          <div style="font-weight: bold; color: white;">${esc(studentName)}</div>
-          <div style="font-size: 11px; color: #64748b;">${esc(studentPhone)}</div>
+          <div style="font-weight: bold; color: var(--text);">${esc(studentName)}</div>
+          <div style="font-size: 11px; color: var(--text-faint);">${esc(studentPhone)}</div>
         </td>
         <td>
-          <div style="font-weight: bold; color: #60a5fa; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+          <div style="font-weight: bold; color: var(--info-text); font-size: 12px; display: flex; align-items: center; gap: 4px;">
             <i class="fa-solid fa-users" style="font-size: 11px;"></i> ${esc(caravanName)}
           </div>
-          <div style="font-size: 11px; color: #cbd5e1; margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-user-tie" style="color: #c084fc; font-size: 11px;"></i> ${esc(mentorName)}
+          <div style="font-size: 11px; color: var(--text-soft); margin-top: 3px; display: flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-user-tie" style="color: var(--primary-text); font-size: 11px;"></i> ${esc(mentorName)}
           </div>
         </td>
         <td>
-          <div style="font-weight: bold; color: #c4b5fd;">${esc(chalTitle)}</div>
-          <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(255,255,255,0.06);">${chalId}</span>
+          <div style="font-weight: bold; color: var(--primary-text);">${esc(chalTitle)}</div>
+          <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgb(var(--fg-rgb) / 0.06);">${chalId}</span>
         </td>
         <td>
           <div style="max-width: 250px;">
-            <div style="font-size: 12.5px; color: #f1f5f9; line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+            <div style="font-size: 12.5px; color: var(--text); line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
               ${esc(answer)}
             </div>
-            <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: #38bdf8; font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+            <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
               <i class="fa-solid fa-eye"></i> مشاهده جواب
             </button>
           </div>
         </td>
         <td>${fileLink}</td>
-        <td style="font-size: 12px; color: #94a3b8;">${dateStr}</td>
-        <td><span style="color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
+        <td style="font-size: 12px; color: var(--text-muted);">${dateStr}</td>
+        <td><span style="color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
         <td>${statusBadge}</td>
         <td style="text-align: center;">${actionCell}</td>
       </tr>
@@ -2144,16 +2144,16 @@ window.openViewSubmissionModal = function(submissionId) {
   const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
   if (metaBadge) {
     if (isPending) {
-      metaBadge.style.background = 'rgba(245, 158, 11, 0.2)';
-      metaBadge.style.color = '#fbbf24';
+      metaBadge.style.background = 'rgb(var(--accent-rgb) / 0.2)';
+      metaBadge.style.color = 'var(--accent-text)';
       metaBadge.innerHTML = '<i class="fa-solid fa-clock"></i> وضعیت: در انتظار بررسی و ارزیابی';
     } else if (s.status === 'approved') {
-      metaBadge.style.background = 'rgba(16, 185, 129, 0.2)';
-      metaBadge.style.color = '#34d399';
+      metaBadge.style.background = 'rgb(var(--success-rgb) / 0.2)';
+      metaBadge.style.color = 'var(--success-text)';
       metaBadge.innerHTML = `<i class="fa-solid fa-check"></i> وضعیت: تایید شده (+${s.score || defaultReward} ${s.challenge?.rewardAssetType === 'nakh' ? 'کلاف' : 'زریک'})`;
     } else {
-      metaBadge.style.background = 'rgba(239, 68, 68, 0.2)';
-      metaBadge.style.color = '#f87171';
+      metaBadge.style.background = 'rgb(var(--danger-rgb) / 0.2)';
+      metaBadge.style.color = 'var(--danger-text)';
       metaBadge.innerHTML = '<i class="fa-solid fa-times"></i> وضعیت: رد شده';
     }
   }
@@ -2173,26 +2173,26 @@ window.openViewSubmissionModal = function(submissionId) {
         fileContainer.innerHTML = `
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <a href="${esc(s.fileUrl)}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
-              <img src="${esc(s.fileUrl)}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4);" />
+              <img src="${esc(s.fileUrl)}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgb(var(--fg-rgb) / 0.1); background: rgb(var(--shade-rgb) / 0.4);" />
             </a>
-            <div style="font-size: 11px; color: #94a3b8;">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
+            <div style="font-size: 11px; color: var(--text-muted);">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
           </div>
         `;
       } else {
         fileContainer.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 12.5px;">
-              <i class="fa-solid fa-file-lines" style="color: #38bdf8; font-size: 18px;"></i>
+            <div style="display: flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: 12.5px;">
+              <i class="fa-solid fa-file-lines" style="color: var(--primary-text); font-size: 18px;"></i>
               <span>فایل ضمیمه شده توسط دانش‌آموز</span>
             </div>
-            <a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-download"></i> دانلود و مشاهده فایل
             </a>
           </div>
         `;
       }
     } else {
-      fileContainer.innerHTML = `<span style="color: #64748b; font-size: 12px;"><i class="fa-solid fa-info-circle"></i> بدون فایل یا پیوست ضمیمه</span>`;
+      fileContainer.innerHTML = `<span style="color: var(--text-faint); font-size: 12px;"><i class="fa-solid fa-info-circle"></i> بدون فایل یا پیوست ضمیمه</span>`;
     }
   }
 
@@ -2382,7 +2382,7 @@ async function loadUsers() {
       let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
-        roleBadge += ` <span class="badge" style="background:#8B5CF6; color:white; font-size:10px;">${levelName}</span>`;
+        roleBadge += ` <span class="badge" style="background:var(--primary); color:white; font-size:10px;">${levelName}</span>`;
       }
       
       const blockBadge = u.blocked ? `<span class="badge badge-blocked">مسدود شده</span>` : '';
@@ -2391,7 +2391,7 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge" style="background:#2563eb; color:white; font-size:10px;">مرد</span>' : u.gender === 'female' ? '<span class="badge" style="background:#db2777; color:white; font-size:10px;">زن</span>' : ''} ${blockBadge}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge" style="background:var(--info-strong); color:white; font-size:10px;">مرد</span>' : u.gender === 'female' ? '<span class="badge" style="background:#db2777; color:white; font-size:10px;">زن</span>' : ''} ${blockBadge}</td>
         <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
@@ -2433,7 +2433,7 @@ async function viewUserDetails(userId) {
       <h3 id="drawer-user-name">${esc(user.name)}</h3>
       <div style="flex:1;"></div>
       ${(user.isDualRole || user.role === 'mentor') ? `
-        <button id="btn-role-switcher" class="btn-action" style="background-color:#10b981; color:white; margin-left:15px;" onclick="toggleDualRoleView()">
+        <button id="btn-role-switcher" class="btn-action" style="background-color:var(--success); color:white; margin-left:15px;" onclick="toggleDualRoleView()">
           <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
         </button>
       ` : ''}
@@ -2463,7 +2463,7 @@ async function viewUserDetails(userId) {
             <div style="margin-top:8px;"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
             <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
             <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
+            <hr style="border-color: rgb(var(--fg-rgb) / 0.1); margin: 15px 0;" />
             <div style="text-align: right; font-size: 13px;">
               <p><strong>زریک:</strong> <span style="color:var(--color-neon-blue);">${payload.balances.zarik.toLocaleString()}</span></p>
               <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
@@ -2472,12 +2472,12 @@ async function viewUserDetails(userId) {
             </div>
             <div style="margin-top:15px; display:flex; gap:5px; flex-wrap:wrap; justify-content:space-between;">
               <button class="btn-primary" style="flex:1; font-size:11px;" onclick="openPasswordOverride('${user.id}')">تغییر رمز</button>
-              <button class="btn-action" style="flex:1; background:#ef4444; color:white; font-size:11px; padding:6px;" onclick="setAccountStatus('${user.id}', 'SUSPENDED')">تعلیق</button>
+              <button class="btn-action" style="flex:1; background:var(--danger); color:white; font-size:11px; padding:6px;" onclick="setAccountStatus('${user.id}', 'SUSPENDED')">تعلیق</button>
             </div>
           </div>
 
           <div style="flex:1; min-width: 300px;">
-            <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+            <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:10px;">
               <button class="btn-action active" onclick="switchDrawerTab('tab-identity')" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
               <button class="btn-action" onclick="switchDrawerTab('tab-class-progress')" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
               <button class="btn-action" onclick="switchDrawerTab('tab-support')" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
@@ -2504,30 +2504,30 @@ async function viewUserDetails(userId) {
               <div class="panel-card glass" style="padding:14px;">
                 <!-- 5 Stats Summary Cards Bar -->
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap:8px; margin-bottom:14px;">
-                  <div style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: #c4b5fd; font-weight: bold;"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
-                    <div id="drawer-stat-stations" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۵</div>
+                  <div style="background: rgb(var(--primary-rgb) / 0.12); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--primary-text); font-weight: bold;"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
+                    <div id="drawer-stat-stations" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۵</div>
                   </div>
-                  <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: #38bdf8; font-weight: bold;"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
-                    <div id="drawer-stat-classes" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  <div style="background: rgb(var(--primary-rgb) / 0.12); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--primary-text); font-weight: bold;"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
+                    <div id="drawer-stat-classes" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
                   </div>
-                  <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: #34d399; font-weight: bold;"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
-                    <div id="drawer-stat-parts" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  <div style="background: rgb(var(--success-rgb) / 0.12); border: 1px solid rgb(var(--success-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--success-text); font-weight: bold;"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
+                    <div id="drawer-stat-parts" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
                   </div>
-                  <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: #fbbf24; font-weight: bold;"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
-                    <div id="drawer-stat-quizzes" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                  <div style="background: rgb(var(--accent-rgb) / 0.12); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
+                    <div style="font-size: 11px; color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
+                    <div id="drawer-stat-quizzes" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
                   </div>
                   <div style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
                     <div style="font-size: 11px; color: #f472b6; font-weight: bold;"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
-                    <div id="drawer-stat-challenges" style="font-size: 15px; font-weight: 800; color: white; margin-top: 4px;">۰ از ۰</div>
+                    <div id="drawer-stat-challenges" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
                   </div>
                 </div>
 
                 <!-- Filter Chips & Search Bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:rgba(0,0,0,0.25); padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.25); padding:8px 10px; border-radius:8px; border:1px solid rgb(var(--fg-rgb) / 0.06);">
                   <div style="display:flex; gap:6px; flex-wrap:wrap;" id="drawer-class-filter-chips">
                     <button type="button" class="btn-action active" onclick="window.filterDrawerClassProgress('all')" id="btn-prog-filter-all" style="padding:4px 8px; font-size:11px; border-radius:6px;">همه موارد</button>
                     <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('classes')" id="btn-prog-filter-classes" style="padding:4px 8px; font-size:11px; border-radius:6px;">کلاس‌ها</button>
@@ -2537,19 +2537,19 @@ async function viewUserDetails(userId) {
                     <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('challenges')" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
                   </div>
                   <div style="position:relative; flex: 1 1 150px; max-width: 220px;">
-                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:white; font-size:11.5px; box-sizing:border-box;">
+                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:11.5px; box-sizing:border-box;">
                   </div>
                 </div>
 
                 <!-- 5-Column Table -->
-                <div class="table-container" style="max-height: 380px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+                <div class="table-container" style="max-height: 380px; overflow-y: auto; border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 8px;">
                   <table class="data-table" id="drawer-class-progress-table" style="margin: 0; width: 100%;">
-                    <thead style="position: sticky; top: 0; background: #0f172a; z-index: 2;">
+                    <thead style="position: sticky; top: 0; background: var(--surface); z-index: 2;">
                       <tr>
-                        <th style="width: 130px;"><i class="fa-solid fa-map-location-dot" style="color: #c4b5fd;"></i> منزلگاه</th>
-                        <th style="width: 140px;"><i class="fa-solid fa-chalkboard-user" style="color: #38bdf8;"></i> کلاس</th>
-                        <th style="width: 150px;"><i class="fa-solid fa-circle-play" style="color: #34d399;"></i> پارت</th>
-                        <th style="width: 130px;"><i class="fa-solid fa-spell-check" style="color: #fbbf24;"></i> آزمون</th>
+                        <th style="width: 130px;"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-text);"></i> منزلگاه</th>
+                        <th style="width: 140px;"><i class="fa-solid fa-chalkboard-user" style="color: var(--primary-text);"></i> کلاس</th>
+                        <th style="width: 150px;"><i class="fa-solid fa-circle-play" style="color: var(--success-text);"></i> پارت</th>
+                        <th style="width: 130px;"><i class="fa-solid fa-spell-check" style="color: var(--accent-text);"></i> آزمون</th>
                         <th style="width: 140px;"><i class="fa-solid fa-trophy" style="color: #f472b6;"></i> چالش</th>
                         <th style="width: 110px; text-align: center;">وضعیت پیشرفت</th>
                       </tr>
@@ -2564,11 +2564,11 @@ async function viewUserDetails(userId) {
 
             <div id="tab-support" class="drawer-tab-content" style="display:none;">
               <div class="panel-card glass" style="padding:12px; margin-bottom:12px;">
-                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">اطلاعات کاروان</h5>
+                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom: 5px;">اطلاعات کاروان</h5>
                 <p style="margin-top:10px;"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
               </div>
               <div class="panel-card glass" style="padding:12px;">
-                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">تاریخچه تیکت‌ها</h5>
+                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom: 5px;">تاریخچه تیکت‌ها</h5>
                 <div id="drawer-ticket-list" style="max-height:200px; overflow:auto; padding-left:12px; margin-top: 10px;"></div>
               </div>
             </div>
@@ -2581,12 +2581,12 @@ async function viewUserDetails(userId) {
         <h3 style="color:var(--color-warning); text-align:center; margin-bottom:20px;">داشبورد و آمار اختصاصی راهبر</h3>
         <div class="grid-cards" style="grid-template-columns: 1fr 1fr;">
            <div class="stat-card glass">
-             <i class="fa-solid fa-users" style="color: #60a5fa;"></i>
+             <i class="fa-solid fa-users" style="color: var(--info-text);"></i>
              <h4>کاروان‌های تحت مدیریت</h4>
              <div class="stat-value" id="mentor-caravans-count">${payload.mentoredCaravans?.length || 0}</div>
            </div>
            <div class="stat-card glass">
-             <i class="fa-solid fa-star" style="color: #fbbf24;"></i>
+             <i class="fa-solid fa-star" style="color: var(--accent-text);"></i>
              <h4>سطح راهبری</h4>
              <div class="stat-value">${user.mentorLevel || 1}</div>
            </div>
@@ -2594,7 +2594,7 @@ async function viewUserDetails(userId) {
         <div class="panel-card glass" style="margin-top:20px; padding:15px;">
            <h4 style="margin-bottom:10px;">لیست کاروان‌ها</h4>
            <ul style="list-style:none; padding:0;">
-             ${payload.mentoredCaravans?.map(c => '<li style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.1);">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
+             ${payload.mentoredCaravans?.map(c => '<li style="padding:10px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1);">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
            </ul>
         </div>
       </div>
@@ -2609,7 +2609,7 @@ async function viewUserDetails(userId) {
     tList.innerHTML = '';
     if (payload.tickets && payload.tickets.length > 0) {
       payload.tickets.forEach(t => {
-        tList.innerHTML += `<div style="padding:8px; background:rgba(0,0,0,0.2); border-radius:8px; margin-bottom:8px;">
+        tList.innerHTML += `<div style="padding:8px; background:rgb(var(--shade-rgb) / 0.2); border-radius:8px; margin-bottom:8px;">
           <strong>${esc(t.subject)}</strong> <span class="badge" style="float:left; font-size:10px;">${t.status}</span>
           <p style="font-size:12px; margin-top:5px; color:var(--text-secondary);">${esc(t.description)}</p>
         </div>`;
@@ -2646,17 +2646,18 @@ async function viewUserDetails(userId) {
                 Math.min(100, (payload.watchRecords?.length || 0) * 10),
                 (payload.quizzes?.[0]?.score || 0)
               ],
-              backgroundColor: 'rgba(139, 92, 246, 0.4)',
-              borderColor: 'rgba(139, 92, 246, 1)',
+              backgroundColor: NopaTheme.rgba('--primary-rgb', 0.4),
+              borderColor: NopaTheme.rgba('--primary-rgb', 1),
               borderWidth: 2
             }]
           },
           options: {
             scales: {
+              // text / grid colours come from the theme (theme.js syncCharts)
               r: {
-                angleLines: { color: 'rgba(255,255,255,0.1)' },
-                grid: { color: 'rgba(255,255,255,0.1)' },
-                pointLabels: { color: 'rgba(255,255,255,0.7)', font: { family: 'Tahoma' } },
+                angleLines: { color: NopaTheme.cssVar('--border') },
+                grid: { color: NopaTheme.cssVar('--border') },
+                pointLabels: { color: NopaTheme.cssVar('--text-muted') },
                 ticks: { display: false }
               }
             },
@@ -2870,16 +2871,16 @@ window.populateDrawerClassProgress = function(payload) {
   const container = document.getElementById('drawer-class-filter-chips');
   if (container) {
     container.querySelectorAll('button').forEach(btn => {
-      btn.style.background = 'rgba(255,255,255,0.06)';
-      btn.style.color = '#cbd5e1';
-      btn.style.borderColor = 'rgba(255,255,255,0.1)';
+      btn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+      btn.style.color = 'var(--text-soft)';
+      btn.style.borderColor = 'rgb(var(--fg-rgb) / 0.1)';
       btn.classList.remove('active');
     });
     const defaultBtn = document.getElementById('btn-prog-filter-all');
     if (defaultBtn) {
-      defaultBtn.style.background = '#8b5cf6';
+      defaultBtn.style.background = 'var(--primary)';
       defaultBtn.style.color = 'white';
-      defaultBtn.style.borderColor = '#a78bfa';
+      defaultBtn.style.borderColor = 'var(--primary)';
       defaultBtn.classList.add('active');
     }
   }
@@ -2927,13 +2928,13 @@ window.renderDrawerClassProgressTable = function() {
     if (r.stationNumber && r.stationNumber !== '-') {
       stationCell = `
         <div style="display:flex; flex-direction:column; gap:4px;">
-          <span class="badge" style="background:rgba(139, 92, 246, 0.22); color:#c4b5fd; font-size:10px; width:fit-content; border: 1px solid rgba(139, 92, 246, 0.3);">
+          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.22); color:var(--primary-text); font-size:10px; width:fit-content; border: 1px solid rgb(var(--primary-rgb) / 0.3);">
             <i class="fa-solid fa-map-location-dot" style="margin-left:3px;"></i>منزلگاه ${r.stationNumber}
           </span>
-          <strong style="font-size:12px; color:white;">${esc(r.stationTitle)}</strong>
+          <strong style="font-size:12px; color:var(--text);">${esc(r.stationTitle)}</strong>
         </div>`;
     } else {
-      stationCell = `<span class="badge" style="background:rgba(255,255,255,0.08); color:#94a3b8; font-size:11px;"><i class="fa-solid fa-layer-group" style="margin-left:3px;"></i>عمومی / کاروان</span>`;
+      stationCell = `<span class="badge" style="background:rgb(var(--fg-rgb) / 0.08); color:var(--text-muted); font-size:11px;"><i class="fa-solid fa-layer-group" style="margin-left:3px;"></i>عمومی / کاروان</span>`;
     }
 
     // 2. کلاس
@@ -2941,7 +2942,7 @@ window.renderDrawerClassProgressTable = function() {
     if (r.sessionTitle && r.sessionTitle !== '-' && r.sessionId) {
       classCell = `
         <div style="display:flex; flex-direction:column; gap:3px;">
-          <strong style="font-size:12px; color:#38bdf8;">
+          <strong style="font-size:12px; color:var(--primary-text);">
             <i class="fa-solid fa-chalkboard-user" style="margin-left:4px; opacity:0.85;"></i>${esc(r.sessionTitle)}
           </strong>
           ${r.categoryTitle && r.categoryTitle !== '-' ? `<span style="font-size:10.5px; color:var(--text-secondary);">${esc(r.categoryTitle)}</span>` : ''}
@@ -2955,17 +2956,17 @@ window.renderDrawerClassProgressTable = function() {
     if (r.clips && r.clips.length > 0) {
       partCell = `
         <div style="display:flex; flex-direction:column; gap:4px;">
-          <span class="badge" style="background:${r.isWatched ? 'rgba(16, 185, 129, 0.2)' : 'rgba(56, 189, 248, 0.15)'}; color:${r.isWatched ? '#34d399' : '#38bdf8'}; font-size:10.5px; width:fit-content; border: 1px solid ${r.isWatched ? 'rgba(16, 185, 129, 0.3)' : 'rgba(56, 189, 248, 0.3)'};">
+          <span class="badge" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; font-size:10.5px; width:fit-content; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'};">
             <i class="fa-solid fa-circle-play" style="margin-left:3px;"></i>${r.clips.length} پارت
           </span>
-          <div style="font-size:10.5px; color:${r.isWatched ? '#34d399' : '#94a3b8'};">
+          <div style="font-size:10.5px; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'};">
             ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
       partCell = `
         <div style="display:flex; align-items:center; gap:5px;">
-          <span class="badge" style="background:${r.isWatched ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255,255,255,0.06)'}; color:${r.isWatched ? '#34d399' : '#94a3b8'}; font-size:10.5px; border: 1px solid ${r.isWatched ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255,255,255,0.1)'};">
+          <span class="badge" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; font-size:10.5px; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'};">
             <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'}" style="margin-left:3px;"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
           </span>
         </div>`;
@@ -2981,23 +2982,23 @@ window.renderDrawerClassProgressTable = function() {
       if (r.quizPassed || (qSub && qSub.score >= 50)) {
         quizCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
+            <span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--success-rgb) / 0.3);">
               <i class="fa-solid fa-check-double" style="margin-left:3px;"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;">${esc(q.title || 'آزمون پایان کلاس')}</span>
+            <span style="font-size:10.5px; color:var(--text-soft);">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       } else if (qSub) {
         quizCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
+            <span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--danger-rgb) / 0.3);">
               <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>مردود (${qSub.score})
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;">${esc(q.title || 'آزمون')}</span>
+            <span style="font-size:10.5px; color:var(--text-soft);">${esc(q.title || 'آزمون')}</span>
           </div>`;
       } else {
         quizCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; font-size:10px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <span class="badge" style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); font-size:10px; width:fit-content; border: 1px solid rgb(var(--accent-rgb) / 0.3);">
               <i class="fa-regular fa-clock" style="margin-left:3px;"></i>شرکت نکرده
             </span>
             <span style="font-size:10.5px; color:var(--text-secondary);">${esc(q.title || 'آزمون پایان کلاس')}</span>
@@ -3016,26 +3017,26 @@ window.renderDrawerClassProgressTable = function() {
       if (sub && sub.status === 'approved') {
         challengeCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(16, 185, 129, 0.2); color:#34d399; font-size:10.5px; width:fit-content; border: 1px solid rgba(16, 185, 129, 0.3);">
+            <span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--success-rgb) / 0.3);">
               <i class="fa-solid fa-trophy" style="margin-left:3px;"></i>تایید (+${ch.rewardZarik || 50} زریک)
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'pending') {
         challengeCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; font-size:10.5px; width:fit-content; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <span class="badge" style="background:rgb(var(--accent-rgb) / 0.2); color:var(--accent-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--accent-rgb) / 0.3);">
               <i class="fa-solid fa-hourglass-start" style="margin-left:3px;"></i>در انتظار ارزیابی
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'rejected') {
         challengeCell = `
           <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:#f87171; font-size:10.5px; width:fit-content; border: 1px solid rgba(239, 68, 68, 0.3);">
+            <span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--danger-rgb) / 0.3);">
               <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>نیازمند اصلاح
             </span>
-            <span style="font-size:10.5px; color:#cbd5e1;" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else {
         challengeCell = `
@@ -3052,19 +3053,19 @@ window.renderDrawerClassProgressTable = function() {
 
     // 6. وضعیت پیشرفت
     const pct = r.progressPct || 0;
-    const barColor = pct === 100 ? '#10b981' : pct >= 50 ? '#38bdf8' : pct > 0 ? '#fbbf24' : '#64748b';
+    const barColor = pct === 100 ? 'var(--success)' : pct >= 50 ? 'var(--primary)' : pct > 0 ? 'var(--accent)' : 'var(--text-faint)';
     const statusText = pct === 100 ? 'تکمیل شده' : pct > 0 ? `${pct}% پیشرفت` : 'شروع نشده';
 
     const progressCell = `
       <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:85px;">
-        <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
+        <div style="width:100%; height:6px; background:rgb(var(--fg-rgb) / 0.1); border-radius:4px; overflow:hidden;">
           <div style="width:${pct}%; height:100%; background:${barColor}; border-radius:4px; transition:width 0.3s ease;"></div>
         </div>
         <span style="font-size:10px; font-weight:bold; color:${barColor};">${statusText}</span>
       </div>`;
 
     return `
-      <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition:background 0.2s ease;">
+      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition:background 0.2s ease;">
         <td style="vertical-align:middle; padding:10px 8px;">${stationCell}</td>
         <td style="vertical-align:middle; padding:10px 8px;">${classCell}</td>
         <td style="vertical-align:middle; padding:10px 8px;">${partCell}</td>
@@ -3081,16 +3082,16 @@ window.filterDrawerClassProgress = function(filterType) {
     const container = document.getElementById('drawer-class-filter-chips');
     if (container) {
       container.querySelectorAll('button').forEach(btn => {
-        btn.style.background = 'rgba(255,255,255,0.06)';
-        btn.style.color = '#cbd5e1';
-        btn.style.borderColor = 'rgba(255,255,255,0.1)';
+        btn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+        btn.style.color = 'var(--text-soft)';
+        btn.style.borderColor = 'rgb(var(--fg-rgb) / 0.1)';
         btn.classList.remove('active');
       });
       const activeBtn = document.getElementById(`btn-prog-filter-${filterType}`);
       if (activeBtn) {
-        activeBtn.style.background = '#8b5cf6';
+        activeBtn.style.background = 'var(--primary)';
         activeBtn.style.color = 'white';
-        activeBtn.style.borderColor = '#a78bfa';
+        activeBtn.style.borderColor = 'var(--primary)';
         activeBtn.classList.add('active');
       }
     }
@@ -3142,7 +3143,7 @@ window.viewMentorDetails = async function(mentorId) {
           <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${escJs(user.userCode || user.phoneNumber)}'); alert('کد راهبر کپی شد')">
             <i class="fa-solid fa-copy text-primary"></i> <strong style="color:var(--text-primary);">NP-${esc(user.userCode || user.phoneNumber)}</strong>
           </div>
-          <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;" />
+          <hr style="border-color: rgb(var(--fg-rgb) / 0.1); margin: 15px 0;" />
           <div style="text-align: right; font-size: 13px;">
             <p><strong>رضایت مخاطبین:</strong> <span style="color:var(--color-warning);">4.8 / 5 <i class="fa-solid fa-star"></i></span></p>
             <p><strong>وضعیت تایید هویت:</strong> ${user.identityVerified ? '<span style="color:var(--color-success);">تایید شده</span>' : '<span style="color:var(--color-danger);">تایید نشده</span>'}</p>
@@ -3150,7 +3151,7 @@ window.viewMentorDetails = async function(mentorId) {
         </div>
 
         <div style="flex:1; min-width: 300px;">
-          <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+          <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:10px;">
             <button class="btn-action active" onclick="switchDrawerTab('mentor-stats')" id="btn-mentor-stats">آمار کاروان‌ها</button>
             <button class="btn-action" onclick="switchDrawerTab('mentor-docs')" id="btn-mentor-docs">بررسی مدارک</button>
             <button class="btn-action" onclick="switchDrawerTab('mentor-logs')" id="btn-mentor-logs">لاگ فعالیت</button>
@@ -3173,14 +3174,14 @@ window.viewMentorDetails = async function(mentorId) {
           <div id="mentor-docs" class="drawer-tab-content" style="display:none;">
             <div class="panel-card glass" style="padding:12px;">
               <h4 style="margin-bottom:12px; color:var(--color-neon-blue);">صف انتظار تایید گواهینامه‌های مربی</h4>
-              <div style="border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+              <div style="border: 1px solid rgb(var(--fg-rgb) / 0.1); padding: 10px; border-radius: 8px; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
                 <div>
                   <strong>مدرک روانشناسی تربیتی</strong>
                   <div style="font-size:11px; color:var(--text-secondary);">آپلود شده: دیروز</div>
                 </div>
                 <div>
-                  <button class="btn-action" style="background:var(--color-success); color:white; padding: 4px 8px; font-size: 11px;" onclick="alert('تایید شد')">تایید و ثبت</button>
-                  <button class="btn-action" style="background:var(--color-danger); color:white; padding: 4px 8px; font-size: 11px;" onclick="alert('رد شد')">رد (علت)</button>
+                  <button class="btn-action" style="background:var(--color-success); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="alert('تایید شد')">تایید و ثبت</button>
+                  <button class="btn-action" style="background:var(--color-danger); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="alert('رد شد')">رد (علت)</button>
                 </div>
               </div>
             </div>
@@ -3190,10 +3191,10 @@ window.viewMentorDetails = async function(mentorId) {
             <div class="panel-card glass" style="padding:12px;">
               <h4 style="margin-bottom:12px; color:var(--color-neon-blue);">لاگ فعالیت مربی</h4>
               <ul style="list-style:none; padding:0; font-size:13px;">
-                <li style="margin-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
+                <li style="margin-bottom:8px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:5px;">
                   <i class="fa-solid fa-check-circle" style="color:var(--color-success);"></i> تصحیح چالش برای علی رضایی
                 </li>
-                <li style="margin-bottom:8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
+                <li style="margin-bottom:8px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:5px;">
                   <i class="fa-solid fa-reply" style="color:var(--color-neon-blue);"></i> پاسخ به تیکت کاروان
                 </li>
               </ul>
@@ -3382,14 +3383,14 @@ async function loadCaravansLeaderboard() {
         rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
         trStyle = '';
       } else if (rank === 1) {
-        rankBadge = '<span class="badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
-        trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
+        trStyle = 'background: rgb(var(--accent-rgb) / 0.07); border-right: 3px solid var(--accent);';
       } else if (rank === 2) {
-        rankBadge = '<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
-        trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
+        trStyle = 'background: rgb(var(--muted-rgb) / 0.05); border-right: 3px solid var(--text-muted);';
       } else if (rank === 3) {
-        rankBadge = '<span class="badge" style="background: rgba(180, 83, 9, 0.2); color: #d97706; border: 1px solid rgba(180, 83, 9, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
-        trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
+        trStyle = 'background: rgb(var(--accent-rgb) / 0.05); border-right: 3px solid var(--accent-strong);';
       } else {
         rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
         trStyle = '';
@@ -3400,30 +3401,30 @@ async function loadCaravansLeaderboard() {
       tr.innerHTML = `
         <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
         <td>
-          <div style="font-weight: 700; font-size: 14px; color: #fff;">${esc(c.name)}</div>
+          <div style="font-weight: 700; font-size: 14px; color: var(--text);">${esc(c.name)}</div>
         </td>
         <td>
           <div style="font-size: 13px; font-weight: 500;">${esc(c.mentorName || '-')}</div>
           ${c.mentorPhone && c.mentorPhone !== '-' ? `<span style="font-size: 11px; color: var(--text-secondary);">${esc(c.mentorPhone)}</span>` : ''}
         </td>
         <td style="text-align: center;">
-          <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${c.memberCount} / ${c.capacityLimit}</span>
+          <span style="background: rgb(var(--fg-rgb) / 0.08); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${c.memberCount} / ${c.capacityLimit}</span>
         </td>
-        <td style="color: #fbbf24; font-weight: 600;">${(c.zarik || 0).toLocaleString()}</td>
-        <td style="color: #a78bfa; font-weight: 600;">${(c.nakh || 0).toLocaleString()}</td>
-        <td style="color: #ef4444; font-weight: 600;">${(c.farsh || 0).toLocaleString()}</td>
-        <td style="color: #3b82f6; font-weight: 600;">${(c.beyragh || 0).toLocaleString()}</td>
-        <td style="color: #f59e0b; font-weight: 600;">${c.stars || 0}</td>
-        <td><span style="color: #00f2fe; font-weight: 600;">${c.challengeScore || 0}</span></td>
+        <td style="color: var(--accent-text); font-weight: 600;">${(c.zarik || 0).toLocaleString()}</td>
+        <td style="color: var(--primary-text); font-weight: 600;">${(c.nakh || 0).toLocaleString()}</td>
+        <td style="color: var(--danger-text); font-weight: 600;">${(c.farsh || 0).toLocaleString()}</td>
+        <td style="color: var(--info-text); font-weight: 600;">${(c.beyragh || 0).toLocaleString()}</td>
+        <td style="color: var(--accent-text); font-weight: 600;">${c.stars || 0}</td>
+        <td><span style="color: var(--primary-text); font-weight: 600;">${c.challengeScore || 0}</span></td>
         <td style="min-width: 110px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-              <div style="height: 100%; width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, #10b981, #00f2fe); border-radius: 3px;"></div>
+            <div style="flex: 1; height: 6px; background: rgb(var(--fg-rgb) / 0.1); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, var(--success), var(--primary)); border-radius: 3px;"></div>
             </div>
             <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${c.overallProgress || 0}%</span>
           </div>
         </td>
-        <td style="color: #10b981; font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
+        <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
           <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{alert('کاروان: ${escJs(c.name)}');}">
             <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
@@ -3503,22 +3504,22 @@ async function loadIndividualsLeaderboard() {
         rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
         trStyle = '';
       } else if (rank === 1) {
-        rankBadge = '<span class="badge" style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
-        trStyle = 'background: rgba(251, 191, 36, 0.07); border-right: 3px solid #fbbf24;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
+        trStyle = 'background: rgb(var(--accent-rgb) / 0.07); border-right: 3px solid var(--accent);';
       } else if (rank === 2) {
-        rankBadge = '<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
-        trStyle = 'background: rgba(148, 163, 184, 0.05); border-right: 3px solid #94a3b8;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
+        trStyle = 'background: rgb(var(--muted-rgb) / 0.05); border-right: 3px solid var(--text-muted);';
       } else if (rank === 3) {
-        rankBadge = '<span class="badge" style="background: rgba(180, 83, 9, 0.2); color: #d97706; border: 1px solid rgba(180, 83, 9, 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
-        trStyle = 'background: rgba(180, 83, 9, 0.05); border-right: 3px solid #b45309;';
+        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
+        trStyle = 'background: rgb(var(--accent-rgb) / 0.05); border-right: 3px solid var(--accent-strong);';
       } else {
         rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
         trStyle = '';
       }
 
       const roleBadge = u.role === 'mentor'
-        ? '<span style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">راهبر</span>'
-        : '<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">دانش‌آموز</span>';
+        ? '<span style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">راهبر</span>'
+        : '<span style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">دانش‌آموز</span>';
 
       const tr = document.createElement('tr');
       if (trStyle) tr.style = trStyle;
@@ -3526,33 +3527,33 @@ async function loadIndividualsLeaderboard() {
         <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
         <td>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgb(var(--fg-rgb) / 0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px;">
               ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fa-solid fa-user" style="color:var(--text-secondary);"></i>'}
             </div>
             <div>
-              <div style="font-weight: 700; font-size: 13px; color: #fff;">${esc(u.name)}</div>
+              <div style="font-weight: 700; font-size: 13px; color: var(--text);">${esc(u.name)}</div>
               <div style="font-size: 11px; color: var(--text-secondary);">${esc(u.phoneNumber || '')}</div>
             </div>
           </div>
         </td>
         <td>${roleBadge}</td>
-        <td><span style="background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${esc(u.caravanName)}</span></td>
-        <td style="color: #fbbf24; font-weight: 600;">${(u.zarik || 0).toLocaleString()}</td>
-        <td style="color: #a78bfa; font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
-        <td style="color: #ef4444; font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
-        <td style="color: #3b82f6; font-weight: 600;">${(u.beyragh || 0).toLocaleString()}</td>
-        <td style="color: #f59e0b; font-weight: 600;">${u.stars || 0}</td>
-        <td><span style="color: #38bdf8; font-weight: 600;">${u.quizScore || 0}</span></td>
-        <td><span style="color: #00f2fe; font-weight: 600;">${u.challengeScore || 0}</span></td>
+        <td><span style="background: rgb(var(--fg-rgb) / 0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${esc(u.caravanName)}</span></td>
+        <td style="color: var(--accent-text); font-weight: 600;">${(u.zarik || 0).toLocaleString()}</td>
+        <td style="color: var(--primary-text); font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
+        <td style="color: var(--danger-text); font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
+        <td style="color: var(--info-text); font-weight: 600;">${(u.beyragh || 0).toLocaleString()}</td>
+        <td style="color: var(--accent-text); font-weight: 600;">${u.stars || 0}</td>
+        <td><span style="color: var(--primary-text); font-weight: 600;">${u.quizScore || 0}</span></td>
+        <td><span style="color: var(--primary-text); font-weight: 600;">${u.challengeScore || 0}</span></td>
         <td style="min-width: 100px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-              <div style="height: 100%; width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, #6366f1, #38bdf8); border-radius: 3px;"></div>
+            <div style="flex: 1; height: 6px; background: rgb(var(--fg-rgb) / 0.1); border-radius: 3px; overflow: hidden;">
+              <div style="height: 100%; width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, var(--primary), var(--primary)); border-radius: 3px;"></div>
             </div>
             <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${u.progressPercentage || 0}%</span>
           </div>
         </td>
-        <td style="color: #10b981; font-weight: 800; font-size: 14px;">${(u.totalScore || 0).toLocaleString()}</td>
+        <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(u.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
           <button class="page-btn" style="padding: 3px 8px; font-size: 11px;" onclick="viewUserDetails('${u.id}')" title="مشاهده پروفایل">
             <i class="fa-solid fa-user"></i>
@@ -3747,7 +3748,7 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   const modal = document.getElementById('user-modal-overlay');
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '999999';
+    modal.style.zIndex = 'var(--z-modal)';
   }
 };
 
@@ -3935,21 +3936,14 @@ async function loadZarikAnalytics() {
           datasets: [{
             label: 'موجودی زریک (۵ نفر برتر)',
             data: data.topWealthy ? data.topWealthy.map(w => w.zarikBalance) : [],
-            backgroundColor: 'rgba(0, 242, 254, 0.6)',
-            borderColor: 'var(--color-neon-blue)',
+            backgroundColor: NopaTheme.rgba('--primary-rgb', 0.6),
+            borderColor: NopaTheme.rgba('--primary-rgb', 1), // canvas cannot resolve var(); the old 'var(--…)' never drew
             borderWidth: 1
           }]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
-          },
-          scales: {
-            x: { ticks: { color: '#94a3b8' } },
-            y: { ticks: { color: '#94a3b8' } }
-          }
+          maintainAspectRatio: false
         }
       });
     }
@@ -3967,19 +3961,19 @@ async function loadZarikAnalytics() {
           datasets: [{
             data: data.distributions ? data.distributions.map(d => Math.abs(d.totalAmount)) : [],
             backgroundColor: [
-              'rgba(99, 102, 241, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-              'rgba(239, 68, 68, 0.7)'
+              NopaTheme.rgba('--primary-rgb', 0.75),
+              NopaTheme.rgba('--success-rgb', 0.75),
+              NopaTheme.rgba('--accent-rgb', 0.75),
+              NopaTheme.rgba('--danger-rgb', 0.75)
             ],
-            borderColor: 'rgba(255,255,255,0.1)'
+            borderColor: NopaTheme.cssVar('--surface')
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'right', labels: { color: '#fff', font: { family: 'Vazirmatn' } } }
+            legend: { position: 'right' }
           }
         }
       });
@@ -4098,7 +4092,7 @@ window.renderCaravansTable = function() {
   if (!tbody) return;
 
   if (!window.caravansData || window.caravansData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">هیچ کاروانی یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">هیچ کاروانی یافت نشد.</td></tr>';
     return;
   }
 
@@ -4127,7 +4121,7 @@ window.renderCaravansTable = function() {
 
   tbody.innerHTML = '';
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">کاروانی با این مشخصات یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">کاروانی با این مشخصات یافت نشد.</td></tr>';
     return;
   }
 
@@ -4144,7 +4138,7 @@ window.renderCaravansTable = function() {
       <td><span class="badge badge-student">${esc(mentorDisplay)}</span></td>
       <td>${memberCount} / ${capacity}</td>
       <td>
-        <span style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
+        <span style="color:var(--accent-text);"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
       </td>
       <td>
         <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
@@ -4156,16 +4150,16 @@ window.renderCaravansTable = function() {
       </td>
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:#0284c7; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.selectCaravanForManagement('${c.id}')" title="مشاهده کاروان">
+          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:var(--primary); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.selectCaravanForManagement('${c.id}')" title="مشاهده کاروان">
             <i class="fa-solid fa-eye"></i> مشاهده
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#10b981; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${escJs(c.name || '')}')" title="تغییر نام کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--success); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${escJs(c.name || '')}')" title="تغییر نام کاروان">
             <i class="fa-solid fa-pen-to-square"></i> تغییر نام
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#3b82f6; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openChangeCaravanMentorModalForCaravan('${c.id}')" title="تغییر راهبر">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--info); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openChangeCaravanMentorModalForCaravan('${c.id}')" title="تغییر راهبر">
             <i class="fa-solid fa-user-gear"></i> تغییر راهبر
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:#ef4444; color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteCaravanRecord('${c.id}', '${escJs(c.name || '')}')" title="حذف کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--danger); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteCaravanRecord('${c.id}', '${escJs(c.name || '')}')" title="حذف کاروان">
             <i class="fa-solid fa-trash"></i> حذف
           </button>
         </div>
@@ -4194,7 +4188,7 @@ window.openRenameCaravanModal = function(id, currentName) {
 
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '100000';
+    modal.style.zIndex = 'var(--z-mobile-nav)';
   } else {
     const promptName = prompt('لطفاً نام جدید کاروان را وارد کنید:', nameToUse);
     if (promptName && promptName.trim() && promptName.trim() !== nameToUse) {
@@ -4369,13 +4363,13 @@ window.viewStudentDetails = async function(studentId) {
   const progressEl = document.getElementById('csd-progress');
   const ticketsEl = document.getElementById('csd-tickets');
 
-  if (identityEl) identityEl.innerHTML = '<p style="color:#94a3b8; font-size:13px;">در حال بارگذاری...</p>';
-  if (assetsEl) assetsEl.innerHTML = '<p style="color:#94a3b8; font-size:13px;">در حال بارگذاری...</p>';
-  if (progressEl) progressEl.innerHTML = '<p style="color:#94a3b8; font-size:13px;">در حال بارگذاری...</p>';
-  if (ticketsEl) ticketsEl.innerHTML = '<p style="color:#94a3b8; font-size:13px;">در حال بارگذاری...</p>';
+  if (identityEl) identityEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
+  if (assetsEl) assetsEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
+  if (progressEl) progressEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
+  if (ticketsEl) ticketsEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
 
   modal.style.display = 'flex';
-  modal.style.zIndex = '999999';
+  modal.style.zIndex = 'var(--z-modal)';
 
   try {
     const token = NopaAuth.getToken();
@@ -4415,7 +4409,7 @@ window.viewStudentDetails = async function(studentId) {
     }
 
     if (!u) {
-      if (identityEl) identityEl.innerHTML = '<p style="color:#ef4444;">کاربر یافت نشد.</p>';
+      if (identityEl) identityEl.innerHTML = '<p style="color:var(--danger-text);">کاربر یافت نشد.</p>';
       return;
     }
 
@@ -4429,14 +4423,14 @@ window.viewStudentDetails = async function(studentId) {
     if (identityEl) {
       identityEl.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <div><strong style="color:#38bdf8;">نام و نام‌خانوادگی:</strong> ${esc(u.name || 'بدون نام')}</div>
-          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
-          <div><strong style="color:#94a3b8;">کد کاربری:</strong> <span style="font-family:monospace; color:#38bdf8;">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
-          <div><strong style="color:#94a3b8;">کاروان عضو:</strong> <span style="background:rgba(56,189,248,0.15); color:#38bdf8; padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
-          <div><strong style="color:#94a3b8;">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
-          <div><strong style="color:#94a3b8;">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
-          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
-          <div><strong style="color:#94a3b8;">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
+          <div><strong style="color:var(--primary-text);">نام و نام‌خانوادگی:</strong> ${esc(u.name || 'بدون نام')}</div>
+          <div><strong style="color:var(--text-muted);">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
+          <div><strong style="color:var(--text-muted);">کد کاربری:</strong> <span style="font-family:monospace; color:var(--primary-text);">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
+          <div><strong style="color:var(--text-muted);">کاروان عضو:</strong> <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
+          <div><strong style="color:var(--text-muted);">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
+          <div><strong style="color:var(--text-muted);">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
+          <div><strong style="color:var(--text-muted);">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
+          <div><strong style="color:var(--text-muted);">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
         </div>
       `;
     }
@@ -4444,11 +4438,11 @@ window.viewStudentDetails = async function(studentId) {
     if (assetsEl) {
       assetsEl.innerHTML = `
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <div><strong style="color:#fbbf24;"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span style="font-size:16px; font-weight:bold; color:#fbbf24;">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
-          <div><strong style="color:#a78bfa;"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
-          <div><strong style="color:#38bdf8;"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
-          <div><strong style="color:#10b981;"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
-          <div><strong style="color:#94a3b8;">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
+          <div><strong style="color:var(--accent-text);"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span style="font-size:16px; font-weight:bold; color:var(--accent-text);">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
+          <div><strong style="color:var(--primary-text);"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
+          <div><strong style="color:var(--primary-text);"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
+          <div><strong style="color:var(--success-text);"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
+          <div><strong style="color:var(--text-muted);">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
         </div>
       `;
     }
@@ -4477,22 +4471,22 @@ window.viewStudentDetails = async function(studentId) {
 
       let stationsHtml = `
         <!-- Summary Stats Counter -->
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-bottom:12px; background:rgba(0,0,0,0.4); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); text-align:center;">
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.4); padding:10px; border-radius:10px; border:1px solid rgb(var(--fg-rgb) / 0.06); text-align:center;">
           <div style="padding:2px;">
-            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">منزلگاه‌ها</div>
-            <div style="font-weight:bold; color:#10b981; font-size:13px;">${summary.passedStations || 0} / ${summary.totalStations || 5}</div>
+            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">منزلگاه‌ها</div>
+            <div style="font-weight:bold; color:var(--success-text); font-size:13px;">${summary.passedStations || 0} / ${summary.totalStations || 5}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
-            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">دسته‌ها / کلاس‌ها</div>
-            <div style="font-weight:bold; color:#38bdf8; font-size:13px;">${summary.passedClasses || 0} / ${summary.totalClasses || 50}</div>
+          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
+            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">دسته‌ها / کلاس‌ها</div>
+            <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${summary.passedClasses || 0} / ${summary.totalClasses || 50}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
-            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">کل پارت‌ها</div>
-            <div style="font-weight:bold; color:#a78bfa; font-size:13px;">${summary.passedParts || 0} / ${summary.totalParts || 201}</div>
+          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
+            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">کل پارت‌ها</div>
+            <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${summary.passedParts || 0} / ${summary.totalParts || 201}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgba(255,255,255,0.1);">
-            <div style="color:#94a3b8; font-size:10px; margin-bottom:2px;">آزمونک‌ها</div>
-            <div style="font-weight:bold; color:#fbbf24; font-size:13px;">${summary.passedQuizzes || 0} / ${summary.totalQuizzes || 331}</div>
+          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
+            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">آزمونک‌ها</div>
+            <div style="font-weight:bold; color:var(--accent-text); font-size:13px;">${summary.passedQuizzes || 0} / ${summary.totalQuizzes || 331}</div>
           </div>
         </div>
 
@@ -4506,34 +4500,34 @@ window.viewStudentDetails = async function(studentId) {
         const stNum = st.stationNumber || (idx + 1);
 
         let statusBadge = '';
-        let cardBorder = 'rgba(255,255,255,0.06)';
-        let cardBg = 'rgba(15,23,42,0.6)';
-        let titleColor = '#cbd5e1';
+        let cardBorder = 'rgb(var(--fg-rgb) / 0.06)';
+        let cardBg = 'rgb(var(--surface-rgb) / 0.6)';
+        let titleColor = 'var(--text-soft)';
 
         if (isCompleted) {
-          statusBadge = '<span style="background:rgba(16,185,129,0.2); color:#10b981; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-circle-check"></i> گذرانده شده</span>';
-          cardBorder = 'rgba(16,185,129,0.3)';
-          cardBg = 'rgba(16,185,129,0.05)';
-          titleColor = '#34d399';
+          statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-circle-check"></i> گذرانده شده</span>';
+          cardBorder = 'rgb(var(--success-rgb) / 0.3)';
+          cardBg = 'rgb(var(--success-rgb) / 0.05)';
+          titleColor = 'var(--success-text)';
         } else if (isUnlocked) {
-          statusBadge = '<span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-play"></i> در حال آموزش</span>';
-          cardBorder = 'rgba(56,189,248,0.3)';
-          cardBg = 'rgba(56,189,248,0.05)';
-          titleColor = '#38bdf8';
+          statusBadge = '<span style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-play"></i> در حال آموزش</span>';
+          cardBorder = 'rgb(var(--primary-rgb) / 0.3)';
+          cardBg = 'rgb(var(--primary-rgb) / 0.05)';
+          titleColor = 'var(--primary-text)';
         } else {
-          statusBadge = '<span style="background:rgba(239,68,68,0.15); color:#f87171; font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-lock"></i> قفل (مسیر آتی)</span>';
-          cardBorder = 'rgba(255,255,255,0.04)';
-          cardBg = 'rgba(0,0,0,0.25)';
-          titleColor = '#64748b';
+          statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-lock"></i> قفل (مسیر آتی)</span>';
+          cardBorder = 'rgb(var(--fg-rgb) / 0.04)';
+          cardBg = 'rgb(var(--shade-rgb) / 0.25)';
+          titleColor = 'var(--text-faint)';
         }
 
         const pct = st.totalClasses > 0 ? Math.min(100, Math.round(((st.completedClasses || 0) / st.totalClasses) * 100)) : 0;
 
         stationsHtml += `
           <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:10px; padding:10px 12px; font-size:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); padding-bottom:6px;">
               <div>
-                <span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; font-weight:bold; padding:2px 7px; border-radius:6px; margin-left:6px;">منزلگاه ${stNum}</span>
+                <span style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); font-size:11px; font-weight:bold; padding:2px 7px; border-radius:6px; margin-left:6px;">منزلگاه ${stNum}</span>
                 <strong style="color:${titleColor}; font-size:13px;">${esc(st.title)}</strong>
               </div>
               ${statusBadge}
@@ -4541,24 +4535,24 @@ window.viewStudentDetails = async function(studentId) {
 
             <!-- Categorized Metrics Grid -->
             <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 12px; font-size:11.5px;">
-              <div style="color:#94a3b8;">
-                <i class="fa-solid fa-layer-group" style="color:#38bdf8; width:16px;"></i> 
-                <strong>دسته‌های کلاس:</strong> <span style="color:white; font-weight:bold;">${st.categoriesCount || 2} دسته</span> <span style="font-size:10px; color:#64748b;">(مهارتی و رسانه‌ای)</span>
+              <div style="color:var(--text-muted);">
+                <i class="fa-solid fa-layer-group" style="color:var(--primary-text); width:16px;"></i> 
+                <strong>دسته‌های کلاس:</strong> <span style="color:var(--text); font-weight:bold;">${st.categoriesCount || 2} دسته</span> <span style="font-size:10px; color:var(--text-faint);">(مهارتی و رسانه‌ای)</span>
               </div>
 
-              <div style="color:#94a3b8;">
-                <i class="fa-solid fa-chalkboard-user" style="color:#10b981; width:16px;"></i> 
-                <strong>تعداد کلاس‌ها:</strong> <span style="color:white; font-weight:bold;">${st.completedClasses || 0}</span> از ${st.totalClasses || 0} جلسه <span style="color:#34d399; font-size:10px;">(${pct}%)</span>
+              <div style="color:var(--text-muted);">
+                <i class="fa-solid fa-chalkboard-user" style="color:var(--success-text); width:16px;"></i> 
+                <strong>تعداد کلاس‌ها:</strong> <span style="color:var(--text); font-weight:bold;">${st.completedClasses || 0}</span> از ${st.totalClasses || 0} جلسه <span style="color:var(--success-text); font-size:10px;">(${pct}%)</span>
               </div>
 
-              <div style="color:#94a3b8;">
-                <i class="fa-solid fa-film" style="color:#a78bfa; width:16px;"></i> 
-                <strong>پارت‌های هر جلسه:</strong> <span style="color:white; font-weight:bold;">${st.partsPerSession || 4} پارت</span> <span style="font-size:10px; color:#a78bfa;">(مجموعاً ${st.totalParts || 0} پارت)</span>
+              <div style="color:var(--text-muted);">
+                <i class="fa-solid fa-film" style="color:var(--primary-text); width:16px;"></i> 
+                <strong>پارت‌های هر جلسه:</strong> <span style="color:var(--text); font-weight:bold;">${st.partsPerSession || 4} پارت</span> <span style="font-size:10px; color:var(--primary-text);">(مجموعاً ${st.totalParts || 0} پارت)</span>
               </div>
 
-              <div style="color:#94a3b8;">
-                <i class="fa-solid fa-list-check" style="color:#fbbf24; width:16px;"></i> 
-                <strong>تعداد آزمون‌ها:</strong> <span style="color:#fbbf24; font-weight:bold;">${st.completedQuizzes || 0}</span> از ${st.totalQuizzes || 0} آزمونک
+              <div style="color:var(--text-muted);">
+                <i class="fa-solid fa-list-check" style="color:var(--accent-text); width:16px;"></i> 
+                <strong>تعداد آزمون‌ها:</strong> <span style="color:var(--accent-text); font-weight:bold;">${st.completedQuizzes || 0}</span> از ${st.totalQuizzes || 0} آزمونک
               </div>
             </div>
           </div>
@@ -4571,19 +4565,19 @@ window.viewStudentDetails = async function(studentId) {
 
     if (ticketsEl) {
       if (tickets.length === 0) {
-        ticketsEl.innerHTML = '<p style="color:#94a3b8; font-size:12px;">تیکت یا درخواستی ثبت نشده است.</p>';
+        ticketsEl.innerHTML = '<p style="color:var(--text-muted); font-size:12px;">تیکت یا درخواستی ثبت نشده است.</p>';
       } else {
         ticketsEl.innerHTML = tickets.slice(0, 4).map(t => `
-          <div style="border-bottom:1px solid rgba(255,255,255,0.05); padding:4px 0;">
-            <strong style="color:white;">${esc(t.subject || 'تیکت پشتیبانی')}</strong>
-            <span style="color:#94a3b8; font-size:11px; margin-right:6px;">[${t.status === 'RESOLVED' ? 'حل شده' : 'در حال بررسی'}]</span>
+          <div style="border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); padding:4px 0;">
+            <strong style="color:var(--text);">${esc(t.subject || 'تیکت پشتیبانی')}</strong>
+            <span style="color:var(--text-muted); font-size:11px; margin-right:6px;">[${t.status === 'RESOLVED' ? 'حل شده' : 'در حال بررسی'}]</span>
           </div>
         `).join('');
       }
     }
   } catch(e) {
     console.error('Error fetching student details:', e);
-    if (identityEl) identityEl.innerHTML = '<p style="color:#ef4444; font-size:13px;">خطا در دریافت اطلاعات دانش‌آموز</p>';
+    if (identityEl) identityEl.innerHTML = '<p style="color:var(--danger-text); font-size:13px;">خطا در دریافت اطلاعات دانش‌آموز</p>';
   }
 };
 
@@ -4636,7 +4630,7 @@ window.loadSelectedCaravanDetails = async function() {
     if (nokhEl) nokhEl.innerHTML = '0 <i class="fa-solid fa-layer-group"></i>';
     if (farshEl) farshEl.innerHTML = '0 <i class="fa-solid fa-rug"></i>';
     milestonesEl.innerText = '0%';
-    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">کاروانی انتخاب نشده است.</td></tr>';
+    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-faint);">کاروانی انتخاب نشده است.</td></tr>';
     return;
   }
 
@@ -4685,7 +4679,7 @@ window.loadSelectedCaravanDetails = async function() {
 
   rosterBody.innerHTML = '';
   if (members.length === 0) {
-    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#64748b;">این کاروان عضوی ندارد.</td></tr>';
+    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-faint);">این کاروان عضوی ندارد.</td></tr>';
   } else {
     members.forEach(m => {
       const name = m.name || m.user?.name || '-';
@@ -4698,18 +4692,18 @@ window.loadSelectedCaravanDetails = async function() {
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-family: monospace; color: #38bdf8; font-weight:bold;">${displayId}</td>
+        <td style="font-family: monospace; color: var(--primary-text); font-weight:bold;">${displayId}</td>
         <td><strong>${esc(name)}</strong></td>
         <td style="font-family: monospace;" dir="ltr">${esc(phone)}</td>
-        <td style="color:#fbbf24; font-weight:bold;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
-        <td style="color:#38bdf8; font-weight:bold;"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
-        <td style="color:#34d399; font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
-        <td style="color:#c084fc; font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
+        <td style="color:var(--accent-text); font-weight:bold;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+        <td style="color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
+        <td style="color:var(--success-text); font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
+        <td style="color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
         <td style="white-space:nowrap; display:flex; gap:5px;">
-          <button class="btn-action" style="background:#3b82f6; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">جزئیات</button>
-          <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${escJs(name)}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
-          <button class="btn-action" style="background:#f59e0b; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق</button>
-          <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${escJs(name)}')">حذف</button>
+          <button class="btn-action" style="background:var(--info); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">جزئیات</button>
+          <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${escJs(name)}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
+          <button class="btn-action" style="background:var(--accent); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق</button>
+          <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${escJs(name)}')">حذف</button>
         </td>
       `;
       rosterBody.appendChild(tr);
@@ -4810,7 +4804,7 @@ function renderStoredFiles() {
         <input type="text" readonly class="input-ctrl" value="${esc(abs)}" style="font-family:monospace;font-size:11px;padding:4px;height:26px;direction:ltr;">
         <button class="page-btn file-copy" data-url="${esc(abs)}" style="padding:4px 8px;font-size:11px;flex-shrink:0;"><i class="fa-solid fa-copy"></i></button></div></td>
       <td style="font-size:11px;color:var(--text-secondary);">${new Date(f.modifiedAt).toLocaleString('fa-IR')}</td>
-      <td><button class="page-btn file-del" data-path="${esc(f.path)}" style="padding:4px 8px;font-size:11px;color:#f87171;"><i class="fa-solid fa-trash"></i></button></td>`;
+      <td><button class="page-btn file-del" data-path="${esc(f.path)}" style="padding:4px 8px;font-size:11px;color:var(--danger-text);"><i class="fa-solid fa-trash"></i></button></td>`;
     tbody.appendChild(tr);
   });
 }
@@ -5305,10 +5299,10 @@ async function loadAnalytics() {
             datasets: [{
               label: 'حجم تراکنش مالی',
               data: data.charts.economyData,
-              borderColor: '#8b5cf6',
+              borderColor: NopaTheme.rgba('--primary-rgb', 1),
               tension: 0.4,
               fill: true,
-              backgroundColor: 'rgba(139, 92, 246, 0.2)'
+              backgroundColor: NopaTheme.rgba('--primary-rgb', 0.2)
             }]
           },
           options: { responsive: true, maintainAspectRatio: false }
@@ -5325,7 +5319,7 @@ async function loadAnalytics() {
             datasets: [{
               label: 'مشارکت (حل چالش)',
               data: data.charts.engagementData,
-              backgroundColor: '#10b981'
+              backgroundColor: NopaTheme.rgba('--accent-rgb', 0.85)
             }]
           },
           options: { responsive: true, maintainAspectRatio: false }
@@ -5376,8 +5370,8 @@ async function loadNotificationData() {
         tr.innerHTML = `
           <td><span class="badge ${l.channel === 'in_app' ? 'badge-admin' : 'badge-student'}">${esc(l.channel)}</span></td>
           <td>${esc(l.targetAudience)}</td>
-          <td><span style="color: ${l.status === 'success' ? '#10b981' : '#ef4444'}">${l.status === 'success' ? 'موفق' : 'خطا'}</span></td>
-          <td style="font-size:11px; color:#aaa;">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
+          <td><span style="color: ${l.status === 'success' ? 'var(--success-text)' : 'var(--danger)'}">${l.status === 'success' ? 'موفق' : 'خطا'}</span></td>
+          <td style="font-size:11px; color:var(--text-muted);">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -5417,7 +5411,7 @@ async function loadChats() {
 
     data.messages.forEach(msg => {
       const typeStr = msg.caravan ? `گروه: ${esc(msg.caravan.name)}` : `مستقیم به: ${esc(msg.receiver ? msg.receiver.name : '؟')}`;
-      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge" style="background:#10B981; color:white;"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
+      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge" style="background:var(--success); color:white;"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="direction:ltr; text-align:right;">${new Date(msg.createdAt).toLocaleString('fa-IR')}</td>
@@ -5488,7 +5482,7 @@ window.loadMentors = async function() {
   const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
 
   const token = NopaAuth.getToken();
   try {
@@ -5507,7 +5501,7 @@ window.loadMentors = async function() {
     window.filterMentorsList();
   } catch (err) {
     console.error('Error loading mentors:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--danger-text);"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
   }
 };
 
@@ -5516,7 +5510,7 @@ window.filterMentorsList = function() {
   if (!tbody) return;
 
   if (!window.mentorsMasterList || window.mentorsMasterList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
     return;
   }
 
@@ -5584,7 +5578,7 @@ window.filterMentorsList = function() {
 
   // Render rows
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:#64748b; margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:var(--text-faint); margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
     return;
   }
 
@@ -5614,44 +5608,44 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
     const caravansHtml = caravans.length > 0
-      ? caravans.map(c => `<span class="badge" style="background:rgba(2, 132, 199, 0.2); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
-      : '<span style="color:#64748b; font-size:12px;">فاقد کاروان</span>';
+      ? caravans.map(c => `<span class="badge" style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
+      : '<span style="color:var(--text-faint); font-size:12px;">فاقد کاروان</span>';
 
     // Status indicator
     const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
-    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#ef4444;"></span>' : '<span title="فعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#10b981;"></span>';
+    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);"></span>' : '<span title="فعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--success);"></span>';
 
     // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
-      ? `<span style="font-family:monospace; color:#cbd5e1;">${esc(m.nationalId)}</span>`
-      : '<span style="color:#64748b; font-size:11px;">وارد نشده است</span>';
+      ? `<span style="font-family:monospace; color:var(--text-soft);">${esc(m.nationalId)}</span>`
+      : '<span style="color:var(--text-faint); font-size:11px;">وارد نشده است</span>';
 
     return `
       <tr style="transition:all 0.2s ease;">
         <td style="text-align:center;">
-          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, #0284c7, #6366f1); display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; font-size:13px; margin:0 auto; box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary)); display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; font-size:13px; margin:0 auto; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
             ${avatarInitials}
           </div>
         </td>
         <td>
           <div style="display:flex; align-items:center; gap:6px;">
             ${statusDot}
-            <strong style="color:#f8fafc; font-size:13.5px;">${esc(m.name || 'راهبر بدون نام')}</strong>
+            <strong style="color:var(--text); font-size:13.5px;">${esc(m.name || 'راهبر بدون نام')}</strong>
           </div>
-          ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:#fbbf24; background:rgba(245,158,11,0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
+          ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:var(--accent-text); background:rgb(var(--accent-rgb) / 0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
         </td>
-        <td style="font-family:monospace; direction:ltr; text-align:right; color:#cbd5e1;">${esc(m.phoneNumber || '-')}</td>
+        <td style="font-family:monospace; direction:ltr; text-align:right; color:var(--text-soft);">${esc(m.phoneNumber || '-')}</td>
         <td style="text-align:center;">${nationalIdText}</td>
         <td>${caravansHtml}</td>
         <td style="text-align:center; white-space:nowrap;">
           <div style="display:inline-flex; gap:6px; align-items:center;">
-            <button class="btn-action" onclick="window.viewMentorDossier('${m.id}')" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
+            <button class="btn-action" onclick="window.viewMentorDossier('${m.id}')" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
               <i class="fa-solid fa-eye"></i> شناسنامه
             </button>
-            <button class="btn-action" onclick="window.editMentor('${m.id}')" style="background:rgba(16, 185, 129, 0.15); color:#10b981; border:1px solid rgba(16, 185, 129, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
+            <button class="btn-action" onclick="window.editMentor('${m.id}')" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
               <i class="fa-solid fa-pen"></i> ویرایش
             </button>
-            <button class="btn-action" onclick="window.openMentorModerationModal('${m.id}')" style="background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
+            <button class="btn-action" onclick="window.openMentorModerationModal('${m.id}')" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
               <i class="fa-solid fa-user-shield"></i> وضعیت
             </button>
           </div>
@@ -5698,8 +5692,8 @@ window.viewMentorDossier = async function(mentorId) {
 
   window.currentMentorId = mentorId;
   modal.style.display = 'flex';
-  modal.style.zIndex = '999999';
-  body.innerHTML = '<div style="text-align:center; padding:30px; color:#38bdf8;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
+  modal.style.zIndex = 'var(--z-modal)';
+  body.innerHTML = '<div style="text-align:center; padding:30px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
   const token = NopaAuth.getToken();
   let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
@@ -5721,7 +5715,7 @@ window.viewMentorDossier = async function(mentorId) {
     const mentorName = dossier?.identity?.name || mentor?.name || 'راهبر آموزشی';
     const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
     
-    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:#38bdf8;"></i> شناسنامه راهبر: ${esc(mentorName)}`;
+    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:var(--primary-text);"></i> شناسنامه راهبر: ${esc(mentorName)}`;
     const cleanNatId = (dossier?.identity?.nationalId || mentor?.nationalId || '').trim();
     const natIdDisplay = (cleanNatId && cleanNatId !== 'null' && !cleanNatId.startsWith('۱۲۳۴۵۶') && !cleanNatId.startsWith('123456')) ? cleanNatId : 'وارد نشده است';
     document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${natIdDisplay} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
@@ -5731,87 +5725,87 @@ window.viewMentorDossier = async function(mentorId) {
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
     const students = dossier?.supervisedStudents || [];
     const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span style="font-size:12px; color:#94a3b8;">/ ۵</span>` : `<span style="font-size:15px; color:#94a3b8;">فاقد ارزیابی</span>`;
+    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span style="font-size:12px; color:var(--text-muted);">/ ۵</span>` : `<span style="font-size:15px; color:var(--text-muted);">فاقد ارزیابی</span>`;
     const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
       <!-- TOP STATS CARDS -->
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:18px;">
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(56, 189, 248, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:#38bdf8;"></i> کاروان‌های تحت راهبری</div>
-          <div style="font-size:22px; font-weight:bold; color:#38bdf8;">${caravans.length} <span style="font-size:12px; color:#94a3b8;">کاروان</span></div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">گروه‌های فعال آموزشی</div>
+        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:var(--primary-text);"></i> کاروان‌های تحت راهبری</div>
+          <div style="font-size:22px; font-weight:bold; color:var(--primary-text);">${caravans.length} <span style="font-size:12px; color:var(--text-muted);">کاروان</span></div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">گروه‌های فعال آموزشی</div>
         </div>
 
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(16, 185, 129, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-users" style="color:#34d399;"></i> دانش‌آموزان تحت نظارت</div>
-          <div style="font-size:22px; font-weight:bold; color:#34d399;">${students.length} <span style="font-size:12px; color:#94a3b8;">دانش‌آموز</span></div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:2px;">افراد تحت سرپرستی این راهبر</div>
+        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--success-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-users" style="color:var(--success-text);"></i> دانش‌آموزان تحت نظارت</div>
+          <div style="font-size:22px; font-weight:bold; color:var(--success-text);">${students.length} <span style="font-size:12px; color:var(--text-muted);">دانش‌آموز</span></div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">افراد تحت سرپرستی این راهبر</div>
         </div>
 
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(139, 92, 246, 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;"><i class="fa-solid fa-shield-halved" style="color:#a78bfa;"></i> وضعیت حساب کاربری</div>
-          <div style="font-size:18px; font-weight:bold; color:#10b981; margin-top:4px;">${mentor?.accountStatus || 'ACTIVE'}</div>
-          <div style="font-size:11px; color:#94a3b8; margin-top:4px;">دسترسی به پنل راهبر</div>
+        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-shield-halved" style="color:var(--primary-text);"></i> وضعیت حساب کاربری</div>
+          <div style="font-size:18px; font-weight:bold; color:var(--success-text); margin-top:4px;">${mentor?.accountStatus || 'ACTIVE'}</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">دسترسی به پنل راهبر</div>
         </div>
       </div>
 
       <!-- PERSONAL & IDENTITY DOSSIER -->
-      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
-        <div style="font-weight:bold; color:#38bdf8; font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="font-weight:bold; color:var(--primary-text); font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
-          <div><strong style="color:#94a3b8;">نام کامل:</strong> <span style="color:white;">${esc(mentorName)}</span></div>
-          <div><strong style="color:#94a3b8;">شماره همراه:</strong> <span style="color:white; font-family:monospace;">${esc(mentor?.phoneNumber || '-')}</span></div>
-          <div><strong style="color:#94a3b8;">کد ملی:</strong> <span style="color:white; font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
-          <div><strong style="color:#94a3b8;">تاریخ تولد:</strong> <span style="color:white;">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
-          <div><strong style="color:#94a3b8;">شهر محل سکونت:</strong> <span style="color:white;">${esc(mentor?.city || 'ثبت نشده')}</span></div>
-          <div><strong style="color:#94a3b8;">پلتفرم پیام‌رسان:</strong> <span style="color:white;">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong style="color:#94a3b8;">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? '#10b981' : '#f59e0b'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
+          <div><strong style="color:var(--text-muted);">نام کامل:</strong> <span style="color:var(--text);">${esc(mentorName)}</span></div>
+          <div><strong style="color:var(--text-muted);">شماره همراه:</strong> <span style="color:var(--text); font-family:monospace;">${esc(mentor?.phoneNumber || '-')}</span></div>
+          <div><strong style="color:var(--text-muted);">کد ملی:</strong> <span style="color:var(--text); font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
+          <div><strong style="color:var(--text-muted);">تاریخ تولد:</strong> <span style="color:var(--text);">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
+          <div><strong style="color:var(--text-muted);">شهر محل سکونت:</strong> <span style="color:var(--text);">${esc(mentor?.city || 'ثبت نشده')}</span></div>
+          <div><strong style="color:var(--text-muted);">پلتفرم پیام‌رسان:</strong> <span style="color:var(--text);">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
+          <div><strong style="color:var(--text-muted);">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
         </div>
       </div>
 
       <!-- CARAVANS LIST -->
-      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
-        <div style="font-weight:bold; color:#a78bfa; font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
+        <div style="font-weight:bold; color:var(--primary-text); font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-caravan"></i> وضعیت کاروان‌های تحت نظارت
         </div>
         ${caravans.length > 0 ? `
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
             ${caravans.map(c => `
-              <div style="background:rgba(30,41,59,0.7); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:12px;">
-                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:#38bdf8; margin-bottom:6px;">
+              <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:10px; padding:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:var(--primary-text); margin-bottom:6px;">
                   <span>${esc(c.name)}</span>
-                  <span style="font-size:11px; color:#cbd5e1;">${c.memberCount || 0} عضو</span>
+                  <span style="font-size:11px; color:var(--text-soft);">${c.memberCount || 0} عضو</span>
                 </div>
-                <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
-                <div style="background:rgba(0,0,0,0.3); height:6px; border-radius:3px; overflow:hidden;">
-                  <div style="background:linear-gradient(90deg, #38bdf8, #10b981); height:100%; width:${c.progress || 0}%;"></div>
+                <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
+                <div style="background:rgb(var(--shade-rgb) / 0.3); height:6px; border-radius:3px; overflow:hidden;">
+                  <div style="background:linear-gradient(90deg, var(--primary), var(--success)); height:100%; width:${c.progress || 0}%;"></div>
                 </div>
               </div>
             `).join('')}
           </div>
-        ` : '<div style="color:#94a3b8; font-size:12px;">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
+        ` : '<div style="color:var(--text-muted); font-size:12px;">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
       </div>
 
       <!-- SUPERVISED STUDENTS SECTION (افراد تحت سرپرستی این راهبر) -->
-      <div style="background:rgba(15, 23, 42, 0.6); border:1px solid rgba(56, 189, 248, 0.3); border-radius:14px; padding:18px; margin-bottom:16px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
+      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:14px; padding:18px; margin-bottom:16px; box-shadow: 0 4px 20px rgb(var(--shade-rgb) / 0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.08); padding-bottom:14px;">
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.3); display:flex; align-items:center; justify-content:center; color:#38bdf8; font-size:17px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.3); display:flex; align-items:center; justify-content:center; color:var(--primary-text); font-size:17px;">
               <i class="fa-solid fa-users"></i>
             </div>
             <div>
-              <div style="font-weight:bold; color:#38bdf8; font-size:14.5px;">دانش‌آموزان تحت سرپرستی این راهبر</div>
-              <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
+              <div style="font-weight:bold; color:var(--primary-text); font-size:14.5px;">دانش‌آموزان تحت سرپرستی این راهبر</div>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <span style="background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.3); color:#38bdf8; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
+            <span style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
               ${students.length} دانش‌آموز تحت نظارت
             </span>
-            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." oninput="window.filterDossierStudents(this.value)" style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.15); color:white; padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
+            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." oninput="window.filterDossierStudents(this.value)" style="background:rgb(var(--shade-rgb) / 0.35); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
           </div>
         </div>
 
@@ -5824,13 +5818,13 @@ window.viewMentorDossier = async function(mentorId) {
     window.renderDossierStudents(students, mentorId);
 
     footerActions.innerHTML = `
-      <button type="button" class="btn-primary" onclick="document.getElementById('mentor-dossier-modal').style.display='none'; window.editMentor('${mentorId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+      <button type="button" class="btn-primary" onclick="document.getElementById('mentor-dossier-modal').style.display = 'none'; window.editMentor('${mentorId}')" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
         <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
       </button>
     `;
   } catch (err) {
     console.error('viewMentorDossier error:', err);
-    body.innerHTML = `<div style="color:#ef4444; text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
+    body.innerHTML = `<div style="color:var(--danger-text); text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
   }
 };
 
@@ -5840,9 +5834,9 @@ window.renderDossierStudents = function(students, mentorId) {
 
   if (!students || students.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; background:rgba(0,0,0,0.2); border-radius:12px; color:#94a3b8; border:1px dashed rgba(255,255,255,0.08);">
-        <i class="fa-solid fa-user-graduate fa-2x" style="color:#64748b; margin-bottom:8px;"></i>
-        <div style="font-size:13.5px; font-weight:bold; color:#cbd5e1;">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
+      <div style="text-align:center; padding:35px 20px; background:rgb(var(--shade-rgb) / 0.2); border-radius:12px; color:var(--text-muted); border:1px dashed rgb(var(--fg-rgb) / 0.08);">
+        <i class="fa-solid fa-user-graduate fa-2x" style="color:var(--text-faint); margin-bottom:8px;"></i>
+        <div style="font-size:13.5px; font-weight:bold; color:var(--text-soft);">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
         <div style="font-size:11.5px; margin-top:4px;">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
       </div>
     `;
@@ -5854,57 +5848,57 @@ window.renderDossierStudents = function(students, mentorId) {
       ${students.map(s => {
         const initials = (s.name || 'دا').trim().split(' ').map(n => n[0]).join('').substring(0, 2);
         const openTicketsBadge = s.stats.openTickets > 0 ? 
-          `<span style="background:rgba(239, 68, 68, 0.2); color:#f87171; border:1px solid rgba(239, 68, 68, 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.openTickets} تیکت باز</span>` : 
-          `<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 7px; border-radius:6px; font-size:10.5px;">تیکت بازی ندارد</span>`;
+          `<span style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.openTickets} تیکت باز</span>` : 
+          `<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); padding:2px 7px; border-radius:6px; font-size:10.5px;">تیکت بازی ندارد</span>`;
         
         const pendingSubmissionsBadge = s.stats.pendingSubmissions > 0 ?
-          `<span style="background:rgba(245, 158, 11, 0.2); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
-          `<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; padding:2px 7px; border-radius:6px; font-size:10.5px;">تکالیف بررسی‌شده</span>`;
+          `<span style="background:rgb(var(--accent-rgb) / 0.2); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
+          `<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); padding:2px 7px; border-radius:6px; font-size:10.5px;">تکالیف بررسی‌شده</span>`;
 
         return `
-          <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(56, 189, 248, 0.45)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+          <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" onmouseover="this.style.borderColor = 'rgb(var(--primary-rgb) / 0.45)'" onmouseout="this.style.borderColor = 'rgb(var(--fg-rgb) / 0.08)'">
             <!-- Student Bio & Info -->
             <div style="display:flex; align-items:center; gap:12px; min-width:240px;">
-              <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #10b981, #0284c7); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; color:white; border:2px solid rgba(255,255,255,0.2); flex-shrink:0;">
+              <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, var(--success), var(--primary)); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; color:white; border:2px solid rgb(var(--fg-rgb) / 0.2); flex-shrink:0;">
                 ${initials}
               </div>
               <div>
-                <div style="font-weight:bold; color:#f8fafc; font-size:14px; display:flex; align-items:center; gap:8px;">
+                <div style="font-weight:bold; color:var(--text); font-size:14px; display:flex; align-items:center; gap:8px;">
                   <span>${esc(s.name)}</span>
-                  <span style="background:rgba(139, 92, 246, 0.15); color:#c084fc; border:1px solid rgba(139, 92, 246, 0.3); padding:1px 7px; border-radius:5px; font-size:11px; font-weight:normal;">
+                  <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:1px 7px; border-radius:5px; font-size:11px; font-weight:normal;">
                     <i class="fa-solid fa-campground"></i> ${esc(s.caravanName)}
                   </span>
                 </div>
-                <div style="font-size:11.5px; color:#94a3b8; margin-top:3px; display:flex; gap:12px; font-family:monospace;">
+                <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px; display:flex; gap:12px; font-family:monospace;">
                   <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
                   <span>کد: ${s.userCode || '-'}</span>
-                  <span style="color:#fbbf24;">${s.zarikBalance || 0} زریک</span>
+                  <span style="color:var(--accent-text);">${s.zarikBalance || 0} زریک</span>
                 </div>
               </div>
             </div>
 
             <!-- Stats Indicators -->
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-headset" style="color:#fbbf24;"></i>
-                <span style="color:#cbd5e1;">کل تیکت‌ها: ${s.stats.totalTickets}</span>
+              <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-headset" style="color:var(--accent-text);"></i>
+                <span style="color:var(--text-soft);">کل تیکت‌ها: ${s.stats.totalTickets}</span>
                 ${openTicketsBadge}
               </div>
 
-              <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-trophy" style="color:#38bdf8;"></i>
-                <span style="color:#cbd5e1;">ارسال‌ها: ${s.stats.totalSubmissions}</span>
+              <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
+                <i class="fa-solid fa-trophy" style="color:var(--primary-text);"></i>
+                <span style="color:var(--text-soft);">ارسال‌ها: ${s.stats.totalSubmissions}</span>
                 ${pendingSubmissionsBadge}
               </div>
             </div>
 
             <!-- Action Buttons for Tickets & Challenges -->
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <button type="button" onclick="window.openStudentTicketsModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28)); border:1px solid rgba(245, 158, 11, 0.5); color:#fbbf24; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background='rgba(245, 158, 11, 0.35)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(217, 119, 6, 0.28))'">
+              <button type="button" onclick="window.openStudentTicketsModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28)); border:1px solid rgb(var(--accent-rgb) / 0.5); color:var(--accent-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background = 'rgb(var(--accent-rgb) / 0.35)'" onmouseout="this.style.background = 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28))'">
                 <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
               </button>
 
-              <button type="button" onclick="window.openStudentChallengesModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(2, 132, 199, 0.28)); border:1px solid rgba(56, 189, 248, 0.5); color:#38bdf8; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background='rgba(56, 189, 248, 0.35)'" onmouseout="this.style.background='linear-gradient(135deg, rgba(56, 189, 248, 0.18), rgba(2, 132, 199, 0.28))'">
+              <button type="button" onclick="window.openStudentChallengesModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28)); border:1px solid rgb(var(--primary-rgb) / 0.5); color:var(--primary-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background = 'rgb(var(--primary-rgb) / 0.35)'" onmouseout="this.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28))'">
                 <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
               </button>
             </div>
@@ -5938,89 +5932,89 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:#fbbf24;"></i> تیکت‌ها و مکالمات: <span style="color:#fff;">${esc(student.name)}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
+  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:var(--accent-text);"></i> تیکت‌ها و مکالمات: <span style="color:var(--text);">${esc(student.name)}</span> <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
   document.getElementById('student-tickets-subtitle').textContent = `کاروان: ${student.caravanName} | موبایل: ${student.phoneNumber || '-'} | کد دانش‌آموزی: ${student.userCode || '-'}`;
 
   const tickets = student.tickets || [];
   if (tickets.length === 0) {
     body.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; color:#94a3b8; background:rgba(0,0,0,0.25); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
-        <i class="fa-solid fa-inbox fa-3x" style="color:#64748b; margin-bottom:12px;"></i>
-        <div style="font-size:14px; font-weight:bold; color:#cbd5e1;">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
-        <div style="font-size:12px; margin-top:6px; color:#94a3b8;">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
+      <div style="text-align:center; padding:35px 20px; color:var(--text-muted); background:rgb(var(--shade-rgb) / 0.25); border-radius:12px; border:1px dashed rgb(var(--fg-rgb) / 0.1);">
+        <i class="fa-solid fa-inbox fa-3x" style="color:var(--text-faint); margin-bottom:12px;"></i>
+        <div style="font-size:14px; font-weight:bold; color:var(--text-soft);">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
+        <div style="font-size:12px; margin-top:6px; color:var(--text-muted);">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
       </div>
     `;
   } else {
     body.innerHTML = tickets.map(t => {
       let statusBadge = '';
       if (t.status === 'resolved') {
-        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">حل‌شده</span>';
+        statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">حل‌شده</span>';
       } else if (t.status === 'answered') {
-        statusBadge = '<span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">پاسخ داده شده</span>';
+        statusBadge = '<span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">پاسخ داده شده</span>';
       } else {
-        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">در انتظار پاسخ</span>';
+        statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">در انتظار پاسخ</span>';
       }
 
       const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : '';
       const replies = t.replies || [];
 
       return `
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px;">
           <!-- Ticket Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+              <span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
                 ${esc(t.category || 'پشتیبانی')}
               </span>
-              <span style="font-weight:bold; color:#f8fafc; font-size:13.5px;">${esc(t.subject || 'بدون موضوع')}</span>
+              <span style="font-weight:bold; color:var(--text); font-size:13.5px;">${esc(t.subject || 'بدون موضوع')}</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${tDate}</span>
+              <span style="font-size:11.5px; color:var(--text-muted); font-family:monospace;">${tDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Initial Message from Student -->
-          <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
-            <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <div style="background:rgb(var(--surface-rgb) / 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid var(--primary);">
+            <div style="font-size:11.5px; font-weight:bold; color:var(--primary-text); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
               <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:#e2e8f0; line-height:1.6;">${esc(t.subject || '')}</div>
+            <div style="font-size:13px; color:var(--text); line-height:1.6;">${esc(t.subject || '')}</div>
             ${t.voiceUrl ? `<div style="margin-top:8px;"><audio controls src="${esc(t.voiceUrl)}" style="height:34px; width:100%; max-width:320px;"></audio></div>` : ''}
-            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${esc(t.attachmentUrl)}" target="_blank" style="color:#38bdf8; font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${esc(t.attachmentUrl)}" target="_blank" style="color:var(--primary-text); font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
           </div>
 
           <!-- Conversation Replies History -->
           ${replies.length > 0 ? `
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-right:12px; border-right:2px dashed rgba(255,255,255,0.1);">
+            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-right:12px; border-right:2px dashed rgb(var(--fg-rgb) / 0.1);">
               ${replies.map(r => {
                 const rDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('fa-IR') : '';
                 return `
-                  <div style="background:rgba(15, 23, 42, 0.8); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:10px 12px;">
+                  <div style="background:rgb(var(--surface-rgb) / 0.8); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:10px 12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11.5px;">
-                      <span style="font-weight:bold; color:#10b981; display:flex; align-items:center; gap:6px;">
+                      <span style="font-weight:bold; color:var(--success-text); display:flex; align-items:center; gap:6px;">
                         <i class="fa-solid fa-reply"></i> پاسخ راهبر (${esc(r.mentor?.name || mentorName)}):
                       </span>
-                      <span style="color:#94a3b8; font-family:monospace;">${rDate}</span>
+                      <span style="color:var(--text-muted); font-family:monospace;">${rDate}</span>
                     </div>
-                    <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${esc(r.message)}</div>
+                    <div style="font-size:12.5px; color:var(--text); line-height:1.6;">${esc(r.message)}</div>
                     ${r.voiceUrl ? `<div style="margin-top:6px;"><audio controls src="${esc(r.voiceUrl)}" style="height:30px; width:100%; max-width:300px;"></audio></div>` : ''}
-                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${esc(r.attachmentUrl)}" target="_blank" style="color:#38bdf8; font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${esc(r.attachmentUrl)}" target="_blank" style="color:var(--primary-text); font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
                   </div>
                 `;
               }).join('')}
             </div>
-          ` : '<div style="font-size:11.5px; color:#94a3b8; margin-bottom:12px; padding:6px 0;">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
+          ` : '<div style="font-size:11.5px; color:var(--text-muted); margin-bottom:12px; padding:6px 0;">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
 
           <!-- Quick Reply & Action Form -->
-          <div style="background:rgba(15, 23, 42, 0.5); border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="background:rgb(var(--surface-rgb) / 0.5); border:1px solid rgb(var(--fg-rgb) / 0.05); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
             <div style="display:flex; gap:8px;">
-              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." style="flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.15); color:white; padding:8px 12px; border-radius:8px; font-size:12.5px; outline:none;">
-              <button type="button" onclick="window.sendTicketReply('${t.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, #f59e0b, #d97706); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." style="flex:1; background:rgb(var(--shade-rgb) / 0.3); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:8px 12px; border-radius:8px; font-size:12.5px; outline:none;">
+              <button type="button" onclick="window.sendTicketReply('${t.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
                 <i class="fa-solid fa-paper-plane"></i> ارسال پاسخ
               </button>
               ${t.status !== 'resolved' ? `
-                <button type="button" onclick="window.resolveStudentTicket('${t.id}', '${mentorId}', '${studentId}')" style="background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); color:#34d399; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
+                <button type="button" onclick="window.resolveStudentTicket('${t.id}', '${mentorId}', '${studentId}')" style="background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.35); color:var(--success-text); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
                   <i class="fa-solid fa-check"></i> حل‌شد
                 </button>
               ` : ''}
@@ -6102,7 +6096,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:#38bdf8;"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:#fff;">${esc(student.name)}</span> <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(راهبر: ${mentorName})</span>`;
+  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:var(--primary-text);"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:var(--text);">${esc(student.name)}</span> <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(راهبر: ${mentorName})</span>`;
   document.getElementById('student-challenges-subtitle').textContent = `کاروان: ${student.caravanName} | تکالیف، فایل‌های ارسالی، نمرات و بازخوردهای اصلاحی راهبر`;
 
   const submissions = student.submissions || [];
@@ -6110,51 +6104,51 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
   if (submissions.length === 0 && quizSubs.length === 0) {
     body.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; color:#94a3b8; background:rgba(0,0,0,0.25); border-radius:12px; border:1px dashed rgba(255,255,255,0.1);">
-        <i class="fa-solid fa-file-circle-xmark fa-3x" style="color:#64748b; margin-bottom:12px;"></i>
-        <div style="font-size:14px; font-weight:bold; color:#cbd5e1;">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
-        <div style="font-size:12px; margin-top:6px; color:#94a3b8;">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
+      <div style="text-align:center; padding:35px 20px; color:var(--text-muted); background:rgb(var(--shade-rgb) / 0.25); border-radius:12px; border:1px dashed rgb(var(--fg-rgb) / 0.1);">
+        <i class="fa-solid fa-file-circle-xmark fa-3x" style="color:var(--text-faint); margin-bottom:12px;"></i>
+        <div style="font-size:14px; font-weight:bold; color:var(--text-soft);">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
+        <div style="font-size:12px; margin-top:6px; color:var(--text-muted);">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
       </div>
     `;
   } else {
     body.innerHTML = submissions.map(sub => {
       let statusBadge = '';
       if (sub.status === 'approved' || sub.status === 'APPROVED') {
-        statusBadge = '<span style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">تایید شده</span>';
+        statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">تایید شده</span>';
       } else if (sub.status === 'rejected' || sub.status === 'REJECTED') {
-        statusBadge = '<span style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">نیاز به اصلاح / رد شده</span>';
+        statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">نیاز به اصلاح / رد شده</span>';
       } else {
-        statusBadge = '<span style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">در انتظار بررسی راهبر</span>';
+        statusBadge = '<span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">در انتظار بررسی راهبر</span>';
       }
 
       const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('fa-IR') : '';
       const defaultScore = sub.score !== undefined && sub.score !== null ? sub.score : (sub.challenge?.rewardZarik || 200);
 
       return `
-        <div style="background:rgba(30, 41, 59, 0.7); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px;">
           <!-- Challenge Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
-              <span style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+              <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
                 چالش کاروان
               </span>
-              <span style="font-weight:bold; color:#f8fafc; font-size:14px;"><i class="fa-solid fa-award" style="color:#fbbf24;"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
+              <span style="font-weight:bold; color:var(--text); font-size:14px;"><i class="fa-solid fa-award" style="color:var(--accent-text);"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:11.5px; color:#94a3b8; font-family:monospace;">${subDate}</span>
+              <span style="font-size:11.5px; color:var(--text-muted); font-family:monospace;">${subDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Student Submission Box -->
-          <div style="background:rgba(15, 23, 42, 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid #38bdf8;">
-            <div style="font-size:11.5px; font-weight:bold; color:#38bdf8; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <div style="background:rgb(var(--surface-rgb) / 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid var(--primary);">
+            <div style="font-size:11.5px; font-weight:bold; color:var(--primary-text); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
               <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:#e2e8f0; line-height:1.7;">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
+            <div style="font-size:13px; color:var(--text); line-height:1.7;">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
             ${sub.fileUrl ? `
               <div style="margin-top:8px;">
-                <a href="${esc(sub.fileUrl)}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
+                <a href="${esc(sub.fileUrl)}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> مشاهده فایل / تصویر پیوست دانش‌آموز
                 </a>
               </div>
@@ -6163,32 +6157,32 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
           <!-- Mentor Feedback History (if any) -->
           ${sub.mentorFeedback ? `
-            <div style="background:rgba(16, 185, 129, 0.08); border:1px solid rgba(16, 185, 129, 0.2); border-radius:10px; padding:12px; margin-bottom:12px;">
+            <div style="background:rgb(var(--success-rgb) / 0.08); border:1px solid rgb(var(--success-rgb) / 0.2); border-radius:10px; padding:12px; margin-bottom:12px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;">
-                <span style="font-weight:bold; color:#10b981; display:flex; align-items:center; gap:6px;">
+                <span style="font-weight:bold; color:var(--success-text); display:flex; align-items:center; gap:6px;">
                   <i class="fa-solid fa-comments"></i> بازخورد ثبت‌شده توسط راهبر:
                 </span>
-                <span style="background:rgba(16, 185, 129, 0.2); color:#34d399; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">
+                <span style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">
                   امتیاز اعطایی: ${sub.score || 0} زریک
                 </span>
               </div>
-              <div style="font-size:12.5px; color:#f1f5f9; line-height:1.6;">${esc(sub.mentorFeedback)}</div>
+              <div style="font-size:12.5px; color:var(--text); line-height:1.6;">${esc(sub.mentorFeedback)}</div>
             </div>
           ` : ''}
 
           <!-- Mentor Review / Correction Form -->
-          <div style="background:rgba(15, 23, 42, 0.7); border:1px solid rgba(56, 189, 248, 0.2); border-radius:10px; padding:12px;">
-            <div style="font-size:12px; font-weight:bold; color:#38bdf8; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.2); border-radius:10px; padding:12px;">
+            <div style="font-size:12px; font-weight:bold; color:var(--primary-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
               <i class="fa-solid fa-pen-to-square"></i> ثبت / بازنویسی نمره و بازخورد راهبر:
             </div>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto; gap:10px; align-items:center;">
-              <select id="review-status-${sub.id}" style="background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
+              <select id="review-status-${sub.id}" style="background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
                 <option value="approved" ${sub.status === 'approved' || sub.status === 'APPROVED' ? 'selected' : ''}>تایید تکلیف (قبول)</option>
                 <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>
               </select>
-              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
-              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" style="grid-column: span 2; background:#1e293b; border:1px solid rgba(255,255,255,0.2); color:white; padding:7px 10px; border-radius:6px; font-size:12px;">
-              <button type="button" onclick="window.submitSubmissionReview('${sub.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
+              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" style="grid-column: span 2; background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
+              <button type="button" onclick="window.submitSubmissionReview('${sub.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
                 <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
               </button>
             </div>
@@ -6277,7 +6271,7 @@ window.showMentorModal = async function() {
   const modal = document.getElementById('mentor-modal-overlay');
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '999999';
+    modal.style.zIndex = 'var(--z-modal)';
   }
 };
 
@@ -6320,17 +6314,17 @@ window.editMentor = async function(mentorId) {
     if (m.mentorDocuments && m.mentorDocuments.length > 0) {
       certsSection.style.display = 'block';
       certsTbody.innerHTML = m.mentorDocuments.map(doc => {
-        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:#10b981;color:white;">تایید شده</span>' :
-                        (doc.status === 'rejected' ? '<span class="badge" style="background:#ef4444;color:white;">رد شده</span>' : '<span class="badge" style="background:#f59e0b;color:white;">در انتظار</span>');
+        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:var(--success);color:white;">تایید شده</span>' :
+                        (doc.status === 'rejected' ? '<span class="badge" style="background:var(--danger);color:white;">رد شده</span>' : '<span class="badge" style="background:var(--accent);color:white;">در انتظار</span>');
         return `
           <tr>
             <td>${esc(doc.filename || 'مدرک پیوست')}</td>
-            <td><a href="${esc(doc.url)}" target="_blank" style="color:#38bdf8; text-decoration:underline;">مشاهده مدرک</a></td>
+            <td><a href="${esc(doc.url)}" target="_blank" style="color:var(--primary-text); text-decoration:underline;">مشاهده مدرک</a></td>
             <td>${statusTag}</td>
             <td>
               ${doc.status === 'pending' ? `
-                <button type="button" class="btn-icon" style="color:#10b981; background:none; border:none; cursor:pointer;" onclick="window.inlineApproveCert('${doc.id}', '${m.id}')" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
-                <button type="button" class="btn-icon" style="color:#ef4444; background:none; border:none; cursor:pointer;" onclick="window.inlineRejectCert('${doc.id}', '${m.id}')" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
+                <button type="button" class="btn-icon" style="color:var(--success-text); background:none; border:none; cursor:pointer;" onclick="window.inlineApproveCert('${doc.id}', '${m.id}')" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
+                <button type="button" class="btn-icon" style="color:var(--danger-text); background:none; border:none; cursor:pointer;" onclick="window.inlineRejectCert('${doc.id}', '${m.id}')" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
               ` : '-'}
             </td>
           </tr>
@@ -6344,7 +6338,7 @@ window.editMentor = async function(mentorId) {
   const modal = document.getElementById('mentor-modal-overlay');
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '999999';
+    modal.style.zIndex = 'var(--z-modal)';
   }
 };
 
@@ -6352,7 +6346,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
   const container = document.getElementById('modal-mentor-caravans-list');
   if (!container) return;
 
-  container.innerHTML = '<span style="font-size:11px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
+  container.innerHTML = '<span style="font-size:11px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
   
   const token = NopaAuth.getToken();
   try {
@@ -6363,19 +6357,19 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
     window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
 
     if (window.cachedCaravansForMentorModal.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color:#94a3b8;">هیچ کاروانی در سامانه ثبت نشده است.</span>';
+      container.innerHTML = '<span style="font-size:12px; color:var(--text-muted);">هیچ کاروانی در سامانه ثبت نشده است.</span>';
       return;
     }
 
     container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
-      <label class="mentor-caravan-item-label" data-caravan-name="${(c.name || '').toLowerCase()}" style="display:flex; align-items:center; gap:8px; background:rgba(15, 23, 42, 0.85); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 12px; color:#f8fafc; font-size:12.5px; cursor:pointer; transition:all 0.2s;">
+      <label class="mentor-caravan-item-label" data-caravan-name="${(c.name || '').toLowerCase()}" style="display:flex; align-items:center; gap:8px; background:rgb(var(--surface-rgb) / 0.85); border:1px solid rgb(var(--fg-rgb) / 0.12); border-radius:8px; padding:8px 12px; color:var(--text); font-size:12.5px; cursor:pointer; transition:all 0.2s;">
         <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
         <span style="font-weight:500;">${esc(c.name)}</span>
       </label>
     `).join('');
   } catch (e) {
     console.error('Error fetching caravans checklist:', e);
-    container.innerHTML = '<span style="font-size:12px; color:#ef4444;">خطا در دریافت لیست کاروان‌ها</span>';
+    container.innerHTML = '<span style="font-size:12px; color:var(--danger-text);">خطا در دریافت لیست کاروان‌ها</span>';
   }
 };
 
@@ -6476,7 +6470,7 @@ window.openMentorModerationModal = function(mentorId) {
   const modal = document.getElementById('mentor-moderation-modal');
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '999999';
+    modal.style.zIndex = 'var(--z-modal)';
   }
 };
 
@@ -6566,10 +6560,10 @@ window.viewTicketThread = async function(ticketId) {
 
   const buildMessageCard = (author, role, message, voiceUrl, attachmentUrl) => {
     let card = `
-      <div style="padding:14px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:12px;">
+      <div style="padding:14px; background:rgb(var(--fg-rgb) / 0.05); border-radius:12px; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center;">
           <strong>${esc(author)}</strong>
-          <span style="font-size:11px; color:#9ca3af;">${esc(role)}</span>
+          <span style="font-size:11px; color:var(--text-muted);">${esc(role)}</span>
         </div>
         <p style="margin-top:10px; font-size:13px; line-height:1.6;">${message ? esc(message) : '<em>بدون متن</em>'}</p>
     `;
@@ -6577,7 +6571,7 @@ window.viewTicketThread = async function(ticketId) {
       card += `<audio controls style="width:100%; margin-top:8px;" src="${esc(voiceUrl)}"></audio>`;
     }
     if (attachmentUrl) {
-      card += `<a href="${esc(attachmentUrl)}" target="_blank" style="display:inline-block; margin-top:8px; color:#10b981; font-size:12px; text-decoration:none;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
+      card += `<a href="${esc(attachmentUrl)}" target="_blank" style="display:inline-block; margin-top:8px; color:var(--success-text); font-size:12px; text-decoration:none;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
     }
     card += '</div>';
     return card;
@@ -6830,30 +6824,30 @@ window.loadAssetConversions = async function() {
     if (!tbody) return;
     
     if (!Array.isArray(requests) || requests.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:16px;">هیچ درخواست تبدیل دارایی در سیستم ثبت نشده است.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">هیچ درخواست تبدیل دارایی در سیستم ثبت نشده است.</td></tr>';
       return;
     }
 
     tbody.innerHTML = requests.map(r => `
       <tr>
         <td>
-          <div style="font-weight:bold; color:white;">${esc(r.user?.name || '-')}</div>
-          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${esc(r.user.phoneNumber)}</div>` : ''}
+          <div style="font-weight:bold; color:var(--text);">${esc(r.user?.name || '-')}</div>
+          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:var(--text-muted); direction:ltr; text-align:right;">${esc(r.user.phoneNumber)}</div>` : ''}
         </td>
         <td>${esc(r.caravan?.name || 'عمومی')}</td>
         <td>
-          <span style="color:#fbbf24; font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
+          <span style="color:var(--accent-text); font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
         </td>
         <td>
-          ${r.status === 'completed' ? '<span class="badge" style="background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.4);">انجام شده</span>' :
-            r.status === 'cancelled' ? `<span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.4);">لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:#f87171; margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
-            '<span class="badge" style="background:rgba(148,163,184,0.2); color:#94a3b8; border:1px solid rgba(148,163,184,0.4);">قدیمی (بدون اثر)</span>'}
+          ${r.status === 'completed' ? '<span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.4);">انجام شده</span>' :
+            r.status === 'cancelled' ? `<span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4);">لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:var(--danger-text); margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
+            '<span class="badge" style="background:rgb(var(--muted-rgb) / 0.2); color:var(--text-muted); border:1px solid rgb(var(--muted-rgb) / 0.4);">قدیمی (بدون اثر)</span>'}
         </td>
-        <td style="font-size:12px; color:#cbd5e1;">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td style="font-size:12px; color:var(--text-soft);">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
         <td style="text-align:center;">
           ${r.status === 'completed' ? `
-            <button type="button" class="btn-icon" style="color:#ef4444; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="cancelAssetConversion('${r.id}')" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
-          ` : '<span style="color:#64748b; font-size:11px;">-</span>'}
+            <button type="button" class="btn-icon" style="color:var(--danger-text); background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="cancelAssetConversion('${r.id}')" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
+          ` : '<span style="color:var(--text-faint); font-size:11px;">-</span>'}
         </td>
       </tr>
     `).join('');
@@ -7183,8 +7177,8 @@ async function decideMentorCertInline(docId, decision) {
       .find(tr => tr.innerHTML.includes(docId));
     if (row && row.cells.length >= 4) {
       row.cells[2].innerHTML = decision === 'approve'
-        ? '<span class="badge" style="background:#10b981;color:white;">تایید شده</span>'
-        : '<span class="badge" style="background:#ef4444;color:white;">رد شده</span>';
+        ? '<span class="badge" style="background:var(--success);color:white;">تایید شده</span>'
+        : '<span class="badge" style="background:var(--danger);color:white;">رد شده</span>';
       row.cells[3].innerHTML = '';
     }
     showToast(decision === 'approve' ? 'مدرک تایید شد' : 'مدرک رد شد', 'success');
@@ -7221,7 +7215,7 @@ async function openCaravanWizard() {
     const allMentors = await res.json();
     const filtered = allMentors.filter(m => m.name.includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
     const html = filtered.map(m => `
-      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333;" data-id="${m.id}" data-name="${esc(m.name)}">
+      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border);" data-id="${m.id}" data-name="${esc(m.name)}">
         <strong>${esc(m.name)}</strong> - NP-${esc(m.userCode || m.phoneNumber)}
       </div>
     `).join('');
@@ -7245,7 +7239,7 @@ async function openCaravanWizard() {
     const data = await res.json();
     const students = Array.isArray(data) ? data : data.users;
     const html = students.filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id)).map(s => `
-      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid #333; display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
         <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)}</span>
         <i class="fa-solid fa-plus text-primary"></i>
       </div>
@@ -7401,15 +7395,15 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
       <td><strong>${esc(u.name || 'بدون نام')}</strong></td>
       <td style="font-family: monospace; color: var(--text-secondary);">${displayCode}</td>
       <td style="font-family: monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</td>
-      <td><span class="badge" style="background: rgba(255,255,255,0.1);">${roleLabel}</span></td>
+      <td><span class="badge" style="background: rgb(var(--fg-rgb) / 0.1);">${roleLabel}</span></td>
       <td>سطح ${u.levelFrame || 1}</td>
-      <td style="color: #fbbf24;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+      <td style="color: var(--accent-text);"><i class="fa-solid fa-coins"></i> ${zarik}</td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgba(2,132,199,0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+          <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgb(var(--primary-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
             <i class="fa-solid fa-eye"></i>
           </button>
-          <button class="page-btn" onclick="removeFromCaravan('${currentDrawerCaravanId}', '${u.id}')" title="حذف از کاروان" style="color: var(--color-danger); background:rgba(239,68,68,0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+          <button class="page-btn" onclick="removeFromCaravan('${currentDrawerCaravanId}', '${u.id}')" title="حذف از کاروان" style="color: var(--color-danger); background:rgb(var(--danger-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -7476,7 +7470,7 @@ window.viewCaravanDetails = async function(caravanId) {
   }
 
   const tbody = document.querySelector('#cd-roster-table tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اطلاعات کاروان...</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اطلاعات کاروان...</td></tr>';
 
   try {
     const res = await request(`/api/v1/admin/caravans/${caravanId}`);
@@ -7485,7 +7479,7 @@ window.viewCaravanDetails = async function(caravanId) {
     window.renderCaravanDrawerData(data);
   } catch (err) {
     console.error('viewCaravanDetails error:', err);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت اطلاعات از سرور</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت اطلاعات از سرور</td></tr>';
   }
 };
 
@@ -7636,7 +7630,7 @@ window.loadCaravanDetails = async function(caravanId) {
       tbody.innerHTML = '';
       const members = caravan.membersList || caravan.members || [];
       if (members.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#64748b;">هیچ عضوی در این کاروان یافت نشد</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-faint);">هیچ عضوی در این کاروان یافت نشد</td></tr>';
       } else {
         members.forEach(m => {
           const name = m.name || m.user?.name || '-';
@@ -7647,14 +7641,14 @@ window.loadCaravanDetails = async function(caravanId) {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>
-              <input type="text" id="edit-name-${userId}" value="${esc(name)}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:white; border-radius: 4px;">
+              <input type="text" id="edit-name-${userId}" value="${esc(name)}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgb(var(--fg-rgb) / 0.2); background:transparent; color:var(--text); border-radius: 4px;">
             </td>
             <td style="font-family: monospace;">${esc(phone)}</td>
             <td>${zarik}</td>
             <td>-</td>
             <td style="white-space:nowrap; display:flex; gap:5px;">
-              <button class="btn-action" style="background:#6366f1; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="editMember('${userId}')">ذخیره</button>
-              <button class="btn-action" style="background:#ef4444; color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="removeFromCaravan('${caravanId}', '${userId}')">حذف</button>
+              <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="editMember('${userId}')">ذخیره</button>
+              <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="removeFromCaravan('${caravanId}', '${userId}')">حذف</button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -7717,14 +7711,14 @@ async function loadLmsData() {
     const tbody = document.querySelector('#stations-table tbody');
     if(tbody) {
       tbody.innerHTML = stations.map(s => `
-  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); text-align: right; color: #e2e8f0;">
+  <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.05); text-align: right; color: var(--text);">
     <td style="padding: 12px;">${s.orderIndex ?? s.order ?? 1}</td>
     <td style="padding: 12px; font-weight: bold;">${esc(s.title || s.name || 'منزلگاه')}</td>
-    <td style="padding: 12px; color: #94a3b8;">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
-    <td style="padding: 12px; color: #94a3b8;">${esc(s.description || '-')}</td>
+    <td style="padding: 12px; color: var(--text-muted);">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
+    <td style="padding: 12px; color: var(--text-muted);">${esc(s.description || '-')}</td>
     <td style="padding: 12px; text-align: center;">
-      <button onclick="editLmsStation('${s.id}')" style="background:#2563eb; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
-      <button onclick="deleteLmsStation('${s.id}')" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
+      <button onclick="editLmsStation('${s.id}')" style="background:var(--info-strong); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
+      <button onclick="deleteLmsStation('${s.id}')" style="background:var(--danger); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
     </td>
   </tr>
 `).join('');
@@ -7762,16 +7756,16 @@ function addCategoryUI(catData = null) {
   const catDiv = document.createElement('div');
   catDiv.className = 'builder-category-item';
   catDiv.dataset.id = catId;
-  catDiv.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 15px; position: relative;';
+  catDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.05); border-radius: 10px; padding: 15px; position: relative;';
   catDiv.innerHTML = `
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
       <span style="color: #EC4899; font-weight: bold; font-size: 13px;">دسته کلاس:</span>
       <input type="text" class="input-ctrl cat-title-input" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
       <input type="number" class="input-ctrl cat-order-input" value="${catOrder}" required placeholder="ترتیب" style="width: 70px; height: 32px; font-size: 12px;">
-      <button type="button" class="btn-primary" style="background: #10B981; padding: 4px 10px; font-size: 11px; height: 32px;" onclick="addClassUI(this.closest('.builder-category-item'))"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
+      <button type="button" class="btn-primary" style="background: var(--success); padding: 4px 10px; font-size: 11px; height: 32px;" onclick="addClassUI(this.closest('.builder-category-item'))"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
       <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" onclick="this.closest('.builder-category-item').remove()"><i class="fa-solid fa-trash"></i> حذف دسته</button>
     </div>
-    <div class="category-classes-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px; padding-right: 15px; border-right: 2px dashed rgba(255,255,255,0.1);">
+    <div class="category-classes-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px; padding-right: 15px; border-right: 2px dashed rgb(var(--fg-rgb) / 0.1);">
       <!-- Classes populated here -->
     </div>
   `;
@@ -7798,38 +7792,38 @@ function addClassUI(catEl, classData = null) {
   const classDiv = document.createElement('div');
   classDiv.className = 'builder-class-item';
   classDiv.dataset.id = classId;
-  classDiv.style.cssText = 'background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px; padding: 12px;';
+  classDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.02); border: 1px solid rgb(var(--fg-rgb) / 0.03); border-radius: 8px; padding: 12px;';
   classDiv.innerHTML = `
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px;">
       <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: #8b5cf6;">عنوان کلاس / درس</label>
+        <label style="font-size: 10px; color: var(--primary-text);">عنوان کلاس / درس</label>
         <input type="text" class="input-ctrl class-title-input" value="${esc(classTitle)}" required style="height: 30px; font-size: 11px;">
       </div>
       <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: #8b5cf6;">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
+        <label style="font-size: 10px; color: var(--primary-text);">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
         <input type="text" class="input-ctrl class-desc-input" value="${esc(classDesc)}" style="height: 30px; font-size: 11px;" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
       </div>
       <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: #8b5cf6;">نام استاد</label>
+        <label style="font-size: 10px; color: var(--primary-text);">نام استاد</label>
         <input type="text" class="input-ctrl class-instructor-input" value="${esc(classInstructor)}" style="height: 30px; font-size: 11px;" placeholder="نام و نام خانوادگی">
       </div>
       <div class="form-group">
-        <label style="font-size: 10px; color: #8b5cf6;">حداقل درصد تماشا</label>
+        <label style="font-size: 10px; color: var(--primary-text);">حداقل درصد تماشا</label>
         <input type="number" class="input-ctrl class-watch-input" value="${minWatch}" required style="height: 30px; font-size: 11px;">
       </div>
       <div class="form-group">
-        <label style="font-size: 10px; color: #8b5cf6;">ترتیب کلاس</label>
+        <label style="font-size: 10px; color: var(--primary-text);">ترتیب کلاس</label>
         <input type="number" class="input-ctrl class-order-input" value="${classOrder}" required style="height: 30px; font-size: 11px;">
       </div>
     </div>
     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-      <button type="button" class="btn-primary" style="background:#f59e0b; padding: 3px 8px; font-size: 10px;" onclick="addClipUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
+      <button type="button" class="btn-primary" style="background:var(--accent); padding: 3px 8px; font-size: 10px;" onclick="addClipUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
       <button type="button" class="btn-primary" style="background:#e040fb; padding: 3px 8px; font-size: 10px;" onclick="addQuizUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
       <button type="button" class="page-btn btn-danger" style="padding: 3px 8px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-class-item').remove()"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
     </div>
     
     <!-- Video parts container -->
-    <div class="class-clips-container" style="display: flex; flex-direction: column; gap: 8px; margin: 10px 10px 0 0; padding-left: 10px; border-left: 2px solid rgba(245,158,11,0.2);">
+    <div class="class-clips-container" style="display: flex; flex-direction: column; gap: 8px; margin: 10px 10px 0 0; padding-left: 10px; border-left: 2px solid rgb(var(--accent-rgb) / 0.2);">
       <!-- Video parts clips populated here -->
     </div>
     
@@ -7879,7 +7873,7 @@ window.uploadClipMediaDirect = async function(input) {
   const urlInput = input.closest('.builder-clip-item').querySelector('.clip-url-input');
   
   statusEl.innerText = 'در حال آپلود...';
-  statusEl.style.color = '#10B981';
+  statusEl.style.color = 'var(--success-text)';
   
   try {
     const res = await fetch('/api/v1/media/upload', {
@@ -7914,16 +7908,16 @@ function addClipUI(classEl, clipData = null) {
   const clipDiv = document.createElement('div');
   clipDiv.className = 'builder-clip-item';
   clipDiv.dataset.id = clipId;
-  clipDiv.style.cssText = 'background: rgba(245,158,11,0.03); border: 1px solid rgba(245,158,11,0.08); border-radius: 6px; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;';
+  clipDiv.style.cssText = 'background: rgb(var(--accent-rgb) / 0.03); border: 1px solid rgb(var(--accent-rgb) / 0.08); border-radius: 6px; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;';
   clipDiv.innerHTML = `
-    <span style="font-size: 10px; color: #f59e0b; font-weight: bold;">پارت/کلیپ:</span>
+    <span style="font-size: 10px; color: var(--accent-text); font-weight: bold;">پارت/کلیپ:</span>
     <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
     <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" onchange="window.detectClipDuration(this)" style="flex:2; min-width:150px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو" style="width:75px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
     <div style="display: flex; align-items: center; gap: 5px;">
       <input type="file" onchange="uploadClipMediaDirect(this)" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
-      <small class="clip-upload-status" style="font-size: 9px; color: #10B981;"></small>
+      <small class="clip-upload-status" style="font-size: 9px; color: var(--success-text);"></small>
     </div>
     <button type="button" class="page-btn btn-danger" style="padding: 2px 6px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-clip-item').remove()"><i class="fa-solid fa-times"></i> حذف پارت</button>
   `;
@@ -7988,10 +7982,10 @@ function addQuizQuestionUI(quizEl, qData = null) {
   
   const qDiv = document.createElement('div');
   qDiv.className = 'builder-question-item';
-  qDiv.style.cssText = 'background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 5px; padding: 8px;';
+  qDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.01); border: 1px solid rgb(var(--fg-rgb) / 0.02); border-radius: 5px; padding: 8px;';
   qDiv.innerHTML = `
     <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
-      <span style="font-size: 10px; color: #ccc;">صورت سوال:</span>
+      <span style="font-size: 10px; color: var(--text-soft);">صورت سوال:</span>
       <input type="text" class="input-ctrl question-text-input" value="${qText}" required placeholder="متن سوال ارزیابی را وارد کنید" style="flex:1; height:26px; font-size:10px;">
       <button type="button" class="page-btn btn-danger" style="padding:1px 5px; font-size:9px;" onclick="this.closest('.builder-question-item').remove()"><i class="fa-solid fa-trash"></i></button>
     </div>
@@ -8489,9 +8483,9 @@ window.renderBulkSelectedMembers = function() {
   }
   
   container.innerHTML = window.bulkTransferSelectedMembers.map(m => `
-    <li style="background: rgba(139, 92, 246, 0.2); border: 1px solid #8b5cf6; padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
+    <li style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
       ${esc(m.name)} (NP-${m.code})
-      <i class="fa-solid fa-times" style="cursor:pointer; color: #f43f5e;" onclick="removeBulkSelectedMember('${m.id}')"></i>
+      <i class="fa-solid fa-times" style="cursor:pointer; color: var(--danger-text);" onclick="removeBulkSelectedMember('${m.id}')"></i>
     </li>
   `).join('');
 };
@@ -8515,9 +8509,9 @@ document.getElementById('bt-student-search')?.addEventListener('input', async (e
     const students = Array.isArray(data) ? data : data.users;
     
     const html = students.filter(s => !window.bulkTransferSelectedMembers.some(sel => sel.id === s.id)).map(s => `
-      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
-        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)} <span style="font-size:10px; color:#aaa;">(${esc(s.caravan?.name || 'بدون کاروان')})</span></span>
-        <i class="fa-solid fa-plus" style="color: #8b5cf6;"></i>
+      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)} <span style="font-size:10px; color:var(--text-muted);">(${esc(s.caravan?.name || 'بدون کاروان')})</span></span>
+        <i class="fa-solid fa-plus" style="color: var(--primary-text);"></i>
       </div>
     `).join('');
     
@@ -8677,7 +8671,7 @@ window.openAddMemberToCaravanModal = async function(preSelectedCaravanId, initia
   }
 
   modal.style.display = 'flex';
-  modal.style.zIndex = '100000';
+  modal.style.zIndex = 'var(--z-mobile-nav)';
 
   // Load candidates with initialSearch
   window.searchCandidateMembers(initialSearch);
@@ -8702,7 +8696,7 @@ window.searchCandidateMembers = async function(query) {
   const container = document.getElementById('candidate-members-list');
   if (!container) return;
 
-  container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px; margin:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
+  container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:12px; margin:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
 
   try {
     const qStr = query ? query.trim() : '';
@@ -8720,7 +8714,7 @@ window.searchCandidateMembers = async function(query) {
     }
 
     if (students.length === 0) {
-      container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px; margin:10px 0;">دانش‌آموزی با این مشخصات یافت نشد</p>';
+      container.innerHTML = '<p style="text-align:center; color:var(--danger-text); font-size:12px; margin:10px 0;">دانش‌آموزی با این مشخصات یافت نشد</p>';
       return;
     }
 
@@ -8729,11 +8723,11 @@ window.searchCandidateMembers = async function(query) {
       const isChecked = window.selectedCandidateMembers.has(u.id) && !hasCaravan ? 'checked' : '';
 
       const caravanBadge = hasCaravan 
-        ? `<span style="color:#ef4444; font-size:11px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
-        : `<span style="color:#10b981; font-size:11px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check" style="font-size:10px;"></i> فاقد کاروان (آماده عضویت)</span>`;
+        ? `<span style="color:var(--danger-text); font-size:11px; background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
+        : `<span style="color:var(--success-text); font-size:11px; background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check" style="font-size:10px;"></i> فاقد کاروان (آماده عضویت)</span>`;
 
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); font-size:13px; opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgba(0,0,0,0.15)' : 'transparent'};">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); font-size:13px; opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'};">
           <label style="display:flex; align-items:center; gap:12px; cursor:${hasCaravan ? 'not-allowed' : 'pointer'}; flex:1; margin:0;">
             <input type="checkbox" 
                    ${hasCaravan ? 'disabled' : `onchange="window.toggleCandidateSelection(this, '${u.id}')"`} 
@@ -8741,9 +8735,9 @@ window.searchCandidateMembers = async function(query) {
                    style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
             <div style="display:flex; flex-direction:column; gap:2px;">
               <div style="display:flex; align-items:center; gap:8px;">
-                <strong style="color:${hasCaravan ? '#94a3b8' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
-                <span style="color:#94a3b8; font-size:11px; font-family:monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</span>
-                <span style="color:#38bdf8; font-size:11px; background:rgba(56,189,248,0.1); padding:1px 6px; border-radius:4px;">دانش‌آموز</span>
+                <strong style="color:${hasCaravan ? 'var(--text-muted)' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
+                <span style="color:var(--text-muted); font-size:11px; font-family:monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</span>
+                <span style="color:var(--primary-text); font-size:11px; background:rgb(var(--primary-rgb) / 0.1); padding:1px 6px; border-radius:4px;">دانش‌آموز</span>
               </div>
               <div style="margin-top:2px;">
                 ${caravanBadge}
@@ -8755,7 +8749,7 @@ window.searchCandidateMembers = async function(query) {
     }).join('');
   } catch(e) {
     console.error(e);
-    container.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:12px;">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
+    container.innerHTML = '<p style="text-align:center; color:var(--danger-text); font-size:12px;">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
   }
 };
 
@@ -8825,7 +8819,7 @@ window.openChangeCaravanMentorModal = async function() {
   }
 
   modal.style.display = 'flex';
-  modal.style.zIndex = '999999';
+  modal.style.zIndex = 'var(--z-modal)';
 
   const caravan = window.caravansData?.find(c => c.id === currentCaravanId);
   const currentMentorId = caravan?.mentorId || caravan?.mentor?.id || '';
@@ -8923,32 +8917,32 @@ window.switchJarchiSubTab = function(subtab) {
     if (bannersView) bannersView.style.display = 'block';
     if (newsView) newsView.style.display = 'none';
     if (btnBanners) {
-      btnBanners.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+      btnBanners.style.background = 'linear-gradient(135deg, var(--accent), var(--accent-strong))';
       btnBanners.style.color = 'white';
-      btnBanners.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.35)';
+      btnBanners.style.boxShadow = '0 4px 12px rgb(var(--accent-rgb) / 0.35)';
       btnBanners.style.border = 'none';
     }
     if (btnNews) {
-      btnNews.style.background = 'rgba(255,255,255,0.06)';
-      btnNews.style.color = '#94a3b8';
+      btnNews.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+      btnNews.style.color = 'var(--text-muted)';
       btnNews.style.boxShadow = 'none';
-      btnNews.style.border = '1px solid rgba(255,255,255,0.1)';
+      btnNews.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
     }
     window.loadBannersTab();
   } else {
     if (bannersView) bannersView.style.display = 'none';
     if (newsView) newsView.style.display = 'block';
     if (btnNews) {
-      btnNews.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+      btnNews.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-strong))';
       btnNews.style.color = 'white';
-      btnNews.style.boxShadow = '0 4px 12px rgba(2, 132, 199, 0.35)';
+      btnNews.style.boxShadow = '0 4px 12px rgb(var(--primary-rgb) / 0.35)';
       btnNews.style.border = 'none';
     }
     if (btnBanners) {
-      btnBanners.style.background = 'rgba(255,255,255,0.06)';
-      btnBanners.style.color = '#94a3b8';
+      btnBanners.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+      btnBanners.style.color = 'var(--text-muted)';
       btnBanners.style.boxShadow = 'none';
-      btnBanners.style.border = '1px solid rgba(255,255,255,0.1)';
+      btnBanners.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
     }
     window.loadNewsTab();
   }
@@ -8977,7 +8971,7 @@ window.cachedBannerList = [];
 window.loadBannersTab = async function() {
   const tbody = document.querySelector('#banners-tbody') || document.querySelector('#banners-table tbody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری بنرها...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری بنرها...</td></tr>';
   }
 
   try {
@@ -8987,7 +8981,7 @@ window.loadBannersTab = async function() {
     });
     
     if (!res.ok) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت بنرها از سرور</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت بنرها از سرور</td></tr>';
       return;
     }
 
@@ -9013,44 +9007,44 @@ window.loadBannersTab = async function() {
 
     if (!tbody) return;
     if (bannerList.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-images" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هنوز بنری ثبت نشده است. با زدن دکمه بالا بنر جدید اضافه کنید.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);"><i class="fa-solid fa-images" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هنوز بنری ثبت نشده است. با زدن دکمه بالا بنر جدید اضافه کنید.</td></tr>';
       return;
     }
 
     const positionLabels = {
-      'home_top': '<span class="badge" style="background:rgba(56, 189, 248, 0.15); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
-      'bazaar_top': '<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
-      'lms_slider': '<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
-      'general': '<span class="badge" style="background:rgba(168, 85, 247, 0.15); color:#c084fc; border:1px solid rgba(168, 85, 247, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-globe"></i> عمومی</span>'
+      'home_top': '<span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
+      'bazaar_top': '<span class="badge" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
+      'lms_slider': '<span class="badge" style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
+      'general': '<span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-globe"></i> عمومی</span>'
     };
 
     tbody.innerHTML = bannerList.map(b => {
       const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
       const isBannerActive = (b.isActive === true || b.isActive === 1 || b.isActive === 'true');
       const statusBadge = isBannerActive
-        ? `<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', true)" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
-        : `<span class="badge" style="background:rgba(239, 68, 68, 0.15); color:#f87171; border:1px solid rgba(239, 68, 68, 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', false)" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
+        ? `<span class="badge" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', true)" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
+        : `<span class="badge" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', false)" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
       
       const imgMarkup = b.imageUrl
-        ? `<img src="${esc(b.imageUrl)}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
-        : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color:#64748b;"><i class="fa-solid fa-image"></i></div>';
+        ? `<img src="${esc(b.imageUrl)}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgb(var(--fg-rgb) / 0.1); box-shadow: 0 2px 6px rgb(var(--shade-rgb) / 0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
+        : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgb(var(--fg-rgb) / 0.05); display: flex; align-items: center; justify-content: center; color:var(--text-faint);"><i class="fa-solid fa-image"></i></div>';
 
-      const targetText = b.targetRoute ? `<code style="background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:#cbd5e1;" dir="ltr">${esc(b.targetRoute)}</code>` : '<span style="color:#64748b;">-</span>';
+      const targetText = b.targetRoute ? `<code style="background:rgb(var(--fg-rgb) / 0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--text-soft);" dir="ltr">${esc(b.targetRoute)}</code>` : '<span style="color:var(--text-faint);">-</span>';
 
       return `
         <tr>
           <td style="text-align: center;">${imgMarkup}</td>
-          <td style="font-weight: bold; color: white;">${esc(b.title || 'بدون عنوان')}</td>
+          <td style="font-weight: bold; color: var(--text);">${esc(b.title || 'بدون عنوان')}</td>
           <td style="text-align: center;">${posLabel}</td>
           <td>${targetText}</td>
-          <td style="text-align: center; color: #f59e0b; font-weight: bold;">${b.orderIndex ?? 0}</td>
+          <td style="text-align: center; color: var(--accent-text); font-weight: bold;">${b.orderIndex ?? 0}</td>
           <td style="text-align: center;">${statusBadge}</td>
           <td style="text-align: center;">
             <div style="display: flex; gap: 6px; justify-content: center;">
-              <button type="button" class="btn-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.editBanner('${b.id}')" title="ویرایش بنر">
+              <button type="button" class="btn-icon" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.editBanner('${b.id}')" title="ویرایش بنر">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button type="button" class="btn-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.deleteBanner('${b.id}')" title="حذف بنر">
+              <button type="button" class="btn-icon" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.deleteBanner('${b.id}')" title="حذف بنر">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -9060,7 +9054,7 @@ window.loadBannersTab = async function() {
     }).join('');
   } catch(e) {
     console.error('Error loading banners:', e);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#ef4444;">ارتباط با سرور برقرار نشد</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger-text);">ارتباط با سرور برقرار نشد</td></tr>';
   }
 };
 
@@ -9092,7 +9086,7 @@ window.openCreateBannerModal = function() {
   const idEl = document.getElementById('banner-id');
   if (idEl) idEl.value = '';
   const titleModalEl = document.getElementById('banner-modal-title');
-  if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-image" style="color: #f59e0b;"></i> بارگذاری و افزودن بنر جدید';
+  if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-image" style="color: var(--accent-text);"></i> بارگذاری و افزودن بنر جدید';
   const preview = document.getElementById('banner-image-preview');
   if (preview) {
     preview.src = '';
@@ -9146,7 +9140,7 @@ window.editBanner = async function(id) {
     }
 
     const titleModalEl = document.getElementById('banner-modal-title');
-    if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-pen" style="color: #f59e0b;"></i> ویرایش و اصلاح بنر';
+    if (titleModalEl) titleModalEl.innerHTML = '<i class="fa-solid fa-pen" style="color: var(--accent-text);"></i> ویرایش و اصلاح بنر';
 
     const m = document.getElementById('banner-modal');
     if (m) {
@@ -9226,7 +9220,7 @@ window.cachedNewsList = [];
 window.loadNewsTab = async function() {
   const tbody = document.querySelector('#news-tbody') || document.querySelector('#news-table tbody');
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:#94a3b8;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اخبار و اعلانات جارچی...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:24px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اخبار و اعلانات جارچی...</td></tr>';
   }
 
   try {
@@ -9236,7 +9230,7 @@ window.loadNewsTab = async function() {
     });
     
     if (!res.ok) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#ef4444;">خطا در دریافت اطلاعات اخبار از سرور</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت اطلاعات اخبار از سرور</td></tr>';
       return;
     }
 
@@ -9259,7 +9253,7 @@ window.loadNewsTab = async function() {
     window.filterNewsTable();
   } catch(e) {
     console.error('Error loading news:', e);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#ef4444;">ارتباط با سرور برقرار نشد</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--danger-text);">ارتباط با سرور برقرار نشد</td></tr>';
   }
 };
 
@@ -9295,42 +9289,42 @@ window.renderNewsTable = function(newsList) {
   if (!tbody) return;
 
   if (!newsList || newsList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هیچ خبر یا اطلاعیه‌ای یافت نشد.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted);"><i class="fa-solid fa-inbox" style="font-size:24px; display:block; margin-bottom:8px; opacity:0.5;"></i>هیچ خبر یا اطلاعیه‌ای یافت نشد.</td></tr>';
     return;
   }
 
   const categoryColors = {
-    'اطلاعیه مهم': { bg: 'rgba(239, 68, 68, 0.15)', text: '#f87171', border: 'rgba(239, 68, 68, 0.3)' },
-    'رویداد و مسابقه': { bg: 'rgba(56, 189, 248, 0.15)', text: '#38bdf8', border: 'rgba(56, 189, 248, 0.3)' },
-    'اخبار کاروان‌ها': { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399', border: 'rgba(16, 185, 129, 0.3)' },
-    'آموزشی': { bg: 'rgba(168, 85, 247, 0.15)', text: '#c084fc', border: 'rgba(168, 85, 247, 0.3)' }
+    'اطلاعیه مهم': { bg: 'rgb(var(--danger-rgb) / 0.15)', text: 'var(--danger-text)', border: 'rgb(var(--danger-rgb) / 0.3)' },
+    'رویداد و مسابقه': { bg: 'rgb(var(--primary-rgb) / 0.15)', text: 'var(--primary-text)', border: 'rgb(var(--primary-rgb) / 0.3)' },
+    'اخبار کاروان‌ها': { bg: 'rgb(var(--success-rgb) / 0.15)', text: 'var(--success-text)', border: 'rgb(var(--success-rgb) / 0.3)' },
+    'آموزشی': { bg: 'rgb(var(--primary-rgb) / 0.15)', text: 'var(--primary-text)', border: 'rgb(var(--primary-rgb) / 0.3)' }
   };
 
   const audienceLabels = {
-    'ALL': '<span class="badge" style="background:rgba(255,255,255,0.08); color:#cbd5e1; border:1px solid rgba(255,255,255,0.1); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-users"></i> عمومی</span>',
-    'STUDENTS': '<span class="badge" style="background:rgba(14, 165, 233, 0.15); color:#38bdf8; border:1px solid rgba(14, 165, 233, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
-    'MENTORS': '<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
+    'ALL': '<span class="badge" style="background:rgb(var(--fg-rgb) / 0.08); color:var(--text-soft); border:1px solid rgb(var(--fg-rgb) / 0.1); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-users"></i> عمومی</span>',
+    'STUDENTS': '<span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
+    'MENTORS': '<span class="badge" style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
   };
 
   tbody.innerHTML = newsList.map(n => {
-    const catStyle = categoryColors[n.category] || { bg: 'rgba(148, 163, 184, 0.15)', text: '#cbd5e1', border: 'rgba(148, 163, 184, 0.3)' };
+    const catStyle = categoryColors[n.category] || { bg: 'rgb(var(--muted-rgb) / 0.15)', text: 'var(--text-soft)', border: 'rgb(var(--muted-rgb) / 0.3)' };
     const audienceBadge = audienceLabels[n.targetAudience] || audienceLabels['ALL'];
     const pDate = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
     
     const imageMarkup = n.imageUrl 
-      ? `<img src="${esc(n.imageUrl)}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3);" />`
-      : `<div style="width: 50px; height: 50px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; color: #64748b; border: 1px solid rgba(255,255,255,0.08);"><i class="fa-solid fa-image" style="font-size: 18px;"></i></div>`;
+      ? `<img src="${esc(n.imageUrl)}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgb(var(--fg-rgb) / 0.1); box-shadow: 0 2px 6px rgb(var(--shade-rgb) / 0.3);" />`
+      : `<div style="width: 50px; height: 50px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.05); display: flex; align-items: center; justify-content: center; color: var(--text-faint); border: 1px solid rgb(var(--fg-rgb) / 0.08);"><i class="fa-solid fa-image" style="font-size: 18px;"></i></div>`;
 
     const statusBadge = n.isPublished
-      ? `<span class="badge" style="background:rgba(16, 185, 129, 0.15); color:#34d399; border:1px solid rgba(16, 185, 129, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-check"></i> منتشرشده</span>`
-      : `<span class="badge" style="background:rgba(245, 158, 11, 0.15); color:#fbbf24; border:1px solid rgba(245, 158, 11, 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
+      ? `<span class="badge" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-check"></i> منتشرشده</span>`
+      : `<span class="badge" style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px;"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
 
     return `
       <tr>
         <td style="text-align:center;">${imageMarkup}</td>
         <td>
-          <div style="font-weight:bold; color:white; font-size:13px; margin-bottom:3px;">${esc(n.title || 'بدون عنوان')}</div>
-          ${n.subtitle ? `<div style="font-size:11px; color:#94a3b8; line-height:1.4;">${esc(n.subtitle)}</div>` : ''}
+          <div style="font-weight:bold; color:var(--text); font-size:13px; margin-bottom:3px;">${esc(n.title || 'بدون عنوان')}</div>
+          ${n.subtitle ? `<div style="font-size:11px; color:var(--text-muted); line-height:1.4;">${esc(n.subtitle)}</div>` : ''}
         </td>
         <td style="text-align:center;">
           <span class="badge" style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:bold;">
@@ -9338,20 +9332,20 @@ window.renderNewsTable = function(newsList) {
           </span>
         </td>
         <td>
-          <div style="font-size:12px; color:#cbd5e1; display:flex; align-items:center; gap:5px;">
-            <i class="fa-solid fa-user-pen" style="color:#38bdf8; font-size:11px;"></i>
+          <div style="font-size:12px; color:var(--text-soft); display:flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-user-pen" style="color:var(--primary-text); font-size:11px;"></i>
             <span>${esc(n.reporter || 'ستاد نپا')}</span>
           </div>
         </td>
-        <td dir="ltr" style="text-align:right; font-size:11px; color:#94a3b8;">${pDate}</td>
+        <td dir="ltr" style="text-align:right; font-size:11px; color:var(--text-muted);">${pDate}</td>
         <td style="text-align:center;">${audienceBadge}</td>
         <td style="text-align:center;">${statusBadge}</td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px;">
-            <button type="button" class="btn-action" style="background:rgba(56, 189, 248, 0.15); border:1px solid rgba(56, 189, 248, 0.3); color:#38bdf8; padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.editNews('${n.id}')" title="ویرایش خبر">
+            <button type="button" class="btn-action" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.editNews('${n.id}')" title="ویرایش خبر">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button type="button" class="btn-action" style="background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); color:#f87171; padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.deleteNews('${n.id}')" title="حذف خبر">
+            <button type="button" class="btn-action" style="background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); color:var(--danger-text); padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.deleteNews('${n.id}')" title="حذف خبر">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -9385,7 +9379,7 @@ window.openCreateNewsModal = function() {
   
   const titleEl = document.getElementById('news-modal-title');
   if (titleEl) {
-    titleEl.innerHTML = '<i class="fa-solid fa-newspaper" style="color: #38bdf8;"></i> افزودن خبر جدید جارچی';
+    titleEl.innerHTML = '<i class="fa-solid fa-newspaper" style="color: var(--primary-text);"></i> افزودن خبر جدید جارچی';
   }
   
   const m = document.getElementById('news-modal');
@@ -9441,7 +9435,7 @@ window.editNews = async function(id) {
 
     const titleEl = document.getElementById('news-modal-title');
     if (titleEl) {
-      titleEl.innerHTML = '<i class="fa-solid fa-pen" style="color: #38bdf8;"></i> ویرایش خبر جارچی';
+      titleEl.innerHTML = '<i class="fa-solid fa-pen" style="color: var(--primary-text);"></i> ویرایش خبر جارچی';
     }
 
     const m = document.getElementById('news-modal');
@@ -9872,7 +9866,7 @@ function renderSubAdminAccess(roles) {
   try { grants = JSON.parse(row.permissionsJson || '{}') || {}; } catch (_) { grants = {}; }
   document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
   box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgb(var(--fg-rgb) / 0.04); padding:8px 10px; border-radius:8px;">
       <span style="font-size:12.5px;">${PANEL_SECTION_LABELS[key]}</span>
       <select class="select-ctrl sub-admin-section" data-section="${key}" style="min-width:120px;">
         <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
