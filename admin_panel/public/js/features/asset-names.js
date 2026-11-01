@@ -89,7 +89,7 @@ window.loadAssetNames = async function() {
       <div style="display:flex; gap:6px; align-items:center;">
         <span style="font-size:11px; color:var(--text-muted); min-width:78px;">${esc(r.key)}</span>
         <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:12.5px;">
-        <button type="button" onclick="window.saveAssetName('${r.key}')" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
+        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
       </div>`).join('');
   } catch (e) { console.error('loadAssetNames error', e); }
 };

@@ -29,8 +29,8 @@ async function loadLmsData() {
     <td style="padding: 12px; color: var(--text-muted);">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
     <td style="padding: 12px; color: var(--text-muted);">${esc(s.description || '-')}</td>
     <td style="padding: 12px; text-align: center;">
-      <button onclick="editLmsStation('${s.id}')" style="background:var(--info-strong); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
-      <button onclick="deleteLmsStation('${s.id}')" style="background:var(--danger); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
+      <button data-click="editLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background:var(--info-strong); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
+      <button data-click="deleteLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background:var(--danger); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
     </td>
   </tr>
 `).join('');
@@ -57,8 +57,8 @@ function addCategoryUI(catData = null) {
       <span style="color: #EC4899; font-weight: bold; font-size: 13px;">دسته کلاس:</span>
       <input type="text" class="input-ctrl cat-title-input" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
       <input type="number" class="input-ctrl cat-order-input" value="${catOrder}" required placeholder="ترتیب" style="width: 70px; height: 32px; font-size: 12px;">
-      <button type="button" class="btn-primary" style="background: var(--success); padding: 4px 10px; font-size: 11px; height: 32px;" onclick="addClassUI(this.closest('.builder-category-item'))"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
-      <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" onclick="this.closest('.builder-category-item').remove()"><i class="fa-solid fa-trash"></i> حذف دسته</button>
+      <button type="button" class="btn-primary" style="background: var(--success); padding: 4px 10px; font-size: 11px; height: 32px;" data-click="addClassUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-category-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
+      <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-category-item&quot;]"><i class="fa-solid fa-trash"></i> حذف دسته</button>
     </div>
     <div class="category-classes-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px; padding-right: 15px; border-right: 2px dashed rgb(var(--fg-rgb) / 0.1);">
       <!-- Classes populated here -->
@@ -112,9 +112,9 @@ function addClassUI(catEl, classData = null) {
       </div>
     </div>
     <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-      <button type="button" class="btn-primary" style="background:var(--accent); padding: 3px 8px; font-size: 10px;" onclick="addClipUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
-      <button type="button" class="btn-primary" style="background:#e040fb; padding: 3px 8px; font-size: 10px;" onclick="addQuizUI(this.closest('.builder-class-item'))"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
-      <button type="button" class="page-btn btn-danger" style="padding: 3px 8px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-class-item').remove()"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
+      <button type="button" class="btn-primary" style="background:var(--accent); padding: 3px 8px; font-size: 10px;" data-click="addClipUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
+      <button type="button" class="btn-primary" style="background:#e040fb; padding: 3px 8px; font-size: 10px;" data-click="addQuizUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
+      <button type="button" class="page-btn btn-danger" style="padding: 3px 8px; font-size: 10px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-class-item&quot;]"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
     </div>
     
     <!-- Video parts container -->
@@ -206,14 +206,14 @@ function addClipUI(classEl, clipData = null) {
   clipDiv.innerHTML = `
     <span style="font-size: 10px; color: var(--accent-text); font-weight: bold;">پارت/کلیپ:</span>
     <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
-    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" onchange="window.detectClipDuration(this)" style="flex:2; min-width:150px; height:28px; font-size:11px;">
+    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" data-change="detectClipDuration" data-change-args="[&quot;$this&quot;]" style="flex:2; min-width:150px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو" style="width:75px; height:28px; font-size:11px;">
     <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
     <div style="display: flex; align-items: center; gap: 5px;">
-      <input type="file" onchange="uploadClipMediaDirect(this)" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
+      <input type="file" data-change="uploadClipMediaDirect" data-change-args="[&quot;$this&quot;]" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
       <small class="clip-upload-status" style="font-size: 9px; color: var(--success-text);"></small>
     </div>
-    <button type="button" class="page-btn btn-danger" style="padding: 2px 6px; font-size: 10px; margin-right: auto;" onclick="this.closest('.builder-clip-item').remove()"><i class="fa-solid fa-times"></i> حذف پارت</button>
+    <button type="button" class="page-btn btn-danger" style="padding: 2px 6px; font-size: 10px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-clip-item&quot;]"><i class="fa-solid fa-times"></i> حذف پارت</button>
   `;
   container.appendChild(clipDiv);
 }
@@ -248,8 +248,8 @@ function addQuizUI(classEl, quizData = null) {
         <option value="FILE" ${quizType === 'FILE' ? 'selected' : ''}>ارسال فایل</option>
       </select>
       <input type="number" class="input-ctrl quiz-zarik-input" value="${rewardZarik}" required placeholder="پاداش زریک" style="width:85px; height:28px; font-size:11px;">
-      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" onclick="addQuizQuestionUI(this.closest('.builder-quiz-item'))"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
-      <button type="button" class="page-btn btn-danger" style="padding:2px 8px; font-size:9px; margin-right: auto;" onclick="this.closest('.builder-quiz-item').remove()"><i class="fa-solid fa-times"></i> حذف آزمون</button>
+      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" data-click="addQuizQuestionUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-quiz-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
+      <button type="button" class="page-btn btn-danger" style="padding:2px 8px; font-size:9px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-quiz-item&quot;]"><i class="fa-solid fa-times"></i> حذف آزمون</button>
     </div>
     
     <div class="quiz-questions-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; padding-right: 10px; border-right: 2px dashed rgba(224,64,251,0.2);">
@@ -281,7 +281,7 @@ function addQuizQuestionUI(quizEl, qData = null) {
     <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
       <span style="font-size: 10px; color: var(--text-soft);">صورت سوال:</span>
       <input type="text" class="input-ctrl question-text-input" value="${qText}" required placeholder="متن سوال ارزیابی را وارد کنید" style="flex:1; height:26px; font-size:10px;">
-      <button type="button" class="page-btn btn-danger" style="padding:1px 5px; font-size:9px;" onclick="this.closest('.builder-question-item').remove()"><i class="fa-solid fa-trash"></i></button>
+      <button type="button" class="page-btn btn-danger" style="padding:1px 5px; font-size:9px;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-question-item&quot;]"><i class="fa-solid fa-trash"></i></button>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-right: 15px;">
       <div style="display:flex; align-items:center; gap:5px;">

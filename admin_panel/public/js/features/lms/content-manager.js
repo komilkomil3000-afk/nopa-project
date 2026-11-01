@@ -167,11 +167,11 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         <div>
           <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-image" style="color:var(--primary-text);"></i> تصویر منزلگاه (در صفحه اول، آموزگاه و منزلگاه یکسان نمایش داده می‌شود):</label>
           <div style="display:flex; gap:6px; align-items:center;">
-            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" style="width:44px; height:62px; object-fit:cover; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); ${station.iconUrl ? '' : 'visibility:hidden;'}" onerror="this.style.visibility = 'hidden'" onload="this.style.visibility = 'visible'">
-            <input type="text" id="content-modal-st-icon" class="input-ctrl" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." style="background:var(--surface); border-color:var(--border-strong); color:var(--text); direction:ltr; text-align:left; flex:1;" oninput="document.getElementById('content-modal-st-icon-preview').src = this.value">
+            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" style="width:44px; height:62px; object-fit:cover; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); ${station.iconUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+            <input type="text" id="content-modal-st-icon" class="input-ctrl" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." style="background:var(--surface); border-color:var(--border-strong); color:var(--text); direction:ltr; text-align:left; flex:1;" data-input="NopaActions.previewSrc" data-input-args="[&quot;content-modal-st-icon-preview&quot;,&quot;$value&quot;]">
             <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود تصویر منزلگاه">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
-              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'content-modal-st-icon')">
+              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;content-modal-st-icon&quot;]">
             </label>
           </div>
         </div>
@@ -181,7 +181,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
       <div style="background: rgb(var(--surface-rgb) / 0.7); border: 1px solid rgb(var(--primary-rgb) / 0.28); border-radius: 10px; padding: 12px; margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div style="font-size:12.5px; font-weight:bold; color:var(--primary-text);"><i class="fa-solid fa-images"></i> نگارستان منزلگاه</div>
-          <button type="button" onclick="window.addGalleryItemCard('content-modal-gallery-container')" style="background:linear-gradient(135deg,var(--primary),var(--primary-strong)); color:white; border:none; padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:bold; cursor:pointer;">
+          <button type="button" data-click="addGalleryItemCard" data-click-args="[&quot;content-modal-gallery-container&quot;]" style="background:linear-gradient(135deg,var(--primary),var(--primary-strong)); color:white; border:none; padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:bold; cursor:pointer;">
             <i class="fa-solid fa-plus"></i> افزودن تصویر به نگارستان
           </button>
         </div>
@@ -194,7 +194,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
       </div>
 
       <div style="display:flex; justify-content:flex-end;">
-        <button type="button" onclick="window.saveStationBasicInfoFromContentModal('${station.id}')" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; border:none; border-radius:8px; padding:8px 20px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+        <button type="button" data-click="saveStationBasicInfoFromContentModal" data-click-args="${esc(JSON.stringify([String(station.id)]))}" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; border:none; border-radius:8px; padding:8px 20px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
           <i class="fa-solid fa-check"></i> ذخیره تغییرات نام و محتوای منزلگاه
         </button>
       </div>
@@ -236,7 +236,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             <span style="font-size:12px; color:var(--text-soft); background:rgb(var(--shade-rgb) / 0.4); padding:5px 12px; border-radius:6px; border:1px solid rgb(var(--fg-rgb) / 0.06); font-weight:bold;">
               ${sessions.length} جلسه
             </span>
-            <button type="button" onclick="window.saveCategoryTitle('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);" title="ذخیره مستقیم عنوان این دسته">
+            <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);" title="ذخیره مستقیم عنوان این دسته">
               <i class="fa-solid fa-save"></i> ذخیره عنوان دسته
             </button>
           </div>
@@ -257,7 +257,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
               ${(window.globalInstructorsList || []).map(i => `<option value="${esc(i.name)}">${esc(i.name)} (${esc(i.degree || 'مدرس')})</option>`).join('')}
               ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="علیرضا خوش‌منظر">علیرضا خوش‌منظر</option><option value="پیراینه‌گر">پیراینه‌گر</option>` : ''}
             </select>
-            <button type="button" onclick="window.applyBatchInstructorToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+            <button type="button" data-click="applyBatchInstructorToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
               <i class="fa-solid fa-user-pen"></i> اعمال روی کل جلسات
             </button>
           </div>
@@ -275,7 +275,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
           <div style="display:flex; align-items:center; gap:8px;">
             <label style="font-size:11px; color:var(--text-soft);">پاداش هر پارت:</label>
             <input type="number" id="batch-zarik-cat-${cat.id}" class="input-ctrl" value="15" min="1" max="1000" style="width:65px; padding:5px 6px; text-align:center; background:var(--surface); border-color:var(--accent); color:var(--accent-text); font-weight:bold; font-size:12px;">
-            <button type="button" onclick="window.applyBatchZarikToCategory('${cat.id}', '${station.id}')" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:black; font-weight:bold; border:none; padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <button type="button" data-click="applyBatchZarikToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:black; font-weight:bold; border:none; padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;">
               <i class="fa-solid fa-bolt"></i> اعمال روی کل این دسته
             </button>
           </div>
@@ -349,21 +349,21 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                 <label style="font-size:11px; color:var(--accent-text); display:block; margin-bottom:4px; font-weight:bold;">
                   <i class="fa-solid fa-calendar-day"></i> تاریخ برگزاری (شمسی):
                 </label>
-                <input type="text" id="sess-date-${sess.id}" class="input-ctrl" value="${sessDate}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲" style="font-size:12px; color:var(--accent-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--accent-rgb) / 0.5); text-align:center;" oninput="const b = document.getElementById('badge-sess-date-${sess.id}'); if(b) b.innerText = this.value">
+                <input type="text" id="sess-date-${sess.id}" class="input-ctrl" value="${sessDate}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲" style="font-size:12px; color:var(--accent-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--accent-rgb) / 0.5); text-align:center;" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-date-' + sess.id, '$value']))}">
               </div>
 
               <div>
                 <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:4px; font-weight:bold;">
                   <i class="fa-solid fa-clock"></i> زمان و ساعت کلاس:
                 </label>
-                <input type="text" id="sess-time-${sess.id}" class="input-ctrl" value="${sessTime}" placeholder="مثال: ۱۸:۰۰ الی ۱۹:۳۰" style="font-size:12px; color:var(--primary-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--primary-rgb) / 0.5); text-align:center;" oninput="const b = document.getElementById('badge-sess-time-${sess.id}'); if(b) b.innerText = this.value">
+                <input type="text" id="sess-time-${sess.id}" class="input-ctrl" value="${sessTime}" placeholder="مثال: ۱۸:۰۰ الی ۱۹:۳۰" style="font-size:12px; color:var(--primary-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--primary-rgb) / 0.5); text-align:center;" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-time-' + sess.id, '$value']))}">
               </div>
 
               <div style="display:flex; gap:6px;">
-                <button type="button" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; border-radius:6px; padding:8px 14px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgb(var(--shade-rgb) / 0.3); white-space:nowrap;" onclick="window.saveSessionDetails('${sess.id}', '${station.id}')" title="ذخیره مستقیم تغییرات این کلاس و تاریخ آن">
+                <button type="button" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; border-radius:6px; padding:8px 14px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgb(var(--shade-rgb) / 0.3); white-space:nowrap;" data-click="saveSessionDetails" data-click-args="${esc(JSON.stringify([String(sess.id), String(station.id)]))}" title="ذخیره مستقیم تغییرات این کلاس و تاریخ آن">
                   <i class="fa-solid fa-floppy-disk"></i> ذخیره تاریخ و مشخصات
                 </button>
-                <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:8px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px; white-space:nowrap;" onclick="window.addNewClipToSession('${sess.id}')" title="افزودن پارت ویدیویی جدید به این کلاس">
+                <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:8px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px; white-space:nowrap;" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}" title="افزودن پارت ویدیویی جدید به این کلاس">
                   <i class="fa-solid fa-plus"></i> پارت جدید
                 </button>
               </div>
@@ -380,7 +380,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
           html += `
             <div style="color:var(--text-muted); font-size:12px; background:rgb(var(--shade-rgb) / 0.2); padding:10px; border-radius:6px; text-align:center;">
               پارتی برای این جلسه تعریف نشده است. 
-              <button type="button" style="background:var(--primary); color:white; border:none; border-radius:4px; padding:4px 10px; font-size:11px; margin-right:8px; cursor:pointer;" onclick="window.addNewClipToSession('${sess.id}')">+ ایجاد اولین پارت</button>
+              <button type="button" style="background:var(--primary); color:white; border:none; border-radius:4px; padding:4px 10px; font-size:11px; margin-right:8px; cursor:pointer;" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}">+ ایجاد اولین پارت</button>
             </div>`;
         } else {
           clips.forEach((clip, cIdx) => {
@@ -407,8 +407,8 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <div style="display:flex; align-items:center; gap:4px;">
                       <input type="number" id="clip-order-${clip.id}" min="1" max="50" class="input-ctrl" style="font-size:12px; padding:4px; text-align:center; background:var(--surface); font-weight:bold; color:var(--primary-text); width:45px;" value="${clip.clipOrder || (cIdx + 1)}">
                       <div style="display:flex; flex-direction:column; gap:2px;">
-                        <button type="button" onclick="window.moveClipInSession('${sess.id}', ${cIdx}, ${cIdx - 1})" ${isFirstClip ? 'disabled' : ''} style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">▲</button>
-                        <button type="button" onclick="window.moveClipInSession('${sess.id}', ${cIdx}, ${cIdx + 1})" ${isLastClip ? 'disabled' : ''} style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isLastClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">▼</button>
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx - 1)]))}" ${isFirstClip ? 'disabled' : ''} style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">▲</button>
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx + 1)]))}" ${isLastClip ? 'disabled' : ''} style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isLastClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">▼</button>
                       </div>
                     </div>
                   </div>
@@ -424,22 +424,22 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                   <div>
                     <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:3px;"><i class="fa-solid fa-image"></i> لینک کاور (پیش‌نمایش ویدیو در اپلیکیشن):</label>
                     <div style="display:flex; gap:6px; align-items:center;">
-                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" style="width:46px; height:30px; object-fit:cover; border-radius:4px; border:1px solid var(--border-strong); background:var(--surface); ${clip.coverImageUrl ? '' : 'visibility:hidden;'}" onerror="this.style.visibility = 'hidden'" onload="this.style.visibility = 'visible'">
-                      <input type="text" id="clip-cover-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:var(--surface); flex:1;" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" oninput="document.getElementById('clip-cover-preview-${clip.id}').src = this.value">
+                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" style="width:46px; height:30px; object-fit:cover; border-radius:4px; border:1px solid var(--border-strong); background:var(--surface); ${clip.coverImageUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+                      <input type="text" id="clip-cover-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:var(--surface); flex:1;" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" data-input="NopaActions.previewSrc" data-input-args="${esc(JSON.stringify(['clip-cover-preview-' + clip.id, '$value']))}">
                       <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 9px; border-radius:6px; cursor:pointer; font-size:11px; white-space:nowrap;" title="آپلود تصویر کاور">
                         <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
-                        <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'clip-cover-${clip.id}')">
+                        <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", ("clip-cover-" + String(clip.id))]))}">
                       </label>
                     </div>
                   </div>
                   <div style="display:flex; gap:6px; align-items:flex-end; padding-top:16px;">
-                    <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" onclick="window.saveClipVideoUrl('${sess.id}', '${clip.id}')" title="ذخیره ترتیب، عنوان و لینک ویدیو">
+                    <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" data-click="saveClipVideoUrl" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="ذخیره ترتیب، عنوان و لینک ویدیو">
                       <i class="fa-solid fa-save"></i> ذخیره
                     </button>
-                    <button type="button" style="background:var(--success); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" onclick="window.openQuizModalForClip('${sess.id}', '${clip.id}')" title="افزودن آزمونک برای این پارت">
+                    <button type="button" style="background:var(--success); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="افزودن آزمونک برای این پارت">
                       <i class="fa-solid fa-circle-question"></i> + آزمونک
                     </button>
-                    <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); border-radius:6px; padding:7px 10px; font-size:11px; cursor:pointer;" onclick="window.deleteClipRecord('${clip.id}', '${sess.id}')" title="حذف این پارت">
+                    <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); border-radius:6px; padding:7px 10px; font-size:11px; cursor:pointer;" data-click="deleteClipRecord" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" title="حذف این پارت">
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </div>
@@ -468,7 +468,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                       <label style="font-size:11px; color:var(--accent-text); white-space:nowrap; font-weight:bold;">
                         <i class="fa-solid fa-calendar-day"></i> تاریخ باز شدن:
                       </label>
-                      <input type="date" id="clip-unlock-date-${clip.id}" class="input-ctrl" value="${clipUnlockDate}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--accent-text); border-color:rgb(var(--accent-rgb) / 0.45); border-radius:6px; width:135px;" onchange="window.updateClipScheduleBadge('${clip.id}')" title="تاریخ باز شدن پارت">
+                      <input type="date" id="clip-unlock-date-${clip.id}" class="input-ctrl" value="${clipUnlockDate}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--accent-text); border-color:rgb(var(--accent-rgb) / 0.45); border-radius:6px; width:135px;" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="تاریخ باز شدن پارت">
                     </div>
 
                     <!-- Time input -->
@@ -476,15 +476,15 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                       <label style="font-size:11px; color:var(--primary-text); white-space:nowrap; font-weight:bold;">
                         <i class="fa-regular fa-clock"></i> ساعت باز شدن:
                       </label>
-                      <input type="time" id="clip-unlock-time-${clip.id}" class="input-ctrl" value="${clipUnlockTime || '00:00'}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--primary-text); border-color:rgb(var(--primary-rgb) / 0.45); border-radius:6px; width:100px;" onchange="window.updateClipScheduleBadge('${clip.id}')" title="ساعت باز شدن پارت">
+                      <input type="time" id="clip-unlock-time-${clip.id}" class="input-ctrl" value="${clipUnlockTime || '00:00'}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--primary-text); border-color:rgb(var(--primary-rgb) / 0.45); border-radius:6px; width:100px;" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="ساعت باز شدن پارت">
                     </div>
 
                     <!-- Quick buttons -->
                     <div style="display:flex; gap:5px;">
-                      <button type="button" onclick="window.setClipScheduleFromSession('${clip.id}', '${sess.id}')" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.4); color:var(--primary-text); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;" title="تنظیم خودکار تاریخ بر اساس تقویم جلسه">
+                      <button type="button" data-click="setClipScheduleFromSession" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.4); color:var(--primary-text); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;" title="تنظیم خودکار تاریخ بر اساس تقویم جلسه">
                         <i class="fa-solid fa-calendar-check"></i> تاریخ جلسه
                       </button>
-                      <button type="button" onclick="window.clearClipSchedule('${clip.id}')" style="background:rgb(var(--fg-rgb) / 0.05); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text-soft); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer;" title="بدون محدودیت زمان‌بندی (همیشه باز)">
+                      <button type="button" data-click="clearClipSchedule" data-click-args="${esc(JSON.stringify([String(clip.id)]))}" style="background:rgb(var(--fg-rgb) / 0.05); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text-soft); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer;" title="بدون محدودیت زمان‌بندی (همیشه باز)">
                         <i class="fa-solid fa-unlock"></i> همیشه باز
                       </button>
                     </div>
@@ -497,7 +497,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <div style="font-size:12px; color:var(--accent-text); font-weight:bold; display:flex; align-items:center; gap:6px;">
                       <i class="fa-solid fa-circle-question"></i> آزمونک‌های تستی انتهای پارت ${clip.clipOrder || (cIdx + 1)}:
                     </div>
-                    <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px;" onclick="window.openQuizModalForClip('${sess.id}', '${clip.id}')">
+                    <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px;" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}">
                       <i class="fa-solid fa-plus"></i> + طراحی آزمونک جدید برای این پارت
                     </button>
                   </div>
@@ -544,10 +544,10 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                         </span>
                       </div>
                       <div style="display:flex; gap:6px;">
-                        <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px;" onclick="window.editQuizRecord('${quiz.id}')" title="ویرایش سوال، گزینه‌ها و پاداش">
+                        <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px;" data-click="editQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="ویرایش سوال، گزینه‌ها و پاداش">
                           <i class="fa-solid fa-pen"></i> ویرایش سوال و گزینه‌ها
                         </button>
-                        <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;" onclick="window.deleteQuizRecord('${quiz.id}')" title="حذف آزمونک">
+                        <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;" data-click="deleteQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="حذف آزمونک">
                           <i class="fa-solid fa-trash"></i>
                         </button>
                       </div>

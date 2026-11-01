@@ -20,7 +20,7 @@ async function loadTickets() {
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.rating || '-'}</td>
         <td>
-          <button class="page-btn btn-view" onclick="showToast('نمایش جزئیات به زودی', 'info')"><i class="fa-solid fa-eye"></i></button>
+          <button class="page-btn btn-view" data-click="showToast" data-click-args="[&quot;نمایش جزئیات به زودی&quot;,&quot;info&quot;]"><i class="fa-solid fa-eye"></i></button>
         </td>
       </tr>
     `, { empty: 'تیکتی ثبت نشده است', emptyIcon: 'fa-solid fa-inbox' });
@@ -56,7 +56,7 @@ async function loadChats() {
         <td style="max-width: 250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(msg.messageText)}</td>
         <td>${fileBadge}</td>
         <td>
-          <button class="btn-icon" style="color:var(--danger);" onclick="deleteChat('${msg.id}')"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn-icon" style="color:var(--danger);" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -103,7 +103,7 @@ async function loadMentorTickets() {
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.ratingGiven || '-'}</td>
         <td>
-          <button class="btn-icon" onclick="viewTicketThread('${t.id}')"><i class="fa-solid fa-reply"></i></button>
+          <button class="btn-icon" data-click="viewTicketThread" data-click-args="${esc(JSON.stringify([String(t.id)]))}"><i class="fa-solid fa-reply"></i></button>
         </td>
       </tr>
     `).join('');

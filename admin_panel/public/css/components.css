@@ -76,3 +76,12 @@
 /* match the mentor modal's other inputs (inline inset background) until its inline styles are removed */
 #mentor-form .person-field .input-ctrl,
 #mentor-form .person-field .select-ctrl { background: var(--surface-inset); }
+
+/* ---------- Hover states that used to be inline onmouseover/onmouseout handlers ---------- */
+/* !important: these elements still carry their resting colours as inline styles */
+[data-hover="primary-strong"]:hover { background: rgb(var(--primary-rgb) / 0.25) !important; }
+[data-hover="primary-soft"]:hover { background: rgb(var(--primary-rgb) / 0.12) !important; }
+[data-hover="primary-fill"]:hover { background: rgb(var(--primary-rgb) / 0.35) !important; }
+[data-hover="accent-fill"]:hover { background: rgb(var(--accent-rgb) / 0.35) !important; }
+[data-hover="border-primary"]:hover { border-color: rgb(var(--primary-rgb) / 0.45) !important; }
+[data-hover="row"]:hover { background: rgb(var(--fg-rgb) / 0.03) !important; }

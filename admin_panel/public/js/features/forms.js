@@ -17,7 +17,7 @@ async function loadDynForms() {
         <td>${esc(f.placement)}</td>
         <td>${esc(f.targetAudience)}</td>
         <td>
-           <button class="page-btn btn-danger" onclick="deleteDynForm('${f.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
+           <button class="page-btn btn-danger" data-click="deleteDynForm" data-click-args="${esc(JSON.stringify([String(f.id)]))}"><i class="fa-solid fa-trash"></i> حذف</button>
         </td>
       `;
       tbody.appendChild(tr);

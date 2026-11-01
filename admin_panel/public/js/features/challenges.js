@@ -177,14 +177,14 @@ function renderAdminChallenges(challenges) {
         <td style="text-align: center;">${participation}</td>
         <td style="text-align: center;">
           <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-            <button type="button" class="btn-action" onclick="window.openChallengeStepsModal('${c.id}')" title="مشاهده مراحل چالش" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <button type="button" class="btn-action" data-click="openChallengeStepsModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده مراحل چالش" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-list-check"></i> مراحل
             </button>
-            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" onclick="window.openChallengeRanking('${c.id}')" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
-            <button type="button" class="btn-action" onclick="window.openEditChallengeModal('${c.id}')" title="ویرایش و اصلاح چالش" style="background: rgb(var(--info-rgb) / 0.15); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" data-click="openChallengeRanking" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
+            <button type="button" class="btn-action" data-click="openEditChallengeModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="ویرایش و اصلاح چالش" style="background: rgb(var(--info-rgb) / 0.15); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" onclick="window.deleteChallengeAdmin('${c.id}', '${escapedTitle}')" title="حذف چالش" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <button type="button" class="btn-action" data-click="deleteChallengeAdmin" data-click-args="${esc(JSON.stringify([String(c.id), String(escapedTitle)]))}" title="حذف چالش" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
               <i class="fa-solid fa-trash"></i> حذف
             </button>
           </div>
@@ -337,7 +337,7 @@ window.openChallengeRanking = async function(challengeId) {
       html += `<label style="display:block; font-size:12px; font-weight:bold; margin:10px 0 4px; color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]};">${placeLabel[i]}</label>
         <select class="ranking-select" style="width:100%; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; color:var(--text);">${options}</select>`;
     }
-    html += `<button type="button" onclick="window.submitChallengeRanking('${challengeId}', ${places})" style="margin-top:16px; width:100%; padding:10px; background:var(--accent); color:var(--text-soft); font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
+    html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" style="margin-top:16px; width:100%; padding:10px; background:var(--accent); color:var(--text-soft); font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
     body.innerHTML = html;
   } catch (e) {
     body.innerHTML = '<div style="color:var(--danger-text);">خطا در ارتباط با سرور</div>';
@@ -376,7 +376,7 @@ window.addQuestionRow = function(mode, initialData = null) {
   card.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
       <span style="font-weight: bold; color: var(--primary-text); font-size: 12px;">سوال / گام شماره ${qIndex}</span>
-      <button type="button" onclick="this.closest('.challenge-q-card').remove()" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
+      <button type="button" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.challenge-q-card&quot;]" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
         <i class="fa-solid fa-trash"></i> حذف
       </button>
     </div>
@@ -1069,12 +1069,12 @@ function renderAdminSubmissions(submissions) {
     // Actions Column with dedicated "مشاهده پاسخ"
     const actionCell = `
       <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-        <button type="button" class="btn-action" onclick="window.openViewSubmissionModal('${s.id}')" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
+        <button type="button" class="btn-action" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
           <i class="fa-solid fa-eye"></i> مشاهده پاسخ
         </button>
         ${isPending ? `
-          <button type="button" class="page-btn btn-success" onclick="window.reviewAdminSubmission('${s.id}', true, ${rewardVal})" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
-          <button type="button" class="page-btn btn-danger" onclick="window.reviewAdminSubmission('${s.id}', false, 0)" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
+          <button type="button" class="page-btn btn-success" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), true, (rewardVal)]))}" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
+          <button type="button" class="page-btn btn-danger" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), false, 0]))}" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
         ` : `
           <span style="font-size: 10.5px; color: var(--text-muted); align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
         `}
@@ -1101,10 +1101,10 @@ function renderAdminSubmissions(submissions) {
         </td>
         <td>
           <div style="max-width: 250px;">
-            <div style="font-size: 12.5px; color: var(--text); line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" onclick="window.openViewSubmissionModal('${s.id}')" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+            <div style="font-size: 12.5px; color: var(--text); line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="برای مشاهده کامل پاسخ کلیک فرمایید">
               ${esc(answer)}
             </div>
-            <button type="button" onclick="window.openViewSubmissionModal('${s.id}')" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+            <button type="button" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
               <i class="fa-solid fa-eye"></i> مشاهده جواب
             </button>
           </div>

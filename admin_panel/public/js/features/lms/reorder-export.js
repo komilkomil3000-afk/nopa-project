@@ -114,10 +114,10 @@ window.renderReorderList = function() {
         </div>
 
         <div style="display:flex; gap:6px; align-items:center;">
-          <button type="button" onclick="window.moveStationInReorder(${idx}, ${idx - 1})" ${isFirst ? 'disabled' : ''} style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isFirst ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx - 1)]))}" ${isFirst ? 'disabled' : ''} style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isFirst ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">
             <i class="fa-solid fa-arrow-up"></i>
           </button>
-          <button type="button" onclick="window.moveStationInReorder(${idx}, ${idx + 1})" ${isLast ? 'disabled' : ''} style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isLast ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx + 1)]))}" ${isLast ? 'disabled' : ''} style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isLast ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">
             <i class="fa-solid fa-arrow-down"></i>
           </button>
         </div>

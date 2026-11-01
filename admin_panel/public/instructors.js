@@ -72,7 +72,7 @@ window.renderInstructorsTable = function(list = null) {
       : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
 
     html += `
-      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition: background 0.2s;" onmouseover="this.style.background = 'rgb(var(--fg-rgb) / 0.03)'" onmouseout="this.style.background = 'transparent'">
+      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition: background 0.2s;" data-hover="row">
         <td style="padding: 12px; text-align:center; color:var(--text-muted); font-size:12px;">${index + 1}</td>
         <td style="padding: 12px;">
           <div style="display:flex; align-items:center; gap:12px;">
@@ -97,10 +97,10 @@ window.renderInstructorsTable = function(list = null) {
         <td style="padding: 12px;">${resumeDisplay}</td>
         <td style="padding: 12px; text-align:center;">
           <div style="display:flex; gap:6px; justify-content:center;">
-            <button type="button" class="btn-action" onclick="window.openInstructorModal('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="ویرایش مشخصات استاد">
+            <button type="button" class="btn-action" data-click="openInstructorModal" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="ویرایش مشخصات استاد">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" onclick="window.deleteInstructorRecord('${inst.id}')" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="حذف استاد">
+            <button type="button" class="btn-action" data-click="deleteInstructorRecord" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="حذف استاد">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -335,7 +335,7 @@ window.renderSelectedInstructorBadges = function(blockId) {
       <span class="inst-selected-tag" style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid rgb(var(--primary-rgb) / 0.45); color: var(--primary-text); font-size: 11.5px; font-weight: bold; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
         <i class="fa-solid fa-user-check" style="font-size:10px;"></i>
         <span>${esc(name)}</span>
-        <span class="inst-tag-remove-btn" onclick="window.removeInstructorFromBlock('${blockId}', '${escJs(name)}', event)" style="cursor:pointer; color:var(--danger-text); font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
+        <span class="inst-tag-remove-btn" data-click="removeInstructorFromBlock" data-click-args="${esc(JSON.stringify([String(blockId), String(name), "$event"]))}" style="cursor:pointer; color:var(--danger-text); font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
       </span>
     `;
   });
@@ -366,7 +366,7 @@ window.populateInstructorDropdownOptions = function(blockId) {
     dropdown.innerHTML = `
       <div style="padding:10px; text-align:center; color:var(--text-muted); font-size:11.5px;">
         <div>هیچ استادی در بانک اساتید ثبت نشده است.</div>
-        <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="margin-top:6px; background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+        <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="margin-top:6px; background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
           <i class="fa-solid fa-plus"></i> ثبت اولین استاد
         </button>
       </div>
@@ -377,7 +377,7 @@ window.populateInstructorDropdownOptions = function(blockId) {
   let html = `
     <div style="padding: 4px 6px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.08); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
       <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-database" style="color:var(--primary-text);"></i> اساتید ثبت‌شده در بانک:</span>
-      <button type="button" onclick="window.openInstructorModalQuick('${blockId}')" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+      <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
         <i class="fa-solid fa-plus"></i> افزودن جدید
       </button>
     </div>
@@ -387,9 +387,9 @@ window.populateInstructorDropdownOptions = function(blockId) {
   instructors.forEach(inst => {
     const isChecked = selectedNames.has(inst.name);
     html += `
-      <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'};" onmouseover="this.style.background = 'rgb(var(--primary-rgb) / 0.12)'" onmouseout="this.style.background = '${isChecked ? 'rgba(56, 189, 248, 0.15)' : 'transparent'}'">
+      <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'};" data-hover="primary-soft">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.selectInstructorForBlock('${blockId}', '${escJs(inst.name)}', this.checked)" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} data-change="selectInstructorForBlock" data-change-args="${esc(JSON.stringify([String(blockId), String(inst.name), "$checked"]))}" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);">
           <div>
             <div style="font-size: 12.5px; font-weight: bold; color: var(--text);">${esc(inst.name)}</div>
             <div style="font-size: 10.5px; color: var(--text-muted);">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>

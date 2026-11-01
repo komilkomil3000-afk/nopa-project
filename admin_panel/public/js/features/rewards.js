@@ -195,7 +195,7 @@ async function loadCaravansLeaderboard() {
         </td>
         <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{showToast('کاروان: ${escJs(c.name)}', 'info');}">
+          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" data-click="viewCaravanDetails" data-click-args="${esc(JSON.stringify([String(c.id)]))}">
             <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
           </button>
         </td>
@@ -324,10 +324,10 @@ async function loadIndividualsLeaderboard() {
         </td>
         <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(u.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 3px 8px; font-size: 11px;" onclick="viewUserDetails('${u.id}')" title="مشاهده پروفایل">
+          <button class="page-btn" style="padding: 3px 8px; font-size: 11px;" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="مشاهده پروفایل">
             <i class="fa-solid fa-user"></i>
           </button>
-          <button class="page-btn" style="padding: 3px 8px; font-size: 11px; margin-right: 4px;" onclick="document.getElementById('zarik-target-user').value='${u.id}';window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});" title="تعدیل زریک">
+          <button class="page-btn" style="padding: 3px 8px; font-size: 11px; margin-right: 4px;" data-click="pickZarikTarget" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="تعدیل زریک">
             <i class="fa-solid fa-coins"></i>
           </button>
         </td>
@@ -555,3 +555,12 @@ async function loadZarikAnalytics() {
     console.error('loadZarikAnalytics error:', err);
   }
 }
+
+// "adjust" icon in the wealth leaderboard: preselect the user in the Zarik form and scroll to it
+window.pickZarikTarget = function(userId) {
+  const select = document.getElementById('zarik-target-user');
+  if (select) select.value = userId;
+  const form = document.getElementById('zarik-adjust-form');
+  if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+};

@@ -113,16 +113,16 @@ window.renderCaravansTable = function() {
       </td>
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:var(--primary); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.selectCaravanForManagement('${c.id}')" title="مشاهده کاروان">
+          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:var(--primary); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="selectCaravanForManagement" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده کاروان">
             <i class="fa-solid fa-eye"></i> مشاهده
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--success); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openRenameCaravanModal('${c.id}', '${escJs(c.name || '')}')" title="تغییر نام کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--success); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="openRenameCaravanModal" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="تغییر نام کاروان">
             <i class="fa-solid fa-pen-to-square"></i> تغییر نام
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--info); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.openChangeCaravanMentorModalForCaravan('${c.id}')" title="تغییر راهبر">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--info); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="openChangeCaravanMentorModalForCaravan" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="تغییر راهبر">
             <i class="fa-solid fa-user-gear"></i> تغییر راهبر
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--danger); color:white; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteCaravanRecord('${c.id}', '${escJs(c.name || '')}')" title="حذف کاروان">
+          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--danger); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="deleteCaravanRecord" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="حذف کاروان">
             <i class="fa-solid fa-trash"></i> حذف
           </button>
         </div>
@@ -651,10 +651,10 @@ window.loadSelectedCaravanDetails = async function() {
         <td style="color:var(--success-text); font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
         <td style="color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
         <td style="white-space:nowrap; display:flex; gap:5px;">
-          <button class="btn-action" style="background:var(--info); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.viewStudentDetails('${m.id}')">جزئیات</button>
-          <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.openUserModal('${m.id}', '${escJs(name)}', '${m.role || 'student'}', '${cId}')">ویرایش</button>
-          <button class="btn-action" style="background:var(--accent); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.setAccountStatus('${m.id}', 'SUSPENDED')">تعلیق</button>
-          <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" onclick="window.removeMemberFromCaravan('${cId}', '${m.id}', '${escJs(name)}')">حذف</button>
+          <button class="btn-action" style="background:var(--info); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="viewStudentDetails" data-click-args="${esc(JSON.stringify([String(m.id)]))}">جزئیات</button>
+          <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(m.id), String(name), String(m.role || 'student'), String(cId)]))}">ویرایش</button>
+          <button class="btn-action" style="background:var(--accent); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(m.id), "SUSPENDED"]))}">تعلیق</button>
+          <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="removeMemberFromCaravan" data-click-args="${esc(JSON.stringify([String(cId), String(m.id), String(name)]))}">حذف</button>
         </td>
       `;
       rosterBody.appendChild(tr);
@@ -697,7 +697,7 @@ window.loadAssetConversions = async function() {
         <td style="font-size:12px; color:var(--text-soft);">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
         <td style="text-align:center;">
           ${r.status === 'completed' ? `
-            <button type="button" class="btn-icon" style="color:var(--danger-text); background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" onclick="cancelAssetConversion('${r.id}')" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
+            <button type="button" class="btn-icon" style="color:var(--danger-text); background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" data-click="cancelAssetConversion" data-click-args="${esc(JSON.stringify([String(r.id)]))}" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
           ` : '<span style="color:var(--text-faint); font-size:11px;">-</span>'}
         </td>
       </tr>
@@ -805,7 +805,7 @@ function renderPendingMembers() {
   document.getElementById('cw-pending-members').innerHTML = window.pendingCaravanMembers.map(p => `
     <li style="background:var(--primary-color); padding:4px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:5px;">
       ${esc(p.name)} (NP-${p.code})
-      <i class="fa-solid fa-times" style="cursor:pointer;" onclick="removePendingMember('${p.id}')"></i>
+      <i class="fa-solid fa-times" style="cursor:pointer;" data-click="removePendingMember" data-click-args="${esc(JSON.stringify([String(p.id)]))}"></i>
     </li>
   `).join('');
 }
@@ -924,10 +924,10 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
       <td style="color: var(--accent-text);"><i class="fa-solid fa-coins"></i> ${zarik}</td>
       <td>
         <div style="display:flex; gap:6px;">
-          <button class="page-btn" onclick="openCaravanStudentDetails('${u.id}')" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgb(var(--primary-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+          <button class="page-btn" data-click="openCaravanStudentDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgb(var(--primary-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
             <i class="fa-solid fa-eye"></i>
           </button>
-          <button class="page-btn" onclick="removeFromCaravan('${currentDrawerCaravanId}', '${u.id}')" title="حذف از کاروان" style="color: var(--color-danger); background:rgb(var(--danger-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+          <button class="page-btn" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(currentDrawerCaravanId), String(u.id)]))}" title="حذف از کاروان" style="color: var(--color-danger); background:rgb(var(--danger-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -1070,7 +1070,7 @@ async function loadCaravanMembersRoster() {
         <td>${u.caravanId || 'بدون کاروان'}</td>
         <td>-</td>
         <td>
-           <button class="page-btn" onclick="removeFromCaravan('${u.caravanId}', '${u.id}')" ${!u.caravanId ? 'disabled' : ''}><i class="fa-solid fa-unlink"></i> حذف از کاروان</button>
+           <button class="page-btn" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(u.caravanId), String(u.id)]))}" ${!u.caravanId ? 'disabled' : ''}><i class="fa-solid fa-unlink"></i> حذف از کاروان</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -1166,8 +1166,8 @@ window.loadCaravanDetails = async function(caravanId) {
             <td>${zarik}</td>
             <td>-</td>
             <td style="white-space:nowrap; display:flex; gap:5px;">
-              <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="editMember('${userId}')">ذخیره</button>
-              <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" onclick="removeFromCaravan('${caravanId}', '${userId}')">حذف</button>
+              <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" data-click="editMember" data-click-args="${esc(JSON.stringify([String(userId)]))}">ذخیره</button>
+              <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(caravanId), String(userId)]))}">حذف</button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -1205,7 +1205,7 @@ window.renderBulkSelectedMembers = function() {
   container.innerHTML = window.bulkTransferSelectedMembers.map(m => `
     <li style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
       ${esc(m.name)} (NP-${m.code})
-      <i class="fa-solid fa-times" style="cursor:pointer; color: var(--danger-text);" onclick="removeBulkSelectedMember('${m.id}')"></i>
+      <i class="fa-solid fa-times" style="cursor:pointer; color: var(--danger-text);" data-click="removeBulkSelectedMember" data-click-args="${esc(JSON.stringify([String(m.id)]))}"></i>
     </li>
   `).join('');
 };
@@ -1450,7 +1450,7 @@ window.searchCandidateMembers = async function(query) {
         <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); font-size:13px; opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'};">
           <label style="display:flex; align-items:center; gap:12px; cursor:${hasCaravan ? 'not-allowed' : 'pointer'}; flex:1; margin:0;">
             <input type="checkbox" 
-                   ${hasCaravan ? 'disabled' : `onchange="window.toggleCandidateSelection(this, '${u.id}')"`} 
+                   ${hasCaravan ? 'disabled' : `data-change="toggleCandidateSelection" data-change-args="${esc(JSON.stringify(["$this", String(u.id)]))}"`} 
                    ${isChecked}
                    style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
             <div style="display:flex; flex-direction:column; gap:2px;">
@@ -1654,4 +1654,15 @@ window.loadCaravansData = async function() {
   if (typeof loadCaravansTab === 'function') {
     await loadCaravansTab();
   }
+};
+
+// Caravan drawer buttons (formerly inline handlers reading the global currentDrawerCaravanId)
+window.openChangeMentorForDrawerCaravan = function() {
+  return window.openChangeCaravanMentorModalForCaravan(currentDrawerCaravanId);
+};
+window.editDrawerCaravanCapacity = function() {
+  return window.editCaravanCapacity(currentDrawerCaravanId);
+};
+window.searchCandidateMembersFromInput = function() {
+  return window.searchCandidateMembers(document.getElementById('input-search-candidate-member')?.value);
 };

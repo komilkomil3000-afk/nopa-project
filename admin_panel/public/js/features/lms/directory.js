@@ -207,7 +207,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
               </span>`;
             }).join('')}
           </div>
-          <button type="button" onclick="window.openStationContentManagerModal('${st.id}')" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" onmouseover="this.style.background = 'rgb(var(--primary-rgb) / 0.25)'" onmouseout="this.style.background = 'rgb(var(--primary-rgb) / 0.12)'" title="ویرایش و اصلاح اساتید این منزلگاه">
+          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" data-hover="primary-strong" title="ویرایش و اصلاح اساتید این منزلگاه">
             <i class="fa-solid fa-user-pen"></i> ویرایش و اصلاح اساتید
           </button>
         </div>
@@ -218,7 +218,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
           <div style="font-size:11px; color:var(--text-muted);">
             <i class="fa-solid fa-chalkboard-user"></i> اساتید دوره نپا
           </div>
-          <button type="button" onclick="window.openStationContentManagerModal('${st.id}')" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px;">
+          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px;">
             <i class="fa-solid fa-user-pen"></i> تعیین اساتید
           </button>
         </div>
@@ -298,7 +298,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
           </div>
         </td>
         <td style="text-align:center;">${sessionsDisplayHtml}</td>
-        <td style="text-align:center; vertical-align:middle; cursor:pointer;" onclick="window.openStationAccessModal('${escJs(stationIdentifier)}')" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+        <td style="text-align:center; vertical-align:middle; cursor:pointer;" data-click="openStationAccessModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
           ${(() => {
             const isStationTimeLocked = Boolean(st.isTimeLocked || (st.scheduledUnlockTime && new Date() < new Date(st.scheduledUnlockTime)));
             const effectiveIsLocked = Boolean(st.isLocked || st.status === 'locked' || isStationTimeLocked);
@@ -352,13 +352,13 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
         </td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
-            <button type="button" class="page-btn" style="background:var(--primary); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.openStationContentManagerModal('${stationIdentifier}', '${selectedCategoryFilter}')" title="مدیریت پارت‌ها و آزمونک‌ها">
+            <button type="button" class="page-btn" style="background:var(--primary); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier), String(selectedCategoryFilter)]))}" title="مدیریت پارت‌ها و آزمونک‌ها">
               <i class="fa-solid fa-film"></i> پارت‌ها
             </button>
-            <button type="button" class="page-btn" style="background:var(--info); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.editStationModal('${stationIdentifier}')" title="ویرایش عنوان و تقویم">
+            <button type="button" class="page-btn" style="background:var(--info); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="editStationModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="ویرایش عنوان و تقویم">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="page-btn" style="background:var(--danger); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" onclick="window.deleteStationRecord('${stationIdentifier}')" title="حذف">
+            <button type="button" class="page-btn" style="background:var(--danger); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="deleteStationRecord" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="حذف">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>

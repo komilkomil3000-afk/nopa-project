@@ -2589,3 +2589,21 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 9 person-field checks pass; open-everything (32 openers), Phase 3–7 suites and smoke test green.
   - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** In Progress (Phase 7 steps 4–5 pending)
+
+### [2026-11-02 08:00] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 4 (Inline handlers → delegated data-actions)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/actions.js` (Created)
+  - `admin_panel/public/index.html` (Modified — 178 inline handlers → data-attributes, actions.js loaded)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — template handlers → data-attributes; small named handler functions)
+  - `admin_panel/public/css/components.css` (Modified — [data-hover] states)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v12)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Replaced all 347 inline event handlers with delegated `data-<event>` / `data-<event>-args` handled by one listener per event (inline semantics preserved: bubbling order, stopPropagation, return false). Hover handlers moved to CSS. Prepares dropping 'unsafe-inline' for script attributes in the CSP.
+  - Fixes: station creator "add gallery item" button always threw (unquoted id); banner image fallback could loop; stale hover colour.
+- **Verification / Checkpoints Executed:**
+  - Static: 193 handler names resolve, 119 static argument lists are valid JSON. Headless Chrome: 8 delegation checks incl. click sweep over all tabs and 15 modals and a zero-inline-handler DOM check; open-everything (32) and Phase 3–7 suites + smoke green.
+  - `node --check` on all scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 step 5 pending)

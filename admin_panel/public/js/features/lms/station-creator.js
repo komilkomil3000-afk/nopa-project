@@ -26,28 +26,28 @@ window.addGalleryItemCard = function(containerId, data = null) {
     <div id="${blockId}" class="modal-animation-card" data-anim-id="${esc(itemId)}" style="background: rgb(var(--surface-2-rgb) / 0.7); border: 1px solid rgb(var(--primary-rgb) / 0.28); border-radius: 10px; padding: 12px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:6px;">
         <span class="anim-badge" style="background:var(--primary); color:white; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">تصویر ${index}</span>
-        <button type="button" onclick="window.removeGalleryItemCard('${blockId}')" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:3px 9px; font-size:11px; cursor:pointer;">
+        <button type="button" data-click="removeGalleryItemCard" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:3px 9px; font-size:11px; cursor:pointer;">
           <i class="fa-solid fa-trash"></i> حذف
         </button>
       </div>
       <div style="display:flex; gap:10px; align-items:flex-start;">
         ${isImage
-          ? `<img class="modal-anim-preview" src="${esc(url)}" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface); ${url ? '' : 'visibility:hidden;'}" onerror="this.style.visibility = 'hidden'" onload="this.style.visibility = 'visible'">`
+          ? `<img class="modal-anim-preview" src="${esc(url)}" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface); ${url ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">`
           : `<div style="width:64px; height:64px; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--primary-text);" title="ویدیو"><i class="fa-solid fa-film"></i></div>`}
         <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
           <input type="text" class="modal-anim-title input-ctrl" value="${esc(title)}" placeholder="عنوان تصویر" style="background:var(--surface-2);">
           <div style="display:flex; gap:6px;">
-            <input type="text" id="${inputId}" class="modal-anim-url input-ctrl" value="${esc(url)}" placeholder="https://... یا /uploads/..." style="background:var(--surface-2); direction:ltr; text-align:left; flex:1;" oninput="const p=this.closest('.modal-animation-card').querySelector('.modal-anim-preview'); if(p) p.src=this.value">
+            <input type="text" id="${inputId}" class="modal-anim-url input-ctrl" value="${esc(url)}" placeholder="https://... یا /uploads/..." style="background:var(--surface-2); direction:ltr; text-align:left; flex:1;" data-input="NopaActions.previewSrcIn" data-input-args="[&quot;$this&quot;,&quot;.modal-animation-card&quot;,&quot;.modal-anim-preview&quot;]">
             <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
-              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputId}')">
+              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", String(inputId)]))}">
             </label>
           </div>
           <div style="display:flex; gap:6px;">
             <input type="text" id="${inputId}-cover" class="modal-anim-cover input-ctrl" value="${esc(data?.coverImageUrl || '')}" placeholder="لینک کاور (فقط برای ویدیو، اختیاری)" style="background:var(--surface-2); direction:ltr; text-align:left; flex:1;">
             <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود کاور
-              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputId}-cover')">
+              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", (String(inputId) + "-cover")]))}">
             </label>
           </div>
           <textarea class="modal-anim-desc input-ctrl" rows="1" placeholder="توضیح (اختیاری)" style="background:var(--surface-2);">${esc(desc)}</textarea>
@@ -144,7 +144,7 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
           <span class="badge" style="background: ${badgeBg}; color: var(--text); padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;">دسته ${catIndex}</span>
           <i class="fa-solid fa-graduation-cap"></i> <span class="cat-label-display">${defaultTitle}</span>
         </h4>
-        <button type="button" onclick="window.removeCategoryBlockFromCreatorModal('${blockId}')" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این دسته کلاس">
+        <button type="button" data-click="removeCategoryBlockFromCreatorModal" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این دسته کلاس">
           <i class="fa-solid fa-trash"></i> حذف دسته
         </button>
       </div>
@@ -152,15 +152,15 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
       <div style="display: grid; grid-template-columns: 2fr 1.8fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <div class="form-group">
           <label style="font-size:11.5px; color:var(--text-soft);">عنوان دسته کلاس:</label>
-          <input type="text" class="modal-cat-title input-ctrl" value="${defaultTitle}" placeholder="مثال: کلاس‌های مهارتی، کارگاه پادکست..." style="background: var(--surface-2);" oninput="this.closest('.modal-category-card').querySelector('.cat-label-display').textContent = this.value">
+          <input type="text" class="modal-cat-title input-ctrl" value="${defaultTitle}" placeholder="مثال: کلاس‌های مهارتی، کارگاه پادکست..." style="background: var(--surface-2);" data-input="NopaActions.setTextIn" data-input-args="[&quot;$this&quot;,&quot;.modal-category-card&quot;,&quot;.cat-label-display&quot;]">
         </div>
         <div class="form-group inst-picker-wrapper" style="position:relative;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
             <label style="font-size:11.5px; color:var(--text-soft);"><i class="fa-solid fa-chalkboard-user" style="color:var(--primary-text);"></i> استاد / اساتید دوره:</label>
-            <a href="javascript:void(0)" onclick="window.openInstructorModalQuick('${blockId}')" style="font-size:10px; color:var(--primary-text); text-decoration:none; display:flex; align-items:center; gap:3px;" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
+            <a href="javascript:void(0)" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="font-size:10px; color:var(--primary-text); text-decoration:none; display:flex; align-items:center; gap:3px;" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
           </div>
-          <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly onclick="window.toggleInstructorDropdown('${blockId}', event)" style="display:none;">
-          <div id="inst-picker-box-${blockId}" class="inst-picker-box" style="background: var(--surface-2); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 6px 10px; min-height: 38px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;" onclick="window.toggleInstructorDropdown('${blockId}', event)">
+          <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}" style="display:none;">
+          <div id="inst-picker-box-${blockId}" class="inst-picker-box" style="background: var(--surface-2); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 6px 10px; min-height: 38px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;" data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}">
             <!-- Selected badges rendered here -->
           </div>
           <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; left: 0; z-index: var(--z-panel-raised); background: var(--surface); border: 1px solid rgb(var(--primary-rgb) / 0.45); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); padding: 8px; max-height: 220px; overflow-y: auto; margin-top: 4px;">

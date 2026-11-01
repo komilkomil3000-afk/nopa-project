@@ -45,7 +45,7 @@ async function loadNotificationData() {
           <div class="permission-item">
             <span>${labelName}</span>
             <label class="switch">
-              <input type="checkbox" onchange="toggleChannelOverride('${ch}', this.checked)" ${ov.isEnabled ? 'checked' : ''}>
+              <input type="checkbox" data-change="toggleChannelOverride" data-change-args="${esc(JSON.stringify([String(ch), "$checked"]))}" ${ov.isEnabled ? 'checked' : ''}>
               <span class="slider"></span>
             </label>
           </div>

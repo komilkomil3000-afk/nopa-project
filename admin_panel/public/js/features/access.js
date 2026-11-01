@@ -71,17 +71,17 @@ async function loadRoles() {
     NopaTable.render(tbody, roles, r => `
       <tr>
         <td>${esc(r.roleName)}</td>
-        <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'maskPhoneNumbers', this.checked)"></td>
-        <td><input type="checkbox" ${r.restrictZarik ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'restrictZarik', this.checked)"></td>
-        <td><input type="checkbox" ${r.lockUserDeletions ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'lockUserDeletions', this.checked)"></td>
-        <td><input type="checkbox" ${r.manageContent ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'manageContent', this.checked)"></td>
-        <td><input type="checkbox" ${r.canSendMessage ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canSendMessage', this.checked)"></td>
-        <td><input type="checkbox" ${r.canJoinClasses ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canJoinClasses', this.checked)"></td>
-        <td><input type="checkbox" ${r.canScoreAndEvaluate ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canScoreAndEvaluate', this.checked)"></td>
-        <td><input type="checkbox" ${r.canConvertAssets ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canConvertAssets', this.checked)"></td>
-        <td><input type="checkbox" ${r.canCreateChallenges ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canCreateChallenges', this.checked)"></td>
-        <td><input type="checkbox" ${r.canViewGlobalAnalytics ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canViewGlobalAnalytics', this.checked)"></td>
-        <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canManageUsers', this.checked)"></td>
+        <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "maskPhoneNumbers", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.restrictZarik ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "restrictZarik", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.lockUserDeletions ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "lockUserDeletions", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.manageContent ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "manageContent", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canSendMessage ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canSendMessage", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canJoinClasses ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canJoinClasses", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canScoreAndEvaluate ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canScoreAndEvaluate", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canConvertAssets ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canConvertAssets", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canCreateChallenges ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canCreateChallenges", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canViewGlobalAnalytics ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canViewGlobalAnalytics", "$checked"]))}"></td>
+        <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canManageUsers", "$checked"]))}"></td>
         <td>-</td>
       </tr>
     `, { empty: 'نقشی تعریف نشده است', emptyIcon: 'fa-solid fa-user-lock' });

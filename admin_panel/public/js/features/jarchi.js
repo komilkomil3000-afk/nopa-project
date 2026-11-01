@@ -116,11 +116,11 @@ window.loadBannersTab = async function() {
       const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
       const isBannerActive = (b.isActive === true || b.isActive === 1 || b.isActive === 'true');
       const statusBadge = isBannerActive
-        ? `<span class="badge" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', true)" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
-        : `<span class="badge" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" onclick="window.toggleBannerStatus('${b.id}', false)" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
+        ? `<span class="badge" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), true]))}" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
+        : `<span class="badge" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); font-size:11px; padding:3px 8px; border-radius:6px; cursor:pointer;" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), false]))}" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
       
       const imgMarkup = b.imageUrl
-        ? `<img src="${esc(b.imageUrl)}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgb(var(--fg-rgb) / 0.1); box-shadow: 0 2px 6px rgb(var(--shade-rgb) / 0.3);" onerror="this.src='/uploads/banner1.jpg'" />`
+        ? `<img src="${esc(b.imageUrl)}" style="width: 75px; height: 42px; border-radius: 6px; object-fit: cover; border: 1px solid rgb(var(--fg-rgb) / 0.1); box-shadow: 0 2px 6px rgb(var(--shade-rgb) / 0.3);" data-error="NopaActions.fallbackSrc" data-error-args="[&quot;$this&quot;,&quot;/uploads/banner1.jpg&quot;]" />`
         : '<div style="width: 75px; height: 42px; border-radius: 6px; background: rgb(var(--fg-rgb) / 0.05); display: flex; align-items: center; justify-content: center; color:var(--text-faint);"><i class="fa-solid fa-image"></i></div>';
 
       const targetText = b.targetRoute ? `<code style="background:rgb(var(--fg-rgb) / 0.06); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--text-soft);" dir="ltr">${esc(b.targetRoute)}</code>` : '<span style="color:var(--text-faint);">-</span>';
@@ -135,10 +135,10 @@ window.loadBannersTab = async function() {
           <td style="text-align: center;">${statusBadge}</td>
           <td style="text-align: center;">
             <div style="display: flex; gap: 6px; justify-content: center;">
-              <button type="button" class="btn-icon" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.editBanner('${b.id}')" title="ویرایش بنر">
+              <button type="button" class="btn-icon" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" data-click="editBanner" data-click-args="${esc(JSON.stringify([String(b.id)]))}" title="ویرایش بنر">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button type="button" class="btn-icon" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" onclick="window.deleteBanner('${b.id}')" title="حذف بنر">
+              <button type="button" class="btn-icon" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); width: 32px; height: 32px; border-radius: 6px; cursor: pointer;" data-click="deleteBanner" data-click-args="${esc(JSON.stringify([String(b.id)]))}" title="حذف بنر">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -424,10 +424,10 @@ window.renderNewsTable = function(newsList) {
         <td style="text-align:center;">${statusBadge}</td>
         <td style="text-align:center;">
           <div style="display:flex; justify-content:center; gap:6px;">
-            <button type="button" class="btn-action" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.editNews('${n.id}')" title="ویرایش خبر">
+            <button type="button" class="btn-action" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 8px; border-radius:6px; cursor:pointer;" data-click="editNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="ویرایش خبر">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button type="button" class="btn-action" style="background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); color:var(--danger-text); padding:5px 8px; border-radius:6px; cursor:pointer;" onclick="window.deleteNews('${n.id}')" title="حذف خبر">
+            <button type="button" class="btn-action" style="background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); color:var(--danger-text); padding:5px 8px; border-radius:6px; cursor:pointer;" data-click="deleteNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="حذف خبر">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>

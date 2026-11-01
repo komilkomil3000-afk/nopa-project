@@ -171,13 +171,13 @@ window.renderMentorsRows = function(mentorsList, tbody) {
         <td>${caravansHtml}</td>
         <td style="text-align:center; white-space:nowrap;">
           <div style="display:inline-flex; gap:6px; align-items:center;">
-            <button class="btn-action" onclick="window.viewMentorDossier('${m.id}')" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
+            <button class="btn-action" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
               <i class="fa-solid fa-eye"></i> شناسنامه
             </button>
-            <button class="btn-action" onclick="window.editMentor('${m.id}')" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
+            <button class="btn-action" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
               <i class="fa-solid fa-pen"></i> ویرایش
             </button>
-            <button class="btn-action" onclick="window.openMentorModerationModal('${m.id}')" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
+            <button class="btn-action" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
               <i class="fa-solid fa-user-shield"></i> وضعیت
             </button>
           </div>
@@ -308,7 +308,7 @@ window.viewMentorDossier = async function(mentorId) {
             <span style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
               ${students.length} دانش‌آموز تحت نظارت
             </span>
-            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." oninput="window.filterDossierStudents(this.value)" style="background:rgb(var(--shade-rgb) / 0.35); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
+            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" style="background:rgb(var(--shade-rgb) / 0.35); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
           </div>
         </div>
 
@@ -321,7 +321,7 @@ window.viewMentorDossier = async function(mentorId) {
     window.renderDossierStudents(students, mentorId);
 
     footerActions.innerHTML = `
-      <button type="button" class="btn-primary" onclick="document.getElementById('mentor-dossier-modal').style.display = 'none'; window.editMentor('${mentorId}')" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+      <button type="button" class="btn-primary" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
         <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
       </button>
     `;
@@ -359,7 +359,7 @@ window.renderDossierStudents = function(students, mentorId) {
           `<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); padding:2px 7px; border-radius:6px; font-size:10.5px;">تکالیف بررسی‌شده</span>`;
 
         return `
-          <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" onmouseover="this.style.borderColor = 'rgb(var(--primary-rgb) / 0.45)'" onmouseout="this.style.borderColor = 'rgb(var(--fg-rgb) / 0.08)'">
+          <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" data-hover="border-primary">
             <!-- Student Bio & Info -->
             <div style="display:flex; align-items:center; gap:12px; min-width:240px;">
               <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, var(--success), var(--primary)); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; color:white; border:2px solid rgb(var(--fg-rgb) / 0.2); flex-shrink:0;">
@@ -397,11 +397,11 @@ window.renderDossierStudents = function(students, mentorId) {
 
             <!-- Action Buttons for Tickets & Challenges -->
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <button type="button" onclick="window.openStudentTicketsModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28)); border:1px solid rgb(var(--accent-rgb) / 0.5); color:var(--accent-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background = 'rgb(var(--accent-rgb) / 0.35)'" onmouseout="this.style.background = 'linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28))'">
+              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28)); border:1px solid rgb(var(--accent-rgb) / 0.5); color:var(--accent-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" data-hover="accent-fill">
                 <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
               </button>
 
-              <button type="button" onclick="window.openStudentChallengesModal('${mentorId}', '${s.id}')" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28)); border:1px solid rgb(var(--primary-rgb) / 0.5); color:var(--primary-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" onmouseover="this.style.background = 'rgb(var(--primary-rgb) / 0.35)'" onmouseout="this.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28))'">
+              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28)); border:1px solid rgb(var(--primary-rgb) / 0.5); color:var(--primary-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" data-hover="primary-fill">
                 <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
               </button>
             </div>
@@ -513,11 +513,11 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
           <div style="background:rgb(var(--surface-rgb) / 0.5); border:1px solid rgb(var(--fg-rgb) / 0.05); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
             <div style="display:flex; gap:8px;">
               <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." style="flex:1; background:rgb(var(--shade-rgb) / 0.3); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:8px 12px; border-radius:8px; font-size:12.5px; outline:none;">
-              <button type="button" onclick="window.sendTicketReply('${t.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+              <button type="button" data-click="sendTicketReply" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
                 <i class="fa-solid fa-paper-plane"></i> ارسال پاسخ
               </button>
               ${t.status !== 'resolved' ? `
-                <button type="button" onclick="window.resolveStudentTicket('${t.id}', '${mentorId}', '${studentId}')" style="background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.35); color:var(--success-text); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
+                <button type="button" data-click="resolveStudentTicket" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" style="background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.35); color:var(--success-text); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
                   <i class="fa-solid fa-check"></i> حل‌شد
                 </button>
               ` : ''}
@@ -683,7 +683,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
               </select>
               <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
               <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" style="grid-column: span 2; background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
-              <button type="button" onclick="window.submitSubmissionReview('${sub.id}', '${mentorId}', '${studentId}')" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+              <button type="button" data-click="submitSubmissionReview" data-click-args="${esc(JSON.stringify([String(sub.id), String(mentorId), String(studentId)]))}" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
                 <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
               </button>
             </div>
@@ -813,8 +813,8 @@ window.editMentor = async function(mentorId) {
             <td>${statusTag}</td>
             <td>
               ${doc.status === 'pending' ? `
-                <button type="button" class="btn-icon" style="color:var(--success-text); background:none; border:none; cursor:pointer;" onclick="window.inlineApproveCert('${doc.id}', '${m.id}')" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
-                <button type="button" class="btn-icon" style="color:var(--danger-text); background:none; border:none; cursor:pointer;" onclick="window.inlineRejectCert('${doc.id}', '${m.id}')" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
+                <button type="button" class="btn-icon" style="color:var(--success-text); background:none; border:none; cursor:pointer;" data-click="inlineApproveCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
+                <button type="button" class="btn-icon" style="color:var(--danger-text); background:none; border:none; cursor:pointer;" data-click="inlineRejectCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
               ` : '-'}
             </td>
           </tr>
@@ -1020,9 +1020,9 @@ window.loadMentorDocs = async function() {
         <td>${new Date(d.createdAt).toLocaleString('fa-IR')}</td>
         <td>${d.status || 'pending'}</td>
         <td>
-          <button class="btn-icon" onclick="openMentorDocModal('${d.id}')"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn-icon" style="color:green" onclick="quickApproveMentorDoc('${d.id}')"><i class="fa-solid fa-check"></i></button>
-          <button class="btn-icon" style="color:red" onclick="openMentorDocModal('${d.id}', true)"><i class="fa-solid fa-ban"></i></button>
+          <button class="btn-icon" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-eye"></i></button>
+          <button class="btn-icon" style="color:green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
+          <button class="btn-icon" style="color:red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
         </td>
       </tr>
     `).join('');
@@ -1160,4 +1160,11 @@ window.loadMentorsData = async function() {
   if (typeof window.loadMentors === 'function') {
     await window.loadMentors();
   }
+};
+
+// "edit" button inside the mentor dossier: close the dossier, open the mentor form
+window.editMentorFromDossier = function(mentorId) {
+  const dossier = document.getElementById('mentor-dossier-modal');
+  if (dossier) dossier.style.display = 'none';
+  return window.editMentor(mentorId);
 };

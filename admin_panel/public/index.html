@@ -447,9 +447,9 @@
             <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
               <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
               <div class="dropdown-content">
-                <a href="javascript:void(0)" onclick="exportData('users', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                <a href="javascript:void(0)" onclick="exportData('users', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                <a href="javascript:void(0)" onclick="exportData('users', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;users&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
               </div>
             </div>
           </div>
@@ -526,8 +526,8 @@
               </span>
             </div>
             <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button type="button" class="btn-action" onclick="window.fetchInstructorsList()"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
-              <button type="button" class="btn-primary" onclick="window.openInstructorModal()" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
+              <button type="button" class="btn-action" data-click="fetchInstructorsList"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              <button type="button" class="btn-primary" data-click="openInstructorModal" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
                 <i class="fa-solid fa-plus"></i> ثبت استاد جدید
               </button>
             </div>
@@ -538,7 +538,7 @@
             <div class="form-group" style="margin: 0; flex: 1;">
               <div style="position: relative;">
                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 13px;"></i>
-                <input type="text" id="instructor-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام استاد، کد ملی، شماره تماس، مدرک یا کلاس‌های تدریس..." oninput="window.filterInstructorsList()" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 8px 36px 8px 12px; font-size: 12.5px; width: 100%;">
+                <input type="text" id="instructor-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام استاد، کد ملی، شماره تماس، مدرک یا کلاس‌های تدریس..." data-input="filterInstructorsList" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 8px 36px 8px 12px; font-size: 12.5px; width: 100%;">
               </div>
             </div>
           </div>
@@ -590,8 +590,8 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <div class="panel-title" style="margin: 0;"><i class="fa-solid fa-trophy" style="color: var(--accent-text); margin-left: 8px;"></i>مرکز لیگ و رتبه‌بندی جامع پلتفرم</div>
                 <div class="pill-nav" style="display: flex; gap: 8px; background: rgb(var(--fg-rgb) / 0.05); padding: 4px; border-radius: 12px; border: 1px solid rgb(var(--fg-rgb) / 0.1);">
-                  <button type="button" id="btn-league-caravans" class="page-btn" style="background: var(--color-accent); color: var(--text); font-weight: 700; border-radius: 8px;" onclick="switchLeagueTab('caravans')"><i class="fa-solid fa-users-rectangle" style="margin-left: 6px;"></i>لیگ کاروان‌ها</button>
-                  <button type="button" id="btn-league-individuals" class="page-btn" style="background: transparent; color: var(--text-secondary); border-radius: 8px;" onclick="switchLeagueTab('individuals')"><i class="fa-solid fa-user-graduate" style="margin-left: 6px;"></i>لیگ افراد و اعضا</button>
+                  <button type="button" id="btn-league-caravans" class="page-btn" style="background: var(--color-accent); color: var(--text); font-weight: 700; border-radius: 8px;" data-click="switchLeagueTab" data-click-args="[&quot;caravans&quot;]"><i class="fa-solid fa-users-rectangle" style="margin-left: 6px;"></i>لیگ کاروان‌ها</button>
+                  <button type="button" id="btn-league-individuals" class="page-btn" style="background: transparent; color: var(--text-secondary); border-radius: 8px;" data-click="switchLeagueTab" data-click-args="[&quot;individuals&quot;]"><i class="fa-solid fa-user-graduate" style="margin-left: 6px;"></i>لیگ افراد و اعضا</button>
                 </div>
               </div>
 
@@ -615,7 +615,7 @@
               <div class="actions-header glass" style="margin-bottom: 15px; padding: 12px 15px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-arrow-down-wide-short"></i> مرتب‌سازی:</span>
-                  <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" onchange="applyLeagueFilters()">
+                  <select id="league-sort-by" class="select-ctrl" style="min-width: 150px;" data-change="applyLeagueFilters">
                     <option value="totalScore">کل امتیازات (جام زرین)</option>
                     <option value="zarik">زریک</option>
                     <option value="beyragh">درفش</option>
@@ -632,7 +632,7 @@
                 <!-- Role Filter (for Individuals) -->
                 <div id="league-role-filter-box" style="display: none; align-items: center; gap: 6px;">
                   <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-user-tag"></i> نقش:</span>
-                  <select id="league-role-filter" class="select-ctrl" style="min-width: 120px;" onchange="applyLeagueFilters()">
+                  <select id="league-role-filter" class="select-ctrl" style="min-width: 120px;" data-change="applyLeagueFilters">
                     <option value="all">همه نقش‌ها</option>
                     <option value="student">فقط دانش‌آموزان</option>
                     <option value="mentor">فقط راهبران / مربیان</option>
@@ -642,14 +642,14 @@
                 <!-- Caravan Filter -->
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;"><i class="fa-solid fa-tents"></i> کاروان:</span>
-                  <select id="league-caravan-filter" class="select-ctrl" style="min-width: 130px;" onchange="applyLeagueFilters()">
+                  <select id="league-caravan-filter" class="select-ctrl" style="min-width: 130px;" data-change="applyLeagueFilters">
                     <option value="all">تمام کاروان‌ها</option>
                   </select>
                 </div>
 
                 <!-- Search box -->
                 <div style="position: relative; flex: 1; min-width: 180px;">
-                  <input type="text" id="league-search-input" class="input-ctrl" placeholder="جستجوی نام، تلفن یا کاروان..." style="width: 100%; padding-right: 32px;" oninput="debounceLeagueSearch()">
+                  <input type="text" id="league-search-input" class="input-ctrl" placeholder="جستجوی نام، تلفن یا کاروان..." style="width: 100%; padding-right: 32px;" data-input="debounceLeagueSearch">
                   <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 12px;"></i>
                 </div>
 
@@ -657,9 +657,9 @@
                 <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
                   <button class="btn-action btn-export" style="padding: 6px 12px;"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
                   <div class="dropdown-content">
-                    <a href="javascript:void(0)" onclick="exportCurrentLeague('excel')"><i class="fa-solid fa-file-excel"></i> اکسل (Excel)</a>
-                    <a href="javascript:void(0)" onclick="exportCurrentLeague('pdf')"><i class="fa-solid fa-file-pdf"></i> فایل (PDF)</a>
-                    <a href="javascript:void(0)" onclick="exportCurrentLeague('csv')"><i class="fa-solid fa-file-csv"></i> فایل (CSV)</a>
+                    <a href="javascript:void(0)" data-click="exportCurrentLeague" data-click-args="[&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> اکسل (Excel)</a>
+                    <a href="javascript:void(0)" data-click="exportCurrentLeague" data-click-args="[&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> فایل (PDF)</a>
+                    <a href="javascript:void(0)" data-click="exportCurrentLeague" data-click-args="[&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> فایل (CSV)</a>
                   </div>
                 </div>
               </div>
@@ -736,9 +736,9 @@
                 <div class="dropdown-wrapper" style="display:inline-block; position:relative; margin-right: auto;">
                   <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
                   <div class="dropdown-content">
-                    <a href="javascript:void(0)" onclick="exportData('ledger', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-                    <a href="javascript:void(0)" onclick="exportData('ledger', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-                    <a href="javascript:void(0)" onclick="exportData('ledger', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+                    <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+                    <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
+                    <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;ledger&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
                   </div>
                 </div>
               </div>
@@ -987,7 +987,7 @@
             <span>ادمین‌ها به صورت پیش‌فرض اجازه ورود به پنل دارند</span>
           </label>
           <div id="sub-admin-sections" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px;"></div>
-          <button type="button" class="btn-primary" style="margin-top:14px; max-width:220px;" onclick="saveSubAdminAccess()">ذخیره دسترسی‌ها</button>
+          <button type="button" class="btn-primary" style="margin-top:14px; max-width:220px;" data-click="saveSubAdminAccess">ذخیره دسترسی‌ها</button>
         </div>
 
         <div class="panel-card glass" style="margin-top: 20px;">
@@ -1061,20 +1061,20 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h3>مدیریت و فهرست کاروان‌ها</h3>
           <div style="display: flex; gap: 10px;">
-            <button id="btn-create-caravan" class="btn-primary" style="background-color: var(--success);" onclick="openCaravanWizard()"><i class="fa-solid fa-plus"></i> ساخت کاروان جدید</button>
+            <button id="btn-create-caravan" class="btn-primary" style="background-color: var(--success);" data-click="openCaravanWizard"><i class="fa-solid fa-plus"></i> ساخت کاروان جدید</button>
           </div>
         </div>
 
         <div class="actions-header glass" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
           <div style="display: flex; gap: 10px; align-items: center; flex: 1; min-width: 300px;">
-            <input type="text" id="caravan-search-input" class="input-ctrl" placeholder="جستجو نام کاروان، مربی یا کد..." style="flex: 1;" oninput="renderCaravansTable()">
-            <select id="caravan-sort-select" class="select-ctrl" onchange="renderCaravansTable()">
+            <input type="text" id="caravan-search-input" class="input-ctrl" placeholder="جستجو نام کاروان، مربی یا کد..." style="flex: 1;" data-input="renderCaravansTable">
+            <select id="caravan-sort-select" class="select-ctrl" data-change="renderCaravansTable">
               <option value="newest">جدیدترین کاروان‌ها</option>
               <option value="most_members">بیشترین اعضا</option>
               <option value="highest_zarik">بالاترین ثروت (زریک)</option>
               <option value="highest_progress">بیشترین درصد پیشرفت</option>
             </select>
-            <select id="caravan-mentor-filter" class="select-ctrl" onchange="renderCaravansTable()">
+            <select id="caravan-mentor-filter" class="select-ctrl" data-change="renderCaravansTable">
               <option value="all">همه مربیان</option>
               <!-- Populated dynamically -->
             </select>
@@ -1082,9 +1082,9 @@
           <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
             <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
             <div class="dropdown-content">
-              <a href="javascript:void(0)" onclick="exportData('caravans', 'pdf')"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</a>
-              <a href="javascript:void(0)" onclick="exportData('caravans', 'excel')"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</a>
-              <a href="javascript:void(0)" onclick="exportData('caravans', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;caravans&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
             </div>
           </div>
         </div>
@@ -1124,7 +1124,7 @@
               <div style="color:var(--text-secondary); font-size:12px; margin-bottom:5px;"><i class="fa-solid fa-chalkboard-user" style="color:var(--primary-text);"></i> راهبر اختصاصی</div>
               <div style="display:flex; justify-content:center; align-items:center;">
                 <span id="cw-mentor-name" style="color:var(--primary-text); font-weight:bold; font-size:15px;">-</span>
-                <button id="btn-change-caravan-mentor" type="button" onclick="window.openChangeCaravanMentorModal()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; margin-right:8px;" title="تغییر راهبر"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button id="btn-change-caravan-mentor" type="button" data-click="openChangeCaravanMentorModal" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; margin-right:8px;" title="تغییر راهبر"><i class="fa-solid fa-pen-to-square"></i></button>
               </div>
             </div>
             <div style="background:rgb(var(--accent-rgb) / 0.06); padding:14px; border-radius:10px; text-align:center; border: 1px solid rgb(var(--accent-rgb) / 0.2);">
@@ -1152,7 +1152,7 @@
           <!-- Dynamic Roster Table -->
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
             <h4 style="color:var(--text); font-size:15px; font-weight:bold; margin:0;">اعضای کاروان و سرمایه‌های فردی</h4>
-            <button id="btn-open-add-member-modal" type="button" onclick="window.openAddMemberToCaravanModal()" class="btn-primary" style="background:var(--success); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
+            <button id="btn-open-add-member-modal" type="button" data-click="openAddMemberToCaravanModal" class="btn-primary" style="background:var(--success); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
               + افزودن عضو جدید به کاروان
             </button>
           </div>
@@ -1184,11 +1184,11 @@
         <!-- Role filter + search (merged from a duplicate, unreachable audit-tab) -->
         <div class="panel-card glass" style="margin-bottom: 20px;">
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="button" class="btn-primary" onclick="loadAuditLogs('all')">همه نقش‌ها</button>
-            <button type="button" class="btn-primary" onclick="loadAuditLogs('student')">فعالیت مخاطبان</button>
-            <button type="button" class="btn-primary" onclick="loadAuditLogs('mentor')">فعالیت راهبران</button>
-            <button type="button" class="btn-primary" onclick="loadAuditLogs('super_mentor')">فعالیت سوپر راهبران</button>
-            <button type="button" class="btn-primary" onclick="loadAuditLogs('admin')">فعالیت مدیران</button>
+            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;all&quot;]">همه نقش‌ها</button>
+            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;student&quot;]">فعالیت مخاطبان</button>
+            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;mentor&quot;]">فعالیت راهبران</button>
+            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;super_mentor&quot;]">فعالیت سوپر راهبران</button>
+            <button type="button" class="btn-primary" data-click="loadAuditLogs" data-click-args="[&quot;admin&quot;]">فعالیت مدیران</button>
           </div>
           <form id="audit-filter-form" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;">
             <div class="form-group">
@@ -1201,7 +1201,7 @@
         </div>
         <div class="actions-header glass" style="margin-bottom: 20px;">
           <div class="filters-group">
-            <select id="audit-action-filter" class="select-ctrl" onchange="loadAuditLogs()">
+            <select id="audit-action-filter" class="select-ctrl" data-change="loadAuditLogs">
               <option value="">تمام عملیات‌ها</option>
               <option value="CREATE_USER">ایجاد کاربر</option>
               <option value="UPDATE_USER">ویرایش کاربر</option>
@@ -1215,9 +1215,9 @@
           <div class="dropdown-wrapper" style="display:inline-block; position:relative;">
             <button class="btn-action btn-export"><i class="fa-solid fa-file-export"></i>خروجی <i class="fa-solid fa-caret-down"></i></button>
             <div class="dropdown-content">
-              <a href="javascript:void(0)" onclick="exportData('audit', 'pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</a>
-              <a href="javascript:void(0)" onclick="exportData('audit', 'excel')"><i class="fa-solid fa-file-excel"></i> Excel</a>
-              <a href="javascript:void(0)" onclick="exportData('audit', 'csv')"><i class="fa-solid fa-file-csv"></i> CSV</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> Excel</a>
+              <a href="javascript:void(0)" data-click="exportData" data-click-args="[&quot;audit&quot;,&quot;csv&quot;]"><i class="fa-solid fa-file-csv"></i> CSV</a>
             </div>
           </div>
         </div>
@@ -1467,9 +1467,9 @@
               </span>
             </div>
             <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn-action" onclick="exportData('mentors', 'excel')"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
-              <button class="btn-action" onclick="exportData('mentors', 'pdf')"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
-              <button class="btn-primary" onclick="showMentorModal()" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
+              <button class="btn-action" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;excel&quot;]"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+              <button class="btn-action" data-click="exportData" data-click-args="[&quot;mentors&quot;,&quot;pdf&quot;]"><i class="fa-solid fa-file-pdf"></i> خروجی پی‌دی‌اف</button>
+              <button class="btn-primary" data-click="showMentorModal" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; padding: 8px 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
                 <i class="fa-solid fa-plus"></i> ثبت راهبر جدید
               </button>
             </div>
@@ -1481,14 +1481,14 @@
               <label style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-magnifying-glass" style="color: var(--primary-text);"></i> جستجوی هوشمند راهبر:
               </label>
-              <input type="text" id="mentor-filter-search" class="input-ctrl" placeholder="نام، موبایل، کد ملی، شهر یا تخصص..." oninput="window.filterMentorsList()" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 12px; font-size: 12.5px;">
+              <input type="text" id="mentor-filter-search" class="input-ctrl" placeholder="نام، موبایل، کد ملی، شهر یا تخصص..." data-input="filterMentorsList" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 12px; font-size: 12.5px;">
             </div>
 
             <div class="form-group" style="margin: 0;">
               <label style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-people-group" style="color: var(--success-text);"></i> وضعیت کاروان:
               </label>
-              <select id="mentor-filter-caravan" class="input-ctrl" onchange="window.filterMentorsList()" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
+              <select id="mentor-filter-caravan" class="input-ctrl" data-change="filterMentorsList" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
                 <option value="all">همه</option>
                 <option value="has_caravan">دارای کاروان فعال</option>
                 <option value="no_caravan">فاقد کاروان</option>
@@ -1499,7 +1499,7 @@
               <label style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-circle-check" style="color: var(--accent-text);"></i> وضعیت حساب:
               </label>
-              <select id="mentor-filter-status" class="input-ctrl" onchange="window.filterMentorsList()" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
+              <select id="mentor-filter-status" class="input-ctrl" data-change="filterMentorsList" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
                 <option value="all">همه وضعیت‌ها</option>
                 <option value="ACTIVE">فعال (ACTIVE)</option>
                 <option value="PENDING_VERIFICATION">در انتظار بررسی</option>
@@ -1511,7 +1511,7 @@
               <label style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; display: block;">
                 <i class="fa-solid fa-arrow-down-wide-short" style="color: var(--primary-text);"></i> مرتب‌سازی:
               </label>
-              <select id="mentor-filter-sort" class="input-ctrl" onchange="window.filterMentorsList()" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
+              <select id="mentor-filter-sort" class="input-ctrl" data-change="filterMentorsList" style="background: var(--surface); border-color: rgb(var(--fg-rgb) / 0.12); color: var(--text); padding: 7px 10px; font-size: 12.5px;">
                 <option value="caravans_desc">بیشترین تعداد کاروان</option>
                 <option value="name_asc">الفبایی نام راهبر</option>
               </select>
@@ -1551,7 +1551,7 @@
                   <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;" id="dossier-mentor-subtitle">اطلاعات هویتی، کاروان‌ها و افراد تحت نظارت</div>
                 </div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('mentor-dossier-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;mentor-dossier-modal&quot;]">&times;</button>
             </div>
 
             <div id="dossier-content-body">
@@ -1562,7 +1562,7 @@
               <div id="dossier-footer-actions">
                 <!-- Action buttons -->
               </div>
-              <button type="button" class="btn-action" onclick="document.getElementById('mentor-dossier-modal').style.display='none'" style="padding: 8px 20px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">بستن پرونده</button>
+              <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;mentor-dossier-modal&quot;]" style="padding: 8px 20px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">بستن پرونده</button>
             </div>
           </div>
         </div>
@@ -1580,7 +1580,7 @@
                   <div id="student-tickets-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">تاریخچه پیام‌ها، فایل‌های ارسالی و پاسخ‌های راهبر</div>
                 </div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('student-tickets-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;student-tickets-modal&quot;]">&times;</button>
             </div>
             
             <div id="student-tickets-content-body" style="display: flex; flex-direction: column; gap: 16px;">
@@ -1588,7 +1588,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px; margin-top: 20px;">
-              <button type="button" onclick="document.getElementById('student-tickets-modal').style.display='none'" style="padding: 8px 22px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">بستن</button>
+              <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;student-tickets-modal&quot;]" style="padding: 8px 22px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">بستن</button>
             </div>
           </div>
         </div>
@@ -1606,7 +1606,7 @@
                   <div id="student-challenges-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">تکالیف ارسالی دانش‌آموز، فایل‌های پیوست، امتیازدهی و بازخوردهای راهبر</div>
                 </div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('student-challenges-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;student-challenges-modal&quot;]">&times;</button>
             </div>
             
             <div id="student-challenges-content-body" style="display: flex; flex-direction: column; gap: 16px;">
@@ -1614,7 +1614,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px; margin-top: 20px;">
-              <button type="button" onclick="document.getElementById('student-challenges-modal').style.display='none'" style="padding: 8px 22px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">بستن</button>
+              <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;student-challenges-modal&quot;]" style="padding: 8px 22px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">بستن</button>
             </div>
           </div>
         </div>
@@ -1629,29 +1629,29 @@
                 </h3>
                 <div id="mod-mentor-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">تعیین وضعیت فعالیت، مسدودسازی موقت یا حذف</div>
               </div>
-              <button class="modal-close" type="button" onclick="document.getElementById('mentor-moderation-modal').style.display='none'">&times;</button>
+              <button class="modal-close" type="button" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]">&times;</button>
             </div>
 
-            <form onsubmit="window.executeMentorModeration(event)">
+            <form data-submit="executeMentorModeration" data-submit-args="[&quot;$event&quot;]">
               <input type="hidden" id="mod-mentor-id">
 
               <div style="background: rgb(var(--surface-2-rgb) / 0.6); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
                 <div style="font-weight: bold; margin-bottom: 10px; font-size: 13px; color: var(--text-soft);">انتخاب نوع اقدام مدیریتی:</div>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--success-text);">
-                    <input type="radio" name="mod_action" value="activate" checked onchange="window.toggleTempSuspendDate(false)">
+                    <input type="radio" name="mod_action" value="activate" checked data-change="toggleTempSuspendDate" data-change-args="[false]">
                     <span>فعال‌سازی مجدد و رفع تعلیق حساب (ACTIVE)</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--accent-text);">
-                    <input type="radio" name="mod_action" value="temp_suspend" onchange="window.toggleTempSuspendDate(true)">
+                    <input type="radio" name="mod_action" value="temp_suspend" data-change="toggleTempSuspendDate" data-change-args="[true]">
                     <span>تعلیق موقت حساب تا تاریخ مشخص</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--danger-text);">
-                    <input type="radio" name="mod_action" value="permanent_suspend" onchange="window.toggleTempSuspendDate(false)">
+                    <input type="radio" name="mod_action" value="permanent_suspend" data-change="toggleTempSuspendDate" data-change-args="[false]">
                     <span>مسدودسازی دائمی حساب کاربری راهبر (SUSPENDED)</span>
                   </label>
                   <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--danger-text);">
-                    <input type="radio" name="mod_action" value="soft_delete" onchange="window.toggleTempSuspendDate(false)">
+                    <input type="radio" name="mod_action" value="soft_delete" data-change="toggleTempSuspendDate" data-change-args="[false]">
                     <span>حذف کامل راهبر از سیستم (Soft Delete)</span>
                   </label>
                 </div>
@@ -1663,7 +1663,7 @@
               </div>
 
               <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 14px;">
-                <button type="button" class="btn-action" onclick="document.getElementById('mentor-moderation-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+                <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;mentor-moderation-modal&quot;]" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
                 <button type="submit" class="btn-primary" style="padding: 8px 20px; border-radius: 8px; background: linear-gradient(135deg, var(--danger), var(--danger-strong)); color: white; border: none; font-weight: bold; cursor: pointer;">
                   <i class="fa-solid fa-shield-halved"></i> اعمال اقدام مدیریتی
                 </button>
@@ -1702,10 +1702,10 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h3>ساختار منزلگاه‌ها و مدیریت کلاس‌ها و آزمون‌ها</h3>
           <div style="display: flex; gap: 10px;">
-            <button type="button" onclick="window.openReorderStationsModal()" class="btn-action" style="background: rgb(var(--success-rgb) / 0.15); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <button type="button" data-click="openReorderStationsModal" class="btn-action" style="background: rgb(var(--success-rgb) / 0.15); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-arrow-down-1-9"></i> مرتب‌سازی و اصلاح ترتیب منزلگاه‌ها
             </button>
-            <button type="button" onclick="window.openCreateStationModal()" class="btn-primary" style="background-color: var(--primary);">
+            <button type="button" data-click="openCreateStationModal" class="btn-primary" style="background-color: var(--primary);">
               <i class="fa-solid fa-plus"></i> ایجاد منزلگاه جدید
             </button>
           </div>
@@ -1748,14 +1748,14 @@
           <div class="filters-group" style="flex: 1;">
             <div class="search-box" style="flex: 1; min-width: 250px;">
               <i class="fa-solid fa-search"></i>
-              <input type="text" id="lms-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام منزلگاه، سرفصل یا استاد..." oninput="window.filterLmsTable()">
+              <input type="text" id="lms-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام منزلگاه، سرفصل یا استاد..." data-input="filterLmsTable">
             </div>
-            <select id="lms-filter-category" class="select-ctrl" onchange="window.filterLmsTable()">
+            <select id="lms-filter-category" class="select-ctrl" data-change="filterLmsTable">
               <option value="all">همه دسته‌ها (مهارتی + رسانه‌ای)</option>
               <option value="مهارتی">فقط کلاس‌های مهارتی</option>
               <option value="رسانه‌ای">فقط کلاس‌های رسانه‌ای</option>
             </select>
-            <select id="lms-filter-instructor" class="select-ctrl" onchange="window.filterLmsTable()">
+            <select id="lms-filter-instructor" class="select-ctrl" data-change="filterLmsTable">
               <option value="all">همه اساتید</option>
               <option value="خوش‌منظر">علیرضا خوش‌منظر</option>
               <option value="پیراینه‌گر">پیراینه‌گر</option>
@@ -1768,10 +1768,10 @@
             </select>
           </div>
           <div style="display: flex; gap: 10px;">
-            <button type="button" onclick="window.exportLmsToExcel()" class="btn-action btn-export">
+            <button type="button" data-click="exportLmsToExcel" class="btn-action btn-export">
               <i class="fa-solid fa-file-excel" style="color: var(--success-text);"></i> خروجی اکسل
             </button>
-            <button type="button" onclick="window.fetchLiveLmsStations()" class="btn-action btn-export">
+            <button type="button" data-click="fetchLiveLmsStations" class="btn-action btn-export">
               <i class="fa-solid fa-sync"></i> بروزرسانی
             </button>
           </div>
@@ -1810,10 +1810,10 @@
                 </h3>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">مشخصات منزلگاه، تفکیک دسته ۱ و ۲، تعداد جلسات، پارت‌های ویدیو و آزمونک‌های بین پارت‌ها</div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('lms-station-creator-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-creator-modal&quot;]">&times;</button>
             </div>
 
-            <form id="lms-creator-form" onsubmit="window.saveCompleteStation(event)">
+            <form id="lms-creator-form" data-submit="saveCompleteStation" data-submit-args="[&quot;$event&quot;]">
               <input type="hidden" id="modal-st-id">
               
               <!-- بخش اطلاعات پایه منزلگاه -->
@@ -1861,7 +1861,7 @@
                         می‌توانید چند تصویر مختلف برای نگارستان این منزلگاه آپلود کنید؛ در اپلیکیشن به صورت اسلاید نمایش داده می‌شوند و قابل بزرگنمایی هستند.
                       </div>
                     </div>
-                    <button type="button" onclick="window.addGalleryItemCard(lms-modal-animations-container)" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; padding: 6px 14px; border-radius: 7px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
+                    <button type="button" data-click="addGalleryItemCard" data-click-args="[&quot;lms-modal-animations-container&quot;]" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; padding: 6px 14px; border-radius: 7px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
                       <i class="fa-solid fa-plus"></i> + افزودن تصویر به نگارستان
                     </button>
                   </div>
@@ -1882,7 +1882,7 @@
                     </h4>
                     <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">تعریف دسته‌بندی کلاس اختیاری است. می‌توانید بدون تعریف کلاس و صرفاً با انیمیشن و توضیحات، منزلگاه را ثبت فرمایید.</div>
                   </div>
-                  <button type="button" onclick="window.addCategoryBlockToCreatorModal()" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
+                  <button type="button" data-click="addCategoryBlockToCreatorModal" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.3);">
                     <i class="fa-solid fa-plus"></i> + افزودن دسته جدید
                   </button>
                 </div>
@@ -1903,7 +1903,7 @@
 
               <!-- دکمه‌های اقدام -->
               <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px;">
-                <button type="button" class="btn-action" onclick="document.getElementById('lms-station-creator-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+                <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-creator-modal&quot;]" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
                 <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-check"></i> ذخیره و ثبت منزلگاه
                 </button>
@@ -1922,7 +1922,7 @@
                 </h3>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">با دکمه‌های بالا و پایین ترتیب منزلگاه‌ها را تغییر دهید. شماره‌ها بدون تکرار و به ترتیب (۱ تا N) ذخیره می‌شوند.</div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('lms-station-reorder-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-reorder-modal&quot;]">&times;</button>
             </div>
 
             <div id="lms-reorder-list-container" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
@@ -1932,8 +1932,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px;">
               <span style="font-size: 11px; color: var(--primary-text);"><i class="fa-solid fa-shield-halved"></i> تضمین عدم وجود شماره تکراری در سیستم</span>
               <div style="display: flex; gap: 10px;">
-                <button type="button" class="btn-action" onclick="document.getElementById('lms-station-reorder-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
-                <button type="button" class="btn-primary" onclick="window.saveStationsReorder()" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--success), var(--success-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-reorder-modal&quot;]" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+                <button type="button" class="btn-primary" data-click="saveStationsReorder" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--success), var(--success-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-check"></i> ذخیره و ثبت ترتیب جدید
                 </button>
               </div>
@@ -1951,7 +1951,7 @@
                 </h3>
                 <div id="lms-content-modal-subtitle" style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">مشاهده و اصلاح لینک‌های ویدیو (پارت‌ها) و مدیریت آزمونک‌های هر جلسه</div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('lms-content-manager-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-content-manager-modal&quot;]">&times;</button>
             </div>
 
             <div id="lms-content-modal-body">
@@ -1963,10 +1963,10 @@
                 <i class="fa-solid fa-circle-info" style="color: var(--primary-text);"></i> پس از اعمال تغییرات در جلسات و پارت‌ها، دکمه «ثبت نهایی تغییرات» را بزنید.
               </div>
               <div style="display: flex; gap: 10px;">
-                <button type="button" class="btn-action" onclick="window.cancelLmsContentManagerModal()" style="padding: 9px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;">
+                <button type="button" class="btn-action" data-click="cancelLmsContentManagerModal" style="padding: 9px 20px; font-weight: bold; border-radius: 8px; cursor: pointer;">
                   <i class="fa-solid fa-xmark" style="margin-left: 4px;"></i> انصراف و بستن
                 </button>
-                <button type="button" class="btn-primary" onclick="window.openFinalLmsSaveConfirmationModal()" style="background: linear-gradient(135deg, var(--success), var(--success-strong)); color: white; padding: 9px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgb(var(--success-rgb) / 0.35); display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn-primary" data-click="openFinalLmsSaveConfirmationModal" style="background: linear-gradient(135deg, var(--success), var(--success-strong)); color: white; padding: 9px 24px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgb(var(--success-rgb) / 0.35); display: flex; align-items: center; gap: 8px;">
                   <i class="fa-solid fa-cloud-arrow-up"></i> ثبت نهایی تغییرات
                 </button>
               </div>
@@ -1997,10 +1997,10 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
-              <button type="button" onclick="document.getElementById('lms-final-confirm-modal').style.display='none'" class="btn-action" style="padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+              <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;lms-final-confirm-modal&quot;]" class="btn-action" style="padding: 8px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">
                 انصراف و بازگشت
               </button>
-              <button type="button" id="btn-confirm-save-lms-final" onclick="window.executeFinalLmsSave()" class="btn-primary" style="background: var(--success); color: white; padding: 8px 22px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--success-rgb) / 0.4);">
+              <button type="button" id="btn-confirm-save-lms-final" data-click="executeFinalLmsSave" class="btn-primary" style="background: var(--success); color: white; padding: 8px 22px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--success-rgb) / 0.4);">
                 <i class="fa-solid fa-check-double"></i> تایید نهایی و ذخیره در دیتابیس
               </button>
             </div>
@@ -2017,10 +2017,10 @@
                 </h3>
                 <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">تنظیم پاداش زریک، صورت سوال، گزینه‌ها و مشخص کردن پاسخ صحیح</div>
               </div>
-              <button type="button" class="modal-close" onclick="document.getElementById('lms-quiz-editor-modal').style.display='none'">&times;</button>
+              <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]">&times;</button>
             </div>
 
-            <form id="lms-quiz-form" onsubmit="window.saveQuizFromModal(event)">
+            <form id="lms-quiz-form" data-submit="saveQuizFromModal" data-submit-args="[&quot;$event&quot;]">
               <input type="hidden" id="quiz-modal-id">
               <input type="hidden" id="quiz-modal-session-id">
               <input type="hidden" id="quiz-modal-clip-id">
@@ -2077,7 +2077,7 @@
               </div>
 
               <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px;">
-                <button type="button" class="btn-action" onclick="document.getElementById('lms-quiz-editor-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+                <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
                 <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: black; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                   <i class="fa-solid fa-save"></i> ذخیره و ثبت آزمونک در دیتابیس
                 </button>
@@ -2091,7 +2091,7 @@
       <section id="form-builder-tab" class="tab-panel" style="display: none;">
         <div class="panel-card glass" style="margin-bottom: 20px;">
           <div class="panel-title">فرم‌ساز داینامیک و تعیین محل نمایش</div>
-          <form id="dyn-form-builder" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" onsubmit="submitDynamicForm(event)">
+          <form id="dyn-form-builder" style="display: flex; gap: 10px; margin-top: 15px; align-items: end; flex-wrap: wrap;" data-submit="submitDynamicForm" data-submit-args="[&quot;$event&quot;]">
             <input type="hidden" id="dyn-form-id">
             <div class="form-group" style="flex:1; min-width:200px;">
               <label>عنوان فرم</label>
@@ -2152,7 +2152,7 @@
             <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">چالش‌های فعال نپا در اپلیکیشن موبایل، گام‌ها و مراحل آزمون، و بررسی پاسخ‌های ارسالی دانش‌آموزان</p>
           </div>
           <div style="display: flex; gap: 10px;">
-            <button type="button" onclick="window.loadChallengesAndSubmissionsTab()" class="btn-action" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <button type="button" data-click="loadChallengesAndSubmissionsTab" class="btn-action" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-sync"></i> بروزرسانی اطلاعات
             </button>
           </div>
@@ -2202,22 +2202,22 @@
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <!-- Caravan Filter -->
-              <select id="filter-challenges-caravan" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; cursor: pointer;">
+              <select id="filter-challenges-caravan" data-change="filterChallengesList" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; cursor: pointer;">
                 <option value="all">همه کاروان‌ها و راهبران</option>
               </select>
 
               <!-- Creator Filter (Admin vs Mentor) -->
-              <select id="filter-challenges-creator" onchange="window.filterChallengesList()" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; cursor: pointer;">
+              <select id="filter-challenges-creator" data-change="filterChallengesList" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; cursor: pointer;">
                 <option value="all">همه سازندگان (مدیر و راهبر)</option>
                 <option value="admin">فقط ایجاد شده توسط مدیر</option>
                 <option value="mentor">فقط ایجاد شده توسط راهبران</option>
               </select>
 
               <!-- Search -->
-              <input type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." oninput="window.filterChallengesList()" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; width: 190px;">
+              <input type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." data-input="filterChallengesList" style="padding: 7px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px; width: 190px;">
 
               <!-- Create Challenge Button -->
-              <button type="button" id="btn-open-create-challenge" class="btn-primary" onclick="window.openCreateChallengeModal()" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.3);">
+              <button type="button" id="btn-open-create-challenge" class="btn-primary" data-click="openCreateChallengeModal" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.3);">
                 <i class="fa-solid fa-plus"></i> ایجاد چالش جدید
               </button>
             </div>
@@ -2260,33 +2260,33 @@
             <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
               <!-- Search Filter -->
               <div style="flex: 2 1 220px; position: relative;">
-                <input type="text" id="filter-submissions-search" placeholder="جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." oninput="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; box-sizing: border-box;">
+                <input type="text" id="filter-submissions-search" placeholder="جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." data-input="filterAdminSubmissionsList" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; box-sizing: border-box;">
               </div>
 
               <!-- Student Filter -->
               <div style="flex: 1 1 150px;">
-                <select id="filter-submissions-student" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                <select id="filter-submissions-student" data-change="filterAdminSubmissionsList" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
                   <option value="all">همه دانش‌آموزان</option>
                 </select>
               </div>
 
               <!-- Caravan Filter -->
               <div style="flex: 1 1 150px;">
-                <select id="filter-submissions-caravan" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                <select id="filter-submissions-caravan" data-change="filterAdminSubmissionsList" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
                   <option value="all">همه کاروان‌ها</option>
                 </select>
               </div>
 
               <!-- Mentor Filter -->
               <div style="flex: 1 1 150px;">
-                <select id="filter-submissions-mentor" onchange="window.filterAdminSubmissionsList()" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                <select id="filter-submissions-mentor" data-change="filterAdminSubmissionsList" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
                   <option value="all">همه راهبران</option>
                 </select>
               </div>
 
               <!-- Status Filter -->
               <div style="flex: 1 1 140px;">
-                <select id="filter-submissions-status" onchange="window.loadAdminSubmissionsData()" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
+                <select id="filter-submissions-status" data-change="loadAdminSubmissionsData" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12px; cursor: pointer; box-sizing: border-box;">
                   <option value="pending">در انتظار بررسی</option>
                   <option value="all">کلیه وضعیت‌ها</option>
                   <option value="approved">تایید شده</option>
@@ -2296,10 +2296,10 @@
 
               <!-- Action Buttons -->
               <div style="display: flex; gap: 8px; align-items: center;">
-                <button type="button" onclick="window.resetAdminSubmissionsFilters()" class="btn-action" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="پاکسازی همه فیلترها">
+                <button type="button" data-click="resetAdminSubmissionsFilters" class="btn-action" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="پاکسازی همه فیلترها">
                   <i class="fa-solid fa-rotate-left"></i> پاکسازی فیلترها
                 </button>
-                <button type="button" onclick="window.loadAdminSubmissionsData()" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="بروزرسانی داده‌ها">
+                <button type="button" data-click="loadAdminSubmissionsData" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;" title="بروزرسانی داده‌ها">
                   <i class="fa-solid fa-sync"></i> بروزرسانی
                 </button>
               </div>
@@ -2339,7 +2339,7 @@
             <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">مدیریت، بارگذاری، ویرایش و انتشار بنرهای تصویری و اطلاعیه‌های رسمی جارچی در اپلیکیشن نپا</p>
           </div>
           <div style="display: flex; gap: 10px;">
-            <button type="button" onclick="window.loadNewsAndBanners()" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+            <button type="button" data-click="loadNewsAndBanners" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-sync"></i> بروزرسانی همه
             </button>
           </div>
@@ -2347,13 +2347,13 @@
 
         <!-- Sub-Tabs Navigation for Jarchi -->
         <div class="jarchi-subnav" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom: 12px;">
-          <button type="button" id="subtab-btn-banners" onclick="window.switchJarchiSubTab('banners')" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgb(var(--accent-rgb) / 0.35); transition: all 0.2s;">
+          <button type="button" id="subtab-btn-banners" data-click="switchJarchiSubTab" data-click-args="[&quot;banners&quot;]" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgb(var(--accent-rgb) / 0.35); transition: all 0.2s;">
             <i class="fa-solid fa-images"></i> مدیریت و بارگذاری بنرها
           </button>
-          <button type="button" id="subtab-btn-news" onclick="window.switchJarchiSubTab('news')" style="background: rgb(var(--fg-rgb) / 0.06); color: var(--text-muted); border: 1px solid rgb(var(--fg-rgb) / 0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+          <button type="button" id="subtab-btn-news" data-click="switchJarchiSubTab" data-click-args="[&quot;news&quot;]" style="background: rgb(var(--fg-rgb) / 0.06); color: var(--text-muted); border: 1px solid rgb(var(--fg-rgb) / 0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
             <i class="fa-solid fa-newspaper"></i> اطلاعیه‌ها و اخبار جارچی
           </button>
-          <button type="button" id="subtab-btn-support" onclick="window.switchJarchiSubTab('support')" style="background: rgb(var(--fg-rgb) / 0.06); color: var(--text-muted); border: 1px solid rgb(var(--fg-rgb) / 0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+          <button type="button" id="subtab-btn-support" data-click="switchJarchiSubTab" data-click-args="[&quot;support&quot;]" style="background: rgb(var(--fg-rgb) / 0.06); color: var(--text-muted); border: 1px solid rgb(var(--fg-rgb) / 0.1); border-radius: 8px; padding: 9px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
             <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" style="display:none; background:var(--danger); color:#fff; border-radius:10px; padding:1px 7px; font-size:11px;"></span>
           </button>
         </div>
@@ -2367,7 +2367,7 @@
             <h4 style="margin: 0; color: var(--text); font-size: 15px; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-layer-group" style="color: var(--accent-text);"></i> لیست بنرهای فعال و تعریف‌شده
             </h4>
-            <button type="button" onclick="window.openCreateBannerModal()" class="btn-primary" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--accent-rgb) / 0.35);">
+            <button type="button" data-click="openCreateBannerModal" class="btn-primary" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--accent-rgb) / 0.35);">
               <i class="fa-solid fa-plus"></i> + بارگذاری و افزودن بنر جدید
             </button>
           </div>
@@ -2431,7 +2431,7 @@
             <h4 style="margin: 0; color: var(--text); font-size: 15px; display: flex; align-items: center; gap: 6px;">
               <i class="fa-solid fa-newspaper" style="color: var(--primary-text);"></i> لیست اخبار و اطلاعیه‌های جارچی
             </h4>
-            <button type="button" onclick="window.openCreateNewsModal()" class="btn-primary" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.35);">
+            <button type="button" data-click="openCreateNewsModal" class="btn-primary" style="background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; border-radius: 8px; padding: 8px 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.35);">
               <i class="fa-solid fa-plus"></i> + افزودن خبر / اعلان جدید
             </button>
           </div>
@@ -2466,16 +2466,16 @@
             <div class="filters-group" style="flex: 1;">
               <div class="search-box" style="flex: 1; min-width: 250px;">
                 <i class="fa-solid fa-search"></i>
-                <input type="text" id="news-search-input" class="input-ctrl" placeholder="جستجو بر اساس عنوان خبر، متن یا گزارشگر..." oninput="window.filterNewsTable()">
+                <input type="text" id="news-search-input" class="input-ctrl" placeholder="جستجو بر اساس عنوان خبر، متن یا گزارشگر..." data-input="filterNewsTable">
               </div>
-              <select id="news-filter-category" class="select-ctrl" onchange="window.filterNewsTable()">
+              <select id="news-filter-category" class="select-ctrl" data-change="filterNewsTable">
                 <option value="all">همه دسته‌بندی‌ها</option>
                 <option value="اطلاعیه مهم">اطلاعیه مهم</option>
                 <option value="رویداد و مسابقه">رویداد و مسابقه</option>
                 <option value="اخبار کاروان‌ها">اخبار کاروان‌ها</option>
                 <option value="آموزشی">آموزشی</option>
               </select>
-              <select id="news-filter-audience" class="select-ctrl" onchange="window.filterNewsTable()">
+              <select id="news-filter-audience" class="select-ctrl" data-change="filterNewsTable">
                 <option value="all">همه مخاطبان</option>
                 <option value="ALL">عمومی (همه)</option>
                 <option value="STUDENTS">فقط دانش‌آموزان</option>
@@ -2589,11 +2589,11 @@
         <h3 id="mentor-modal-form-title" style="margin: 0; color: var(--primary-text); font-size: 17px; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-user-pen"></i> ثبت و ویرایش مشخصات راهبر
         </h3>
-        <button type="button" id="btn-close-mentor-modal" class="modal-close" onclick="document.getElementById('mentor-modal-overlay').style.display='none'">&times;</button>
+        <button type="button" id="btn-close-mentor-modal" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]">&times;</button>
       </div>
 
       <div style="padding: 24px; overflow-y: auto; max-height: calc(90vh - 80px);">
-        <form id="mentor-form" onsubmit="window.handleMentorFormSubmit(event)" style="display: flex; flex-direction: column; gap: 20px;">
+        <form id="mentor-form" data-submit="handleMentorFormSubmit" data-submit-args="[&quot;$event&quot;]" style="display: flex; flex-direction: column; gap: 20px;">
           <input type="hidden" id="modal-mentor-id">
           
           <!-- Identity & Contact -->
@@ -2657,8 +2657,8 @@
 
             <div class="form-group" style="margin-bottom: 10px;">
               <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
-                <input type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="جستجوی نام کاروان..." oninput="window.filterMentorCaravansChecklist(this.value)" style="padding: 7px 12px; font-size: 12px; flex: 1; background: var(--surface-inset); color: var(--text);">
-                <button type="button" class="btn-action" onclick="window.uncheckAllMentorCaravans()" style="padding: 7px 14px; font-size: 11.5px; background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); border-radius: 6px; cursor: pointer; white-space: nowrap;" title="پاک کردن همه تیک‌ها">
+                <input type="text" id="mentor-caravan-search-input" class="input-ctrl" placeholder="جستجوی نام کاروان..." data-input="filterMentorCaravansChecklist" data-input-args="[&quot;$value&quot;]" style="padding: 7px 12px; font-size: 12px; flex: 1; background: var(--surface-inset); color: var(--text);">
+                <button type="button" class="btn-action" data-click="uncheckAllMentorCaravans" style="padding: 7px 14px; font-size: 11.5px; background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.3); border-radius: 6px; cursor: pointer; white-space: nowrap;" title="پاک کردن همه تیک‌ها">
                   <i class="fa-solid fa-ban"></i> بدون کاروان (لغو همه)
                 </button>
               </div>
@@ -2689,7 +2689,7 @@
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px;">
-            <button type="button" class="btn-action" onclick="document.getElementById('mentor-modal-overlay').style.display='none'" style="padding: 9px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">انصراف</button>
+            <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]" style="padding: 9px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">انصراف</button>
             <button type="submit" class="btn-primary" style="padding: 9px 26px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.4);">
               <i class="fa-solid fa-check"></i> ثبت نهایی و ذخیره راهبر
             </button>
@@ -2739,9 +2739,9 @@
       <div class="modal-content glass" style="max-width:800px;">
         <div class="modal-header">
           <h3>ساخت کاروان جدید</h3>
-          <button class="modal-close" onclick="closeCaravanWizard()">&times;</button>
+          <button class="modal-close" data-click="closeCaravanWizard">&times;</button>
         </div>
-        <form id="caravan-wizard-form" onsubmit="submitCaravan(event)">
+        <form id="caravan-wizard-form" data-submit="submitCaravan" data-submit-args="[&quot;$event&quot;]">
           <div style="padding: 16px;">
             <div class="form-group">
               <label>نام کاروان</label>
@@ -2792,7 +2792,7 @@
       <div class="modal-content glass" style="max-width:820px; width:90%; display:flex; flex-direction:column; background: rgb(var(--surface-2-rgb) / 0.95);">
         <div class="modal-header" style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1);">
           <h3 id="ticket-drawer-title">جزئیات تیکت</h3>
-          <button class="modal-close" onclick="closeTicketDrawer()">&times;</button>
+          <button class="modal-close" data-click="closeTicketDrawer">&times;</button>
         </div>
         <div style="padding:20px; display:flex; flex-direction:column; gap:16px; max-height:520px; overflow-y:auto;">
           <div id="ticket-thread-container"></div>
@@ -2817,14 +2817,14 @@
               <span id="cd-status-text"><i class="fa-solid fa-circle-info"></i> وضعیت: فعال</span>
             </div>
           </div>
-          <button class="modal-close" onclick="closeCaravanDrawer()">&times;</button>
+          <button class="modal-close" data-click="closeCaravanDrawer">&times;</button>
         </div>
         
         <div style="padding: 20px 0 0 0;">
           <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:10px; padding-right: 20px;">
-            <button class="btn-action active" onclick="switchCaravanDrawerTab('cd-roster')" id="btn-cd-roster">لیست اعضا (Roster)</button>
-            <button class="btn-action" onclick="switchCaravanDrawerTab('cd-wealth')" id="btn-cd-wealth">دارایی و پیشرفت</button>
-            <button class="btn-action" onclick="switchCaravanDrawerTab('cd-actions')" id="btn-cd-actions">عملیات سریع</button>
+            <button class="btn-action active" data-click="switchCaravanDrawerTab" data-click-args="[&quot;cd-roster&quot;]" id="btn-cd-roster">لیست اعضا (Roster)</button>
+            <button class="btn-action" data-click="switchCaravanDrawerTab" data-click-args="[&quot;cd-wealth&quot;]" id="btn-cd-wealth">دارایی و پیشرفت</button>
+            <button class="btn-action" data-click="switchCaravanDrawerTab" data-click-args="[&quot;cd-actions&quot;]" id="btn-cd-actions">عملیات سریع</button>
           </div>
         </div>
 
@@ -2833,7 +2833,7 @@
           <!-- Tab 1: Roster Ledger -->
           <div id="cd-roster" class="cd-tab-content" style="display:block;">
             <div style="display:flex; justify-content:flex-start; margin-bottom:15px;">
-              <button id="cw-btn-add-student" class="btn-primary" style="background:var(--success);" onclick="addStudentToCaravan()"><i class="fa-solid fa-plus"></i> افزودن دانش‌آموز به کاروان</button>
+              <button id="cw-btn-add-student" class="btn-primary" style="background:var(--success);" data-click="addStudentToCaravan"><i class="fa-solid fa-plus"></i> افزودن دانش‌آموز به کاروان</button>
             </div>
             <div class="table-container" style="background: rgb(var(--shade-rgb) / 0.2); border-radius: 12px; overflow: hidden;">
               <table class="data-table" id="cd-roster-table" style="width: 100%;">
@@ -2899,17 +2899,17 @@
           <!-- Tab 3: Quick Actions -->
           <div id="cd-actions" class="cd-tab-content" style="display:none;">
              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.openAddMemberToCaravanModal()">
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" data-click="openAddMemberToCaravanModal">
                  <i class="fa-solid fa-user-plus" style="font-size: 32px; color: var(--info-text); margin-bottom: 10px;"></i>
                  <h4>افزودن و مدیریت اعضای کاروان</h4>
                  <p style="font-size: 12px; color: var(--text-muted);">افزودن مستقیم دانش‌آموزان به کاروان</p>
                </div>
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.openChangeCaravanMentorModalForCaravan(currentDrawerCaravanId)">
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" data-click="openChangeMentorForDrawerCaravan">
                  <i class="fa-solid fa-user-tie" style="font-size: 32px; color: var(--primary-text); margin-bottom: 10px;"></i>
                  <h4>تغییر مربی کاروان</h4>
                  <p style="font-size: 12px; color: var(--text-muted);">انتساب راهبر جدید برای کاروان</p>
                </div>
-               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" onclick="window.editCaravanCapacity(currentDrawerCaravanId)">
+               <div class="panel-card glass" style="text-align: center; cursor: pointer; transition: 0.2s;" data-click="editDrawerCaravanCapacity">
                  <i class="fa-solid fa-users-gear" style="font-size: 32px; color: var(--success-text); margin-bottom: 10px;"></i>
                  <h4>ویرایش ظرفیت</h4>
                  <p style="font-size: 12px; color: var(--text-muted);">تغییر سقف ظرفیت ثبت‌نام</p>
@@ -2920,7 +2920,7 @@
                  <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
                     <input type="text" id="cd-broadcast-title" class="input-ctrl" placeholder="عنوان پیام">
                     <textarea id="cd-broadcast-msg" class="input-ctrl" placeholder="متن پیام..." style="resize:none; height: 40px;"></textarea>
-                    <button class="btn-primary" onclick="sendCaravanBroadcast()"><i class="fa-solid fa-paper-plane"></i> ارسال به همه</button>
+                    <button class="btn-primary" data-click="sendCaravanBroadcast"><i class="fa-solid fa-paper-plane"></i> ارسال به همه</button>
                  </div>
                </div>
              </div>
@@ -2937,7 +2937,7 @@
           <div>
             <h3 style="margin:0; color: var(--color-neon-blue); font-size: 20px;">جزئیات ۳۶۰ درجه دانش‌آموز</h3>
           </div>
-          <button class="modal-close" onclick="document.getElementById('caravan-student-detail-modal').style.display='none'">&times;</button>
+          <button class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;caravan-student-detail-modal&quot;]">&times;</button>
         </div>
         <div style="padding: 20px; overflow-y: auto; max-height: 600px;">
           <div style="display:flex; gap:20px;">
@@ -3031,7 +3031,7 @@
     <div class="modal-content glass" style="max-width:800px; display:flex; flex-direction:column; background: rgb(var(--surface-rgb) / 0.95); backdrop-filter: blur(16px); border: 1px solid rgb(var(--fg-rgb) / 0.1); border-radius: 16px;">
       <div class="modal-header" style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px;">
         <h3 style="margin:0; color: var(--color-neon-blue); font-size: 24px;"><i class="fa-solid fa-exchange-alt"></i> انتقال گروهی اعضا</h3>
-        <button class="modal-close" onclick="closeBulkTransferModal()">&times;</button>
+        <button class="modal-close" data-click="closeBulkTransferModal">&times;</button>
       </div>
       <div style="padding: 20px 0;">
         <div style="display:flex; gap:20px; margin-bottom: 20px;">
@@ -3056,8 +3056,8 @@
         </div>
       </div>
       <div style="border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 15px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn-action" onclick="closeBulkTransferModal()">انصراف</button>
-        <button class="btn-primary" style="background-color: var(--primary);" onclick="submitBulkTransfer()">تایید و انتقال</button>
+        <button class="btn-action" data-click="closeBulkTransferModal">انصراف</button>
+        <button class="btn-primary" style="background-color: var(--primary);" data-click="submitBulkTransfer">تایید و انتقال</button>
       </div>
     </div>
   </div>
@@ -3067,7 +3067,7 @@
     <div class="modal-content glass" style="max-width:600px; width:90%; padding:24px; border-radius:16px; background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
         <h3 style="color:var(--text); font-size:16px; font-weight:bold; margin:0;"><i class="fa-solid fa-user-plus" style="color:var(--success-text);"></i> افزودن عضو جدید به کاروان</h3>
-        <button type="button" class="modal-close" onclick="closeAddMemberToCaravanModal()">&times;</button>
+        <button type="button" class="modal-close" data-click="closeAddMemberToCaravanModal">&times;</button>
       </div>
 
       <div class="form-group" style="margin-bottom:15px;">
@@ -3079,13 +3079,13 @@
 
       <div class="form-group" style="margin-bottom:12px;">
         <label style="display:block; color:var(--text-muted); font-size:12px; margin-bottom:6px;">جستجوی دانش‌آموز (نام، شماره تماس یا شناسه):</label>
-        <input type="text" id="input-search-candidate-member" class="input-ctrl" placeholder="نام، شماره همراه یا شناسه دانش‌آموز..." oninput="searchCandidateMembers(this.value)" style="width:100%; padding:10px 14px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:13px;">
+        <input type="text" id="input-search-candidate-member" class="input-ctrl" placeholder="نام، شماره همراه یا شناسه دانش‌آموز..." data-input="searchCandidateMembers" data-input-args="[&quot;$value&quot;]" style="width:100%; padding:10px 14px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:13px;">
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px;">
         <span style="color:var(--text-soft); font-weight:600;"><i class="fa-solid fa-graduation-cap" style="color:var(--primary-text);"></i> لیست دانش‌آموزان:</span>
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-muted); font-size:11px;">
-          <input type="checkbox" id="chk-candidate-unassigned-only" checked onchange="searchCandidateMembers(document.getElementById('input-search-candidate-member')?.value)">
+          <input type="checkbox" id="chk-candidate-unassigned-only" checked data-change="searchCandidateMembersFromInput">
           فقط دانش‌آموزان بدون کاروان
         </label>
       </div>
@@ -3099,10 +3099,10 @@
           تعداد انتخاب شده: <span id="add-member-selected-count">0</span> نفر
         </div>
         <div style="display:flex; gap:10px;">
-          <button type="button" onclick="window.closeAddMemberToCaravanModal()" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer;">
+          <button type="button" data-click="closeAddMemberToCaravanModal" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer;">
             انصراف
           </button>
-          <button type="button" onclick="window.confirmBulkAddUsersToCaravan()" class="btn-primary" style="background:var(--success); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
+          <button type="button" data-click="confirmBulkAddUsersToCaravan" class="btn-primary" style="background:var(--success); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
             افزودن افراد انتخاب‌شده به کاروان
           </button>
         </div>
@@ -3117,18 +3117,18 @@
         <h3 style="color:var(--text); font-size:16px; font-weight:bold; margin:0; display:flex; align-items:center; gap:8px;">
           <i class="fa-solid fa-pen-to-square" style="color:var(--success-text);"></i> ویرایش و تغییر نام کاروان
         </h3>
-        <button type="button" class="modal-close" onclick="window.closeRenameCaravanModal()">&times;</button>
+        <button type="button" class="modal-close" data-click="closeRenameCaravanModal">&times;</button>
       </div>
       <input type="hidden" id="rename-caravan-id" value="">
       <div class="form-group" style="margin-bottom:16px;">
         <label style="display:block; color:var(--text-muted); font-size:12.5px; margin-bottom:8px;">نام جدید کاروان:</label>
-        <input type="text" id="rename-caravan-name-input" class="input-ctrl" placeholder="نام کاروان را وارد کنید..." style="width:100%; box-sizing:border-box; padding:10px 14px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:14px; font-weight:bold; outline:none;" onkeydown="if(event.key==='Enter'){event.preventDefault();window.saveNewCaravanName();}">
+        <input type="text" id="rename-caravan-name-input" class="input-ctrl" placeholder="نام کاروان را وارد کنید..." style="width:100%; box-sizing:border-box; padding:10px 14px; background:var(--surface); border:1px solid var(--border-strong); border-radius:8px; color:var(--text); font-size:14px; font-weight:bold; outline:none;" data-keydown="NopaActions.onEnter" data-keydown-args="[&quot;$event&quot;,&quot;saveNewCaravanName&quot;]">
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-        <button type="button" onclick="window.closeRenameCaravanModal()" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer; background:rgb(var(--fg-rgb) / 0.08); border:none; color:var(--text-soft);">
+        <button type="button" data-click="closeRenameCaravanModal" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer; background:rgb(var(--fg-rgb) / 0.08); border:none; color:var(--text-soft);">
           انصراف
         </button>
-        <button type="button" id="btn-save-caravan-name" onclick="window.saveNewCaravanName()" class="btn-primary" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; padding:8px 18px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+        <button type="button" id="btn-save-caravan-name" data-click="saveNewCaravanName" class="btn-primary" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; padding:8px 18px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-check"></i> ذخیره نام جدید
         </button>
       </div>
@@ -3139,7 +3139,7 @@
     <div class="modal-content glass" style="max-width:420px; width:90%; padding:24px; border-radius:16px; background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.1);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
         <h3 style="color:var(--text); font-size:16px; font-weight:bold; margin:0;"><i class="fa-solid fa-user-gear" style="color:var(--primary-text);"></i> تغییر راهبر کاروان</h3>
-        <button type="button" class="modal-close" onclick="closeChangeCaravanMentorModal()">&times;</button>
+        <button type="button" class="modal-close" data-click="closeChangeCaravanMentorModal">&times;</button>
       </div>
       <div class="form-group" style="margin-bottom:15px;">
         <label style="display:block; color:var(--text-muted); font-size:12px; margin-bottom:6px;">انتخاب راهبر جدید:</label>
@@ -3148,10 +3148,10 @@
         </select>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-        <button type="button" onclick="closeChangeCaravanMentorModal()" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer;">
+        <button type="button" data-click="closeChangeCaravanMentorModal" class="btn-action" style="padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; cursor:pointer;">
           انصراف
         </button>
-        <button type="button" onclick="updateCaravanMentor()" class="btn-primary" style="background:var(--info); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
+        <button type="button" data-click="updateCaravanMentor" class="btn-primary" style="background:var(--info); color:white; padding:8px 16px; font-size:13px; font-weight:bold; border-radius:8px; border:none; cursor:pointer;">
           ذخیره تغییرات
         </button>
       </div>
@@ -3165,10 +3165,10 @@
         <h3 id="news-modal-title" style="color: var(--primary-text); font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-newspaper"></i> افزودن خبر جدید جارچی
         </h3>
-        <button type="button" class="modal-close" onclick="window.closeNewsModal()">&times;</button>
+        <button type="button" class="modal-close" data-click="closeNewsModal">&times;</button>
       </div>
       
-      <form id="news-form" onsubmit="window.saveNewsArticle(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <form id="news-form" data-submit="saveNewsArticle" data-submit-args="[&quot;$event&quot;]" style="display: flex; flex-direction: column; gap: 14px;">
         <input type="hidden" id="news-id" />
         
         <div>
@@ -3231,13 +3231,13 @@
         <div>
           <label style="color: var(--text-soft); font-size: 12px; font-weight: bold;"><i class="fa-solid fa-image" style="color: var(--primary-text);"></i> تصویر خبر (اختیاری)</label>
           <div style="display: flex; gap: 12px; align-items: center; margin-top: 5px;">
-            <input type="file" id="news-file" accept="image/*" class="input-ctrl" style="flex: 1; padding: 8px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);" onchange="window.previewNewsImage(event)">
+            <input type="file" id="news-file" accept="image/*" class="input-ctrl" style="flex: 1; padding: 8px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);" data-change="previewNewsImage" data-change-args="[&quot;$event&quot;]">
             <img id="news-image-preview" src="" style="width: 60px; height: 60px; border-radius: 8px; object-fit: cover; display: none; border: 1px solid var(--primary);" />
           </div>
         </div>
         
         <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 15px; margin-top: 6px;">
-          <button type="button" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;" onclick="window.closeNewsModal()">انصراف</button>
+          <button type="button" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;" data-click="closeNewsModal">انصراف</button>
           <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--success), var(--success-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--success-rgb) / 0.3);">
             <i class="fa-solid fa-check"></i> ثبت و انتشار خبر
           </button>
@@ -3253,10 +3253,10 @@
         <h3 id="banner-modal-title" style="color: var(--accent-text); font-size: 18px; margin: 0; display: flex; align-items: center; gap: 8px;">
           <i class="fa-solid fa-image"></i> بارگذاری و افزودن بنر جدید
         </h3>
-        <button type="button" class="modal-close" onclick="window.closeBannerModal()">&times;</button>
+        <button type="button" class="modal-close" data-click="closeBannerModal">&times;</button>
       </div>
       
-      <form id="banner-form" onsubmit="window.saveBannerItem(event)" style="display: flex; flex-direction: column; gap: 14px;">
+      <form id="banner-form" data-submit="saveBannerItem" data-submit-args="[&quot;$event&quot;]" style="display: flex; flex-direction: column; gap: 14px;">
         <input type="hidden" id="banner-id" />
         
         <div>
@@ -3287,7 +3287,7 @@
         <div>
           <label style="color: var(--text-soft); font-size: 12px; font-weight: bold;"><i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent-text);"></i> فایل تصویر بنر *</label>
           <div style="display: flex; gap: 12px; align-items: center; margin-top: 5px;">
-            <input type="file" id="banner-file" accept="image/*" class="input-ctrl" style="flex: 1; padding: 8px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);" onchange="window.previewBannerImage(event)">
+            <input type="file" id="banner-file" accept="image/*" class="input-ctrl" style="flex: 1; padding: 8px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);" data-change="previewBannerImage" data-change-args="[&quot;$event&quot;]">
             <img id="banner-image-preview" src="" style="width: 80px; height: 50px; border-radius: 6px; object-fit: cover; display: none; border: 1px solid var(--accent);" />
           </div>
           <small style="color: var(--text-faint); font-size: 11px; margin-top: 4px; display: block;">فرمت‌های مجاز: JPG, PNG, WEBP (حداکثر ۵ مگابایت)</small>
@@ -3301,7 +3301,7 @@
         </div>
         
         <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 15px; margin-top: 6px;">
-          <button type="button" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;" onclick="window.closeBannerModal()">انصراف</button>
+          <button type="button" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;" data-click="closeBannerModal">انصراف</button>
           <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--accent-rgb) / 0.3);">
             <i class="fa-solid fa-check"></i> ذخیره و بارگذاری بنر
           </button>
@@ -3320,13 +3320,13 @@
             </h3>
             <span id="modal-challenge-badge" style="display: inline-block; margin-top: 4px; background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); padding: 2px 8px; border-radius: 4px; font-size: 11px;">کد: CH501</span>
           </div>
-          <button class="modal-close" onclick="window.closeChallengeStepsModal()">&times;</button>
+          <button class="modal-close" data-click="closeChallengeStepsModal">&times;</button>
         </div>
         <div id="modal-challenge-body" style="padding: 20px 0; max-height: 65vh; overflow-y: auto;">
           <!-- Dynamically populated steps/questions -->
         </div>
         <div style="display: flex; justify-content: flex-end; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 12px;">
-          <button type="button" class="btn-action" onclick="window.closeChallengeStepsModal()" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text); border: none; cursor: pointer;">بستن</button>
+          <button type="button" class="btn-action" data-click="closeChallengeStepsModal" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text); border: none; cursor: pointer;">بستن</button>
         </div>
       </div>
     </div>
@@ -3341,7 +3341,7 @@
             </h3>
             <span class="badge" style="margin-top: 4px; background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); font-size: 11px;">ثبت با برچسب رسمی «توسط مدیر» + ارسال اعلان خودکار</span>
           </div>
-          <button class="modal-close" onclick="window.closeCreateChallengeModal()">&times;</button>
+          <button class="modal-close" data-click="closeCreateChallengeModal">&times;</button>
         </div>
 
         <div style="padding: 16px 0; overflow-y: auto; flex: 1;">
@@ -3349,7 +3349,7 @@
             <i class="fa-solid fa-bell" style="color: var(--accent-text);"></i> چالش‌هایی که توسط مدیر ثبت می‌شوند با نشان اختصاصی <strong>«توسط مدیر»</strong> مشخص شده و بلافاصله به دانش‌آموزان کاروان هدف و راهبر مربوطه اعلان (Notification) ارسال می‌گردد.
           </div>
 
-          <form id="create-challenge-form" onsubmit="window.submitCreateChallenge(event)">
+          <form id="create-challenge-form" data-submit="submitCreateChallenge" data-submit-args="[&quot;$event&quot;]">
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">عنوان چالش *</label>
@@ -3379,14 +3379,14 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف *</label>
-                <select id="new-chal-caravan-id" required onchange="window.handleChallengeAudienceChange('new')" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                <select id="new-chal-caravan-id" required data-change="handleChallengeAudienceChange" data-change-args="[&quot;new&quot;]" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                   <option value="inter_group">عمومی (میان‌گروهی)</option>
                 </select>
                 <div id="new-chal-mentor-notice" style="display: none; font-size: 11px; color: var(--primary-text); margin-top: 5px; background: rgb(var(--primary-rgb) / 0.1); padding: 5px 8px; border-radius: 6px; border: 1px solid rgb(var(--primary-rgb) / 0.25); line-height: 1.5;"></div>
               </div>
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
-                <select id="new-chal-type" onchange="window.handleChallengeTypeChange('new')" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                <select id="new-chal-type" data-change="handleChallengeTypeChange" data-change-args="[&quot;new&quot;]" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                   <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
                   <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
@@ -3403,8 +3403,8 @@
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">تاریخ شروع و پایان چالش (اختیاری):</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <input type="date" id="new-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
-                  <input type="date" id="new-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('new')" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                  <input type="date" id="new-chal-start-date" title="تاریخ شروع" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                  <input type="date" id="new-chal-due-date" title="تاریخ پایان" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                 </div>
                 <div id="new-chal-duration" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">مهلت: -</div>
               </div>
@@ -3421,7 +3421,7 @@
                 <div style="font-size: 13px; font-weight: bold; color: var(--primary-text); display: flex; align-items: center; gap: 6px;">
                   <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
                 </div>
-                <button type="button" onclick="window.addQuestionRow('new')" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <button type="button" data-click="addQuestionRow" data-click-args="[&quot;new&quot;]" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-solid fa-plus"></i> افزودن سوال
                 </button>
               </div>
@@ -3431,7 +3431,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 14px;">
-              <button type="button" class="btn-action" onclick="window.closeCreateChallengeModal()" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+              <button type="button" class="btn-action" data-click="closeCreateChallengeModal" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
               <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.35);">
                 <i class="fa-solid fa-paper-plane"></i> ایجاد چالش و ارسال اعلان
               </button>
@@ -3446,7 +3446,7 @@
       <div class="glass" style="width: 100%; max-width: 520px; padding: 22px; border-radius: 16px; border: 1px solid rgb(var(--fg-rgb) / 0.1);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
           <div id="ranking-title" style="font-size: 15px; font-weight: bold; color: var(--text);">رتبه‌بندی کاروان‌ها</div>
-          <button type="button" onclick="document.getElementById('ranking-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;ranking-modal&quot;]" style="background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="ranking-body" style="color: var(--text-soft); font-size: 13px;"></div>
       </div>
@@ -3461,11 +3461,11 @@
             </h3>
             <span id="edit-chal-creator-badge" class="badge" style="margin-top: 4px; font-size: 11px;">-</span>
           </div>
-          <button class="modal-close" onclick="window.closeEditChallengeModal()">&times;</button>
+          <button class="modal-close" data-click="closeEditChallengeModal">&times;</button>
         </div>
 
         <div style="padding: 16px 0; overflow-y: auto; flex: 1;">
-          <form id="edit-challenge-form" onsubmit="window.submitEditChallenge(event)">
+          <form id="edit-challenge-form" data-submit="submitEditChallenge" data-submit-args="[&quot;$event&quot;]">
             <input type="hidden" id="edit-chal-id">
 
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
@@ -3497,13 +3497,13 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">کاروان و راهبر هدف</label>
-                <select id="edit-chal-caravan-id" onchange="window.handleChallengeAudienceChange('edit')" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                <select id="edit-chal-caravan-id" data-change="handleChallengeAudienceChange" data-change-args="[&quot;edit&quot;]" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                   <option value="inter_group">عمومی (میان‌گروهی)</option>
                 </select>
               </div>
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">نوع چالش *</label>
-                <select id="edit-chal-type" onchange="window.handleChallengeTypeChange('edit')" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                <select id="edit-chal-type" data-change="handleChallengeTypeChange" data-change-args="[&quot;edit&quot;]" style="width: 100%; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                   <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
                   <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
                 </select>
@@ -3520,8 +3520,8 @@
               <div>
                 <label style="display: block; color: var(--text-soft); font-size: 12px; font-weight: bold; margin-bottom: 5px;">تاریخ شروع و پایان چالش (اختیاری):</label>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                  <input type="date" id="edit-chal-start-date" title="تاریخ شروع" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
-                  <input type="date" id="edit-chal-due-date" title="تاریخ پایان" oninput="window.updateChallengeDuration('edit')" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                  <input type="date" id="edit-chal-start-date" title="تاریخ شروع" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
+                  <input type="date" id="edit-chal-due-date" title="تاریخ پایان" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]" style="width: 100%; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); font-size: 12.5px;">
                 </div>
                 <div id="edit-chal-duration" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">مهلت: -</div>
               </div>
@@ -3538,7 +3538,7 @@
                 <div style="font-size: 13px; font-weight: bold; color: var(--info-text); display: flex; align-items: center; gap: 6px;">
                   <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
                 </div>
-                <button type="button" onclick="window.addQuestionRow('edit')" style="background: rgb(var(--info-rgb) / 0.2); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <button type="button" data-click="addQuestionRow" data-click-args="[&quot;edit&quot;]" style="background: rgb(var(--info-rgb) / 0.2); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.4); border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-solid fa-plus"></i> افزودن سوال
                 </button>
               </div>
@@ -3548,7 +3548,7 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 14px;">
-              <button type="button" class="btn-action" onclick="window.closeEditChallengeModal()" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+              <button type="button" class="btn-action" data-click="closeEditChallengeModal" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
               <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--info), var(--info-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgb(var(--info-rgb) / 0.35);">
                 <i class="fa-solid fa-floppy-disk"></i> ذخیره تغییرات چالش
               </button>
@@ -3568,7 +3568,7 @@
             </h3>
             <span id="view-sub-meta-badge" class="badge" style="margin-top: 4px; background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); font-size: 11px;">-</span>
           </div>
-          <button type="button" class="modal-close" onclick="window.closeViewSubmissionModal()">&times;</button>
+          <button type="button" class="modal-close" data-click="closeViewSubmissionModal">&times;</button>
         </div>
 
         <!-- Student & Challenge Profile Card -->
@@ -3592,7 +3592,7 @@
         <div style="margin-bottom: 16px;">
           <label style="display: flex; justify-content: space-between; align-items: center; color: var(--text-soft); font-size: 12.5px; font-weight: bold; margin-bottom: 6px;">
             <span><i class="fa-solid fa-comment-dots" style="color: var(--success-text);"></i> متن پاسخ ارسالی دانش‌آموز:</span>
-            <button type="button" onclick="window.copySubmissionAnswerText()" style="background: rgb(var(--fg-rgb) / 0.08); color: var(--text-soft); border: 1px solid rgb(var(--fg-rgb) / 0.15); border-radius: 5px; padding: 2px 8px; font-size: 11px; cursor: pointer;">
+            <button type="button" data-click="copySubmissionAnswerText" style="background: rgb(var(--fg-rgb) / 0.08); color: var(--text-soft); border: 1px solid rgb(var(--fg-rgb) / 0.15); border-radius: 5px; padding: 2px 8px; font-size: 11px; cursor: pointer;">
               <i class="fa-solid fa-copy"></i> کپی پاسخ
             </button>
           </label>
@@ -3629,7 +3629,7 @@
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 14px;">
-          <button type="button" class="btn-action" onclick="window.closeViewSubmissionModal()" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">بستن</button>
+          <button type="button" class="btn-action" data-click="closeViewSubmissionModal" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">بستن</button>
           
           <div style="display: flex; gap: 8px;" id="view-sub-actions-container">
             <button type="button" id="view-sub-btn-reject" class="btn-action" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.4); font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
@@ -3658,7 +3658,7 @@
               <div style="font-size: 12px; color: var(--text-muted);" id="sam-station-subtitle">کنترل باز/قفل بودن، زمان‌بندی و شروط پیش‌نیاز</div>
             </div>
           </div>
-          <button class="modal-close" type="button" onclick="window.closeStationAccessModal()" style="padding: 4px 8px;">&times;</button>
+          <button class="modal-close" type="button" data-click="closeStationAccessModal" style="padding: 4px 8px;">&times;</button>
         </div>
 
         <input type="hidden" id="sam-station-id">
@@ -3670,14 +3670,14 @@
           </label>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <label id="sam-status-active-label" style="display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; background: rgb(var(--success-rgb) / 0.12); border: 2px solid var(--success); cursor: pointer; transition: all 0.2s;">
-              <input type="radio" name="sam-status-choice" value="active" id="sam-status-active" style="accent-color: var(--success); width: 18px; height: 18px;" onchange="window.handleSamStatusChange()">
+              <input type="radio" name="sam-status-choice" value="active" id="sam-status-active" style="accent-color: var(--success); width: 18px; height: 18px;" data-change="handleSamStatusChange">
               <div>
                 <div style="font-weight: bold; color: var(--success-text); font-size: 13px;"><i class="fa-solid fa-lock-open"></i> فعال (در دسترس)</div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">کاروان‌ها می‌توانند وارد شوند</div>
               </div>
             </label>
             <label id="sam-status-locked-label" style="display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; background: rgb(var(--danger-rgb) / 0.06); border: 1px solid rgb(var(--danger-rgb) / 0.3); cursor: pointer; transition: all 0.2s;">
-              <input type="radio" name="sam-status-choice" value="locked" id="sam-status-locked" style="accent-color: var(--danger); width: 18px; height: 18px;" onchange="window.handleSamStatusChange()">
+              <input type="radio" name="sam-status-choice" value="locked" id="sam-status-locked" style="accent-color: var(--danger); width: 18px; height: 18px;" data-change="handleSamStatusChange">
               <div>
                 <div style="font-weight: bold; color: var(--danger-text); font-size: 13px;"><i class="fa-solid fa-lock"></i> قفل شده (مسدود)</div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">ورود کاروان‌ها مسدود است</div>
@@ -3690,7 +3690,7 @@
             <div style="font-size: 12.5px; color: var(--text-soft); margin-bottom: 6px; font-weight: 500;">
               اعمال وضعیت برای کاروان‌ها:
             </div>
-            <select id="sam-caravan-scope" class="select-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" onchange="window.handleSamScopeChange()">
+            <select id="sam-caravan-scope" class="select-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" data-change="handleSamScopeChange">
               <option value="all">همه کاروان‌ها (سراسری)</option>
               <option value="custom">کاروان‌های انتخاب‌شده...</option>
             </select>
@@ -3704,7 +3704,7 @@
         <div style="background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 16px; margin-bottom: 18px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <label style="font-weight: bold; font-size: 13.5px; color: var(--text); display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="checkbox" id="sam-schedule-enable" style="accent-color: var(--primary); width: 17px; height: 17px;" onchange="window.handleSamScheduleToggle()">
+              <input type="checkbox" id="sam-schedule-enable" style="accent-color: var(--primary); width: 17px; height: 17px;" data-change="handleSamScheduleToggle">
               <span><i class="fa-regular fa-clock" style="color: var(--primary-text);"></i> باز کردن منزلگاه در یک زمان خاص</span>
             </label>
             <span class="badge" style="background: rgb(var(--primary-rgb) / 0.12); color: var(--primary-text); font-size: 11px; padding: 2px 8px; border-radius: 6px;">زمان‌بندی خودکار</span>
@@ -3715,11 +3715,11 @@
           <div id="sam-schedule-inputs-box" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
               <label style="display: block; font-size: 12px; color: var(--text-soft); margin-bottom: 4px;">تاریخ بازگشایی:</label>
-              <input type="date" id="sam-schedule-date" class="input-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" onchange="window.updateSamSchedulePreview()">
+              <input type="date" id="sam-schedule-date" class="input-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" data-change="updateSamSchedulePreview">
             </div>
             <div>
               <label style="display: block; font-size: 12px; color: var(--text-soft); margin-bottom: 4px;">ساعت بازگشایی:</label>
-              <input type="time" id="sam-schedule-time" class="input-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" onchange="window.updateSamSchedulePreview()">
+              <input type="time" id="sam-schedule-time" class="input-ctrl" style="width: 100%; background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 10px; font-size: 13px;" data-change="updateSamSchedulePreview">
             </div>
           </div>
           <div id="sam-schedule-status-preview" style="display: none; margin-top: 10px; font-size: 12px; color: var(--primary-text); background: rgb(var(--primary-rgb) / 0.1); border: 1px solid rgb(var(--primary-rgb) / 0.25); border-radius: 8px; padding: 8px 12px;">
@@ -3743,10 +3743,10 @@
 
         <!-- Modal Actions -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 16px;">
-          <button type="button" onclick="window.closeStationAccessModal()" class="btn-action" style="padding: 9px 20px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">
+          <button type="button" data-click="closeStationAccessModal" class="btn-action" style="padding: 9px 20px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer; font-size: 13px;">
             انصراف
           </button>
-          <button type="button" id="btn-save-station-access" onclick="window.saveStationAccessSettings()" class="btn-primary" style="padding: 10px 24px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgb(var(--primary-rgb) / 0.35);">
+          <button type="button" id="btn-save-station-access" data-click="saveStationAccessSettings" class="btn-primary" style="padding: 10px 24px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgb(var(--primary-rgb) / 0.35);">
             <i class="fa-solid fa-check"></i> ذخیره تغییرات دسترسی
           </button>
         </div>
@@ -3764,10 +3764,10 @@
             </h3>
             <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">مشخصات هویتی، علمی، رزومه و کلاس‌های آموزشی استاد</div>
           </div>
-          <button type="button" class="modal-close" onclick="document.getElementById('instructor-form-modal').style.display='none'">&times;</button>
+          <button type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]">&times;</button>
         </div>
 
-        <form id="instructor-creator-form" onsubmit="window.saveInstructorForm(event)">
+        <form id="instructor-creator-form" data-submit="saveInstructorForm" data-submit-args="[&quot;$event&quot;]">
           <input type="hidden" id="inst-id">
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
@@ -3803,7 +3803,7 @@
               <input type="text" id="inst-avatar" class="input-ctrl" placeholder="https://... یا /uploads/..." style="background: var(--surface-2); border-color: var(--border-strong); direction: ltr; text-align: left; flex: 1;">
               <label style="background: rgb(var(--primary-rgb) / 0.18); border: 1px solid var(--primary); color: var(--primary-text); padding: 7px 14px; border-radius: 7px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
                 <i class="fa-solid fa-cloud-arrow-up"></i> آپلود عکس
-                <input type="file" accept="image/*" style="display: none;" onchange="window.handleDirectFileUpload(this, 'inst-avatar')">
+                <input type="file" accept="image/*" style="display: none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;inst-avatar&quot;]">
               </label>
             </div>
             <div id="inst-avatar-preview-container" style="display: none; margin-top: 8px;">
@@ -3822,7 +3822,7 @@
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgb(var(--fg-rgb) / 0.1); padding-top: 14px;">
-            <button type="button" class="btn-action" onclick="document.getElementById('instructor-form-modal').style.display='none'" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
+            <button type="button" class="btn-action" data-click="NopaActions.hide" data-click-args="[&quot;instructor-form-modal&quot;]" style="padding: 8px 18px; border-radius: 8px; background: rgb(var(--fg-rgb) / 0.1); color: var(--text-soft); border: none; cursor: pointer;">انصراف</button>
             <button type="submit" class="btn-primary" style="padding: 8px 22px; border-radius: 8px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: white; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
               <i class="fa-solid fa-check"></i> ذخیره مشخصات استاد
             </button>
@@ -3848,6 +3848,7 @@
     <script src="js/ui/modal.js"></script>
     <script src="js/ui/confirm.js"></script>
     <script src="js/ui/table.js"></script>
+    <script src="js/ui/actions.js"></script>
     <script src="js/ui/person-fields.js"></script>
     <script src="js/core/attention.js"></script>
     <script src="js/layout/topnav.js"></script>

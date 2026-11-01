@@ -33,7 +33,7 @@ async function loadLevelsAndCertificatesTab() {
         <td>${user.registrationCompleted ? '<span style="color:var(--color-success)">تکمیل شده</span>' : '<span style="color:var(--color-danger)">ناقص</span>'}</td>
         <td>${physicalReqs}</td>
         <td>
-          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" onclick="promptLevelOverride('${user.id}', ${user.levelFrame})" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -134,10 +134,10 @@ async function loadUsers() {
           </div>
         </td>
         <td>
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" onclick="viewUserDetails('${u.id}')"><i class="fa-solid fa-eye"></i></button>
-          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" onclick="openUserModal('${u.id}', '${escJs(u.name)}', '${escJs(u.role)}', '${escJs(u.caravanId || '')}', ${u.levelFrame}, ${u.mentorLevel || 1}, '${escJs(u.nationalId || '')}', '${escJs(u.dateOfBirth || '')}')"><i class="fa-solid fa-edit"></i></button>
-          <button class="page-btn btn-block" style="padding: 4px 8px; font-size:11px; color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" onclick="toggleBlockUser('${u.id}', ${!u.blocked})"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-          <button class="page-btn btn-delete" style="padding: 4px 8px; font-size:11px; color: var(--color-danger);" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>
+          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
+          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-block" style="padding: 4px 8px; font-size:11px; color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
+          <button class="page-btn btn-delete" style="padding: 4px 8px; font-size:11px; color: var(--color-danger);" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -162,11 +162,11 @@ async function viewUserDetails(userId) {
       <h3 id="drawer-user-name">${esc(user.name)}</h3>
       <div style="flex:1;"></div>
       ${(user.isDualRole || user.role === 'mentor') ? `
-        <button id="btn-role-switcher" class="btn-action" style="background-color:var(--success); color:white; margin-left:15px;" onclick="toggleDualRoleView()">
+        <button id="btn-role-switcher" class="btn-action" style="background-color:var(--success); color:white; margin-left:15px;" data-click="toggleDualRoleView">
           <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
         </button>
       ` : ''}
-      <button class="modal-close" id="btn-close-drawer" onclick="window.closeUserDetailDrawer();">&times;</button>
+      <button class="modal-close" id="btn-close-drawer" data-click="closeUserDetailDrawer">&times;</button>
     `;
 
     // Calculate age
@@ -200,16 +200,16 @@ async function viewUserDetails(userId) {
               <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
             </div>
             <div style="margin-top:15px; display:flex; gap:5px; flex-wrap:wrap; justify-content:space-between;">
-              <button class="btn-primary" style="flex:1; font-size:11px;" onclick="openPasswordOverride('${user.id}')">تغییر رمز</button>
-              <button class="btn-action" style="flex:1; background:var(--danger); color:white; font-size:11px; padding:6px;" onclick="setAccountStatus('${user.id}', 'SUSPENDED')">تعلیق</button>
+              <button class="btn-primary" style="flex:1; font-size:11px;" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
+              <button class="btn-action" style="flex:1; background:var(--danger); color:white; font-size:11px; padding:6px;" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
             </div>
           </div>
 
           <div style="flex:1; min-width: 300px;">
             <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:10px;">
-              <button class="btn-action active" onclick="switchDrawerTab('tab-identity')" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
-              <button class="btn-action" onclick="switchDrawerTab('tab-class-progress')" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
-              <button class="btn-action" onclick="switchDrawerTab('tab-support')" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
+              <button class="btn-action active" data-click="switchDrawerTab" data-click-args="[&quot;tab-identity&quot;]" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
+              <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-class-progress&quot;]" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
+              <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-support&quot;]" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
             </div>
             
             <div id="tab-identity" class="drawer-tab-content active" style="display:block;">
@@ -258,15 +258,15 @@ async function viewUserDetails(userId) {
                 <!-- Filter Chips & Search Bar -->
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.25); padding:8px 10px; border-radius:8px; border:1px solid rgb(var(--fg-rgb) / 0.06);">
                   <div style="display:flex; gap:6px; flex-wrap:wrap;" id="drawer-class-filter-chips">
-                    <button type="button" class="btn-action active" onclick="window.filterDrawerClassProgress('all')" id="btn-prog-filter-all" style="padding:4px 8px; font-size:11px; border-radius:6px;">همه موارد</button>
-                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('classes')" id="btn-prog-filter-classes" style="padding:4px 8px; font-size:11px; border-radius:6px;">کلاس‌ها</button>
-                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('parts')" id="btn-prog-filter-parts" style="padding:4px 8px; font-size:11px; border-radius:6px;">پارت‌ها</button>
-                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('stations')" id="btn-prog-filter-stations" style="padding:4px 8px; font-size:11px; border-radius:6px;">منزلگاه‌ها</button>
-                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('quizzes')" id="btn-prog-filter-quizzes" style="padding:4px 8px; font-size:11px; border-radius:6px;">آزمون‌ها</button>
-                    <button type="button" class="btn-action" onclick="window.filterDrawerClassProgress('challenges')" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
+                    <button type="button" class="btn-action active" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all" style="padding:4px 8px; font-size:11px; border-radius:6px;">همه موارد</button>
+                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes" style="padding:4px 8px; font-size:11px; border-radius:6px;">کلاس‌ها</button>
+                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts" style="padding:4px 8px; font-size:11px; border-radius:6px;">پارت‌ها</button>
+                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations" style="padding:4px 8px; font-size:11px; border-radius:6px;">منزلگاه‌ها</button>
+                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes" style="padding:4px 8px; font-size:11px; border-radius:6px;">آزمون‌ها</button>
+                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
                   </div>
                   <div style="position:relative; flex: 1 1 150px; max-width: 220px;">
-                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." oninput="window.filterDrawerClassProgress()" style="width:100%; padding:5px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:11.5px; box-sizing:border-box;">
+                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" style="width:100%; padding:5px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:11.5px; box-sizing:border-box;">
                   </div>
                 </div>
 
