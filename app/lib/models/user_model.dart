@@ -6,6 +6,11 @@ enum UserRole {
   admin,
 }
 
+extension UserRoleX on UserRole {
+  /// True for every mentor level.
+  bool get isMentorLike => this == UserRole.mentor || this == UserRole.superMentor;
+}
+
 class UserModel {
   final String id;
   final String name;
@@ -173,7 +178,9 @@ class UserModel {
     UserRole parsedRole = UserRole.member;
     if (rawRole == 'admin') {
       parsedRole = UserRole.admin;
-    } else if (rawRole == 'mentor' || rawRole == 'superMentor' || rawRole == 'SUPER_MENTOR') {
+    } else if (rawRole == 'superMentor' || rawRole == 'SUPER_MENTOR') {
+      parsedRole = UserRole.superMentor;
+    } else if (rawRole == 'mentor') {
       parsedRole = UserRole.mentor;
     }
 

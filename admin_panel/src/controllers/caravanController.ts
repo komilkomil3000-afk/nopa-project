@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
+import { isMentorRole } from '../utils/roles';
 
 // Explicit field list for a caravan's mentor: never return the full User row
 // (it contains passwordHash, nationalId, lockout state, ...).
@@ -537,6 +538,9 @@ export async function broadcastToCaravan(req: AuthRequest, res: Response) {
     
     const caravan = await prisma.caravan.findUnique({ where: { id }, include: { members: true } });
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد' });
+    if (isMentorRole(req.user?.role) && caravan.mentorId !== req.user!.id) {
+      return res.status(403).json({ error: 'فقط می‌توانید به کاروان خودتان پیام بفرستید' });
+    }
 
     const notifications = caravan.members.map(m => ({
       userId: m.id,

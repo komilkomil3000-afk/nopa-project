@@ -98,7 +98,7 @@ class MainScreenState extends State<AppShell> {
     final repository = Provider.of<AppRepository>(context);
     final userRole = repository.currentUser.role;
 
-    final List<Widget> screens = userRole == UserRole.mentor || userRole == UserRole.superMentor
+    final List<Widget> screens = userRole.isMentorLike
         ? [
             const MentorHomeScreen(),
             const MentorStationClass1Screen(),

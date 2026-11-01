@@ -1,3 +1,5 @@
+import { mentorOwnsTicket } from './supportController';
+import { isMentorRole } from '../utils/roles';
 import { Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
@@ -1463,12 +1465,15 @@ export async function replyTicketAdmin(req: AuthRequest, res: Response) {
     if (!ticket) {
       return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
     }
+    if (isMentorRole(req.user?.role) && !(await mentorOwnsTicket(req.user!.id, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
+    }
 
     const reply = await prisma.supportTicketReply.create({
       data: {
         ticketId: id,
         message: message.trim(),
-        mentorId: mentorId || req.user?.id || null,
+        mentorId: isMentorRole(req.user?.role) ? req.user!.id : (mentorId || req.user?.id || null),
         voiceUrl: voiceUrl || null,
         attachmentUrl: attachmentUrl || null
       },
@@ -1504,6 +1509,9 @@ export async function resolveTicketAdmin(req: AuthRequest, res: Response) {
     const ticket = await prisma.supportTicket.findUnique({ where: { id } });
     if (!ticket) {
       return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
+    }
+    if (isMentorRole(req.user?.role) && !(await mentorOwnsTicket(req.user!.id, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
     }
 
     await prisma.supportTicket.update({

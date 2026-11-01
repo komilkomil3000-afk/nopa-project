@@ -151,3 +151,23 @@ test('admin panel CSP: no inline scripts or handlers, stylesheets same-origin on
   assert.deepEqual(header.split(';').filter(d => d.includes('unsafe-inline')), ["style-src-attr 'unsafe-inline'"]);
   assert.ok(!header.includes('unsafe-eval'));
 });
+
+test('access tokens: expired and forged tokens are a 401, so clients refresh them', async () => {
+  const jwt = require('jsonwebtoken');
+  const save = process.env.JWT_SECRET;
+  const secret = 'k3Y'.repeat(14);
+  process.env.JWT_SECRET = secret;
+  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
+  try {
+    const { verifyAccessToken } = load('middleware/auth.js');
+    const expired = jwt.sign({ id: 'u1', role: 'student' }, secret, { expiresIn: -10 });
+    const forged = jwt.sign({ id: 'u1', role: 'admin' }, 'x'.repeat(40));
+    for (const token of [expired, forged, 'not-a-token']) {
+      const result = await verifyAccessToken(token, '127.0.0.1');
+      assert.equal(result.ok, false);
+      assert.equal(result.status, 401);
+    }
+  } finally {
+    if (save === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = save;
+  }
+});

@@ -2653,3 +2653,51 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - helmet output equals `cspHeader()`; `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`.
   - Deploy: rebuild needed on the server for the new header.
 - **Status:** In Progress (Phase 8 steps 2–3 pending: accessibility, typography/spacing/states)
+
+### [2026-11-02 03:15] - Claude Code / Chat Plan Phase 0
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/chatController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `admin_panel/src/middleware/adminAccess.ts` (Modified)
+  - `admin_panel/src/middleware/auth.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `admin_panel/tests/security.test.js` (Modified)
+  - `app/lib/core/constants/api_constants.dart` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261042_enable_rls_missing_tables/` (Created)
+  - `docs/nopa-chat-plan.md` (Created — local only, *.md is git-ignored)
+- **Description of Changes:**
+  - Saved the chat plan (v3) and completed Phase 0 of it.
+  - Removed the unused /chat/direct, /chat/caravan and /chat/send routes, which had no membership checks, plus their app client methods; mentors can no longer read GET /admin/chat.
+  - Added ownership checks to caravan broadcast and to ticket reply/resolve on both the user and admin routes; a mentor can no longer spoof mentorId on a reply, and only the sender can rate a ticket.
+  - Extracted verifyAccessToken from authenticateJWT for socket reuse; bad or expired JWTs now return 401 so the app refreshes them.
+  - App now uses https://nopa-app.ir; SUPER_MENTOR parses to superMentor; added UserRole.isMentorLike and replaced repeated checks.
+  - Added migration 20261042 enabling RLS on SubmissionEvent, AssetType and CaravanBanner.
+  - No change for uploads/: it is git-ignored, so checkout -f in post-receive leaves it in place.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 11/11 in `admin_panel/` (new test: expired/forged tokens give 401).
+  - `flutter analyze` no issues and `flutter test` pass in `app/`.
+  - curl: https://nopa-app.ir has a valid certificate; http does not redirect.
+  - Not run: ownership checks against a real database; the migration against any database; the app on a device.
+- **Status:** Completed

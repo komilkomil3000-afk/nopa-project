@@ -20,7 +20,6 @@ import { getMentorAnalytics } from '../controllers/analyticsController';
 import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
-import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
 import { getCaravanAssetConversions, submitStudentAssetConversion, cancelAssetConversion, getCaravans, getCaravanDetails, removeMemberFromCaravan, addMemberToCaravan } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
@@ -116,10 +115,6 @@ router.get('/calendar/events', authenticateJWT as any, getCalendarEvents as any)
 router.get('/instructors', authenticateJWT as any, getInstructors as any);
 
 
-// J. Chat & Messaging Routes
-router.get('/chat/direct/:mentorId', authenticateJWT as any, getDirectMessages as any);
-router.get('/chat/caravan/:caravanId', authenticateJWT as any, getCaravanMessages as any);
-router.post('/chat/send', authenticateJWT as any, sendMessage as any);
 
 // K. Support Tickets
 router.post('/support/tickets', authenticateJWT as any, createTicket as any);

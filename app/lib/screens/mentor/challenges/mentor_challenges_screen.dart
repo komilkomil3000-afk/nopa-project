@@ -183,7 +183,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
     // Mentors manage challenges, they never answer them
     final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    if (role == UserRole.mentor || role == UserRole.superMentor) return;
+    if (role.isMentorLike) return;
 
     final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
     int selectedOptionIndex = -1;
@@ -678,7 +678,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final user = repository.currentUser;
-    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final bool isMentor = user.role.isMentorLike;
 
     if (isMentor) {
       return _buildMentorChallengesView(context, repository, user);

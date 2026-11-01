@@ -39,7 +39,6 @@ const MENTOR_ALLOWED: Rule[] = [
   { methods: GET, path: /^\/analytics$/i },
   { methods: GET, path: /^\/leaderboard\/(assets|individuals|caravans)$/i },
   { methods: GET, path: /^\/rewards\/ledger$/i },
-  { methods: GET, path: /^\/chat$/i },
   { methods: GET, path: /^\/messages$/i },
   { methods: GET, path: /^\/lms\/(stations|classes|sessions|clips|quizzes)$/i },
   { methods: GET, path: /^\/courses\/hierarchy$/i },

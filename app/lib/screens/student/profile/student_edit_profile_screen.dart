@@ -318,7 +318,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final mentorName = (widget.user.caravanMentor != null && widget.user.caravanMentor!.isNotEmpty)
         ? widget.user.caravanMentor!
         : 'راهبر کاروان';
-    final isMentor = widget.user.role == UserRole.mentor || widget.user.role == UserRole.superMentor;
+    final isMentor = widget.user.role.isMentorLike;
 
     return AppScaffold(
       showBackButton: true,

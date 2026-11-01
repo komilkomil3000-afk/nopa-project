@@ -147,7 +147,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// Mentors are not bound by the release schedule (the server does the same for stations).
   bool get _isMentorUser {
     final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    return role == UserRole.mentor || role == UserRole.superMentor;
+    return role.isMentorLike;
   }
 
   /// When a session that has not started yet opens; null when it is open (or has no schedule).

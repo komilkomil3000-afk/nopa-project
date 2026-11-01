@@ -62,7 +62,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final currentUser = repository.currentUser;
-    final bool isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final bool isMentor = currentUser.role.isMentorLike;
 
     return RefreshIndicator(
       onRefresh: () => Provider.of<AppRepository>(context, listen: false).refreshUser(),

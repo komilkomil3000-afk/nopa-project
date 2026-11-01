@@ -493,7 +493,7 @@ class _MarketScreenState extends State<StudentMarketScreen> {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
         final user = repository.currentUser;
-        final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+        final bool isMentor = user.role.isMentorLike;
 
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

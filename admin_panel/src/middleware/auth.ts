@@ -13,68 +13,78 @@ export interface AuthRequest extends Request {
   };
 }
 
-export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
+export type TokenCheck =
+  | { ok: true; user: NonNullable<AuthRequest['user']> }
+  | { ok: false; status: number; error: string };
 
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    let secret: string;
-    try {
-      secret = getJwtSecret();
-    } catch (e) {
-      console.error('JWT configuration error:', e);
-      return res.status(500).json({ error: 'پیکربندی امنیتی سرور نامعتبر است' });
+/**
+ * Runs every access-token check: signature, token version, account state, active session and IP
+ * blacklist. Shared by the HTTP middleware and any non-HTTP entry point, such as a socket handshake.
+ * A bad or expired token is a 401 so that clients know to refresh it.
+ */
+export async function verifyAccessToken(token: string, clientIp: string): Promise<TokenCheck> {
+  let payload: { id: string; role: string; phoneNumber: string; tokenVersion?: number };
+  try {
+    payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as typeof payload;
+  } catch (e) {
+    if (e instanceof jwt.JsonWebTokenError) {
+      return { ok: false, status: 401, error: 'کاربر غیرمجاز است یا توکن منقضی شده است' };
+    }
+    console.error('JWT configuration error:', e);
+    return { ok: false, status: 500, error: 'پیکربندی امنیتی سرور نامعتبر است' };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const isAdmin = String(user?.role || payload.role).toLowerCase() === 'admin';
+
+    if (!user || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
+      return { ok: false, status: 401, error: 'نشست شما نامعتبر یا منقضی شده است' };
     }
 
-    jwt.verify(token, secret, { algorithms: ['HS256'] }, async (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ error: 'کاربر غیرمجاز است یا توکن منقضی شده است' });
+    if (!isAdmin) {
+      if (user.blocked || user.isDeleted) {
+        return { ok: false, status: 401, error: 'حساب شما مسدود یا حذف شده است' };
       }
-      const payload = decoded as { id: string; role: string; phoneNumber: string; tokenVersion?: number };
-
-        try {
-          const user = await prisma.user.findUnique({ where: { id: payload.id } });
-          const isAdmin = String(user?.role || payload.role).toLowerCase() === 'admin';
-
-          if (!user || (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion)) {
-            return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
-          }
-
-          if (!isAdmin) {
-            if (user.blocked || user.isDeleted) {
-              return res.status(401).json({ error: 'حساب شما مسدود یا حذف شده است' });
-            }
-            if (user.accountStatus === 'SUSPENDED') {
-              return res.status(403).json({ error: 'حساب کاربری شما تعلیق شده است' });
-            }
-            if (user.suspendedUntil && new Date(user.suspendedUntil) > new Date()) {
-              return res.status(403).json({ error: 'حساب کاربری شما موقتا مسدود شده است' });
-            }
-          }
-
-        // Validate active session token in database
-        const activeSession = await prisma.userSession.findUnique({ where: { token } });
-        if (!activeSession) {
-          return res.status(401).json({ error: 'نشست شما نامعتبر یا منقضی شده است' });
-        }
-        
-        // Also check IP blacklist as an extra layer
-        const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
-        const blacklistedIp = await prisma.blacklist.findUnique({ where: { value: clientIp } });
-        if (blacklistedIp) {
-          return res.status(403).json({ error: 'دسترسی مسدود شده است (IP Blocked)' });
-        }
-
-        // Use the live role from the database so a role change takes effect immediately
-        req.user = { ...payload, role: user.role, panelAccess: user.panelAccess };
-        next();
-      } catch (dbErr) {
-        return res.status(500).json({ error: 'خطای سرور در اعتبارسنجی کاربر' });
+      if (user.accountStatus === 'SUSPENDED') {
+        return { ok: false, status: 403, error: 'حساب کاربری شما تعلیق شده است' };
       }
-    });
-  } else {
-    res.status(401).json({ error: 'توکن اعتبارسنجی ارسال نشده است' });
+      if (user.suspendedUntil && new Date(user.suspendedUntil) > new Date()) {
+        return { ok: false, status: 403, error: 'حساب کاربری شما موقتا مسدود شده است' };
+      }
+    }
+
+    // Validate active session token in database
+    const activeSession = await prisma.userSession.findUnique({ where: { token } });
+    if (!activeSession) {
+      return { ok: false, status: 401, error: 'نشست شما نامعتبر یا منقضی شده است' };
+    }
+
+    // Also check IP blacklist as an extra layer
+    const blacklistedIp = await prisma.blacklist.findUnique({ where: { value: clientIp } });
+    if (blacklistedIp) {
+      return { ok: false, status: 403, error: 'دسترسی مسدود شده است (IP Blocked)' };
+    }
+
+    // Use the live role from the database so a role change takes effect immediately
+    return { ok: true, user: { ...payload, role: user.role, panelAccess: user.panelAccess } };
+  } catch (dbErr) {
+    return { ok: false, status: 500, error: 'خطای سرور در اعتبارسنجی کاربر' };
   }
+}
+
+export function authenticateJWT(req: AuthRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'توکن اعتبارسنجی ارسال نشده است' });
+  }
+
+  const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+  verifyAccessToken(authHeader.split(' ')[1], clientIp).then(result => {
+    if (!result.ok) return res.status(result.status).json({ error: result.error });
+    req.user = result.user;
+    next();
+  });
 }
 
 export function authorizeRoles(...roles: string[]) {

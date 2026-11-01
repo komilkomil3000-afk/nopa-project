@@ -174,7 +174,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Map<String, dynamic> caravanBanners = {};
 
   Future<void> fetchCaravanBanners() async {
-    final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final isMentor = currentUser.role.isMentorLike;
     final data = await _apiService.getCaravanBanners(caravanId: isMentor ? _selectedCaravanId : null);
     if (data != null) {
       caravanBanners = data;
@@ -479,7 +479,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       if (onlyIfChanged && _apiService.isUnchanged('notifications')) return;
       if (data != null && data['notifications'] is List) {
         final List notifs = data['notifications'];
-        final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+        final isMentor = currentUser.role.isMentorLike;
         final List<Map<String, dynamic>> updatedNotifs = [];
         for (final item in notifs) {
           String timeStr = 'اعلان سیستم';
@@ -522,7 +522,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   int get unreadNotificationsCount {
-    return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)).length;
+    return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role.isMentorLike)).length;
   }
 
   Future<void> markNotificationAsRead(String id) async {
@@ -542,7 +542,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void markAllNotificationsAsRead() {
     for (var n in notifications) {
-      if (n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)) {
+      if (n['isForMentor'] == (currentUser.role.isMentorLike)) {
         if (n['isRead'] == false && n['id'] != null && n['id'].toString().isNotEmpty) {
           _apiService.markNotificationAsRead(n['id'].toString());
         }

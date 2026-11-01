@@ -118,7 +118,7 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMentor = role == UserRole.mentor || role == UserRole.superMentor;
+    final isMentor = role.isMentorLike;
     final currentUser = Provider.of<AppRepository>(context).currentUser;
 
     final String displayName = currentUser.name.trim().isNotEmpty

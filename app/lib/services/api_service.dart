@@ -1578,69 +1578,6 @@ class HttpApiService {
     }
   }
 
-  // --- CHAT API ---
-  Future<List<dynamic>> getDirectMessages(String mentorId, {int? limit}) async {
-    try {
-      final queryParams = <String, String>{};
-      if (limit != null) queryParams['limit'] = limit.toString();
-
-      final uri = queryParams.isNotEmpty
-          ? Uri.parse('$baseUrl/chat/direct/$mentorId').replace(queryParameters: queryParams)
-          : Uri.parse('$baseUrl/chat/direct/$mentorId');
-
-      final response = await _get(uri, headers: _getHeaders());
-      if (response.statusCode == 200) {
-        final dynamic data = await parseJsonAsync(response.body);
-        if (data is List) return data;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('HTTP getDirectMessages error: $e');
-      return [];
-    }
-  }
-
-  Future<List<dynamic>> getCaravanMessages(String caravanId, {int? limit}) async {
-    try {
-      final queryParams = <String, String>{};
-      if (limit != null) queryParams['limit'] = limit.toString();
-
-      final uri = queryParams.isNotEmpty
-          ? Uri.parse('$baseUrl/chat/caravan/$caravanId').replace(queryParameters: queryParams)
-          : Uri.parse('$baseUrl/chat/caravan/$caravanId');
-
-      final response = await _get(uri, headers: _getHeaders());
-      if (response.statusCode == 200) {
-        final dynamic data = await parseJsonAsync(response.body);
-        if (data is List) return data;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('HTTP getCaravanMessages error: $e');
-      return [];
-    }
-  }
-
-  Future<bool> sendChatMessage({String? receiverId, String? caravanId, String? text, String? fileUrl, String? fileType}) async {
-    try {
-      final response = await _post(
-        Uri.parse('$baseUrl/chat/send'),
-        headers: _getHeaders(),
-        body: jsonEncode({
-          'receiverId': receiverId,
-          'caravanId': caravanId,
-          'messageText': text,
-          'fileUrl': fileUrl,
-          'fileType': fileType,
-        }),
-      );
-      return response.statusCode == 201;
-    } catch (e) {
-      debugPrint('HTTP sendChatMessage error: $e');
-      return false;
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getBookmarks(String sessionId) async {
     try {
       final res = await _get(Uri.parse('$baseUrl/lms/bookmarks/$sessionId'), headers: _getHeaders());

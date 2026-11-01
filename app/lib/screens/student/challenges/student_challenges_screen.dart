@@ -289,7 +289,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final user = repository.currentUser;
-    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final bool isMentor = user.role.isMentorLike;
 
     if (isMentor) {
       return _buildMentorChallengesView(context, repository, user);

@@ -4,7 +4,7 @@ import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/widgets/support_message_dialog.dart';
 
-bool _isMentorRole(UserModel user) => user.role == UserRole.mentor || user.role == UserRole.superMentor;
+bool _isMentorRole(UserModel user) => user.role.isMentorLike;
 
 /// Label of the "contact" button: a mentor has no mentor above them, so they write to the support team.
 String contactMentorLabel(UserModel user) => _isMentorRole(user) ? 'پیام به پشتیبانی' : 'ارتباط با راهبر';

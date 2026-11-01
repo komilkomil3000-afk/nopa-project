@@ -577,7 +577,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
   /// Bottom 2-Column Class Details Card: Right is Skill Classes, Left is Media Classes (Overdue removed)
   Future<void> _navigateToClass(CalendarEvent event) async {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final bool isMentor = user.role.isMentorLike;
 
     // A class that has not started yet only shows when it opens
     if (!isMentor) {
