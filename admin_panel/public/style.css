@@ -123,11 +123,10 @@ body {
   padding: 20px;
 }
 
-/* The login overlay is the whole page when signed out: show the page background, not a dim backdrop */
+/* Login modal sits above the landing page (Phase 5) */
 #login-modal {
-  background-color: var(--bg);
-  background-image: radial-gradient(circle at 10% 20%, var(--page-glow-1) 0%, transparent 40%),
-                    radial-gradient(circle at 90% 80%, var(--page-glow-2) 0%, transparent 45%);
+  z-index: var(--z-modal);
+  padding: 16px;
 }
 
 .login-card {
@@ -1518,11 +1517,29 @@ button, input, select, textarea { font-family: inherit; }
 
 .login-card {
   position: relative;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
 }
-.login-theme-toggle {
+.login-close {
   position: absolute;
   top: 14px;
   left: 14px;
+}
+.btn-primary.login-submit {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--brand-gradient);
+  color: var(--on-fill);
+  font-weight: 800;
+  box-shadow: 0 6px 18px rgb(var(--primary-rgb) / 0.35);
+  cursor: pointer;
+}
+.btn-primary.login-submit:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 /* Visible keyboard focus everywhere */

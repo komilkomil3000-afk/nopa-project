@@ -9,14 +9,32 @@
 }
 
 /* ---------- Header bar ---------- */
+/* fixed, not sticky: html/body/#app-layout use overflow-x: hidden, which makes them scroll
+   containers, and a sticky header inside them scrolls away with the page */
 .app-header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-panel);
   background: rgb(var(--surface-rgb) / 0.82);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
   border-bottom: 1px solid var(--border);
+  /* no will-change: transform here — like transform itself it would make the header the
+     containing block of the fixed mobile panel and clip it to 64px */
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+}
+body.nav-open .app-header {
+  transform: none;
+}
+/* Hidden while scrolling down (js/layout/topnav.js); any scroll up brings it back */
+.app-header.is-hidden {
+  transform: translateY(calc(-100% - 2px));
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-header { transition: none; }
 }
 .app-header-inner {
   max-width: 1600px;
@@ -438,7 +456,7 @@
 .main-wrapper {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 24px 24px 48px;
+  padding: calc(64px + 24px) 24px 48px; /* room for the fixed header */
   min-width: 0;
 }
 .page-header {
@@ -571,7 +589,7 @@
     top: 10px;
     width: auto;
   }
-  .main-wrapper { padding: 16px 14px 40px; }
+  .main-wrapper { padding: calc(58px + 16px) 14px 40px; }
   .page-header h2 { font-size: var(--text-lg); }
   .header-dropdown { position: fixed; top: 64px; left: 12px; right: 12px; min-width: 0; }
 }

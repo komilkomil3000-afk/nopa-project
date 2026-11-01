@@ -20,10 +20,179 @@
   <link rel="stylesheet" href="/admin/css/tokens.css">
   <link rel="stylesheet" href="/admin/style.css">
   <link rel="stylesheet" href="/admin/css/layout.css">
+  <link rel="stylesheet" href="/admin/css/landing.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
 </head>
 <body>
+
+  <!-- 1. PUBLIC LANDING PAGE (signed out). Login opens the existing #login-modal. -->
+  <div id="landing-view" class="landing">
+    <header class="landing-header" id="landing-header">
+      <div class="landing-container landing-header-inner">
+        <a class="app-brand" href="#" data-scroll-to="landing-top" aria-label="نپا">
+          <span class="app-brand-icon"><i class="fa-solid fa-flag"></i></span>
+          <span class="app-brand-text">نپا</span>
+        </a>
+        <nav class="landing-nav" aria-label="بخش‌های صفحه">
+          <button type="button" data-scroll-to="landing-features">امکانات</button>
+          <button type="button" data-scroll-to="landing-path">مسیر یادگیری</button>
+          <button type="button" data-scroll-to="landing-roles">برای چه کسانی</button>
+        </nav>
+        <div class="landing-header-tools">
+          <button type="button" class="btn-icon theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
+          <button type="button" class="landing-btn landing-btn--primary" data-open-login><i class="fa-solid fa-right-to-bracket"></i> ورود</button>
+        </div>
+      </div>
+    </header>
+
+    <main id="landing-top">
+      <!-- Hero -->
+      <section class="landing-hero landing-container">
+        <div class="landing-hero-text" data-reveal>
+          <span class="landing-eyebrow"><i class="fa-solid fa-wand-magic-sparkles"></i> سامانه مدیریت نپا</span>
+          <h1>مسیر رشد نوجوانان،<br><span class="landing-gradient-text">در کاروان‌های همراه</span></h1>
+          <p>نپا نوجوانان را در قالب کاروان‌هایی با هدایت راهبران، از منزلگاهی به منزلگاه بعد همراهی می‌کند: کلاس و ویدیو، آزمونک و چالش، و پاداشی که با زریک و دارایی‌ها دیده می‌شود. این پنل، اتاق فرمان همین مسیر است.</p>
+          <div class="landing-hero-actions">
+            <button type="button" class="landing-btn landing-btn--primary landing-btn--lg" data-open-login><i class="fa-solid fa-right-to-bracket"></i> ورود به پنل مدیریت</button>
+            <button type="button" class="landing-btn landing-btn--ghost landing-btn--lg" data-scroll-to="landing-features">آشنایی با امکانات <i class="fa-solid fa-arrow-down"></i></button>
+          </div>
+        </div>
+
+        <!-- Decorative bento preview (no real data) -->
+        <div class="landing-hero-visual" aria-hidden="true" data-reveal>
+          <div class="hero-tile hero-tile--caravan">
+            <div class="hero-tile-head"><i class="fa-solid fa-people-group"></i> کاروان</div>
+            <div class="hero-avatars"><span></span><span></span><span></span><span></span><span class="more">+</span></div>
+            <div class="hero-bar"><i style="width: 72%"></i></div>
+          </div>
+          <div class="hero-tile hero-tile--station">
+            <div class="hero-ring"><i class="fa-solid fa-route"></i></div>
+            <div class="hero-tile-label">منزلگاه بعدی</div>
+          </div>
+          <div class="hero-tile hero-tile--zarik">
+            <i class="fa-solid fa-coins"></i>
+            <div class="hero-tile-label">زریک</div>
+          </div>
+          <div class="hero-tile hero-tile--league">
+            <div class="hero-tile-head"><i class="fa-solid fa-trophy"></i> لیگ کاروان‌ها</div>
+            <div class="hero-podium"><span style="height: 58%"></span><span style="height: 92%"></span><span style="height: 40%"></span></div>
+          </div>
+          <div class="hero-tile hero-tile--chart">
+            <svg viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0 48 C 30 40, 45 18, 75 26 S 120 52, 150 22 S 185 10, 200 14" /></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features (bento) -->
+      <section class="landing-section landing-container" id="landing-features">
+        <div class="landing-section-head" data-reveal>
+          <h2>هر آنچه یک مسیر آموزشی زنده لازم دارد</h2>
+          <p>از تشکیل کاروان تا ارزیابی تکلیف، همه در یک پنل.</p>
+        </div>
+        <div class="landing-bento">
+          <article class="landing-card landing-card--wide" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-people-group"></i></span>
+            <h3>کاروان‌ها و راهبران</h3>
+            <p>نوجوانان در کاروان‌هایی با ظرفیت مشخص کنار هم قرار می‌گیرند و هر کاروان راهبر خودش را دارد. پیشرفت گروهی، اعضا و ثروت هر کاروان یک‌جا دیده می‌شود.</p>
+          </article>
+          <article class="landing-card" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-route"></i></span>
+            <h3>منزلگاه‌ها و کلاس‌ها</h3>
+            <p>مسیر آموزشی از منزلگاه‌هایی ساخته می‌شود که هر کدام کلاس، پارت ویدیویی و آزمونک دارند و طبق زمان‌بندی باز می‌شوند.</p>
+          </article>
+          <article class="landing-card landing-card--accent" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-coins"></i></span>
+            <h3>زریک و دارایی‌ها</h3>
+            <p>تلاش‌ها با زریک پاداش می‌گیرند و به دارایی‌هایی مثل کلاف، قالیچه و درفش تبدیل می‌شوند.</p>
+          </article>
+          <article class="landing-card" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-trophy"></i></span>
+            <h3>چالش‌ها و لیگ</h3>
+            <p>چالش‌های مرحله‌ای، بررسی تکالیف و لیگ کاروان‌ها و افراد، رقابتی سالم و قابل‌پیگیری می‌سازند.</p>
+          </article>
+          <article class="landing-card" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-bullhorn"></i></span>
+            <h3>جارچی</h3>
+            <p>تابلوی اعلانات، بنرها و اطلاعیه‌ها مستقیم در اپلیکیشن به دست مخاطبان می‌رسد.</p>
+          </article>
+          <article class="landing-card landing-card--wide" data-reveal>
+            <span class="landing-card-icon"><i class="fa-solid fa-certificate"></i></span>
+            <h3>سطوح، گواهینامه‌ها و ارزیابی</h3>
+            <p>سطح هر نوجوان، گواهینامه‌های کسب‌شده و ارزیابی راهبران ثبت می‌شود؛ مدارک راهبران هم پیش از فعالیت بررسی و تایید می‌شود.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Learning path -->
+      <section class="landing-section landing-container" id="landing-path">
+        <div class="landing-section-head" data-reveal>
+          <h2>مسیر یادگیری در نپا</h2>
+          <p>سه گام ساده که هر هفته تکرار می‌شود.</p>
+        </div>
+        <ol class="landing-steps">
+          <li data-reveal>
+            <span class="landing-step-num">۱</span>
+            <h3>همراهی در کاروان</h3>
+            <p>هر نوجوان عضو یک کاروان می‌شود و راهبر کاروان مسیر را کنار او پیش می‌برد.</p>
+          </li>
+          <li data-reveal>
+            <span class="landing-step-num">۲</span>
+            <h3>عبور از منزلگاه‌ها</h3>
+            <p>کلاس‌ها و ویدیوها دیده می‌شوند، آزمونک‌ها پاسخ داده می‌شوند و تکالیف برای ارزیابی ارسال می‌شوند.</p>
+          </li>
+          <li data-reveal>
+            <span class="landing-step-num">۳</span>
+            <h3>پاداش و لیگ</h3>
+            <p>زریک و دارایی‌ها جمع می‌شوند و جایگاه فرد و کاروان در لیگ مشخص می‌شود.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Roles -->
+      <section class="landing-section landing-container" id="landing-roles">
+        <div class="landing-section-head" data-reveal>
+          <h2>این پنل برای چه کسانی است؟</h2>
+          <p>نوجوانان از اپلیکیشن نپا استفاده می‌کنند؛ این پنل برای تیمی است که مسیر را می‌سازد و همراهی می‌کند.</p>
+        </div>
+        <div class="landing-roles">
+          <article class="landing-role" data-reveal>
+            <i class="fa-solid fa-user-shield"></i>
+            <h3>مدیران</h3>
+            <p>کاربران، کاروان‌ها، محتوای آموزشی، اقتصاد زریک، دسترسی‌ها و گزارش‌های امنیتی.</p>
+          </article>
+          <article class="landing-role" data-reveal>
+            <i class="fa-solid fa-user-pen"></i>
+            <h3>ادمین‌های محتوایی</h3>
+            <p>فقط بخش‌هایی که مدیر کل اجازه داده: از جارچی و فرم‌ها تا منزلگاه‌ها و چالش‌ها.</p>
+          </article>
+          <article class="landing-role" data-reveal>
+            <i class="fa-solid fa-user-tie"></i>
+            <h3>راهبران</h3>
+            <p>پیگیری کاروان، پاسخ به تیکت‌ها و ارزیابی تکالیف اعضا.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="landing-container">
+        <div class="landing-cta" data-reveal>
+          <div>
+            <h2>به پنل مدیریت نپا وارد شوید</h2>
+            <p>با شماره همراه و گذرواژه‌ای که برای شما فعال شده است.</p>
+          </div>
+          <button type="button" class="landing-btn landing-btn--light landing-btn--lg" data-open-login><i class="fa-solid fa-right-to-bracket"></i> ورود</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="landing-footer">
+      <div class="landing-container landing-footer-inner">
+        <span class="app-brand"><span class="app-brand-icon"><i class="fa-solid fa-flag"></i></span> نپا</span>
+        <span>تمامی حقوق برای نپا محفوظ است.</span>
+      </div>
+    </footer>
+  </div>
 
   <!-- 2. DASHBOARD APP LAYOUT -->
   <div id="app-layout">
@@ -2840,26 +3009,27 @@
     }
   </style>
 
-  <div id="login-modal" class="modal-overlay" style="display:flex;">
+  <!-- Login: opened from the landing page (or on an expired session); same form and handler as before -->
+  <div id="login-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="login-title">
     <div class="login-card glass">
-      <button type="button" class="btn-icon theme-toggle login-theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
+      <button type="button" class="modal-close login-close" aria-label="بستن">&times;</button>
       <div class="brand">
         <div class="brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
         <h1>سامانه اختصاصی نپا</h1>
       </div>
-      <h2>ورود به پنل مدیریت</h2>
+      <h2 id="login-title">ورود به پنل مدیریت</h2>
       <p>جهت دسترسی به دایرکتوری، مالی و تنظیمات امنیتی وارد شوید</p>
-      
+
       <form id="admin-login-form">
         <div class="form-group">
-          <label>شماره همراه</label>
+          <label for="login-phone">شماره همراه</label>
           <input type="text" id="login-phone" class="input-ctrl" placeholder="۰۹۱۲۰۰۰۰۰۰۱" autocomplete="username" inputmode="numeric" required>
         </div>
         <div class="form-group">
-          <label>گذرواژه</label>
+          <label for="login-password">گذرواژه</label>
           <input type="password" id="login-password" class="input-ctrl" placeholder="******" autocomplete="current-password" required>
         </div>
-        <button type="submit" id="admin-login-btn" class="btn-primary" style="width: 100%; background-color: var(--info-strong); box-shadow: 0 4px 14px 0 rgb(var(--info-rgb) / 0.4); border: none; padding: 12px; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px;">ورود به پنل کاربری</button>
+        <button type="submit" id="admin-login-btn" class="btn-primary login-submit">ورود به پنل کاربری</button>
         <div id="login-error" class="error-msg" style="display:none;">شماره همراه یا رمز عبور نامعتبر است</div>
       </form>
     </div>
@@ -3689,6 +3859,7 @@
     <script src="js/ui/table.js"></script>
     <script src="js/core/attention.js"></script>
     <script src="js/layout/topnav.js"></script>
+    <script src="js/layout/landing.js"></script>
     <script src="app.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>

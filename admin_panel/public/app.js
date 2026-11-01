@@ -24,11 +24,6 @@ let analyticsEngagementChart = null;
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
   const token = NopaAuth.getToken();
-  const modal = document.getElementById('login-modal');
-
-  if (token) {
-    if (modal) modal.style.setProperty('display', 'none', 'important');
-  }
 
   const form = document.getElementById('admin-login-form');
   if (form) {
@@ -44,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      const submitBtn = document.getElementById('admin-login-btn');
+      if (submitBtn) submitBtn.disabled = true;
       try {
         const res = await fetch('/api/v1/auth/login', {
           method: 'POST',
@@ -54,10 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok && data.token) {
           NopaAuth.setSession(data.token, data.user || { role: 'admin', identityVerified: true });
           currentUser = NopaAuth.getUser();
-          
-          const modal = document.getElementById('login-modal');
-          if (modal) modal.style.setProperty('display', 'none', 'important');
-          
+          if (passInput) passInput.value = '';
           showDashboard();
         } else {
           showToast(data.error || 'اطلاعات ورود اشتباه است', 'error');
@@ -65,29 +59,40 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (err) {
         console.error('Login error:', err);
         showToast('خطا در اتصال به سرور بکاند', 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
   }
 
-  if (token) {
-    showDashboard();
-  }
+  if (token) showDashboard();
+  else showLanding();
   setupEventListeners();
 });
 
-function showLogin() {
-  const modal = document.getElementById('login-modal');
-  if (modal) modal.style.display = 'flex';
+// Signed-out state: the public landing page (#landing-view). The panel stays hidden.
+function showLanding() {
+  document.documentElement.setAttribute('data-session', 'out');
   const layout = document.getElementById('app-layout');
   if (layout) layout.style.display = 'none';
+  document.body.classList.remove('nav-open');
+  if (window.NopaLanding) NopaLanding.onShow();
+}
+
+// Login is needed (expired session / 401): landing page with the login modal open on top.
+function showLogin() {
+  showLanding();
+  if (window.NopaLanding) NopaLanding.openLogin();
 }
 
 function showDashboard() {
+  document.documentElement.setAttribute('data-session', 'in');
   if (typeof window.loadAssetNames === 'function') window.loadAssetNames();
   const modal = document.getElementById('login-modal');
-  if (modal) modal.style.setProperty('display', 'none', 'important');
+  if (modal) modal.style.display = 'none';
   const layout = document.getElementById('app-layout');
   if (layout) layout.style.display = 'block';
+  window.scrollTo({ top: 0 });
   
   // Current user in the header (js/layout/topnav.js)
   NopaNav.setUser(currentUser);

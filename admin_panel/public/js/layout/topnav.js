@@ -193,6 +193,51 @@
     attentionTimer = setInterval(refreshAttention, ATTENTION_REFRESH_MS);
   }
 
+  // ---- hide on scroll down, show on any scroll up ------------------------------------------
+  // Scrolling down hides the header; the slightest scroll up (anywhere on the page) brings it
+  // back. Never hides while one of its menus, the search or the mobile panel is in use.
+  const SHOW_NEAR_TOP = 72;  // px: always visible near the top
+  const HIDE_AFTER = 8;      // px of downward movement before hiding
+  let lastY = 0;
+  let scrollTicking = false;
+
+  function setHeaderHidden(hidden) {
+    const header = $('app-header');
+    if (!header || header.classList.contains('is-hidden') === hidden) return;
+    header.classList.toggle('is-hidden', hidden);
+    if (hidden) closeMenus();
+  }
+
+  function headerInUse() {
+    const header = $('app-header');
+    return document.body.classList.contains('nav-open') ||
+      !!document.querySelector('#topnav .has-menu.is-open, .header-menu.is-open') ||
+      (header && header.contains(document.activeElement) && document.activeElement.tagName === 'INPUT');
+  }
+
+  function onScroll() {
+    scrollTicking = false;
+    const y = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+    const delta = y - lastY;
+    if (y <= SHOW_NEAR_TOP || headerInUse()) setHeaderHidden(false);
+    else if (delta < 0) setHeaderHidden(false);          // any upward movement reveals
+    else if (delta > HIDE_AFTER) setHeaderHidden(true);
+    else return;                                          // small downward jitter: keep lastY anchored
+    lastY = y;
+  }
+
+  function watchScroll() {
+    lastY = window.scrollY || 0;
+    window.addEventListener('scroll', () => {
+      if (scrollTicking) return;
+      scrollTicking = true;
+      requestAnimationFrame(onScroll);
+    }, { passive: true });
+    // Keyboard focus moving into the header (Tab) must reveal it
+    $('app-header').addEventListener('focusin', () => setHeaderHidden(false));
+    window.addEventListener('nopa:tabchange', () => { setHeaderHidden(false); lastY = window.scrollY || 0; });
+  }
+
   // ---- public -----------------------------------------------------------------------------
   function applyAccess(next) {
     access = next && !next.all ? { all: false, sections: next.sections || {} } : { all: true, sections: {} };
@@ -310,6 +355,7 @@
     });
 
     window.addEventListener('nopa:tabchange', e => markActive(e.detail.tabId));
+    watchScroll();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

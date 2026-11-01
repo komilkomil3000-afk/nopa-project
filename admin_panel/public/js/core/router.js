@@ -186,6 +186,8 @@
   }
 
   function handleHashRouting() {
+    // Signed out: the landing page is showing; a panel hash is handled after login
+    if (!NopaAuth.getToken()) return;
     const tabId = tabFromHash(window.location.hash) || DEFAULT_TAB;
     // back/forward fire both popstate and hashchange: don't load the same tab twice
     if (tabId === lastSwitch.id && Date.now() - lastSwitch.at < 300) return;

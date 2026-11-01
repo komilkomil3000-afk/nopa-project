@@ -11,7 +11,7 @@
   const stack = [];
   const opener = new WeakMap();
   const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-  const EXCLUDED = new Set(['login-modal']); // the login screen is not dismissible
+  const EXCLUDED = new Set(); // ids of overlays the manager should ignore
 
   const resolve = el => (typeof el === 'string' ? document.getElementById(el) : el);
   const isOpen = el => el.isConnected && getComputedStyle(el).display !== 'none' && !el.classList.contains('hidden');

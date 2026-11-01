@@ -2500,3 +2500,28 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 18 navigation checks pass (desktop menus, keyboard, search, bell counts, user menu, 1024px/390px panel, sub-admin filtering and polling); header overlap measured at 1181–1920px; Phase 1–3 suites still green (20 tabs, 0 page errors, 0 duplicate IDs); screenshots dark/light at 1366/1024/390.
   - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed
+
+### [2026-11-02 01:20] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 5 (Landing Page & Login Modal) + hide-on-scroll header
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/landing.css` (Created)
+  - `admin_panel/public/js/layout/landing.js` (Created)
+  - `admin_panel/public/index.html` (Modified — #landing-view, login modal closable, new assets)
+  - `admin_panel/public/app.js` (Modified — showLanding / showLogin / showDashboard auth gate)
+  - `admin_panel/public/theme.js` (Modified — data-session flag before first paint)
+  - `admin_panel/public/js/core/router.js` (Modified — ignore hashes while signed out)
+  - `admin_panel/public/js/ui/modal.js` (Modified — login modal managed like the others)
+  - `admin_panel/public/js/layout/topnav.js` (Modified — hide on scroll down / show on scroll up)
+  - `admin_panel/public/css/layout.css` (Modified — fixed header, hide state, mobile panel fix)
+  - `admin_panel/public/style.css` (Modified — login modal styles)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v8)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Public landing page for signed-out visitors (hero with decorative bento preview, feature bento, learning path, roles, CTA, footer) with login in the top-left; login opens the existing form in a closable modal. Signed-out panel links open the login and land on the linked tab; 401 shows the landing page with the login open; logout returns to the landing page. No landing/panel flash thanks to a pre-paint session flag.
+  - Requested: the panel header (and landing header) hides while scrolling down and reappears on any upward scroll anywhere on the page; stays visible while its menus/search/mobile panel are in use; reveals on tab change and keyboard focus.
+  - Headers switched from sticky to fixed (sticky broke under overflow-x: hidden ancestors); removed will-change: transform that clipped the mobile nav panel.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 18 Phase 5 checks pass (landing/auth flows, deep link, session expiry, logout, header hide/show, no flash, 390px), Phase 3 (13) and Phase 4 (18) suites and the smoke test still green; screenshots dark/light at 1366px and 390px.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
