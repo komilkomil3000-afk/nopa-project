@@ -6,15 +6,9 @@ window.fetchLiveLmsStations = async function() {
   if (!tbody) return;
 
   try {
-    const token = NopaAuth.getToken();
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-    };
-
-    let res = await fetch('/api/v1/lms/stations', { headers });
+    let res = await request('/api/v1/lms/stations');
     if (!res.ok) {
-      res = await fetch('/api/v1/admin/lms/stations', { headers });
+      res = await request('/api/v1/admin/lms/stations');
     }
 
     if (res.ok) {
@@ -1030,24 +1024,23 @@ window.saveStationBasicInfoFromContentModal = async function(stationId) {
   const animationTitle = animations.length ? animations[0].title : '';
   const animationUrl = animations.length ? animations[0].url : '';
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/lms/stations/${stationId}`, {
+    const res = await request(`/api/v1/admin/lms/stations/${stationId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify({ id: stationId, title, description, releaseDate, stayDuration, iconUrl, animationTitle, animationUrl, animations })
     });
     if (res.ok) {
-      alert('مشخصات و محتوای کلی منزلگاه با موفقیت ذخیره شد');
+      showToast('مشخصات و محتوای کلی منزلگاه با موفقیت ذخیره شد', 'success');
       await window.fetchLiveLmsStations();
       window.openStationContentManagerModal(stationId);
     } else {
       const data = await res.json();
-      alert('خطا در ذخیره مشخصات: ' + (data.error || 'خطای ناشناخته'));
+      showToast('خطا در ذخیره مشخصات: ' + (data.error || 'خطای ناشناخته'), 'error');
     }
   } catch (err) {
     console.error('Save Station Basic Info Error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 
@@ -1072,19 +1065,18 @@ window.moveClipInSession = async function(sessionId, fromIdx, toIdx) {
   clips.splice(toIdx, 0, moved);
 
   const clipIds = clips.map(c => c.id);
-  const token = NopaAuth.getToken();
 
   try {
-    const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}/clips/reorder`, {
+    const res = await request(`/api/v1/admin/lms/sessions/${sessionId}/clips/reorder`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify({ clipIds })
     });
     if (res.ok) {
       await window.fetchLiveLmsStations();
       if (foundStation) window.openStationContentManagerModal(foundStation.id);
     } else {
-      alert('خطا در تغییر ترتیب پارت‌ها');
+      showToast('خطا در تغییر ترتیب پارت‌ها', 'error');
     }
   } catch (err) {
     console.error('Reorder clips error:', err);
@@ -1095,11 +1087,10 @@ window.addNewClipToSession = async function(sessionId) {
   const title = prompt('عنوان پارت جدید را وارد نمایید:', 'پارت جدید');
   if (!title) return;
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/lms/clips', {
+    const res = await request('/api/v1/admin/lms/clips', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify({ sessionId, title, videoUrl: '', clipOrder: 99 })
     });
     if (res.ok) {
@@ -1109,7 +1100,7 @@ window.addNewClipToSession = async function(sessionId) {
       );
       if (st) window.openStationContentManagerModal(st.id);
     } else {
-      alert('خطا در ایجاد پارت جدید');
+      showToast('خطا در ایجاد پارت جدید', 'error');
     }
   } catch (err) {
     console.error('Add clip error:', err);
@@ -1117,12 +1108,11 @@ window.addNewClipToSession = async function(sessionId) {
 };
 
 window.deleteClipRecord = async function(clipId, sessionId) {
-  if (!confirm('آیا از حذف این پارت ویدیو و تمام آزمونک‌های متصل به آن اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از حذف این پارت ویدیو و تمام آزمونک‌های متصل به آن اطمینان دارید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/lms/clips/${clipId}`, {
+    const res = await request(`/api/v1/admin/lms/clips/${clipId}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      headers: { 'Content-Type': 'application/json'  }
     });
     if (res.ok) {
       await window.fetchLiveLmsStations();
@@ -1131,7 +1121,7 @@ window.deleteClipRecord = async function(clipId, sessionId) {
       );
       if (st) window.openStationContentManagerModal(st.id);
     } else {
-      alert('خطا در حذف پارت');
+      showToast('خطا در حذف پارت', 'error');
     }
   } catch (err) {
     console.error('Delete clip error:', err);
@@ -1223,61 +1213,59 @@ window.saveClipVideoUrl = async function(sessionId, clipId) {
     unlockTime: unlockTime
   };
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/lms/clips', {
+    const res = await request('/api/v1/admin/lms/clips', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      alert('ترتیب، عنوان، زمان‌بندی باز شدن و مشخصات پارت با موفقیت ذخیره شد');
+      showToast('ترتیب، عنوان، زمان‌بندی باز شدن و مشخصات پارت با موفقیت ذخیره شد', 'success');
       await window.fetchLiveLmsStations();
       const st = window.lmsStationsMasterList.find(s => 
         (s.categories || []).some(c => (c.sessions || []).some(sess => sess.id === sessionId))
       );
       if (st) window.openStationContentManagerModal(st.id);
     } else {
-      alert('خطا در ذخیره‌سازی مشخصات پارت');
+      showToast('خطا در ذخیره‌سازی مشخصات پارت', 'error');
     }
   } catch (err) {
     console.error('Save clip error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 
 window.saveCategoryTitle = async function(categoryId, stationId) {
   const title = document.getElementById(`cat-title-${categoryId}`)?.value;
   if (!title) {
-    alert('لطفاً عنوان دسته کلاس را وارد نمایید.');
+    showToast('لطفاً عنوان دسته کلاس را وارد نمایید.', 'error');
     return;
   }
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/lms/classes', {
+    const res = await request('/api/v1/admin/lms/classes', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ id: categoryId, title })
     });
 
     if (res.ok) {
-      alert('عنوان دسته کلاس با موفقیت ذخیره شد.');
+      showToast('عنوان دسته کلاس با موفقیت ذخیره شد.', 'success');
       await window.fetchLiveLmsStations();
     } else {
       const d = await res.json();
-      alert('خطا در ذخیره‌سازی: ' + (d.error || 'خطای سرور'));
+      showToast('خطا در ذخیره‌سازی: ' + (d.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Save category title error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
-window.cancelLmsContentManagerModal = function() {
+window.cancelLmsContentManagerModal = async function() {
   const modal = document.getElementById('lms-content-manager-modal');
   if (!modal) return;
 
@@ -1292,7 +1280,7 @@ window.cancelLmsContentManagerModal = function() {
   );
 
   if (isDirty) {
-    if (!confirm('تغییراتی در مشخصات منزلگاه یا پارت‌ها داده‌اید که هنوز ثبت نهایی نشده‌اند. آیا از انصراف و بستن پنجره اطمینان دارید؟')) {
+    if (!(await NopaConfirm('تغییراتی در مشخصات منزلگاه یا پارت‌ها داده‌اید که هنوز ثبت نهایی نشده‌اند. آیا از انصراف و بستن پنجره اطمینان دارید؟'))) {
       return;
     }
   }
@@ -1303,7 +1291,7 @@ window.cancelLmsContentManagerModal = function() {
 window.openFinalLmsSaveConfirmationModal = function() {
   const stationId = window.currentActiveContentStationId;
   if (!stationId) {
-    alert('شناسه منزلگاه یافت نشد.');
+    showToast('شناسه منزلگاه یافت نشد.', 'error');
     return;
   }
 
@@ -1410,12 +1398,11 @@ window.executeFinalLmsSave = async function() {
       clips: clipsPayload
     };
 
-    const token = NopaAuth.getToken();
-    const res = await fetch(`/api/v1/admin/lms/stations/${stationId}/batch-content`, {
+    const res = await request(`/api/v1/admin/lms/stations/${stationId}/batch-content`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify(payload)
     });
@@ -1424,15 +1411,15 @@ window.executeFinalLmsSave = async function() {
       document.getElementById('lms-final-confirm-modal').style.display = 'none';
       document.getElementById('lms-content-manager-modal').style.display = 'none';
 
-      alert('کلیه تغییرات منزلگاه، دسته‌های کلاس و پارت‌های ویدیو با موفقیت ثبت نهایی و در پایگاه‌داده ذخیره شد.');
+      showToast('کلیه تغییرات منزلگاه، دسته‌های کلاس و پارت‌های ویدیو با موفقیت ثبت نهایی و در پایگاه‌داده ذخیره شد.', 'success');
       await window.fetchLiveLmsStations();
     } else {
       const d = await res.json();
-      alert('خطا در ثبت نهایی: ' + (d.error || 'خطای سرور'));
+      showToast('خطا در ثبت نهایی: ' + (d.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Final LMS save error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   } finally {
     if (confirmBtn) {
       confirmBtn.disabled = false;
@@ -1489,11 +1476,8 @@ window.editQuizRecord = async function(quizId) {
 
   // 2. Fallback fetch from API if not found
   if (!foundQuiz) {
-    const token = NopaAuth.getToken();
     try {
-      const res = await fetch(`/api/v1/admin/lms/quizzes`, {
-        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-      });
+      const res = await request(`/api/v1/admin/lms/quizzes`);
       const allQ = await res.json();
       if (Array.isArray(allQ)) {
         foundQuiz = allQ.find(q => q.id === quizId);
@@ -1502,7 +1486,7 @@ window.editQuizRecord = async function(quizId) {
   }
 
   if (!foundQuiz) {
-    alert('آزمونک مورد نظر یافت نشد.');
+    showToast('آزمونک مورد نظر یافت نشد.', 'error');
     return;
   }
 
@@ -1582,15 +1566,14 @@ window.saveQuizFromModal = async function(e) {
     questionsJson
   };
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/lms/quizzes', {
+    const res = await request('/api/v1/admin/lms/quizzes', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify(payload)
     });
     if (res.ok) {
-      alert('آزمونک (متن سوال، گزینه‌ها، پاسخ صحیح و پاداش زریک) با موفقیت در دیتابیس ذخیره شد');
+      showToast('آزمونک (متن سوال، گزینه‌ها، پاسخ صحیح و پاداش زریک) با موفقیت در دیتابیس ذخیره شد', 'success');
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
       if (sessionId) {
@@ -1601,24 +1584,23 @@ window.saveQuizFromModal = async function(e) {
       }
     } else {
       const data = await res.json();
-      alert('خطا در ذخیره‌سازی آزمونک: ' + (data.error || 'خطای ناشناخته'));
+      showToast('خطا در ذخیره‌سازی آزمونک: ' + (data.error || 'خطای ناشناخته'), 'error');
     }
   } catch (err) {
     console.error('Save quiz error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 
 window.deleteQuizRecord = async function(quizId) {
-  if (!confirm('آیا از حذف این آزمونک اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از حذف این آزمونک اطمینان دارید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/lms/quizzes/${quizId}`, {
+    const res = await request(`/api/v1/admin/lms/quizzes/${quizId}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      headers: { 'Content-Type': 'application/json'  }
     });
     if (res.ok) {
-      alert('آزمونک با موفقیت حذف شد');
+      showToast('آزمونک با موفقیت حذف شد', 'success');
       await window.fetchLiveLmsStations();
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
     }
@@ -1631,39 +1613,38 @@ window.applyBatchZarikToCategory = async function(categoryId, stationId) {
   const inputEl = document.getElementById(`batch-zarik-cat-${categoryId}`);
   const amount = parseInt(inputEl ? inputEl.value : 15);
   if (isNaN(amount) || amount < 0) {
-    alert('لطفاً یک عدد معتبر برای پاداش زریک وارد نمایید.');
+    showToast('لطفاً یک عدد معتبر برای پاداش زریک وارد نمایید.', 'error');
     return;
   }
 
-  if (!confirm(`آیا مطمئنید که می‌خواهید پاداش ${amount} زریک را برای تمام پارت‌ها و آزمونک‌های این دسته اعمال کنید؟`)) {
+  if (!(await NopaConfirm(`آیا مطمئنید که می‌خواهید پاداش ${amount} زریک را برای تمام پارت‌ها و آزمونک‌های این دسته اعمال کنید؟`))) {
     return;
   }
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-zarik`, {
+    const res = await request(`/api/v1/admin/lms/categories/${categoryId}/batch-zarik`, {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ rewardZarik: amount })
     });
 
     if (res.ok) {
       const data = await res.json();
-      alert(data.message || 'پاداش زریک با موفقیت روی تمام پارت‌ها اعمال شد');
+      showToast(data.message || 'پاداش زریک با موفقیت روی تمام پارت‌ها اعمال شد', 'success');
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);
       }
     } else {
       const data = await res.json();
-      alert('خطا در اعمال پاداش گروهی زریک: ' + (data.error || 'خطای ناشناخته'));
+      showToast('خطا در اعمال پاداش گروهی زریک: ' + (data.error || 'خطای ناشناخته'), 'error');
     }
   } catch (err) {
     console.error('Batch zarik error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 
@@ -1674,34 +1655,33 @@ window.saveSessionDetails = async function(sessionId, stationId) {
   const sessionTime = document.getElementById(`sess-time-${sessionId}`)?.value?.trim() || '';
 
   if (!title) {
-    alert('لطفاً عنوان جلسه را وارد نمایید');
+    showToast('لطفاً عنوان جلسه را وارد نمایید', 'error');
     return;
   }
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}`, {
+    const res = await request(`/api/v1/admin/lms/sessions/${sessionId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ id: sessionId, title, instructor, sessionDate, sessionTime })
     });
 
     if (res.ok) {
-      alert(`مشخصات، نام مدرس و تاریخ جلسه (${sessionDate || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد و در تقویم اپلیکیشن به‌روزرسانی گردید.`);
+      showToast(`مشخصات، نام مدرس و تاریخ جلسه (${sessionDate || 'تعیین‌نشده'}) با موفقیت در پایگاه‌داده ذخیره شد و در تقویم اپلیکیشن به‌روزرسانی گردید.`, 'success');
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);
       }
     } else {
       const data = await res.json();
-      alert('خطا در ذخیره مشخصات جلسه: ' + (data.error || 'خطای سرور'));
+      showToast('خطا در ذخیره مشخصات جلسه: ' + (data.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Save session error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
@@ -1710,51 +1690,49 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
   const instructor = inputEl ? inputEl.value.trim() : '';
 
   if (!instructor) {
-    alert('لطفاً نام استاد یا مدرس جدید را وارد نمایید.');
+    showToast('لطفاً نام استاد یا مدرس جدید را وارد نمایید.', 'error');
     return;
   }
 
-  if (!confirm(`آیا از تغییر نام استاد تمام جلسات این دسته‌بندی به «${instructor}» اطمینان دارید؟`)) {
+  if (!(await NopaConfirm(`آیا از تغییر نام استاد تمام جلسات این دسته‌بندی به «${instructor}» اطمینان دارید؟`))) {
     return;
   }
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/lms/categories/${categoryId}/batch-instructor`, {
+    const res = await request(`/api/v1/admin/lms/categories/${categoryId}/batch-instructor`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ instructor })
     });
 
     if (res.ok) {
       const data = await res.json();
-      alert(`${data.message || 'نام مدرس برای تمامی جلسات با موفقیت به‌روزرسانی شد.'}`);
+      showToast(`${data.message || 'نام مدرس برای تمامی جلسات با موفقیت به‌روزرسانی شد.'}`, 'success');
       await window.fetchLiveLmsStations();
       if (stationId) {
         window.openStationContentManagerModal(stationId);
       }
     } else {
       const data = await res.json();
-      alert('خطا در تخصیص یکجای استاد: ' + (data.error || 'خطای سرور'));
+      showToast('خطا در تخصیص یکجای استاد: ' + (data.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Batch instructor error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 // Note: Station creator and edit modal functions are defined in the dynamic section below.
 
 
 window.deleteStationRecord = async function(id) {
-  if (!confirm('آیا از حذف این منزلگاه اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از حذف این منزلگاه اطمینان دارید؟'))) return;
   try {
-    await fetch(`/api/v1/admin/lms/stations/${id}`, {
+    await request(`/api/v1/admin/lms/stations/${id}`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      headers: { 'Content-Type': 'application/json'  }
     });
   } catch (err) {
     console.error(err);
@@ -1771,7 +1749,7 @@ window.openReorderStationsModal = function() {
   if (!modal) return;
 
   if (!window.lmsStationsMasterList || window.lmsStationsMasterList.length === 0) {
-    alert('منزلگاهی برای مرتب‌سازی یافت نشد.');
+    showToast('منزلگاهی برای مرتب‌سازی یافت نشد.', 'error');
     return;
   }
 
@@ -1885,25 +1863,24 @@ window.saveStationsReorder = async function() {
   if (!window.lmsReorderList || window.lmsReorderList.length === 0) return;
 
   const orderedIds = window.lmsReorderList.map(s => s.id);
-  const token = NopaAuth.getToken();
 
   try {
-    const res = await fetch('/api/v1/admin/lms/stations/reorder', {
+    const res = await request('/api/v1/admin/lms/stations/reorder', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify({ stationIds: orderedIds })
     });
     if (res.ok) {
-      alert('ترتیب منزلگاه‌ها با موفقیت ذخیره و یکتا شد (شماره‌گذاری ۱ تا ' + orderedIds.length + ')');
+      showToast('ترتیب منزلگاه‌ها با موفقیت ذخیره و یکتا شد (شماره‌گذاری ۱ تا ' + orderedIds.length + ')', 'success');
       document.getElementById('lms-station-reorder-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
     } else {
       const data = await res.json();
-      alert('خطا در ذخیره ترتیب: ' + (data.error || 'خطای ناشناخته'));
+      showToast('خطا در ذخیره ترتیب: ' + (data.error || 'خطای ناشناخته'), 'error');
     }
   } catch (err) {
     console.error('Reorder error:', err);
-    alert('ارتباط با سرور برقرار نشد');
+    showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
 
@@ -1911,7 +1888,7 @@ window.exportLmsToExcel = function() {
 
   const list = window.lmsStationsMasterList || [];
   if (list.length === 0) {
-    alert('اطلاعات منزلگاه‌ها هنوز بارگذاری نشده است. لطفاً چند لحظه صبر کنید.');
+    showToast('اطلاعات منزلگاه‌ها هنوز بارگذاری نشده است. لطفاً چند لحظه صبر کنید.', 'error');
     return;
   }
 
@@ -2125,10 +2102,10 @@ window.addGalleryItemCard = function(containerId, data = null) {
     </div>`);
 };
 
-window.removeGalleryItemCard = function(blockId) {
+window.removeGalleryItemCard = async function(blockId) {
   const card = document.getElementById(blockId);
   if (!card) return;
-  if (!confirm('این مورد از نگارستان حذف شود؟')) return;
+  if (!(await NopaConfirm('این مورد از نگارستان حذف شود؟'))) return;
   const container = card.parentElement;
   card.remove();
   container.querySelectorAll('.modal-animation-card').forEach((c, i) => {
@@ -2268,11 +2245,11 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
   window.reindexModalCategoryCards();
 };
 
-window.removeCategoryBlockFromCreatorModal = function(blockId) {
+window.removeCategoryBlockFromCreatorModal = async function(blockId) {
   const card = document.getElementById(blockId);
   if (!card) return;
 
-  if (confirm('آیا از حذف این دسته کلاس اطمینان دارید؟ جلسات مربوط به آن نیز حذف خواهند شد.')) {
+  if ((await NopaConfirm('آیا از حذف این دسته کلاس اطمینان دارید؟ جلسات مربوط به آن نیز حذف خواهند شد.'))) {
     card.remove();
     window.reindexModalCategoryCards();
   }
@@ -2426,28 +2403,27 @@ window.saveCompleteStation = async function(e) {
     categories
   };
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/stations', {
+    const res = await request('/api/v1/admin/stations', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify(payload)
     });
 
     if (res.ok) {
-      alert('مشخصات منزلگاه، نگارستان و دسته‌ها با موفقیت ذخیره شد.');
+      showToast('مشخصات منزلگاه، نگارستان و دسته‌ها با موفقیت ذخیره شد.', 'success');
       document.getElementById('lms-station-creator-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
     } else {
       const d = await res.json();
-      alert('خطا در ذخیره‌سازی: ' + (d.error || 'خطای سرور'));
+      showToast('خطا در ذخیره‌سازی: ' + (d.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Save station error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
@@ -2457,17 +2433,13 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
   const formData = new FormData();
   formData.append('file', file);
   
-  const token = NopaAuth.getToken();
   const targetEl = document.getElementById(targetInputId);
   const origPlaceholder = targetEl ? targetEl.placeholder : '';
   if (targetEl) targetEl.placeholder = 'در حال آپلود فایل...';
 
   try {
-    const res = await fetch('/api/v1/media/upload', {
+    const res = await request('/api/v1/media/upload', {
       method: 'POST',
-      headers: {
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-      },
       body: formData
     });
     const data = await res.json();
@@ -2476,13 +2448,13 @@ window.handleDirectFileUpload = async function(inputElement, targetInputId) {
       if (targetEl) {
         targetEl.value = fileUrl;
       }
-      alert('فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.');
+      showToast('فایل با موفقیت آپلود شد و لینک در کادر قرار گرفت.', 'success');
     } else {
-      alert('خطا در آپلود: ' + (data.error || 'خطای سرور'));
+      showToast('خطا در آپلود: ' + (data.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Direct Upload Error:', err);
-    alert('خطا در ارتباط با سرور برای آپلود فایل');
+    showToast('خطا در ارتباط با سرور برای آپلود فایل', 'error');
   } finally {
     if (targetEl) targetEl.placeholder = origPlaceholder;
   }
@@ -2498,7 +2470,7 @@ window.openStationAccessModal = function(stationId) {
   // Find station by id, orderIndex or identifier
   const station = window.lmsStationsMasterList.find(s => s.id === stationId || String(s.orderIndex) === String(stationId) || ('MZ' + s.orderIndex) === String(stationId));
   if (!station) {
-    alert('منزلگاه مورد نظر یافت نشد.');
+    showToast('منزلگاه مورد نظر یافت نشد.', 'error');
     return;
   }
 
@@ -2736,12 +2708,11 @@ window.saveStationAccessSettings = async function() {
     const condCheckbox = document.getElementById('sam-condition-enable');
     const requirePreviousComplete = Boolean(condCheckbox && condCheckbox.checked && !condCheckbox.disabled);
 
-    const token = NopaAuth.getToken();
-    const res = await fetch(`/api/v1/lms/stations/${stationId}/access`, {
+    const res = await request(`/api/v1/lms/stations/${stationId}/access`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({
         isLocked,
@@ -2753,18 +2724,18 @@ window.saveStationAccessSettings = async function() {
     });
 
     if (res.ok) {
-      alert('تنظیمات وضعیت و دسترسی منزلگاه با موفقیت ذخیره شد.');
+      showToast('تنظیمات وضعیت و دسترسی منزلگاه با موفقیت ذخیره شد.', 'success');
       window.closeStationAccessModal();
       if (typeof window.fetchLiveLmsStations === 'function') {
         await window.fetchLiveLmsStations();
       }
     } else {
       const err = await res.json();
-      alert('خطا در ذخیره تنظیمات: ' + (err.error || err.message || 'خطای سرور'));
+      showToast('خطا در ذخیره تنظیمات: ' + (err.error || err.message || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('saveStationAccessSettings error:', err);
-    alert('خطا در برقراری ارتباط با سرور: ' + err.message);
+    showToast('خطا در برقراری ارتباط با سرور: ' + err.message, 'error');
   } finally {
     if (btn) {
       btn.disabled = false;

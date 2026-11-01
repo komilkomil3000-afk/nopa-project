@@ -2164,3 +2164,91 @@ select option {
   color: var(--text);
   background: rgb(var(--fg-rgb) / 0.06);
 }
+
+
+/* ==================== Core UI (Phase 3: js/ui/*) ==================== */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Confirm dialog (js/ui/confirm.js) */
+.nopa-confirm-box {
+  max-width: 440px;
+  width: 92%;
+  padding: 22px 24px;
+}
+.nopa-confirm-box .modal-header {
+  margin-bottom: 12px;
+}
+.nopa-confirm-box .modal-header h3 {
+  font-size: var(--text-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nopa-confirm-box .fa-triangle-exclamation { color: var(--danger-text); }
+.nopa-confirm-box .fa-circle-question { color: var(--primary-text); }
+.nopa-confirm-msg {
+  color: var(--text-soft);
+  font-size: var(--text-base);
+  line-height: 1.9;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+.nopa-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.nopa-confirm-actions button {
+  min-width: 96px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+}
+.nopa-confirm-actions .btn-primary {
+  width: auto;
+  margin: 0;
+}
+.nopa-confirm-ok.is-danger {
+  background: var(--danger);
+  box-shadow: 0 4px 14px rgb(var(--danger-rgb) / 0.35);
+}
+.nopa-confirm-ok.is-danger:hover {
+  background: var(--danger-strong);
+}
+
+/* Table states (js/ui/table.js) */
+.nopa-table-state td {
+  text-align: center;
+  padding: 32px 16px !important;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.nopa-table-state i {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-faint);
+}
+.nopa-table-state.is-loading i {
+  display: inline-block;
+  margin: 0 0 0 6px;
+  font-size: 14px;
+  color: var(--primary-text);
+}
+.nopa-table-state.is-error i { color: var(--danger-text); }
+
+.nopa-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.nopa-pagination-buttons {
+  display: flex;
+  gap: 8px;
+}

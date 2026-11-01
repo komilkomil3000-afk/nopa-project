@@ -2449,3 +2449,30 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Smoke test: theme toggle flips + persists + charts recolour; all Phase 1 checks still pass (17 tabs, routes, 0 duplicate IDs, 0 API calls before login).
   - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed
+
+### [2026-11-01 22:05] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 3 (Core JS Layer)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/core/api.js` (Created)
+  - `admin_panel/public/js/core/router.js` (Created)
+  - `admin_panel/public/js/ui/modal.js` (Created)
+  - `admin_panel/public/js/ui/confirm.js` (Created)
+  - `admin_panel/public/js/ui/table.js` (Created)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/support.js` (Modified)
+  - `admin_panel/public/index.html` (Modified — load new modules)
+  - `admin_panel/public/style.css` (Modified — confirm, table states, pagination, scroll lock)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v6)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - api.js: single `request()` (bearer token, 401/403 handling, automatic JSON Content-Type for string bodies — fixes saves whose body express.json() ignored) and `NopaApi.json()`; 77 raw fetch calls migrated, 49 now-unused token locals removed.
+  - router.js: one TABS registry (hash aliases, title/desc, sub-admin section, loader, nav group/label/icon) replaces HASH_TAB_MAP, TAB_REVERSE_HASH_MAP, titlesMap, TAB_SECTION and the switchTab if/else chain; back/forward no longer double-loads; duplicate and dead per-tab click loaders removed.
+  - modal.js: stack, ESC, focus trap/restore, scroll lock and safe backdrop close for every .modal-overlay (observes existing open/close code). confirm.js: promise-based NopaConfirm replaces all 29 confirm() calls. table.js: loading/empty/error states + pagination, adopted in users, tickets, audit logs and role matrix.
+  - 259 alert() calls replaced by typed showToast().
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 13 Phase 3 behaviour checks pass (confirm ESC/OK, modal ESC/focus/scroll lock/backdrop, request headers, back navigation, sub-admin menu filtering, empty state); Phase 1–2 smoke test still green (17 tabs, 0 page errors, 0 duplicate IDs, 0 API calls before login); confirm dialog screenshots in dark and light.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed

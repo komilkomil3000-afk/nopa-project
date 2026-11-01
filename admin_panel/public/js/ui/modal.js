@@ -1,0 +1,116 @@
+// Modal manager for every .modal-overlay in the panel. Loaded before app.js.
+// Existing code opens modals by setting style.display; this watches those changes, so all modals get:
+//   - a stack (nested modals close top-first)
+//   - ESC closes the top modal (through its own close button, so cleanup handlers still run)
+//   - click on the backdrop closes it, unless it contains form fields (no accidental data loss)
+//     or has data-modal-static
+//   - focus moves into the modal, Tab stays inside it, focus returns to the opener on close
+//   - the page behind does not scroll
+// New code can use NopaModal.open(idOrEl) / NopaModal.close(idOrEl).
+(function () {
+  const stack = [];
+  const opener = new WeakMap();
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const EXCLUDED = new Set(['login-modal']); // the login screen is not dismissible
+
+  const resolve = el => (typeof el === 'string' ? document.getElementById(el) : el);
+  const isOpen = el => el.isConnected && getComputedStyle(el).display !== 'none' && !el.classList.contains('hidden');
+  const visibleFocusables = el => Array.from(el.querySelectorAll(FOCUSABLE)).filter(n => n.offsetParent !== null);
+
+  function onOpened(el) {
+    if (stack.includes(el)) return;
+    opener.set(el, document.activeElement);
+    stack.push(el);
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    document.body.classList.add('modal-open');
+    // Focus the first field (or the dialog itself) once it is laid out
+    requestAnimationFrame(() => {
+      if (!isOpen(el) || el.contains(document.activeElement)) return;
+      const first = visibleFocusables(el).find(n => !n.classList.contains('modal-close')) || visibleFocusables(el)[0];
+      if (first) first.focus({ preventScroll: true });
+    });
+  }
+
+  function onClosed(el) {
+    const i = stack.indexOf(el);
+    if (i === -1) return;
+    stack.splice(i, 1);
+    if (!stack.length) document.body.classList.remove('modal-open');
+    const back = opener.get(el);
+    if (back && back.isConnected && typeof back.focus === 'function') back.focus({ preventScroll: true });
+  }
+
+  function sync(el) {
+    if (EXCLUDED.has(el.id)) return;
+    if (isOpen(el)) onOpened(el); else onClosed(el);
+  }
+
+  function close(el) {
+    el = resolve(el);
+    if (!el) return;
+    // Prefer the modal's own close control: it may reset state (e.g. closeCaravanDrawer)
+    const btn = el.querySelector('.modal-close, [data-modal-close]');
+    if (btn && btn.offsetParent !== null) btn.click();
+    if (isOpen(el)) el.style.display = 'none';
+  }
+
+  function open(el) {
+    el = resolve(el);
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.style.display = 'flex';
+  }
+
+  const top = () => {
+    for (let i = stack.length - 1; i >= 0; i--) if (isOpen(stack[i])) return stack[i];
+    return null;
+  };
+
+  document.addEventListener('keydown', e => {
+    const el = top();
+    if (!el) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close(el);
+    } else if (e.key === 'Tab') {
+      const items = visibleFocusables(el);
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (!el.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
+  // Backdrop click (mousedown + click both on the overlay, so a text selection drag never closes it)
+  let downOnBackdrop = null;
+  document.addEventListener('mousedown', e => { downOnBackdrop = e.target.classList && e.target.classList.contains('modal-overlay') ? e.target : null; });
+  document.addEventListener('click', e => {
+    const el = e.target;
+    if (el !== downOnBackdrop || el !== top()) return;
+    if (el.hasAttribute('data-modal-static') || el.querySelector('input:not([type="hidden"]), textarea, select')) return;
+    close(el);
+  });
+
+  function watch() {
+    const observer = new MutationObserver(records => {
+      const touched = new Set();
+      records.forEach(r => {
+        if (r.type === 'attributes' && r.target.classList && r.target.classList.contains('modal-overlay')) touched.add(r.target);
+        if (r.type === 'childList') {
+          r.addedNodes.forEach(n => { if (n.nodeType === 1 && n.classList.contains('modal-overlay')) touched.add(n); });
+          r.removedNodes.forEach(n => { if (n.nodeType === 1 && stack.includes(n)) onClosed(n); });
+        }
+      });
+      touched.forEach(sync);
+    });
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
+    document.querySelectorAll('.modal-overlay').forEach(sync);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+
+  window.NopaModal = { open, close, top, stack };
+})();

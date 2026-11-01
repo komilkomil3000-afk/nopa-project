@@ -201,7 +201,7 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'خطا در ثبت پاسخ');
+        showToast(data.error || 'خطا در ثبت پاسخ', 'error');
         return;
       }
       const id = currentTicketId;
@@ -209,7 +209,7 @@
       openTicket(id);
     } catch (e) {
       console.error(e);
-      alert('خطا در ارسال پاسخ');
+      showToast('خطا در ارسال پاسخ', 'error');
     }
   }
 
@@ -218,7 +218,7 @@
     try {
       const res = await request(`/api/v1/admin/tickets/${currentTicketId}/resolve`, { method: 'POST' });
       if (!res.ok) {
-        alert('خطا در تغییر وضعیت');
+        showToast('خطا در تغییر وضعیت', 'error');
         return;
       }
       closeModal();

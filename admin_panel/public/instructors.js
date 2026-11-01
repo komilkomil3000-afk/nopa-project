@@ -5,12 +5,7 @@ window.globalInstructorsList = [];
 // Fetch instructors list from backend
 window.fetchInstructorsList = async function() {
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch('/api/v1/instructors', {
-      headers: {
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
-      }
-    });
+    const res = await request('/api/v1/instructors');
 
     if (res.ok) {
       const data = await res.json();
@@ -202,7 +197,7 @@ window.saveInstructorForm = async function(event) {
   const description = document.getElementById('inst-desc')?.value?.trim();
 
   if (!name) {
-    alert('نام استاد الزامی است.');
+    showToast('نام استاد الزامی است.', 'error');
     return;
   }
 
@@ -218,23 +213,22 @@ window.saveInstructorForm = async function(event) {
     description
   };
 
-  const token = NopaAuth.getToken();
 
   try {
     const url = id ? `/api/v1/admin/instructors/${id}` : '/api/v1/admin/instructors';
     const method = id ? 'PUT' : 'POST';
 
-    const res = await fetch(url, {
+    const res = await request(url, {
       method,
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify(payload)
     });
 
     if (res.ok) {
-      alert('اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.');
+      showToast('اطلاعات استاد با موفقیت در بانک اساتید ذخیره شد.', 'success');
       document.getElementById('instructor-form-modal').style.display = 'none';
       await window.fetchInstructorsList();
 
@@ -245,11 +239,11 @@ window.saveInstructorForm = async function(event) {
       }
     } else {
       const errData = await res.json();
-      alert('خطا در ذخیره استاد: ' + (errData.error || 'خطای سرور'));
+      showToast('خطا در ذخیره استاد: ' + (errData.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Save instructor error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
@@ -258,29 +252,28 @@ window.deleteInstructorRecord = async function(id) {
   const inst = window.globalInstructorsList.find(i => i.id === id);
   const instName = inst ? inst.name : 'این استاد';
 
-  if (!confirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`)) return;
+  if (!(await NopaConfirm(`آیا از حذف «${instName}» از بانک اساتید اطمینان دارید؟`))) return;
 
-  const token = NopaAuth.getToken();
 
   try {
-    const res = await fetch(`/api/v1/admin/instructors/${id}`, {
+    const res = await request(`/api/v1/admin/instructors/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        'Content-Type': 'application/json'
+        
       }
     });
 
     if (res.ok) {
-      alert('استاد با موفقیت حذف شد.');
+      showToast('استاد با موفقیت حذف شد.', 'success');
       await window.fetchInstructorsList();
     } else {
       const d = await res.json();
-      alert('خطا در حذف استاد: ' + (d.error || 'خطای سرور'));
+      showToast('خطا در حذف استاد: ' + (d.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Delete instructor error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 

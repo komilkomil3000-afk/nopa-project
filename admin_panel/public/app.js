@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
       const password = passInput ? passInput.value.trim() : '';
       if (!phoneNumber || !password) {
-        alert('شماره همراه و گذرواژه را وارد کنید');
+        showToast('شماره همراه و گذرواژه را وارد کنید', 'error');
         return;
       }
 
@@ -60,11 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
           
           showDashboard();
         } else {
-          alert(data.error || 'اطلاعات ورود اشتباه است');
+          showToast(data.error || 'اطلاعات ورود اشتباه است', 'error');
         }
       } catch (err) {
         console.error('Login error:', err);
-        alert('خطا در اتصال به سرور بکاند');
+        showToast('خطا در اتصال به سرور بکاند', 'error');
       }
     });
   }
@@ -144,11 +144,11 @@ window.moderateMentorModal = function(id) {
     body: JSON.stringify({ action, suspendedUntil })
   }).then(async res => {
     if (res.ok) {
-      alert('عملیات با موفقیت انجام شد');
+      showToast('عملیات با موفقیت انجام شد', 'success');
       loadMentorsTab();
     } else {
       const data = await res.json();
-      alert(data.error);
+      showToast(data.error);
     }
   });
 };  
@@ -204,13 +204,13 @@ window.promptLevelOverride = async function(userId, currentLevel) {
     });
     const data = await res.json();
     if (res.ok) {
-      alert('سطح با موفقیت تغییر یافت');
+      showToast('سطح با موفقیت تغییر یافت', 'success');
       loadLevelsAndCertificatesTab();
     } else {
-      alert(data.error || 'خطا در تغییر سطح');
+      showToast(data.error || 'خطا در تغییر سطح', 'error');
     }
   } catch (err) {
-    alert('خطای شبکه');
+    showToast('خطای شبکه', 'error');
   }
 };
 
@@ -491,7 +491,7 @@ async function handleBlacklistSubmit(e) {
       body: JSON.stringify({ type, value, reason })
     });
     const data = await res.json();
-    alert(res.ok ? data.message : data.error);
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) {
       document.getElementById('bl-value').value = '';
       document.getElementById('bl-reason').value = '';
@@ -501,7 +501,7 @@ async function handleBlacklistSubmit(e) {
 
 async function handleRevokeSessions() {
   const targetUserId = document.getElementById('revoke-target-user').value;
-  if (!confirm('آیا از ابطال نشست‌ها اطمینان دارید؟')) return;
+  if (!(await NopaConfirm('آیا از ابطال نشست‌ها اطمینان دارید؟'))) return;
   try {
     const res = await request('/api/v1/admin/security/revoke', {
       method: 'POST',
@@ -509,7 +509,7 @@ async function handleRevokeSessions() {
       body: JSON.stringify({ targetUserId })
     });
     const data = await res.json();
-    alert(res.ok ? data.message : data.error);
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) document.getElementById('revoke-target-user').value = '';
   } catch (err) { console.error(err); }
 }
@@ -527,7 +527,7 @@ async function handlePromoZarik(e) {
       body: JSON.stringify({ targetUserId, amount, reason })
     });
     const data = await res.json();
-    alert(res.ok ? data.message : data.error);
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) {
       e.target.reset();
       loadLedger();
@@ -551,7 +551,7 @@ async function handleNotificationBroadcast(e) {
       body: JSON.stringify({ targetAudience, channel, titleTpl, messageTpl, caravanId })
     });
     const data = await res.json();
-    alert(res.ok ? data.message : data.error);
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) e.target.reset();
   } catch (err) { console.error(err); }
 }
@@ -570,7 +570,7 @@ async function handleBulkTransfer() {
       body: JSON.stringify({ userIds, targetCaravanId })
     });
     const data = await res.json();
-    alert(res.ok ? data.message : data.error);
+    showToast(res.ok ? data.message : data.error, res.ok ? 'success' : 'error');
     if (res.ok) {
       loadCaravansTab();
       loadUsers();
@@ -586,264 +586,6 @@ function debounce(func, delay) {
     timer = setTimeout(() => func.apply(this, args), delay);
   };
 }
-
-async function request(url, options = {}) {
-  const currentToken = NopaAuth.getToken();
-  options.headers = {
-    ...options.headers,
-    'Authorization': `Bearer ${currentToken}`
-  };
-  const res = await fetch(url, options);
-  if (res.status === 403) {
-    // 403 from the permission layer (e.g. a sub admin without this section) is not an expired
-    // session: show the server's reason and keep the user signed in. Only a bad/expired token logs out.
-    let reason = '';
-    try { reason = (await res.clone().json()).error || ''; } catch (_) { /* not JSON */ }
-    if (reason && !/توکن|نشست|مسدود|IP/.test(reason)) {
-      showToast(reason, 'error');
-      return res;
-    }
-  }
-  if (res.status === 401 || res.status === 403) {
-    // Session expired or unauthorized: non-blocking toast, only if a token was actually sent
-    if (currentToken) showToast('نشست کاربری شما منقضی شده یا دسترسی ندارید', 'error');
-    NopaAuth.clear();
-    showLogin();
-    throw new Error('Unauthorized');
-  }
-  return res;
-}
-
-const HASH_TAB_MAP = {
-  '#users': 'users-tab',
-  '#users-tab': 'users-tab',
-  '#assets': 'assets-tab',
-  '#assets-tab': 'assets-tab',
-  '#rewards': 'rewards-tab',
-  '#rewards-tab': 'rewards-tab',
-  '#levels': 'levels-tab',
-  '#levels-tab': 'levels-tab',
-  
-  '#mentors': 'mentors-profile-tab',
-  '#mentors-profile': 'mentors-profile-tab',
-  '#mentors-profile-tab': 'mentors-profile-tab',
-  '#mentors-tickets': 'mentors-tickets-tab',
-  '#mentors-tickets-tab': 'mentors-tickets-tab',
-  '#mentors-docs': 'mentors-docs-tab',
-  '#mentors-docs-tab': 'mentors-docs-tab',
-  // There is no mentors league section; keep old links working by opening the mentors profile
-  '#mentors-league': 'mentors-profile-tab',
-  '#mentors-league-tab': 'mentors-profile-tab',
-  '#instructors': 'instructors-tab',
-  '#instructors-tab': 'instructors-tab',
-
-  '#caravans': 'caravans-tab',
-  '#caravans-tab': 'caravans-tab',
-  '#caravan-league': 'caravans-tab',
-  '#caravan-league-tab': 'caravans-tab',
-
-  '#lms': 'lms-tab',
-  '#lms-tab': 'lms-tab',
-  '#stations': 'lms-tab',
-  '#form-builder': 'form-builder-tab',
-  '#form-builder-tab': 'form-builder-tab',
-  '#submissions': 'submissions-tab',
-  '#submissions-tab': 'submissions-tab',
-
-  '#roles': 'roles-tab',
-  '#roles-tab': 'roles-tab',
-  '#notifications': 'notifications-tab',
-  '#notifications-tab': 'notifications-tab',
-  '#news': 'news-tab',
-  '#news-tab': 'news-tab',
-  '#jarchi': 'news-tab',
-  '#media': 'media-tab',
-  '#media-tab': 'media-tab',
-  '#chat': 'chat-tab',
-  '#chat-tab': 'chat-tab',
-  '#content': 'content-tab',
-  '#content-tab': 'content-tab',
-  '#audit': 'audit-tab',
-  '#audit-tab': 'audit-tab',
-  '#analytics': 'analytics-tab',
-  '#analytics-tab': 'analytics-tab'
-};
-
-const TAB_REVERSE_HASH_MAP = {
-  'users-tab': 'users',
-  'assets-tab': 'assets',
-  'rewards-tab': 'rewards',
-  'levels-tab': 'levels',
-  'mentors-profile-tab': 'mentors',
-  'mentors-tickets-tab': 'mentors-tickets',
-  'mentors-docs-tab': 'mentors-docs',
-  'instructors-tab': 'instructors',
-  'caravans-tab': 'caravans',
-  'caravan-league-tab': 'caravan-league',
-  'lms-tab': 'lms',
-  'form-builder-tab': 'form-builder',
-  'submissions-tab': 'submissions',
-  'news-tab': 'news',
-  'media-tab': 'media',
-  'chat-tab': 'chat',
-  'content-tab': 'content',
-  'roles-tab': 'roles',
-  'notifications-tab': 'notifications',
-  'audit-tab': 'audit',
-  'analytics-tab': 'analytics'
-};
-
-// Switch tabs with URL Hash updates
-function switchTab(tabId, updateUrl = true) {
-  if (!tabId) tabId = 'users-tab';
-
-  // Automatically dismiss user detail drawer when navigating between pages/tabs
-  if (typeof window.closeUserDetailDrawer === 'function') {
-    window.closeUserDetailDrawer();
-  }
-
-  const panels = document.querySelectorAll('.tab-panel');
-  panels.forEach(panel => {
-    panel.style.display = 'none';
-    panel.classList.remove('active-panel');
-  });
-
-  const target = document.getElementById(tabId);
-  if (target) {
-    target.style.display = 'block';
-    target.classList.add('active-panel');
-  }
-
-  // Ensure top-bar header is visible on tab navigation
-  const topBarEl = document.querySelector('.top-bar');
-  if (topBarEl) topBarEl.classList.remove('scroll-hidden');
-
-  activeTab = tabId;
-
-  // Highlight menu item and expand parent accordion
-  const menuItems = document.querySelectorAll('.menu-item');
-  menuItems.forEach(mi => {
-    if (mi.getAttribute('data-tab') === tabId) {
-      mi.classList.add('active');
-      const accordion = mi.closest('.accordion-item');
-      if (accordion) {
-        accordion.classList.add('open');
-      }
-    } else {
-      mi.classList.remove('active');
-    }
-  });
-
-  // Set top title
-  const titlesMap = {
-    'users-tab': { title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا' },
-    'levels-tab': { title: 'سطوح و گواهینامه‌ها', desc: 'دایرکتوری دستاوردهای مخاطبان و درخواست‌های فیزیکی گواهینامه' },
-    'analytics-tab': { title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران' },
-    'assets-tab': { title: 'نام دارایی‌ها', desc: 'تغییر نام زریک، کلاف، قالیچه و درفش در اپ، پنل و پیام‌ها' },
-    'rewards-tab': { title: 'کیف پول زریک', desc: 'مدیریت ترازنامه، جوایز فصلی و توزیع ثروت اقتصاد زریک' },
-    'roles-tab': { title: 'امنیت و دسترسی', desc: 'ماتریس اختصاصی نقش‌های امنیتی نپا' },
-    'caravans-tab': { title: 'کاروان‌ها و مربیان', desc: 'گزارش پیشرفت گروهی کاروان‌ها و ارزیابی مربیان' },
-    'caravan-league-tab': { title: 'لیگ و تبدیل سرمایه‌ها', desc: 'جدول رده‌بندی و تبدیل سرمایه‌های کاروان‌ها' },
-    'content-tab': { title: 'اطلاعیه‌ها و محتوا', desc: 'مدیریت و انتشار اطلاعیه‌های سراسری و پیام‌های هدفمند' },
-    'notifications-tab': { title: 'مدیریت اعلان‌ها', desc: 'ارسال و پیگیری پیامک، ایمیل و پوش‌نوتیفیکیشن' },
-    'media-tab': { title: 'مدیریت رسانه‌ها', desc: 'آپلود و دسته‌بندی فایل‌های ویدیویی و تصویری جهت استریم در اپلیکیشن' },
-    'audit-tab': { title: 'لاگ‌های سیستمی', desc: 'گزارش حسابرسی عملیات مدیران و رکوردهای امنیتی' },
-    'chat-tab': { title: 'مدیریت گفتگوها', desc: 'نظارت بر گفتگوهای کاروان‌ها و پیام‌های کاربران' },
-    'banners-tab': { title: 'مدیریت بنرها', desc: 'مدیریت بنرها و تبلیغات نمایشی اپلیکیشن' },
-    'news-tab': { title: 'اخبار جارچی', desc: 'مدیریت تابلوی اعلانات جارچی و رویدادها' },
-    'mentors-profile-tab': { title: 'پروفایل و شناسنامه راهبران', desc: 'مرکز ارزیابی راهبران و مربیان' },
-    'mentors-tickets-tab': { title: 'میزکار و تیکت‌ها', desc: 'مدیریت تیکت‌ها و درخواست‌های مربیان' },
-    'mentors-docs-tab': { title: 'تایید مدارک و گواهینامه‌ها', desc: 'صف انتظار بررسی و تایید مدارک مربیان' },
-    'mentors-league-tab': { title: 'لیگ و ارزیابی مربیان', desc: 'ارزیابی عملکرد و رتبه‌بندی راهبران' },
-    'instructors-tab': { title: 'بانک و مدیریت اساتید', desc: 'مشخصات، سوابق، مدرک، رزومه و کلاس‌های اساتید دوره' },
-    'lms-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
-    'stations-tab': { title: 'ساختار منزلگاه‌ها', desc: 'مدیریت منزلگاه‌ها، کلاس‌ها و آزمون‌ها' },
-    'form-builder-tab': { title: 'فرم‌ساز داینامیک', desc: 'طراحی و مدیریت فرم‌ها و پرسشنامه‌های اختصاصی' },
-    'submissions-tab': { title: 'بررسی و مدیریت چالش‌ها', desc: 'مشاهده چالش‌های فعال نپا، مراحل و گام‌های سوالات، و ارزیابی تکالیف دانش‌آموزان' }
-  };
-
-  if (titlesMap[tabId]) {
-    const titleEl = document.getElementById('tab-title-text');
-    if (titleEl) titleEl.textContent = titlesMap[tabId].title;
-    const descEl = document.getElementById('tab-desc-text');
-    if (descEl) descEl.textContent = titlesMap[tabId].desc;
-  }
-
-  // Update URL hash cleanly without page reload
-  if (updateUrl) {
-    const cleanHash = TAB_REVERSE_HASH_MAP[tabId] || tabId.replace('-tab', '');
-    if (window.location.hash !== '#' + cleanHash) {
-      history.pushState(null, '', '#' + cleanHash);
-    }
-  }
-
-  // Lazy-load data based on active tab
-  if (tabId === 'users-tab') {
-    if (typeof window.loadUsersData === 'function') window.loadUsersData();
-    else loadUsers();
-  } else if (tabId === 'mentors-profile-tab') {
-    if (typeof window.loadMentorsData === 'function') window.loadMentorsData();
-    else loadMentorsTab();
-  } else if (tabId === 'instructors-tab') {
-    if (typeof window.fetchInstructorsList === 'function') window.fetchInstructorsList();
-  } else if (tabId === 'caravans-tab') {
-    if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
-    else loadCaravansTab();
-  } else if (tabId === 'lms-tab' || tabId === 'stations-tab') {
-    if (typeof window.fetchLiveLmsStations === 'function') window.fetchLiveLmsStations();
-    else if (typeof window.loadLmsStationsData === 'function') window.loadLmsStationsData();
-  } else if (tabId === 'assets-tab') {
-    window.loadAssetNames();
-  } else if (tabId === 'rewards-tab') {
-    loadLedger();
-    loadZarikAnalytics();
-    if (typeof loadAssetLeaderboard === 'function') loadAssetLeaderboard();
-    if (typeof loadRewardRules === 'function') loadRewardRules();
-  } else if (tabId === 'roles-tab') {
-    loadRolePermissions();
-  } else if (tabId === 'audit-tab') {
-    loadAuditLogs();
-  } else if (tabId === 'levels-tab') {
-    loadLevelsAndCertificatesTab();
-  } else if (tabId === 'economy-hub-tab') {
-    if (typeof loadEconomyHubTab === 'function') loadEconomyHubTab();
-  } else if (tabId === 'caravan-league-tab') {
-    if (typeof loadCaravanLeague === 'function') loadCaravanLeague();
-  } else if (tabId === 'form-builder-tab') {
-    if (typeof loadDynForms === 'function') loadDynForms();
-  } else if (tabId === 'media-tab') {
-    if (typeof loadMediaAssets === 'function') loadMediaAssets();
-  } else if (tabId === 'analytics-tab') {
-    if (typeof loadAnalytics === 'function') loadAnalytics();
-  } else if (tabId === 'notifications-tab') {
-    if (typeof loadNotificationData === 'function') loadNotificationData();
-  } else if (tabId === 'banners-tab' || tabId === 'news-tab') {
-    if (typeof loadNewsAndBanners === 'function') loadNewsAndBanners();
-    else if (typeof loadNewsTab === 'function') loadNewsTab();
-  } else if (tabId === 'chat-tab') {
-    if (typeof loadChats === 'function') loadChats();
-  } else if (tabId === 'mentors-tickets-tab') {
-    if (typeof loadTickets === 'function') loadTickets();
-  } else if (tabId === 'mentors-league-tab') {
-    if (typeof loadMentorLeague === 'function') loadMentorLeague();
-  } else if (tabId === 'submissions-tab') {
-    if (typeof window.loadChallengesAndSubmissionsTab === 'function') {
-      window.loadChallengesAndSubmissionsTab();
-    } else if (typeof loadSubmissions === 'function') {
-      loadSubmissions();
-    }
-  }
-}
-
-function handleHashRouting() {
-  const currentHash = (window.location.hash || '#users').toLowerCase();
-  const targetTab = HASH_TAB_MAP[currentHash] || 'users-tab';
-  switchTab(targetTab, false);
-}
-
-// Window popstate / hashchange listeners
-window.addEventListener('hashchange', handleHashRouting);
-window.addEventListener('popstate', handleHashRouting);
 
 // Caravan Drawer
 async function openCaravanDrawer(caravanId) {
@@ -861,7 +603,7 @@ async function loadTickets() {
     const tbody = document.querySelector('#mentor-tickets-table tbody');
     if (!tbody) return;
     
-    tbody.innerHTML = tickets.map(t => `
+    NopaTable.render(tbody, tickets, t => `
       <tr>
         <td>${esc(t.student?.name || 'ناشناس')}</td>
         <td>${esc(t.category)}</td>
@@ -870,10 +612,10 @@ async function loadTickets() {
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.rating || '-'}</td>
         <td>
-          <button class="page-btn btn-view" onclick="alert('نمایش جزئیات به زودی')"><i class="fa-solid fa-eye"></i></button>
+          <button class="page-btn btn-view" onclick="showToast('نمایش جزئیات به زودی', 'info')"><i class="fa-solid fa-eye"></i></button>
         </td>
       </tr>
-    `).join('');
+    `, { empty: 'تیکتی ثبت نشده است', emptyIcon: 'fa-solid fa-inbox' });
   } catch (e) {
     console.error('Error loading tickets', e);
   }
@@ -1146,11 +888,11 @@ window.readChallengeReward = function(mode) {
   const rewardMin = Number(document.getElementById(`${mode}-chal-reward-min`)?.value);
   const rewardMax = Number(document.getElementById(`${mode}-chal-reward-max`)?.value);
   if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax <= 0) {
-    alert('حداقل و حداکثر پاداش را به صورت عدد صحیح وارد کنید (حداکثر بزرگ‌تر از صفر).');
+    showToast('حداقل و حداکثر پاداش را به صورت عدد صحیح وارد کنید (حداکثر بزرگ‌تر از صفر).', 'error');
     return null;
   }
   if (rewardMin > rewardMax) {
-    alert('حداقل پاداش نمی‌تواند از حداکثر بیشتر باشد.');
+    showToast('حداقل پاداش نمی‌تواند از حداکثر بیشتر باشد.', 'info');
     return null;
   }
   return { rewardAssetType, rewardMin, rewardMax, rewardZarik: rewardMax };
@@ -1228,17 +970,17 @@ window.openChallengeRanking = async function(challengeId) {
 window.submitChallengeRanking = async function(challengeId, places) {
   const ranking = Array.from(document.querySelectorAll('#ranking-body .ranking-select')).map(s => s.value);
   if (ranking.length !== places || ranking.some(v => !v) || new Set(ranking).size !== places) {
-    alert('برای هر رتبه یک کاروان متفاوت انتخاب کنید.');
+    showToast('برای هر رتبه یک کاروان متفاوت انتخاب کنید.', 'error');
     return;
   }
-  if (!confirm('رتبه‌بندی نهایی می‌شود و قابل ویرایش نیست. ادامه می‌دهید؟')) return;
+  if (!(await NopaConfirm('رتبه‌بندی نهایی می‌شود و قابل ویرایش نیست. ادامه می‌دهید؟'))) return;
   const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ranking })
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { alert(data.error || 'خطا در ثبت رتبه‌بندی'); return; }
+  if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }
   await window.openChallengeRanking(challengeId);
 };
 
@@ -1336,16 +1078,16 @@ window.loadAssetNames = async function() {
 
 window.saveAssetName = async function(key) {
   const nameFa = document.getElementById(`asset-name-${key}`)?.value.trim();
-  if (!nameFa) { alert('نام دارایی نمی‌تواند خالی باشد.'); return; }
+  if (!nameFa) { showToast('نام دارایی نمی‌تواند خالی باشد.', 'info'); return; }
   const res = await request(`/api/v1/admin/assets/${key}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nameFa })
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) { alert(data.error || 'خطا در ذخیره'); return; }
+  if (!res.ok) { showToast(data.error || 'خطا در ذخیره', 'error'); return; }
   window.assetNamesMap = { ...(window.assetNamesMap || {}), [key]: nameFa };
-  alert('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.');
+  showToast('نام دارایی ذخیره شد. اپ در اجرای بعدی نام جدید را نشان می‌دهد؛ برای اعمال کامل در این پنل صفحه را رفرش کنید.', 'success');
 };
 
 window.addQuestionRow = function(mode, initialData = null) {
@@ -1402,7 +1144,7 @@ window.openCreateChallengeModal = function() {
   const modal = document.getElementById('create-challenge-modal');
   if (!modal) {
     console.error('Modal create-challenge-modal not found');
-    alert('مودال ایجاد چالش یافت نشد. لطفاً صفحه را مجدداً بارگذاری کنید.');
+    showToast('مودال ایجاد چالش یافت نشد. لطفاً صفحه را مجدداً بارگذاری کنید.', 'error');
     return;
   }
 
@@ -1487,12 +1229,12 @@ window.submitCreateChallenge = async function(event) {
   const dueDate = document.getElementById('new-chal-due-date')?.value || null;
   const startDate = document.getElementById('new-chal-start-date')?.value || null;
   if (startDate && dueDate && startDate > dueDate) {
-    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    showToast('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.', 'info');
     return;
   }
 
   if (!title || !description) {
-    alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
+    showToast('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.', 'error');
     return;
   }
 
@@ -1536,23 +1278,23 @@ window.submitCreateChallenge = async function(event) {
     });
 
     if (res.ok) {
-      alert('چالش جدید با موفقیت توسط مدیر ثبت گردید و اعلان درون‌برنامه‌ای به کاربران و راهبر ارسال شد.');
+      showToast('چالش جدید با موفقیت توسط مدیر ثبت گردید و اعلان درون‌برنامه‌ای به کاربران و راهبر ارسال شد.', 'success');
       window.closeCreateChallengeModal();
       await window.loadChallengesAndSubmissionsTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطایی در ثبت چالش رخ داد');
+      showToast(data.error || 'خطایی در ثبت چالش رخ داد', 'error');
     }
   } catch (err) {
     console.error('submitCreateChallenge error:', err);
-    alert('خطا در ارتباط با سرور هنگام ایجاد چالش');
+    showToast('خطا در ارتباط با سرور هنگام ایجاد چالش', 'error');
   }
 };
 
 window.openEditChallengeModal = function(challengeId) {
   const c = window.cachedAdminChallenges.find(item => item.id === challengeId);
   if (!c) {
-    alert('اطلاعات چالش یافت نشد');
+    showToast('اطلاعات چالش یافت نشد', 'error');
     return;
   }
 
@@ -1638,12 +1380,12 @@ window.submitEditChallenge = async function(event) {
   const dueDate = document.getElementById('edit-chal-due-date')?.value || null;
   const startDate = document.getElementById('edit-chal-start-date')?.value || null;
   if (startDate && dueDate && startDate > dueDate) {
-    alert('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.');
+    showToast('تاریخ شروع نمی‌تواند بعد از تاریخ پایان باشد.', 'info');
     return;
   }
 
   if (!id || !title || !description) {
-    alert('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.');
+    showToast('لطفاً عنوان و توضیحات چالش را تکمیل فرمایید.', 'error');
     return;
   }
 
@@ -1686,21 +1428,21 @@ window.submitEditChallenge = async function(event) {
     });
 
     if (res.ok) {
-      alert('تغییرات چالش با موفقیت ذخیره شد.');
+      showToast('تغییرات چالش با موفقیت ذخیره شد.', 'success');
       window.closeEditChallengeModal();
       await window.loadChallengesAndSubmissionsTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطایی در ویرایش چالش رخ داد');
+      showToast(data.error || 'خطایی در ویرایش چالش رخ داد', 'error');
     }
   } catch (err) {
     console.error('submitEditChallenge error:', err);
-    alert('خطا در ارتباط با سرور هنگام ویرایش چالش');
+    showToast('خطا در ارتباط با سرور هنگام ویرایش چالش', 'error');
   }
 };
 
 window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
-  if (!confirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف، پاسخ‌ها و تاریخچه‌ی ثبت‌شده برای این چالش نیز حذف می‌شوند. پاداش‌هایی که قبلاً پرداخت شده برگردانده نمی‌شود.`)) {
+  if (!(await NopaConfirm(`آیا از حذف چالش "${challengeTitle || challengeId}" اطمینان دارید؟ تمامی تکالیف، پاسخ‌ها و تاریخچه‌ی ثبت‌شده برای این چالش نیز حذف می‌شوند. پاداش‌هایی که قبلاً پرداخت شده برگردانده نمی‌شود.`))) {
     return;
   }
 
@@ -1710,22 +1452,22 @@ window.deleteChallengeAdmin = async function(challengeId, challengeTitle) {
     });
 
     if (res.ok) {
-      alert('چالش با موفقیت حذف گردید.');
+      showToast('چالش با موفقیت حذف گردید.', 'success');
       await window.loadChallengesAndSubmissionsTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطایی در حذف چالش رخ داد');
+      showToast(data.error || 'خطایی در حذف چالش رخ داد', 'error');
     }
   } catch (err) {
     console.error('deleteChallengeAdmin error:', err);
-    alert('خطا در برقراری ارتباط با سرور');
+    showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.openChallengeStepsModal = function(challengeId) {
   const c = window.cachedAdminChallenges.find(item => item.id === challengeId);
   if (!c) {
-    alert('اطلاعات چالش یافت نشد');
+    showToast('اطلاعات چالش یافت نشد', 'error');
     return;
   }
 
@@ -2113,7 +1855,7 @@ function renderAdminSubmissions(submissions) {
 window.openViewSubmissionModal = function(submissionId) {
   const s = window.cachedAdminSubmissions.find(item => item.id === submissionId);
   if (!s) {
-    alert('اطلاعات پاسخ یافت نشد');
+    showToast('اطلاعات پاسخ یافت نشد', 'error');
     return;
   }
 
@@ -2254,29 +1996,29 @@ window.submitReviewFromModal = async function(isApproved) {
     });
 
     if (res.ok) {
-      alert(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به دانش‌آموز اعطا گردید.' : 'تکلیف رد شد و اعلان ارسال گردید.');
+      showToast(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به دانش‌آموز اعطا گردید.' : 'تکلیف رد شد و اعلان ارسال گردید.', 'success');
       window.closeViewSubmissionModal();
       await window.loadAdminSubmissionsData();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطایی در ثبت ارزیابی رخ داد');
+      showToast(data.error || 'خطایی در ثبت ارزیابی رخ داد', 'error');
     }
   } catch (err) {
     console.error('submitReviewFromModal error:', err);
-    alert('خطا در برقراری ارتباط با سرور');
+    showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.copySubmissionAnswerText = function() {
   const text = document.getElementById('view-sub-answer-text')?.textContent || '';
   if (!text || text === '-') {
-    alert('متنی برای کپی وجود ندارد');
+    showToast('متنی برای کپی وجود ندارد', 'info');
     return;
   }
   navigator.clipboard.writeText(text).then(() => {
-    alert('متن پاسخ دانش‌آموز در کلیپ‌بورد کپی شد.');
+    showToast('متن پاسخ دانش‌آموز در کلیپ‌بورد کپی شد.', 'info');
   }).catch(() => {
-    alert('امکان کپی در کلیپ‌بورد فراهم نشد.');
+    showToast('امکان کپی در کلیپ‌بورد فراهم نشد.', 'info');
   });
 };
 
@@ -2300,15 +2042,15 @@ window.reviewAdminSubmission = async function(id, isApproved, defaultReward) {
     });
 
     if (res.ok) {
-      alert(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به حساب دانش‌آموز اضافه گردید.' : 'تکلیف رد شد و اطلاع‌رسانی ارسال شد.');
+      showToast(isApproved ? 'تکلیف با موفقیت تایید شد و زریک به حساب دانش‌آموز اضافه گردید.' : 'تکلیف رد شد و اطلاع‌رسانی ارسال شد.', 'success');
       window.loadChallengesAndSubmissionsTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطایی در ارزیابی تکلیف رخ داد');
+      showToast(data.error || 'خطایی در ارزیابی تکلیف رخ داد', 'error');
     }
   } catch (err) {
     console.error('reviewAdminSubmission error:', err);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
@@ -2341,6 +2083,8 @@ async function loadCaravans() {
 
 // Load users (paginated)
 async function loadUsers() {
+  const usersTbody = document.querySelector('#users-data-table tbody');
+  NopaTable.loading(usersTbody);
   try {
     const url = `/api/v1/admin/users?page=${usersPage}&limit=20&search=${encodeURIComponent(userSearchVal)}&role=${filterRoleVal}&caravanId=${filterCaravanVal}&levelFrame=${filterLevelVal}&startDate=${encodeURIComponent(filterStartDateVal)}&endDate=${encodeURIComponent(filterEndDateVal)}`;
     const res = await request(url);
@@ -2373,8 +2117,8 @@ async function loadUsers() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (data.users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 20px;">هیچ کاربری یافت نشد</td></tr>';
+    if (!Array.isArray(data.users) || data.users.length === 0) {
+      NopaTable.empty(tbody, 'هیچ کاربری با این فیلترها یافت نشد', 'fa-solid fa-user-slash');
       return;
     }
 
@@ -2416,6 +2160,7 @@ async function loadUsers() {
     });
   } catch (err) {
     console.error('Failed to load users:', err);
+    if (err.message !== 'Unauthorized') NopaTable.error(usersTbody, 'خطا در دریافت فهرست کاربران');
   }
 }
 
@@ -2424,7 +2169,7 @@ async function viewUserDetails(userId) {
   try {
     const res = await request(`/api/v1/admin/users/${userId}/analytics`);
     const payload = await res.json();
-    if (!res.ok) return alert('خطا در دریافت اطلاعات');
+    if (!res.ok) return showToast('خطا در دریافت اطلاعات', 'error');
 
     const user = payload.user;
 
@@ -3140,7 +2885,7 @@ window.viewMentorDetails = async function(mentorId) {
           <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto; background: var(--color-neon-blue);">${esc(user.name.substring(0,2))}</div>
           <div style="margin-top:8px;"><span class="badge badge-mentor">مربی - سطح ${user.mentorLevel || 1}</span></div>
           <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
-          <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${escJs(user.userCode || user.phoneNumber)}'); alert('کد راهبر کپی شد')">
+          <div style="margin-top:10px; font-size:13px; cursor:pointer;" onclick="navigator.clipboard.writeText('NP-${escJs(user.userCode || user.phoneNumber)}'); showToast('کد راهبر کپی شد', 'success')">
             <i class="fa-solid fa-copy text-primary"></i> <strong style="color:var(--text-primary);">NP-${esc(user.userCode || user.phoneNumber)}</strong>
           </div>
           <hr style="border-color: rgb(var(--fg-rgb) / 0.1); margin: 15px 0;" />
@@ -3180,8 +2925,8 @@ window.viewMentorDetails = async function(mentorId) {
                   <div style="font-size:11px; color:var(--text-secondary);">آپلود شده: دیروز</div>
                 </div>
                 <div>
-                  <button class="btn-action" style="background:var(--color-success); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="alert('تایید شد')">تایید و ثبت</button>
-                  <button class="btn-action" style="background:var(--color-danger); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="alert('رد شد')">رد (علت)</button>
+                  <button class="btn-action" style="background:var(--color-success); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="showToast('تایید شد', 'info')">تایید و ثبت</button>
+                  <button class="btn-action" style="background:var(--color-danger); color:var(--text); padding: 4px 8px; font-size: 11px;" onclick="showToast('رد شد', 'info')">رد (علت)</button>
                 </div>
               </div>
             </div>
@@ -3426,7 +3171,7 @@ async function loadCaravansLeaderboard() {
         </td>
         <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{alert('کاروان: ${escJs(c.name)}');}">
+          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" onclick="if(typeof viewCaravanDetails==='function'){viewCaravanDetails('${c.id}')}else{showToast('کاروان: ${escJs(c.name)}', 'info');}">
             <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
           </button>
         </td>
@@ -3618,17 +3363,17 @@ async function loadLevels() {
 
 // Delete User
 async function deleteUser(userId) {
-  if (!confirm('آیا از حذف دائم این کاربر اطمینان دارید؟ این عملیات غیرقابل بازگشت است.')) return;
+  if (!(await NopaConfirm('آیا از حذف دائم این کاربر اطمینان دارید؟ این عملیات غیرقابل بازگشت است.'))) return;
   try {
     const res = await request(`/api/v1/admin/users/${userId}`, {
       method: 'DELETE'
     });
     const data = await res.json();
     if (res.ok) {
-      alert(data.message);
+      showToast(data.message);
       loadUsers();
     } else {
-      alert(data.error || 'خطا در حذف کاربر');
+      showToast(data.error || 'خطا در حذف کاربر', 'error');
     }
   } catch (err) {
     console.error(err);
@@ -3647,9 +3392,9 @@ function openPasswordOverride(userId) {
   }).then(async res => {
     const data = await res.json();
     if (res.ok) {
-      alert('گذرواژه با موفقیت تغییر کرد');
+      showToast('گذرواژه با موفقیت تغییر کرد', 'success');
     } else {
-      alert(data.error);
+      showToast(data.error);
     }
   });
 }
@@ -3659,10 +3404,7 @@ window.openUserModal = async function(id = '', name = '', role = 'student', cara
   let user = null;
   if (id) {
     try {
-      const token = NopaAuth.getToken();
-      const res = await fetch(`/api/v1/admin/users/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await request(`/api/v1/admin/users/${id}`);
       if (res.ok) user = await res.json();
     } catch(e) {
       console.warn('Could not fetch user details from API, using arguments');
@@ -3788,14 +3530,14 @@ async function handleUserFormSubmit(e) {
   const data = await res.json();
   if (res.ok) {
     await saveUserPanelAccess(id || data.userId);
-    alert(data.message || 'مشخصات کاربر با موفقیت ذخیره شد');
+    showToast(data.message || 'مشخصات کاربر با موفقیت ذخیره شد', 'success');
     document.getElementById('user-modal-overlay').style.display = 'none';
     if (typeof loadUsers === 'function') loadUsers();
     if (typeof loadAllUsersDropdown === 'function') loadAllUsersDropdown();
     if (typeof loadCaravansTab === 'function') await loadCaravansTab();
     if (typeof window.loadSelectedCaravanDetails === 'function') window.loadSelectedCaravanDetails();
   } else {
-    alert(data.error || 'خطا در ثبت اطلاعات');
+    showToast(data.error || 'خطا در ثبت اطلاعات', 'error');
   }
 }
 
@@ -3861,14 +3603,14 @@ async function handleZarikAdjustment(e) {
     const data = await res.json();
 
     if (res.ok) {
-      alert(data.message);
+      showToast(data.message);
       document.getElementById('zarik-amount').value = '';
       document.getElementById('zarik-reason').value = '';
       loadLedger();
       loadZarikAnalytics();
       loadAllUsersDropdown();
     } else {
-      alert(data.error);
+      showToast(data.error);
     }
   } catch (err) {
     console.error(err);
@@ -3888,11 +3630,11 @@ async function handleRewardRuleUpsert(e) {
     });
     const data = await res.json();
     if (res.ok) {
-      alert('قانون ذخیره شد');
+      showToast('قانون ذخیره شد', 'success');
       document.getElementById('reward-rules-form').reset();
       loadRewardRules();
     } else {
-      alert(data.error);
+      showToast(data.error);
     }
   } catch (err) { console.error(err); }
 }
@@ -4210,7 +3952,7 @@ window.saveNewCaravanName = async function() {
 
   const newName = nameInput.value.trim();
   if (!newName) {
-    alert('نام کاروان نمی‌تواند خالی باشد.');
+    showToast('نام کاروان نمی‌تواند خالی باشد.', 'info');
     nameInput.focus();
     return;
   }
@@ -4229,13 +3971,12 @@ window.saveNewCaravanName = async function() {
 };
 
 window.executeRenameCaravan = async function(id, newName) {
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/caravans/${id}`, {
+    const res = await request(`/api/v1/admin/caravans/${id}`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ name: newName })
     });
@@ -4265,13 +4006,13 @@ window.executeRenameCaravan = async function(id, newName) {
         if (opt) opt.textContent = newName;
       }
 
-      alert('نام کاروان با موفقیت به «' + newName + '» تغییر یافت.');
+      showToast('نام کاروان با موفقیت به «' + newName + '» تغییر یافت.', 'success');
     } else {
-      alert('خطا در تغییر نام کاروان: ' + (result.error || 'خطای سرور'));
+      showToast('خطا در تغییر نام کاروان: ' + (result.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('executeRenameCaravan error:', err);
-    alert('خطا در برقراری ارتباط با سرور: ' + err.message);
+    showToast('خطا در برقراری ارتباط با سرور: ' + err.message, 'error');
   }
 };
 
@@ -4297,43 +4038,39 @@ window.openChangeCaravanMentorModalForCaravan = function(id) {
 };
 
 window.deleteCaravanRecord = async function(caravanId, caravanName) {
-  if (!confirm(`آیا از حذف کاروان "${caravanName || ''}" اطمینان دارید؟ اعضای این کاروان آزاد خواهند شد.`)) {
+  if (!(await NopaConfirm(`آیا از حذف کاروان "${caravanName || ''}" اطمینان دارید؟ اعضای این کاروان آزاد خواهند شد.`))) {
     return;
   }
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch(`/api/v1/admin/caravans/${caravanId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await request(`/api/v1/admin/caravans/${caravanId}`, {
+      method: 'DELETE'
     });
     if (res.ok) {
-      alert('کاروان با موفقیت حذف گردید.');
+      showToast('کاروان با موفقیت حذف گردید.', 'success');
       if (typeof window.loadCaravansTab === 'function') {
         await window.loadCaravansTab();
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در حذف کاروان');
+      showToast(err.error || 'خطا در حذف کاروان', 'error');
     }
   } catch (e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
 window.removeMemberFromCaravan = async function(caravanId, studentId, memberName) {
   const nameText = memberName ? `«${memberName}»` : 'این فرد';
-  if (!confirm(`آیا می‌خواهید ${nameText} را از این کاروان حذف کنید؟`)) {
+  if (!(await NopaConfirm(`آیا می‌خواهید ${nameText} را از این کاروان حذف کنید؟`))) {
     return;
   }
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, {
+      method: 'DELETE'
     });
     if (res.ok) {
-      alert(`فرد با موفقیت از این کاروان حذف گردید.`);
+      showToast(`فرد با موفقیت از این کاروان حذف گردید.`, 'success');
       if (typeof window.loadCaravansTab === 'function') {
         await window.loadCaravansTab();
       }
@@ -4346,11 +4083,11 @@ window.removeMemberFromCaravan = async function(caravanId, studentId, memberName
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در حذف فرد از کاروان');
+      showToast(err.error || 'خطا در حذف فرد از کاروان', 'error');
     }
   } catch (e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
@@ -4372,7 +4109,6 @@ window.viewStudentDetails = async function(studentId) {
   modal.style.zIndex = 'var(--z-modal)';
 
   try {
-    const token = NopaAuth.getToken();
     let data = {};
     let u = null;
     let balances = {};
@@ -4381,9 +4117,7 @@ window.viewStudentDetails = async function(studentId) {
     let tickets = [];
     let metrics = {};
 
-    const res = await fetch(`/api/v1/admin/users/${studentId}/analytics`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await request(`/api/v1/admin/users/${studentId}/analytics`);
 
     if (res.ok) {
       data = await res.json();
@@ -4394,9 +4128,7 @@ window.viewStudentDetails = async function(studentId) {
       tickets = data.tickets || [];
       metrics = data.metrics || {};
     } else {
-      const basicRes = await fetch(`/api/v1/admin/users/${studentId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const basicRes = await request(`/api/v1/admin/users/${studentId}`);
       if (basicRes.ok) {
         u = await basicRes.json();
         balances = {
@@ -4582,7 +4314,7 @@ window.viewStudentDetails = async function(studentId) {
 };
 
 window.setAccountStatus = async function(userId, status) {
-  if (!confirm(`آیا از تغییر وضعیت حساب این کاربر اطمینان دارید؟`)) return;
+  if (!(await NopaConfirm(`آیا از تغییر وضعیت حساب این کاربر اطمینان دارید؟`))) return;
   try {
     // The server route is PATCH /admin/users/:id/status (a PUT here used to 404)
     const res = await request(`/api/v1/admin/users/${userId}/status`, {
@@ -4591,18 +4323,18 @@ window.setAccountStatus = async function(userId, status) {
       body: JSON.stringify({ status })
     });
     if (res.ok) {
-      alert('وضعیت حساب کاربر با موفقیت تغییر کرد');
+      showToast('وضعیت حساب کاربر با موفقیت تغییر کرد', 'success');
       if (activeTab === 'users-tab' && typeof loadUsers === 'function') loadUsers();
       if (typeof window.loadSelectedCaravanDetails === 'function') {
         window.loadSelectedCaravanDetails();
       }
     } else {
       const err = await res.json().catch(() => ({}));
-      alert(err.error || 'خطا در تغییر وضعیت کاربر');
+      showToast(err.error || 'خطا در تغییر وضعیت کاربر', 'error');
     }
   } catch(e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
@@ -4727,11 +4459,11 @@ async function handleAnnouncementBroadcast(e) {
     });
     const data = await res.json();
     if (res.ok) {
-      alert(data.message);
+      showToast(data.message);
       document.getElementById('announcement-title').value = '';
       document.getElementById('announcement-message').value = '';
     } else {
-      alert(data.error);
+      showToast(data.error);
     }
   } catch (err) {
     console.error(err);
@@ -4811,7 +4543,7 @@ function renderStoredFiles() {
 
 async function deleteStoredFiles(paths) {
   if (!paths.length) return;
-  if (!confirm('حذف ' + paths.length + ' فایل از سرور؟ این کار قابل بازگشت نیست و اگر فایل در جایی از اپ استفاده شده باشد، دیگر نمایش داده نمی‌شود.')) return;
+  if (!(await NopaConfirm('حذف ' + paths.length + ' فایل از سرور؟ این کار قابل بازگشت نیست و اگر فایل در جایی از اپ استفاده شده باشد، دیگر نمایش داده نمی‌شود.'))) return;
   try {
     const res = await request('/api/v1/admin/media/files/delete', {
       method: 'POST',
@@ -4871,27 +4603,24 @@ async function handleMediaUpload(e) {
     btn.disabled = true;
     progressText.style.display = 'block';
     
-    const res = await fetch('/api/v1/media/upload', {
+    const res = await request('/api/v1/media/upload', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token
-      },
       body: formData
     });
     
     const data = await res.json();
     if (res.ok) {
-      alert('فایل با موفقیت آپلود شد!');
+      showToast('فایل با موفقیت آپلود شد!', 'success');
       fileInput.value = '';
       document.getElementById('media-title').value = '';
       document.getElementById('media-instructor').value = '';
       loadMediaAssets();
     } else {
-      alert(data.error || 'خطا در آپلود فایل');
+      showToast(data.error || 'خطا در آپلود فایل', 'error');
     }
   } catch (err) {
     console.error('Upload Error:', err);
-    alert('خطا در ارتباط با سرور هنگام آپلود');
+    showToast('خطا در ارتباط با سرور هنگام آپلود', 'error');
   } finally {
     btn.disabled = false;
     progressText.style.display = 'none';
@@ -5209,7 +4938,6 @@ window.setupScrollHeader = setupScrollHeader;
 
 // 2. Universal Export Function
 window.exportData = async function(type, format) {
-  const token = NopaAuth.getToken();
   try {
     let url = `/api/v1/admin/export?type=${encodeURIComponent(type)}&format=${encodeURIComponent(format)}`;
     
@@ -5235,9 +4963,7 @@ window.exportData = async function(type, format) {
       showToastSuccess('در حال آماده‌سازی و دانلود فایل خروجی...');
     }
 
-    const res = await fetch(url, {
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
+    const res = await request(url);
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'خطا در تولید فایل خروجی');
@@ -5272,7 +4998,7 @@ window.exportData = async function(type, format) {
     }, 15000);
   } catch (error) {
     console.error('Export Error:', error);
-    alert('خطا در دریافت فایل خروجی: ' + error.message);
+    showToast('خطا در دریافت فایل خروجی: ' + error.message, 'error');
   }
 };
 
@@ -5431,15 +5157,15 @@ async function loadChats() {
 }
 
 async function deleteChat(id) {
-  if (!confirm('آیا از حذف این پیام اطمینان دارید؟')) return;
+  if (!(await NopaConfirm('آیا از حذف این پیام اطمینان دارید؟'))) return;
   try {
     const res = await request(`/api/v1/admin/chat/${id}`, { method: 'DELETE' });
     if (res.ok) {
-      alert('پیام حذف شد');
+      showToast('پیام حذف شد', 'success');
       loadChats();
     } else {
       const d = await res.json();
-      alert(d.error || 'خطا در حذف پیام');
+      showToast(d.error || 'خطا در حذف پیام', 'error');
     }
   } catch (e) {
     console.error(e);
@@ -5484,11 +5210,8 @@ window.loadMentors = async function() {
 
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/mentors', {
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
+    const res = await request('/api/v1/admin/mentors');
     if (!res.ok) throw new Error('خطا در دریافت لیست راهبران');
     const mentors = await res.json();
     window.mentorsMasterList = Array.isArray(mentors) ? mentors : [];
@@ -5656,28 +5379,27 @@ window.renderMentorsRows = function(mentorsList, tbody) {
 };
 
 window.quickUpdateMentorLevel = async function(mentorId, newLevel) {
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/users/${mentorId}`, {
+    const res = await request(`/api/v1/admin/users/${mentorId}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ mentorLevel: parseInt(newLevel) })
     });
     if (res.ok) {
       const m = window.mentorsMasterList.find(x => x.id === mentorId);
       if (m) m.mentorLevel = parseInt(newLevel);
-      alert(`سطح راهبری با موفقیت به سطح ${newLevel} بروزرسانی شد.`);
+      showToast(`سطح راهبری با موفقیت به سطح ${newLevel} بروزرسانی شد.`, 'success');
       window.filterMentorsList();
     } else {
       const err = await res.json().catch(() => ({}));
-      alert('خطا در بروزرسانی سطح: ' + (err.error || 'خطای سرور'));
+      showToast('خطا در بروزرسانی سطح: ' + (err.error || 'خطای سرور'), 'error');
     }
   } catch (e) {
     console.error('Update mentor level error:', e);
-    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+    showToast('خطا در برقراری ارتباط با سرور: ' + e.message, 'error');
   }
 };
 
@@ -5695,13 +5417,10 @@ window.viewMentorDossier = async function(mentorId) {
   modal.style.zIndex = 'var(--z-modal)';
   body.innerHTML = '<div style="text-align:center; padding:30px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
-  const token = NopaAuth.getToken();
   let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
 
   try {
-    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
+    const res = await request(`/api/v1/admin/mentors/${mentorId}/dossier`);
     let dossier = null;
     if (res.ok) {
       dossier = await res.json();
@@ -5927,7 +5646,7 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
 
   const student = window.currentDossierData?.supervisedStudents?.find(s => s.id === studentId);
   if (!student) {
-    alert('اطلاعات دانش‌آموز یافت نشد.');
+    showToast('اطلاعات دانش‌آموز یافت نشد.', 'error');
     return;
   }
 
@@ -6031,56 +5750,54 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
 window.sendTicketReply = async function(ticketId, mentorId, studentId) {
   const input = document.getElementById(`ticket-reply-input-${ticketId}`);
   if (!input || !input.value.trim()) {
-    alert('لطفاً متن پاسخ را وارد نمایید.');
+    showToast('لطفاً متن پاسخ را وارد نمایید.', 'error');
     return;
   }
   const message = input.value.trim();
-  const token = NopaAuth.getToken();
 
   try {
-    const res = await fetch(`/api/v1/admin/tickets/${ticketId}/reply`, {
+    const res = await request(`/api/v1/admin/tickets/${ticketId}/reply`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ message, mentorId })
     });
     const result = await res.json();
     if (res.ok) {
-      alert('پاسخ با موفقیت ثبت و برای دانش‌آموز ارسال شد.');
+      showToast('پاسخ با موفقیت ثبت و برای دانش‌آموز ارسال شد.', 'success');
       await window.refreshDossierData(mentorId);
       window.openStudentTicketsModal(mentorId, studentId);
     } else {
-      alert('خطا در ارسال پاسخ: ' + (result.error || 'خطای سرور'));
+      showToast('خطا در ارسال پاسخ: ' + (result.error || 'خطای سرور'), 'error');
     }
   } catch (e) {
     console.error('sendTicketReply error:', e);
-    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+    showToast('خطا در برقراری ارتباط با سرور: ' + e.message, 'error');
   }
 };
 
 window.resolveStudentTicket = async function(ticketId, mentorId, studentId) {
-  if (!confirm('آیا از تغییر وضعیت این تیکت به «حل‌شده» اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از تغییر وضعیت این تیکت به «حل‌شده» اطمینان دارید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/tickets/${ticketId}/resolve`, {
+    const res = await request(`/api/v1/admin/tickets/${ticketId}/resolve`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       }
     });
     if (res.ok) {
-      alert('وضعیت تیکت با موفقیت به «حل‌شده» تغییر یافت.');
+      showToast('وضعیت تیکت با موفقیت به «حل‌شده» تغییر یافت.', 'success');
       await window.refreshDossierData(mentorId);
       window.openStudentTicketsModal(mentorId, studentId);
     } else {
       const err = await res.json();
-      alert('خطا: ' + (err.error || 'عملیات ناموفق'));
+      showToast('خطا: ' + (err.error || 'عملیات ناموفق'), 'error');
     }
   } catch (e) {
-    alert('خطا در ارتباط با سرور: ' + e.message);
+    showToast('خطا در ارتباط با سرور: ' + e.message, 'error');
   }
 };
 
@@ -6091,7 +5808,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
   const student = window.currentDossierData?.supervisedStudents?.find(s => s.id === studentId);
   if (!student) {
-    alert('اطلاعات دانش‌آموز یافت نشد.');
+    showToast('اطلاعات دانش‌آموز یافت نشد.', 'error');
     return;
   }
 
@@ -6204,36 +5921,32 @@ window.submitSubmissionReview = async function(submissionId, mentorId, studentId
   const score = scoreEl ? parseInt(scoreEl.value, 10) || 0 : 0;
   const mentorFeedback = feedbackEl ? feedbackEl.value.trim() : '';
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/submissions/${submissionId}/review`, {
+    const res = await request(`/api/v1/admin/submissions/${submissionId}/review`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ status, score, mentorFeedback })
     });
     const result = await res.json();
     if (res.ok) {
-      alert('بازخورد و نمره راهبر با موفقیت ثبت شد و در پرونده ذخیره گردید.');
+      showToast('بازخورد و نمره راهبر با موفقیت ثبت شد و در پرونده ذخیره گردید.', 'success');
       await window.refreshDossierData(mentorId);
       window.openStudentChallengesModal(mentorId, studentId);
     } else {
-      alert('خطا در ثبت بازخورد: ' + (result.error || 'خطای سرور'));
+      showToast('خطا در ثبت بازخورد: ' + (result.error || 'خطای سرور'), 'error');
     }
   } catch (e) {
     console.error('submitSubmissionReview error:', e);
-    alert('خطا در برقراری ارتباط با سرور: ' + e.message);
+    showToast('خطا در برقراری ارتباط با سرور: ' + e.message, 'error');
   }
 };
 
 window.refreshDossierData = async function(mentorId) {
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/mentors/${mentorId}/dossier`, {
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
+    const res = await request(`/api/v1/admin/mentors/${mentorId}/dossier`);
     if (res.ok) {
       const dossier = await res.json();
       window.currentDossierData = dossier;
@@ -6278,7 +5991,7 @@ window.showMentorModal = async function() {
 window.editMentor = async function(mentorId) {
   const m = window.mentorsMasterList.find(x => x.id === mentorId);
   if (!m) {
-    alert('اطلاعات راهبر یافت نشد.');
+    showToast('اطلاعات راهبر یافت نشد.', 'error');
     return;
   }
 
@@ -6348,11 +6061,8 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
 
   container.innerHTML = '<span style="font-size:11px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
   
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/caravans', {
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
-    });
+    const res = await request('/api/v1/admin/caravans');
     const caravans = res.ok ? await res.json() : [];
     window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
 
@@ -6430,13 +6140,12 @@ window.handleMentorFormSubmit = async function(e) {
     caravanId: assignedCaravanIds.length > 0 ? assignedCaravanIds[0] : null
   };
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch('/api/v1/admin/mentors', {
+    const res = await request('/api/v1/admin/mentors', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify(payload)
     });
@@ -6445,16 +6154,16 @@ window.handleMentorFormSubmit = async function(e) {
       const msg = assignedCaravanIds.length > 0 
         ? `راهبر «${name}» با موفقیت همراه با ${assignedCaravanIds.length} کاروان ثبت و ذخیره شد.`
         : `راهبر «${name}» با موفقیت به عنوان راهبر مستقل (بدون کاروان) ثبت و ذخیره شد.`;
-      alert(msg);
+      showToast(msg);
       document.getElementById('mentor-modal-overlay').style.display = 'none';
       await window.loadMentors();
     } else {
       const err = await res.json();
-      alert('خطا در ذخیره‌سازی: ' + (err.error || 'خطای سرور'));
+      showToast('خطا در ذخیره‌سازی: ' + (err.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Save mentor error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
@@ -6488,33 +6197,30 @@ window.executeMentorModeration = async function(e) {
   const action = document.querySelector('input[name="mod_action"]:checked')?.value || 'activate';
   const suspendedUntil = document.getElementById('mod-suspended-until')?.value;
 
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(`/api/v1/admin/mentors/${id}/moderate`, {
+    const res = await request(`/api/v1/admin/mentors/${id}/moderate`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ action, suspendedUntil: suspendedUntil || undefined })
     });
 
     if (res.ok) {
-      alert('اقدام مدیریتی با موفقیت بر روی حساب کاربری راهبر اعمال شد.');
+      showToast('اقدام مدیریتی با موفقیت بر روی حساب کاربری راهبر اعمال شد.', 'success');
       document.getElementById('mentor-moderation-modal').style.display = 'none';
       await window.loadMentors();
     } else {
       const err = await res.json();
-      alert('خطا در اعمال اقدام: ' + (err.error || 'خطای سرور'));
+      showToast('خطا در اعمال اقدام: ' + (err.error || 'خطای سرور'), 'error');
     }
   } catch (err) {
     console.error('Mentor moderation error:', err);
-    alert('ارتباط با سرور برقرار نشد: ' + err.message);
+    showToast('ارتباط با سرور برقرار نشد: ' + err.message, 'error');
   }
 };
 
-// Hook for Student Drawer Events their tab is clicked
-document.querySelector('[data-tab="mentors-profile-tab"]')?.addEventListener('click', loadMentors);
 
 // 2. Mentors Tickets Tab
 async function loadMentorTickets() {
@@ -6548,7 +6254,7 @@ window.closeTicketDrawer = function() {
 };
 window.viewTicketThread = async function(ticketId) {
   currentTicketId = ticketId;
-  const res = await fetch('/api/v1/support/tickets', { headers: { 'Authorization': `Bearer ${token}` } });
+  const res = await request('/api/v1/support/tickets');
   const tickets = await res.json();
   const t = tickets.find(x => x.id === ticketId);
   if (!t) return;
@@ -6597,14 +6303,14 @@ document.getElementById('btn-submit-ticket-reply')?.addEventListener('click', as
   if (!msg) return;
 
   try {
-    const res = await fetch(`/api/v1/support/tickets/${currentTicketId}/reply`, {
+    const res = await request(`/api/v1/support/tickets/${currentTicketId}/reply`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: msg })
     });
     if (!res.ok) {
       const data = await res.json();
-      alert(data?.error || 'خطا در ثبت پاسخ');
+      showToast(data?.error || 'خطا در ثبت پاسخ', 'error');
       return;
     }
     msgEl.value = '';
@@ -6612,7 +6318,7 @@ document.getElementById('btn-submit-ticket-reply')?.addEventListener('click', as
     if (typeof loadMentorTickets === 'function') loadMentorTickets();
   } catch (error) {
     console.error(error);
-    alert('خطا در ارسال پاسخ');
+    showToast('خطا در ارسال پاسخ', 'error');
   }
 });
 
@@ -6656,10 +6362,6 @@ window.exportMentorLeague = function() {
   loadMentorLeague('csv');
 }
 
-// Mentor docs tab listener
-document.querySelector('[data-tab="mentors-docs-tab"]')?.addEventListener('click', () => {
-  if (typeof window.loadMentorDocs === 'function') window.loadMentorDocs();
-});
 
 // ===============================
 // MODULE B: STUDENTS LOGIC
@@ -6687,28 +6389,28 @@ document.getElementById('student-form')?.addEventListener('submit', async (e) =>
   const caravanId = document.getElementById('modal-student-caravan').value;
   
   try {
-    const res = await fetch('/api/v1/admin/students', {
+    const res = await request('/api/v1/admin/students', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, name, phoneNumber, nationalId, dateOfBirth, caravanId })
     });
     const data = await res.json();
     if(res.ok) {
       document.getElementById('student-modal-overlay').style.display = 'none';
       if (typeof loadUsers === 'function') loadUsers(); // refresh list
-      alert('مخاطب با موفقیت ثبت/ویرایش شد');
+      showToast('مخاطب با موفقیت ثبت/ویرایش شد', 'success');
     } else {
-      alert(data.error || 'خطا در ثبت مخاطب');
+      showToast(data.error || 'خطا در ثبت مخاطب', 'error');
     }
   } catch(e) {
-    alert('خطا در ثبت مخاطب');
+    showToast('خطا در ثبت مخاطب', 'error');
   }
 });
 
 window.editStudent = async function(id) {
   // Use existing users array if possible, or fetch
   try {
-    const res = await fetch(`/api/v1/admin/users?role=student`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request(`/api/v1/admin/users?role=student`);
     const data = await res.json();
     const users = data.users || [];
     const u = users.find(x => x.id === id);
@@ -6747,15 +6449,15 @@ document.getElementById('zarik-adjust-form')?.addEventListener('submit', async (
       body: JSON.stringify({ assetType, amount, note })
     });
     if (res.ok) {
-      alert('تغییر موجودی با موفقیت اعمال شد');
+      showToast('تغییر موجودی با موفقیت اعمال شد', 'success');
       document.getElementById('zarik-adjust-form').reset();
       if (typeof loadLedger === 'function') loadLedger();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطا در تغییر موجودی');
+      showToast(data.error || 'خطا در تغییر موجودی', 'error');
     }
   } catch(e) {
-    alert('خطای سیستمی');
+    showToast('خطای سیستمی', 'error');
   }
 });
 
@@ -6766,21 +6468,21 @@ document.getElementById('level-adjust-form')?.addEventListener('submit', async (
   const levelFrame = parseInt(document.getElementById('level-frame-select').value);
 
   try {
-    const res = await fetch(`/api/v1/admin/students/${userId}/level-frame`, {
+    const res = await request(`/api/v1/admin/students/${userId}/level-frame`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ levelFrame })
     });
     if (res.ok) {
-      alert('ارتقای سطح با موفقیت انجام شد');
+      showToast('ارتقای سطح با موفقیت انجام شد', 'success');
       document.getElementById('level-adjust-form').reset();
       if (typeof loadUsers === 'function') loadUsers();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطا در اعمال تغییر سطح');
+      showToast(data.error || 'خطا در اعمال تغییر سطح', 'error');
     }
   } catch(e) {
-    alert('خطای سیستمی');
+    showToast('خطای سیستمی', 'error');
   }
 });
 
@@ -6795,20 +6497,20 @@ document.getElementById('bulk-transfer-form')?.addEventListener('submit', async 
   const targetCaravanId = document.getElementById('bulk-target-caravan').value;
   
   const userIds = idsStr.split(',').map(s => s.trim()).filter(s => s);
-  if(!userIds.length || !targetCaravanId) return alert('اطلاعات نامعتبر');
+  if(!userIds.length || !targetCaravanId) return showToast('اطلاعات نامعتبر', 'error');
 
   try {
-    const res = await fetch('/api/v1/admin/caravans/bulk-transfer', {
+    const res = await request('/api/v1/admin/caravans/bulk-transfer', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userIds, targetCaravanId })
     });
     if(res.ok) {
-      alert('انتقال با موفقیت انجام شد');
+      showToast('انتقال با موفقیت انجام شد', 'success');
       document.getElementById('bulk-transfer-form').reset();
     } else {
       const d = await res.json();
-      alert(d.error || 'خطا در انتقال');
+      showToast(d.error || 'خطا در انتقال', 'error');
     }
   } catch(e) {
     console.error(e);
@@ -6818,7 +6520,7 @@ document.getElementById('bulk-transfer-form')?.addEventListener('submit', async 
 // 2. Asset Conversions Queue (Tab C3)
 window.loadAssetConversions = async function() {
   try {
-    const res = await fetch('/api/v1/admin/asset-conversions', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request('/api/v1/admin/asset-conversions');
     const requests = await res.json();
     const tbody = document.querySelector('#asset-conversions-table tbody');
     if (!tbody) return;
@@ -6861,24 +6563,23 @@ window.cancelAssetConversion = async function(id) {
   if (reason === null) return;
 
   try {
-    const res = await fetch(`/api/v1/admin/asset-conversions/${id}/cancel`, {
+    const res = await request(`/api/v1/admin/asset-conversions/${id}/cancel`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason })
     });
     const d = await res.json();
     if(res.ok) {
-      alert('مبادله لغو و سرمایه‌ها بازگردانده شد');
+      showToast('مبادله لغو و سرمایه‌ها بازگردانده شد', 'info');
       window.loadAssetConversions();
     } else {
-      alert(d.error || 'خطا در عملیات');
+      showToast(d.error || 'خطا در عملیات', 'error');
     }
   } catch(e) {
     console.error('cancelAssetConversion error:', e);
   }
 };
 
-document.querySelector('[data-tab="caravan-league-tab"]')?.addEventListener('click', loadAssetConversions);
 
 // ===============================
 // MODULE D: LMS CONTENT LOGIC
@@ -6887,7 +6588,7 @@ document.querySelector('[data-tab="caravan-league-tab"]')?.addEventListener('cli
 // Load Hierarchy Data for Selects
 async function loadCourseHierarchyOptions() {
   try {
-    const res = await fetch('/api/v1/admin/courses/hierarchy', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request('/api/v1/admin/courses/hierarchy');
     const packages = await res.json();
     
     const pkgSelect = document.getElementById('station-pkg-id');
@@ -6915,21 +6616,21 @@ document.getElementById('station-form')?.addEventListener('submit', async (e) =>
   const releaseTime = document.getElementById('station-release-time').value;
 
   try {
-    const res = await fetch('/api/v1/admin/courses/subcourses', {
+    const res = await request('/api/v1/admin/courses/subcourses', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ packageId, title, releaseDate, releaseTime })
     });
     const d = await res.json();
     if(res.ok) {
-      alert('منزلگاه با موفقیت ثبت شد');
+      showToast('منزلگاه با موفقیت ثبت شد', 'success');
       document.getElementById('station-form').reset();
       loadCourseHierarchyOptions();
     } else {
-      alert(d.error || 'خطا در ثبت');
+      showToast(d.error || 'خطا در ثبت', 'error');
     }
   } catch(e) {
-    alert('خطای سیستمی');
+    showToast('خطای سیستمی', 'error');
   }
 });
 
@@ -6942,20 +6643,20 @@ document.getElementById('class-form')?.addEventListener('submit', async (e) => {
   // Ignoring file upload for the mock
   
   try {
-    const res = await fetch('/api/v1/admin/courses/classes', {
+    const res = await request('/api/v1/admin/courses/classes', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subCourseId, title, teacher, bio: '', videoUrl: 'mock-url' })
     });
     const d = await res.json();
     if(res.ok) {
-      alert('کلاس با موفقیت ثبت شد');
+      showToast('کلاس با موفقیت ثبت شد', 'success');
       document.getElementById('class-form').reset();
     } else {
-      alert(d.error || 'خطا در ثبت');
+      showToast(d.error || 'خطا در ثبت', 'error');
     }
   } catch(e) {
-    alert('خطای سیستمی');
+    showToast('خطای سیستمی', 'error');
   }
 });
 
@@ -6967,25 +6668,23 @@ document.getElementById('quiz-form')?.addEventListener('submit', async (e) => {
   const passScore = parseInt(document.getElementById('quiz-pass-score').value);
 
   try {
-    const res = await fetch('/api/v1/admin/quizzes', {
+    const res = await request('/api/v1/admin/quizzes', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, rewardZarik, passScore })
     });
     const d = await res.json();
     if(res.ok) {
-      alert(d.message || 'آزمون با موفقیت ثبت شد');
+      showToast(d.message || 'آزمون با موفقیت ثبت شد', 'success');
       document.getElementById('quiz-form').reset();
     } else {
-      alert(d.error || 'خطا در ثبت آزمون');
+      showToast(d.error || 'خطا در ثبت آزمون', 'error');
     }
   } catch(e) {
-    alert('خطای سیستمی');
+    showToast('خطای سیستمی', 'error');
   }
 });
 
-document.querySelector('[data-tab="stations-tab"]')?.addEventListener('click', loadCourseHierarchyOptions);
-document.querySelector('[data-tab="content-tab"]')?.addEventListener('click', loadCourseHierarchyOptions);
 
 // ===============================
 // MODULE E: SYSTEM / RBAC LOGIC
@@ -6994,11 +6693,11 @@ document.querySelector('[data-tab="content-tab"]')?.addEventListener('click', lo
 // 1. Roles (Tab E1)
 async function loadRoles() {
   try {
-    const res = await fetch('/api/v1/admin/roles', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request('/api/v1/admin/roles');
     const roles = await res.json();
     const tbody = document.querySelector('#roles-table tbody');
     if (!tbody) return;
-    tbody.innerHTML = roles.map(r => `
+    NopaTable.render(tbody, roles, r => `
       <tr>
         <td>${esc(r.roleName)}</td>
         <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'maskPhoneNumbers', this.checked)"></td>
@@ -7014,7 +6713,7 @@ async function loadRoles() {
         <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} onchange="updateRole('${escJs(r.roleName)}', 'canManageUsers', this.checked)"></td>
         <td>-</td>
       </tr>
-    `).join('');
+    `, { empty: 'نقشی تعریف نشده است', emptyIcon: 'fa-solid fa-user-lock' });
   } catch(e) {
     console.error(e);
   }
@@ -7024,14 +6723,14 @@ window.updateRole = async function(roleName, field, value) {
   try {
     const data = { roleName };
     data[field] = value;
-    await fetch('/api/v1/admin/roles', {
+    await request('/api/v1/admin/roles', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
   } catch(e) {
     console.error(e);
-    alert('خطا در بروزرسانی نقش');
+    showToast('خطا در بروزرسانی نقش', 'error');
   }
 }
 
@@ -7044,7 +6743,7 @@ let _currentMentorDocId = null;
 
 window.loadMentorDocs = async function() {
   try {
-    const res = await fetch('/api/v1/admin/mentors/documents/pending', { headers: { 'Authorization': `Bearer ${token}` } });
+    const res = await request('/api/v1/admin/mentors/documents/pending');
     if(!res.ok) return console.error('Failed to load mentor docs');
     const docs = await res.json();
     _mentorDocsCache = docs;
@@ -7098,19 +6797,19 @@ window.openMentorDocModal = function(id, focusReject = false) {
 }
 
 window.quickApproveMentorDoc = async function(id) {
-  if(!confirm('آیا مطمئنید می‌خواهید این مدرک را بدون اضافه کردن یادداشت تایید کنید؟')) return;
+  if(!(await NopaConfirm('آیا مطمئنید می‌خواهید این مدرک را بدون اضافه کردن یادداشت تایید کنید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/mentors/documents/${id}/approve`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    const res = await request(`/api/v1/admin/mentors/documents/${id}/approve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note: 'تایید سریع توسط ادمین' })
     });
     if(res.ok) {
-      alert('مدرک تایید شد');
+      showToast('مدرک تایید شد', 'success');
       loadMentorDocs();
     } else {
-      const d = await res.json(); alert(d.error || 'خطا در تایید');
+      const d = await res.json(); showToast(d.error || 'خطا در تایید', 'error');
     }
-  } catch(e) { console.error(e); alert('خطا'); }
+  } catch(e) { console.error(e); showToast('خطا', 'error'); }
 }
 
 document.getElementById('btn-close-mentor-doc-modal')?.addEventListener('click', () => {
@@ -7119,40 +6818,40 @@ document.getElementById('btn-close-mentor-doc-modal')?.addEventListener('click',
 });
 
 document.getElementById('btn-approve-mentor-doc')?.addEventListener('click', async () => {
-  if(!_currentMentorDocId) return alert('مدرکی انتخاب نشده');
+  if(!_currentMentorDocId) return showToast('مدرکی انتخاب نشده', 'error');
   const note = document.getElementById('mentor-doc-admin-note').value || 'تایید شد';
   try {
-    const res = await fetch(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/approve`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    const res = await request(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/approve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note })
     });
     if(res.ok) {
-      alert('مدرک تایید شد');
+      showToast('مدرک تایید شد', 'success');
       document.getElementById('mentor-doc-modal').style.display = 'none';
       loadMentorDocs();
     } else {
-      const d = await res.json(); alert(d.error || 'خطا');
+      const d = await res.json(); showToast(d.error || 'خطا', 'error');
     }
-  } catch(e) { console.error(e); alert('خطا'); }
+  } catch(e) { console.error(e); showToast('خطا', 'error'); }
 });
 
 document.getElementById('btn-reject-mentor-doc')?.addEventListener('click', async () => {
-  if(!_currentMentorDocId) return alert('مدرکی انتخاب نشده');
+  if(!_currentMentorDocId) return showToast('مدرکی انتخاب نشده', 'error');
   const note = document.getElementById('mentor-doc-admin-note').value;
-  if(!note || note.trim().length < 3) return alert('لطفا علت رد را وارد کنید (حداقل ۳ کاراکتر)');
+  if(!note || note.trim().length < 3) return showToast('لطفا علت رد را وارد کنید (حداقل ۳ کاراکتر)', 'error');
   try {
-    const res = await fetch(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/reject`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    const res = await request(`/api/v1/admin/mentors/documents/${_currentMentorDocId}/reject`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ note })
     });
     if(res.ok) {
-      alert('مدرک رد شد');
+      showToast('مدرک رد شد', 'info');
       document.getElementById('mentor-doc-modal').style.display = 'none';
       loadMentorDocs();
     } else {
-      const d = await res.json(); alert(d.error || 'خطا');
+      const d = await res.json(); showToast(d.error || 'خطا', 'error');
     }
-  } catch(e) { console.error(e); alert('خطا'); }
+  } catch(e) { console.error(e); showToast('خطا', 'error'); }
 });
 
 // Approve / reject a certificate from inside the mentor modal (buttons rendered by editMentor).
@@ -7171,7 +6870,7 @@ async function decideMentorCertInline(docId, decision) {
     });
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
-      return alert(d.error || 'خطا در ثبت وضعیت مدرک');
+      return showToast(d.error || 'خطا در ثبت وضعیت مدرک', 'error');
     }
     const row = Array.from(document.querySelectorAll('#modal-mentor-certs-tbody tr'))
       .find(tr => tr.innerHTML.includes(docId));
@@ -7297,7 +6996,7 @@ async function submitCaravan(e) {
   const socialGroupLink = document.getElementById('cw-social-link').value;
   const studentIds = window.pendingCaravanMembers.map(s => s.id);
 
-  if(!mentorId) return alert('لطفاً یک راهبر انتخاب کنید.');
+  if(!mentorId) return showToast('لطفاً یک راهبر انتخاب کنید.', 'error');
 
   try {
     const res = await request('/api/v1/admin/caravans', {
@@ -7305,12 +7004,12 @@ async function submitCaravan(e) {
       body: JSON.stringify({ name, capacityLimit, mentorId, description, socialGroupLink, studentIds })
     });
     if (res.ok) {
-      alert('کاروان با موفقیت ایجاد شد');
+      showToast('کاروان با موفقیت ایجاد شد', 'success');
       closeCaravanWizard();
       loadCaravansTab();
     } else {
       const data = await res.json();
-      alert(data.error || 'خطا در ایجاد کاروان');
+      showToast(data.error || 'خطا در ایجاد کاروان', 'error');
     }
   } catch(err) { console.error(err); }
 }
@@ -7490,7 +7189,7 @@ window.closeCaravanDrawer = function() {
 
 window.editCaravanCapacity = async function(caravanId) {
   const cId = caravanId || currentDrawerCaravanId;
-  if (!cId) return alert('شناسه کاروان نامعتبر است');
+  if (!cId) return showToast('شناسه کاروان نامعتبر است', 'error');
   const initialVal = currentCaravanDrawerData?.capacityLimit || 50;
   const val = prompt('ظرفیت جدید کاروان را وارد نمایید:', initialVal);
   if (!val || isNaN(val) || parseInt(val) <= 0) return;
@@ -7501,29 +7200,29 @@ window.editCaravanCapacity = async function(caravanId) {
       body: JSON.stringify({ capacityLimit: parseInt(val) })
     });
     if (res.ok) {
-      alert('ظرفیت کاروان با موفقیت به‌روزرسانی شد');
+      showToast('ظرفیت کاروان با موفقیت به‌روزرسانی شد', 'success');
       if (currentDrawerCaravanId && typeof window.viewCaravanDetails === 'function') {
         window.viewCaravanDetails(currentDrawerCaravanId);
       }
       if (typeof window.renderCaravansTable === 'function') window.renderCaravansTable();
     } else {
       const d = await res.json();
-      alert(d.error || 'خطا در ویرایش ظرفیت');
+      showToast(d.error || 'خطا در ویرایش ظرفیت', 'error');
     }
-  } catch(e) { console.error(e); alert('خطا در ارتباط با سرور'); }
+  } catch(e) { console.error(e); showToast('خطا در ارتباط با سرور', 'error'); }
 };
 
 async function sendCaravanBroadcast() {
   const title = document.getElementById('cd-broadcast-title').value;
   const message = document.getElementById('cd-broadcast-msg').value;
-  if(!message) return alert('متن پیام الزامی است');
+  if(!message) return showToast('متن پیام الزامی است', 'error');
   try {
     const res = await request(`/api/v1/admin/caravans/${currentDrawerCaravanId}/broadcast`, {
       method: 'POST',
       body: JSON.stringify({ title, message })
     });
     if (res.ok) {
-      alert('پیام گروهی با موفقیت ارسال شد');
+      showToast('پیام گروهی با موفقیت ارسال شد', 'success');
       document.getElementById('cd-broadcast-title').value = '';
       document.getElementById('cd-broadcast-msg').value = '';
     }
@@ -7570,11 +7269,11 @@ function filterCaravanMembers() {
 
 window.removeFromCaravan = async function(caravanId, studentId) {
   if(!caravanId) return;
-  if(confirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟')) {
+  if((await NopaConfirm('آیا از حذف این دانش‌آموز از کاروان مطمئن هستید؟'))) {
      try {
        const res = await request(`/api/v1/admin/caravans/${caravanId}/members/${studentId}`, { method: 'DELETE' });
        if(res.ok) { 
-         alert('با موفقیت حذف شد'); 
+         showToast('با موفقیت حذف شد', 'success'); 
          if (typeof window.loadCaravanDetails === 'function') {
            window.loadCaravanDetails(caravanId);
          } else {
@@ -7667,7 +7366,7 @@ async function saveGlobalCapacity(e) {
     const res = await request('/api/v1/admin/settings/DEFAULT_CARAVAN_CAPACITY', {
       method: 'POST', body: JSON.stringify({ value: val })
     });
-    if(res.ok) alert('ظرفیت پیش‌فرض ذخیره شد');
+    if(res.ok) showToast('ظرفیت پیش‌فرض ذخیره شد', 'success');
   } catch(err) { console.error(err); }
 }
 
@@ -7876,9 +7575,8 @@ window.uploadClipMediaDirect = async function(input) {
   statusEl.style.color = 'var(--success-text)';
   
   try {
-    const res = await fetch('/api/v1/media/upload', {
+    const res = await request('/api/v1/media/upload', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
       body: formData
     });
     const data = await res.json();
@@ -8044,21 +7742,21 @@ function editLmsStation(stationId) {
 }
 
 async function deleteLmsStation(stationId) {
-  if (confirm('آیا از حذف این منزلگاه و تمام پارت‌های ویدیو و آزمون‌های آن مطمئن هستید؟ این عملیات غیرقابل بازگشت است.')) {
+  if ((await NopaConfirm('آیا از حذف این منزلگاه و تمام پارت‌های ویدیو و آزمون‌های آن مطمئن هستید؟ این عملیات غیرقابل بازگشت است.'))) {
     try {
       const res = await request(`/api/v1/admin/lms/stations/${stationId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        alert('منزلگاه با موفقیت حذف شد');
+        showToast('منزلگاه با موفقیت حذف شد', 'success');
         loadLmsData();
         cancelLmsBuilder();
       } else {
-        alert('خطا در حذف منزلگاه');
+        showToast('خطا در حذف منزلگاه', 'error');
       }
     } catch(e) {
       console.error(e);
-      alert('خطا در ارتباط با سرور');
+      showToast('خطا در ارتباط با سرور', 'error');
     }
   }
 }
@@ -8196,16 +7894,16 @@ async function submitLmsStationUnified(e) {
     });
     
     if (res.ok) {
-      alert('کل ساختار منزلگاه با موفقیت ذخیره شد');
+      showToast('کل ساختار منزلگاه با موفقیت ذخیره شد', 'success');
       cancelLmsBuilder();
       loadLmsData();
     } else {
       const data = await res.json();
-      alert('خطا در ذخیره ساختار: ' + (data.error || 'خطای ناشناخته'));
+      showToast('خطا در ذخیره ساختار: ' + (data.error || 'خطای ناشناخته'), 'error');
     }
   } catch(e) {
     console.error(e);
-    alert('خطای شبکه در ارتباط با سرور');
+    showToast('خطای شبکه در ارتباط با سرور', 'error');
   }
 }
 
@@ -8220,7 +7918,7 @@ async function submitLmsQuiz(e) {
     const res = await request('/api/v1/admin/lms/quizzes', {
       method: 'POST', body: JSON.stringify({ id, sessionId, title, rewardZarik })
     });
-    if(res.ok) { alert('آزمون ذخیره شد'); document.getElementById('lms-quiz-form').reset(); loadLmsData(); }
+    if(res.ok) { showToast('آزمون ذخیره شد', 'success'); document.getElementById('lms-quiz-form').reset(); loadLmsData(); }
   } catch(e) { console.error(e); }
 }
 
@@ -8259,12 +7957,12 @@ async function submitDynamicForm(e) {
     const res = await request('/api/v1/admin/forms', {
       method: 'POST', body: JSON.stringify({ id, title, purpose, placement, targetAudience })
     });
-    if(res.ok) { alert('فرم با موفقیت ذخیره شد'); document.getElementById('dyn-form-builder').reset(); loadDynForms(); }
+    if(res.ok) { showToast('فرم با موفقیت ذخیره شد', 'success'); document.getElementById('dyn-form-builder').reset(); loadDynForms(); }
   } catch(e) { console.error(e); }
 }
 
 async function deleteDynForm(id) {
-  if(!confirm('آیا از حذف این فرم مطمئن هستید؟')) return;
+  if(!(await NopaConfirm('آیا از حذف این فرم مطمئن هستید؟'))) return;
   try {
     const res = await request(`/api/v1/admin/forms/${id}`, { method: 'DELETE' });
     if(res.ok) loadDynForms();
@@ -8294,7 +7992,7 @@ window.loadAuditLogs = async function(role = null) {
     // Fallback if data is array or object with logs array
     const logs = data.logs || data || [];
     
-    tbody.innerHTML = logs.map(l => `
+    NopaTable.render(tbody, logs, l => `
       <tr>
         <td><span style="font-size:0.8rem">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
         <td>${esc(l.actorName)}</td>
@@ -8304,7 +8002,7 @@ window.loadAuditLogs = async function(role = null) {
         <td><span style="font-size:0.8rem">${esc(l.details)}</span></td>
         <td>${esc(l.ipAddress || '-')}</td>
       </tr>
-    `).join('');
+    `, { empty: 'رویدادی با این فیلترها ثبت نشده است', emptyIcon: 'fa-solid fa-clock-rotate-left' });
   } catch(e) {
     console.error(e);
   }
@@ -8371,9 +8069,8 @@ window.uploadClipMedia = async function(input) {
   statusEl.innerText = 'در حال آپلود...';
   
   try {
-    const res = await fetch('/api/v1/media/upload', {
+    const res = await request('/api/v1/media/upload', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
       body: formData
     });
     const data = await res.json();
@@ -8399,40 +8096,35 @@ window.submitLmsClip = async function(e) {
   const videoUrl = document.getElementById('lms-clip-url').value;
   
   if (!videoUrl) {
-    alert('لطفا ابتدا یک ویدیو آپلود کنید');
+    showToast('لطفا ابتدا یک ویدیو آپلود کنید', 'error');
     return;
   }
   
   try {
     // Note: This endpoint must exist in the backend. 
     // We will ensure it is handled or we use a generic class-clip endpoint.
-    const res = await fetch(`/api/v1/admin/lms/sessions/${sessionId}/clips`, {
+    const res = await request(`/api/v1/admin/lms/sessions/${sessionId}/clips`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ title, clipOrder, videoUrl })
     });
     
     if (res.ok) {
-      alert('کلیپ با موفقیت اضافه شد!');
+      showToast('کلیپ با موفقیت اضافه شد!', 'success');
       document.getElementById('lms-clip-form').reset();
       document.getElementById('lms-clip-upload-status').innerText = '';
     } else {
-      alert('خطا در افزودن کلیپ');
+      showToast('خطا در افزودن کلیپ', 'error');
     }
   } catch(e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 }
 
-document.querySelector('[data-tab="submissions-tab"]')?.addEventListener('click', () => {
-  if (typeof window.loadChallengesAndSubmissionsTab === 'function') {
-    window.loadChallengesAndSubmissionsTab();
-  }
-});
 
 // ===============================
 // BULK TRANSFER MODAL LOGIC
@@ -8540,10 +8232,10 @@ window.submitBulkTransfer = async function() {
   const userIds = window.bulkTransferSelectedMembers.map(m => m.id);
   
   if (userIds.length === 0) {
-    return alert('لطفاً حداقل یک عضو را برای انتقال انتخاب کنید.');
+    return showToast('لطفاً حداقل یک عضو را برای انتقال انتخاب کنید.', 'error');
   }
   if (!targetCaravanId) {
-    return alert('لطفاً کاروان مقصد را انتخاب کنید.');
+    return showToast('لطفاً کاروان مقصد را انتخاب کنید.', 'error');
   }
   
   try {
@@ -8555,17 +8247,17 @@ window.submitBulkTransfer = async function() {
     });
     
     if (res.ok) {
-      alert('اعضا با موفقیت منتقل شدند');
+      showToast('اعضا با موفقیت منتقل شدند', 'success');
       closeBulkTransferModal();
       if (typeof loadCaravansTab === 'function') loadCaravansTab();
       if (typeof loadCaravanMembersRoster === 'function') loadCaravanMembersRoster();
     } else {
       const data = await res.json();
-      alert('خطا در انتقال: ' + (data.error || 'ناشناخته'));
+      showToast('خطا در انتقال: ' + (data.error || 'ناشناخته'), 'error');
     }
   } catch (err) {
     console.error(err);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
@@ -8615,7 +8307,7 @@ window.openCaravanStudentDetails = async function(userId) {
     document.getElementById('caravan-student-detail-modal').style.display = 'flex';
   } catch(e) {
     console.error(e);
-    alert('خطا در دریافت جزئیات دانش‌آموز');
+    showToast('خطا در دریافت جزئیات دانش‌آموز', 'error');
   }
 };
 
@@ -8759,12 +8451,12 @@ window.confirmBulkAddUsersToCaravan = async function() {
   const targetCaravanId = modalPicker?.value || pagePicker?.value || currentDrawerCaravanId;
 
   if (!targetCaravanId) {
-    return alert('لطفاً کاروان مقصد را از کشوی بالای فرم انتخاب کنید');
+    return showToast('لطفاً کاروان مقصد را از کشوی بالای فرم انتخاب کنید', 'error');
   }
 
   const userIds = Array.from(window.selectedCandidateMembers);
   if (userIds.length === 0) {
-    return alert('لطفاً حداقل یک دانش‌آموز را انتخاب کنید');
+    return showToast('لطفاً حداقل یک دانش‌آموز را انتخاب کنید', 'error');
   }
 
   try {
@@ -8776,7 +8468,7 @@ window.confirmBulkAddUsersToCaravan = async function() {
     if (res.ok) {
       window.closeAddMemberToCaravanModal();
       const resData = await res.json().catch(() => ({}));
-      alert(resData.message || 'دانش‌آموزان با موفقیت به کاروان اضافه شدند');
+      showToast(resData.message || 'دانش‌آموزان با موفقیت به کاروان اضافه شدند', 'success');
       
       // Update page caravan picker & refresh details
       if (pagePicker) {
@@ -8796,18 +8488,18 @@ window.confirmBulkAddUsersToCaravan = async function() {
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در افزودن دانش‌آموزان به کاروان');
+      showToast(err.error || 'خطا در افزودن دانش‌آموزان به کاروان', 'error');
     }
   } catch(e) {
     console.error(e);
-    alert('خطا در برقراری ارتباط با سرور');
+    showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.openChangeCaravanMentorModal = async function() {
   const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
   if (!currentCaravanId) {
-    return alert('لطفاً ابتدا یک کاروان را انتخاب کنید');
+    return showToast('لطفاً ابتدا یک کاروان را انتخاب کنید', 'error');
   }
 
   const modal = document.getElementById('change-caravan-mentor-modal');
@@ -8825,13 +8517,10 @@ window.openChangeCaravanMentorModal = async function() {
   const currentMentorId = caravan?.mentorId || caravan?.mentor?.id || '';
 
   try {
-    const token = NopaAuth.getToken();
     let mentors = [];
     
     // Fetch mentors
-    const res = await fetch('/api/v1/admin/mentors', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await request('/api/v1/admin/mentors');
     if (res.ok) {
       const data = await res.json();
       mentors = Array.isArray(data) ? data : (data.users || data.mentors || []);
@@ -8864,25 +8553,24 @@ window.closeChangeCaravanMentorModal = function() {
 window.updateCaravanMentor = async function() {
   const currentCaravanId = document.getElementById('target-caravan-picker')?.value || document.getElementById('main-caravan-selector')?.value;
   if (!currentCaravanId) {
-    return alert('لطفاً ابتدا یک کاروان را انتخاب کنید');
+    return showToast('لطفاً ابتدا یک کاروان را انتخاب کنید', 'error');
   }
 
   const mentorId = document.getElementById('cw-mentor-select')?.value || null;
   
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch(`/api/v1/admin/caravans/${currentCaravanId}`, {
+    const res = await request(`/api/v1/admin/caravans/${currentCaravanId}`, {
       method: 'PATCH',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json'
+        
       },
       body: JSON.stringify({ mentorId })
     });
 
     if (res.ok) {
       window.closeChangeCaravanMentorModal();
-      alert('راهبر کاروان با موفقیت تغییر یافت');
+      showToast('راهبر کاروان با موفقیت تغییر یافت', 'success');
       
       if (typeof window.loadCaravansTab === 'function') {
         await window.loadCaravansTab();
@@ -8897,11 +8585,11 @@ window.updateCaravanMentor = async function() {
       }
     } else {
       const err = await res.json();
-      alert(err.error || 'خطا در تغییر راهبر');
+      showToast(err.error || 'خطا در تغییر راهبر', 'error');
     }
   } catch(e) {
     console.error(e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 
@@ -8975,10 +8663,7 @@ window.loadBannersTab = async function() {
   }
 
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch('/api/v1/admin/banners', { 
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
-    });
+    const res = await request('/api/v1/admin/banners');
     
     if (!res.ok) {
       if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت بنرها از سرور</td></tr>';
@@ -9059,14 +8744,12 @@ window.loadBannersTab = async function() {
 };
 
 window.toggleBannerStatus = async function(id, currentActive) {
-  const token = NopaAuth.getToken();
   const newActive = !currentActive;
   try {
     const formData = new FormData();
     formData.append('isActive', newActive);
-    const res = await fetch(`/api/v1/admin/banners/${id}`, {
+    const res = await request(`/api/v1/admin/banners/${id}`, {
       method: 'PUT',
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: formData
     });
     if (res.ok) {
@@ -9112,10 +8795,7 @@ window.editBanner = async function(id) {
   try {
     let b = (window.cachedBannerList || []).find(x => x.id === id);
     if (!b) {
-      const token = NopaAuth.getToken();
-      const res = await fetch('/api/v1/admin/banners', { 
-        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
-      });
+      const res = await request('/api/v1/admin/banners');
       const banners = await res.json();
       b = (Array.isArray(banners) ? banners : []).find(x => x.id === id);
     }
@@ -9168,39 +8848,35 @@ window.saveBannerItem = async function(e) {
   
   const url = id ? `/api/v1/admin/banners/${id}` : '/api/v1/admin/banners';
   const method = id ? 'PUT' : 'POST';
-  const token = NopaAuth.getToken();
   
   try {
-    const res = await fetch(url, {
+    const res = await request(url, {
       method,
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: formData
     });
     if (res.ok) {
       if (typeof showToastSuccess === 'function') {
         showToastSuccess(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
       } else {
-        alert(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد');
+        showToast(id ? 'بنر با موفقیت ویرایش شد' : 'بنر جدید با موفقیت بارگذاری شد', 'success');
       }
       closeBannerModal();
       loadBannersTab();
     } else {
       const err = await res.json().catch(() => ({}));
-      alert(err.error || 'خطا در ثبت بنر');
+      showToast(err.error || 'خطا در ثبت بنر', 'error');
     }
   } catch(e) {
     console.error('Network error saving banner:', e);
-    alert('خطا در برقراری ارتباط با سرور');
+    showToast('خطا در برقراری ارتباط با سرور', 'error');
   }
 };
 
 window.deleteBanner = async function(id) {
-  if (!confirm('آیا از حذف این بنر اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از حذف این بنر اطمینان دارید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/banners/${id}`, {
-      method: 'DELETE',
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    const res = await request(`/api/v1/admin/banners/${id}`, {
+      method: 'DELETE'
     });
     if (res.ok) {
       if (typeof showToastSuccess === 'function') {
@@ -9208,7 +8884,7 @@ window.deleteBanner = async function(id) {
       }
       loadBannersTab();
     } else {
-      alert('خطا در حذف بنر');
+      showToast('خطا در حذف بنر', 'error');
     }
   } catch(e) {
     console.error('Error deleting banner:', e);
@@ -9224,10 +8900,7 @@ window.loadNewsTab = async function() {
   }
 
   try {
-    const token = NopaAuth.getToken();
-    const res = await fetch('/api/v1/admin/news', { 
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } 
-    });
+    const res = await request('/api/v1/admin/news');
     
     if (!res.ok) {
       if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت اطلاعات اخبار از سرور</td></tr>';
@@ -9398,8 +9071,7 @@ window.editNews = async function(id) {
   try {
     let n = (window.cachedNewsList || []).find(x => x.id === id);
     if (!n) {
-      const token = NopaAuth.getToken();
-      const res = await fetch('/api/v1/admin/news', { headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) } });
+      const res = await request('/api/v1/admin/news');
       const news = await res.json();
       n = news.find(x => x.id === id);
     }
@@ -9474,11 +9146,9 @@ window.saveNewsArticle = async function(e) {
   const url = id ? `/api/v1/admin/news/${id}` : '/api/v1/admin/news';
   const method = id ? 'PUT' : 'POST';
   
-  const token = NopaAuth.getToken();
   try {
-    const res = await fetch(url, {
+    const res = await request(url, {
       method,
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: formData
     });
     
@@ -9492,11 +9162,11 @@ window.saveNewsArticle = async function(e) {
       }
     } else {
       const err = await res.json();
-      alert('خطا در ثبت خبر: ' + (err.error || 'خطای سرور'));
+      showToast('خطا در ثبت خبر: ' + (err.error || 'خطای سرور'), 'error');
     }
   } catch(e) { 
     console.error('Save news error:', e);
-    alert('خطا در برقراری ارتباط با سرور'); 
+    showToast('خطا در برقراری ارتباط با سرور', 'error'); 
   }
 };
 
@@ -9518,23 +9188,21 @@ window.previewNewsImage = function(event) {
 // showToastSuccess / showToastError / showToastInfo are defined in toast.js (shared bottom-left toast system)
 
 window.deleteNews = async function(id) {
-  if (!confirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟')) return;
-  const token = NopaAuth.getToken();
+  if (!(await NopaConfirm('آیا از حذف این خبر از تابلوی اعلانات جارچی اطمینان دارید؟'))) return;
   try {
-    const res = await fetch(`/api/v1/admin/news/${id}`, {
-      method: 'DELETE',
-      headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+    const res = await request(`/api/v1/admin/news/${id}`, {
+      method: 'DELETE'
     });
     if (res.ok) {
       showToastSuccess('خبر با موفقیت حذف شد.');
       await window.loadNewsTab();
     } else {
       const d = await res.json();
-      alert('خطا در حذف خبر: ' + (d.error || 'خطای سرور'));
+      showToast('خطا در حذف خبر: ' + (d.error || 'خطای سرور'), 'error');
     }
   } catch(e) { 
     console.error('Delete news error:', e);
-    alert('خطا در ارتباط با سرور');
+    showToast('خطا در ارتباط با سرور', 'error');
   }
 };
 // --- CARAVAN MANAGEMENT MODAL LOGIC ---
@@ -9559,27 +9227,27 @@ window.editMember = async function(userId) {
         method: 'PUT',
         body: JSON.stringify({ ...user, name: newName.trim() })
       });
-      alert('اطلاعات کاربر به‌روزرسانی شد');
+      showToast('اطلاعات کاربر به‌روزرسانی شد', 'success');
       if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId);
     }
   } catch (err) {
     console.error(err);
-    alert('خطا در به‌روزرسانی کاربر');
+    showToast('خطا در به‌روزرسانی کاربر', 'error');
   }
 };
 
 window.toggleBlockMember = async function(userId, blockStatus) {
-  if (!confirm(`آیا از ${blockStatus ? 'مسدودسازی' : 'رفع مسدودی'} این کاربر اطمینان دارید؟`)) return;
+  if (!(await NopaConfirm(`آیا از ${blockStatus ? 'مسدودسازی' : 'رفع مسدودی'} این کاربر اطمینان دارید؟`))) return;
   try {
     await request(`/api/v1/admin/users/${userId}/block`, {
       method: 'PATCH',
       body: JSON.stringify({ blocked: blockStatus })
     });
-    alert(`وضعیت کاربر به ${blockStatus ? 'مسدود' : 'فعال'} تغییر یافت`);
+    showToast(`وضعیت کاربر به ${blockStatus ? 'مسدود' : 'فعال'} تغییر یافت`, 'info');
     if (currentDrawerCaravanId) window.viewCaravanDetails(currentDrawerCaravanId);
   } catch (err) {
     console.error(err);
-    alert('خطا در تغییر وضعیت کاربر');
+    showToast('خطا در تغییر وضعیت کاربر', 'error');
   }
 };
 
@@ -9613,8 +9281,7 @@ window.closeCaravanEditModal = function() {
 
 window.refreshCaravanEditData = async function() {
   if (!window.activeCaravanId) return;
-  const token = NopaAuth.getToken();
-  const res = await fetch('/api/v1/caravans', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json());
+  const res = await request('/api/v1/caravans').then(r => r.json());
   const caravans = res.data || res || [];
   
   const caravan = caravans.find(c => String(c.id) === String(window.activeCaravanId));
@@ -9633,17 +9300,17 @@ window.saveCaravanEdits = async function() {
   const notes = notesEl ? notesEl.value.trim() : '';
   
   try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
+    const res = await request('/api/v1/caravans/' + window.activeCaravanId, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${NopaAuth.getToken()}` },
+      headers: { 'Content-Type': 'application/json'  },
       body: JSON.stringify({ name, title: name, capacityLimit: Number(capacity), notes, adminNotes: notes })
     });
     if (res.ok) {
-      alert('تغییرات با موفقیت ذخیره شد.');
+      showToast('تغییرات با موفقیت ذخیره شد.', 'success');
       window.closeCaravanEditModal();
       if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
     } else {
-      alert('خطا در ذخیره تغییرات');
+      showToast('خطا در ذخیره تغییرات', 'error');
     }
   } catch(e) { console.error(e); }
 };
@@ -9665,14 +9332,13 @@ window.closeCaravanStatusDialog = function() {
 };
 
 window.confirmSuspendCaravan = async function() {
-  if(!confirm('آیا از تعلیق موقت این کاروان مطمئن هستید؟')) return;
+  if(!(await NopaConfirm('آیا از تعلیق موقت این کاروان مطمئن هستید؟'))) return;
   try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/status', {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
+    const res = await request('/api/v1/caravans/' + window.activeCaravanId + '/status', {
+      method: 'PUT'
     });
     if(res.ok) {
-      alert('وضعیت کاروان تغییر کرد.');
+      showToast('وضعیت کاروان تغییر کرد.', 'info');
       window.closeCaravanStatusDialog();
       if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
     }
@@ -9680,28 +9346,26 @@ window.confirmSuspendCaravan = async function() {
 };
 
 window.confirmBlockCaravan = async function() {
-  if(!confirm('آیا از مسدودسازی تمامی اعضای این کاروان مطمئن هستید؟')) return;
+  if(!(await NopaConfirm('آیا از مسدودسازی تمامی اعضای این کاروان مطمئن هستید؟'))) return;
   try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId + '/block-members', {
-      method: 'PUT',
-      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
+    const res = await request('/api/v1/caravans/' + window.activeCaravanId + '/block-members', {
+      method: 'PUT'
     });
     if(res.ok) {
-      alert('تمامی اعضا مسدود شدند.');
+      showToast('تمامی اعضا مسدود شدند.', 'info');
       window.closeCaravanStatusDialog();
     }
   } catch(e) { console.error(e); }
 };
 
 window.confirmDeleteCaravan = async function() {
-  if(!confirm('آیا از حذف کامل این کاروان و خروج تمامی اعضا اطمینان دارید؟ این عمل غیرقابل بازگشت است!')) return;
+  if(!(await NopaConfirm('آیا از حذف کامل این کاروان و خروج تمامی اعضا اطمینان دارید؟ این عمل غیرقابل بازگشت است!'))) return;
   try {
-    const res = await fetch('/api/v1/caravans/' + window.activeCaravanId, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${NopaAuth.getToken()}` }
+    const res = await request('/api/v1/caravans/' + window.activeCaravanId, {
+      method: 'DELETE'
     });
     if(res.ok) {
-      alert('کاروان با موفقیت حذف شد.');
+      showToast('کاروان با موفقیت حذف شد.', 'success');
       window.closeCaravanStatusDialog();
       if(typeof window.loadCaravansTable === 'function') window.loadCaravansTable();
     }
@@ -9774,14 +9438,7 @@ const PANEL_SECTION_LABELS = {
   analytics: 'آمار و لیگ'
 };
 
-// Sidebar tab -> panel section. Tabs not listed here are super-admin only.
-const TAB_SECTION = {
-  'users-tab': 'users', 'levels-tab': 'users', 'rewards-tab': 'rewards',
-  'mentors-profile-tab': 'mentors', 'mentors-docs-tab': 'mentors', 'mentors-tickets-tab': 'support',
-  'instructors-tab': 'instructors', 'caravans-tab': 'caravans', 'lms-tab': 'lms',
-  'form-builder-tab': 'content', 'news-tab': 'content', 'submissions-tab': 'challenges',
-  'notifications-tab': 'notifications', 'analytics-tab': 'analytics'
-};
+// Tab -> panel section lives in the tab registry (js/core/router.js); tabs without a section are super-admin only.
 
 function isSuperAdminUser() {
   return String((currentUser && currentUser.role) || '').toLowerCase() === 'admin';
@@ -9801,7 +9458,7 @@ async function applyPanelPermissions() {
     const me = await res.json();
     const sections = me.sections || {};
     document.querySelectorAll('.menu-item[data-tab]').forEach(li => {
-      const section = TAB_SECTION[li.getAttribute('data-tab')];
+      const section = NopaRouter.sectionOf(li.getAttribute('data-tab'));
       li.style.display = (section && sections[section]) ? '' : 'none';
     });
     document.querySelectorAll('.accordion-item').forEach(acc => {
