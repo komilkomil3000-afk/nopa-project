@@ -2476,3 +2476,27 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 13 Phase 3 behaviour checks pass (confirm ESC/OK, modal ESC/focus/scroll lock/backdrop, request headers, back navigation, sub-admin menu filtering, empty state); Phase 1–2 smoke test still green (17 tabs, 0 page errors, 0 duplicate IDs, 0 API calls before login); confirm dialog screenshots in dark and light.
   - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed
+
+### [2026-11-01 23:55] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 4 (Top Navigation)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/layout.css` (Created)
+  - `admin_panel/public/js/layout/topnav.js` (Created)
+  - `admin_panel/public/js/core/attention.js` (Created)
+  - `admin_panel/public/js/core/api.js` (Modified — `silent` option for background polls)
+  - `admin_panel/public/js/core/router.js` (Modified — chat/content tabs in the outreach group, sidebar code removed)
+  - `admin_panel/public/index.html` (Modified — sidebar + old top bar replaced by the app header)
+  - `admin_panel/public/app.js` (Modified — sidebar controls, scroll header, accordion and menu-item code removed; permissions feed the top nav)
+  - `admin_panel/public/style.css` (Modified — sidebar / old top-bar rules removed)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v7)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Horizontal top navigation generated from the tab registry: brand, dashboard link + 7 groups with dropdowns (label + description), section search (`/`, Ctrl+K), "needs attention" bell (pending mentor documents, submissions, open tickets — only for granted sections), theme toggle and user menu with logout.
+  - Responsive tiers down to 390px; ≤1180px uses a slide-in panel with accordion groups. Keyboard support (Enter/arrows/ESC, focus return) and real hrefs on every link.
+  - Sub-admin access now filters the nav and the bell through the registry sections; chat oversight and global announcement tabs became reachable.
+  - Removed the sidebar (resize, compact mode, mobile drawer, hide-on-scroll header) — ~330 lines JS, ~140 lines markup, ~500 lines CSS.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 18 navigation checks pass (desktop menus, keyboard, search, bell counts, user menu, 1024px/390px panel, sub-admin filtering and polling); header overlap measured at 1181–1920px; Phase 1–3 suites still green (20 tabs, 0 page errors, 0 duplicate IDs); screenshots dark/light at 1366/1024/390.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed

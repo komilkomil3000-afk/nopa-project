@@ -73,8 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showDashboard();
   }
   setupEventListeners();
-  setupSidebarControls();
-  setupScrollHeader();
 });
 
 function showLogin() {
@@ -91,10 +89,8 @@ function showDashboard() {
   const layout = document.getElementById('app-layout');
   if (layout) layout.style.display = 'block';
   
-  // Set current user details
-  document.getElementById('current-user-avatar').textContent = currentUser.name ? currentUser.name.substring(0, 2) : 'مد';
-  document.getElementById('current-user-name').textContent = currentUser.name || 'مدیر سیستم';
-  document.getElementById('current-user-role').textContent = `نقش: ${currentUser.role}`;
+  // Current user in the header (js/layout/topnav.js)
+  NopaNav.setUser(currentUser);
 
   if (typeof applyPanelPermissions === 'function') applyPanelPermissions();
 
@@ -228,17 +224,7 @@ function setupEventListeners() {
     window.location.reload();
   });
 
-  // Tab switching
-  const menuItems = document.querySelectorAll('.menu-item');
-  menuItems.forEach(item => {
-    item.addEventListener('click', () => {
-      if (typeof window.closeUserDetailDrawer === 'function') {
-        window.closeUserDetailDrawer();
-      }
-      const tabId = item.getAttribute('data-tab');
-      switchTab(tabId, true);
-    });
-  });
+  // Tab switching is handled by the top navigation (js/layout/topnav.js)
 
   // Add Member Modal Trigger
   const addMemberBtn = document.getElementById('btn-open-add-member-modal');
@@ -261,19 +247,6 @@ function setupEventListeners() {
       }
     });
   }
-
-  // Accordion Toggle Logic
-  window.toggleAccordion = function(headerEl) {
-    const item = headerEl.parentElement;
-    // Close other accordions
-    document.querySelectorAll('.accordion-item').forEach(accItem => {
-      if(accItem !== item) {
-        accItem.classList.remove('open');
-      }
-    });
-    // Toggle current
-    item.classList.toggle('open');
-  };
 
   // Filters & Search
   document.getElementById('user-search-input').addEventListener('input', debounce(() => {
@@ -4628,313 +4601,6 @@ async function handleMediaUpload(e) {
 }
 
 // ---- PHASE 5 NEW LOGIC ----
-
-// 1. Sidebar Resizer & Compact Mode & Mobile Drawer Controls
-function setupSidebarControls() {
-  const sidebar = document.getElementById('sidebar');
-  const sidebarContainer = document.getElementById('sidebar-container');
-  const resizer = document.getElementById('sidebar-resizer');
-  const collapseBtn = document.getElementById('btn-sidebar-collapse');
-  const mobileToggleBtn = document.getElementById('btn-mobile-sidebar-toggle');
-  const mobileCloseBtn = document.getElementById('btn-mobile-sidebar-close');
-  const backdrop = document.getElementById('sidebar-backdrop');
-  
-  if (!sidebar) return;
-
-  const brandBtn = document.getElementById('sidebar-brand-btn') || (sidebar ? sidebar.querySelector('.brand-icon') : null);
-
-  function updateSidebarStateUI() {
-    const isCompact = sidebar.classList.contains('compact');
-    if (brandBtn) {
-      if (isCompact) {
-        brandBtn.setAttribute('title', 'باز کردن سایدبار');
-      } else {
-        brandBtn.setAttribute('title', 'مدیریت نپا');
-      }
-    }
-  }
-
-  function expandSidebar() {
-    if (window.innerWidth <= 992) return;
-    sidebar.classList.remove('compact');
-    document.body.classList.remove('sidebar-compact');
-    const layout = document.getElementById('app-layout');
-    if (layout) layout.classList.remove('sidebar-compact');
-
-    const savedWidth = localStorage.getItem('sidebar_width');
-    const targetWidth = (savedWidth && savedWidth !== '80px') ? savedWidth : '280px';
-    sidebar.style.width = targetWidth;
-    document.documentElement.style.setProperty('--sidebar-width', targetWidth);
-    localStorage.setItem('sidebar_width', targetWidth);
-    localStorage.setItem('sidebar_compact', 'false');
-    updateSidebarStateUI();
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
-  }
-
-  function collapseSidebar() {
-    if (window.innerWidth <= 992) return;
-    sidebar.classList.add('compact');
-    document.body.classList.add('sidebar-compact');
-    const layout = document.getElementById('app-layout');
-    if (layout) layout.classList.add('sidebar-compact');
-
-    sidebar.style.width = '80px';
-    document.documentElement.style.setProperty('--sidebar-width', '80px');
-    localStorage.setItem('sidebar_compact', 'true');
-    updateSidebarStateUI();
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
-  }
-
-  // Responsive sidebar mode applier
-  function applySidebarResponsiveMode() {
-    if (window.innerWidth <= 992) {
-      sidebar.style.width = '';
-      sidebar.classList.remove('compact');
-      document.body.classList.remove('sidebar-compact');
-      const layout = document.getElementById('app-layout');
-      if (layout) layout.classList.remove('sidebar-compact');
-      document.documentElement.style.removeProperty('--sidebar-width');
-    } else {
-      const savedWidth = localStorage.getItem('sidebar_width');
-      const savedCompact = localStorage.getItem('sidebar_compact');
-      if (savedCompact === 'true') {
-        sidebar.classList.add('compact');
-        document.body.classList.add('sidebar-compact');
-        const layout = document.getElementById('app-layout');
-        if (layout) layout.classList.add('sidebar-compact');
-        sidebar.style.width = '80px';
-        document.documentElement.style.setProperty('--sidebar-width', '80px');
-      } else {
-        const width = (savedWidth && savedWidth !== '80px') ? savedWidth : '280px';
-        sidebar.style.width = width;
-        sidebar.classList.remove('compact');
-        document.body.classList.remove('sidebar-compact');
-        const layout = document.getElementById('app-layout');
-        if (layout) layout.classList.remove('sidebar-compact');
-        document.documentElement.style.setProperty('--sidebar-width', width);
-      }
-    }
-    updateSidebarStateUI();
-  }
-
-  // Mobile Drawer Toggle Methods
-  function openMobileSidebar() {
-    if (sidebarContainer) sidebarContainer.classList.add('mobile-open');
-    if (backdrop) backdrop.classList.add('active');
-    document.body.classList.add('sidebar-mobile-open');
-  }
-
-  function closeMobileSidebar() {
-    if (sidebarContainer) sidebarContainer.classList.remove('mobile-open');
-    if (backdrop) backdrop.classList.remove('active');
-    document.body.classList.remove('sidebar-mobile-open');
-  }
-
-  window.openMobileSidebar = openMobileSidebar;
-  window.closeMobileSidebar = closeMobileSidebar;
-
-  if (mobileToggleBtn) {
-    mobileToggleBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (window.innerWidth <= 992) {
-        if (sidebarContainer && sidebarContainer.classList.contains('mobile-open')) {
-          closeMobileSidebar();
-        } else {
-          openMobileSidebar();
-        }
-      } else {
-        if (sidebar.classList.contains('compact')) {
-          expandSidebar();
-        } else {
-          collapseSidebar();
-        }
-      }
-    });
-  }
-
-  if (mobileCloseBtn) {
-    mobileCloseBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeMobileSidebar();
-    });
-  }
-
-  if (backdrop) {
-    backdrop.addEventListener('click', () => {
-      closeMobileSidebar();
-    });
-  }
-
-  // Auto-close mobile drawer when selecting any navigation item
-  document.querySelectorAll('.menu-item').forEach(item => {
-    item.addEventListener('click', () => {
-      if (window.innerWidth <= 992) {
-        closeMobileSidebar();
-      }
-    });
-  });
-  
-  let isResizing = false;
-
-  if (resizer) {
-    resizer.addEventListener('mousedown', (e) => {
-      if (window.innerWidth <= 992) return;
-      isResizing = true;
-      resizer.classList.add('resizing');
-      document.body.classList.add('resizing');
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing || window.innerWidth <= 992) return;
-      // Window width minus mouse X gives right-sided width in RTL
-      const newWidth = window.innerWidth - e.clientX;
-      if (newWidth > 80 && newWidth < 400) {
-        sidebar.style.width = newWidth + 'px';
-        sidebar.classList.remove('compact');
-        document.body.classList.remove('sidebar-compact');
-        const layout = document.getElementById('app-layout');
-        if (layout) layout.classList.remove('sidebar-compact');
-        document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
-      } else if (newWidth <= 80) {
-        sidebar.classList.add('compact');
-        document.body.classList.add('sidebar-compact');
-        const layout = document.getElementById('app-layout');
-        if (layout) layout.classList.add('sidebar-compact');
-        sidebar.style.width = '80px';
-        document.documentElement.style.setProperty('--sidebar-width', '80px');
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (isResizing) {
-        isResizing = false;
-        resizer.classList.remove('resizing');
-        document.body.classList.remove('resizing');
-        document.body.style.cursor = 'default';
-        if (window.innerWidth > 992) {
-          if (!sidebar.classList.contains('compact')) {
-            localStorage.setItem('sidebar_width', sidebar.style.width);
-          }
-          localStorage.setItem('sidebar_compact', sidebar.classList.contains('compact'));
-          updateSidebarStateUI();
-          window.dispatchEvent(new Event('resize'));
-        }
-      }
-    });
-  }
-  
-  // Collapse button for desktop
-  if (collapseBtn) {
-    collapseBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (sidebar.classList.contains('compact')) {
-        expandSidebar();
-      } else {
-        collapseSidebar();
-      }
-    });
-  }
-
-  // Brand header / logo click to expand in compact mode
-  if (brandBtn) {
-    brandBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (sidebar.classList.contains('compact')) {
-        expandSidebar();
-      }
-    });
-  }
-
-  // Handle window resizing
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 992) {
-      closeMobileSidebar();
-    }
-    applySidebarResponsiveMode();
-  });
-
-  // Restore initial state
-  applySidebarResponsiveMode();
-}
-
-// 1.1 Smart Hide/Reveal Header on Scroll & Touch
-function setupScrollHeader() {
-  const topBar = document.querySelector('.top-bar');
-  if (!topBar) return;
-
-  let lastScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0);
-  let ticking = false;
-  const minScrollToHide = 50; // keep visible near the very top of the page
-
-  function updateHeaderOnScroll() {
-    const currentScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0);
-    const sidebarContainer = document.getElementById('sidebar-container');
-    const isSidebarOpen = sidebarContainer && sidebarContainer.classList.contains('mobile-open');
-
-    // If sidebar drawer is open or near top of the page, always show header
-    if (isSidebarOpen || currentScrollY <= minScrollToHide) {
-      topBar.classList.remove('scroll-hidden');
-      lastScrollY = currentScrollY;
-      ticking = false;
-      return;
-    }
-
-    const delta = currentScrollY - lastScrollY;
-
-    // Any upward scroll immediately reveals the top-bar (everywhere, including from bottom of page!)
-    if (delta < -3) {
-      topBar.classList.remove('scroll-hidden');
-    } else if (delta > 8 && currentScrollY > 70) {
-      // Downward scroll hides the top-bar
-      topBar.classList.add('scroll-hidden');
-    }
-
-    lastScrollY = currentScrollY;
-    ticking = false;
-  }
-
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(updateHeaderOnScroll);
-      ticking = true;
-    }
-  }, { passive: true });
-
-  // Direct touch gesture detection for instantaneous mobile response anywhere on screen
-  let touchStartY = 0;
-  window.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches.length > 0) {
-      touchStartY = e.touches[0].clientY;
-    }
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (!e.touches || e.touches.length === 0) return;
-    const currentTouchY = e.touches[0].clientY;
-    const touchDelta = currentTouchY - touchStartY;
-    const currentScrollY = Math.max(0, window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0);
-
-    // Finger dragging DOWN (user scrolling UP) -> IMMEDIATELY reveal top-bar!
-    if (touchDelta > 6) {
-      topBar.classList.remove('scroll-hidden');
-      touchStartY = currentTouchY;
-    } else if (touchDelta < -15 && currentScrollY > 70) {
-      // Finger dragging UP (user scrolling DOWN) -> hide top-bar
-      const sidebarContainer = document.getElementById('sidebar-container');
-      const isSidebarOpen = sidebarContainer && sidebarContainer.classList.contains('mobile-open');
-      if (!isSidebarOpen) {
-        topBar.classList.add('scroll-hidden');
-      }
-      touchStartY = currentTouchY;
-    }
-  }, { passive: true });
-}
-
-window.setupScrollHeader = setupScrollHeader;
 
 // 2. Universal Export Function
 window.exportData = async function(type, format) {
@@ -9444,27 +9110,24 @@ function isSuperAdminUser() {
   return String((currentUser && currentUser.role) || '').toLowerCase() === 'admin';
 }
 
-// Hides the sidebar entries a sub admin was not granted (the server enforces it as well).
+// Builds the top navigation for the signed-in user: a sub admin only sees the sections a super
+// admin granted (the server enforces it as well); everyone else sees every tab.
 async function applyPanelPermissions() {
   try {
     const role = String((currentUser && currentUser.role) || '').toLowerCase().replace(/[\s-]/g, '_');
-    if (role !== 'sub_admin') return;
+    if (role !== 'sub_admin') {
+      NopaNav.applyAccess({ all: true });
+      return;
+    }
     const res = await request('/api/v1/admin/panel/me');
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));
       showToast(d.error || 'دسترسی شما به پنل فعال نشده است', 'error');
+      NopaNav.applyAccess({ all: true });
       return;
     }
     const me = await res.json();
-    const sections = me.sections || {};
-    document.querySelectorAll('.menu-item[data-tab]').forEach(li => {
-      const section = NopaRouter.sectionOf(li.getAttribute('data-tab'));
-      li.style.display = (section && sections[section]) ? '' : 'none';
-    });
-    document.querySelectorAll('.accordion-item').forEach(acc => {
-      const visible = Array.from(acc.querySelectorAll('.menu-item')).some(li => li.style.display !== 'none');
-      acc.style.display = visible ? '' : 'none';
-    });
+    NopaNav.applyAccess({ all: false, sections: me.sections || {} });
   } catch (e) {
     console.error('applyPanelPermissions error:', e);
   }

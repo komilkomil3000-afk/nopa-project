@@ -98,7 +98,7 @@
       load: () => call('loadNotificationData'),
     },
     'content-tab': {
-      hashes: ['content'], group: null, label: 'اطلاعیه سراسری', icon: 'fa-solid fa-bullhorn', section: null,
+      hashes: ['content'], group: 'outreach', label: 'اطلاعیه سراسری', icon: 'fa-solid fa-bullhorn', section: null,
       title: 'اطلاعیه‌ها و محتوا', desc: 'مدیریت و انتشار اطلاعیه‌های سراسری و پیام‌های هدفمند',
       load: () => {},
     },
@@ -108,7 +108,7 @@
       load: () => call('loadMediaAssets'),
     },
     'chat-tab': {
-      hashes: ['chat'], group: null, label: 'مدیریت گفتگوها', icon: 'fa-solid fa-comments', section: null,
+      hashes: ['chat'], group: 'outreach', label: 'نظارت بر گفتگوها', icon: 'fa-solid fa-comments', section: null,
       title: 'مدیریت گفتگوها', desc: 'نظارت بر گفتگوهای کاروان‌ها و پیام‌های کاربران',
       load: () => call('loadChats'),
     },
@@ -162,22 +162,9 @@
       target.classList.add('active-panel');
     }
 
-    // Ensure top-bar header is visible on tab navigation
-    const topBarEl = document.querySelector('.top-bar');
-    if (topBarEl) topBarEl.classList.remove('scroll-hidden');
-
     activeTab = tabId; // global state declared in app.js
     lastSwitch = { id: tabId, at: Date.now() };
-
-    // Highlight menu item and expand parent accordion
-    document.querySelectorAll('.menu-item').forEach(mi => {
-      const on = mi.getAttribute('data-tab') === tabId;
-      mi.classList.toggle('active', on);
-      if (on) {
-        const accordion = mi.closest('.accordion-item');
-        if (accordion) accordion.classList.add('open');
-      }
-    });
+    window.scrollTo({ top: 0 });
 
     if (meta.title) {
       const titleEl = document.getElementById('tab-title-text');

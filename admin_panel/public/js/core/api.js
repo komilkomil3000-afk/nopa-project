@@ -10,7 +10,9 @@
     if (currentToken) headers['Authorization'] = `Bearer ${currentToken}`;
     const hasType = Object.keys(headers).some(h => h.toLowerCase() === 'content-type');
     if (typeof options.body === 'string' && !hasType) headers['Content-Type'] = 'application/json';
-    const res = await fetch(url, Object.assign({}, options, { headers }));
+    const fetchOptions = Object.assign({}, options, { headers });
+    delete fetchOptions.silent;
+    const res = await fetch(url, fetchOptions);
 
     if (res.status === 403) {
       // 403 from the permission layer (e.g. a sub admin without this section) is not an expired
@@ -18,7 +20,7 @@
       let reason = '';
       try { reason = (await res.clone().json()).error || ''; } catch (_) { /* not JSON */ }
       if (reason && !/توکن|نشست|مسدود|IP/.test(reason)) {
-        showToast(reason, 'error');
+        if (!options.silent) showToast(reason, 'error'); // silent: background polls (e.g. the attention bell)
         return res;
       }
     }

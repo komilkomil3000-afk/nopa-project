@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="/admin/libs/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="/admin/css/tokens.css">
   <link rel="stylesheet" href="/admin/style.css">
+  <link rel="stylesheet" href="/admin/css/layout.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
 </head>
@@ -26,144 +27,70 @@
 
   <!-- 2. DASHBOARD APP LAYOUT -->
   <div id="app-layout">
-    <!-- Sidebar Container -->
-    <div id="sidebar-container">
-      <aside class="sidebar glass" id="sidebar">
-        <div class="brand">
-          <div class="brand-title-wrap">
-            <div class="brand-icon" id="sidebar-brand-btn" title="مدیریت نپا">
-              <i class="fa-solid fa-flag brand-logo-icon"></i>
-              <i class="fa-solid fa-chevron-left brand-expand-icon"></i>
+    <!-- Top navigation: the menu itself is built from the tab registry by js/layout/topnav.js -->
+    <header class="app-header" id="app-header">
+      <div class="app-header-inner">
+        <button type="button" class="btn-icon nav-toggle" id="btn-nav-toggle" aria-label="منوی سامانه" aria-controls="topnav" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+
+        <a class="app-brand" href="#analytics" aria-label="مدیریت نپا - داشبورد">
+          <span class="app-brand-icon"><i class="fa-solid fa-flag"></i></span>
+          <span class="app-brand-text">مدیریت نپا</span>
+        </a>
+
+        <nav class="topnav" id="topnav" aria-label="منوی اصلی">
+          <div class="topnav-panel-head">
+            <span class="app-brand-icon"><i class="fa-solid fa-flag"></i></span>
+            <strong>منوی سامانه</strong>
+            <button type="button" class="modal-close" id="btn-nav-close" aria-label="بستن منو">&times;</button>
+          </div>
+          <ul class="topnav-list" id="topnav-list"></ul>
+        </nav>
+
+        <div class="app-header-tools">
+          <div class="nav-search" id="nav-search" role="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="nav-search-input" placeholder="جستجوی بخش‌ها..." autocomplete="off" aria-label="جستجوی بخش‌های پنل" aria-controls="nav-search-results">
+            <kbd>/</kbd>
+            <ul class="nav-search-results" id="nav-search-results" role="listbox" hidden></ul>
+          </div>
+
+          <div class="header-menu" id="attention-menu">
+            <button type="button" class="btn-icon header-btn" id="btn-attention" aria-haspopup="true" aria-expanded="false" aria-label="موارد نیازمند رسیدگی">
+              <i class="fa-solid fa-bell"></i><span class="header-badge" id="attention-badge" hidden>0</span>
+            </button>
+            <div class="header-dropdown" id="attention-dropdown" hidden>
+              <div class="header-dropdown-title">نیازمند رسیدگی</div>
+              <ul class="attention-list" id="attention-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
             </div>
-            <h1>مدیریت نپا</h1>
           </div>
-          <button id="btn-sidebar-collapse" class="btn-icon desktop-only" title="تغییر حالت سایدبار"><i class="fa-solid fa-bars"></i></button>
-          <button id="btn-mobile-sidebar-close" class="btn-icon mobile-only" aria-label="بستن منو"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-      
-      <ul class="menu-list accordion">
-        <!-- Module A -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-user-tie"></i>
-            <span class="menu-text">مرکز ارزیابی راهبران</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item" data-tab="mentors-profile-tab"><i class="fa-solid fa-id-card"></i><span class="menu-text">پروفایل و شناسنامه</span></li>
-            <li class="menu-item" data-tab="mentors-tickets-tab"><i class="fa-solid fa-inbox"></i><span class="menu-text">میزکار و تیکت‌ها</span></li>
-            <li class="menu-item" data-tab="mentors-docs-tab"><i class="fa-solid fa-file-check"></i><span class="menu-text">تایید مدارک و گواهینامه‌ها</span></li>
-            <li class="menu-item" data-tab="instructors-tab"><i class="fa-solid fa-chalkboard-user"></i><span class="menu-text">بانک اساتید</span></li>
-          </ul>
-        </li>
 
-        <!-- Module B -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-users-gear"></i>
-            <span class="menu-text">مخاطبان و سرمایه‌ها</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item active" data-tab="users-tab"><i class="fa-solid fa-users"></i><span class="menu-text">دایرکتوری مخاطبان</span></li>
-            <li class="menu-item" data-tab="assets-tab"><i class="fa-solid fa-tags"></i><span class="menu-text">نام دارایی‌ها</span></li>
-            <li class="menu-item" data-tab="rewards-tab"><i class="fa-solid fa-coins"></i><span class="menu-text">کیف پول و لیگ</span></li>
-            <li class="menu-item" data-tab="levels-tab"><i class="fa-solid fa-layer-group"></i><span class="menu-text">سطوح و گواهینامه‌ها</span></li>
-          </ul>
-        </li>
+          <button type="button" class="btn-icon theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
 
-        <!-- Module C -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-compass"></i>
-            <span class="menu-text">مدیریت کاروان‌ها</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item" data-tab="caravans-tab"><i class="fa-solid fa-compass"></i><span class="menu-text">مدیریت و فهرست کاروان‌ها</span></li>
-          </ul>
-        </li>
-
-        <!-- Module D -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-book-open"></i>
-            <span class="menu-text">مدیریت کلاس و آزمون</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item" data-tab="lms-tab"><i class="fa-solid fa-graduation-cap"></i><span class="menu-text">ساختار منزلگاه و کلاس‌ها</span></li>
-            <li class="menu-item" data-tab="form-builder-tab"><i class="fa-solid fa-wpforms"></i><span class="menu-text">فرم‌ساز داینامیک</span></li>
-            <li class="menu-item" data-tab="submissions-tab"><i class="fa-solid fa-trophy"></i><span class="menu-text">بررسی چالش‌ها و تکالیف</span></li>
-          </ul>
-        </li>
-
-        <!-- Module E: اطلاع‌رسانی و جارچی -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-bullhorn" style="color: var(--primary-text);"></i>
-            <span class="menu-text">جارچی و اطلاع‌رسانی</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item" data-tab="news-tab"><i class="fa-solid fa-newspaper"></i><span class="menu-text">تابلوی اعلانات جارچی</span></li>
-            <li class="menu-item" data-tab="media-tab"><i class="fa-solid fa-folder-open"></i><span class="menu-text">مدیریت فایل‌ها و رسانه</span></li>
-          </ul>
-        </li>
-
-        <!-- Module F -->
-        <li class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion(this)">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span class="menu-text">تنظیمات سیستم</span>
-            <i class="fa-solid fa-chevron-down accordion-arrow"></i>
-          </div>
-          <ul class="accordion-content">
-            <li class="menu-item" data-tab="roles-tab"><i class="fa-solid fa-user-lock"></i><span class="menu-text">نقش‌ها و دسترسی‌ها (RBAC)</span></li>
-            <li class="menu-item" data-tab="notifications-tab"><i class="fa-solid fa-bell"></i><span class="menu-text">تنظیمات پیام‌رسانی</span></li>
-            <li class="menu-item" data-tab="audit-tab"><i class="fa-solid fa-clock-rotate-left"></i><span class="menu-text">امنیت و گزارشات سیستم</span></li>
-          </ul>
-        </li>
-      </ul>
-
-      <div class="sidebar-footer">
-        <div class="user-profile">
-          <div class="user-avatar" id="current-user-avatar">مد</div>
-          <div class="user-info">
-            <h4 id="current-user-name">مدیر سیستم</h4>
-            <p id="current-user-role">نقش: Super Admin</p>
+          <div class="header-menu" id="user-menu">
+            <button type="button" class="user-menu-btn" id="btn-user-menu" aria-haspopup="true" aria-expanded="false" aria-label="حساب کاربری">
+              <span class="user-avatar-sm" id="current-user-avatar">مد</span>
+              <span class="user-menu-name" id="current-user-name">مدیر سیستم</span>
+              <i class="fa-solid fa-chevron-down user-menu-caret"></i>
+            </button>
+            <div class="header-dropdown user-dropdown" id="user-dropdown" hidden>
+              <div class="user-dropdown-head">
+                <strong id="current-user-name-full">مدیر سیستم</strong>
+                <span id="current-user-role">سوپر ادمین</span>
+              </div>
+              <button type="button" id="btn-logout-ctrl" class="header-dropdown-item is-danger"><i class="fa-solid fa-right-from-bracket"></i> خروج از سیستم</button>
+            </div>
           </div>
         </div>
-        <button id="btn-logout-ctrl" class="btn-logout" title="خروج"><i class="fa-solid fa-sign-out-alt"></i> <span class="menu-text">خروج از سیستم</span></button>
       </div>
-      </aside>
-      <div id="sidebar-resizer" class="desktop-only"></div>
-    </div>
-
-    <!-- Mobile Sidebar Backdrop Overlay -->
-    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    </header>
+    <div class="nav-backdrop" id="nav-backdrop"></div>
 
     <!-- Main Content Area -->
-    <main class="main-wrapper">
-      <!-- Top header bar -->
-      <header class="top-bar glass">
-        <div class="top-bar-start">
-          <button id="btn-mobile-sidebar-toggle" class="btn-mobile-toggle mobile-only" aria-label="منوی سامانه" title="منوی سامانه">
-            <i class="fa-solid fa-bars"></i>
-          </button>
-          <div class="page-title">
-            <h2 id="tab-title-text">دایرکتوری کاربران</h2>
-            <p id="tab-desc-text">مشاهده، فیلتر، ویرایش و مدیریت اطلاعات ۵۰۰+ کاربر نپا</p>
-          </div>
-        </div>
-        <div class="top-bar-end">
-          <button type="button" class="btn-icon theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
-          <div class="mobile-brand-pill mobile-only">
-            <div class="brand-icon mini"><i class="fa-solid fa-flag"></i></div>
-            <span>نپا</span>
-          </div>
-        </div>
-      </header>
+    <main class="main-wrapper" id="main-content">
+      <div class="page-header">
+        <h2 id="tab-title-text">دایرکتوری کاربران</h2>
+        <p id="tab-desc-text">مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا</p>
+      </div>
 
       <!-- TAB 0: ANALYTICS DASHBOARD -->
       <section id="analytics-tab" class="tab-panel" style="display: none;">
@@ -3760,6 +3687,8 @@
     <script src="js/ui/modal.js"></script>
     <script src="js/ui/confirm.js"></script>
     <script src="js/ui/table.js"></script>
+    <script src="js/core/attention.js"></script>
+    <script src="js/layout/topnav.js"></script>
     <script src="app.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>
