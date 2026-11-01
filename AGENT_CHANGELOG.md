@@ -2278,3 +2278,73 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - Static check only, not run in browser
 - **Status:** Completed
+
+### [2026-11-01 15:35] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/sw.js` (Modified)
+  - `admin_panel/src/controllers/mediaController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `app/android/app/src/main/res/drawable-v21/launch_background.xml` (Modified)
+  - `app/android/app/src/main/res/drawable/launch_background.xml` (Modified)
+  - `app/android/app/src/main/res/values-night/styles.xml` (Modified)
+  - `app/android/app/src/main/res/values/colors.xml` (Modified)
+  - `app/android/app/src/main/res/values/styles.xml` (Modified)
+  - `app/ios/Runner/Base.lproj/LaunchScreen.storyboard` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/reward_popup.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `admin_panel/public/fa-digits.js` (Created)
+  - `app/android/app/src/main/res/values-v31/` (Created)
+  - `app/lib/widgets/fa_text.dart` (Created)
+- **Description of Changes:**
+  - App: new widgets/fa_text.dart (drop-in Text that renders Persian digits, links untouched) and all screens/widgets now import it instead of material Text
+  - login_screen shows a 'در حال ورود به نپا' loading view with spinner while a saved session is verified so logged-in users go straight into the app
+  - native Android/iOS launch background changed from white to app background color (#201A36, plus values-v31 splash style). Admin panel: GET /admin/media/files and POST /admin/media/files/delete (path-traversal safe) in mediaController/routes
+  - media-tab rebuilt as a file manager of the uploads folder (preview, search, type filter, copy link, single/bulk delete) and added to sidebar
+  - new public/fa-digits.js converts visible digits to Persian
+  - sw cache bumped to v3
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check app.js; backend tsc not run (node_modules missing)
+- **Status:** Completed

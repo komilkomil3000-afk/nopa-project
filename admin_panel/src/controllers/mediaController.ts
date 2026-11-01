@@ -147,3 +147,121 @@ export const getMediaAssets = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch media assets' });
   }
 };
+
+// ---------------------------------------------------------------------------
+// Admin file manager: list / delete what is physically stored in the uploads folder
+// ---------------------------------------------------------------------------
+
+interface StoredFile {
+  path: string; // relative to uploads/, forward slashes
+  name: string;
+  url: string;
+  size: number;
+  modifiedAt: string;
+  mimeType: string;
+  title: string | null;
+  assetType: string | null;
+  tracked: boolean; // has a MediaAsset record
+}
+
+function walkUploads(dir: string, rel: string, depth: number, out: { path: string; size: number; mtime: Date }[]) {
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith('.')) continue;
+    const abs = path.join(dir, e.name);
+    const relPath = rel ? `${rel}/${e.name}` : e.name;
+    if (e.isDirectory()) {
+      if (depth < 4) walkUploads(abs, relPath, depth + 1, out);
+    } else if (e.isFile()) {
+      try {
+        const st = fs.statSync(abs);
+        out.push({ path: relPath, size: st.size, mtime: st.mtime });
+      } catch {
+        /* vanished while listing */
+      }
+    }
+  }
+}
+
+export const listStoredFiles = async (_req: Request, res: Response) => {
+  try {
+    const found: { path: string; size: number; mtime: Date }[] = [];
+    walkUploads(uploadsDir, '', 0, found);
+
+    const assets = await prisma.mediaAsset.findMany({ select: { url: true, title: true, assetType: true } });
+    const byUrl = new Map(assets.map((a) => [a.url, a]));
+
+    const files: StoredFile[] = found
+      .map((f) => {
+        const url = `/uploads/${f.path}`;
+        const ext = path.extname(f.path).toLowerCase();
+        const meta = byUrl.get(url);
+        return {
+          path: f.path,
+          name: path.basename(f.path),
+          url,
+          size: f.size,
+          modifiedAt: f.mtime.toISOString(),
+          mimeType: ALLOWED_UPLOADS[ext] || 'application/octet-stream',
+          title: meta?.title ?? null,
+          assetType: meta?.assetType ?? null,
+          tracked: !!meta,
+        };
+      })
+      .sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
+
+    res.json({
+      files,
+      totalSize: files.reduce((s, f) => s + f.size, 0),
+    });
+  } catch (error) {
+    console.error('Error listing stored files:', error);
+    res.status(500).json({ error: 'خطا در دریافت فهرست فایل‌ها' });
+  }
+};
+
+export const deleteStoredFiles = async (req: AuthRequest, res: Response) => {
+  try {
+    const paths: unknown = req.body?.paths;
+    if (!Array.isArray(paths) || paths.length === 0 || paths.length > 200) {
+      return res.status(400).json({ error: 'فهرست فایل‌ها نامعتبر است' });
+    }
+
+    let deleted = 0;
+    const failed: string[] = [];
+    for (const raw of paths) {
+      if (typeof raw !== 'string' || !raw) {
+        continue;
+      }
+      // Resolve inside uploads/ only (blocks ../ traversal and absolute paths)
+      const abs = path.resolve(uploadsDir, raw);
+      if (!abs.startsWith(uploadsDir + path.sep)) {
+        failed.push(raw);
+        continue;
+      }
+      try {
+        const st = fs.statSync(abs);
+        if (!st.isFile()) {
+          failed.push(raw);
+          continue;
+        }
+        fs.unlinkSync(abs);
+        deleted++;
+        const url = `/uploads/${raw.split(path.sep).join('/')}`;
+        await prisma.mediaAsset.deleteMany({ where: { url } });
+      } catch {
+        failed.push(raw);
+      }
+    }
+
+    res.json({ success: true, deleted, failed });
+  } catch (error) {
+    console.error('Error deleting stored files:', error);
+    res.status(500).json({ error: 'خطا در حذف فایل‌ها' });
+  }
+};

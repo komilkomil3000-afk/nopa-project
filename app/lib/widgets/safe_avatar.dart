@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/avatar_catalog.dart';
 import '../core/constants/api_constants.dart';

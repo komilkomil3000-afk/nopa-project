@@ -170,10 +170,12 @@ router.get('/users/:id/analytics', getUserAnalytics as any);
 
 import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
-import { upload, uploadMedia } from '../controllers/mediaController';
+import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
 
 // 5. Educational Content, Banners, News & Announcements
 router.post('/media/upload', upload.single('file') as any, uploadMedia as any);
+router.get('/media/files', listStoredFiles as any);
+router.post('/media/files/delete', deleteStoredFiles as any);
 router.post('/announcements/broadcast', createGlobalAnnouncement as any);
 
 router.get('/news', getAdminNews as any);

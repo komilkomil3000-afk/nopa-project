@@ -104,6 +104,7 @@
           </div>
           <ul class="accordion-content">
             <li class="menu-item" data-tab="news-tab"><i class="fa-solid fa-newspaper"></i><span class="menu-text">تابلوی اعلانات جارچی</span></li>
+            <li class="menu-item" data-tab="media-tab"><i class="fa-solid fa-folder-open"></i><span class="menu-text">مدیریت فایل‌ها و رسانه</span></li>
           </ul>
         </li>
 
@@ -1179,23 +1180,37 @@
         </div>
 
         <div class="table-container glass">
-          <div class="panel-title" style="padding: 15px;">گالری رسانه‌های آپلود شده</div>
+          <div class="panel-title" style="padding: 15px;">فایل‌های ذخیره‌شده روی سرور (پوشه uploads)</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:0 15px 15px;">
+            <input type="text" id="files-search" class="input-ctrl" placeholder="جستجوی نام فایل..." style="max-width:240px;">
+            <select id="files-type-filter" class="input-ctrl" style="max-width:160px;">
+              <option value="">همه انواع</option>
+              <option value="image">تصویر</option>
+              <option value="video">ویدیو</option>
+              <option value="audio">صوت</option>
+              <option value="doc">سند</option>
+            </select>
+            <span id="files-summary" style="color:var(--text-secondary); font-size:12px;"></span>
+            <button type="button" class="page-btn" id="btn-files-refresh"><i class="fa-solid fa-rotate"></i> بازخوانی</button>
+            <button type="button" class="page-btn" id="btn-files-delete-selected" style="color:#f87171;"><i class="fa-solid fa-trash"></i> حذف انتخاب‌شده‌ها</button>
+          </div>
           <table class="data-table" id="media-gallery-table">
             <thead>
               <tr>
+                <th style="width:32px;"><input type="checkbox" id="files-select-all"></th>
+                <th>پیش‌نمایش</th>
                 <th>نام فایل</th>
-                <th>نوع فایل</th>
+                <th>نوع</th>
                 <th>حجم</th>
                 <th>لینک مستقیم</th>
-                <th>تاریخ آپلود</th>
+                <th>تاریخ</th>
+                <th>عملیات</th>
               </tr>
             </thead>
-            <tbody>
-              <!-- Media assets rows -->
-            </tbody>
+            <tbody></tbody>
           </table>
         </div>
-      </section>
+</section>
 
       <!-- CHAT OVERSIGHT TAB -->
       <section id="chat-tab" class="tab-panel" style="display: none;">
@@ -4020,5 +4035,6 @@
     <script src="support.js"></script>
     <script src="instructors.js"></script>
     <script src="lms.js"></script>
+    <script src="fa-digits.js"></script>
 </body>
 </html>
