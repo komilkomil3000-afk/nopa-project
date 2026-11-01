@@ -81,7 +81,7 @@ function renderAdminChallenges(challenges) {
   if (!tbody) return;
 
   if (challenges.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 25px; color: var(--text-muted);">هیچ چالشی با فیلتر انتخابی یافت نشد</td></tr>`;
+    NopaTable.empty(tbody, 'هیچ چالشی با فیلتر انتخابی یافت نشد');
     return;
   }
 
@@ -92,17 +92,17 @@ function renderAdminChallenges(challenges) {
     let creatorBadge = '';
     if (isByAdmin) {
       creatorBadge = `
-        <span class="badge" style="background: linear-gradient(135deg, rgb(var(--primary-rgb) / 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45); font-weight: 800; font-size: 11.5px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+        <span class="badge u-fw-800 u-fs-11_5 u-p-4-10 u-inline-flex u-items-center u-gap-5 u-nowrap" style="background: linear-gradient(135deg, rgb(var(--primary-rgb) / 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45)">
           <i class="fa-solid fa-shield-halved"></i> توسط مدیر سیستم
         </span>
       `;
     } else {
       creatorBadge = `
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgb(var(--info-rgb) / 0.2); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.45); font-weight: bold; font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+        <div class="u-flex u-col u-gap-3">
+          <span class="badge u-bg-info-20 u-c-info-text u-bd-info-45 u-bold u-fs-11 u-p-3-8 u-inline-flex u-items-center u-gap-4 u-nowrap">
             <i class="fa-solid fa-user-tie"></i> توسط راهبر
           </span>
-          <span style="font-size: 11.5px; color: var(--text-soft); font-weight: 600;">${esc(creatorName)}</span>
+          <span class="u-fs-11_5 u-c-text-soft u-fw-600">${esc(creatorName)}</span>
         </div>
       `;
     }
@@ -112,79 +112,79 @@ function renderAdminChallenges(challenges) {
     const audience = c.targetAudience;
     if (audience && audience.type === 'caravan') {
       caravanDisplay = `
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgb(var(--primary-rgb) / 0.18); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+        <div class="u-flex u-col u-gap-3">
+          <span class="badge u-bg-primary-18 u-c-primary-text u-bd-primary-35 u-bold u-fs-11_5 u-inline-flex u-items-center u-gap-4">
             <i class="fa-solid fa-users"></i> کاروان: ${esc(audience.name)}
           </span>
-          <span style="font-size: 11px; color: var(--text-muted);">
-            <i class="fa-solid fa-user-tie" style="color: var(--text-faint);"></i> راهبر: ${esc(audience.mentorName || 'نامشخص')}
+          <span class="u-fs-11 u-c-text-muted">
+            <i class="fa-solid fa-user-tie u-c-text-faint"></i> راهبر: ${esc(audience.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
     } else if (c.caravanInfo) {
       caravanDisplay = `
-        <div style="display: flex; flex-direction: column; gap: 3px;">
-          <span class="badge" style="background: rgb(var(--primary-rgb) / 0.18); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); font-weight: bold; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;">
+        <div class="u-flex u-col u-gap-3">
+          <span class="badge u-bg-primary-18 u-c-primary-text u-bd-primary-35 u-bold u-fs-11_5 u-inline-flex u-items-center u-gap-4">
             <i class="fa-solid fa-users"></i> کاروان: ${esc(c.caravanInfo.name)}
           </span>
-          <span style="font-size: 11px; color: var(--text-muted);">
-            <i class="fa-solid fa-user-tie" style="color: var(--text-faint);"></i> راهبر: ${esc(c.caravanInfo.mentorName || 'نامشخص')}
+          <span class="u-fs-11 u-c-text-muted">
+            <i class="fa-solid fa-user-tie u-c-text-faint"></i> راهبر: ${esc(c.caravanInfo.mentorName || 'نامشخص')}
           </span>
         </div>
       `;
     } else {
       caravanDisplay = `
-        <span class="badge" style="background: rgb(var(--muted-rgb) / 0.15); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.25); font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+        <span class="badge u-bg-muted-15 u-c-text-muted u-bd-muted-25 u-fs-11_5 u-inline-flex u-items-center u-gap-5">
           <i class="fa-solid fa-globe"></i> عمومی (همه کاروان‌ها)
         </span>
       `;
     }
 
     // Type badge
-    let typeBadge = `<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-soft); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">${c.type}</span>`;
+    let typeBadge = `<span class="badge u-bg-muted-20 u-c-text-soft u-nowrap u-inline-flex u-items-center u-gap-5">${c.type}</span>`;
     if (c.type === 'quiz') {
-      typeBadge = `<span class="badge" style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
+      typeBadge = `<span class="badge u-bg-success-20 u-c-success-text u-bd-success-30 u-nowrap u-inline-flex u-items-center u-gap-5"><i class="fa-solid fa-circle-question"></i> آزمون مرحله‌ای</span>`;
     } else if (c.type === 'skill' || c.type === 'text') {
-      typeBadge = `<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
+      typeBadge = `<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-30 u-nowrap u-inline-flex u-items-center u-gap-5"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     } else if (c.type === 'file') {
-      typeBadge = `<span class="badge" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
+      typeBadge = `<span class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-30 u-nowrap u-inline-flex u-items-center u-gap-5"><i class="fa-solid fa-pen"></i> تشریحی</span>`;
     }
 
     // Submissions participation
     const approved = c.approvedSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'approved').length : 0);
     const pending = c.pendingSubmissions || (c.submissions ? c.submissions.filter(s => s.status === 'pending' || s.status === 'PENDING_REVIEW').length : 0);
-    const participation = `<div style="font-size: 11.5px; display: flex; justify-content: center; gap: 6px;">
-      <span style="color: var(--success-text); font-weight: bold;"><i class="fa-solid fa-check"></i> ${approved}</span>
-      <span style="color: var(--text-faint);">|</span>
-      <span style="color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-clock"></i> ${pending}</span>
+    const participation = `<div class="u-fs-11_5 u-flex u-justify-center u-gap-6">
+      <span class="u-c-success-text u-bold"><i class="fa-solid fa-check"></i> ${approved}</span>
+      <span class="u-c-text-faint">|</span>
+      <span class="u-c-accent-text u-bold"><i class="fa-solid fa-clock"></i> ${pending}</span>
     </div>`;
 
     const escapedTitle = escJs(c.title || '');
 
     return `
       <tr>
-        <td><span class="badge" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); font-family: monospace; font-weight: bold; padding: 3px 8px;">${c.id}</span></td>
+        <td><span class="badge u-bg-primary-20 u-c-primary-text u-mono u-bold u-p-3-8">${c.id}</span></td>
         <td>
-          <div style="font-weight: bold; color: var(--text); font-size: 13px;">${esc(c.title)}</div>
-          <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${esc(c.description || '')}</div>
+          <div class="u-bold u-c-text u-fs-13">${esc(c.title)}</div>
+          <div class="u-fs-11_5 u-c-text-muted u-mt-3 u-maxw-280 u-overflow-hidden u-ellipsis u-nowrap">${esc(c.description || '')}</div>
         </td>
         <td>${caravanDisplay}</td>
         <td>${creatorBadge}</td>
-        <td style="white-space: nowrap;">
-          <div style="margin-bottom: 6px;">${typeBadge}</div>
-          <div style="color: var(--accent-text); font-weight: bold; font-size: 12.5px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
+        <td class="u-nowrap">
+          <div class="u-mb-6">${typeBadge}</div>
+          <div class="u-c-accent-text u-bold u-fs-12_5 u-inline-flex u-items-center u-gap-5 u-nowrap"><i class="fa-solid ${c.category === 'inter_group' ? 'fa-flag' : 'fa-coins'}"></i> ${c.category === 'inter_group' ? 'درفش (بر اساس رتبه)' : window.formatChallengeReward(c)}</div>
         </td>
-        <td style="text-align: center;">${participation}</td>
-        <td style="text-align: center;">
-          <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
-            <button type="button" class="btn-action" data-click="openChallengeStepsModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده مراحل چالش" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+        <td class="u-text-center">${participation}</td>
+        <td class="u-text-center">
+          <div class="u-flex u-gap-5 u-justify-center u-wrap">
+            <button type="button" class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-4-8 u-fs-11 u-bold u-pointer u-inline-flex u-items-center u-gap-4" data-click="openChallengeStepsModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده مراحل چالش">
               <i class="fa-solid fa-list-check"></i> مراحل
             </button>
-            ${c.category === 'inter_group' ? `<button type="button" class="btn-action" data-click="openChallengeRanking" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="رتبه‌بندی کاروان‌ها و اعطای درفش" style="background: rgb(var(--accent-rgb) / 0.15); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
-            <button type="button" class="btn-action" data-click="openEditChallengeModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="ویرایش و اصلاح چالش" style="background: rgb(var(--info-rgb) / 0.15); color: var(--info-text); border: 1px solid rgb(var(--info-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            ${c.category === 'inter_group' ? `<button type="button" class="btn-action u-bg-accent-15 u-c-accent-text u-bd-accent-40 u-r-6 u-p-4-8 u-fs-11 u-bold u-pointer u-inline-flex u-items-center u-gap-4" data-click="openChallengeRanking" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="رتبه‌بندی کاروان‌ها و اعطای درفش"><i class="fa-solid fa-flag"></i> رتبه‌بندی</button>` : ''}
+            <button type="button" class="btn-action u-bg-info-15 u-c-info-text u-bd-info-35 u-r-6 u-p-4-8 u-fs-11 u-bold u-pointer u-inline-flex u-items-center u-gap-4" data-click="openEditChallengeModal" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="ویرایش و اصلاح چالش">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" data-click="deleteChallengeAdmin" data-click-args="${esc(JSON.stringify([String(c.id), String(escapedTitle)]))}" title="حذف چالش" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+            <button type="button" class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-4-8 u-fs-11 u-bold u-pointer u-inline-flex u-items-center u-gap-4" data-click="deleteChallengeAdmin" data-click-args="${esc(JSON.stringify([String(c.id), String(escapedTitle)]))}" title="حذف چالش">
               <i class="fa-solid fa-trash"></i> حذف
             </button>
           </div>
@@ -309,38 +309,38 @@ window.openChallengeRanking = async function(challengeId) {
   const modal = document.getElementById('ranking-modal');
   const body = document.getElementById('ranking-body');
   if (!modal || !body) return;
-  body.innerHTML = '<div style="color:var(--text-muted);">در حال بارگذاری...</div>';
+  body.innerHTML = '<div class="u-c-text-muted">در حال بارگذاری...</div>';
   modal.style.display = 'flex';
   try {
     const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`);
     const data = await res.json();
-    if (!res.ok) { body.innerHTML = `<div style="color:var(--danger-text);">${esc(data.error || 'خطا')}</div>`; return; }
+    if (!res.ok) { body.innerHTML = `<div class="u-c-danger-text">${esc(data.error || 'خطا')}</div>`; return; }
     document.getElementById('ranking-title').textContent = `رتبه‌بندی کاروان‌ها: ${data.challenge.title}`;
     const names = window.assetNamesMap || {};
     const tierName = { gold: names.derafsh_gold || 'درفش طلایی', silver: names.derafsh_silver || 'درفش نقره‌ای', bronze: names.derafsh_bronze || 'درفش برنزی', cloth: names.derafsh_cloth || 'درفش پارچه‌ای' };
     const tierColor = { gold: 'var(--accent-text)', silver: 'var(--text-soft)', bronze: 'var(--accent-strong)', cloth: 'var(--text-muted)' };
 
     if (data.challenge.finalized) {
-      body.innerHTML = '<div style="margin-bottom:10px; color:var(--success-text);"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
-        data.result.map(r => `<div style="display:flex; justify-content:space-between; padding:8px 12px; margin-bottom:6px; background:rgb(var(--fg-rgb) / 0.04); border-radius:8px;"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
+      body.innerHTML = '<div class="u-mb-10 u-c-success-text"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
+        data.result.map(r => `<div class="u-flex u-justify-between u-p-8-12 u-mb-6 u-bg-fg-4 u-r-8"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
       return;
     }
     if (!data.caravans.length) {
-      body.innerHTML = '<div style="color:var(--text-muted);">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
+      body.innerHTML = '<div class="u-c-text-muted">هنوز هیچ کاروانی در این چالش پاسخ نداده است.</div>';
       return;
     }
     const places = Math.min(3, data.caravans.length);
     const placeLabel = ['رتبه‌ی اول (' + tierName.gold + ')', 'رتبه‌ی دوم (' + tierName.silver + ')', 'رتبه‌ی سوم (' + tierName.bronze + ')'];
     const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
-    let html = `<div style="margin-bottom:12px; color:var(--text-muted);">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
+    let html = `<div class="u-mb-12 u-c-text-muted">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
     for (let i = 0; i < places; i++) {
-      html += `<label style="display:block; font-size:12px; font-weight:bold; margin:10px 0 4px; color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]};">${placeLabel[i]}</label>
-        <select class="ranking-select" style="width:100%; padding:8px 12px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:8px; color:var(--text);">${options}</select>`;
+      html += `<label class="u-block u-fs-12 u-bold u-m-10-0-4" style="color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]}">${placeLabel[i]}</label>
+        <select class="ranking-select u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text">${options}</select>`;
     }
-    html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" style="margin-top:16px; width:100%; padding:10px; background:var(--accent); color:var(--text-soft); font-weight:bold; border:none; border-radius:8px; cursor:pointer;">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
+    html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" class="u-mt-16 u-w-full u-p-10 u-bg-accent u-c-text-soft u-bold u-bd-none u-r-8 u-pointer">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--danger-text);">خطا در ارتباط با سرور</div>';
+    body.innerHTML = '<div class="u-c-danger-text">خطا در ارتباط با سرور</div>';
   }
 };
 
@@ -374,21 +374,21 @@ window.addQuestionRow = function(mode, initialData = null) {
   card.className = 'challenge-q-card';
   card.style.cssText = 'background: rgb(var(--fg-rgb) / 0.04); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 8px; padding: 12px; position: relative;';
   card.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-      <span style="font-weight: bold; color: var(--primary-text); font-size: 12px;">سوال / گام شماره ${qIndex}</span>
-      <button type="button" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.challenge-q-card&quot;]" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: none; border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer;">
+    <div class="u-flex u-justify-between u-items-center u-mb-8">
+      <span class="u-bold u-c-primary-text u-fs-12">سوال / گام شماره ${qIndex}</span>
+      <button type="button" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.challenge-q-card&quot;]" class="u-bg-danger-20 u-c-danger-text u-bd-none u-r-4 u-p-2-6 u-fs-11 u-pointer">
         <i class="fa-solid fa-trash"></i> حذف
       </button>
     </div>
-    <div style="margin-bottom: 8px;">
-      <input type="text" class="chal-q-title" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}" style="width: 100%; padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 6px; color: var(--text); font-size: 12px;">
+    <div class="u-mb-8">
+      <input type="text" class="chal-q-title u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12" placeholder="صورت سوال یا عنوان مرحله..." value="${esc(qText)}">
     </div>
-    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+    <div class="u-fs-11 u-c-text-muted u-mb-4">گزینه‌ها (گزینه صحیح را با رادیوباتن انتخاب کنید):</div>
+    <div class="u-grid u-cols-2 u-gap-6">
       ${[0, 1, 2, 3].map(i => `
-        <div style="display: flex; align-items: center; gap: 6px; background: rgb(var(--shade-rgb) / 0.2); padding: 4px 8px; border-radius: 6px;">
-          <input type="radio" name="${mode}-correct-${qIndex}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''} style="cursor: pointer; accent-color: var(--success);">
-          <input type="text" class="chal-q-opt" placeholder="گزینه ${i + 1}" value="${(opts[i] || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; background: transparent; border: 1px solid var(--border-strong); border-radius: 4px; color: var(--text); font-size: 11.5px;">
+        <div class="u-flex u-items-center u-gap-6 u-bg-shade-20 u-p-4-8 u-r-6">
+          <input type="radio" name="${mode}-correct-${qIndex}" value="${i}" ${i === Number(correctIdx) ? 'checked' : ''} class="u-pointer u-accent-success">
+          <input type="text" class="chal-q-opt u-flex-1 u-p-4-8 u-bg-transparent u-bd-border-strong u-r-4 u-c-text u-fs-11_5" placeholder="گزینه ${i + 1}" value="${(opts[i] || '').replace(/"/g, '&quot;')}">
         </div>
       `).join('')}
     </div>
@@ -748,7 +748,7 @@ window.openChallengeStepsModal = function(challengeId) {
   const bodyEl = document.getElementById('modal-challenge-body');
   if (!modal || !bodyEl) return;
 
-  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy" style="color: var(--accent-text);"></i> ${esc(c.title)}`;
+  if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-trophy u-c-accent-text"></i> ${esc(c.title)}`;
   if (badgeEl) badgeEl.innerHTML = `کد: ${c.id} | پاداش: ${window.formatChallengeReward(c)} | نوع: ${c.type}`;
 
   const qList = Array.isArray(c.questions) ? c.questions : [];
@@ -756,9 +756,9 @@ window.openChallengeStepsModal = function(challengeId) {
   let html = '';
   if (qList.length > 0) {
     html += `
-      <div style="margin-bottom: 16px; padding: 12px 16px; background: rgb(var(--primary-rgb) / 0.1); border: 1px solid rgb(var(--primary-rgb) / 0.25); border-radius: 10px;">
-        <div style="font-weight: bold; color: var(--primary-text); font-size: 13px; margin-bottom: 4px;"><i class="fa-solid fa-info-circle"></i> ساختار مرحله‌ای چالش در اپلیکیشن نپا:</div>
-        <div style="color: var(--text-muted); font-size: 12px;">این چالش شامل ${qList.length} مرحله یا سوال متوالی است که دانش‌آموز در اپلیکیشن قدم به قدم به آن پاسخ می‌دهد.</div>
+      <div class="u-mb-16 u-p-12-16 u-bg-primary-10 u-bd-primary-25 u-r-10">
+        <div class="u-bold u-c-primary-text u-fs-13 u-mb-4"><i class="fa-solid fa-info-circle"></i> ساختار مرحله‌ای چالش در اپلیکیشن نپا:</div>
+        <div class="u-c-text-muted u-fs-12">این چالش شامل ${qList.length} مرحله یا سوال متوالی است که دانش‌آموز در اپلیکیشن قدم به قدم به آن پاسخ می‌دهد.</div>
       </div>
     `;
 
@@ -768,49 +768,49 @@ window.openChallengeStepsModal = function(challengeId) {
       const correctIdx = q.correct !== undefined ? q.correct : -1;
 
       html += `
-        <div style="background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span class="badge" style="background: rgb(var(--primary-rgb) / 0.25); color: var(--primary-text); font-weight: bold; font-size: 12px;">
+        <div class="u-bg-fg-3 u-bd-fg-8 u-r-12 u-p-16 u-mb-14">
+          <div class="u-flex u-justify-between u-items-center u-mb-10">
+            <span class="badge u-bg-primary-25 u-c-primary-text u-bold u-fs-12">
               گام ${idx + 1} از ${qList.length}
             </span>
-            <span style="font-size: 11px; color: var(--text-muted);">سوال چهارگزینه‌ای</span>
+            <span class="u-fs-11 u-c-text-muted">سوال چهارگزینه‌ای</span>
           </div>
-          <h4 style="color: var(--text); font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${esc(qText)}</h4>
+          <h4 class="u-c-text u-fs-14 u-m-0-0-12-0 u-lh-1_6">${esc(qText)}</h4>
           ${opts.length > 0 ? `
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="u-flex u-col u-gap-8">
               ${opts.map((opt, oIdx) => {
                 const isCorrect = (oIdx === correctIdx);
                 return `
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; background: ${isCorrect ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--shade-rgb) / 0.2)'}; border: 1px solid ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color: ${isCorrect ? 'var(--success-text)' : 'var(--border-strong)'}; font-size: 12.5px;">
-                    <span style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; background: ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.1)'}; color: white; font-weight: bold;">${oIdx + 1}</span>
-                    <span style="flex: 1;">${esc(opt)}</span>
-                    ${isCorrect ? '<span style="color: var(--success-text); font-weight: bold; font-size: 11px;"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
+                  <div class="u-flex u-items-center u-gap-10 u-p-8-12 u-r-8 u-fs-12_5" style="background: ${isCorrect ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--shade-rgb) / 0.2)'}; border: 1px solid ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color: ${isCorrect ? 'var(--success-text)' : 'var(--border-strong)'}">
+                    <span class="u-w-22 u-h-22 u-r-50p u-flex u-items-center u-justify-center u-fs-11 u-c-white u-bold" style="background: ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.1)'}">${oIdx + 1}</span>
+                    <span class="u-flex-1">${esc(opt)}</span>
+                    ${isCorrect ? '<span class="u-c-success-text u-bold u-fs-11"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
                   </div>
                 `;
               }).join('')}
             </div>
           ` : `
-            <div style="color: var(--text-muted); font-size: 12px;">بدون گزینه‌های چهارگزینه‌ای (پاسخ تشریحی)</div>
+            <div class="u-c-text-muted u-fs-12">بدون گزینه‌های چهارگزینه‌ای (پاسخ تشریحی)</div>
           `}
         </div>
       `;
     });
   } else {
     html += `
-      <div style="background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 12px; padding: 18px; margin-bottom: 14px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); font-weight: bold; font-size: 12px;">
+      <div class="u-bg-fg-3 u-bd-fg-8 u-r-12 u-p-18 u-mb-14">
+        <div class="u-flex u-justify-between u-items-center u-mb-12">
+          <span class="badge u-bg-accent-20 u-c-accent-text u-bold u-fs-12">
             مرحله ۱: اجرای تکلیف مهارتی
           </span>
-          <span style="font-size: 11px; color: var(--text-muted);">پاسخ متنی و پیوست فایل</span>
+          <span class="u-fs-11 u-c-text-muted">پاسخ متنی و پیوست فایل</span>
         </div>
-        <h4 style="color: var(--text); font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">${esc(c.title)}</h4>
-        <div style="background: rgb(var(--shade-rgb) / 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; color: var(--text-soft); font-size: 13px; line-height: 1.7; border-right: 3px solid var(--accent);">
+        <h4 class="u-c-text u-fs-14 u-m-0-0-10-0 u-lh-1_6">${esc(c.title)}</h4>
+        <div class="u-bg-shade-25 u-r-8 u-p-12-14 u-mb-14 u-c-text-soft u-fs-13 u-lh-1_7 u-br-3-solid-accent">
           ${esc(c.description)}
         </div>
-        <div style="background: rgb(var(--success-rgb) / 0.08); border: 1px solid rgb(var(--success-rgb) / 0.2); border-radius: 8px; padding: 10px 14px;">
-          <div style="color: var(--success-text); font-size: 12px; font-weight: bold; margin-bottom: 4px;"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
-          <div style="color: var(--text-muted); font-size: 12px; line-height: 1.6;">دانش‌آموز متن پاسخ خود را در فیلد مربوطه تایپ کرده و در صورت تمایل فایل صوتی، عکس یا پوستر طراحی‌شده را ضمیمه می‌نماید. راهبر یا مدیر در بخش ارزیابی زیر می‌تواند آن را بررسی و پاداش زریک را ثبت کند.</div>
+        <div class="u-bg-success-8 u-bd-success-20 u-r-8 u-p-10-14">
+          <div class="u-c-success-text u-fs-12 u-bold u-mb-4"><i class="fa-solid fa-mobile-screen"></i> نحوه نمایش و تعامل در اپلیکیشن:</div>
+          <div class="u-c-text-muted u-fs-12 u-lh-1_6">دانش‌آموز متن پاسخ خود را در فیلد مربوطه تایپ کرده و در صورت تمایل فایل صوتی، عکس یا پوستر طراحی‌شده را ضمیمه می‌نماید. راهبر یا مدیر در بخش ارزیابی زیر می‌تواند آن را بررسی و پاداش زریک را ثبت کند.</div>
         </div>
       </div>
     `;
@@ -1035,7 +1035,7 @@ function renderAdminSubmissions(submissions) {
   if (!tbody) return;
 
   if (submissions.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 24px; margin-bottom: 8px; display: block; opacity: 0.5;"></i>هیچ پاسخی با فیلترهای انتخابی یافت نشد</td></tr>`;
+    NopaTable.empty(tbody, 'هیچ پاسخی با فیلترهای انتخابی یافت نشد', 'fa-solid fa-filter-circle-xmark');
     return;
   }
 
@@ -1049,8 +1049,8 @@ function renderAdminSubmissions(submissions) {
     const chalId = s.challengeId || (s.challenge ? s.challenge.id : '');
     const answer = s.answerText || 'بدون متن (فایل ارسالی)';
     const fileLink = s.fileUrl
-      ? `<a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 6px; padding: 4px 10px; font-size: 11px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
-      : '<span style="color: var(--text-faint);">-</span>';
+      ? `<a href="${esc(s.fileUrl)}" target="_blank" class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-6 u-p-4-10 u-fs-11 u-no-underline u-inline-flex u-items-center u-gap-5"><i class="fa-solid fa-download"></i> دانلود فایل</a>`
+      : '<span class="u-c-text-faint">-</span>';
 
     const dateStr = s.submittedAt ? new Date(s.submittedAt).toLocaleDateString('fa-IR', { hour: '2-digit', minute: '2-digit' }) : '-';
     const rewardVal = s.challenge?.rewardZarik || 50;
@@ -1059,24 +1059,24 @@ function renderAdminSubmissions(submissions) {
     let statusBadge = '';
     const isPending = s.status === 'pending' || s.status === 'PENDING_REVIEW';
     if (isPending) {
-      statusBadge = `<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4);">در انتظار ارزیابی</span>`;
+      statusBadge = `<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-40">در انتظار ارزیابی</span>`;
     } else if (s.status === 'approved') {
-      statusBadge = `<span class="badge" style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4);"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
+      statusBadge = `<span class="badge u-bg-success-20 u-c-success-text u-bd-success-40"><i class="fa-solid fa-check"></i> تایید شده (+${s.score || rewardVal} زریک)</span>`;
     } else {
-      statusBadge = `<span class="badge" style="background: rgb(var(--danger-rgb) / 0.2); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.4);">رد شده</span>`;
+      statusBadge = `<span class="badge u-bg-danger-20 u-c-danger-text u-bd-danger-40">رد شده</span>`;
     }
 
     // Actions Column with dedicated "مشاهده پاسخ"
     const actionCell = `
-      <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
-        <button type="button" class="btn-action" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background: rgb(var(--primary-rgb) / 0.15); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 5px 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="مشاهده کامل و ارزیابی پاسخ">
+      <div class="u-flex u-gap-6 u-justify-center u-wrap">
+        <button type="button" class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-5-10 u-fs-11 u-bold u-pointer u-inline-flex u-items-center u-gap-4" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="مشاهده کامل و ارزیابی پاسخ">
           <i class="fa-solid fa-eye"></i> مشاهده پاسخ
         </button>
         ${isPending ? `
-          <button type="button" class="page-btn btn-success" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), true, (rewardVal)]))}" style="padding: 5px 8px; font-size: 11px;" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
-          <button type="button" class="page-btn btn-danger" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), false, 0]))}" style="padding: 5px 8px; font-size: 11px;" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
+          <button type="button" class="page-btn btn-success u-p-5-8 u-fs-11" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), true, (rewardVal)]))}" title="تایید سریع"><i class="fa-solid fa-check"></i> تایید</button>
+          <button type="button" class="page-btn btn-danger u-p-5-8 u-fs-11" data-click="reviewAdminSubmission" data-click-args="${esc(JSON.stringify([String(s.id), false, 0]))}" title="رد سریع"><i class="fa-solid fa-times"></i> رد</button>
         ` : `
-          <span style="font-size: 10.5px; color: var(--text-muted); align-self: center;">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
+          <span class="u-fs-10_5 u-c-text-muted u-self-center">${s.mentorFeedback ? 'ارزیابی شد' : ''}</span>
         `}
       </div>
     `;
@@ -1084,36 +1084,36 @@ function renderAdminSubmissions(submissions) {
     return `
       <tr>
         <td>
-          <div style="font-weight: bold; color: var(--text);">${esc(studentName)}</div>
-          <div style="font-size: 11px; color: var(--text-faint);">${esc(studentPhone)}</div>
+          <div class="u-bold u-c-text">${esc(studentName)}</div>
+          <div class="u-fs-11 u-c-text-faint">${esc(studentPhone)}</div>
         </td>
         <td>
-          <div style="font-weight: bold; color: var(--info-text); font-size: 12px; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-users" style="font-size: 11px;"></i> ${esc(caravanName)}
+          <div class="u-bold u-c-info-text u-fs-12 u-flex u-items-center u-gap-4">
+            <i class="fa-solid fa-users u-fs-11"></i> ${esc(caravanName)}
           </div>
-          <div style="font-size: 11px; color: var(--text-soft); margin-top: 3px; display: flex; align-items: center; gap: 4px;">
-            <i class="fa-solid fa-user-tie" style="color: var(--primary-text); font-size: 11px;"></i> ${esc(mentorName)}
+          <div class="u-fs-11 u-c-text-soft u-mt-3 u-flex u-items-center u-gap-4">
+            <i class="fa-solid fa-user-tie u-c-primary-text u-fs-11"></i> ${esc(mentorName)}
           </div>
         </td>
         <td>
-          <div style="font-weight: bold; color: var(--primary-text);">${esc(chalTitle)}</div>
-          <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgb(var(--fg-rgb) / 0.06);">${chalId}</span>
+          <div class="u-bold u-c-primary-text">${esc(chalTitle)}</div>
+          <span class="badge u-fs-10 u-p-1-6 u-bg-fg-6">${chalId}</span>
         </td>
         <td>
-          <div style="max-width: 250px;">
-            <div style="font-size: 12.5px; color: var(--text); line-height: 1.5; max-height: 44px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer;" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+          <div class="u-maxw-250">
+            <div class="u-fs-12_5 u-c-text u-lh-1_5 u-maxh-44 u-overflow-hidden u-ellipsis u-pointer" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="برای مشاهده کامل پاسخ کلیک فرمایید">
               ${esc(answer)}
             </div>
-            <button type="button" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; padding: 3px 0 0 0; display: inline-flex; align-items: center; gap: 4px; font-weight: bold;">
+            <button type="button" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" class="u-bg-none u-bd-none u-c-primary-text u-fs-11 u-pointer u-p-3-0-0-0 u-inline-flex u-items-center u-gap-4 u-bold">
               <i class="fa-solid fa-eye"></i> مشاهده جواب
             </button>
           </div>
         </td>
         <td>${fileLink}</td>
-        <td style="font-size: 12px; color: var(--text-muted);">${dateStr}</td>
-        <td><span style="color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
+        <td class="u-fs-12 u-c-text-muted">${dateStr}</td>
+        <td><span class="u-c-accent-text u-bold"><i class="fa-solid fa-coins"></i> ${rewardVal}</span></td>
         <td>${statusBadge}</td>
-        <td style="text-align: center;">${actionCell}</td>
+        <td class="u-text-center">${actionCell}</td>
       </tr>
     `;
   }).join('');
@@ -1184,28 +1184,28 @@ window.openViewSubmissionModal = function(submissionId) {
       const isImg = s.fileUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i);
       if (isImg) {
         fileContainer.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="u-flex u-col u-gap-8">
             <a href="${esc(s.fileUrl)}" target="_blank" title="مشاهده تصویر در اندازه اصلی">
-              <img src="${esc(s.fileUrl)}" style="max-height: 220px; max-width: 100%; border-radius: 8px; object-fit: contain; border: 1px solid rgb(var(--fg-rgb) / 0.1); background: rgb(var(--shade-rgb) / 0.4);" />
+              <img src="${esc(s.fileUrl)}" class="u-maxh-220 u-maxw-100p u-r-8 u-fit-contain u-bd-fg-10 u-bg-shade-40" />
             </a>
-            <div style="font-size: 11px; color: var(--text-muted);">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
+            <div class="u-fs-11 u-c-text-muted">برای مشاهده در اندازه بزرگ روی تصویر کلیک کنید.</div>
           </div>
         `;
       } else {
         fileContainer.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; color: var(--text-soft); font-size: 12.5px;">
-              <i class="fa-solid fa-file-lines" style="color: var(--primary-text); font-size: 18px;"></i>
+          <div class="u-flex u-items-center u-justify-between u-wrap u-gap-10">
+            <div class="u-flex u-items-center u-gap-8 u-c-text-soft u-fs-12_5">
+              <i class="fa-solid fa-file-lines u-c-primary-text u-fs-18"></i>
               <span>فایل ضمیمه شده توسط دانش‌آموز</span>
             </div>
-            <a href="${esc(s.fileUrl)}" target="_blank" class="btn-action" style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <a href="${esc(s.fileUrl)}" target="_blank" class="btn-action u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-r-6 u-p-6-14 u-fs-12 u-bold u-no-underline u-inline-flex u-items-center u-gap-6">
               <i class="fa-solid fa-download"></i> دانلود و مشاهده فایل
             </a>
           </div>
         `;
       }
     } else {
-      fileContainer.innerHTML = `<span style="color: var(--text-faint); font-size: 12px;"><i class="fa-solid fa-info-circle"></i> بدون فایل یا پیوست ضمیمه</span>`;
+      fileContainer.innerHTML = `<span class="u-c-text-faint u-fs-12"><i class="fa-solid fa-info-circle"></i> بدون فایل یا پیوست ضمیمه</span>`;
     }
   }
 

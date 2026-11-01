@@ -15,25 +15,25 @@ async function loadLevelsAndCertificatesTab() {
 
     data.data.forEach(user => {
       const levelNames = { 1: 'تازه وارد', 2: 'نقره‌ای', 3: 'طلایی' };
-      const levelBadge = `<span class="badge" style="background:var(--primary); color:white; font-size:10px;">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
+      const levelBadge = `<span class="badge u-bg-primary u-c-white u-fs-10">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
       
       const lastCert = user.certificates && user.certificates.length > 0 ? user.certificates[0].title : 'بدون گواهینامه';
       
       let physicalReqs = 'ندارد';
       if (user.physicalOrders && user.physicalOrders.length > 0) {
-        physicalReqs = user.physicalOrders.map(o => `<span class="badge" style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}; color:black;">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
+        physicalReqs = user.physicalOrders.map(o => `<span class="badge u-c-black" style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
       }
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${esc(user.name || 'کاربر بدون نام')}</strong></td>
-        <td style="font-family: monospace;">${esc(user.phoneNumber)}</td>
+        <td class="u-mono">${esc(user.phoneNumber)}</td>
         <td>${levelBadge}</td>
         <td>${esc(lastCert)}</td>
-        <td>${user.registrationCompleted ? '<span style="color:var(--color-success)">تکمیل شده</span>' : '<span style="color:var(--color-danger)">ناقص</span>'}</td>
+        <td>${user.registrationCompleted ? '<span class="u-c-color-success">تکمیل شده</span>' : '<span class="u-c-color-danger">ناقص</span>'}</td>
         <td>${physicalReqs}</td>
         <td>
-          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-edit u-p-4-8 u-fs-11" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -110,7 +110,7 @@ async function loadUsers() {
       let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
-        roleBadge += ` <span class="badge" style="background:var(--primary); color:white; font-size:10px;">${levelName}</span>`;
+        roleBadge += ` <span class="badge u-bg-primary u-c-white u-fs-10">${levelName}</span>`;
       }
       
       const blockBadge = u.blocked ? `<span class="badge badge-blocked">مسدود شده</span>` : '';
@@ -119,25 +119,25 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge" style="background:var(--info-strong); color:white; font-size:10px;">مرد</span>' : u.gender === 'female' ? '<span class="badge" style="background:#db2777; color:white; font-size:10px;">زن</span>' : ''} ${blockBadge}</td>
-        <td style="font-family: monospace;">${esc(u.phoneNumber)}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-10">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-10" style="background:#db2777">زن</span>' : ''} ${blockBadge}</td>
+        <td class="u-mono">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
-        <td><strong style="color: var(--color-neon-blue);">${(u.zarikBalance || 0).toLocaleString()}</strong></td>
-        <td style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">${regDate}</td>
+        <td><strong class="u-c-color-neon-blue">${(u.zarikBalance || 0).toLocaleString()}</strong></td>
+        <td class="u-fs-12 u-c-text-secondary u-nowrap">${regDate}</td>
         <td>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <div class="progress-bar-container" style="flex: 1; margin:0; width:60px;">
+          <div class="u-flex u-items-center u-gap-8">
+            <div class="progress-bar-container u-flex-1 u-m-0 u-w-60">
               <div class="progress-bar-fill" style="width: ${u.completionRate}%"></div>
             </div>
-            <span style="font-size:11px;">${u.completionRate}%</span>
+            <span class="u-fs-11">${u.completionRate}%</span>
           </div>
         </td>
         <td>
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px;" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button class="page-btn btn-edit" style="padding: 4px 8px; font-size:11px;" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
-          <button class="page-btn btn-block" style="padding: 4px 8px; font-size:11px; color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-          <button class="page-btn btn-delete" style="padding: 4px 8px; font-size:11px; color: var(--color-danger);" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
+          <button class="page-btn btn-view u-p-4-8 u-fs-11" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
+          <button class="page-btn btn-edit u-p-4-8 u-fs-11" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-block u-p-4-8 u-fs-11" style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
+          <button class="page-btn btn-delete u-p-4-8 u-fs-11 u-c-color-danger" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -160,9 +160,9 @@ async function viewUserDetails(userId) {
     const drawerHeader = document.querySelector('#user-detail-drawer .drawer-header');
     drawerHeader.innerHTML = `
       <h3 id="drawer-user-name">${esc(user.name)}</h3>
-      <div style="flex:1;"></div>
+      <div class="u-flex-1"></div>
       ${(user.isDualRole || user.role === 'mentor') ? `
-        <button id="btn-role-switcher" class="btn-action" style="background-color:var(--success); color:white; margin-left:15px;" data-click="toggleDualRoleView">
+        <button id="btn-role-switcher" class="btn-action u-bgc-success u-c-white u-ml-15" data-click="toggleDualRoleView">
           <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
         </button>
       ` : ''}
@@ -186,36 +186,36 @@ async function viewUserDetails(userId) {
     const body = document.getElementById('drawer-body-info');
     body.innerHTML = `
       <div id="student-view-container">
-        <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap: wrap;">
-          <div class="glass" style="flex: 0 0 200px; text-align:center; padding: 20px; border-radius: 12px;">
-            <div class="user-avatar" style="width:100px; height:100px; font-size:32px; margin: 0 auto 10px auto;">${esc(user.name.substring(0,2))}</div>
-            <div style="margin-top:8px;"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
-            <div style="margin-top:10px; font-size:13px; color:var(--text-secondary);">${esc(user.phoneNumber)}</div>
-            <div style="margin-top:5px; font-size:12px; color:var(--text-muted);">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
-            <hr style="border-color: rgb(var(--fg-rgb) / 0.1); margin: 15px 0;" />
-            <div style="text-align: right; font-size: 13px;">
-              <p><strong>زریک:</strong> <span style="color:var(--color-neon-blue);">${payload.balances.zarik.toLocaleString()}</span></p>
+        <div class="u-flex u-gap-18 u-items-start u-wrap">
+          <div class="glass u-flex-0-0-200 u-text-center u-p-20 u-r-12">
+            <div class="user-avatar u-w-100 u-h-100 u-fs-32 u-m-0-auto-10-auto">${esc(user.name.substring(0,2))}</div>
+            <div class="u-mt-8"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
+            <div class="u-mt-10 u-fs-13 u-c-text-secondary">${esc(user.phoneNumber)}</div>
+            <div class="u-mt-5 u-fs-12 u-c-text-muted">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
+            <hr class="u-bdc-fg-10 u-m-15-0" />
+            <div class="u-text-right u-fs-13">
+              <p><strong>زریک:</strong> <span class="u-c-color-neon-blue">${payload.balances.zarik.toLocaleString()}</span></p>
               <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
               <p><strong>درفش:</strong> ${payload.balances.beyragh}</p>
               <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
             </div>
-            <div style="margin-top:15px; display:flex; gap:5px; flex-wrap:wrap; justify-content:space-between;">
-              <button class="btn-primary" style="flex:1; font-size:11px;" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
-              <button class="btn-action" style="flex:1; background:var(--danger); color:white; font-size:11px; padding:6px;" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
+            <div class="u-mt-15 u-flex u-gap-5 u-wrap u-justify-between">
+              <button class="btn-primary u-flex-1 u-fs-11" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
+              <button class="btn-action u-flex-1 u-bg-danger u-c-white u-fs-11 u-p-6" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
             </div>
           </div>
 
-          <div style="flex:1; min-width: 300px;">
-            <div class="tabs-header" style="display:flex; gap:10px; margin-bottom:15px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom:10px;">
+          <div class="u-flex-1 u-minw-300">
+            <div class="tabs-header u-flex u-gap-10 u-mb-15 u-bb-fg-10 u-pb-10">
               <button class="btn-action active" data-click="switchDrawerTab" data-click-args="[&quot;tab-identity&quot;]" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
               <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-class-progress&quot;]" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
               <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-support&quot;]" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
             </div>
             
-            <div id="tab-identity" class="drawer-tab-content active" style="display:block;">
-              <div class="panel-card glass" style="margin-bottom:12px; padding:20px;">
-                <h4 style="margin-bottom:15px; color:var(--color-neon-blue);">اطلاعات هویتی کامل</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div id="tab-identity" class="drawer-tab-content active u-block">
+              <div class="panel-card glass u-mb-12 u-p-20">
+                <h4 class="u-mb-15 u-c-color-neon-blue">اطلاعات هویتی کامل</h4>
+                <div class="u-grid u-cols-2 u-gap-15">
                   <p><strong>نام کامل:</strong> ${esc(user.name)}</p>
                   <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
                   <p><strong>شماره تماس:</strong> ${esc(user.phoneNumber)}</p>
@@ -230,57 +230,57 @@ async function viewUserDetails(userId) {
             </div>
 
             <div id="tab-class-progress" class="drawer-tab-content" style="display:none;">
-              <div class="panel-card glass" style="padding:14px;">
+              <div class="panel-card glass u-p-14">
                 <!-- 5 Stats Summary Cards Bar -->
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap:8px; margin-bottom:14px;">
-                  <div style="background: rgb(var(--primary-rgb) / 0.12); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: var(--primary-text); font-weight: bold;"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
-                    <div id="drawer-stat-stations" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۵</div>
+                <div class="u-grid u-cols-fit-115 u-gap-8 u-mb-14">
+                  <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
+                    <div class="u-fs-11 u-c-primary-text u-bold"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
+                    <div id="drawer-stat-stations" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۵</div>
                   </div>
-                  <div style="background: rgb(var(--primary-rgb) / 0.12); border: 1px solid rgb(var(--primary-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: var(--primary-text); font-weight: bold;"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
-                    <div id="drawer-stat-classes" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
+                  <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
+                    <div class="u-fs-11 u-c-primary-text u-bold"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
+                    <div id="drawer-stat-classes" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
-                  <div style="background: rgb(var(--success-rgb) / 0.12); border: 1px solid rgb(var(--success-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: var(--success-text); font-weight: bold;"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
-                    <div id="drawer-stat-parts" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
+                  <div class="u-bg-success-12 u-bd-success-30 u-r-10 u-p-10 u-text-center">
+                    <div class="u-fs-11 u-c-success-text u-bold"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
+                    <div id="drawer-stat-parts" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
-                  <div style="background: rgb(var(--accent-rgb) / 0.12); border: 1px solid rgb(var(--accent-rgb) / 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: var(--accent-text); font-weight: bold;"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
-                    <div id="drawer-stat-quizzes" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
+                  <div class="u-bg-accent-12 u-bd-accent-30 u-r-10 u-p-10 u-text-center">
+                    <div class="u-fs-11 u-c-accent-text u-bold"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
+                    <div id="drawer-stat-quizzes" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
-                  <div style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 10px; padding: 10px; text-align: center;">
-                    <div style="font-size: 11px; color: #f472b6; font-weight: bold;"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
-                    <div id="drawer-stat-challenges" style="font-size: 15px; font-weight: 800; color: var(--text); margin-top: 4px;">۰ از ۰</div>
+                  <div class="u-r-10 u-p-10 u-text-center" style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3)">
+                    <div class="u-fs-11 u-bold" style="color: #f472b6"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
+                    <div id="drawer-stat-challenges" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                 </div>
 
                 <!-- Filter Chips & Search Bar -->
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.25); padding:8px 10px; border-radius:8px; border:1px solid rgb(var(--fg-rgb) / 0.06);">
-                  <div style="display:flex; gap:6px; flex-wrap:wrap;" id="drawer-class-filter-chips">
-                    <button type="button" class="btn-action active" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all" style="padding:4px 8px; font-size:11px; border-radius:6px;">همه موارد</button>
-                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes" style="padding:4px 8px; font-size:11px; border-radius:6px;">کلاس‌ها</button>
-                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts" style="padding:4px 8px; font-size:11px; border-radius:6px;">پارت‌ها</button>
-                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations" style="padding:4px 8px; font-size:11px; border-radius:6px;">منزلگاه‌ها</button>
-                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes" style="padding:4px 8px; font-size:11px; border-radius:6px;">آزمون‌ها</button>
-                    <button type="button" class="btn-action" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges" style="padding:4px 8px; font-size:11px; border-radius:6px;">چالش‌ها</button>
+                <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bg-shade-25 u-p-8-10 u-r-8 u-bd-fg-6">
+                  <div class="u-flex u-gap-6 u-wrap" id="drawer-class-filter-chips">
+                    <button type="button" class="btn-action active u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all">همه موارد</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes">کلاس‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts">پارت‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations">منزلگاه‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes">آزمون‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges">چالش‌ها</button>
                   </div>
-                  <div style="position:relative; flex: 1 1 150px; max-width: 220px;">
-                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" style="width:100%; padding:5px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:11.5px; box-sizing:border-box;">
+                  <div class="u-relative u-flex-1-1-150 u-maxw-220">
+                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" class="u-w-full u-p-5-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-11_5 u-border-box">
                   </div>
                 </div>
 
                 <!-- 5-Column Table -->
-                <div class="table-container" style="max-height: 380px; overflow-y: auto; border: 1px solid rgb(var(--fg-rgb) / 0.08); border-radius: 8px;">
-                  <table class="data-table" id="drawer-class-progress-table" style="margin: 0; width: 100%;">
-                    <thead style="position: sticky; top: 0; background: var(--surface); z-index: 2;">
+                <div class="table-container u-maxh-380 u-scroll-y u-bd-fg-8 u-r-8">
+                  <table class="data-table u-m-0 u-w-full" id="drawer-class-progress-table">
+                    <thead class="u-pos-sticky u-top-0 u-bg-surface u-z-2">
                       <tr>
-                        <th style="width: 130px;"><i class="fa-solid fa-map-location-dot" style="color: var(--primary-text);"></i> منزلگاه</th>
-                        <th style="width: 140px;"><i class="fa-solid fa-chalkboard-user" style="color: var(--primary-text);"></i> کلاس</th>
-                        <th style="width: 150px;"><i class="fa-solid fa-circle-play" style="color: var(--success-text);"></i> پارت</th>
-                        <th style="width: 130px;"><i class="fa-solid fa-spell-check" style="color: var(--accent-text);"></i> آزمون</th>
-                        <th style="width: 140px;"><i class="fa-solid fa-trophy" style="color: #f472b6;"></i> چالش</th>
-                        <th style="width: 110px; text-align: center;">وضعیت پیشرفت</th>
+                        <th class="u-w-130"><i class="fa-solid fa-map-location-dot u-c-primary-text"></i> منزلگاه</th>
+                        <th class="u-w-140"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> کلاس</th>
+                        <th class="u-w-150"><i class="fa-solid fa-circle-play u-c-success-text"></i> پارت</th>
+                        <th class="u-w-130"><i class="fa-solid fa-spell-check u-c-accent-text"></i> آزمون</th>
+                        <th class="u-w-140"><i class="fa-solid fa-trophy" style="color: #f472b6;"></i> چالش</th>
+                        <th class="u-w-110 u-text-center">وضعیت پیشرفت</th>
                       </tr>
                     </thead>
                     <tbody id="drawer-class-progress-tbody">
@@ -292,13 +292,13 @@ async function viewUserDetails(userId) {
             </div>
 
             <div id="tab-support" class="drawer-tab-content" style="display:none;">
-              <div class="panel-card glass" style="padding:12px; margin-bottom:12px;">
-                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom: 5px;">اطلاعات کاروان</h5>
-                <p style="margin-top:10px;"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
+              <div class="panel-card glass u-p-12 u-mb-12">
+                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-5">اطلاعات کاروان</h5>
+                <p class="u-mt-10"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
               </div>
-              <div class="panel-card glass" style="padding:12px;">
-                <h5 style="color: var(--color-neon-blue); border-bottom: 1px solid rgb(var(--fg-rgb) / 0.1); padding-bottom: 5px;">تاریخچه تیکت‌ها</h5>
-                <div id="drawer-ticket-list" style="max-height:200px; overflow:auto; padding-left:12px; margin-top: 10px;"></div>
+              <div class="panel-card glass u-p-12">
+                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-5">تاریخچه تیکت‌ها</h5>
+                <div id="drawer-ticket-list" class="u-maxh-200 u-overflow-auto u-pl-12 u-mt-10"></div>
               </div>
             </div>
             
@@ -306,24 +306,24 @@ async function viewUserDetails(userId) {
         </div>
       </div>
       
-      <div id="mentor-view-container" style="display:none; padding:20px;">
-        <h3 style="color:var(--color-warning); text-align:center; margin-bottom:20px;">داشبورد و آمار اختصاصی راهبر</h3>
-        <div class="grid-cards" style="grid-template-columns: 1fr 1fr;">
+      <div id="mentor-view-container" class="u-p-20" style="display:none">
+        <h3 class="u-c-color-warning u-text-center u-mb-20">داشبورد و آمار اختصاصی راهبر</h3>
+        <div class="grid-cards u-cols-2">
            <div class="stat-card glass">
-             <i class="fa-solid fa-users" style="color: var(--info-text);"></i>
+             <i class="fa-solid fa-users u-c-info-text"></i>
              <h4>کاروان‌های تحت مدیریت</h4>
              <div class="stat-value" id="mentor-caravans-count">${payload.mentoredCaravans?.length || 0}</div>
            </div>
            <div class="stat-card glass">
-             <i class="fa-solid fa-star" style="color: var(--accent-text);"></i>
+             <i class="fa-solid fa-star u-c-accent-text"></i>
              <h4>سطح راهبری</h4>
              <div class="stat-value">${user.mentorLevel || 1}</div>
            </div>
         </div>
-        <div class="panel-card glass" style="margin-top:20px; padding:15px;">
-           <h4 style="margin-bottom:10px;">لیست کاروان‌ها</h4>
-           <ul style="list-style:none; padding:0;">
-             ${payload.mentoredCaravans?.map(c => '<li style="padding:10px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.1);">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
+        <div class="panel-card glass u-mt-20 u-p-15">
+           <h4 class="u-mb-10">لیست کاروان‌ها</h4>
+           <ul class="u-list-none u-p-0">
+             ${payload.mentoredCaravans?.map(c => '<li class="u-p-10 u-bb-fg-10">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
            </ul>
         </div>
       </div>
@@ -338,9 +338,9 @@ async function viewUserDetails(userId) {
     tList.innerHTML = '';
     if (payload.tickets && payload.tickets.length > 0) {
       payload.tickets.forEach(t => {
-        tList.innerHTML += `<div style="padding:8px; background:rgb(var(--shade-rgb) / 0.2); border-radius:8px; margin-bottom:8px;">
-          <strong>${esc(t.subject)}</strong> <span class="badge" style="float:left; font-size:10px;">${t.status}</span>
-          <p style="font-size:12px; margin-top:5px; color:var(--text-secondary);">${esc(t.description)}</p>
+        tList.innerHTML += `<div class="u-p-8 u-bg-shade-20 u-r-8 u-mb-8">
+          <strong>${esc(t.subject)}</strong> <span class="badge u-float-left u-fs-10">${t.status}</span>
+          <p class="u-fs-12 u-mt-5 u-c-text-secondary">${esc(t.description)}</p>
         </div>`;
       });
     } else {
@@ -647,7 +647,7 @@ window.renderDrawerClassProgressTable = function() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:28px 12px; color:var(--text-secondary);"><i class="fa-solid fa-inbox" style="font-size:24px; margin-bottom:8px; display:block; opacity:0.6;"></i>اطلاعاتی متناسب با فیلتر یافت نشد.</td></tr>`;
+    NopaTable.empty(tbody, 'اطلاعاتی متناسب با فیلتر یافت نشد.', 'fa-solid fa-inbox');
     return;
   }
 
@@ -656,51 +656,51 @@ window.renderDrawerClassProgressTable = function() {
     let stationCell = '';
     if (r.stationNumber && r.stationNumber !== '-') {
       stationCell = `
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.22); color:var(--primary-text); font-size:10px; width:fit-content; border: 1px solid rgb(var(--primary-rgb) / 0.3);">
-            <i class="fa-solid fa-map-location-dot" style="margin-left:3px;"></i>منزلگاه ${r.stationNumber}
+        <div class="u-flex u-col u-gap-4">
+          <span class="badge u-bg-primary-22 u-c-primary-text u-fs-10 u-w-fit-content u-bd-primary-30">
+            <i class="fa-solid fa-map-location-dot u-ml-3"></i>منزلگاه ${r.stationNumber}
           </span>
-          <strong style="font-size:12px; color:var(--text);">${esc(r.stationTitle)}</strong>
+          <strong class="u-fs-12 u-c-text">${esc(r.stationTitle)}</strong>
         </div>`;
     } else {
-      stationCell = `<span class="badge" style="background:rgb(var(--fg-rgb) / 0.08); color:var(--text-muted); font-size:11px;"><i class="fa-solid fa-layer-group" style="margin-left:3px;"></i>عمومی / کاروان</span>`;
+      stationCell = `<span class="badge u-bg-fg-8 u-c-text-muted u-fs-11"><i class="fa-solid fa-layer-group u-ml-3"></i>عمومی / کاروان</span>`;
     }
 
     // 2. کلاس
     let classCell = '';
     if (r.sessionTitle && r.sessionTitle !== '-' && r.sessionId) {
       classCell = `
-        <div style="display:flex; flex-direction:column; gap:3px;">
-          <strong style="font-size:12px; color:var(--primary-text);">
-            <i class="fa-solid fa-chalkboard-user" style="margin-left:4px; opacity:0.85;"></i>${esc(r.sessionTitle)}
+        <div class="u-flex u-col u-gap-3">
+          <strong class="u-fs-12 u-c-primary-text">
+            <i class="fa-solid fa-chalkboard-user u-ml-4 u-o-0_85"></i>${esc(r.sessionTitle)}
           </strong>
-          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span style="font-size:10.5px; color:var(--text-secondary);">${esc(r.categoryTitle)}</span>` : ''}
+          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span class="u-fs-10_5 u-c-text-secondary">${esc(r.categoryTitle)}</span>` : ''}
         </div>`;
     } else {
-      classCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+      classCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
     }
 
     // 3. پارت
     let partCell = '';
     if (r.clips && r.clips.length > 0) {
       partCell = `
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          <span class="badge" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; font-size:10.5px; width:fit-content; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'};">
-            <i class="fa-solid fa-circle-play" style="margin-left:3px;"></i>${r.clips.length} پارت
+        <div class="u-flex u-col u-gap-4">
+          <span class="badge u-fs-10_5 u-w-fit-content" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
+            <i class="fa-solid fa-circle-play u-ml-3"></i>${r.clips.length} پارت
           </span>
-          <div style="font-size:10.5px; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'};">
+          <div class="u-fs-10_5" style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
             ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
       partCell = `
-        <div style="display:flex; align-items:center; gap:5px;">
-          <span class="badge" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; font-size:10.5px; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'};">
-            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'}" style="margin-left:3px;"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
+        <div class="u-flex u-items-center u-gap-5">
+          <span class="badge u-fs-10_5" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
+            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'} u-ml-3"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
           </span>
         </div>`;
     } else {
-      partCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+      partCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
     }
 
     // 4. آزمون
@@ -710,31 +710,31 @@ window.renderDrawerClassProgressTable = function() {
       const qSub = (r.quizSubmissions && r.quizSubmissions[0]) || null;
       if (r.quizPassed || (qSub && qSub.score >= 50)) {
         quizCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--success-rgb) / 0.3);">
-              <i class="fa-solid fa-check-double" style="margin-left:3px;"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-success-20 u-c-success-text u-fs-10_5 u-w-fit-content u-bd-success-30">
+              <i class="fa-solid fa-check-double u-ml-3"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
             </span>
-            <span style="font-size:10.5px; color:var(--text-soft);">${esc(q.title || 'آزمون پایان کلاس')}</span>
+            <span class="u-fs-10_5 u-c-text-soft">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       } else if (qSub) {
         quizCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--danger-rgb) / 0.3);">
-              <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>مردود (${qSub.score})
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-10_5 u-w-fit-content u-bd-danger-30">
+              <i class="fa-solid fa-xmark u-ml-3"></i>مردود (${qSub.score})
             </span>
-            <span style="font-size:10.5px; color:var(--text-soft);">${esc(q.title || 'آزمون')}</span>
+            <span class="u-fs-10_5 u-c-text-soft">${esc(q.title || 'آزمون')}</span>
           </div>`;
       } else {
         quizCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); font-size:10px; width:fit-content; border: 1px solid rgb(var(--accent-rgb) / 0.3);">
-              <i class="fa-regular fa-clock" style="margin-left:3px;"></i>شرکت نکرده
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-accent-15 u-c-accent-text u-fs-10 u-w-fit-content u-bd-accent-30">
+              <i class="fa-regular fa-clock u-ml-3"></i>شرکت نکرده
             </span>
-            <span style="font-size:10.5px; color:var(--text-secondary);">${esc(q.title || 'آزمون پایان کلاس')}</span>
+            <span class="u-fs-10_5 u-c-text-secondary">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       }
     } else {
-      quizCell = `<span style="color:var(--text-secondary); font-size:11px;">بدون آزمون</span>`;
+      quizCell = `<span class="u-c-text-secondary u-fs-11">بدون آزمون</span>`;
     }
 
     // 5. چالش
@@ -745,39 +745,39 @@ window.renderDrawerClassProgressTable = function() {
       const chTypeLabel = ch.type === 'quiz' ? 'کوئیز' : ch.type === 'file' ? 'فایلی' : 'مهارتی';
       if (sub && sub.status === 'approved') {
         challengeCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--success-rgb) / 0.3);">
-              <i class="fa-solid fa-trophy" style="margin-left:3px;"></i>تایید (+${ch.rewardZarik || 50} زریک)
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-success-20 u-c-success-text u-fs-10_5 u-w-fit-content u-bd-success-30">
+              <i class="fa-solid fa-trophy u-ml-3"></i>تایید (+${ch.rewardZarik || 50} زریک)
             </span>
-            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'pending') {
         challengeCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--accent-rgb) / 0.2); color:var(--accent-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--accent-rgb) / 0.3);">
-              <i class="fa-solid fa-hourglass-start" style="margin-left:3px;"></i>در انتظار ارزیابی
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-accent-20 u-c-accent-text u-fs-10_5 u-w-fit-content u-bd-accent-30">
+              <i class="fa-solid fa-hourglass-start u-ml-3"></i>در انتظار ارزیابی
             </span>
-            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'rejected') {
         challengeCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); font-size:10.5px; width:fit-content; border: 1px solid rgb(var(--danger-rgb) / 0.3);">
-              <i class="fa-solid fa-xmark" style="margin-left:3px;"></i>نیازمند اصلاح
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-10_5 u-w-fit-content u-bd-danger-30">
+              <i class="fa-solid fa-xmark u-ml-3"></i>نیازمند اصلاح
             </span>
-            <span style="font-size:10.5px; color:var(--text-soft);" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else {
         challengeCell = `
-          <div style="display:flex; flex-direction:column; gap:3px;">
-            <span class="badge" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; font-size:10px; width:fit-content; border: 1px solid rgba(236, 72, 153, 0.25);">
-              <i class="fa-regular fa-circle" style="margin-left:3px;"></i>انجام نشده (${chTypeLabel})
+          <div class="u-flex u-col u-gap-3">
+            <span class="badge u-fs-10 u-w-fit-content" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; border: 1px solid rgba(236, 72, 153, 0.25)">
+              <i class="fa-regular fa-circle u-ml-3"></i>انجام نشده (${chTypeLabel})
             </span>
-            <span style="font-size:10.5px; color:var(--text-secondary);" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-10_5 u-c-text-secondary" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       }
     } else {
-      challengeCell = `<span style="color:var(--text-secondary); font-size:11px;">-</span>`;
+      challengeCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
     }
 
     // 6. وضعیت پیشرفت
@@ -786,21 +786,21 @@ window.renderDrawerClassProgressTable = function() {
     const statusText = pct === 100 ? 'تکمیل شده' : pct > 0 ? `${pct}% پیشرفت` : 'شروع نشده';
 
     const progressCell = `
-      <div style="display:flex; flex-direction:column; align-items:center; gap:4px; min-width:85px;">
-        <div style="width:100%; height:6px; background:rgb(var(--fg-rgb) / 0.1); border-radius:4px; overflow:hidden;">
-          <div style="width:${pct}%; height:100%; background:${barColor}; border-radius:4px; transition:width 0.3s ease;"></div>
+      <div class="u-flex u-col u-items-center u-gap-4 u-minw-85">
+        <div class="u-w-full u-h-6 u-bg-fg-10 u-r-4 u-overflow-hidden">
+          <div class="u-h-full u-r-4 u-tr-width-0_3s-ease" style="width:${pct}%; background:${barColor}"></div>
         </div>
-        <span style="font-size:10px; font-weight:bold; color:${barColor};">${statusText}</span>
+        <span class="u-fs-10 u-bold" style="color:${barColor}">${statusText}</span>
       </div>`;
 
     return `
-      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition:background 0.2s ease;">
-        <td style="vertical-align:middle; padding:10px 8px;">${stationCell}</td>
-        <td style="vertical-align:middle; padding:10px 8px;">${classCell}</td>
-        <td style="vertical-align:middle; padding:10px 8px;">${partCell}</td>
-        <td style="vertical-align:middle; padding:10px 8px;">${quizCell}</td>
-        <td style="vertical-align:middle; padding:10px 8px;">${challengeCell}</td>
-        <td style="vertical-align:middle; padding:10px 8px; text-align:center;">${progressCell}</td>
+      <tr class="u-bb-fg-6 u-tr-background-0_2s-ease">
+        <td class="u-va-middle u-p-10-8">${stationCell}</td>
+        <td class="u-va-middle u-p-10-8">${classCell}</td>
+        <td class="u-va-middle u-p-10-8">${partCell}</td>
+        <td class="u-va-middle u-p-10-8">${quizCell}</td>
+        <td class="u-va-middle u-p-10-8">${challengeCell}</td>
+        <td class="u-va-middle u-p-10-8 u-text-center">${progressCell}</td>
       </tr>`;
   }).join('');
 };

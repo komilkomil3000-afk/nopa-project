@@ -55,7 +55,7 @@ window.renderCaravansTable = function() {
   if (!tbody) return;
 
   if (!window.caravansData || window.caravansData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">هیچ کاروانی یافت نشد.</td></tr>';
+    NopaTable.empty(tbody, 'هیچ کاروانی یافت نشد.');
     return;
   }
 
@@ -84,7 +84,7 @@ window.renderCaravansTable = function() {
 
   tbody.innerHTML = '';
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-muted);">کاروانی با این مشخصات یافت نشد.</td></tr>';
+    NopaTable.empty(tbody, 'کاروانی با این مشخصات یافت نشد.');
     return;
   }
 
@@ -101,28 +101,28 @@ window.renderCaravansTable = function() {
       <td><span class="badge badge-student">${esc(mentorDisplay)}</span></td>
       <td>${memberCount} / ${capacity}</td>
       <td>
-        <span style="color:var(--accent-text);"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
+        <span class="u-c-accent-text"><i class="fa-solid fa-coins"></i> ${totalZarik}</span>
       </td>
       <td>
-        <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+        <div class="u-flex u-justify-between u-fs-12 u-mb-6">
           <span>${progress}%</span>
         </div>
-        <div class="progress-bar-container" style="margin: 0; height: 6px;">
+        <div class="progress-bar-container u-m-0 u-h-6">
           <div class="progress-bar-fill" style="width: ${progress}%"></div>
         </div>
       </td>
       <td>
-        <div style="display:flex; gap:6px; flex-wrap:wrap;">
-          <button class="page-btn btn-view" style="padding: 4px 8px; font-size:11px; background:var(--primary); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="selectCaravanForManagement" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده کاروان">
+        <div class="u-flex u-gap-6 u-wrap">
+          <button class="page-btn btn-view u-p-4-8 u-fs-11 u-bg-primary u-c-white u-r-6 u-bd-none u-pointer" data-click="selectCaravanForManagement" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="مشاهده کاروان">
             <i class="fa-solid fa-eye"></i> مشاهده
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--success); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="openRenameCaravanModal" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="تغییر نام کاروان">
+          <button class="page-btn u-p-4-8 u-fs-11 u-bg-success u-c-white u-r-6 u-bd-none u-pointer" data-click="openRenameCaravanModal" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="تغییر نام کاروان">
             <i class="fa-solid fa-pen-to-square"></i> تغییر نام
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--info); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="openChangeCaravanMentorModalForCaravan" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="تغییر راهبر">
+          <button class="page-btn u-p-4-8 u-fs-11 u-bg-info u-c-white u-r-6 u-bd-none u-pointer" data-click="openChangeCaravanMentorModalForCaravan" data-click-args="${esc(JSON.stringify([String(c.id)]))}" title="تغییر راهبر">
             <i class="fa-solid fa-user-gear"></i> تغییر راهبر
           </button>
-          <button class="page-btn" style="padding: 4px 8px; font-size:11px; background:var(--danger); color:white; border-radius:6px; border:none; cursor:pointer;" data-click="deleteCaravanRecord" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="حذف کاروان">
+          <button class="page-btn u-p-4-8 u-fs-11 u-bg-danger u-c-white u-r-6 u-bd-none u-pointer" data-click="deleteCaravanRecord" data-click-args="${esc(JSON.stringify([String(c.id), String(c.name || '')]))}" title="حذف کاروان">
             <i class="fa-solid fa-trash"></i> حذف
           </button>
         </div>
@@ -321,10 +321,10 @@ window.viewStudentDetails = async function(studentId) {
   const progressEl = document.getElementById('csd-progress');
   const ticketsEl = document.getElementById('csd-tickets');
 
-  if (identityEl) identityEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
-  if (assetsEl) assetsEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
-  if (progressEl) progressEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
-  if (ticketsEl) ticketsEl.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">در حال بارگذاری...</p>';
+  if (identityEl) identityEl.innerHTML = '<p class="u-c-text-muted u-fs-13">در حال بارگذاری...</p>';
+  if (assetsEl) assetsEl.innerHTML = '<p class="u-c-text-muted u-fs-13">در حال بارگذاری...</p>';
+  if (progressEl) progressEl.innerHTML = '<p class="u-c-text-muted u-fs-13">در حال بارگذاری...</p>';
+  if (ticketsEl) ticketsEl.innerHTML = '<p class="u-c-text-muted u-fs-13">در حال بارگذاری...</p>';
 
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal)';
@@ -362,7 +362,7 @@ window.viewStudentDetails = async function(studentId) {
     }
 
     if (!u) {
-      if (identityEl) identityEl.innerHTML = '<p style="color:var(--danger-text);">کاربر یافت نشد.</p>';
+      if (identityEl) identityEl.innerHTML = '<p class="u-c-danger-text">کاربر یافت نشد.</p>';
       return;
     }
 
@@ -375,27 +375,27 @@ window.viewStudentDetails = async function(studentId) {
 
     if (identityEl) {
       identityEl.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div><strong style="color:var(--primary-text);">نام و نام‌خانوادگی:</strong> ${esc(u.name || 'بدون نام')}</div>
-          <div><strong style="color:var(--text-muted);">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
-          <div><strong style="color:var(--text-muted);">کد کاربری:</strong> <span style="font-family:monospace; color:var(--primary-text);">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
-          <div><strong style="color:var(--text-muted);">کاروان عضو:</strong> <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); padding:3px 10px; border-radius:6px; font-weight:bold;">${caravanDisplay}</span></div>
-          <div><strong style="color:var(--text-muted);">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
-          <div><strong style="color:var(--text-muted);">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
-          <div><strong style="color:var(--text-muted);">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
-          <div><strong style="color:var(--text-muted);">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
+        <div class="u-flex u-col u-gap-8">
+          <div><strong class="u-c-primary-text">نام و نام‌خانوادگی:</strong> ${esc(u.name || 'بدون نام')}</div>
+          <div><strong class="u-c-text-muted">شماره همراه:</strong> <span dir="ltr">${esc(u.phoneNumber || '-')}</span></div>
+          <div><strong class="u-c-text-muted">کد کاربری:</strong> <span class="u-mono u-c-primary-text">${u.userCode ? 'NP-' + u.userCode : (u.id ? u.id.slice(0, 8) : '-')}</span></div>
+          <div><strong class="u-c-text-muted">کاروان عضو:</strong> <span class="u-bg-primary-15 u-c-primary-text u-p-3-10 u-r-6 u-bold">${caravanDisplay}</span></div>
+          <div><strong class="u-c-text-muted">نقش سیستمی:</strong> ${roleLabel(u.role)}</div>
+          <div><strong class="u-c-text-muted">کد ملی:</strong> ${esc(u.nationalId || 'ثبت نشده')}</div>
+          <div><strong class="u-c-text-muted">تاریخ تولد:</strong> ${esc(u.dateOfBirth || '-')}</div>
+          <div><strong class="u-c-text-muted">سطح فریم:</strong> سطح ${u.levelFrame || 1}</div>
         </div>
       `;
     }
 
     if (assetsEl) {
       assetsEl.innerHTML = `
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div><strong style="color:var(--accent-text);"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span style="font-size:16px; font-weight:bold; color:var(--accent-text);">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
-          <div><strong style="color:var(--primary-text);"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
-          <div><strong style="color:var(--primary-text);"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
-          <div><strong style="color:var(--success-text);"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
-          <div><strong style="color:var(--text-muted);">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
+        <div class="u-flex u-col u-gap-8">
+          <div><strong class="u-c-accent-text"><i class="fa-solid fa-coins"></i> موجودی زریک:</strong> <span class="u-fs-16 u-bold u-c-accent-text">${(balances.zarik || u.zarikBalance || 0).toLocaleString()}</span> زریک</div>
+          <div><strong class="u-c-primary-text"><i class="fa-solid fa-layer-group"></i> کلاف:</strong> ${(balances.nakh || 0).toLocaleString()}</div>
+          <div><strong class="u-c-primary-text"><i class="fa-solid fa-flag"></i> درفش:</strong> ${(balances.beyragh || 0).toLocaleString()}</div>
+          <div><strong class="u-c-success-text"><i class="fa-solid fa-rug"></i> قالیچه:</strong> ${(balances.farsh || 0).toLocaleString()}</div>
+          <div><strong class="u-c-text-muted">مدت فعالیت تقریبی:</strong> ${metrics.approximateActiveMinutes || 0} دقیقه</div>
         </div>
       `;
     }
@@ -424,27 +424,27 @@ window.viewStudentDetails = async function(studentId) {
 
       let stationsHtml = `
         <!-- Summary Stats Counter -->
-        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:6px; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.4); padding:10px; border-radius:10px; border:1px solid rgb(var(--fg-rgb) / 0.06); text-align:center;">
-          <div style="padding:2px;">
-            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">منزلگاه‌ها</div>
-            <div style="font-weight:bold; color:var(--success-text); font-size:13px;">${summary.passedStations || 0} / ${summary.totalStations || 5}</div>
+        <div class="u-grid u-cols-4 u-gap-6 u-mb-12 u-bg-shade-40 u-p-10 u-r-10 u-bd-fg-6 u-text-center">
+          <div class="u-p-2">
+            <div class="u-c-text-muted u-fs-10 u-mb-2">منزلگاه‌ها</div>
+            <div class="u-bold u-c-success-text u-fs-13">${summary.passedStations || 0} / ${summary.totalStations || 5}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
-            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">دسته‌ها / کلاس‌ها</div>
-            <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${summary.passedClasses || 0} / ${summary.totalClasses || 50}</div>
+          <div class="u-p-2 u-br-fg-10">
+            <div class="u-c-text-muted u-fs-10 u-mb-2">دسته‌ها / کلاس‌ها</div>
+            <div class="u-bold u-c-primary-text u-fs-13">${summary.passedClasses || 0} / ${summary.totalClasses || 50}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
-            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">کل پارت‌ها</div>
-            <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${summary.passedParts || 0} / ${summary.totalParts || 201}</div>
+          <div class="u-p-2 u-br-fg-10">
+            <div class="u-c-text-muted u-fs-10 u-mb-2">کل پارت‌ها</div>
+            <div class="u-bold u-c-primary-text u-fs-13">${summary.passedParts || 0} / ${summary.totalParts || 201}</div>
           </div>
-          <div style="padding:2px; border-right:1px solid rgb(var(--fg-rgb) / 0.1);">
-            <div style="color:var(--text-muted); font-size:10px; margin-bottom:2px;">آزمونک‌ها</div>
-            <div style="font-weight:bold; color:var(--accent-text); font-size:13px;">${summary.passedQuizzes || 0} / ${summary.totalQuizzes || 331}</div>
+          <div class="u-p-2 u-br-fg-10">
+            <div class="u-c-text-muted u-fs-10 u-mb-2">آزمونک‌ها</div>
+            <div class="u-bold u-c-accent-text u-fs-13">${summary.passedQuizzes || 0} / ${summary.totalQuizzes || 331}</div>
           </div>
         </div>
 
         <!-- 5 Stations Progression List -->
-        <div style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; padding-left:4px;">
+        <div class="u-flex u-col u-gap-8 u-maxh-260 u-scroll-y u-pl-4">
       `;
 
       stations.forEach((st, idx) => {
@@ -458,17 +458,17 @@ window.viewStudentDetails = async function(studentId) {
         let titleColor = 'var(--text-soft)';
 
         if (isCompleted) {
-          statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-circle-check"></i> گذرانده شده</span>';
+          statusBadge = '<span class="u-bg-success-20 u-c-success-text u-fs-11 u-p-2-8 u-r-12 u-bold"><i class="fa-solid fa-circle-check"></i> گذرانده شده</span>';
           cardBorder = 'rgb(var(--success-rgb) / 0.3)';
           cardBg = 'rgb(var(--success-rgb) / 0.05)';
           titleColor = 'var(--success-text)';
         } else if (isUnlocked) {
-          statusBadge = '<span style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-play"></i> در حال آموزش</span>';
+          statusBadge = '<span class="u-bg-primary-20 u-c-primary-text u-fs-11 u-p-2-8 u-r-12 u-bold"><i class="fa-solid fa-play"></i> در حال آموزش</span>';
           cardBorder = 'rgb(var(--primary-rgb) / 0.3)';
           cardBg = 'rgb(var(--primary-rgb) / 0.05)';
           titleColor = 'var(--primary-text)';
         } else {
-          statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); font-size:11px; padding:2px 8px; border-radius:12px; font-weight:bold;"><i class="fa-solid fa-lock"></i> قفل (مسیر آتی)</span>';
+          statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-fs-11 u-p-2-8 u-r-12 u-bold"><i class="fa-solid fa-lock"></i> قفل (مسیر آتی)</span>';
           cardBorder = 'rgb(var(--fg-rgb) / 0.04)';
           cardBg = 'rgb(var(--shade-rgb) / 0.25)';
           titleColor = 'var(--text-faint)';
@@ -477,35 +477,35 @@ window.viewStudentDetails = async function(studentId) {
         const pct = st.totalClasses > 0 ? Math.min(100, Math.round(((st.completedClasses || 0) / st.totalClasses) * 100)) : 0;
 
         stationsHtml += `
-          <div style="background:${cardBg}; border:1px solid ${cardBorder}; border-radius:10px; padding:10px 12px; font-size:12px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); padding-bottom:6px;">
+          <div class="u-r-10 u-p-10-12 u-fs-12" style="background:${cardBg}; border:1px solid ${cardBorder}">
+            <div class="u-flex u-justify-between u-items-center u-mb-8 u-bb-fg-5 u-pb-6">
               <div>
-                <span style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); font-size:11px; font-weight:bold; padding:2px 7px; border-radius:6px; margin-left:6px;">منزلگاه ${stNum}</span>
-                <strong style="color:${titleColor}; font-size:13px;">${esc(st.title)}</strong>
+                <span class="u-bg-primary-20 u-c-primary-text u-fs-11 u-bold u-p-2-7 u-r-6 u-ml-6">منزلگاه ${stNum}</span>
+                <strong class="u-fs-13" style="color:${titleColor}">${esc(st.title)}</strong>
               </div>
               ${statusBadge}
             </div>
 
             <!-- Categorized Metrics Grid -->
-            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 12px; font-size:11.5px;">
-              <div style="color:var(--text-muted);">
-                <i class="fa-solid fa-layer-group" style="color:var(--primary-text); width:16px;"></i> 
-                <strong>دسته‌های کلاس:</strong> <span style="color:var(--text); font-weight:bold;">${st.categoriesCount || 2} دسته</span> <span style="font-size:10px; color:var(--text-faint);">(مهارتی و رسانه‌ای)</span>
+            <div class="u-grid u-cols-2 u-gap-6-12 u-fs-11_5">
+              <div class="u-c-text-muted">
+                <i class="fa-solid fa-layer-group u-c-primary-text u-w-16"></i> 
+                <strong>دسته‌های کلاس:</strong> <span class="u-c-text u-bold">${st.categoriesCount || 2} دسته</span> <span class="u-fs-10 u-c-text-faint">(مهارتی و رسانه‌ای)</span>
               </div>
 
-              <div style="color:var(--text-muted);">
-                <i class="fa-solid fa-chalkboard-user" style="color:var(--success-text); width:16px;"></i> 
-                <strong>تعداد کلاس‌ها:</strong> <span style="color:var(--text); font-weight:bold;">${st.completedClasses || 0}</span> از ${st.totalClasses || 0} جلسه <span style="color:var(--success-text); font-size:10px;">(${pct}%)</span>
+              <div class="u-c-text-muted">
+                <i class="fa-solid fa-chalkboard-user u-c-success-text u-w-16"></i> 
+                <strong>تعداد کلاس‌ها:</strong> <span class="u-c-text u-bold">${st.completedClasses || 0}</span> از ${st.totalClasses || 0} جلسه <span class="u-c-success-text u-fs-10">(${pct}%)</span>
               </div>
 
-              <div style="color:var(--text-muted);">
-                <i class="fa-solid fa-film" style="color:var(--primary-text); width:16px;"></i> 
-                <strong>پارت‌های هر جلسه:</strong> <span style="color:var(--text); font-weight:bold;">${st.partsPerSession || 4} پارت</span> <span style="font-size:10px; color:var(--primary-text);">(مجموعاً ${st.totalParts || 0} پارت)</span>
+              <div class="u-c-text-muted">
+                <i class="fa-solid fa-film u-c-primary-text u-w-16"></i> 
+                <strong>پارت‌های هر جلسه:</strong> <span class="u-c-text u-bold">${st.partsPerSession || 4} پارت</span> <span class="u-fs-10 u-c-primary-text">(مجموعاً ${st.totalParts || 0} پارت)</span>
               </div>
 
-              <div style="color:var(--text-muted);">
-                <i class="fa-solid fa-list-check" style="color:var(--accent-text); width:16px;"></i> 
-                <strong>تعداد آزمون‌ها:</strong> <span style="color:var(--accent-text); font-weight:bold;">${st.completedQuizzes || 0}</span> از ${st.totalQuizzes || 0} آزمونک
+              <div class="u-c-text-muted">
+                <i class="fa-solid fa-list-check u-c-accent-text u-w-16"></i> 
+                <strong>تعداد آزمون‌ها:</strong> <span class="u-c-accent-text u-bold">${st.completedQuizzes || 0}</span> از ${st.totalQuizzes || 0} آزمونک
               </div>
             </div>
           </div>
@@ -518,19 +518,19 @@ window.viewStudentDetails = async function(studentId) {
 
     if (ticketsEl) {
       if (tickets.length === 0) {
-        ticketsEl.innerHTML = '<p style="color:var(--text-muted); font-size:12px;">تیکت یا درخواستی ثبت نشده است.</p>';
+        ticketsEl.innerHTML = '<p class="u-c-text-muted u-fs-12">تیکت یا درخواستی ثبت نشده است.</p>';
       } else {
         ticketsEl.innerHTML = tickets.slice(0, 4).map(t => `
-          <div style="border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); padding:4px 0;">
-            <strong style="color:var(--text);">${esc(t.subject || 'تیکت پشتیبانی')}</strong>
-            <span style="color:var(--text-muted); font-size:11px; margin-right:6px;">[${t.status === 'RESOLVED' ? 'حل شده' : 'در حال بررسی'}]</span>
+          <div class="u-bb-fg-5 u-p-4-0">
+            <strong class="u-c-text">${esc(t.subject || 'تیکت پشتیبانی')}</strong>
+            <span class="u-c-text-muted u-fs-11 u-mr-6">[${t.status === 'RESOLVED' ? 'حل شده' : 'در حال بررسی'}]</span>
           </div>
         `).join('');
       }
     }
   } catch(e) {
     console.error('Error fetching student details:', e);
-    if (identityEl) identityEl.innerHTML = '<p style="color:var(--danger-text); font-size:13px;">خطا در دریافت اطلاعات دانش‌آموز</p>';
+    if (identityEl) identityEl.innerHTML = '<p class="u-c-danger-text u-fs-13">خطا در دریافت اطلاعات دانش‌آموز</p>';
   }
 };
 
@@ -581,7 +581,7 @@ window.loadSelectedCaravanDetails = async function() {
     if (nokhEl) nokhEl.innerHTML = '0 <i class="fa-solid fa-layer-group"></i>';
     if (farshEl) farshEl.innerHTML = '0 <i class="fa-solid fa-rug"></i>';
     milestonesEl.innerText = '0%';
-    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-faint);">کاروانی انتخاب نشده است.</td></tr>';
+    NopaTable.empty(rosterBody, 'کاروانی انتخاب نشده است.');
     return;
   }
 
@@ -630,7 +630,7 @@ window.loadSelectedCaravanDetails = async function() {
 
   rosterBody.innerHTML = '';
   if (members.length === 0) {
-    rosterBody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-faint);">این کاروان عضوی ندارد.</td></tr>';
+    NopaTable.empty(rosterBody, 'این کاروان عضوی ندارد.');
   } else {
     members.forEach(m => {
       const name = m.name || m.user?.name || '-';
@@ -643,18 +643,18 @@ window.loadSelectedCaravanDetails = async function() {
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-family: monospace; color: var(--primary-text); font-weight:bold;">${displayId}</td>
+        <td class="u-mono u-c-primary-text u-bold">${displayId}</td>
         <td><strong>${esc(name)}</strong></td>
-        <td style="font-family: monospace;" dir="ltr">${esc(phone)}</td>
-        <td style="color:var(--accent-text); font-weight:bold;"><i class="fa-solid fa-coins"></i> ${zarik}</td>
-        <td style="color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
-        <td style="color:var(--success-text); font-weight:bold;"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
-        <td style="color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-rug"></i> ${farsh}</td>
-        <td style="white-space:nowrap; display:flex; gap:5px;">
-          <button class="btn-action" style="background:var(--info); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="viewStudentDetails" data-click-args="${esc(JSON.stringify([String(m.id)]))}">جزئیات</button>
-          <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(m.id), String(name), String(m.role || 'student'), String(cId)]))}">ویرایش</button>
-          <button class="btn-action" style="background:var(--accent); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(m.id), "SUSPENDED"]))}">تعلیق</button>
-          <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px; cursor:pointer;" data-click="removeMemberFromCaravan" data-click-args="${esc(JSON.stringify([String(cId), String(m.id), String(name)]))}">حذف</button>
+        <td class="u-mono" dir="ltr">${esc(phone)}</td>
+        <td class="u-c-accent-text u-bold"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+        <td class="u-c-primary-text u-bold"><i class="fa-solid fa-flag"></i> ${beyragh}</td>
+        <td class="u-c-success-text u-bold"><i class="fa-solid fa-layer-group"></i> ${nokh}</td>
+        <td class="u-c-primary-text u-bold"><i class="fa-solid fa-rug"></i> ${farsh}</td>
+        <td class="u-nowrap u-flex u-gap-5">
+          <button class="btn-action u-bg-info u-c-white u-p-4-8 u-fs-11 u-r-6 u-pointer" data-click="viewStudentDetails" data-click-args="${esc(JSON.stringify([String(m.id)]))}">جزئیات</button>
+          <button class="btn-action u-bg-primary u-c-white u-p-4-8 u-fs-11 u-r-6 u-pointer" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(m.id), String(name), String(m.role || 'student'), String(cId)]))}">ویرایش</button>
+          <button class="btn-action u-bg-accent u-c-white u-p-4-8 u-fs-11 u-r-6 u-pointer" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(m.id), "SUSPENDED"]))}">تعلیق</button>
+          <button class="btn-action u-bg-danger u-c-white u-p-4-8 u-fs-11 u-r-6 u-pointer" data-click="removeMemberFromCaravan" data-click-args="${esc(JSON.stringify([String(cId), String(m.id), String(name)]))}">حذف</button>
         </td>
       `;
       rosterBody.appendChild(tr);
@@ -675,30 +675,30 @@ window.loadAssetConversions = async function() {
     if (!tbody) return;
     
     if (!Array.isArray(requests) || requests.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:16px;">هیچ درخواست تبدیل دارایی در سیستم ثبت نشده است.</td></tr>';
+      NopaTable.empty(tbody, 'هیچ درخواست تبدیل دارایی در سیستم ثبت نشده است.');
       return;
     }
 
     tbody.innerHTML = requests.map(r => `
       <tr>
         <td>
-          <div style="font-weight:bold; color:var(--text);">${esc(r.user?.name || '-')}</div>
-          ${r.user?.phoneNumber ? `<div style="font-size:11px; color:var(--text-muted); direction:ltr; text-align:right;">${esc(r.user.phoneNumber)}</div>` : ''}
+          <div class="u-bold u-c-text">${esc(r.user?.name || '-')}</div>
+          ${r.user?.phoneNumber ? `<div class="u-fs-11 u-c-text-muted u-direction-ltr u-text-right">${esc(r.user.phoneNumber)}</div>` : ''}
         </td>
         <td>${esc(r.caravan?.name || 'عمومی')}</td>
         <td>
-          <span style="color:var(--accent-text); font-weight:bold;">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
+          <span class="u-c-accent-text u-bold">${esc(r.note || 'تبدیل ۵ کلاف به ۱ قالیچه')}</span>
         </td>
         <td>
-          ${r.status === 'completed' ? '<span class="badge" style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.4);">انجام شده</span>' :
-            r.status === 'cancelled' ? `<span class="badge" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4);">لغو شده</span>${r.rejectionReason ? `<div style="font-size:11px; color:var(--danger-text); margin-top:3px;">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
-            '<span class="badge" style="background:rgb(var(--muted-rgb) / 0.2); color:var(--text-muted); border:1px solid rgb(var(--muted-rgb) / 0.4);">قدیمی (بدون اثر)</span>'}
+          ${r.status === 'completed' ? '<span class="badge u-bg-success-20 u-c-success-text u-bd-success-40">انجام شده</span>' :
+            r.status === 'cancelled' ? `<span class="badge u-bg-danger-20 u-c-danger-text u-bd-danger-40">لغو شده</span>${r.rejectionReason ? `<div class="u-fs-11 u-c-danger-text u-mt-3">علت: ${esc(r.rejectionReason)}</div>` : ''}` :
+            '<span class="badge u-bg-muted-20 u-c-text-muted u-bd-muted-40">قدیمی (بدون اثر)</span>'}
         </td>
-        <td style="font-size:12px; color:var(--text-soft);">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
-        <td style="text-align:center;">
+        <td class="u-fs-12 u-c-text-soft">${new Date(r.createdAt).toLocaleDateString('fa-IR')}</td>
+        <td class="u-text-center">
           ${r.status === 'completed' ? `
-            <button type="button" class="btn-icon" style="color:var(--danger-text); background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:4px 8px; border-radius:6px; cursor:pointer;" data-click="cancelAssetConversion" data-click-args="${esc(JSON.stringify([String(r.id)]))}" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
-          ` : '<span style="color:var(--text-faint); font-size:11px;">-</span>'}
+            <button type="button" class="btn-icon u-c-danger-text u-bg-danger-15 u-bd-danger-30 u-p-4-8 u-r-6 u-pointer" data-click="cancelAssetConversion" data-click-args="${esc(JSON.stringify([String(r.id)]))}" title="لغو مبادله"><i class="fa-solid fa-rotate-left"></i> لغو مبادله</button>
+          ` : '<span class="u-c-text-faint u-fs-11">-</span>'}
         </td>
       </tr>
     `).join('');
@@ -752,7 +752,7 @@ async function openCaravanWizard() {
     const allMentors = await res.json();
     const filtered = allMentors.filter(m => m.name.includes(q) || (m.phoneNumber && m.phoneNumber.includes(q)) || (m.userCode && m.userCode.toString() === q));
     const html = filtered.map(m => `
-      <div class="mentor-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border);" data-id="${m.id}" data-name="${esc(m.name)}">
+      <div class="mentor-result-item u-p-10 u-pointer u-bb-border" data-id="${m.id}" data-name="${esc(m.name)}">
         <strong>${esc(m.name)}</strong> - NP-${esc(m.userCode || m.phoneNumber)}
       </div>
     `).join('');
@@ -776,7 +776,7 @@ async function openCaravanWizard() {
     const data = await res.json();
     const students = Array.isArray(data) ? data : data.users;
     const html = students.filter(s => !window.pendingCaravanMembers.some(p => p.id === s.id)).map(s => `
-      <div class="student-result-item" style="padding:10px; cursor:pointer; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+      <div class="student-result-item u-p-10 u-pointer u-bb-border u-flex u-justify-between" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
         <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)}</span>
         <i class="fa-solid fa-plus text-primary"></i>
       </div>
@@ -803,9 +803,9 @@ window.removePendingMember = function(id) {
 function renderPendingMembers() {
   document.getElementById('cw-pending-count').innerText = window.pendingCaravanMembers.length;
   document.getElementById('cw-pending-members').innerHTML = window.pendingCaravanMembers.map(p => `
-    <li style="background:var(--primary-color); padding:4px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:5px;">
+    <li class="u-bg-primary-color u-p-4-8 u-r-4 u-fs-12 u-flex u-items-center u-gap-5">
       ${esc(p.name)} (NP-${p.code})
-      <i class="fa-solid fa-times" style="cursor:pointer;" data-click="removePendingMember" data-click-args="${esc(JSON.stringify([String(p.id)]))}"></i>
+      <i class="fa-solid fa-times u-pointer" data-click="removePendingMember" data-click-args="${esc(JSON.stringify([String(p.id)]))}"></i>
     </li>
   `).join('');
 }
@@ -904,8 +904,7 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color: var(--text-muted);">' + 
-      (q ? 'کاربری با این مشخصات در کاروان یافت نشد.' : 'عضوی در این کاروان یافت نشد.') + '</td></tr>';
+    NopaTable.empty(tbody, q ? 'کاربری با این مشخصات در کاروان یافت نشد.' : 'عضوی در این کاروان یافت نشد.');
     return;
   }
 
@@ -917,17 +916,17 @@ window.renderCaravanRosterTable = function(membersList, searchQuery = '') {
     
     tr.innerHTML = `
       <td><strong>${esc(u.name || 'بدون نام')}</strong></td>
-      <td style="font-family: monospace; color: var(--text-secondary);">${displayCode}</td>
-      <td style="font-family: monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</td>
-      <td><span class="badge" style="background: rgb(var(--fg-rgb) / 0.1);">${roleLabel}</span></td>
+      <td class="u-mono u-c-text-secondary">${displayCode}</td>
+      <td class="u-mono" dir="ltr">${esc(u.phoneNumber || '-')}</td>
+      <td><span class="badge u-bg-fg-10">${roleLabel}</span></td>
       <td>سطح ${u.levelFrame || 1}</td>
-      <td style="color: var(--accent-text);"><i class="fa-solid fa-coins"></i> ${zarik}</td>
+      <td class="u-c-accent-text"><i class="fa-solid fa-coins"></i> ${zarik}</td>
       <td>
-        <div style="display:flex; gap:6px;">
-          <button class="page-btn" data-click="openCaravanStudentDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="نمایش جزئیات" style="color: var(--color-neon-blue); background:rgb(var(--primary-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+        <div class="u-flex u-gap-6">
+          <button class="page-btn u-c-color-neon-blue u-bg-primary-20 u-p-4-8 u-r-6 u-bd-none u-pointer" data-click="openCaravanStudentDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="نمایش جزئیات">
             <i class="fa-solid fa-eye"></i>
           </button>
-          <button class="page-btn" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(currentDrawerCaravanId), String(u.id)]))}" title="حذف از کاروان" style="color: var(--color-danger); background:rgb(var(--danger-rgb) / 0.2); padding:4px 8px; border-radius:6px; border:none; cursor:pointer;">
+          <button class="page-btn u-c-color-danger u-bg-danger-20 u-p-4-8 u-r-6 u-bd-none u-pointer" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(currentDrawerCaravanId), String(u.id)]))}" title="حذف از کاروان">
             <i class="fa-solid fa-user-minus"></i>
           </button>
         </div>
@@ -994,7 +993,7 @@ window.viewCaravanDetails = async function(caravanId) {
   }
 
   const tbody = document.querySelector('#cd-roster-table tbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری اطلاعات کاروان...</td></tr>';
+  NopaTable.loading(tbody, 'در حال بارگذاری اطلاعات کاروان...');
 
   try {
     const res = await request(`/api/v1/admin/caravans/${caravanId}`);
@@ -1003,7 +1002,7 @@ window.viewCaravanDetails = async function(caravanId) {
     window.renderCaravanDrawerData(data);
   } catch (err) {
     console.error('viewCaravanDetails error:', err);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger-text);">خطا در دریافت اطلاعات از سرور</td></tr>';
+    NopaTable.error(tbody, 'خطا در دریافت اطلاعات از سرور');
   }
 };
 
@@ -1149,7 +1148,7 @@ window.loadCaravanDetails = async function(caravanId) {
       tbody.innerHTML = '';
       const members = caravan.membersList || caravan.members || [];
       if (members.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-faint);">هیچ عضوی در این کاروان یافت نشد</td></tr>';
+        NopaTable.empty(tbody, 'هیچ عضوی در این کاروان یافت نشد');
       } else {
         members.forEach(m => {
           const name = m.name || m.user?.name || '-';
@@ -1160,14 +1159,14 @@ window.loadCaravanDetails = async function(caravanId) {
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>
-              <input type="text" id="edit-name-${userId}" value="${esc(name)}" class="input-ctrl" style="width:120px; padding:4px; font-size:12px; border:1px solid rgb(var(--fg-rgb) / 0.2); background:transparent; color:var(--text); border-radius: 4px;">
+              <input type="text" id="edit-name-${userId}" value="${esc(name)}" class="input-ctrl u-w-120 u-p-4 u-fs-12 u-bd-fg-20 u-bg-transparent u-c-text u-r-4">
             </td>
-            <td style="font-family: monospace;">${esc(phone)}</td>
+            <td class="u-mono">${esc(phone)}</td>
             <td>${zarik}</td>
             <td>-</td>
-            <td style="white-space:nowrap; display:flex; gap:5px;">
-              <button class="btn-action" style="background:var(--primary); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" data-click="editMember" data-click-args="${esc(JSON.stringify([String(userId)]))}">ذخیره</button>
-              <button class="btn-action" style="background:var(--danger); color:white; padding:4px 8px; font-size:11px; border-radius:6px;" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(caravanId), String(userId)]))}">حذف</button>
+            <td class="u-nowrap u-flex u-gap-5">
+              <button class="btn-action u-bg-primary u-c-white u-p-4-8 u-fs-11 u-r-6" data-click="editMember" data-click-args="${esc(JSON.stringify([String(userId)]))}">ذخیره</button>
+              <button class="btn-action u-bg-danger u-c-white u-p-4-8 u-fs-11 u-r-6" data-click="removeFromCaravan" data-click-args="${esc(JSON.stringify([String(caravanId), String(userId)]))}">حذف</button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -1198,14 +1197,14 @@ window.renderBulkSelectedMembers = function() {
   count.innerText = window.bulkTransferSelectedMembers.length;
   
   if (window.bulkTransferSelectedMembers.length === 0) {
-    container.innerHTML = '<li style="color: var(--text-secondary); font-size: 13px;">هیچ عضوی انتخاب نشده است.</li>';
+    container.innerHTML = '<li class="u-c-text-secondary u-fs-13">هیچ عضوی انتخاب نشده است.</li>';
     return;
   }
   
   container.innerHTML = window.bulkTransferSelectedMembers.map(m => `
-    <li style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid var(--primary); padding: 5px 12px; border-radius: 20px; font-size: 13px; display:flex; align-items:center; gap:8px;">
+    <li class="u-bg-primary-20 u-bd-primary u-p-5-12 u-r-20 u-fs-13 u-flex u-items-center u-gap-8">
       ${esc(m.name)} (NP-${m.code})
-      <i class="fa-solid fa-times" style="cursor:pointer; color: var(--danger-text);" data-click="removeBulkSelectedMember" data-click-args="${esc(JSON.stringify([String(m.id)]))}"></i>
+      <i class="fa-solid fa-times u-pointer u-c-danger-text" data-click="removeBulkSelectedMember" data-click-args="${esc(JSON.stringify([String(m.id)]))}"></i>
     </li>
   `).join('');
 };
@@ -1229,9 +1228,9 @@ document.getElementById('bt-student-search')?.addEventListener('input', async (e
     const students = Array.isArray(data) ? data : data.users;
     
     const html = students.filter(s => !window.bulkTransferSelectedMembers.some(sel => sel.id === s.id)).map(s => `
-      <div class="bt-student-item" style="padding:10px; cursor:pointer; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); display:flex; justify-content:space-between;" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
-        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)} <span style="font-size:10px; color:var(--text-muted);">(${esc(s.caravan?.name || 'بدون کاروان')})</span></span>
-        <i class="fa-solid fa-plus" style="color: var(--primary-text);"></i>
+      <div class="bt-student-item u-p-10 u-pointer u-bb-fg-5 u-flex u-justify-between" data-id="${s.id}" data-name="${esc(s.name)}" data-code="${esc(s.userCode || s.phoneNumber)}">
+        <span><strong>${esc(s.name)}</strong> - NP-${esc(s.userCode || s.phoneNumber)} <span class="u-fs-10 u-c-text-muted">(${esc(s.caravan?.name || 'بدون کاروان')})</span></span>
+        <i class="fa-solid fa-plus u-c-primary-text"></i>
       </div>
     `).join('');
     
@@ -1416,7 +1415,7 @@ window.searchCandidateMembers = async function(query) {
   const container = document.getElementById('candidate-members-list');
   if (!container) return;
 
-  container.innerHTML = '<p style="text-align:center; color:var(--text-muted); font-size:12px; margin:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
+  container.innerHTML = '<p class="u-text-center u-c-text-muted u-fs-12 u-m-10-0"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری دانش‌آموزان...</p>';
 
   try {
     const qStr = query ? query.trim() : '';
@@ -1434,7 +1433,7 @@ window.searchCandidateMembers = async function(query) {
     }
 
     if (students.length === 0) {
-      container.innerHTML = '<p style="text-align:center; color:var(--danger-text); font-size:12px; margin:10px 0;">دانش‌آموزی با این مشخصات یافت نشد</p>';
+      container.innerHTML = '<p class="u-text-center u-c-danger-text u-fs-12 u-m-10-0">دانش‌آموزی با این مشخصات یافت نشد</p>';
       return;
     }
 
@@ -1443,23 +1442,23 @@ window.searchCandidateMembers = async function(query) {
       const isChecked = window.selectedCandidateMembers.has(u.id) && !hasCaravan ? 'checked' : '';
 
       const caravanBadge = hasCaravan 
-        ? `<span style="color:var(--danger-text); font-size:11px; background:rgb(var(--danger-rgb) / 0.15); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock" style="font-size:10px;"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
-        : `<span style="color:var(--success-text); font-size:11px; background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.3); padding:2px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-check" style="font-size:10px;"></i> فاقد کاروان (آماده عضویت)</span>`;
+        ? `<span class="u-c-danger-text u-fs-11 u-bg-danger-15 u-bd-danger-30 u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-lock u-fs-10"></i> عضو کاروان «${esc(u.caravanName)}» (غیرقابل انتخاب)</span>`
+        : `<span class="u-c-success-text u-fs-11 u-bg-success-15 u-bd-success-30 u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-check u-fs-10"></i> فاقد کاروان (آماده عضویت)</span>`;
 
       return `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.05); font-size:13px; opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'};">
-          <label style="display:flex; align-items:center; gap:12px; cursor:${hasCaravan ? 'not-allowed' : 'pointer'}; flex:1; margin:0;">
+        <div class="u-flex u-justify-between u-items-center u-p-10-12 u-bb-fg-5 u-fs-13" style="opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'}">
+          <label class="u-flex u-items-center u-gap-12 u-flex-1 u-m-0" style="cursor:${hasCaravan ? 'not-allowed' : 'pointer'}">
             <input type="checkbox" 
                    ${hasCaravan ? 'disabled' : `data-change="toggleCandidateSelection" data-change-args="${esc(JSON.stringify(["$this", String(u.id)]))}"`} 
                    ${isChecked}
                    style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
-            <div style="display:flex; flex-direction:column; gap:2px;">
-              <div style="display:flex; align-items:center; gap:8px;">
+            <div class="u-flex u-col u-gap-2">
+              <div class="u-flex u-items-center u-gap-8">
                 <strong style="color:${hasCaravan ? 'var(--text-muted)' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
-                <span style="color:var(--text-muted); font-size:11px; font-family:monospace;" dir="ltr">${esc(u.phoneNumber || '-')}</span>
-                <span style="color:var(--primary-text); font-size:11px; background:rgb(var(--primary-rgb) / 0.1); padding:1px 6px; border-radius:4px;">دانش‌آموز</span>
+                <span class="u-c-text-muted u-fs-11 u-mono" dir="ltr">${esc(u.phoneNumber || '-')}</span>
+                <span class="u-c-primary-text u-fs-11 u-bg-primary-10 u-p-1-6 u-r-4">دانش‌آموز</span>
               </div>
-              <div style="margin-top:2px;">
+              <div class="u-mt-2">
                 ${caravanBadge}
               </div>
             </div>
@@ -1469,7 +1468,7 @@ window.searchCandidateMembers = async function(query) {
     }).join('');
   } catch(e) {
     console.error(e);
-    container.innerHTML = '<p style="text-align:center; color:var(--danger-text); font-size:12px;">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
+    container.innerHTML = '<p class="u-text-center u-c-danger-text u-fs-12">خطا در جستجو و دریافت لیست دانش‌آموزان</p>';
   }
 };
 

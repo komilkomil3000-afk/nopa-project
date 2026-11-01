@@ -66,7 +66,7 @@ async function loadNotificationData() {
           <td><span class="badge ${l.channel === 'in_app' ? 'badge-admin' : 'badge-student'}">${esc(l.channel)}</span></td>
           <td>${esc(l.targetAudience)}</td>
           <td><span style="color: ${l.status === 'success' ? 'var(--success-text)' : 'var(--danger)'}">${l.status === 'success' ? 'موفق' : 'خطا'}</span></td>
-          <td style="font-size:11px; color:var(--text-muted);">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
+          <td class="u-fs-11 u-c-text-muted">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
         `;
         tbody.appendChild(tr);
       });

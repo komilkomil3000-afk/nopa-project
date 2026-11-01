@@ -33,7 +33,7 @@ window.loadMentors = async function() {
   const tbody = document.getElementById('mentors-table-body') || document.querySelector('#mentors-table tbody');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری لیست راهبران و اساتید...</td></tr>';
+  NopaTable.loading(tbody, 'در حال بارگذاری لیست راهبران و اساتید...');
 
   try {
     const res = await request('/api/v1/admin/mentors');
@@ -49,7 +49,7 @@ window.loadMentors = async function() {
     window.filterMentorsList();
   } catch (err) {
     console.error('Error loading mentors:', err);
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--danger-text);"><i class="fa-solid fa-triangle-exclamation"></i> خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
+    NopaTable.error(tbody, `خطا در بارگذاری اطلاعات: ${err.message}`);
   }
 };
 
@@ -58,7 +58,7 @@ window.filterMentorsList = function() {
   if (!tbody) return;
 
   if (!window.mentorsMasterList || window.mentorsMasterList.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">هیچ راهبری در سیستم ثبت نشده است.</td></tr>';
+    NopaTable.empty(tbody, 'هیچ راهبری در سیستم ثبت نشده است.');
     return;
   }
 
@@ -126,7 +126,7 @@ window.filterMentorsList = function() {
 
   // Render rows
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:var(--text-muted);"><i class="fa-solid fa-filter-circle-xmark" style="font-size:24px; color:var(--text-faint); margin-bottom:8px; display:block;"></i> هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.</td></tr>';
+    NopaTable.empty(tbody, 'هیچ راهبری با معیارهای فیلتر و جستجوی انتخاب‌شده مطابقت ندارد.', 'fa-solid fa-filter-circle-xmark');
     return;
   }
 
@@ -140,44 +140,44 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
     const caravansHtml = caravans.length > 0
-      ? caravans.map(c => `<span class="badge" style="background:rgb(var(--primary-rgb) / 0.2); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.4); padding:3px 8px; border-radius:6px; font-size:11px; margin:2px; display:inline-block;"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
-      : '<span style="color:var(--text-faint); font-size:12px;">فاقد کاروان</span>';
+      ? caravans.map(c => `<span class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-3-8 u-r-6 u-fs-11 u-m-2 u-inline-block"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
+      : '<span class="u-c-text-faint u-fs-12">فاقد کاروان</span>';
 
     // Status indicator
     const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
-    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);"></span>' : '<span title="فعال" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--success);"></span>';
+    const statusDot = isSuspended ? '<span title="مسدود / غیرفعال" class="u-inline-block u-w-9 u-h-9 u-r-50p u-bg-danger"></span>' : '<span title="فعال" class="u-inline-block u-w-9 u-h-9 u-r-50p u-bg-success"></span>';
 
     // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
-      ? `<span style="font-family:monospace; color:var(--text-soft);">${esc(m.nationalId)}</span>`
-      : '<span style="color:var(--text-faint); font-size:11px;">وارد نشده است</span>';
+      ? `<span class="u-mono u-c-text-soft">${esc(m.nationalId)}</span>`
+      : '<span class="u-c-text-faint u-fs-11">وارد نشده است</span>';
 
     return `
-      <tr style="transition:all 0.2s ease;">
-        <td style="text-align:center;">
-          <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary)); display:flex; align-items:center; justify-content:center; font-weight:bold; color:white; font-size:13px; margin:0 auto; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+      <tr class="u-tr-all-0_2s-ease">
+        <td class="u-text-center">
+          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-13 u-m-0-auto u-shadow-0-2-6-shade-30" style="background:linear-gradient(135deg, var(--primary), var(--primary))">
             ${avatarInitials}
           </div>
         </td>
         <td>
-          <div style="display:flex; align-items:center; gap:6px;">
+          <div class="u-flex u-items-center u-gap-6">
             ${statusDot}
-            <strong style="color:var(--text); font-size:13.5px;">${esc(m.name || 'راهبر بدون نام')}</strong>
+            <strong class="u-c-text u-fs-13_5">${esc(m.name || 'راهبر بدون نام')}</strong>
           </div>
-          ${m.role === 'SUPER_MENTOR' ? '<span style="font-size:10px; color:var(--accent-text); background:rgb(var(--accent-rgb) / 0.15); padding:1px 6px; border-radius:4px;">سرراهبر</span>' : ''}
+          ${m.role === 'SUPER_MENTOR' ? '<span class="u-fs-10 u-c-accent-text u-bg-accent-15 u-p-1-6 u-r-4">سرراهبر</span>' : ''}
         </td>
-        <td style="font-family:monospace; direction:ltr; text-align:right; color:var(--text-soft);">${esc(m.phoneNumber || '-')}</td>
-        <td style="text-align:center;">${nationalIdText}</td>
+        <td class="u-mono u-direction-ltr u-text-right u-c-text-soft">${esc(m.phoneNumber || '-')}</td>
+        <td class="u-text-center">${nationalIdText}</td>
         <td>${caravansHtml}</td>
-        <td style="text-align:center; white-space:nowrap;">
-          <div style="display:inline-flex; gap:6px; align-items:center;">
-            <button class="btn-action" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="نمایش شناسنامه جامع">
+        <td class="u-text-center u-nowrap">
+          <div class="u-inline-flex u-gap-6 u-items-center">
+            <button class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="نمایش شناسنامه جامع">
               <i class="fa-solid fa-eye"></i> شناسنامه
             </button>
-            <button class="btn-action" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="ویرایش اطلاعات">
+            <button class="btn-action u-bg-success-15 u-c-success-text u-bd-success-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="ویرایش اطلاعات">
               <i class="fa-solid fa-pen"></i> ویرایش
             </button>
-            <button class="btn-action" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:5px 9px; font-size:11.5px; cursor:pointer; font-weight:500; display:inline-flex; align-items:center; gap:4px;" title="مدیریت وضعیت و تعلیق">
+            <button class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="مدیریت وضعیت و تعلیق">
               <i class="fa-solid fa-user-shield"></i> وضعیت
             </button>
           </div>
@@ -199,7 +199,7 @@ window.viewMentorDossier = async function(mentorId) {
   window.currentMentorId = mentorId;
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal)';
-  body.innerHTML = '<div style="text-align:center; padding:30px; color:var(--primary-text);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div style="margin-top:10px;">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
+  body.innerHTML = '<div class="u-text-center u-p-30 u-c-primary-text"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div class="u-mt-10">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
   let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
 
@@ -218,7 +218,7 @@ window.viewMentorDossier = async function(mentorId) {
     const mentorName = dossier?.identity?.name || mentor?.name || 'راهبر آموزشی';
     const initials = mentorName.trim().split(' ').map(n => n[0]).join('').substring(0, 2);
     
-    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card" style="color:var(--primary-text);"></i> شناسنامه راهبر: ${esc(mentorName)}`;
+    document.getElementById('dossier-mentor-name').innerHTML = `<i class="fa-solid fa-id-card u-c-primary-text"></i> شناسنامه راهبر: ${esc(mentorName)}`;
     const cleanNatId = (dossier?.identity?.nationalId || mentor?.nationalId || '').trim();
     const natIdDisplay = (cleanNatId && cleanNatId !== 'null' && !cleanNatId.startsWith('۱۲۳۴۵۶') && !cleanNatId.startsWith('123456')) ? cleanNatId : 'وارد نشده است';
     document.getElementById('dossier-mentor-subtitle').textContent = `کد ملی: ${natIdDisplay} | موبایل: ${dossier?.identity?.phoneNumber || mentor?.phoneNumber || '-'}`;
@@ -228,87 +228,87 @@ window.viewMentorDossier = async function(mentorId) {
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
     const students = dossier?.supervisedStudents || [];
     const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span style="font-size:12px; color:var(--text-muted);">/ ۵</span>` : `<span style="font-size:15px; color:var(--text-muted);">فاقد ارزیابی</span>`;
+    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span class="u-fs-12 u-c-text-muted">/ ۵</span>` : `<span class="u-fs-15 u-c-text-muted">فاقد ارزیابی</span>`;
     const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
       <!-- TOP STATS CARDS -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-bottom:18px;">
-        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-people-group" style="color:var(--primary-text);"></i> کاروان‌های تحت راهبری</div>
-          <div style="font-size:22px; font-weight:bold; color:var(--primary-text);">${caravans.length} <span style="font-size:12px; color:var(--text-muted);">کاروان</span></div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">گروه‌های فعال آموزشی</div>
+      <div class="u-grid u-cols-fit-200 u-gap-12 u-mb-18">
+        <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
+          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-people-group u-c-primary-text"></i> کاروان‌های تحت راهبری</div>
+          <div class="u-fs-22 u-bold u-c-primary-text">${caravans.length} <span class="u-fs-12 u-c-text-muted">کاروان</span></div>
+          <div class="u-fs-11 u-c-text-muted u-mt-2">گروه‌های فعال آموزشی</div>
         </div>
 
-        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--success-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-users" style="color:var(--success-text);"></i> دانش‌آموزان تحت نظارت</div>
-          <div style="font-size:22px; font-weight:bold; color:var(--success-text);">${students.length} <span style="font-size:12px; color:var(--text-muted);">دانش‌آموز</span></div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">افراد تحت سرپرستی این راهبر</div>
+        <div class="u-bg-surface-2-70 u-bd-success-30 u-r-12 u-p-14 u-text-center">
+          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-users u-c-success-text"></i> دانش‌آموزان تحت نظارت</div>
+          <div class="u-fs-22 u-bold u-c-success-text">${students.length} <span class="u-fs-12 u-c-text-muted">دانش‌آموز</span></div>
+          <div class="u-fs-11 u-c-text-muted u-mt-2">افراد تحت سرپرستی این راهبر</div>
         </div>
 
-        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:12px; padding:14px; text-align:center;">
-          <div style="font-size:11px; color:var(--text-soft); margin-bottom:4px;"><i class="fa-solid fa-shield-halved" style="color:var(--primary-text);"></i> وضعیت حساب کاربری</div>
-          <div style="font-size:18px; font-weight:bold; color:var(--success-text); margin-top:4px;">${mentor?.accountStatus || 'ACTIVE'}</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">دسترسی به پنل راهبر</div>
+        <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
+          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-shield-halved u-c-primary-text"></i> وضعیت حساب کاربری</div>
+          <div class="u-fs-18 u-bold u-c-success-text u-mt-4">${mentor?.accountStatus || 'ACTIVE'}</div>
+          <div class="u-fs-11 u-c-text-muted u-mt-4">دسترسی به پنل راهبر</div>
         </div>
       </div>
 
       <!-- PERSONAL & IDENTITY DOSSIER -->
-      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
-        <div style="font-weight:bold; color:var(--primary-text); font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+      <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
+        <div class="u-bold u-c-primary-text u-fs-13_5 u-mb-12 u-flex u-items-center u-gap-6">
           <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
         </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:12.5px;">
-          <div><strong style="color:var(--text-muted);">نام کامل:</strong> <span style="color:var(--text);">${esc(mentorName)}</span></div>
-          <div><strong style="color:var(--text-muted);">شماره همراه:</strong> <span style="color:var(--text); font-family:monospace;">${esc(mentor?.phoneNumber || '-')}</span></div>
-          <div><strong style="color:var(--text-muted);">کد ملی:</strong> <span style="color:var(--text); font-family:monospace;">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
-          <div><strong style="color:var(--text-muted);">تاریخ تولد:</strong> <span style="color:var(--text);">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
-          <div><strong style="color:var(--text-muted);">شهر محل سکونت:</strong> <span style="color:var(--text);">${esc(mentor?.city || 'ثبت نشده')}</span></div>
-          <div><strong style="color:var(--text-muted);">پلتفرم پیام‌رسان:</strong> <span style="color:var(--text);">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong style="color:var(--text-muted);">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
+        <div class="u-grid u-cols-fit-200 u-gap-12 u-fs-12_5">
+          <div><strong class="u-c-text-muted">نام کامل:</strong> <span class="u-c-text">${esc(mentorName)}</span></div>
+          <div><strong class="u-c-text-muted">شماره همراه:</strong> <span class="u-c-text u-mono">${esc(mentor?.phoneNumber || '-')}</span></div>
+          <div><strong class="u-c-text-muted">کد ملی:</strong> <span class="u-c-text u-mono">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
+          <div><strong class="u-c-text-muted">تاریخ تولد:</strong> <span class="u-c-text">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
+          <div><strong class="u-c-text-muted">شهر محل سکونت:</strong> <span class="u-c-text">${esc(mentor?.city || 'ثبت نشده')}</span></div>
+          <div><strong class="u-c-text-muted">پلتفرم پیام‌رسان:</strong> <span class="u-c-text">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
+          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
         </div>
       </div>
 
       <!-- CARAVANS LIST -->
-      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px; margin-bottom:16px;">
-        <div style="font-weight:bold; color:var(--primary-text); font-size:13.5px; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
+      <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
+        <div class="u-bold u-c-primary-text u-fs-13_5 u-mb-12 u-flex u-items-center u-gap-6">
           <i class="fa-solid fa-caravan"></i> وضعیت کاروان‌های تحت نظارت
         </div>
         ${caravans.length > 0 ? `
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:10px;">
+          <div class="u-grid u-cols-fit-240 u-gap-10">
             ${caravans.map(c => `
-              <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:10px; padding:12px;">
-                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:var(--primary-text); margin-bottom:6px;">
+              <div class="u-bg-surface-2-70 u-bd-fg-6 u-r-10 u-p-12">
+                <div class="u-flex u-justify-between u-fs-13 u-bold u-c-primary-text u-mb-6">
                   <span>${esc(c.name)}</span>
-                  <span style="font-size:11px; color:var(--text-soft);">${c.memberCount || 0} عضو</span>
+                  <span class="u-fs-11 u-c-text-soft">${c.memberCount || 0} عضو</span>
                 </div>
-                <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
-                <div style="background:rgb(var(--shade-rgb) / 0.3); height:6px; border-radius:3px; overflow:hidden;">
-                  <div style="background:linear-gradient(90deg, var(--primary), var(--success)); height:100%; width:${c.progress || 0}%;"></div>
+                <div class="u-fs-11 u-c-text-muted u-mb-6">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
+                <div class="u-bg-shade-30 u-h-6 u-r-3 u-overflow-hidden">
+                  <div class="u-h-full" style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
                 </div>
               </div>
             `).join('')}
           </div>
-        ` : '<div style="color:var(--text-muted); font-size:12px;">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
+        ` : '<div class="u-c-text-muted u-fs-12">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
       </div>
 
       <!-- SUPERVISED STUDENTS SECTION (افراد تحت سرپرستی این راهبر) -->
-      <div style="background:rgb(var(--surface-rgb) / 0.6); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:14px; padding:18px; margin-bottom:16px; box-shadow: 0 4px 20px rgb(var(--shade-rgb) / 0.3);">
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.08); padding-bottom:14px;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:38px; height:38px; border-radius:10px; background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.3); display:flex; align-items:center; justify-content:center; color:var(--primary-text); font-size:17px;">
+      <div class="u-bg-surface-60 u-bd-primary-30 u-r-14 u-p-18 u-mb-16 u-shadow-0-4-20-shade-30">
+        <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-mb-16 u-bb-fg-8 u-pb-14">
+          <div class="u-flex u-items-center u-gap-10">
+            <div class="u-w-38 u-h-38 u-r-10 u-bg-primary-15 u-bd-primary-30 u-flex u-items-center u-justify-center u-c-primary-text u-fs-17">
               <i class="fa-solid fa-users"></i>
             </div>
             <div>
-              <div style="font-weight:bold; color:var(--primary-text); font-size:14.5px;">دانش‌آموزان تحت سرپرستی این راهبر</div>
-              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
+              <div class="u-bold u-c-primary-text u-fs-14_5">دانش‌آموزان تحت سرپرستی این راهبر</div>
+              <div class="u-fs-11_5 u-c-text-muted u-mt-2">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
+          <div class="u-flex u-items-center u-gap-10">
+            <span class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-5-12 u-r-20 u-fs-12 u-bold">
               ${students.length} دانش‌آموز تحت نظارت
             </span>
-            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" style="background:rgb(var(--shade-rgb) / 0.35); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:6px 12px; border-radius:8px; font-size:12px; outline:none; width:210px;">
+            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" class="u-bg-shade-35 u-bd-fg-15 u-c-text u-p-6-12 u-r-8 u-fs-12 u-outline-none u-w-210">
           </div>
         </div>
 
@@ -321,13 +321,13 @@ window.viewMentorDossier = async function(mentorId) {
     window.renderDossierStudents(students, mentorId);
 
     footerActions.innerHTML = `
-      <button type="button" class="btn-primary" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:8px 18px; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+      <button type="button" class="btn-primary u-bg-grad-success u-c-white u-bd-none u-p-8-18 u-r-8 u-bold u-pointer u-inline-flex u-items-center u-gap-6" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}">
         <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
       </button>
     `;
   } catch (err) {
     console.error('viewMentorDossier error:', err);
-    body.innerHTML = `<div style="color:var(--danger-text); text-align:center; padding:20px;">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
+    body.innerHTML = `<div class="u-c-danger-text u-text-center u-p-20">خطا در دریافت اطلاعات پرونده: ${esc(err.message)}</div>`;
   }
 };
 
@@ -337,71 +337,71 @@ window.renderDossierStudents = function(students, mentorId) {
 
   if (!students || students.length === 0) {
     container.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; background:rgb(var(--shade-rgb) / 0.2); border-radius:12px; color:var(--text-muted); border:1px dashed rgb(var(--fg-rgb) / 0.08);">
-        <i class="fa-solid fa-user-graduate fa-2x" style="color:var(--text-faint); margin-bottom:8px;"></i>
-        <div style="font-size:13.5px; font-weight:bold; color:var(--text-soft);">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
-        <div style="font-size:11.5px; margin-top:4px;">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
+      <div class="u-text-center u-p-35-20 u-bg-shade-20 u-r-12 u-c-text-muted u-bd-1-dashed-fg-8">
+        <i class="fa-solid fa-user-graduate fa-2x u-c-text-faint u-mb-8"></i>
+        <div class="u-fs-13_5 u-bold u-c-text-soft">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
+        <div class="u-fs-11_5 u-mt-4">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
       </div>
     `;
     return;
   }
 
   container.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:10px;">
+    <div class="u-flex u-col u-gap-10">
       ${students.map(s => {
         const initials = (s.name || 'دا').trim().split(' ').map(n => n[0]).join('').substring(0, 2);
         const openTicketsBadge = s.stats.openTickets > 0 ? 
-          `<span style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.openTickets} تیکت باز</span>` : 
-          `<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); padding:2px 7px; border-radius:6px; font-size:10.5px;">تیکت بازی ندارد</span>`;
+          `<span class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-2-7 u-r-6 u-fs-10_5 u-bold">${s.stats.openTickets} تیکت باز</span>` : 
+          `<span class="u-bg-success-15 u-c-success-text u-p-2-7 u-r-6 u-fs-10_5">تیکت بازی ندارد</span>`;
         
         const pendingSubmissionsBadge = s.stats.pendingSubmissions > 0 ?
-          `<span style="background:rgb(var(--accent-rgb) / 0.2); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.4); padding:2px 7px; border-radius:6px; font-size:10.5px; font-weight:bold;">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
-          `<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); padding:2px 7px; border-radius:6px; font-size:10.5px;">تکالیف بررسی‌شده</span>`;
+          `<span class="u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-p-2-7 u-r-6 u-fs-10_5 u-bold">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
+          `<span class="u-bg-success-15 u-c-success-text u-p-2-7 u-r-6 u-fs-10_5">تکالیف بررسی‌شده</span>`;
 
         return `
-          <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; transition:all 0.2s;" data-hover="border-primary">
+          <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-14 u-flex u-justify-between u-items-center u-wrap u-gap-14 u-transition" data-hover="border-primary">
             <!-- Student Bio & Info -->
-            <div style="display:flex; align-items:center; gap:12px; min-width:240px;">
-              <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, var(--success), var(--primary)); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; color:white; border:2px solid rgb(var(--fg-rgb) / 0.2); flex-shrink:0;">
+            <div class="u-flex u-items-center u-gap-12 u-minw-240">
+              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-15 u-c-white u-bd-2-solid-fg-20 u-shrink-0" style="background:linear-gradient(135deg, var(--success), var(--primary))">
                 ${initials}
               </div>
               <div>
-                <div style="font-weight:bold; color:var(--text); font-size:14px; display:flex; align-items:center; gap:8px;">
+                <div class="u-bold u-c-text u-fs-14 u-flex u-items-center u-gap-8">
                   <span>${esc(s.name)}</span>
-                  <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:1px 7px; border-radius:5px; font-size:11px; font-weight:normal;">
+                  <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-1-7 u-r-5 u-fs-11 u-fw-normal">
                     <i class="fa-solid fa-campground"></i> ${esc(s.caravanName)}
                   </span>
                 </div>
-                <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px; display:flex; gap:12px; font-family:monospace;">
+                <div class="u-fs-11_5 u-c-text-muted u-mt-3 u-flex u-gap-12 u-mono">
                   <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
                   <span>کد: ${s.userCode || '-'}</span>
-                  <span style="color:var(--accent-text);">${s.zarikBalance || 0} زریک</span>
+                  <span class="u-c-accent-text">${s.zarikBalance || 0} زریک</span>
                 </div>
               </div>
             </div>
 
             <!-- Stats Indicators -->
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-headset" style="color:var(--accent-text);"></i>
-                <span style="color:var(--text-soft);">کل تیکت‌ها: ${s.stats.totalTickets}</span>
+            <div class="u-flex u-gap-10 u-items-center u-wrap">
+              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-11_5 u-flex u-items-center u-gap-6">
+                <i class="fa-solid fa-headset u-c-accent-text"></i>
+                <span class="u-c-text-soft">کل تیکت‌ها: ${s.stats.totalTickets}</span>
                 ${openTicketsBadge}
               </div>
 
-              <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:6px 10px; font-size:11.5px; display:flex; align-items:center; gap:6px;">
-                <i class="fa-solid fa-trophy" style="color:var(--primary-text);"></i>
-                <span style="color:var(--text-soft);">ارسال‌ها: ${s.stats.totalSubmissions}</span>
+              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-11_5 u-flex u-items-center u-gap-6">
+                <i class="fa-solid fa-trophy u-c-primary-text"></i>
+                <span class="u-c-text-soft">ارسال‌ها: ${s.stats.totalSubmissions}</span>
                 ${pendingSubmissionsBadge}
               </div>
             </div>
 
             <!-- Action Buttons for Tickets & Challenges -->
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28)); border:1px solid rgb(var(--accent-rgb) / 0.5); color:var(--accent-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" data-hover="accent-fill">
+            <div class="u-flex u-gap-8 u-items-center u-wrap">
+              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-7-14 u-r-8 u-fs-12 u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28))" data-hover="accent-fill">
                 <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
               </button>
 
-              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28)); border:1px solid rgb(var(--primary-rgb) / 0.5); color:var(--primary-text); padding:7px 14px; border-radius:8px; font-size:12px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" data-hover="primary-fill">
+              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-7-14 u-r-8 u-fs-12 u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28))" data-hover="primary-fill">
                 <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
               </button>
             </div>
@@ -435,89 +435,89 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset" style="color:var(--accent-text);"></i> تیکت‌ها و مکالمات: <span style="color:var(--text);">${esc(student.name)}</span> <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(تحت سرپرستی: ${mentorName})</span>`;
+  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset u-c-accent-text"></i> تیکت‌ها و مکالمات: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-12 u-c-text-muted u-fw-normal">(تحت سرپرستی: ${mentorName})</span>`;
   document.getElementById('student-tickets-subtitle').textContent = `کاروان: ${student.caravanName} | موبایل: ${student.phoneNumber || '-'} | کد دانش‌آموزی: ${student.userCode || '-'}`;
 
   const tickets = student.tickets || [];
   if (tickets.length === 0) {
     body.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; color:var(--text-muted); background:rgb(var(--shade-rgb) / 0.25); border-radius:12px; border:1px dashed rgb(var(--fg-rgb) / 0.1);">
-        <i class="fa-solid fa-inbox fa-3x" style="color:var(--text-faint); margin-bottom:12px;"></i>
-        <div style="font-size:14px; font-weight:bold; color:var(--text-soft);">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
-        <div style="font-size:12px; margin-top:6px; color:var(--text-muted);">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
+      <div class="u-text-center u-p-35-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
+        <i class="fa-solid fa-inbox fa-3x u-c-text-faint u-mb-12"></i>
+        <div class="u-fs-14 u-bold u-c-text-soft">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
+        <div class="u-fs-12 u-mt-6 u-c-text-muted">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
       </div>
     `;
   } else {
     body.innerHTML = tickets.map(t => {
       let statusBadge = '';
       if (t.status === 'resolved') {
-        statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">حل‌شده</span>';
+        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-3-8 u-r-6 u-fs-11 u-bold">حل‌شده</span>';
       } else if (t.status === 'answered') {
-        statusBadge = '<span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">پاسخ داده شده</span>';
+        statusBadge = '<span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-3-8 u-r-6 u-fs-11 u-bold">پاسخ داده شده</span>';
       } else {
-        statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:bold;">در انتظار پاسخ</span>';
+        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-3-8 u-r-6 u-fs-11 u-bold">در انتظار پاسخ</span>';
       }
 
       const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : '';
       const replies = t.replies || [];
 
       return `
-        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px;">
+        <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-16">
           <!-- Ticket Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+          <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bb-fg-6 u-pb-10">
+            <div class="u-flex u-items-center u-gap-8">
+              <span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-2-8 u-r-6 u-fs-11_5 u-bold">
                 ${esc(t.category || 'پشتیبانی')}
               </span>
-              <span style="font-weight:bold; color:var(--text); font-size:13.5px;">${esc(t.subject || 'بدون موضوع')}</span>
+              <span class="u-bold u-c-text u-fs-13_5">${esc(t.subject || 'بدون موضوع')}</span>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:11.5px; color:var(--text-muted); font-family:monospace;">${tDate}</span>
+            <div class="u-flex u-items-center u-gap-10">
+              <span class="u-fs-11_5 u-c-text-muted u-mono">${tDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Initial Message from Student -->
-          <div style="background:rgb(var(--surface-rgb) / 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid var(--primary);">
-            <div style="font-size:11.5px; font-weight:bold; color:var(--primary-text); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <div class="u-bg-surface-60 u-r-10 u-p-12 u-mb-12 u-br-3-solid-primary">
+            <div class="u-fs-11_5 u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:var(--text); line-height:1.6;">${esc(t.subject || '')}</div>
-            ${t.voiceUrl ? `<div style="margin-top:8px;"><audio controls src="${esc(t.voiceUrl)}" style="height:34px; width:100%; max-width:320px;"></audio></div>` : ''}
-            ${t.attachmentUrl ? `<div style="margin-top:8px;"><a href="${esc(t.attachmentUrl)}" target="_blank" style="color:var(--primary-text); font-size:12px; text-decoration:none;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+            <div class="u-fs-13 u-c-text u-lh-1_6">${esc(t.subject || '')}</div>
+            ${t.voiceUrl ? `<div class="u-mt-8"><audio controls src="${esc(t.voiceUrl)}" class="u-h-34 u-w-full u-maxw-320"></audio></div>` : ''}
+            ${t.attachmentUrl ? `<div class="u-mt-8"><a href="${esc(t.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-12 u-no-underline"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
           </div>
 
           <!-- Conversation Replies History -->
           ${replies.length > 0 ? `
-            <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-right:12px; border-right:2px dashed rgb(var(--fg-rgb) / 0.1);">
+            <div class="u-flex u-col u-gap-8 u-mb-12 u-pr-12 u-br-2-dashed-fg-10">
               ${replies.map(r => {
                 const rDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('fa-IR') : '';
                 return `
-                  <div style="background:rgb(var(--surface-rgb) / 0.8); border:1px solid rgb(var(--fg-rgb) / 0.06); border-radius:8px; padding:10px 12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:11.5px;">
-                      <span style="font-weight:bold; color:var(--success-text); display:flex; align-items:center; gap:6px;">
+                  <div class="u-bg-surface-80 u-bd-fg-6 u-r-8 u-p-10-12">
+                    <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-11_5">
+                      <span class="u-bold u-c-success-text u-flex u-items-center u-gap-6">
                         <i class="fa-solid fa-reply"></i> پاسخ راهبر (${esc(r.mentor?.name || mentorName)}):
                       </span>
-                      <span style="color:var(--text-muted); font-family:monospace;">${rDate}</span>
+                      <span class="u-c-text-muted u-mono">${rDate}</span>
                     </div>
-                    <div style="font-size:12.5px; color:var(--text); line-height:1.6;">${esc(r.message)}</div>
-                    ${r.voiceUrl ? `<div style="margin-top:6px;"><audio controls src="${esc(r.voiceUrl)}" style="height:30px; width:100%; max-width:300px;"></audio></div>` : ''}
-                    ${r.attachmentUrl ? `<div style="margin-top:6px;"><a href="${esc(r.attachmentUrl)}" target="_blank" style="color:var(--primary-text); font-size:11.5px;"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+                    <div class="u-fs-12_5 u-c-text u-lh-1_6">${esc(r.message)}</div>
+                    ${r.voiceUrl ? `<div class="u-mt-6"><audio controls src="${esc(r.voiceUrl)}" class="u-h-30 u-w-full u-maxw-300"></audio></div>` : ''}
+                    ${r.attachmentUrl ? `<div class="u-mt-6"><a href="${esc(r.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-11_5"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
                   </div>
                 `;
               }).join('')}
             </div>
-          ` : '<div style="font-size:11.5px; color:var(--text-muted); margin-bottom:12px; padding:6px 0;">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
+          ` : '<div class="u-fs-11_5 u-c-text-muted u-mb-12 u-p-6-0">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
 
           <!-- Quick Reply & Action Form -->
-          <div style="background:rgb(var(--surface-rgb) / 0.5); border:1px solid rgb(var(--fg-rgb) / 0.05); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px;">
-            <div style="display:flex; gap:8px;">
-              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." style="flex:1; background:rgb(var(--shade-rgb) / 0.3); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text); padding:8px 12px; border-radius:8px; font-size:12.5px; outline:none;">
-              <button type="button" data-click="sendTicketReply" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+          <div class="u-bg-surface-50 u-bd-fg-5 u-r-8 u-p-10 u-flex u-col u-gap-8">
+            <div class="u-flex u-gap-8">
+              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." class="u-flex-1 u-bg-shade-30 u-bd-fg-15 u-c-text u-p-8-12 u-r-8 u-fs-12_5 u-outline-none">
+              <button type="button" data-click="sendTicketReply" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-accent u-c-white u-bd-none u-p-8-16 u-r-8 u-bold u-pointer u-fs-12 u-inline-flex u-items-center u-gap-6">
                 <i class="fa-solid fa-paper-plane"></i> ارسال پاسخ
               </button>
               ${t.status !== 'resolved' ? `
-                <button type="button" data-click="resolveStudentTicket" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" style="background:rgb(var(--success-rgb) / 0.15); border:1px solid rgb(var(--success-rgb) / 0.35); color:var(--success-text); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:5px;" title="تغییر وضعیت تیکت به حل‌شده">
+                <button type="button" data-click="resolveStudentTicket" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-success-15 u-bd-success-35 u-c-success-text u-p-8-12 u-r-8 u-pointer u-fs-12 u-inline-flex u-items-center u-gap-5" title="تغییر وضعیت تیکت به حل‌شده">
                   <i class="fa-solid fa-check"></i> حل‌شد
                 </button>
               ` : ''}
@@ -597,7 +597,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy" style="color:var(--primary-text);"></i> رفت و برگشت چالش‌ها و تکالیف: <span style="color:var(--text);">${esc(student.name)}</span> <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">(راهبر: ${mentorName})</span>`;
+  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy u-c-primary-text"></i> رفت و برگشت چالش‌ها و تکالیف: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-12 u-c-text-muted u-fw-normal">(راهبر: ${mentorName})</span>`;
   document.getElementById('student-challenges-subtitle').textContent = `کاروان: ${student.caravanName} | تکالیف، فایل‌های ارسالی، نمرات و بازخوردهای اصلاحی راهبر`;
 
   const submissions = student.submissions || [];
@@ -605,51 +605,51 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
   if (submissions.length === 0 && quizSubs.length === 0) {
     body.innerHTML = `
-      <div style="text-align:center; padding:35px 20px; color:var(--text-muted); background:rgb(var(--shade-rgb) / 0.25); border-radius:12px; border:1px dashed rgb(var(--fg-rgb) / 0.1);">
-        <i class="fa-solid fa-file-circle-xmark fa-3x" style="color:var(--text-faint); margin-bottom:12px;"></i>
-        <div style="font-size:14px; font-weight:bold; color:var(--text-soft);">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
-        <div style="font-size:12px; margin-top:6px; color:var(--text-muted);">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
+      <div class="u-text-center u-p-35-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
+        <i class="fa-solid fa-file-circle-xmark fa-3x u-c-text-faint u-mb-12"></i>
+        <div class="u-fs-14 u-bold u-c-text-soft">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
+        <div class="u-fs-12 u-mt-6 u-c-text-muted">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
       </div>
     `;
   } else {
     body.innerHTML = submissions.map(sub => {
       let statusBadge = '';
       if (sub.status === 'approved' || sub.status === 'APPROVED') {
-        statusBadge = '<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">تایید شده</span>';
+        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">تایید شده</span>';
       } else if (sub.status === 'rejected' || sub.status === 'REJECTED') {
-        statusBadge = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">نیاز به اصلاح / رد شده</span>';
+        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">نیاز به اصلاح / رد شده</span>';
       } else {
-        statusBadge = '<span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.3); padding:3px 10px; border-radius:6px; font-size:11.5px; font-weight:bold;">در انتظار بررسی راهبر</span>';
+        statusBadge = '<span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">در انتظار بررسی راهبر</span>';
       }
 
       const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('fa-IR') : '';
       const defaultScore = sub.score !== undefined && sub.score !== null ? sub.score : (sub.challenge?.rewardZarik || 200);
 
       return `
-        <div style="background:rgb(var(--surface-2-rgb) / 0.7); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:12px; padding:16px;">
+        <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-16">
           <!-- Challenge Header -->
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:10px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); padding:2px 8px; border-radius:6px; font-size:11.5px; font-weight:bold;">
+          <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bb-fg-6 u-pb-10">
+            <div class="u-flex u-items-center u-gap-8">
+              <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-2-8 u-r-6 u-fs-11_5 u-bold">
                 چالش کاروان
               </span>
-              <span style="font-weight:bold; color:var(--text); font-size:14px;"><i class="fa-solid fa-award" style="color:var(--accent-text);"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
+              <span class="u-bold u-c-text u-fs-14"><i class="fa-solid fa-award u-c-accent-text"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
             </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-              <span style="font-size:11.5px; color:var(--text-muted); font-family:monospace;">${subDate}</span>
+            <div class="u-flex u-items-center u-gap-10">
+              <span class="u-fs-11_5 u-c-text-muted u-mono">${subDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Student Submission Box -->
-          <div style="background:rgb(var(--surface-rgb) / 0.6); border-radius:10px; padding:12px; margin-bottom:12px; border-right:3px solid var(--primary);">
-            <div style="font-size:11.5px; font-weight:bold; color:var(--primary-text); margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <div class="u-bg-surface-60 u-r-10 u-p-12 u-mb-12 u-br-3-solid-primary">
+            <div class="u-fs-11_5 u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${esc(student.name)}):
             </div>
-            <div style="font-size:13px; color:var(--text); line-height:1.7;">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
+            <div class="u-fs-13 u-c-text u-lh-1_7">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
             ${sub.fileUrl ? `
-              <div style="margin-top:8px;">
-                <a href="${esc(sub.fileUrl)}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); padding:5px 12px; border-radius:6px; font-size:12px; text-decoration:none;">
+              <div class="u-mt-8">
+                <a href="${esc(sub.fileUrl)}" target="_blank" class="u-inline-flex u-items-center u-gap-6 u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-5-12 u-r-6 u-fs-12 u-no-underline">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> مشاهده فایل / تصویر پیوست دانش‌آموز
                 </a>
               </div>
@@ -658,32 +658,32 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
           <!-- Mentor Feedback History (if any) -->
           ${sub.mentorFeedback ? `
-            <div style="background:rgb(var(--success-rgb) / 0.08); border:1px solid rgb(var(--success-rgb) / 0.2); border-radius:10px; padding:12px; margin-bottom:12px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;">
-                <span style="font-weight:bold; color:var(--success-text); display:flex; align-items:center; gap:6px;">
+            <div class="u-bg-success-8 u-bd-success-20 u-r-10 u-p-12 u-mb-12">
+              <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-12">
+                <span class="u-bold u-c-success-text u-flex u-items-center u-gap-6">
                   <i class="fa-solid fa-comments"></i> بازخورد ثبت‌شده توسط راهبر:
                 </span>
-                <span style="background:rgb(var(--success-rgb) / 0.2); color:var(--success-text); padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">
+                <span class="u-bg-success-20 u-c-success-text u-p-2-8 u-r-6 u-bold u-fs-11">
                   امتیاز اعطایی: ${sub.score || 0} زریک
                 </span>
               </div>
-              <div style="font-size:12.5px; color:var(--text); line-height:1.6;">${esc(sub.mentorFeedback)}</div>
+              <div class="u-fs-12_5 u-c-text u-lh-1_6">${esc(sub.mentorFeedback)}</div>
             </div>
           ` : ''}
 
           <!-- Mentor Review / Correction Form -->
-          <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.2); border-radius:10px; padding:12px;">
-            <div style="font-size:12px; font-weight:bold; color:var(--primary-text); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <div class="u-bg-surface-70 u-bd-primary-20 u-r-10 u-p-12">
+            <div class="u-fs-12 u-bold u-c-primary-text u-mb-8 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-pen-to-square"></i> ثبت / بازنویسی نمره و بازخورد راهبر:
             </div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto; gap:10px; align-items:center;">
-              <select id="review-status-${sub.id}" style="background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
+            <div class="u-grid u-gap-10 u-items-center" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto">
+              <select id="review-status-${sub.id}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
                 <option value="approved" ${sub.status === 'approved' || sub.status === 'APPROVED' ? 'selected' : ''}>تایید تکلیف (قبول)</option>
                 <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>
               </select>
-              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" style="background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
-              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" style="grid-column: span 2; background:var(--surface-2); border:1px solid rgb(var(--fg-rgb) / 0.2); color:var(--text); padding:7px 10px; border-radius:6px; font-size:12px;">
-              <button type="button" data-click="submitSubmissionReview" data-click-args="${esc(JSON.stringify([String(sub.id), String(mentorId), String(studentId)]))}" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; padding:7px 16px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
+              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" class="u-col-span-span-2 u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
+              <button type="button" data-click="submitSubmissionReview" data-click-args="${esc(JSON.stringify([String(sub.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-success u-c-white u-bd-none u-p-7-16 u-r-6 u-bold u-pointer u-fs-12 u-inline-flex u-items-center u-gap-6 u-nowrap">
                 <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
               </button>
             </div>
@@ -804,17 +804,17 @@ window.editMentor = async function(mentorId) {
     if (m.mentorDocuments && m.mentorDocuments.length > 0) {
       certsSection.style.display = 'block';
       certsTbody.innerHTML = m.mentorDocuments.map(doc => {
-        let statusTag = doc.status === 'approved' ? '<span class="badge" style="background:var(--success);color:white;">تایید شده</span>' :
-                        (doc.status === 'rejected' ? '<span class="badge" style="background:var(--danger);color:white;">رد شده</span>' : '<span class="badge" style="background:var(--accent);color:white;">در انتظار</span>');
+        let statusTag = doc.status === 'approved' ? '<span class="badge u-bg-success u-c-white">تایید شده</span>' :
+                        (doc.status === 'rejected' ? '<span class="badge u-bg-danger u-c-white">رد شده</span>' : '<span class="badge u-bg-accent u-c-white">در انتظار</span>');
         return `
           <tr>
             <td>${esc(doc.filename || 'مدرک پیوست')}</td>
-            <td><a href="${esc(doc.url)}" target="_blank" style="color:var(--primary-text); text-decoration:underline;">مشاهده مدرک</a></td>
+            <td><a href="${esc(doc.url)}" target="_blank" class="u-c-primary-text u-td-underline">مشاهده مدرک</a></td>
             <td>${statusTag}</td>
             <td>
               ${doc.status === 'pending' ? `
-                <button type="button" class="btn-icon" style="color:var(--success-text); background:none; border:none; cursor:pointer;" data-click="inlineApproveCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
-                <button type="button" class="btn-icon" style="color:var(--danger-text); background:none; border:none; cursor:pointer;" data-click="inlineRejectCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
+                <button type="button" class="btn-icon u-c-success-text u-bg-none u-bd-none u-pointer" data-click="inlineApproveCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="تایید مدرک"><i class="fa-solid fa-check"></i></button>
+                <button type="button" class="btn-icon u-c-danger-text u-bg-none u-bd-none u-pointer" data-click="inlineRejectCert" data-click-args="${esc(JSON.stringify([String(doc.id), String(m.id)]))}" title="رد مدرک"><i class="fa-solid fa-times"></i></button>
               ` : '-'}
             </td>
           </tr>
@@ -836,7 +836,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
   const container = document.getElementById('modal-mentor-caravans-list');
   if (!container) return;
 
-  container.innerHTML = '<span style="font-size:11px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
+  container.innerHTML = '<span class="u-fs-11 u-c-text-muted"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
   
   try {
     const res = await request('/api/v1/admin/caravans');
@@ -844,19 +844,19 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
     window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
 
     if (window.cachedCaravansForMentorModal.length === 0) {
-      container.innerHTML = '<span style="font-size:12px; color:var(--text-muted);">هیچ کاروانی در سامانه ثبت نشده است.</span>';
+      container.innerHTML = '<span class="u-fs-12 u-c-text-muted">هیچ کاروانی در سامانه ثبت نشده است.</span>';
       return;
     }
 
     container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
-      <label class="mentor-caravan-item-label" data-caravan-name="${(c.name || '').toLowerCase()}" style="display:flex; align-items:center; gap:8px; background:rgb(var(--surface-rgb) / 0.85); border:1px solid rgb(var(--fg-rgb) / 0.12); border-radius:8px; padding:8px 12px; color:var(--text); font-size:12.5px; cursor:pointer; transition:all 0.2s;">
-        <input type="checkbox" class="mentor-caravan-checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer;">
-        <span style="font-weight:500;">${esc(c.name)}</span>
+      <label class="mentor-caravan-item-label u-flex u-items-center u-gap-8 u-bg-surface-85 u-bd-fg-12 u-r-8 u-p-8-12 u-c-text u-fs-12_5 u-pointer u-transition" data-caravan-name="${(c.name || '').toLowerCase()}">
+        <input type="checkbox" class="mentor-caravan-checkbox u-w-16 u-h-16 u-pointer" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
+        <span class="u-fw-500">${esc(c.name)}</span>
       </label>
     `).join('');
   } catch (e) {
     console.error('Error fetching caravans checklist:', e);
-    container.innerHTML = '<span style="font-size:12px; color:var(--danger-text);">خطا در دریافت لیست کاروان‌ها</span>';
+    container.innerHTML = '<span class="u-fs-12 u-c-danger-text">خطا در دریافت لیست کاروان‌ها</span>';
   }
 };
 
@@ -1021,8 +1021,8 @@ window.loadMentorDocs = async function() {
         <td>${d.status || 'pending'}</td>
         <td>
           <button class="btn-icon" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn-icon" style="color:green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
-          <button class="btn-icon" style="color:red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
+          <button class="btn-icon u-c-green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
+          <button class="btn-icon u-c-red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
         </td>
       </tr>
     `).join('');
@@ -1038,19 +1038,19 @@ window.openMentorDocModal = function(id, focusReject = false) {
   if(!doc) {
     preview.innerHTML = '<div>مدرک یافت نشد</div>';
   } else {
-    let html = `<div style="display:flex; gap:12px; align-items:center;">
-      <div style="flex:1">
+    let html = `<div class="u-flex u-gap-12 u-items-center">
+      <div class="u-flex-1">
         <strong>مربی: </strong>${esc(doc.user?.name || '-')}<br>
         <strong>نوع: </strong>${esc(doc.documentType || '-')}<br>
         <strong>فایل: </strong>${esc(doc.fileName || '-')}
       </div>
-      <div style="flex:1; text-align:left;">
+      <div class="u-flex-1 u-text-left">
         <a href="${esc(doc.url || ('/uploads/' + doc.filePath))}" target="_blank" class="btn-action">باز کردن در پنجره جدید</a>
       </div>
     </div>`;
     // If image show inline preview
     if(doc.mimeType && doc.mimeType.startsWith('image')) {
-      html += `<div style="margin-top:10px;"><img src="${esc(doc.url || ('/uploads/' + doc.filePath))}" style="max-width:100%; max-height:360px;"/></div>`;
+      html += `<div class="u-mt-10"><img src="${esc(doc.url || ('/uploads/' + doc.filePath))}" class="u-maxw-100p u-maxh-360"/></div>`;
     }
     preview.innerHTML = html;
   }
@@ -1139,8 +1139,8 @@ async function decideMentorCertInline(docId, decision) {
       .find(tr => tr.innerHTML.includes(docId));
     if (row && row.cells.length >= 4) {
       row.cells[2].innerHTML = decision === 'approve'
-        ? '<span class="badge" style="background:var(--success);color:white;">تایید شده</span>'
-        : '<span class="badge" style="background:var(--danger);color:white;">رد شده</span>';
+        ? '<span class="badge u-bg-success u-c-white">تایید شده</span>'
+        : '<span class="badge u-bg-danger u-c-white">رد شده</span>';
       row.cells[3].innerHTML = '';
     }
     showToast(decision === 'approve' ? 'مدرک تایید شد' : 'مدرک رد شد', 'success');

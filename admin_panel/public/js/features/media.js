@@ -45,7 +45,7 @@ function renderStoredFiles() {
   if (all) all.checked = false;
   tbody.innerHTML = '';
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:var(--text-secondary);">فایلی یافت نشد</td></tr>';
+    NopaTable.empty(tbody, 'فایلی یافت نشد');
     return;
   }
   list.forEach(f => {
@@ -53,22 +53,22 @@ function renderStoredFiles() {
     const icon = k === 'video' ? 'fa-video' : k === 'image' ? 'fa-image' : k === 'audio' ? 'fa-music' : 'fa-file';
     const abs = window.location.origin + f.url;
     const preview = k === 'image'
-      ? `<a href="${esc(f.url)}" target="_blank"><img src="${esc(f.url)}" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:8px;"></a>`
-      : `<a href="${esc(f.url)}" target="_blank"><i class="fa-solid ${icon}" style="font-size:22px;color:var(--color-neon-blue);"></i></a>`;
+      ? `<a href="${esc(f.url)}" target="_blank"><img src="${esc(f.url)}" loading="lazy" class="u-w-48 u-h-48 u-fit-cover u-r-8"></a>`
+      : `<a href="${esc(f.url)}" target="_blank"><i class="fa-solid ${icon} u-fs-22 u-c-color-neon-blue"></i></a>`;
     const sub = (f.title || f.path !== f.name)
-      ? `<div style="font-size:10px;color:var(--text-secondary);direction:ltr;">${esc(f.path)}</div>` : '';
+      ? `<div class="u-fs-10 u-c-text-secondary u-direction-ltr">${esc(f.path)}</div>` : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="checkbox" class="file-check" data-path="${esc(f.path)}"></td>
       <td>${preview}</td>
-      <td><strong style="word-break:break-all;">${esc(f.title || f.name)}</strong>${sub}</td>
+      <td><strong class="u-wb-break-all">${esc(f.title || f.name)}</strong>${sub}</td>
       <td><span class="badge badge-student">${esc(f.mimeType)}</span></td>
       <td>${_fmtSize(f.size)}</td>
-      <td><div style="display:flex;align-items:center;gap:8px;">
-        <input type="text" readonly class="input-ctrl" value="${esc(abs)}" style="font-family:monospace;font-size:11px;padding:4px;height:26px;direction:ltr;">
-        <button class="page-btn file-copy" data-url="${esc(abs)}" style="padding:4px 8px;font-size:11px;flex-shrink:0;"><i class="fa-solid fa-copy"></i></button></div></td>
-      <td style="font-size:11px;color:var(--text-secondary);">${new Date(f.modifiedAt).toLocaleString('fa-IR')}</td>
-      <td><button class="page-btn file-del" data-path="${esc(f.path)}" style="padding:4px 8px;font-size:11px;color:var(--danger-text);"><i class="fa-solid fa-trash"></i></button></td>`;
+      <td><div class="u-flex u-items-center u-gap-8">
+        <input type="text" readonly class="input-ctrl u-mono u-fs-11 u-p-4 u-h-26 u-direction-ltr" value="${esc(abs)}">
+        <button class="page-btn file-copy u-p-4-8 u-fs-11 u-shrink-0" data-url="${esc(abs)}"><i class="fa-solid fa-copy"></i></button></div></td>
+      <td class="u-fs-11 u-c-text-secondary">${new Date(f.modifiedAt).toLocaleString('fa-IR')}</td>
+      <td><button class="page-btn file-del u-p-4-8 u-fs-11 u-c-danger-text" data-path="${esc(f.path)}"><i class="fa-solid fa-trash"></i></button></td>`;
     tbody.appendChild(tr);
   });
 }

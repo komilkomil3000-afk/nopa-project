@@ -86,10 +86,10 @@ window.loadAssetNames = async function() {
     window.applyAssetNames();
     if (!box) return;
     box.innerHTML = rows.map(r => `
-      <div style="display:flex; gap:6px; align-items:center;">
-        <span style="font-size:11px; color:var(--text-muted); min-width:78px;">${esc(r.key)}</span>
-        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" style="flex:1; padding:6px 10px; background:var(--surface-2); border:1px solid var(--border-strong); border-radius:6px; color:var(--text); font-size:12.5px;">
-        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action" style="padding:5px 10px; font-size:11px; cursor:pointer;">ذخیره</button>
+      <div class="u-flex u-gap-6 u-items-center">
+        <span class="u-fs-11 u-c-text-muted u-minw-78">${esc(r.key)}</span>
+        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
+        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action u-p-5-10 u-fs-11 u-pointer">ذخیره</button>
       </div>`).join('');
   } catch (e) { console.error('loadAssetNames error', e); }
 };

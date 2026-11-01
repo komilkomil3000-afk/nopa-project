@@ -38,14 +38,14 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
   let filterTitleSuffix = '';
   if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
-    filterTitleSuffix = ' <span style="font-size:12px; color:var(--primary-text); font-weight:normal; background:rgb(var(--primary-rgb) / 0.2); padding:2px 8px; border-radius:10px; margin-right:6px;">(فقط کلاس‌های مهارتی)</span>';
+    filterTitleSuffix = ' <span class="u-fs-12 u-c-primary-text u-fw-normal u-bg-primary-20 u-p-2-8 u-r-10 u-mr-6">(فقط کلاس‌های مهارتی)</span>';
   } else if (currentCatFilter === 'رسانه‌ای' || currentCatFilter === 'media') {
-    filterTitleSuffix = ' <span style="font-size:12px; color:var(--primary-text); font-weight:normal; background:rgb(var(--primary-rgb) / 0.2); padding:2px 8px; border-radius:10px; margin-right:6px;">(فقط کلاس‌های رسانه‌ای)</span>';
+    filterTitleSuffix = ' <span class="u-fs-12 u-c-primary-text u-fw-normal u-bg-primary-20 u-p-2-8 u-r-10 u-mr-6">(فقط کلاس‌های رسانه‌ای)</span>';
   }
 
   const titleEl = document.getElementById('lms-content-modal-title');
   if (titleEl) {
-    titleEl.innerHTML = `<i class="fa-solid fa-film" style="color:var(--primary-text);"></i> مدیریت پارت‌ها، ویدیوها و آزمونک‌های ${simpleStationName}${filterTitleSuffix}`;
+    titleEl.innerHTML = `<i class="fa-solid fa-film u-c-primary-text"></i> مدیریت پارت‌ها، ویدیوها و آزمونک‌های ${simpleStationName}${filterTitleSuffix}`;
   }
 
   const container = document.getElementById('lms-content-modal-body');
@@ -134,42 +134,42 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
   // --- SECTION 1: STATION BASIC INFO & CONTENT EDITOR CARD ---
   let html = `
-    <div style="background:rgb(var(--surface-rgb) / 0.95); border:1px solid rgb(var(--primary-rgb) / 0.35); border-radius:12px; padding:16px; margin-bottom:20px; box-shadow:0 4px 15px rgb(var(--shade-rgb) / 0.3);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.08); padding-bottom:8px;">
-        <div style="font-size:14px; font-weight:bold; color:var(--primary-text); display:flex; align-items:center; gap:8px;">
+    <div class="u-bg-surface-95 u-bd-primary-35 u-r-12 u-p-16 u-mb-20 u-shadow-0-4-15-shade-30">
+      <div class="u-flex u-justify-between u-items-center u-mb-12 u-bb-fg-8 u-pb-8">
+        <div class="u-fs-14 u-bold u-c-primary-text u-flex u-items-center u-gap-8">
           <i class="fa-solid fa-pen-to-square"></i> مشخصات، عنوان و محتوای ${simpleStationName}
         </div>
-        <span class="badge" style="background:var(--primary); color:white; padding:4px 12px; border-radius:6px; font-size:12px; font-weight:bold;">
+        <span class="badge u-bg-primary u-c-white u-p-4-12 u-r-6 u-fs-12 u-bold">
           کد: MZ${stationIdx} (${simpleStationName})
         </span>
       </div>
 
-      <div style="display:grid; grid-template-columns: 120px 1.8fr 1.2fr; gap:12px; margin-bottom:12px;">
+      <div class="u-grid u-cols-120-1_8fr-1_2fr u-gap-12 u-mb-12">
         <div>
-          <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-hashtag" style="color:var(--primary-text);"></i> شماره منزلگاه:</label>
-          <input type="number" id="content-modal-st-order" class="input-ctrl" value="${stationIdx}" readonly style="background:var(--surface); border-color:var(--border-strong); color:var(--primary-text); font-weight:bold; cursor:not-allowed; text-align:center;" title="شماره منزلگاه یکتاست. برای جابجایی ترتیب از دکمه مرتب‌سازی منزلگاه‌ها استفاده فرمایید.">
+          <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-hashtag u-c-primary-text"></i> شماره منزلگاه:</label>
+          <input type="number" id="content-modal-st-order" class="input-ctrl u-bg-surface u-bdc-border-strong u-c-primary-text u-bold u-cursor-not-allowed u-text-center" value="${stationIdx}" readonly title="شماره منزلگاه یکتاست. برای جابجایی ترتیب از دکمه مرتب‌سازی منزلگاه‌ها استفاده فرمایید.">
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-graduation-cap" style="color:var(--primary-text);"></i> نام و عنوان منزلگاه:</label>
-          <input type="text" id="content-modal-st-title" class="input-ctrl" value="${simpleStationName}" placeholder="عنوان منزلگاه..." style="background:var(--surface); border-color:var(--border-strong); font-weight:bold; color:var(--text);">
+          <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-graduation-cap u-c-primary-text"></i> نام و عنوان منزلگاه:</label>
+          <input type="text" id="content-modal-st-title" class="input-ctrl u-bg-surface u-bdc-border-strong u-bold u-c-text" value="${simpleStationName}" placeholder="عنوان منزلگاه...">
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-calendar-days" style="color:var(--primary-text);"></i> تاریخ انتشار تقویم:</label>
-          <input type="date" id="content-modal-st-date" class="input-ctrl" value="${releaseDateStr}" style="background:var(--surface); color:var(--text); border-color:var(--border-strong);">
+          <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-calendar-days u-c-primary-text"></i> تاریخ انتشار تقویم:</label>
+          <input type="date" id="content-modal-st-date" class="input-ctrl u-bg-surface u-c-text u-bdc-border-strong" value="${releaseDateStr}">
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 2.5fr; gap:12px; margin-bottom:12px;">
+      <div class="u-grid u-cols-1fr-2_5fr u-gap-12 u-mb-12">
         <div>
-          <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-hourglass-half" style="color:var(--primary-text);"></i> مدت اقامت در منزلگاه:</label>
-          <input type="text" id="content-modal-st-duration" class="input-ctrl" value="${station.stayDuration || ''}" placeholder="مثال: ۲ هفته یا ۱۴ روز" style="background:var(--surface); border-color:var(--border-strong); color:var(--text);">
+          <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-hourglass-half u-c-primary-text"></i> مدت اقامت در منزلگاه:</label>
+          <input type="text" id="content-modal-st-duration" class="input-ctrl u-bg-surface u-bdc-border-strong u-c-text" value="${station.stayDuration || ''}" placeholder="مثال: ۲ هفته یا ۱۴ روز">
         </div>
         <div>
-          <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-image" style="color:var(--primary-text);"></i> تصویر منزلگاه (در صفحه اول، آموزگاه و منزلگاه یکسان نمایش داده می‌شود):</label>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" style="width:44px; height:62px; object-fit:cover; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); ${station.iconUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
-            <input type="text" id="content-modal-st-icon" class="input-ctrl" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." style="background:var(--surface); border-color:var(--border-strong); color:var(--text); direction:ltr; text-align:left; flex:1;" data-input="NopaActions.previewSrc" data-input-args="[&quot;content-modal-st-icon-preview&quot;,&quot;$value&quot;]">
-            <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود تصویر منزلگاه">
+          <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-image u-c-primary-text"></i> تصویر منزلگاه (در صفحه اول، آموزگاه و منزلگاه یکسان نمایش داده می‌شود):</label>
+          <div class="u-flex u-gap-6 u-items-center">
+            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" class="u-w-44 u-h-62 u-fit-cover u-r-6 u-bd-border-strong u-bg-surface" style="${station.iconUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+            <input type="text" id="content-modal-st-icon" class="input-ctrl u-bg-surface u-bdc-border-strong u-c-text u-direction-ltr u-text-left u-flex-1" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." data-input="NopaActions.previewSrc" data-input-args="[&quot;content-modal-st-icon-preview&quot;,&quot;$value&quot;]">
+            <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-6-10 u-r-6 u-pointer u-fs-11 u-inline-flex u-items-center u-gap-4 u-nowrap" title="آپلود تصویر منزلگاه">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
               <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;content-modal-st-icon&quot;]">
             </label>
@@ -178,23 +178,23 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
       </div>
 
       <!-- نگارستان منزلگاه -->
-      <div style="background: rgb(var(--surface-rgb) / 0.7); border: 1px solid rgb(var(--primary-rgb) / 0.28); border-radius: 10px; padding: 12px; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div style="font-size:12.5px; font-weight:bold; color:var(--primary-text);"><i class="fa-solid fa-images"></i> نگارستان منزلگاه</div>
-          <button type="button" data-click="addGalleryItemCard" data-click-args="[&quot;content-modal-gallery-container&quot;]" style="background:linear-gradient(135deg,var(--primary),var(--primary-strong)); color:white; border:none; padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:bold; cursor:pointer;">
+      <div class="u-bg-surface-70 u-bd-primary-28 u-r-10 u-p-12 u-mb-12">
+        <div class="u-flex u-justify-between u-items-center u-mb-10">
+          <div class="u-fs-12_5 u-bold u-c-primary-text"><i class="fa-solid fa-images"></i> نگارستان منزلگاه</div>
+          <button type="button" data-click="addGalleryItemCard" data-click-args="[&quot;content-modal-gallery-container&quot;]" class="u-bg-grad-primary u-c-white u-bd-none u-p-5-12 u-r-7 u-fs-11_5 u-bold u-pointer">
             <i class="fa-solid fa-plus"></i> افزودن تصویر به نگارستان
           </button>
         </div>
-        <div id="content-modal-gallery-container" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <div id="content-modal-gallery-container" class="u-flex u-col u-gap-10"></div>
       </div>
 
-      <div style="margin-bottom:12px;">
-        <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px;"><i class="fa-solid fa-align-right" style="color:var(--primary-text);"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
-        <textarea id="content-modal-st-desc" class="input-ctrl" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های آموزشی این منزلگاه..." style="background:var(--surface); border-color:var(--border-strong);">${esc(station.description || '')}</textarea>
+      <div class="u-mb-12">
+        <label class="u-fs-11 u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-align-right u-c-primary-text"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
+        <textarea id="content-modal-st-desc" class="input-ctrl u-bg-surface u-bdc-border-strong" rows="3" placeholder="توضیحات، داستان، اهداف و سرفصل‌های آموزشی این منزلگاه...">${esc(station.description || '')}</textarea>
       </div>
 
-      <div style="display:flex; justify-content:flex-end;">
-        <button type="button" data-click="saveStationBasicInfoFromContentModal" data-click-args="${esc(JSON.stringify([String(station.id)]))}" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; border:none; border-radius:8px; padding:8px 20px; font-size:12px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+      <div class="u-flex u-justify-end">
+        <button type="button" data-click="saveStationBasicInfoFromContentModal" data-click-args="${esc(JSON.stringify([String(station.id)]))}" class="u-bg-grad-primary u-c-white u-bd-none u-r-8 u-p-8-20 u-fs-12 u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30">
           <i class="fa-solid fa-check"></i> ذخیره تغییرات نام و محتوای منزلگاه
         </button>
       </div>
@@ -202,7 +202,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   `;
 
   if (categories.length === 0) {
-    html += '<div style="text-align:center; color:var(--text-muted); padding:20px;">هیچ دسته‌بندی با این فیلتر برای این منزلگاه پیدا نشد.</div>';
+    html += '<div class="u-text-center u-c-text-muted u-p-20">هیچ دسته‌بندی با این فیلتر برای این منزلگاه پیدا نشد.</div>';
     container.innerHTML = html;
     window.fillGalleryFromStation('content-modal-gallery-container', station);
     modal.style.display = 'flex';
@@ -218,64 +218,64 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
     const sessions = cat.sessions || [];
 
     html += `
-      <div style="background:${bg}; border:1px solid ${color}44; border-radius:12px; padding:16px; margin-bottom:20px;">
+      <div class="u-r-12 u-p-16 u-mb-20" style="background:${bg}; border:1px solid ${color}44">
         
         <!-- Editable Category Header & Controls -->
-        <div style="margin:0 0 14px 0; background:rgb(var(--surface-rgb) / 0.85); border:1px solid ${color}55; border-radius:10px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-          <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
-            <span class="badge" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}; color:white; padding:5px 10px; border-radius:6px; font-size:12px; font-weight:bold; white-space:nowrap;">
+        <div class="u-m-0-0-14-0 u-bg-surface-85 u-r-10 u-p-12-14 u-flex u-items-center u-justify-between u-wrap u-gap-12" style="border:1px solid ${color}55">
+          <div class="u-flex u-items-center u-gap-10 u-flex-1 u-minw-280">
+            <span class="badge u-c-white u-p-5-10 u-r-6 u-fs-12 u-bold u-nowrap" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
               ${isSkill ? 'دسته ۱ (مهارتی)' : 'دسته ۲ (رسانه‌ای)'}
             </span>
-            <div style="flex:1; display:flex; align-items:center; gap:6px;">
-              <label style="font-size:11px; color:var(--text-soft); white-space:nowrap;"><i class="fa-solid fa-pen" style="color:${color};"></i> عنوان دسته کلاس:</label>
-              <input type="text" id="cat-title-${cat.id}" class="input-ctrl" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." style="background:var(--surface); border-color:${color}66; color:var(--text); font-weight:bold; font-size:13px; padding:6px 12px;">
+            <div class="u-flex-1 u-flex u-items-center u-gap-6">
+              <label class="u-fs-11 u-c-text-soft u-nowrap"><i class="fa-solid fa-pen" style="color:${color};"></i> عنوان دسته کلاس:</label>
+              <input type="text" id="cat-title-${cat.id}" class="input-ctrl u-bg-surface u-c-text u-bold u-fs-13 u-p-6-12" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." style="border-color:${color}66">
             </div>
           </div>
           
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:12px; color:var(--text-soft); background:rgb(var(--shade-rgb) / 0.4); padding:5px 12px; border-radius:6px; border:1px solid rgb(var(--fg-rgb) / 0.06); font-weight:bold;">
+          <div class="u-flex u-items-center u-gap-8">
+            <span class="u-fs-12 u-c-text-soft u-bg-shade-40 u-p-5-12 u-r-6 u-bd-fg-6 u-bold">
               ${sessions.length} جلسه
             </span>
-            <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);" title="ذخیره مستقیم عنوان این دسته">
+            <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-c-white u-bd-none u-p-6-14 u-r-6 u-fs-11 u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30" style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'})" title="ذخیره مستقیم عنوان این دسته">
               <i class="fa-solid fa-save"></i> ذخیره عنوان دسته
             </button>
           </div>
         </div>
 
         <!-- Quick Batch Instructor Allocation Tool for this entire Category -->
-        <div style="background:rgb(var(--primary-rgb) / 0.08); border:1px dashed rgb(var(--primary-rgb) / 0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-chalkboard-user" style="color:var(--primary-text); font-size:18px;"></i>
+        <div class="u-bg-primary-8 u-bd-1-dashed-primary-40 u-r-8 u-p-10-14 u-mb-12 u-flex u-justify-between u-items-center u-wrap u-gap-10">
+          <div class="u-flex u-items-center u-gap-8">
+            <i class="fa-solid fa-chalkboard-user u-c-primary-text u-fs-18"></i>
             <div>
-              <div style="font-weight:bold; color:var(--primary-text); font-size:12px;">تغییر و تخصیص یکجای استاد/مدرس برای تمام جلسات این دسته:</div>
-              <div style="font-size:11px; color:var(--text-muted);">با یک کلیک، نام مدرس برای تمامی ${sessions.length} جلسه این دسته‌بندی به‌صورت یکپارچه به‌روزرسانی می‌شود.</div>
+              <div class="u-bold u-c-primary-text u-fs-12">تغییر و تخصیص یکجای استاد/مدرس برای تمام جلسات این دسته:</div>
+              <div class="u-fs-11 u-c-text-muted">با یک کلیک، نام مدرس برای تمامی ${sessions.length} جلسه این دسته‌بندی به‌صورت یکپارچه به‌روزرسانی می‌شود.</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <label style="font-size:11px; color:var(--text-soft);">انتخاب از بانک اساتید:</label>
-            <select id="batch-instructor-cat-${cat.id}" class="input-ctrl" style="width:170px; padding:5px 8px; background:var(--surface); border-color:var(--primary); color:var(--text); font-size:12px; font-weight:bold;">
+          <div class="u-flex u-items-center u-gap-8">
+            <label class="u-fs-11 u-c-text-soft">انتخاب از بانک اساتید:</label>
+            <select id="batch-instructor-cat-${cat.id}" class="input-ctrl u-w-170 u-p-5-8 u-bg-surface u-bdc-primary u-c-text u-fs-12 u-bold">
               ${(window.globalInstructorsList || []).map(i => `<option value="${esc(i.name)}">${esc(i.name)} (${esc(i.degree || 'مدرس')})</option>`).join('')}
               ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="علیرضا خوش‌منظر">علیرضا خوش‌منظر</option><option value="پیراینه‌گر">پیراینه‌گر</option>` : ''}
             </select>
-            <button type="button" data-click="applyBatchInstructorToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; font-weight:bold; border:none; padding:6px 14px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+            <button type="button" data-click="applyBatchInstructorToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-bg-grad-primary u-c-white u-bold u-bd-none u-p-6-14 u-r-6 u-fs-11 u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30">
               <i class="fa-solid fa-user-pen"></i> اعمال روی کل جلسات
             </button>
           </div>
         </div>
 
         <!-- Quick Batch Zarik Allocation Tool for this entire Category -->
-        <div style="background:rgb(var(--accent-rgb) / 0.09); border:1px dashed rgb(var(--accent-rgb) / 0.4); border-radius:8px; padding:10px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-coins" style="color:var(--accent-text); font-size:18px;"></i>
+        <div class="u-bg-accent-9 u-bd-1-dashed-accent-40 u-r-8 u-p-10-14 u-mb-14 u-flex u-justify-between u-items-center u-wrap u-gap-10">
+          <div class="u-flex u-items-center u-gap-8">
+            <i class="fa-solid fa-coins u-c-accent-text u-fs-18"></i>
             <div>
-              <div style="font-weight:bold; color:var(--accent-text); font-size:12px;">تخصیص یکجای پاداش زریک برای تمام پارت‌ها و آزمونک‌های این دسته:</div>
-              <div style="font-size:11px; color:var(--text-muted);">با یک کلیک، پاداش تمامی آزمونک‌های این دسته تعیین شده و پس از پاسخ صحیح به دانش‌آموز اعطا می‌گردد.</div>
+              <div class="u-bold u-c-accent-text u-fs-12">تخصیص یکجای پاداش زریک برای تمام پارت‌ها و آزمونک‌های این دسته:</div>
+              <div class="u-fs-11 u-c-text-muted">با یک کلیک، پاداش تمامی آزمونک‌های این دسته تعیین شده و پس از پاسخ صحیح به دانش‌آموز اعطا می‌گردد.</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <label style="font-size:11px; color:var(--text-soft);">پاداش هر پارت:</label>
-            <input type="number" id="batch-zarik-cat-${cat.id}" class="input-ctrl" value="15" min="1" max="1000" style="width:65px; padding:5px 6px; text-align:center; background:var(--surface); border-color:var(--accent); color:var(--accent-text); font-weight:bold; font-size:12px;">
-            <button type="button" data-click="applyBatchZarikToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:black; font-weight:bold; border:none; padding:6px 12px; border-radius:6px; font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <div class="u-flex u-items-center u-gap-8">
+            <label class="u-fs-11 u-c-text-soft">پاداش هر پارت:</label>
+            <input type="number" id="batch-zarik-cat-${cat.id}" class="input-ctrl u-w-65 u-p-5-6 u-text-center u-bg-surface u-bdc-accent u-c-accent-text u-bold u-fs-12" value="15" min="1" max="1000">
+            <button type="button" data-click="applyBatchZarikToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-bg-grad-accent u-c-black u-bold u-bd-none u-p-6-12 u-r-6 u-fs-11 u-pointer u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-bolt"></i> اعمال روی کل این دسته
             </button>
           </div>
@@ -283,7 +283,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
     `;
 
     if (sessions.length === 0) {
-      html += '<div style="color:var(--text-soft); font-size:12px; padding:10px;">جلسه‌ای در این دسته ثبت نشده است.</div>';
+      html += '<div class="u-c-text-soft u-fs-12 u-p-10">جلسه‌ای در این دسته ثبت نشده است.</div>';
     } else {
       sessions.forEach((sess, sIdx) => {
         const clips = (sess.videoClips || []).sort((a, b) => (Number(a.clipOrder) || 0) - (Number(b.clipOrder) || 0));
@@ -295,92 +295,92 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         const sessTime = sess.sessionTime || curFallback.time;
 
         html += `
-          <div style="background:rgb(var(--surface-rgb) / 0.9); border:1px solid rgb(var(--fg-rgb) / 0.1); border-radius:12px; padding:14px; margin-bottom:16px; box-shadow:0 4px 12px rgb(var(--shade-rgb) / 0.25);">
+          <div class="u-bg-surface-90 u-bd-fg-10 u-r-12 u-p-14 u-mb-16 u-shadow-0-4-12-shade-25">
             
             <!-- Session Top Header with Glowing Date Badge -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.08); padding-bottom:10px; flex-wrap:wrap; gap:10px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="badge" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}; color:white; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold;">
+            <div class="u-flex u-justify-between u-items-center u-mb-12 u-bb-fg-8 u-pb-10 u-wrap u-gap-10">
+              <div class="u-flex u-items-center u-gap-8">
+                <span class="badge u-c-white u-p-4-10 u-r-6 u-fs-11 u-bold" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
                   جلسه ${sessOrder}
                 </span>
-                <span style="font-size:13px; font-weight:bold; color:var(--text);">
+                <span class="u-fs-13 u-bold u-c-text">
                   ${sess.title || `جلسه ${sessOrder}`}
                 </span>
               </div>
               
               <!-- Prominent Date & Time Badge right next to the session -->
-              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <div style="background:rgb(var(--accent-rgb) / 0.15); border:1px solid rgb(var(--accent-rgb) / 0.4); padding:4px 10px; border-radius:8px; font-size:12px; color:var(--accent-text); font-weight:bold; display:flex; align-items:center; gap:6px;">
+              <div class="u-flex u-items-center u-gap-8 u-wrap">
+                <div class="u-bg-accent-15 u-bd-accent-40 u-p-4-10 u-r-8 u-fs-12 u-c-accent-text u-bold u-flex u-items-center u-gap-6">
                   <i class="fa-solid fa-calendar-day"></i>
                   <span>تاریخ کلاس:</span>
                   <span id="badge-sess-date-${sess.id}">${sessDate}</span>
                 </div>
-                <div style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.4); padding:4px 10px; border-radius:8px; font-size:12px; color:var(--primary-text); font-weight:bold; display:flex; align-items:center; gap:6px;">
+                <div class="u-bg-primary-15 u-bd-primary-40 u-p-4-10 u-r-8 u-fs-12 u-c-primary-text u-bold u-flex u-items-center u-gap-6">
                   <i class="fa-solid fa-clock"></i>
                   <span>ساعت:</span>
                   <span id="badge-sess-time-${sess.id}">${sessTime}</span>
                 </div>
-                <span style="font-size:11px; color:var(--text-muted); background:rgb(var(--fg-rgb) / 0.05); padding:4px 8px; border-radius:6px;">
+                <span class="u-fs-11 u-c-text-muted u-bg-fg-5 u-p-4-8 u-r-6">
                   ${clips.length} پارت ویدیو | ${quizzes.length} آزمونک
                 </span>
               </div>
             </div>
 
             <!-- Session Controls & Editable Fields Grid -->
-            <div style="display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr auto; gap:10px; align-items:flex-end; margin-bottom:12px; background:rgb(var(--shade-rgb) / 0.3); padding:12px; border-radius:10px; border:1px solid rgb(var(--fg-rgb) / 0.05);">
+            <div class="u-grid u-cols-1_2fr-1fr-1fr-1fr-auto u-gap-10 u-items-end u-mb-12 u-bg-shade-30 u-p-12 u-r-10 u-bd-fg-5">
               <div>
-                <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:4px; font-weight:bold;">
+                <label class="u-fs-11 u-c-text-soft u-block u-mb-4 u-bold">
                   <i class="fa-solid fa-book-open" style="color:${color};"></i> عنوان کلاس/جلسه:
                 </label>
-                <input type="text" id="sess-title-${sess.id}" class="input-ctrl" value="${sess.title || `جلسه ${sessOrder}`}" placeholder="عنوان جلسه..." style="font-size:12px; font-weight:bold; color:var(--text); background:var(--surface); padding:7px 10px; border-color:${color}55;">
+                <input type="text" id="sess-title-${sess.id}" class="input-ctrl u-fs-12 u-bold u-c-text u-bg-surface u-p-7-10" value="${sess.title || `جلسه ${sessOrder}`}" placeholder="عنوان جلسه..." style="border-color:${color}55">
               </div>
 
               <div>
-                <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:4px; font-weight:bold;">
+                <label class="u-fs-11 u-c-primary-text u-block u-mb-4 u-bold">
                   <i class="fa-solid fa-chalkboard-user"></i> استاد / مدرس:
                 </label>
-                <select id="sess-instructor-${sess.id}" class="input-ctrl" style="font-size:12px; color:var(--primary-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--primary-rgb) / 0.4);">
+                <select id="sess-instructor-${sess.id}" class="input-ctrl u-fs-12 u-c-primary-text u-bg-surface u-p-7-10 u-bold u-bdc-primary-40">
                   ${(window.globalInstructorsList || []).map(i => `<option value="${esc(i.name)}" ${(sess.instructor && sess.instructor.includes(i.name)) ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
                   ${(!window.globalInstructorsList || window.globalInstructorsList.length === 0) ? `<option value="${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}">${sess.instructor || (isSkill ? 'پیراینه‌گر' : 'علیرضا خوش‌منظر')}</option>` : ''}
                 </select>
               </div>
 
               <div>
-                <label style="font-size:11px; color:var(--accent-text); display:block; margin-bottom:4px; font-weight:bold;">
+                <label class="u-fs-11 u-c-accent-text u-block u-mb-4 u-bold">
                   <i class="fa-solid fa-calendar-day"></i> تاریخ برگزاری (شمسی):
                 </label>
-                <input type="text" id="sess-date-${sess.id}" class="input-ctrl" value="${sessDate}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲" style="font-size:12px; color:var(--accent-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--accent-rgb) / 0.5); text-align:center;" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-date-' + sess.id, '$value']))}">
+                <input type="text" id="sess-date-${sess.id}" class="input-ctrl u-fs-12 u-c-accent-text u-bg-surface u-p-7-10 u-bold u-bdc-accent-50 u-text-center" value="${sessDate}" placeholder="مثال: ۱۴۰۵/۰۷/۰۲" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-date-' + sess.id, '$value']))}">
               </div>
 
               <div>
-                <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:4px; font-weight:bold;">
+                <label class="u-fs-11 u-c-primary-text u-block u-mb-4 u-bold">
                   <i class="fa-solid fa-clock"></i> زمان و ساعت کلاس:
                 </label>
-                <input type="text" id="sess-time-${sess.id}" class="input-ctrl" value="${sessTime}" placeholder="مثال: ۱۸:۰۰ الی ۱۹:۳۰" style="font-size:12px; color:var(--primary-text); background:var(--surface); padding:7px 10px; font-weight:bold; border-color:rgb(var(--primary-rgb) / 0.5); text-align:center;" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-time-' + sess.id, '$value']))}">
+                <input type="text" id="sess-time-${sess.id}" class="input-ctrl u-fs-12 u-c-primary-text u-bg-surface u-p-7-10 u-bold u-bdc-primary-50 u-text-center" value="${sessTime}" placeholder="مثال: ۱۸:۰۰ الی ۱۹:۳۰" data-input="NopaActions.setTextById" data-input-args="${esc(JSON.stringify(['badge-sess-time-' + sess.id, '$value']))}">
               </div>
 
-              <div style="display:flex; gap:6px;">
-                <button type="button" style="background:linear-gradient(135deg, var(--success), var(--success-strong)); color:white; border:none; border-radius:6px; padding:8px 14px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:5px; box-shadow:0 2px 5px rgb(var(--shade-rgb) / 0.3); white-space:nowrap;" data-click="saveSessionDetails" data-click-args="${esc(JSON.stringify([String(sess.id), String(station.id)]))}" title="ذخیره مستقیم تغییرات این کلاس و تاریخ آن">
+              <div class="u-flex u-gap-6">
+                <button type="button" class="u-bg-grad-success u-c-white u-bd-none u-r-6 u-p-8-14 u-fs-11 u-bold u-pointer u-flex u-items-center u-gap-5 u-shadow-0-2-5-shade-30 u-nowrap" data-click="saveSessionDetails" data-click-args="${esc(JSON.stringify([String(sess.id), String(station.id)]))}" title="ذخیره مستقیم تغییرات این کلاس و تاریخ آن">
                   <i class="fa-solid fa-floppy-disk"></i> ذخیره تاریخ و مشخصات
                 </button>
-                <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:8px 12px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px; white-space:nowrap;" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}" title="افزودن پارت ویدیویی جدید به این کلاس">
+                <button type="button" class="u-bg-primary u-c-white u-bd-none u-r-6 u-p-8-12 u-fs-11 u-pointer u-bold u-flex u-items-center u-gap-4 u-nowrap" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}" title="افزودن پارت ویدیویی جدید به این کلاس">
                   <i class="fa-solid fa-plus"></i> پارت جدید
                 </button>
               </div>
             </div>
 
             <!-- Video Clips List & Link Editor with Order Adjustment -->
-            <div style="margin-bottom:10px;">
-              <div style="font-size:12px; color:var(--primary-text); font-weight:bold; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <div class="u-mb-10">
+              <div class="u-fs-12 u-c-primary-text u-bold u-mb-8 u-flex u-items-center u-gap-6">
                 <i class="fa-solid fa-film"></i> پارت‌های ویدیویی این جلسه (امکان جابجایی ترتیب با دکمه‌های بالا/پایین، ویرایش لینک و آزمونک):
               </div>
         `;
 
         if (clips.length === 0) {
           html += `
-            <div style="color:var(--text-muted); font-size:12px; background:rgb(var(--shade-rgb) / 0.2); padding:10px; border-radius:6px; text-align:center;">
+            <div class="u-c-text-muted u-fs-12 u-bg-shade-20 u-p-10 u-r-6 u-text-center">
               پارتی برای این جلسه تعریف نشده است. 
-              <button type="button" style="background:var(--primary); color:white; border:none; border-radius:4px; padding:4px 10px; font-size:11px; margin-right:8px; cursor:pointer;" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}">+ ایجاد اولین پارت</button>
+              <button type="button" class="u-bg-primary u-c-white u-bd-none u-r-4 u-p-4-10 u-fs-11 u-mr-8 u-pointer" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}">+ ایجاد اولین پارت</button>
             </div>`;
         } else {
           clips.forEach((clip, cIdx) => {
@@ -398,93 +398,93 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             }
 
             html += `
-              <div style="background:rgb(var(--surface-2-rgb) / 0.9); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:8px; padding:12px; margin-bottom:10px;">
-                <div style="display:grid; grid-template-columns: 85px 1.4fr 2fr auto; gap:10px; align-items:center; margin-bottom:8px;">
+              <div class="u-bg-surface-2-90 u-bd-fg-8 u-r-8 u-p-12 u-mb-10">
+                <div class="u-grid u-cols-85-1_4fr-2fr-auto u-gap-10 u-items-center u-mb-8">
                   
                   <!-- Part Order with Up/Down Buttons -->
                   <div>
-                    <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:3px; font-weight:bold;">ترتیب پارت:</label>
-                    <div style="display:flex; align-items:center; gap:4px;">
-                      <input type="number" id="clip-order-${clip.id}" min="1" max="50" class="input-ctrl" style="font-size:12px; padding:4px; text-align:center; background:var(--surface); font-weight:bold; color:var(--primary-text); width:45px;" value="${clip.clipOrder || (cIdx + 1)}">
-                      <div style="display:flex; flex-direction:column; gap:2px;">
-                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx - 1)]))}" ${isFirstClip ? 'disabled' : ''} style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">▲</button>
-                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx + 1)]))}" ${isLastClip ? 'disabled' : ''} style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; border-radius:3px; width:20px; height:15px; font-size:9px; cursor:${isLastClip ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">▼</button>
+                    <label class="u-fs-11 u-c-primary-text u-block u-mb-3 u-bold">ترتیب پارت:</label>
+                    <div class="u-flex u-items-center u-gap-4">
+                      <input type="number" id="clip-order-${clip.id}" min="1" max="50" class="input-ctrl u-fs-12 u-p-4 u-text-center u-bg-surface u-bold u-c-primary-text u-w-45" value="${clip.clipOrder || (cIdx + 1)}">
+                      <div class="u-flex u-col u-gap-2">
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx - 1)]))}" ${isFirstClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-9 u-flex u-items-center u-justify-center" style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">▲</button>
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx + 1)]))}" ${isLastClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-9 u-flex u-items-center u-justify-center" style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLastClip ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">▼</button>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label style="font-size:11px; color:var(--text-soft); display:block; margin-bottom:3px;">عنوان پارت:</label>
-                    <input type="text" id="clip-title-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; background:var(--surface);" value="${esc(clip.title || '')}" placeholder="عنوان پارت...">
+                    <label class="u-fs-11 u-c-text-soft u-block u-mb-3">عنوان پارت:</label>
+                    <input type="text" id="clip-title-${clip.id}" class="input-ctrl u-fs-12 u-p-6-10 u-bg-surface" value="${esc(clip.title || '')}" placeholder="عنوان پارت...">
                   </div>
                   <div>
-                    <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:3px;"><i class="fa-solid fa-video"></i> لینک ویدیو (آپارات یا URL مستقیم):</label>
-                    <input type="text" id="clip-url-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:var(--surface);" value="${esc(clip.videoUrl || '')}" placeholder="https://www.aparat.com/v/...">
+                    <label class="u-fs-11 u-c-primary-text u-block u-mb-3"><i class="fa-solid fa-video"></i> لینک ویدیو (آپارات یا URL مستقیم):</label>
+                    <input type="text" id="clip-url-${clip.id}" class="input-ctrl u-fs-12 u-p-6-10 u-direction-ltr u-bg-surface" value="${esc(clip.videoUrl || '')}" placeholder="https://www.aparat.com/v/...">
                   </div>
                   <div>
-                    <label style="font-size:11px; color:var(--primary-text); display:block; margin-bottom:3px;"><i class="fa-solid fa-image"></i> لینک کاور (پیش‌نمایش ویدیو در اپلیکیشن):</label>
-                    <div style="display:flex; gap:6px; align-items:center;">
-                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" style="width:46px; height:30px; object-fit:cover; border-radius:4px; border:1px solid var(--border-strong); background:var(--surface); ${clip.coverImageUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
-                      <input type="text" id="clip-cover-${clip.id}" class="input-ctrl" style="font-size:12px; padding:6px 10px; direction:ltr; background:var(--surface); flex:1;" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" data-input="NopaActions.previewSrc" data-input-args="${esc(JSON.stringify(['clip-cover-preview-' + clip.id, '$value']))}">
-                      <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 9px; border-radius:6px; cursor:pointer; font-size:11px; white-space:nowrap;" title="آپلود تصویر کاور">
+                    <label class="u-fs-11 u-c-primary-text u-block u-mb-3"><i class="fa-solid fa-image"></i> لینک کاور (پیش‌نمایش ویدیو در اپلیکیشن):</label>
+                    <div class="u-flex u-gap-6 u-items-center">
+                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" class="u-w-46 u-h-30 u-fit-cover u-r-4 u-bd-border-strong u-bg-surface" style="${clip.coverImageUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+                      <input type="text" id="clip-cover-${clip.id}" class="input-ctrl u-fs-12 u-p-6-10 u-direction-ltr u-bg-surface u-flex-1" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" data-input="NopaActions.previewSrc" data-input-args="${esc(JSON.stringify(['clip-cover-preview-' + clip.id, '$value']))}">
+                      <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-5-9 u-r-6 u-pointer u-fs-11 u-nowrap" title="آپلود تصویر کاور">
                         <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
                         <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", ("clip-cover-" + String(clip.id))]))}">
                       </label>
                     </div>
                   </div>
-                  <div style="display:flex; gap:6px; align-items:flex-end; padding-top:16px;">
-                    <button type="button" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" data-click="saveClipVideoUrl" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="ذخیره ترتیب، عنوان و لینک ویدیو">
+                  <div class="u-flex u-gap-6 u-items-end u-pt-16">
+                    <button type="button" class="u-bg-primary u-c-white u-bd-none u-r-6 u-p-7-12 u-fs-11 u-pointer" data-click="saveClipVideoUrl" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="ذخیره ترتیب، عنوان و لینک ویدیو">
                       <i class="fa-solid fa-save"></i> ذخیره
                     </button>
-                    <button type="button" style="background:var(--success); color:white; border:none; border-radius:6px; padding:7px 12px; font-size:11px; cursor:pointer;" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="افزودن آزمونک برای این پارت">
+                    <button type="button" class="u-bg-success u-c-white u-bd-none u-r-6 u-p-7-12 u-fs-11 u-pointer" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}" title="افزودن آزمونک برای این پارت">
                       <i class="fa-solid fa-circle-question"></i> + آزمونک
                     </button>
-                    <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); border-radius:6px; padding:7px 10px; font-size:11px; cursor:pointer;" data-click="deleteClipRecord" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" title="حذف این پارت">
+                    <button type="button" class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-r-6 u-p-7-10 u-fs-11 u-pointer" data-click="deleteClipRecord" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" title="حذف این پارت">
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </div>
                 </div>
 
                 <!-- Section: Part Unlock / Schedule Settings (تنظیمات باز شدن پارت) -->
-                <div style="background:rgb(var(--surface-rgb) / 0.7); border:1px solid rgb(var(--primary-rgb) / 0.25); border-radius:8px; padding:10px 14px; margin-top:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:34px; height:34px; border-radius:8px; background:rgb(var(--primary-rgb) / 0.15); display:flex; align-items:center; justify-content:center; color:var(--primary-text); font-size:15px; border:1px solid rgb(var(--primary-rgb) / 0.3);">
+                <div class="u-bg-surface-70 u-bd-primary-25 u-r-8 u-p-10-14 u-mt-8 u-mb-10 u-flex u-justify-between u-items-center u-wrap u-gap-12">
+                  <div class="u-flex u-items-center u-gap-10">
+                    <div class="u-w-34 u-h-34 u-r-8 u-bg-primary-15 u-flex u-items-center u-justify-center u-c-primary-text u-fs-15 u-bd-primary-30">
                       <i class="fa-solid fa-clock-rotate-left"></i>
                     </div>
                     <div>
-                      <div style="font-size:12px; font-weight:bold; color:var(--primary-text); display:flex; align-items:center; gap:8px;">
+                      <div class="u-fs-12 u-bold u-c-primary-text u-flex u-items-center u-gap-8">
                         <span>تنظیمات باز شدن پارت ${clip.clipOrder || (cIdx + 1)}:</span>
                         <span id="clip-status-badge-${clip.id}" class="badge"></span>
                       </div>
-                      <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+                      <div class="u-fs-11 u-c-text-muted u-mt-2">
                         تعیین تاریخ و ساعت بازگشایی و در دسترس قرار گرفتن این پارت
                       </div>
                     </div>
                   </div>
 
-                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <div class="u-flex u-items-center u-gap-10 u-wrap">
                     <!-- Date input -->
-                    <div style="display:flex; align-items:center; gap:6px;">
-                      <label style="font-size:11px; color:var(--accent-text); white-space:nowrap; font-weight:bold;">
+                    <div class="u-flex u-items-center u-gap-6">
+                      <label class="u-fs-11 u-c-accent-text u-nowrap u-bold">
                         <i class="fa-solid fa-calendar-day"></i> تاریخ باز شدن:
                       </label>
-                      <input type="date" id="clip-unlock-date-${clip.id}" class="input-ctrl" value="${clipUnlockDate}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--accent-text); border-color:rgb(var(--accent-rgb) / 0.45); border-radius:6px; width:135px;" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="تاریخ باز شدن پارت">
+                      <input type="date" id="clip-unlock-date-${clip.id}" class="input-ctrl u-fs-12 u-p-6-10 u-bg-surface u-c-accent-text u-bdc-accent-45 u-r-6 u-w-135" value="${clipUnlockDate}" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="تاریخ باز شدن پارت">
                     </div>
 
                     <!-- Time input -->
-                    <div style="display:flex; align-items:center; gap:6px;">
-                      <label style="font-size:11px; color:var(--primary-text); white-space:nowrap; font-weight:bold;">
+                    <div class="u-flex u-items-center u-gap-6">
+                      <label class="u-fs-11 u-c-primary-text u-nowrap u-bold">
                         <i class="fa-regular fa-clock"></i> ساعت باز شدن:
                       </label>
-                      <input type="time" id="clip-unlock-time-${clip.id}" class="input-ctrl" value="${clipUnlockTime || '00:00'}" style="font-size:12px; padding:6px 10px; background:var(--surface); color:var(--primary-text); border-color:rgb(var(--primary-rgb) / 0.45); border-radius:6px; width:100px;" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="ساعت باز شدن پارت">
+                      <input type="time" id="clip-unlock-time-${clip.id}" class="input-ctrl u-fs-12 u-p-6-10 u-bg-surface u-c-primary-text u-bdc-primary-45 u-r-6 u-w-100" value="${clipUnlockTime || '00:00'}" data-change="updateClipScheduleBadge" data-change-args="${esc(JSON.stringify([String(clip.id)]))}" title="ساعت باز شدن پارت">
                     </div>
 
                     <!-- Quick buttons -->
-                    <div style="display:flex; gap:5px;">
-                      <button type="button" data-click="setClipScheduleFromSession" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" style="background:rgb(var(--primary-rgb) / 0.15); border:1px solid rgb(var(--primary-rgb) / 0.4); color:var(--primary-text); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer; font-weight:bold;" title="تنظیم خودکار تاریخ بر اساس تقویم جلسه">
+                    <div class="u-flex u-gap-5">
+                      <button type="button" data-click="setClipScheduleFromSession" data-click-args="${esc(JSON.stringify([String(clip.id), String(sess.id)]))}" class="u-bg-primary-15 u-bd-primary-40 u-c-primary-text u-r-6 u-p-6-10 u-fs-11 u-pointer u-bold" title="تنظیم خودکار تاریخ بر اساس تقویم جلسه">
                         <i class="fa-solid fa-calendar-check"></i> تاریخ جلسه
                       </button>
-                      <button type="button" data-click="clearClipSchedule" data-click-args="${esc(JSON.stringify([String(clip.id)]))}" style="background:rgb(var(--fg-rgb) / 0.05); border:1px solid rgb(var(--fg-rgb) / 0.15); color:var(--text-soft); border-radius:6px; padding:6px 10px; font-size:11px; cursor:pointer;" title="بدون محدودیت زمان‌بندی (همیشه باز)">
+                      <button type="button" data-click="clearClipSchedule" data-click-args="${esc(JSON.stringify([String(clip.id)]))}" class="u-bg-fg-5 u-bd-fg-15 u-c-text-soft u-r-6 u-p-6-10 u-fs-11 u-pointer" title="بدون محدودیت زمان‌بندی (همیشه باز)">
                         <i class="fa-solid fa-unlock"></i> همیشه باز
                       </button>
                     </div>
@@ -492,12 +492,12 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                 </div>
 
                 <!-- Per-Part Quiz Inspector & Manager -->
-                <div style="background:rgb(var(--surface-rgb) / 0.75); border-right:3px solid var(--accent); padding:10px 14px; margin-top:10px; border-radius:8px; border:1px solid rgb(var(--accent-rgb) / 0.2);">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <div style="font-size:12px; color:var(--accent-text); font-weight:bold; display:flex; align-items:center; gap:6px;">
+                <div class="u-bg-surface-75 u-br-3-solid-accent u-p-10-14 u-mt-10 u-r-8 u-bd-accent-20">
+                  <div class="u-flex u-justify-between u-items-center u-mb-8">
+                    <div class="u-fs-12 u-c-accent-text u-bold u-flex u-items-center u-gap-6">
                       <i class="fa-solid fa-circle-question"></i> آزمونک‌های تستی انتهای پارت ${clip.clipOrder || (cIdx + 1)}:
                     </div>
-                    <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:4px;" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}">
+                    <button type="button" class="u-bg-accent u-c-black u-bd-none u-p-4-10 u-r-6 u-fs-11 u-bold u-pointer u-flex u-items-center u-gap-4" data-click="openQuizModalForClip" data-click-args="${esc(JSON.stringify([String(sess.id), String(clip.id)]))}">
                       <i class="fa-solid fa-plus"></i> + طراحی آزمونک جدید برای این پارت
                     </button>
                   </div>
@@ -510,7 +510,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
             if (clipQuizzes.length === 0) {
               html += `
-                <div style="font-size:11px; color:var(--text-muted); background:rgb(var(--shade-rgb) / 0.2); padding:8px 12px; border-radius:6px;">
+                <div class="u-fs-11 u-c-text-muted u-bg-shade-20 u-p-8-12 u-r-6">
                   هنوز آزمونکی برای پایان این پارت ثبت نشده است. با زدن دکمه «+ طراحی آزمونک جدید» می‌توانید سوال، گزینه‌ها و پاداش زریک این پارت را تنظیم نمایید.
                 </div>`;
             } else {
@@ -533,36 +533,36 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                 }
 
                 html += `
-                  <div style="background:rgb(var(--surface-2-rgb) / 0.9); border:1px solid rgb(var(--accent-rgb) / 0.35); border-radius:8px; padding:12px; margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="background:linear-gradient(135deg, var(--accent), var(--accent-strong)); color:black; font-weight:bold; padding:2px 8px; border-radius:5px; font-size:11px;">
+                  <div class="u-bg-surface-2-90 u-bd-accent-35 u-r-8 u-p-12 u-mb-8">
+                    <div class="u-flex u-justify-between u-items-center u-mb-8">
+                      <div class="u-flex u-items-center u-gap-8 u-wrap">
+                        <span class="u-bg-grad-accent u-c-black u-bold u-p-2-8 u-r-5 u-fs-11">
                           آزمونک ${qIdx + 1}: ${esc(quiz.title || 'آزمونک پارت')}
                         </span>
-                        <span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.4); font-size:11px; padding:2px 8px; border-radius:5px; font-weight:bold; display:inline-flex; align-items:center; gap:4px;">
-                          <i class="fa-solid fa-coins" style="color:var(--accent-text);"></i> پاداش زریک: ${quiz.rewardZarik ?? 10} زریک
+                        <span class="u-bg-accent-15 u-c-accent-text u-bd-accent-40 u-fs-11 u-p-2-8 u-r-5 u-bold u-inline-flex u-items-center u-gap-4">
+                          <i class="fa-solid fa-coins u-c-accent-text"></i> پاداش زریک: ${quiz.rewardZarik ?? 10} زریک
                         </span>
                       </div>
-                      <div style="display:flex; gap:6px;">
-                        <button type="button" style="background:var(--accent); color:black; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:4px;" data-click="editQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="ویرایش سوال، گزینه‌ها و پاداش">
+                      <div class="u-flex u-gap-6">
+                        <button type="button" class="u-bg-accent u-c-black u-bd-none u-p-4-10 u-r-6 u-fs-11 u-pointer u-bold u-flex u-items-center u-gap-4" data-click="editQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="ویرایش سوال، گزینه‌ها و پاداش">
                           <i class="fa-solid fa-pen"></i> ویرایش سوال و گزینه‌ها
                         </button>
-                        <button type="button" style="background:rgb(var(--danger-rgb) / 0.2); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer;" data-click="deleteQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="حذف آزمونک">
+                        <button type="button" class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-4-8 u-r-6 u-fs-11 u-pointer" data-click="deleteQuizRecord" data-click-args="${esc(JSON.stringify([String(quiz.id)]))}" title="حذف آزمونک">
                           <i class="fa-solid fa-trash"></i>
                         </button>
                       </div>
                     </div>
 
-                    <div style="font-weight:bold; color:var(--text); font-size:12px; margin-bottom:8px; background:rgb(var(--surface-rgb) / 0.6); padding:8px 12px; border-radius:6px; border:1px solid rgb(var(--fg-rgb) / 0.06);">
-                      <i class="fa-solid fa-question-circle" style="color:var(--primary-text);"></i> متن سوال: ${esc(questionText)}
+                    <div class="u-bold u-c-text u-fs-12 u-mb-8 u-bg-surface-60 u-p-8-12 u-r-6 u-bd-fg-6">
+                      <i class="fa-solid fa-question-circle u-c-primary-text"></i> متن سوال: ${esc(questionText)}
                     </div>
 
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
+                    <div class="u-grid u-cols-2 u-gap-6 u-fs-11">
                       ${opts.map((opt, oIdx) => `
-                        <div style="background:${oIdx === correctIdx ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--surface-rgb) / 0.5)'}; border:1px solid ${oIdx === correctIdx ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${oIdx === correctIdx ? 'var(--success-text)' : 'var(--border-strong)'}; padding:5px 8px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-                          <i class="fa-solid ${oIdx === correctIdx ? 'fa-circle-check' : 'fa-circle'}" style="font-size:12px;"></i>
+                        <div class="u-p-5-8 u-r-6 u-flex u-items-center u-gap-6" style="background:${oIdx === correctIdx ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--surface-rgb) / 0.5)'}; border:1px solid ${oIdx === correctIdx ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${oIdx === correctIdx ? 'var(--success-text)' : 'var(--border-strong)'}">
+                          <i class="fa-solid ${oIdx === correctIdx ? 'fa-circle-check' : 'fa-circle'} u-fs-12"></i>
                           <span><strong>گزینه ${oIdx + 1}:</strong> ${esc(opt || '-')}</span>
-                          ${oIdx === correctIdx ? '<span style="color:var(--success-text); font-weight:bold; margin-right:auto; font-size:10px;">(پاسخ صحیح)</span>' : ''}
+                          ${oIdx === correctIdx ? '<span class="u-c-success-text u-bold u-mr-auto u-fs-10">(پاسخ صحیح)</span>' : ''}
                         </div>
                       `).join('')}
                     </div>
@@ -725,7 +725,7 @@ window.updateClipScheduleBadge = function(clipId) {
   const timeVal = (timeInp && timeInp.value.trim()) ? timeInp.value.trim() : '00:00';
 
   if (!dateVal) {
-    badgeEl.innerHTML = '<span style="background:rgb(var(--success-rgb) / 0.15); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.35); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock-open"></i> همیشه باز (دسترسی آزاد)</span>';
+    badgeEl.innerHTML = '<span class="u-bg-success-15 u-c-success-text u-bd-success-35 u-p-2-8 u-r-5 u-bold u-fs-10_5 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-lock-open"></i> همیشه باز (دسترسی آزاد)</span>';
     return;
   }
 
@@ -745,13 +745,13 @@ window.updateClipScheduleBadge = function(clipId) {
       }
       
       const faDate = target.toLocaleDateString('fa-IR');
-      badgeEl.innerHTML = `<span style="background:rgb(var(--accent-rgb) / 0.15); color:var(--accent-text); border:1px solid rgb(var(--accent-rgb) / 0.4); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;" title="تا تاریخ ${faDate} ساعت ${timeVal} قفل است"><i class="fa-solid fa-lock"></i> قفل تا: ${faDate} ساعت ${timeVal} (${remainText} مانده)</span>`;
+      badgeEl.innerHTML = `<span class="u-bg-accent-15 u-c-accent-text u-bd-accent-40 u-p-2-8 u-r-5 u-bold u-fs-10_5 u-inline-flex u-items-center u-gap-4" title="تا تاریخ ${faDate} ساعت ${timeVal} قفل است"><i class="fa-solid fa-lock"></i> قفل تا: ${faDate} ساعت ${timeVal} (${remainText} مانده)</span>`;
     } else {
       const faDate = target.toLocaleDateString('fa-IR');
-      badgeEl.innerHTML = `<span style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); padding:2px 8px; border-radius:5px; font-weight:bold; font-size:10.5px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده (${faDate})</span>`;
+      badgeEl.innerHTML = `<span class="u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-p-2-8 u-r-5 u-bold u-fs-10_5 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده (${faDate})</span>`;
     }
   } catch (e) {
-    badgeEl.innerHTML = '<span style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); padding:2px 8px; border-radius:5px; font-size:10.5px;">فرمت تاریخ/ساعت نامعتبر</span>';
+    badgeEl.innerHTML = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-40 u-p-2-8 u-r-5 u-fs-10_5">فرمت تاریخ/ساعت نامعتبر</span>';
   }
 };
 
@@ -893,11 +893,11 @@ window.openFinalLmsSaveConfirmationModal = function() {
   const summaryEl = document.getElementById('lms-confirm-summary-list');
   if (summaryEl) {
     summaryEl.innerHTML = `
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px;">
-        <div><strong>نام منزلگاه:</strong> <span style="color:var(--primary-text); font-weight:bold;">${esc(stTitle)}</span></div>
-        <div><strong>تاریخ انتشار:</strong> <span style="color:var(--accent-text); font-weight:bold;">${stDate || 'تعیین‌نشده'}</span></div>
-        <div><strong>پارت‌های ویدیویی:</strong> <span style="color:var(--success-text); font-weight:bold;">${clipCount} پارت</span></div>
-        <div><strong>وضعیت اعمال:</strong> <span style="color:var(--primary-text); font-weight:bold;">ذخیره‌سازی یکجا و آنی</span></div>
+      <div class="u-grid u-cols-2 u-gap-8 u-mt-6">
+        <div><strong>نام منزلگاه:</strong> <span class="u-c-primary-text u-bold">${esc(stTitle)}</span></div>
+        <div><strong>تاریخ انتشار:</strong> <span class="u-c-accent-text u-bold">${stDate || 'تعیین‌نشده'}</span></div>
+        <div><strong>پارت‌های ویدیویی:</strong> <span class="u-c-success-text u-bold">${clipCount} پارت</span></div>
+        <div><strong>وضعیت اعمال:</strong> <span class="u-c-primary-text u-bold">ذخیره‌سازی یکجا و آنی</span></div>
       </div>
     `;
   }

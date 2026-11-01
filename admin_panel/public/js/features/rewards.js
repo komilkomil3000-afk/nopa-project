@@ -86,7 +86,7 @@ async function loadLeagueCaravansOptions() {
 async function loadCaravansLeaderboard() {
   const tbody = document.querySelector('#caravans-leaderboard-table tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> در حال دریافت رتبه‌بندی کاروان‌ها...</td></tr>';
+  NopaTable.loading(tbody, 'در حال دریافت رتبه‌بندی کاروان‌ها...');
 
   const sortBy = document.getElementById('league-sort-by')?.value || 'totalScore';
   const search = document.getElementById('league-search-input')?.value || '';
@@ -103,7 +103,7 @@ async function loadCaravansLeaderboard() {
 
     tbody.innerHTML = '';
     if (!caravans || caravans.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--text-secondary);">موردی برای نمایش یافت نشد.</td></tr>';
+      NopaTable.empty(tbody, 'موردی برای نمایش یافت نشد.');
       return;
     }
 
@@ -149,54 +149,54 @@ async function loadCaravansLeaderboard() {
       let trStyle = '';
 
       if (rank === null || rank === undefined) {
-        rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
+        rankBadge = '<span class="u-c-text-secondary u-fs-13 u-fw-600" title="بدون رتبه">-</span>';
         trStyle = '';
       } else if (rank === 1) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
+        rankBadge = '<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۱</span>';
         trStyle = 'background: rgb(var(--accent-rgb) / 0.07); border-right: 3px solid var(--accent);';
       } else if (rank === 2) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
+        rankBadge = '<span class="badge u-bg-muted-20 u-c-text-muted u-bd-muted-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۲</span>';
         trStyle = 'background: rgb(var(--muted-rgb) / 0.05); border-right: 3px solid var(--text-muted);';
       } else if (rank === 3) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
+        rankBadge = '<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۳</span>';
         trStyle = 'background: rgb(var(--accent-rgb) / 0.05); border-right: 3px solid var(--accent-strong);';
       } else {
-        rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
+        rankBadge = `<span class="u-fw-700 u-c-text-secondary u-fs-12">${rank}</span>`;
         trStyle = '';
       }
 
       const tr = document.createElement('tr');
       if (trStyle) tr.style = trStyle;
       tr.innerHTML = `
-        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td class="u-text-center u-va-middle">${rankBadge}</td>
         <td>
-          <div style="font-weight: 700; font-size: 14px; color: var(--text);">${esc(c.name)}</div>
+          <div class="u-fw-700 u-fs-14 u-c-text">${esc(c.name)}</div>
         </td>
         <td>
-          <div style="font-size: 13px; font-weight: 500;">${esc(c.mentorName || '-')}</div>
-          ${c.mentorPhone && c.mentorPhone !== '-' ? `<span style="font-size: 11px; color: var(--text-secondary);">${esc(c.mentorPhone)}</span>` : ''}
+          <div class="u-fs-13 u-fw-500">${esc(c.mentorName || '-')}</div>
+          ${c.mentorPhone && c.mentorPhone !== '-' ? `<span class="u-fs-11 u-c-text-secondary">${esc(c.mentorPhone)}</span>` : ''}
         </td>
-        <td style="text-align: center;">
-          <span style="background: rgb(var(--fg-rgb) / 0.08); padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">${c.memberCount} / ${c.capacityLimit}</span>
+        <td class="u-text-center">
+          <span class="u-bg-fg-8 u-p-2-8 u-r-12 u-fs-12 u-fw-600">${c.memberCount} / ${c.capacityLimit}</span>
         </td>
-        <td style="color: var(--accent-text); font-weight: 600;">${(c.zarik || 0).toLocaleString()}</td>
-        <td style="color: var(--primary-text); font-weight: 600;">${(c.nakh || 0).toLocaleString()}</td>
-        <td style="color: var(--danger-text); font-weight: 600;">${(c.farsh || 0).toLocaleString()}</td>
-        <td style="color: var(--info-text); font-weight: 600;">${(c.beyragh || 0).toLocaleString()}</td>
-        <td style="color: var(--accent-text); font-weight: 600;">${c.stars || 0}</td>
-        <td><span style="color: var(--primary-text); font-weight: 600;">${c.challengeScore || 0}</span></td>
-        <td style="min-width: 110px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <div style="flex: 1; height: 6px; background: rgb(var(--fg-rgb) / 0.1); border-radius: 3px; overflow: hidden;">
-              <div style="height: 100%; width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, var(--success), var(--primary)); border-radius: 3px;"></div>
+        <td class="u-c-accent-text u-fw-600">${(c.zarik || 0).toLocaleString()}</td>
+        <td class="u-c-primary-text u-fw-600">${(c.nakh || 0).toLocaleString()}</td>
+        <td class="u-c-danger-text u-fw-600">${(c.farsh || 0).toLocaleString()}</td>
+        <td class="u-c-info-text u-fw-600">${(c.beyragh || 0).toLocaleString()}</td>
+        <td class="u-c-accent-text u-fw-600">${c.stars || 0}</td>
+        <td><span class="u-c-primary-text u-fw-600">${c.challengeScore || 0}</span></td>
+        <td class="u-minw-110">
+          <div class="u-flex u-items-center u-gap-6">
+            <div class="u-flex-1 u-h-6 u-bg-fg-10 u-r-3 u-overflow-hidden">
+              <div class="u-h-full u-r-3" style="width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, var(--success), var(--primary))"></div>
             </div>
-            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${c.overallProgress || 0}%</span>
+            <span class="u-fs-11 u-fw-600 u-c-text-secondary">${c.overallProgress || 0}%</span>
           </div>
         </td>
-        <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(c.totalScore || 0).toLocaleString()}</td>
-        <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 4px 10px; font-size: 11px;" data-click="viewCaravanDetails" data-click-args="${esc(JSON.stringify([String(c.id)]))}">
-            <i class="fa-solid fa-eye" style="margin-left: 4px;"></i>اعضا
+        <td class="u-c-success-text u-fw-800 u-fs-14">${(c.totalScore || 0).toLocaleString()}</td>
+        <td class="u-text-center u-nowrap">
+          <button class="page-btn u-p-4-10 u-fs-11" data-click="viewCaravanDetails" data-click-args="${esc(JSON.stringify([String(c.id)]))}">
+            <i class="fa-solid fa-eye u-ml-4"></i>اعضا
           </button>
         </td>
       `;
@@ -204,14 +204,14 @@ async function loadCaravansLeaderboard() {
     });
   } catch (err) {
     console.error('Failed to load caravans leaderboard', err);
-    tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
+    NopaTable.error(tbody, `خطا در بارگذاری اطلاعات: ${err.message}`);
   }
 }
 
 async function loadIndividualsLeaderboard() {
   const tbody = document.querySelector('#individuals-leaderboard-table tbody');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin" style="margin-left: 8px;"></i> در حال دریافت رتبه‌بندی افراد...</td></tr>';
+  NopaTable.loading(tbody, 'در حال دریافت رتبه‌بندی افراد...');
 
   const role = document.getElementById('league-role-filter')?.value || 'all';
   const caravanId = document.getElementById('league-caravan-filter')?.value || 'all';
@@ -225,7 +225,7 @@ async function loadIndividualsLeaderboard() {
 
     tbody.innerHTML = '';
     if (!users || users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--text-secondary);">موردی برای نمایش یافت نشد.</td></tr>';
+      NopaTable.empty(tbody, 'موردی برای نمایش یافت نشد.');
       return;
     }
 
@@ -270,64 +270,64 @@ async function loadIndividualsLeaderboard() {
       let trStyle = '';
 
       if (rank === null || rank === undefined) {
-        rankBadge = '<span style="color: var(--text-secondary); font-size: 13px; font-weight: 600;" title="بدون رتبه">-</span>';
+        rankBadge = '<span class="u-c-text-secondary u-fs-13 u-fw-600" title="بدون رتبه">-</span>';
         trStyle = '';
       } else if (rank === 1) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۱</span>';
+        rankBadge = '<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۱</span>';
         trStyle = 'background: rgb(var(--accent-rgb) / 0.07); border-right: 3px solid var(--accent);';
       } else if (rank === 2) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--muted-rgb) / 0.2); color: var(--text-muted); border: 1px solid rgb(var(--muted-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۲</span>';
+        rankBadge = '<span class="badge u-bg-muted-20 u-c-text-muted u-bd-muted-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۲</span>';
         trStyle = 'background: rgb(var(--muted-rgb) / 0.05); border-right: 3px solid var(--text-muted);';
       } else if (rank === 3) {
-        rankBadge = '<span class="badge" style="background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); border: 1px solid rgb(var(--accent-rgb) / 0.4); font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px;">۳</span>';
+        rankBadge = '<span class="badge u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-fw-800 u-fs-12 u-p-2-8 u-r-6">۳</span>';
         trStyle = 'background: rgb(var(--accent-rgb) / 0.05); border-right: 3px solid var(--accent-strong);';
       } else {
-        rankBadge = `<span style="font-weight: 700; color: var(--text-secondary); font-size: 12px;">${rank}</span>`;
+        rankBadge = `<span class="u-fw-700 u-c-text-secondary u-fs-12">${rank}</span>`;
         trStyle = '';
       }
 
       const roleBadge = u.role === 'mentor'
-        ? '<span style="background: rgb(var(--primary-rgb) / 0.2); color: var(--primary-text); border: 1px solid rgb(var(--primary-rgb) / 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">راهبر</span>'
-        : '<span style="background: rgb(var(--success-rgb) / 0.2); color: var(--success-text); border: 1px solid rgb(var(--success-rgb) / 0.4); padding: 2px 8px; border-radius: 6px; font-size: 11px;">دانش‌آموز</span>';
+        ? '<span class="u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-2-8 u-r-6 u-fs-11">راهبر</span>'
+        : '<span class="u-bg-success-20 u-c-success-text u-bd-success-40 u-p-2-8 u-r-6 u-fs-11">دانش‌آموز</span>';
 
       const tr = document.createElement('tr');
       if (trStyle) tr.style = trStyle;
       tr.innerHTML = `
-        <td style="text-align: center; vertical-align: middle;">${rankBadge}</td>
+        <td class="u-text-center u-va-middle">${rankBadge}</td>
         <td>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: rgb(var(--fg-rgb) / 0.1); overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-              ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" style="width:100%;height:100%;object-fit:cover;">` : '<i class="fa-solid fa-user" style="color:var(--text-secondary);"></i>'}
+          <div class="u-flex u-items-center u-gap-8">
+            <div class="u-w-32 u-h-32 u-r-50p u-bg-fg-10 u-overflow-hidden u-flex u-items-center u-justify-center u-fs-14">
+              ${u.avatarUrl ? `<img src="${esc(u.avatarUrl)}" class="u-w-full u-h-full u-fit-cover">` : '<i class="fa-solid fa-user u-c-text-secondary"></i>'}
             </div>
             <div>
-              <div style="font-weight: 700; font-size: 13px; color: var(--text);">${esc(u.name)}</div>
-              <div style="font-size: 11px; color: var(--text-secondary);">${esc(u.phoneNumber || '')}</div>
+              <div class="u-fw-700 u-fs-13 u-c-text">${esc(u.name)}</div>
+              <div class="u-fs-11 u-c-text-secondary">${esc(u.phoneNumber || '')}</div>
             </div>
           </div>
         </td>
         <td>${roleBadge}</td>
-        <td><span style="background: rgb(var(--fg-rgb) / 0.05); padding: 2px 8px; border-radius: 6px; font-size: 12px;">${esc(u.caravanName)}</span></td>
-        <td style="color: var(--accent-text); font-weight: 600;">${(u.zarik || 0).toLocaleString()}</td>
-        <td style="color: var(--primary-text); font-weight: 600;">${(u.nakh || 0).toLocaleString()}</td>
-        <td style="color: var(--danger-text); font-weight: 600;">${(u.farsh || 0).toLocaleString()}</td>
-        <td style="color: var(--info-text); font-weight: 600;">${(u.beyragh || 0).toLocaleString()}</td>
-        <td style="color: var(--accent-text); font-weight: 600;">${u.stars || 0}</td>
-        <td><span style="color: var(--primary-text); font-weight: 600;">${u.quizScore || 0}</span></td>
-        <td><span style="color: var(--primary-text); font-weight: 600;">${u.challengeScore || 0}</span></td>
-        <td style="min-width: 100px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <div style="flex: 1; height: 6px; background: rgb(var(--fg-rgb) / 0.1); border-radius: 3px; overflow: hidden;">
-              <div style="height: 100%; width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, var(--primary), var(--primary)); border-radius: 3px;"></div>
+        <td><span class="u-bg-fg-5 u-p-2-8 u-r-6 u-fs-12">${esc(u.caravanName)}</span></td>
+        <td class="u-c-accent-text u-fw-600">${(u.zarik || 0).toLocaleString()}</td>
+        <td class="u-c-primary-text u-fw-600">${(u.nakh || 0).toLocaleString()}</td>
+        <td class="u-c-danger-text u-fw-600">${(u.farsh || 0).toLocaleString()}</td>
+        <td class="u-c-info-text u-fw-600">${(u.beyragh || 0).toLocaleString()}</td>
+        <td class="u-c-accent-text u-fw-600">${u.stars || 0}</td>
+        <td><span class="u-c-primary-text u-fw-600">${u.quizScore || 0}</span></td>
+        <td><span class="u-c-primary-text u-fw-600">${u.challengeScore || 0}</span></td>
+        <td class="u-minw-100">
+          <div class="u-flex u-items-center u-gap-6">
+            <div class="u-flex-1 u-h-6 u-bg-fg-10 u-r-3 u-overflow-hidden">
+              <div class="u-h-full u-r-3" style="width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, var(--primary), var(--primary))"></div>
             </div>
-            <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">${u.progressPercentage || 0}%</span>
+            <span class="u-fs-11 u-fw-600 u-c-text-secondary">${u.progressPercentage || 0}%</span>
           </div>
         </td>
-        <td style="color: var(--success-text); font-weight: 800; font-size: 14px;">${(u.totalScore || 0).toLocaleString()}</td>
-        <td style="text-align: center; white-space: nowrap;">
-          <button class="page-btn" style="padding: 3px 8px; font-size: 11px;" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="مشاهده پروفایل">
+        <td class="u-c-success-text u-fw-800 u-fs-14">${(u.totalScore || 0).toLocaleString()}</td>
+        <td class="u-text-center u-nowrap">
+          <button class="page-btn u-p-3-8 u-fs-11" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="مشاهده پروفایل">
             <i class="fa-solid fa-user"></i>
           </button>
-          <button class="page-btn" style="padding: 3px 8px; font-size: 11px; margin-right: 4px;" data-click="pickZarikTarget" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="تعدیل زریک">
+          <button class="page-btn u-p-3-8 u-fs-11 u-mr-4" data-click="pickZarikTarget" data-click-args="${esc(JSON.stringify([String(u.id)]))}" title="تعدیل زریک">
             <i class="fa-solid fa-coins"></i>
           </button>
         </td>
@@ -336,7 +336,7 @@ async function loadIndividualsLeaderboard() {
     });
   } catch (err) {
     console.error('Failed to load individuals leaderboard', err);
-    tbody.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 25px; color: var(--color-danger);"><i class="fa-solid fa-triangle-exclamation" style="margin-left: 6px;"></i>خطا در بارگذاری اطلاعات: ${esc(err.message)}</td></tr>`;
+    NopaTable.error(tbody, `خطا در بارگذاری اطلاعات: ${err.message}`);
   }
 }
 
@@ -376,12 +376,12 @@ async function loadLedger() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${esc(t.userName)}</strong></td>
-        <td style="font-family: monospace;">${esc(t.userPhone)}</td>
+        <td class="u-mono">${esc(t.userPhone)}</td>
         <td><strong style="color: ${amountColor};">${amountPrefix}${t.amount} زریک</strong></td>
         <td><span class="badge badge-student">${esc(t.category)}</span></td>
         <td>${esc(t.reason)}</td>
         <td>${esc(t.createdBy)}</td>
-        <td style="font-size:11px; color:var(--text-secondary);">${new Date(t.createdAt).toLocaleString('fa-IR')}</td>
+        <td class="u-fs-11 u-c-text-secondary">${new Date(t.createdAt).toLocaleString('fa-IR')}</td>
       `;
       tbody.appendChild(tr);
     });

@@ -23,14 +23,14 @@ async function loadLmsData() {
     const tbody = document.querySelector('#stations-table tbody');
     if(tbody) {
       tbody.innerHTML = stations.map(s => `
-  <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.05); text-align: right; color: var(--text);">
-    <td style="padding: 12px;">${s.orderIndex ?? s.order ?? 1}</td>
-    <td style="padding: 12px; font-weight: bold;">${esc(s.title || s.name || 'منزلگاه')}</td>
-    <td style="padding: 12px; color: var(--text-muted);">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
-    <td style="padding: 12px; color: var(--text-muted);">${esc(s.description || '-')}</td>
-    <td style="padding: 12px; text-align: center;">
-      <button data-click="editLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background:var(--info-strong); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer;">ویرایش</button>
-      <button data-click="deleteLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" style="background:var(--danger); color:white; border:none; padding:4px 10px; border-radius:6px; cursor:pointer; margin-right:4px;">حذف</button>
+  <tr class="u-bb-fg-5 u-text-right u-c-text">
+    <td class="u-p-12">${s.orderIndex ?? s.order ?? 1}</td>
+    <td class="u-p-12 u-bold">${esc(s.title || s.name || 'منزلگاه')}</td>
+    <td class="u-p-12 u-c-text-muted">${s.releaseDate ? s.releaseDate.split('T')[0] : 'آزاد'}</td>
+    <td class="u-p-12 u-c-text-muted">${esc(s.description || '-')}</td>
+    <td class="u-p-12 u-text-center">
+      <button data-click="editLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" class="u-bg-info-strong u-c-white u-bd-none u-p-4-10 u-r-6 u-pointer">ویرایش</button>
+      <button data-click="deleteLmsStation" data-click-args="${esc(JSON.stringify([String(s.id)]))}" class="u-bg-danger u-c-white u-bd-none u-p-4-10 u-r-6 u-pointer u-mr-4">حذف</button>
     </td>
   </tr>
 `).join('');
@@ -53,14 +53,14 @@ function addCategoryUI(catData = null) {
   catDiv.dataset.id = catId;
   catDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.05); border-radius: 10px; padding: 15px; position: relative;';
   catDiv.innerHTML = `
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
-      <span style="color: #EC4899; font-weight: bold; font-size: 13px;">دسته کلاس:</span>
-      <input type="text" class="input-ctrl cat-title-input" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)" style="flex: 2; min-width: 150px; height: 32px; font-size: 12px;">
-      <input type="number" class="input-ctrl cat-order-input" value="${catOrder}" required placeholder="ترتیب" style="width: 70px; height: 32px; font-size: 12px;">
-      <button type="button" class="btn-primary" style="background: var(--success); padding: 4px 10px; font-size: 11px; height: 32px;" data-click="addClassUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-category-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
-      <button type="button" class="page-btn btn-danger" style="padding: 4px 10px; font-size: 11px; height: 32px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-category-item&quot;]"><i class="fa-solid fa-trash"></i> حذف دسته</button>
+    <div class="u-flex u-gap-10 u-items-center u-mb-10 u-wrap">
+      <span class="u-bold u-fs-13" style="color: #EC4899">دسته کلاس:</span>
+      <input type="text" class="input-ctrl cat-title-input u-flex-2 u-minw-150 u-h-32 u-fs-12" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)">
+      <input type="number" class="input-ctrl cat-order-input u-w-70 u-h-32 u-fs-12" value="${catOrder}" required placeholder="ترتیب">
+      <button type="button" class="btn-primary u-bg-success u-p-4-10 u-fs-11 u-h-32" data-click="addClassUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-category-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
+      <button type="button" class="page-btn btn-danger u-p-4-10 u-fs-11 u-h-32 u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-category-item&quot;]"><i class="fa-solid fa-trash"></i> حذف دسته</button>
     </div>
-    <div class="category-classes-container" style="display: flex; flex-direction: column; gap: 15px; margin-top: 15px; padding-right: 15px; border-right: 2px dashed rgb(var(--fg-rgb) / 0.1);">
+    <div class="category-classes-container u-flex u-col u-gap-15 u-mt-15 u-pr-15 u-br-2-dashed-fg-10">
       <!-- Classes populated here -->
     </div>
   `;
@@ -89,41 +89,41 @@ function addClassUI(catEl, classData = null) {
   classDiv.dataset.id = classId;
   classDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.02); border: 1px solid rgb(var(--fg-rgb) / 0.03); border-radius: 8px; padding: 12px;';
   classDiv.innerHTML = `
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 10px;">
-      <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: var(--primary-text);">عنوان کلاس / درس</label>
-        <input type="text" class="input-ctrl class-title-input" value="${esc(classTitle)}" required style="height: 30px; font-size: 11px;">
+    <div class="u-grid u-cols-fit-130 u-gap-10 u-mb-10">
+      <div class="form-group u-col-span-span-2">
+        <label class="u-fs-10 u-c-primary-text">عنوان کلاس / درس</label>
+        <input type="text" class="input-ctrl class-title-input u-h-30 u-fs-11" value="${esc(classTitle)}" required>
       </div>
-      <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: var(--primary-text);">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
-        <input type="text" class="input-ctrl class-desc-input" value="${esc(classDesc)}" style="height: 30px; font-size: 11px;" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
+      <div class="form-group u-col-span-span-2">
+        <label class="u-fs-10 u-c-primary-text">خلاصه/توضیح کلاس (سرفصل‌ها)</label>
+        <input type="text" class="input-ctrl class-desc-input u-h-30 u-fs-11" value="${esc(classDesc)}" placeholder="مثال: ۱. معرفی دوره - ۲. قوانین">
       </div>
-      <div class="form-group" style="grid-column: span 2;">
-        <label style="font-size: 10px; color: var(--primary-text);">نام استاد</label>
-        <input type="text" class="input-ctrl class-instructor-input" value="${esc(classInstructor)}" style="height: 30px; font-size: 11px;" placeholder="نام و نام خانوادگی">
-      </div>
-      <div class="form-group">
-        <label style="font-size: 10px; color: var(--primary-text);">حداقل درصد تماشا</label>
-        <input type="number" class="input-ctrl class-watch-input" value="${minWatch}" required style="height: 30px; font-size: 11px;">
+      <div class="form-group u-col-span-span-2">
+        <label class="u-fs-10 u-c-primary-text">نام استاد</label>
+        <input type="text" class="input-ctrl class-instructor-input u-h-30 u-fs-11" value="${esc(classInstructor)}" placeholder="نام و نام خانوادگی">
       </div>
       <div class="form-group">
-        <label style="font-size: 10px; color: var(--primary-text);">ترتیب کلاس</label>
-        <input type="number" class="input-ctrl class-order-input" value="${classOrder}" required style="height: 30px; font-size: 11px;">
+        <label class="u-fs-10 u-c-primary-text">حداقل درصد تماشا</label>
+        <input type="number" class="input-ctrl class-watch-input u-h-30 u-fs-11" value="${minWatch}" required>
+      </div>
+      <div class="form-group">
+        <label class="u-fs-10 u-c-primary-text">ترتیب کلاس</label>
+        <input type="number" class="input-ctrl class-order-input u-h-30 u-fs-11" value="${classOrder}" required>
       </div>
     </div>
-    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-      <button type="button" class="btn-primary" style="background:var(--accent); padding: 3px 8px; font-size: 10px;" data-click="addClipUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
-      <button type="button" class="btn-primary" style="background:#e040fb; padding: 3px 8px; font-size: 10px;" data-click="addQuizUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
-      <button type="button" class="page-btn btn-danger" style="padding: 3px 8px; font-size: 10px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-class-item&quot;]"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
+    <div class="u-flex u-gap-8 u-mb-10">
+      <button type="button" class="btn-primary u-bg-accent u-p-3-8 u-fs-10" data-click="addClipUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
+      <button type="button" class="btn-primary u-p-3-8 u-fs-10" style="background:#e040fb" data-click="addQuizUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
+      <button type="button" class="page-btn btn-danger u-p-3-8 u-fs-10 u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-class-item&quot;]"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
     </div>
     
     <!-- Video parts container -->
-    <div class="class-clips-container" style="display: flex; flex-direction: column; gap: 8px; margin: 10px 10px 0 0; padding-left: 10px; border-left: 2px solid rgb(var(--accent-rgb) / 0.2);">
+    <div class="class-clips-container u-flex u-col u-gap-8 u-m-10-10-0-0 u-pl-10 u-bl-2-solid-accent-20">
       <!-- Video parts clips populated here -->
     </div>
     
     <!-- Quiz container -->
-    <div class="class-quiz-container" style="margin-top: 10px;">
+    <div class="class-quiz-container u-mt-10">
       <!-- Quiz populated here -->
     </div>
   `;
@@ -204,16 +204,16 @@ function addClipUI(classEl, clipData = null) {
   clipDiv.dataset.id = clipId;
   clipDiv.style.cssText = 'background: rgb(var(--accent-rgb) / 0.03); border: 1px solid rgb(var(--accent-rgb) / 0.08); border-radius: 6px; padding: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;';
   clipDiv.innerHTML = `
-    <span style="font-size: 10px; color: var(--accent-text); font-weight: bold;">پارت/کلیپ:</span>
-    <input type="text" class="input-ctrl clip-title-input" value="${esc(clipTitle)}" required placeholder="عنوان پارت" style="flex:1; min-width:100px; height:28px; font-size:11px;">
-    <input type="text" class="input-ctrl clip-url-input" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" data-change="detectClipDuration" data-change-args="[&quot;$this&quot;]" style="flex:2; min-width:150px; height:28px; font-size:11px;">
-    <input type="number" class="input-ctrl clip-duration-input" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو" style="width:75px; height:28px; font-size:11px;">
-    <input type="number" class="input-ctrl clip-order-input" value="${clipOrder}" required placeholder="ترتیب" style="width:50px; height:28px; font-size:11px;">
-    <div style="display: flex; align-items: center; gap: 5px;">
-      <input type="file" data-change="uploadClipMediaDirect" data-change-args="[&quot;$this&quot;]" class="input-ctrl" accept="video/*" style="width: 130px; height: 28px; font-size: 9px; padding: 2px;">
-      <small class="clip-upload-status" style="font-size: 9px; color: var(--success-text);"></small>
+    <span class="u-fs-10 u-c-accent-text u-bold">پارت/کلیپ:</span>
+    <input type="text" class="input-ctrl clip-title-input u-flex-1 u-minw-100 u-h-28 u-fs-11" value="${esc(clipTitle)}" required placeholder="عنوان پارت">
+    <input type="text" class="input-ctrl clip-url-input u-flex-2 u-minw-150 u-h-28 u-fs-11" value="${esc(clipUrl)}" required placeholder="آدرس مستقیم ویدیو" data-change="detectClipDuration" data-change-args="[&quot;$this&quot;]">
+    <input type="number" class="input-ctrl clip-duration-input u-w-75 u-h-28 u-fs-11" value="${clipDur}" required placeholder="مدت (ثانیه) - خودکار از ویدیو">
+    <input type="number" class="input-ctrl clip-order-input u-w-50 u-h-28 u-fs-11" value="${clipOrder}" required placeholder="ترتیب">
+    <div class="u-flex u-items-center u-gap-5">
+      <input type="file" data-change="uploadClipMediaDirect" data-change-args="[&quot;$this&quot;]" class="input-ctrl u-w-130 u-h-28 u-fs-9 u-p-2" accept="video/*">
+      <small class="clip-upload-status u-fs-9 u-c-success-text"></small>
     </div>
-    <button type="button" class="page-btn btn-danger" style="padding: 2px 6px; font-size: 10px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-clip-item&quot;]"><i class="fa-solid fa-times"></i> حذف پارت</button>
+    <button type="button" class="page-btn btn-danger u-p-2-6 u-fs-10 u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-clip-item&quot;]"><i class="fa-solid fa-times"></i> حذف پارت</button>
   `;
   container.appendChild(clipDiv);
 }
@@ -239,20 +239,20 @@ function addQuizUI(classEl, quizData = null) {
   quizDiv.dataset.id = quizId;
   quizDiv.style.cssText = 'background: rgba(224,64,251,0.03); border: 1px solid rgba(224,64,251,0.08); border-radius: 6px; padding: 10px;';
   quizDiv.innerHTML = `
-    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-      <span style="font-size: 11px; color: #e040fb; font-weight: bold;">آزمون ارزیابی:</span>
-      <input type="text" class="input-ctrl quiz-title-input" value="${esc(quizTitle)}" required placeholder="عنوان آزمون" style="flex:2; height:28px; font-size:11px;">
-      <select class="select-ctrl quiz-type-input" style="width:100px; height:28px; font-size:11px;">
+    <div class="u-flex u-gap-10 u-items-center u-mb-8">
+      <span class="u-fs-11 u-bold" style="color: #e040fb">آزمون ارزیابی:</span>
+      <input type="text" class="input-ctrl quiz-title-input u-flex-2 u-h-28 u-fs-11" value="${esc(quizTitle)}" required placeholder="عنوان آزمون">
+      <select class="select-ctrl quiz-type-input u-w-100 u-h-28 u-fs-11">
         <option value="MULTIPLE_CHOICE" ${quizType === 'MULTIPLE_CHOICE' ? 'selected' : ''}>تستی (۴ گزینه‌ای)</option>
         <option value="TEXT" ${quizType === 'TEXT' ? 'selected' : ''}>تشریحی (متنی)</option>
         <option value="FILE" ${quizType === 'FILE' ? 'selected' : ''}>ارسال فایل</option>
       </select>
-      <input type="number" class="input-ctrl quiz-zarik-input" value="${rewardZarik}" required placeholder="پاداش زریک" style="width:85px; height:28px; font-size:11px;">
-      <button type="button" class="btn-primary" style="background:#e040fb; padding:2px 8px; font-size:9px;" data-click="addQuizQuestionUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-quiz-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
-      <button type="button" class="page-btn btn-danger" style="padding:2px 8px; font-size:9px; margin-right: auto;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-quiz-item&quot;]"><i class="fa-solid fa-times"></i> حذف آزمون</button>
+      <input type="number" class="input-ctrl quiz-zarik-input u-w-85 u-h-28 u-fs-11" value="${rewardZarik}" required placeholder="پاداش زریک">
+      <button type="button" class="btn-primary u-p-2-8 u-fs-9" style="background:#e040fb" data-click="addQuizQuestionUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-quiz-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
+      <button type="button" class="page-btn btn-danger u-p-2-8 u-fs-9 u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-quiz-item&quot;]"><i class="fa-solid fa-times"></i> حذف آزمون</button>
     </div>
     
-    <div class="quiz-questions-container" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; padding-right: 10px; border-right: 2px dashed rgba(224,64,251,0.2);">
+    <div class="quiz-questions-container u-flex u-col u-gap-8 u-mt-8 u-pr-10" style="border-right: 2px dashed rgba(224,64,251,0.2)">
       <!-- Questions list -->
     </div>
   `;
@@ -278,27 +278,27 @@ function addQuizQuestionUI(quizEl, qData = null) {
   qDiv.className = 'builder-question-item';
   qDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.01); border: 1px solid rgb(var(--fg-rgb) / 0.02); border-radius: 5px; padding: 8px;';
   qDiv.innerHTML = `
-    <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
-      <span style="font-size: 10px; color: var(--text-soft);">صورت سوال:</span>
-      <input type="text" class="input-ctrl question-text-input" value="${qText}" required placeholder="متن سوال ارزیابی را وارد کنید" style="flex:1; height:26px; font-size:10px;">
-      <button type="button" class="page-btn btn-danger" style="padding:1px 5px; font-size:9px;" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-question-item&quot;]"><i class="fa-solid fa-trash"></i></button>
+    <div class="u-flex u-gap-8 u-mb-5 u-items-center">
+      <span class="u-fs-10 u-c-text-soft">صورت سوال:</span>
+      <input type="text" class="input-ctrl question-text-input u-flex-1 u-h-26 u-fs-10" value="${qText}" required placeholder="متن سوال ارزیابی را وارد کنید">
+      <button type="button" class="page-btn btn-danger u-p-1-5 u-fs-9" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-question-item&quot;]"><i class="fa-solid fa-trash"></i></button>
     </div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-right: 15px;">
-      <div style="display:flex; align-items:center; gap:5px;">
+    <div class="u-grid u-cols-2 u-gap-8 u-pr-15">
+      <div class="u-flex u-items-center u-gap-5">
         <input type="radio" name="correct_radio_${Math.random()}" class="correct-option-radio" value="0" ${correctIdx === 0 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${esc(options[0] || '')}" required placeholder="گزینه ۱" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input u-h-24 u-fs-10" value="${esc(options[0] || '')}" required placeholder="گزینه ۱">
       </div>
-      <div style="display:flex; align-items:center; gap:5px;">
+      <div class="u-flex u-items-center u-gap-5">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="1" ${correctIdx === 1 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${esc(options[1] || '')}" required placeholder="گزینه ۲" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input u-h-24 u-fs-10" value="${esc(options[1] || '')}" required placeholder="گزینه ۲">
       </div>
-      <div style="display:flex; align-items:center; gap:5px;">
+      <div class="u-flex u-items-center u-gap-5">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="2" ${correctIdx === 2 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${esc(options[2] || '')}" required placeholder="گزینه ۳" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input u-h-24 u-fs-10" value="${esc(options[2] || '')}" required placeholder="گزینه ۳">
       </div>
-      <div style="display:flex; align-items:center; gap:5px;">
+      <div class="u-flex u-items-center u-gap-5">
         <input type="radio" name="${Math.random()}" class="correct-option-radio" value="3" ${correctIdx === 3 ? 'checked' : ''}>
-        <input type="text" class="input-ctrl option-input" value="${esc(options[3] || '')}" required placeholder="گزینه ۴" style="height:24px; font-size:10px;">
+        <input type="text" class="input-ctrl option-input u-h-24 u-fs-10" value="${esc(options[3] || '')}" required placeholder="گزینه ۴">
       </div>
     </div>
   `;

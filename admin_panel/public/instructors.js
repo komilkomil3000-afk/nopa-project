@@ -48,59 +48,59 @@ window.renderInstructorsTable = function(list = null) {
   let html = '';
   instructors.forEach((inst, index) => {
     const avatar = inst.avatarUrl 
-      ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid var(--primary);">`
-      : `<div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, var(--primary), var(--primary-strong)); display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:15px; border:2px solid var(--primary);"><i class="fa-solid fa-chalkboard-user"></i></div>`;
+      ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" class="u-w-40 u-h-40 u-r-50p u-fit-cover u-bd-2-solid-primary">`
+      : `<div class="u-w-40 u-h-40 u-r-50p u-bg-grad-primary u-flex u-items-center u-justify-center u-c-white u-bold u-fs-15 u-bd-2-solid-primary"><i class="fa-solid fa-chalkboard-user"></i></div>`;
 
     const degreeBadge = inst.degree 
-      ? `<span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11px; padding:2px 8px; border-radius:6px;">${esc(inst.degree)}</span>`
-      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
+      ? `<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-11 u-p-2-8 u-r-6">${esc(inst.degree)}</span>`
+      : `<span class="u-c-text-faint u-fs-11">-</span>`;
 
     const phoneDisplay = inst.phoneNumber 
-      ? `<span style="font-family:monospace; direction:ltr; display:inline-block; color:var(--text-soft);"><i class="fa-solid fa-phone" style="font-size:10px; color:var(--primary-text);"></i> ${esc(inst.phoneNumber)}</span>`
-      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
+      ? `<span class="u-mono u-direction-ltr u-inline-block u-c-text-soft"><i class="fa-solid fa-phone u-fs-10 u-c-primary-text"></i> ${esc(inst.phoneNumber)}</span>`
+      : `<span class="u-c-text-faint u-fs-11">-</span>`;
 
     const nationalIdDisplay = inst.nationalId
-      ? `<span style="font-family:monospace; color:var(--text-soft);"><i class="fa-solid fa-id-card" style="font-size:10px; color:var(--primary-text);"></i> ${esc(inst.nationalId)}</span>`
-      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
+      ? `<span class="u-mono u-c-text-soft"><i class="fa-solid fa-id-card u-fs-10 u-c-primary-text"></i> ${esc(inst.nationalId)}</span>`
+      : `<span class="u-c-text-faint u-fs-11">-</span>`;
 
     const classesDisplay = inst.classes
-      ? `<div style="max-width:220px; font-size:12px; color:var(--text); line-height:1.4;">${esc(inst.classes)}</div>`
-      : `<span style="color:var(--text-faint); font-size:11px;">تعریف‌نشده</span>`;
+      ? `<div class="u-maxw-220 u-fs-12 u-c-text u-lh-1_4">${esc(inst.classes)}</div>`
+      : `<span class="u-c-text-faint u-fs-11">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume
-      ? `<div style="max-width:240px; font-size:11.5px; color:var(--text-muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
-      : `<span style="color:var(--text-faint); font-size:11px;">-</span>`;
+      ? `<div class="u-maxw-240 u-fs-11_5 u-c-text-muted u-lh-1_4 u-overflow-hidden" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
+      : `<span class="u-c-text-faint u-fs-11">-</span>`;
 
     html += `
-      <tr style="border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); transition: background 0.2s;" data-hover="row">
-        <td style="padding: 12px; text-align:center; color:var(--text-muted); font-size:12px;">${index + 1}</td>
-        <td style="padding: 12px;">
-          <div style="display:flex; align-items:center; gap:12px;">
+      <tr class="u-bb-fg-6 u-tr-background-0_2s" data-hover="row">
+        <td class="u-p-12 u-text-center u-c-text-muted u-fs-12">${index + 1}</td>
+        <td class="u-p-12">
+          <div class="u-flex u-items-center u-gap-12">
             ${avatar}
             <div>
-              <div style="font-weight:bold; color:var(--text); font-size:13.5px; display:flex; align-items:center; gap:6px;">
+              <div class="u-bold u-c-text u-fs-13_5 u-flex u-items-center u-gap-6">
                 ${esc(inst.name)}
               </div>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+              <div class="u-fs-11 u-c-text-muted u-mt-2">
                 ${degreeBadge}
               </div>
             </div>
           </div>
         </td>
-        <td style="padding: 12px; font-size:12px;">
-          <div style="display:flex; flex-direction:column; gap:4px;">
+        <td class="u-p-12 u-fs-12">
+          <div class="u-flex u-col u-gap-4">
             ${phoneDisplay}
             ${nationalIdDisplay}
           </div>
         </td>
-        <td style="padding: 12px;">${classesDisplay}</td>
-        <td style="padding: 12px;">${resumeDisplay}</td>
-        <td style="padding: 12px; text-align:center;">
-          <div style="display:flex; gap:6px; justify-content:center;">
-            <button type="button" class="btn-action" data-click="openInstructorModal" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="ویرایش مشخصات استاد">
+        <td class="u-p-12">${classesDisplay}</td>
+        <td class="u-p-12">${resumeDisplay}</td>
+        <td class="u-p-12 u-text-center">
+          <div class="u-flex u-gap-6 u-justify-center">
+            <button type="button" class="btn-action u-p-5-10 u-fs-11_5 u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-6 u-pointer" data-click="openInstructorModal" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="ویرایش مشخصات استاد">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action" data-click="deleteInstructorRecord" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" style="padding:5px 10px; font-size:11.5px; background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.3); border-radius:6px; cursor:pointer;" title="حذف استاد">
+            <button type="button" class="btn-action u-p-5-10 u-fs-11_5 u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-r-6 u-pointer" data-click="deleteInstructorRecord" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="حذف استاد">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -325,17 +325,17 @@ window.renderSelectedInstructorBadges = function(blockId) {
     .filter(s => s.length > 0);
 
   if (selectedNames.length === 0) {
-    box.innerHTML = `<span style="color:var(--text-faint); font-size:12px; user-select:none;">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
+    box.innerHTML = `<span class="u-c-text-faint u-fs-12 u-select-none">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
     return;
   }
 
   let html = '';
   selectedNames.forEach(name => {
     html += `
-      <span class="inst-selected-tag" style="background: rgb(var(--primary-rgb) / 0.2); border: 1px solid rgb(var(--primary-rgb) / 0.45); color: var(--primary-text); font-size: 11.5px; font-weight: bold; padding: 2px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">
-        <i class="fa-solid fa-user-check" style="font-size:10px;"></i>
+      <span class="inst-selected-tag u-bg-primary-20 u-bd-primary-45 u-c-primary-text u-fs-11_5 u-bold u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-5">
+        <i class="fa-solid fa-user-check u-fs-10"></i>
         <span>${esc(name)}</span>
-        <span class="inst-tag-remove-btn" data-click="removeInstructorFromBlock" data-click-args="${esc(JSON.stringify([String(blockId), String(name), "$event"]))}" style="cursor:pointer; color:var(--danger-text); font-size:13px; line-height:1; padding:0 2px;" title="حذف">&times;</span>
+        <span class="inst-tag-remove-btn u-pointer u-c-danger-text u-fs-13 u-lh-1 u-p-0-2" data-click="removeInstructorFromBlock" data-click-args="${esc(JSON.stringify([String(blockId), String(name), "$event"]))}" title="حذف">&times;</span>
       </span>
     `;
   });
@@ -364,9 +364,9 @@ window.populateInstructorDropdownOptions = function(blockId) {
 
   if (instructors.length === 0) {
     dropdown.innerHTML = `
-      <div style="padding:10px; text-align:center; color:var(--text-muted); font-size:11.5px;">
+      <div class="u-p-10 u-text-center u-c-text-muted u-fs-11_5">
         <div>هیچ استادی در بانک اساتید ثبت نشده است.</div>
-        <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="margin-top:6px; background:var(--primary); color:white; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+        <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-mt-6 u-bg-primary u-c-white u-bd-none u-p-4-10 u-r-6 u-fs-11 u-pointer">
           <i class="fa-solid fa-plus"></i> ثبت اولین استاد
         </button>
       </div>
@@ -375,27 +375,27 @@ window.populateInstructorDropdownOptions = function(blockId) {
   }
 
   let html = `
-    <div style="padding: 4px 6px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.08); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-database" style="color:var(--primary-text);"></i> اساتید ثبت‌شده در بانک:</span>
-      <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background: none; border: none; color: var(--primary-text); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 3px;">
+    <div class="u-p-4-6 u-bb-fg-8 u-mb-6 u-flex u-justify-between u-items-center">
+      <span class="u-fs-11 u-c-text-muted"><i class="fa-solid fa-database u-c-primary-text"></i> اساتید ثبت‌شده در بانک:</span>
+      <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-none u-bd-none u-c-primary-text u-fs-11 u-pointer u-flex u-items-center u-gap-3">
         <i class="fa-solid fa-plus"></i> افزودن جدید
       </button>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 4px;">
+    <div class="u-flex u-col u-gap-4">
   `;
 
   instructors.forEach(inst => {
     const isChecked = selectedNames.has(inst.name);
     html += `
-      <label style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'};" data-hover="primary-soft">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" ${isChecked ? 'checked' : ''} data-change="selectInstructorForBlock" data-change-args="${esc(JSON.stringify([String(blockId), String(inst.name), "$checked"]))}" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--primary);">
+      <label class="u-flex u-items-center u-justify-between u-p-6-8 u-r-6 u-pointer u-tr-background-0_15s" style="background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'}" data-hover="primary-soft">
+        <div class="u-flex u-items-center u-gap-8">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} data-change="selectInstructorForBlock" data-change-args="${esc(JSON.stringify([String(blockId), String(inst.name), "$checked"]))}" class="u-pointer u-w-15 u-h-15 u-accent-primary">
           <div>
-            <div style="font-size: 12.5px; font-weight: bold; color: var(--text);">${esc(inst.name)}</div>
-            <div style="font-size: 10.5px; color: var(--text-muted);">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
+            <div class="u-fs-12_5 u-bold u-c-text">${esc(inst.name)}</div>
+            <div class="u-fs-10_5 u-c-text-muted">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
           </div>
         </div>
-        ${inst.avatarUrl ? `<img src="${esc(inst.avatarUrl)}" style="width:24px; height:24px; border-radius:50%; object-fit:cover;">` : ''}
+        ${inst.avatarUrl ? `<img src="${esc(inst.avatarUrl)}" class="u-w-24 u-h-24 u-r-50p u-fit-cover">` : ''}
       </label>
     `;
   });

@@ -43,7 +43,7 @@ window.renderReorderList = function() {
   if (!container) return;
 
   if (!window.lmsReorderList || window.lmsReorderList.length === 0) {
-    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">هیچ منزلگاهی وجود ندارد.</div>';
+    container.innerHTML = '<div class="u-text-center u-c-text-muted u-p-20">هیچ منزلگاهی وجود ندارد.</div>';
     return;
   }
 
@@ -93,31 +93,31 @@ window.renderReorderList = function() {
     categories.forEach(c => totalSessions += (c.sessions || []).length);
 
     html += `
-      <div style="display:flex; align-items:center; justify-content:space-between; background:rgb(var(--surface-2-rgb) / 0.85); border:1px solid rgb(var(--fg-rgb) / 0.08); border-radius:10px; padding:12px 16px; transition:all 0.2s;">
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="background:linear-gradient(135deg, var(--primary), var(--primary-strong)); color:white; font-weight:bold; font-size:13.5px; width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgb(var(--shade-rgb) / 0.3);">
+      <div class="u-flex u-items-center u-justify-between u-bg-surface-2-85 u-bd-fg-8 u-r-10 u-p-12-16 u-transition">
+        <div class="u-flex u-items-center u-gap-12">
+          <div class="u-bg-grad-primary u-c-white u-bold u-fs-13_5 u-w-38 u-h-38 u-r-8 u-flex u-items-center u-justify-center u-shadow-0-2-6-shade-30">
             ${currentNumber}
           </div>
           <div>
-            <div style="font-weight:bold; color:var(--text); font-size:14px; display:flex; align-items:center; gap:8px;">
+            <div class="u-bold u-c-text u-fs-14 u-flex u-items-center u-gap-8">
               <span>${persianStationTitle}</span>
-              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span style="font-size:12px; color:var(--primary-text); font-weight:normal;">(${esc(st.title)})</span>` : ''}
+              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span class="u-fs-12 u-c-primary-text u-fw-normal">(${esc(st.title)})</span>` : ''}
             </div>
-            <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <span style="color:var(--primary-text);"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
-              <span style="color:var(--text-faint);">|</span>
-              <span style="color:var(--primary-text);"><i class="fa-solid fa-photo-film"></i> رسانه‌ای: ${mediaTopic}</span>
-              <span style="color:var(--text-faint);">|</span>
-              <span style="color:var(--text-soft);">${totalSessions} جلسه مصوب</span>
+            <div class="u-fs-11_5 u-c-text-muted u-mt-3 u-flex u-items-center u-gap-8 u-wrap">
+              <span class="u-c-primary-text"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
+              <span class="u-c-text-faint">|</span>
+              <span class="u-c-primary-text"><i class="fa-solid fa-photo-film"></i> رسانه‌ای: ${mediaTopic}</span>
+              <span class="u-c-text-faint">|</span>
+              <span class="u-c-text-soft">${totalSessions} جلسه مصوب</span>
             </div>
           </div>
         </div>
 
-        <div style="display:flex; gap:6px; align-items:center;">
-          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx - 1)]))}" ${isFirst ? 'disabled' : ''} style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isFirst ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به بالا">
+        <div class="u-flex u-gap-6 u-items-center">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx - 1)]))}" ${isFirst ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-14 u-flex u-items-center u-justify-center" style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirst ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">
             <i class="fa-solid fa-arrow-up"></i>
           </button>
-          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx + 1)]))}" ${isLast ? 'disabled' : ''} style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; width:36px; height:36px; border-radius:8px; cursor:${isLast ? 'not-allowed' : 'pointer'}; font-size:14px; display:flex; align-items:center; justify-content:center;" title="حرکت به پایین">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx + 1)]))}" ${isLast ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-14 u-flex u-items-center u-justify-center" style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLast ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">
             <i class="fa-solid fa-arrow-down"></i>
           </button>
         </div>
@@ -222,33 +222,33 @@ window.exportLmsToExcel = function() {
     tableRows += `
       <tr>
         <td style="text-align:center; mso-number-format:'\\@';">${rowNum}</td>
-        <td style="text-align:center; font-weight:bold; color:var(--primary-text); mso-number-format:'\\@';">${mzCode}</td>
-        <td style="font-weight:bold; color:var(--text);">${esc(title)}</td>
+        <td style="text-align:center; font-weight:bold; color:#7C3AED; mso-number-format:'\\@';">${mzCode}</td>
+        <td style="font-weight:bold; color:#1E1633;">${esc(title)}</td>
         <td>${esc(instructorsStr)}</td>
         <td style="text-align:center;">${categories.length} دسته</td>
         <td style="text-align:center;">${skillSessions} جلسه</td>
         <td style="text-align:center;">${mediaSessions} جلسه</td>
-        <td style="text-align:center; font-weight:bold; color:var(--primary-text);">${totalSessions} جلسه</td>
+        <td style="text-align:center; font-weight:bold; color:#7C3AED;">${totalSessions} جلسه</td>
         <td style="text-align:center;">${totalClips} پارت</td>
-        <td style="text-align:center; font-weight:bold; color:var(--accent-text);">${totalQuizzes} آزمونک</td>
+        <td style="text-align:center; font-weight:bold; color:#A16207;">${totalQuizzes} آزمونک</td>
         <td style="text-align:center; mso-number-format:'\\@';">${releaseDateStr}</td>
-        <td style="font-size:11px; color:var(--text-faint);">${esc(desc)}</td>
-        <td style="text-align:center; background-color:rgb(var(--success-rgb) / 0.15); color:var(--success-text); font-weight:bold;">فعال</td>
+        <td style="font-size:11px; color:#64748b;">${esc(desc)}</td>
+        <td style="text-align:center; background-color:#dcfce7; color:#166534; font-weight:bold;">فعال</td>
       </tr>
     `;
   });
 
   // Summary footer row
   tableRows += `
-    <tr style="background-color:var(--surface-2); font-weight:bold;">
-      <td colspan="4" style="text-align:center; padding:10px; font-size:13px; color:var(--text);">مجموع کل سامانه نپا</td>
-      <td style="text-align:center; color:var(--primary-text);">۱۰ دسته</td>
-      <td style="text-align:center; color:var(--primary-text);">${totalAllSkill} جلسه</td>
-      <td style="text-align:center; color:var(--primary-text);">${totalAllMedia} جلسه</td>
-      <td style="text-align:center; color:var(--primary-text); font-size:13px;">${totalAllSessions} جلسه</td>
-      <td style="text-align:center; color:var(--primary-text);">${totalAllClips} پارت</td>
-      <td style="text-align:center; color:var(--accent-text); font-size:13px;">${totalAllQuizzes} آزمونک</td>
-      <td colspan="3" style="text-align:center; color:var(--text-faint);">۵ منزلگاه فعال</td>
+    <tr style="background-color:#f3f0ff; font-weight:bold;">
+      <td colspan="4" style="text-align:center; padding:10px; font-size:13px; color:#1E1633;">مجموع کل سامانه نپا</td>
+      <td style="text-align:center; color:#7C3AED;">۱۰ دسته</td>
+      <td style="text-align:center; color:#7C3AED;">${totalAllSkill} جلسه</td>
+      <td style="text-align:center; color:#7C3AED;">${totalAllMedia} جلسه</td>
+      <td style="text-align:center; color:#7C3AED; font-size:13px;">${totalAllSessions} جلسه</td>
+      <td style="text-align:center; color:#7C3AED;">${totalAllClips} پارت</td>
+      <td style="text-align:center; color:#A16207; font-size:13px;">${totalAllQuizzes} آزمونک</td>
+      <td colspan="3" style="text-align:center; color:#64748b;">۵ منزلگاه فعال</td>
     </tr>
   `;
 
@@ -273,7 +273,7 @@ window.exportLmsToExcel = function() {
       <style>
         body { font-family: 'YekanBakh', Tahoma, sans-serif; direction: rtl; }
         table { border-collapse: collapse; width: 100%; direction: rtl; }
-        th { background-color: #0f172a; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 10px 8px; font-size: 12px; text-align: center; }
+        th { background-color: #2E1065; color: #ffffff; font-weight: bold; border: 1px solid #4C1D95; padding: 10px 8px; font-size: 12px; text-align: center; }
         td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12px; vertical-align: middle; }
       </style>
     </head>
@@ -281,7 +281,7 @@ window.exportLmsToExcel = function() {
       <table>
         <thead>
           <tr>
-            <th colspan="13" style="font-size:15px; padding:14px; background-color:var(--surface-2); color:var(--primary-text); text-align:center;">
+            <th colspan="13" style="font-size:15px; padding:14px; background-color:#1E1633; color:#EAB308; text-align:center;">
               گزارش جامع ساختار منزلگاه‌ها، جلسات و آزمونک‌های سامانه آموزشی نپا
             </th>
           </tr>

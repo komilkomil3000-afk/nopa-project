@@ -1,6 +1,6 @@
 // Nopa Admin PWA service worker
 // Strategy: network-first for the shell, never cache API calls (live, sensitive data).
-const CACHE = 'nopa-admin-v12';
+const CACHE = 'nopa-admin-v13';
 const SCOPE_PREFIX = '/admin';
 
 self.addEventListener('install', () => {

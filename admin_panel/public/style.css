@@ -1210,6 +1210,7 @@ button, select, input, a {
   }
 
   /* Stack button bars on mobile */
+  div.u-flex.u-justify-between,
   div[style*="justify-content: space-between"][style*="display: flex"],
   div[style*="justify-content:space-between"][style*="display:flex"] {
     flex-wrap: wrap !important;
@@ -1253,6 +1254,7 @@ button, select, input, a {
   /* Data Tables: Touch Scrollable */
   .table-container,
   .caravans-table-scroll-container,
+  div.u-scroll-x,
   div[style*="overflow-x: auto"],
   div[style*="overflow-x:auto"] {
     overflow-x: auto !important;
@@ -1372,6 +1374,7 @@ button, select, input, a {
   .caravans-grid,
   .mentor-scorecards,
   .rbac-matrix,
+  div[class*="u-cols-"],
   div[style*="grid-template-columns"] {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
@@ -1383,6 +1386,9 @@ button, select, input, a {
   }
 
   /* Stack 2-column flex forms inside modals and cards */
+  div.u-flex.u-gap-20,
+  div.u-flex.u-gap-15,
+  div.u-flex.u-gap-12,
   div[style*="display: flex"][style*="gap: 20px"],
   div[style*="display:flex"][style*="gap:20px"],
   div[style*="display: flex"][style*="gap:15px"],
@@ -1394,6 +1400,8 @@ button, select, input, a {
     gap: 10px !important;
   }
 
+  div[class*="u-flex-1"],
+  div[class*="u-flex-2"],
   div[style*="flex: 1"],
   div[style*="flex:1"],
   div[style*="flex: 2"],
@@ -1656,7 +1664,8 @@ body.modal-open {
 .nopa-table-state i {
   font-size: 22px;
   display: block;
-  margin-bottom: 8px;
+  width: fit-content;
+  margin: 0 auto 8px;
   color: var(--text-faint);
 }
 .nopa-table-state.is-loading i {

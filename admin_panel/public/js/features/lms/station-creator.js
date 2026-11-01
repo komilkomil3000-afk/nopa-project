@@ -23,34 +23,34 @@ window.addGalleryItemCard = function(containerId, data = null) {
   const isImage = !url || /\.(jpe?g|png|gif|webp|bmp|heic)(\?.*)?$/i.test(url);
 
   container.insertAdjacentHTML('beforeend', `
-    <div id="${blockId}" class="modal-animation-card" data-anim-id="${esc(itemId)}" style="background: rgb(var(--surface-2-rgb) / 0.7); border: 1px solid rgb(var(--primary-rgb) / 0.28); border-radius: 10px; padding: 12px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom:6px;">
-        <span class="anim-badge" style="background:var(--primary); color:white; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">تصویر ${index}</span>
-        <button type="button" data-click="removeGalleryItemCard" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background:rgb(var(--danger-rgb) / 0.15); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.35); border-radius:6px; padding:3px 9px; font-size:11px; cursor:pointer;">
+    <div id="${blockId}" class="modal-animation-card u-bg-surface-2-70 u-bd-primary-28 u-r-10 u-p-12" data-anim-id="${esc(itemId)}">
+      <div class="u-flex u-justify-between u-items-center u-mb-8 u-bb-fg-6 u-pb-6">
+        <span class="anim-badge u-bg-primary u-c-white u-p-2-8 u-r-6 u-bold u-fs-11">تصویر ${index}</span>
+        <button type="button" data-click="removeGalleryItemCard" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-3-9 u-fs-11 u-pointer">
           <i class="fa-solid fa-trash"></i> حذف
         </button>
       </div>
-      <div style="display:flex; gap:10px; align-items:flex-start;">
+      <div class="u-flex u-gap-10 u-items-start">
         ${isImage
-          ? `<img class="modal-anim-preview" src="${esc(url)}" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface); ${url ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">`
-          : `<div style="width:64px; height:64px; border-radius:8px; border:1px solid var(--border-strong); background:var(--surface); display:flex; align-items:center; justify-content:center; color:var(--primary-text);" title="ویدیو"><i class="fa-solid fa-film"></i></div>`}
-        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-          <input type="text" class="modal-anim-title input-ctrl" value="${esc(title)}" placeholder="عنوان تصویر" style="background:var(--surface-2);">
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="${inputId}" class="modal-anim-url input-ctrl" value="${esc(url)}" placeholder="https://... یا /uploads/..." style="background:var(--surface-2); direction:ltr; text-align:left; flex:1;" data-input="NopaActions.previewSrcIn" data-input-args="[&quot;$this&quot;,&quot;.modal-animation-card&quot;,&quot;.modal-anim-preview&quot;]">
-            <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+          ? `<img class="modal-anim-preview u-w-64 u-h-64 u-fit-cover u-r-8 u-bd-border-strong u-bg-surface" src="${esc(url)}" alt="" style="${url ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">`
+          : `<div class="u-w-64 u-h-64 u-r-8 u-bd-border-strong u-bg-surface u-flex u-items-center u-justify-center u-c-primary-text" title="ویدیو"><i class="fa-solid fa-film"></i></div>`}
+        <div class="u-flex-1 u-flex u-col u-gap-8">
+          <input type="text" class="modal-anim-title input-ctrl u-bg-surface-2" value="${esc(title)}" placeholder="عنوان تصویر">
+          <div class="u-flex u-gap-6">
+            <input type="text" id="${inputId}" class="modal-anim-url input-ctrl u-bg-surface-2 u-direction-ltr u-text-left u-flex-1" value="${esc(url)}" placeholder="https://... یا /uploads/..." data-input="NopaActions.previewSrcIn" data-input-args="[&quot;$this&quot;,&quot;.modal-animation-card&quot;,&quot;.modal-anim-preview&quot;]">
+            <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-5-10 u-r-6 u-pointer u-fs-11 u-inline-flex u-items-center u-gap-4 u-nowrap">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
               <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", String(inputId)]))}">
             </label>
           </div>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="${inputId}-cover" class="modal-anim-cover input-ctrl" value="${esc(data?.coverImageUrl || '')}" placeholder="لینک کاور (فقط برای ویدیو، اختیاری)" style="background:var(--surface-2); direction:ltr; text-align:left; flex:1;">
-            <label style="background:rgb(var(--primary-rgb) / 0.18); border:1px solid var(--primary); color:var(--primary-text); padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+          <div class="u-flex u-gap-6">
+            <input type="text" id="${inputId}-cover" class="modal-anim-cover input-ctrl u-bg-surface-2 u-direction-ltr u-text-left u-flex-1" value="${esc(data?.coverImageUrl || '')}" placeholder="لینک کاور (فقط برای ویدیو، اختیاری)">
+            <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-5-10 u-r-6 u-pointer u-fs-11 u-inline-flex u-items-center u-gap-4 u-nowrap">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود کاور
               <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", (String(inputId) + "-cover")]))}">
             </label>
           </div>
-          <textarea class="modal-anim-desc input-ctrl" rows="1" placeholder="توضیح (اختیاری)" style="background:var(--surface-2);">${esc(desc)}</textarea>
+          <textarea class="modal-anim-desc input-ctrl u-bg-surface-2" rows="1" placeholder="توضیح (اختیاری)">${esc(desc)}</textarea>
         </div>
       </div>
     </div>`);
@@ -138,53 +138,53 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
   const badgeBg = catIndex % 2 === 1 ? 'var(--info-strong)' : 'var(--primary-strong)';
 
   const cardHtml = `
-    <div id="${blockId}" class="modal-category-card" data-cat-id="${catData?.id || ''}" style="background: rgb(var(--surface-2-rgb) / 0.7); border: 1px solid ${color}55; border-radius: 12px; padding: 14px; box-shadow: 0 4px 12px rgb(var(--shade-rgb) / 0.2);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid rgb(var(--fg-rgb) / 0.06); padding-bottom: 8px;">
-        <h4 class="modal-cat-badge-title" style="margin: 0; color: ${color}; font-size: 13.5px; display: flex; align-items: center; gap: 8px;">
-          <span class="badge" style="background: ${badgeBg}; color: var(--text); padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;">دسته ${catIndex}</span>
+    <div id="${blockId}" class="modal-category-card u-bg-surface-2-70 u-r-12 u-p-14 u-shadow-0-4-12-shade-20" data-cat-id="${catData?.id || ''}" style="border: 1px solid ${color}55">
+      <div class="u-flex u-justify-between u-items-center u-mb-10 u-bb-fg-6 u-pb-8">
+        <h4 class="modal-cat-badge-title u-m-0 u-fs-13_5 u-flex u-items-center u-gap-8" style="color: ${color}">
+          <span class="badge u-c-text u-p-3-8 u-r-6 u-bold u-fs-11" style="background: ${badgeBg}">دسته ${catIndex}</span>
           <i class="fa-solid fa-graduation-cap"></i> <span class="cat-label-display">${defaultTitle}</span>
         </h4>
-        <button type="button" data-click="removeCategoryBlockFromCreatorModal" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="background: rgb(var(--danger-rgb) / 0.15); color: var(--danger-text); border: 1px solid rgb(var(--danger-rgb) / 0.35); border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این دسته کلاس">
+        <button type="button" data-click="removeCategoryBlockFromCreatorModal" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-4-10 u-fs-11 u-pointer u-flex u-items-center u-gap-4" title="حذف این دسته کلاس">
           <i class="fa-solid fa-trash"></i> حذف دسته
         </button>
       </div>
 
-      <div style="display: grid; grid-template-columns: 2fr 1.8fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <div class="u-grid u-cols-2fr-1_8fr-1fr-1fr u-gap-10 u-mb-10">
         <div class="form-group">
-          <label style="font-size:11.5px; color:var(--text-soft);">عنوان دسته کلاس:</label>
-          <input type="text" class="modal-cat-title input-ctrl" value="${defaultTitle}" placeholder="مثال: کلاس‌های مهارتی، کارگاه پادکست..." style="background: var(--surface-2);" data-input="NopaActions.setTextIn" data-input-args="[&quot;$this&quot;,&quot;.modal-category-card&quot;,&quot;.cat-label-display&quot;]">
+          <label class="u-fs-11_5 u-c-text-soft">عنوان دسته کلاس:</label>
+          <input type="text" class="modal-cat-title input-ctrl u-bg-surface-2" value="${defaultTitle}" placeholder="مثال: کلاس‌های مهارتی، کارگاه پادکست..." data-input="NopaActions.setTextIn" data-input-args="[&quot;$this&quot;,&quot;.modal-category-card&quot;,&quot;.cat-label-display&quot;]">
         </div>
-        <div class="form-group inst-picker-wrapper" style="position:relative;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <label style="font-size:11.5px; color:var(--text-soft);"><i class="fa-solid fa-chalkboard-user" style="color:var(--primary-text);"></i> استاد / اساتید دوره:</label>
-            <a href="javascript:void(0)" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" style="font-size:10px; color:var(--primary-text); text-decoration:none; display:flex; align-items:center; gap:3px;" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
+        <div class="form-group inst-picker-wrapper u-relative">
+          <div class="u-flex u-justify-between u-items-center u-mb-4">
+            <label class="u-fs-11_5 u-c-text-soft"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> استاد / اساتید دوره:</label>
+            <a href="javascript:void(0)" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-fs-10 u-c-primary-text u-no-underline u-flex u-items-center u-gap-3" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
           </div>
           <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}" style="display:none;">
-          <div id="inst-picker-box-${blockId}" class="inst-picker-box" style="background: var(--surface-2); border: 1px solid rgb(var(--primary-rgb) / 0.35); border-radius: 6px; padding: 6px 10px; min-height: 38px; cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;" data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}">
+          <div id="inst-picker-box-${blockId}" class="inst-picker-box u-bg-surface-2 u-bd-primary-35 u-r-6 u-p-6-10 u-minh-38 u-pointer u-flex u-wrap u-gap-4 u-items-center" data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}">
             <!-- Selected badges rendered here -->
           </div>
-          <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu" style="display: none; position: absolute; top: 100%; right: 0; left: 0; z-index: var(--z-panel-raised); background: var(--surface); border: 1px solid rgb(var(--primary-rgb) / 0.45); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); padding: 8px; max-height: 220px; overflow-y: auto; margin-top: 4px;">
+          <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu u-absolute u-top-100p u-right-0 u-left-0 u-z-z-panel-raised u-bg-surface u-bd-primary-45 u-r-8 u-p-8 u-maxh-220 u-scroll-y u-mt-4" style="display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.7)">
             <!-- Checklist from globalInstructorsList -->
           </div>
         </div>
         <div class="form-group">
-          <label style="font-size:11.5px; color:var(--text-soft);">تعداد جلسات:</label>
-          <input type="number" class="modal-cat-sessions input-ctrl" value="${defaultSessions}" min="1" max="50" style="background: var(--surface-2);">
+          <label class="u-fs-11_5 u-c-text-soft">تعداد جلسات:</label>
+          <input type="number" class="modal-cat-sessions input-ctrl u-bg-surface-2" value="${defaultSessions}" min="1" max="50">
         </div>
         <div class="form-group">
-          <label style="font-size:11.5px; color:var(--primary-text); font-weight:bold;"><i class="fa-solid fa-film"></i> پارت هر جلسه:</label>
-          <input type="number" class="modal-cat-parts input-ctrl" value="${defaultParts}" min="1" max="20" style="background: var(--surface-2); border-color: ${color};" title="تعداد پارت‌های ویدیویی در هر جلسه">
+          <label class="u-fs-11_5 u-c-primary-text u-bold"><i class="fa-solid fa-film"></i> پارت هر جلسه:</label>
+          <input type="number" class="modal-cat-parts input-ctrl u-bg-surface-2" value="${defaultParts}" min="1" max="20" style="border-color: ${color}" title="تعداد پارت‌های ویدیویی در هر جلسه">
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+      <div class="u-grid u-cols-2 u-gap-10">
         <div class="form-group">
-          <label style="font-size:11.5px; color:var(--text-soft);">زمان‌بندی برگزاری هفتگی:</label>
-          <input type="text" class="modal-cat-schedule input-ctrl" value="${defaultSchedule}" placeholder="مثال: شنبه و دوشنبه" style="background: var(--surface-2);">
+          <label class="u-fs-11_5 u-c-text-soft">زمان‌بندی برگزاری هفتگی:</label>
+          <input type="text" class="modal-cat-schedule input-ctrl u-bg-surface-2" value="${defaultSchedule}" placeholder="مثال: شنبه و دوشنبه">
         </div>
         <div class="form-group">
-          <label style="font-size:11.5px; color:var(--text-soft);"><i class="fa-solid fa-calendar-check"></i> تاریخ شروع این دسته:</label>
-          <input type="date" class="modal-cat-date input-ctrl" value="${defaultDateStr}" style="color:var(--text); background: var(--surface-2);">
+          <label class="u-fs-11_5 u-c-text-soft"><i class="fa-solid fa-calendar-check"></i> تاریخ شروع این دسته:</label>
+          <input type="date" class="modal-cat-date input-ctrl u-c-text u-bg-surface-2" value="${defaultDateStr}">
         </div>
       </div>
     </div>

@@ -41,22 +41,22 @@ async function loadChats() {
     tbody.innerHTML = '';
 
     if (data.messages.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">هیچ پیامی یافت نشد</td></tr>';
+      NopaTable.empty(tbody, 'هیچ پیامی یافت نشد');
       return;
     }
 
     data.messages.forEach(msg => {
       const typeStr = msg.caravan ? `گروه: ${esc(msg.caravan.name)}` : `مستقیم به: ${esc(msg.receiver ? msg.receiver.name : '؟')}`;
-      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge" style="background:var(--success); color:white;"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
+      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge u-bg-success u-c-white"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="direction:ltr; text-align:right;">${new Date(msg.createdAt).toLocaleString('fa-IR')}</td>
+        <td class="u-direction-ltr u-text-right">${new Date(msg.createdAt).toLocaleString('fa-IR')}</td>
         <td>${esc(msg.sender.name)}</td>
         <td>${typeStr}</td>
-        <td style="max-width: 250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(msg.messageText)}</td>
+        <td class="u-maxw-250 u-overflow-hidden u-ellipsis u-nowrap">${esc(msg.messageText)}</td>
         <td>${fileBadge}</td>
         <td>
-          <button class="btn-icon" style="color:var(--danger);" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn-icon u-c-danger" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -99,7 +99,7 @@ async function loadMentorTickets() {
         <td>${esc(t.student?.name || 'نامشخص')}</td>
         <td>${esc(t.category)}</td>
         <td>${esc(t.subject)}</td>
-        <td>${t.status === 'resolved' ? '<span style="color:green">پاسخ‌داده</span>' : '<span style="color:orange">باز</span>'}</td>
+        <td>${t.status === 'resolved' ? '<span class="u-c-green">پاسخ‌داده</span>' : '<span class="u-c-orange">باز</span>'}</td>
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.ratingGiven || '-'}</td>
         <td>
@@ -131,18 +131,18 @@ window.viewTicketThread = async function(ticketId) {
 
   const buildMessageCard = (author, role, message, voiceUrl, attachmentUrl) => {
     let card = `
-      <div style="padding:14px; background:rgb(var(--fg-rgb) / 0.05); border-radius:12px; margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center;">
+      <div class="u-p-14 u-bg-fg-5 u-r-12 u-mb-12">
+        <div class="u-flex u-justify-between u-wrap u-gap-10 u-items-center">
           <strong>${esc(author)}</strong>
-          <span style="font-size:11px; color:var(--text-muted);">${esc(role)}</span>
+          <span class="u-fs-11 u-c-text-muted">${esc(role)}</span>
         </div>
-        <p style="margin-top:10px; font-size:13px; line-height:1.6;">${message ? esc(message) : '<em>بدون متن</em>'}</p>
+        <p class="u-mt-10 u-fs-13 u-lh-1_6">${message ? esc(message) : '<em>بدون متن</em>'}</p>
     `;
     if (voiceUrl) {
-      card += `<audio controls style="width:100%; margin-top:8px;" src="${esc(voiceUrl)}"></audio>`;
+      card += `<audio controls class="u-w-full u-mt-8" src="${esc(voiceUrl)}"></audio>`;
     }
     if (attachmentUrl) {
-      card += `<a href="${esc(attachmentUrl)}" target="_blank" style="display:inline-block; margin-top:8px; color:var(--success-text); font-size:12px; text-decoration:none;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
+      card += `<a href="${esc(attachmentUrl)}" target="_blank" class="u-inline-block u-mt-8 u-c-success-text u-fs-12 u-no-underline"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
     }
     card += '</div>';
     return card;

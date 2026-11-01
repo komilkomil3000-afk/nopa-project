@@ -68,7 +68,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
   if (!tbody) return;
 
   if (!list || list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-muted);">هیچ منزلگاهی با این فیلترها یافت نشد.</td></tr>';
+    NopaTable.empty(tbody, 'هیچ منزلگاهی با این فیلترها یافت نشد.');
     return;
   }
 
@@ -155,28 +155,28 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
 
     if (isSkillOnly) {
       topicsDisplayHtml = `
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
-            <i class="fa-solid fa-person-running" style="margin-left:4px;"></i> ${esc(skillTopic)}
+        <div class="u-flex u-items-center u-gap-6">
+          <span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-fs-12 u-p-4-9 u-r-6 u-fw-600">
+            <i class="fa-solid fa-person-running u-ml-4"></i> ${esc(skillTopic)}
           </span>
         </div>
       `;
     } else if (isMediaOnly) {
       topicsDisplayHtml = `
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.15); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.35); font-size:12px; padding:4px 9px; border-radius:6px; font-weight:600;">
-            <i class="fa-solid fa-microphone-lines" style="margin-left:4px;"></i> ${esc(mediaTopic)}
+        <div class="u-flex u-items-center u-gap-6">
+          <span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-fs-12 u-p-4-9 u-r-6 u-fw-600">
+            <i class="fa-solid fa-microphone-lines u-ml-4"></i> ${esc(mediaTopic)}
           </span>
         </div>
       `;
     } else {
       topicsDisplayHtml = `
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.12); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11.5px; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
-            <i class="fa-solid fa-person-running" style="font-size:10px;"></i> <strong>مهارتی:</strong> ${skillTopic}
+        <div class="u-flex u-col u-gap-4">
+          <span class="badge u-bg-primary-12 u-c-primary-text u-bd-primary-30 u-fs-11_5 u-p-3-8 u-r-6 u-fw-600 u-inline-flex u-items-center u-gap-5">
+            <i class="fa-solid fa-person-running u-fs-10"></i> <strong>مهارتی:</strong> ${skillTopic}
           </span>
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.12); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.3); font-size:11.5px; padding:3px 8px; border-radius:6px; font-weight:600; display:inline-flex; align-items:center; gap:5px;">
-            <i class="fa-solid fa-microphone-lines" style="font-size:10px;"></i> <strong>رسانه‌ای:</strong> ${mediaTopic}
+          <span class="badge u-bg-primary-12 u-c-primary-text u-bd-primary-30 u-fs-11_5 u-p-3-8 u-r-6 u-fw-600 u-inline-flex u-items-center u-gap-5">
+            <i class="fa-solid fa-microphone-lines u-fs-10"></i> <strong>رسانه‌ای:</strong> ${mediaTopic}
           </span>
         </div>
       `;
@@ -195,30 +195,30 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     let instructorsDisplayHtml = '';
     if (stationInstructors.size > 0) {
       instructorsDisplayHtml = `
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:220px;">
+        <div class="u-flex u-col u-gap-6">
+          <div class="u-flex u-wrap u-gap-4 u-maxw-220">
             ${Array.from(stationInstructors).map(inst => {
               const isMatch = selectedInstructorFilter !== 'all' && (inst.toLowerCase().includes(selectedInstructorFilter) || inst.replace(/‌/g, '').includes(selectedInstructorFilter.replace(/‌/g, '')));
               const badgeStyle = isMatch
                 ? 'background:rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border:1px solid var(--primary);'
                 : 'background:rgb(var(--fg-rgb) / 0.06); color:var(--text-soft); border:1px solid rgb(var(--fg-rgb) / 0.08);';
-              return `<span class="badge" style="${badgeStyle} font-size:11px; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;">
-                <i class="fa-solid fa-chalkboard-user" style="font-size:10px; color:var(--primary-text);"></i> ${esc(inst)}
+              return `<span class="badge u-p-2-7 u-r-6 u-inline-flex u-items-center u-gap-4" style="${badgeStyle} font-size:11px">
+                <i class="fa-solid fa-chalkboard-user u-fs-10 u-c-primary-text"></i> ${esc(inst)}
               </span>`;
             }).join('')}
           </div>
-          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;" data-hover="primary-strong" title="ویرایش و اصلاح اساتید این منزلگاه">
+          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-r-5 u-fs-10 u-p-3-8 u-pointer u-w-fit-content u-inline-flex u-items-center u-gap-4 u-transition" data-hover="primary-strong" title="ویرایش و اصلاح اساتید این منزلگاه">
             <i class="fa-solid fa-user-pen"></i> ویرایش و اصلاح اساتید
           </button>
         </div>
       `;
     } else {
       instructorsDisplayHtml = `
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <div style="font-size:11px; color:var(--text-muted);">
+        <div class="u-flex u-col u-gap-6">
+          <div class="u-fs-11 u-c-text-muted">
             <i class="fa-solid fa-chalkboard-user"></i> اساتید دوره نپا
           </div>
-          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" style="background:rgb(var(--primary-rgb) / 0.12); border:1px solid rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border-radius:5px; font-size:10px; padding:3px 8px; cursor:pointer; width:fit-content; display:inline-flex; align-items:center; gap:4px;">
+          <button type="button" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(st.id)]))}" class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-r-5 u-fs-10 u-p-3-8 u-pointer u-w-fit-content u-inline-flex u-items-center u-gap-4">
             <i class="fa-solid fa-user-pen"></i> تعیین اساتید
           </button>
         </div>
@@ -229,39 +229,39 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
     let sessionsDisplayHtml = '';
 
     if (isSkillOnly) {
-      categoryBadgeHtml = `<span class="badge" style="background:var(--primary); color:white; font-size:11px; padding:4px 10px; border-radius:6px;">دسته ۱: مهارتی (${skillSessCount} جلسه | ${skillPartsCount} پارت)</span>`;
+      categoryBadgeHtml = `<span class="badge u-bg-primary u-c-white u-fs-11 u-p-4-10 u-r-6">دسته ۱: مهارتی (${skillSessCount} جلسه | ${skillPartsCount} پارت)</span>`;
       sessionsDisplayHtml = `
-        <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${skillSessCount} جلسه مهارتی</div>
-        <div style="font-size:11px; color:var(--success-text); margin-top:2px;">${skillPartsCount} پارت ویدیو</div>
-        <div style="font-size:10px; color:var(--accent-text); margin-top:2px;"><i class="fa-solid fa-file-signature"></i> ${skillQuizzesCount} آزمونک</div>
+        <div class="u-bold u-c-primary-text u-fs-13">${skillSessCount} جلسه مهارتی</div>
+        <div class="u-fs-11 u-c-success-text u-mt-2">${skillPartsCount} پارت ویدیو</div>
+        <div class="u-fs-10 u-c-accent-text u-mt-2"><i class="fa-solid fa-file-signature"></i> ${skillQuizzesCount} آزمونک</div>
       `;
     } else if (isMediaOnly) {
-      categoryBadgeHtml = `<span class="badge" style="background:var(--primary-strong); color:white; font-size:11px; padding:4px 10px; border-radius:6px;">دسته ۲: رسانه‌ای (${mediaSessCount} جلسه | ${mediaPartsCount} پارت)</span>`;
+      categoryBadgeHtml = `<span class="badge u-bg-primary-strong u-c-white u-fs-11 u-p-4-10 u-r-6">دسته ۲: رسانه‌ای (${mediaSessCount} جلسه | ${mediaPartsCount} پارت)</span>`;
       sessionsDisplayHtml = `
-        <div style="font-weight:bold; color:var(--primary-text); font-size:13px;">${mediaSessCount} جلسه رسانه‌ای</div>
-        <div style="font-size:11px; color:var(--success-text); margin-top:2px;">${mediaPartsCount} پارت ویدیو</div>
-        <div style="font-size:10px; color:var(--accent-text); margin-top:2px;"><i class="fa-solid fa-file-signature"></i> ${mediaQuizzesCount} آزمونک</div>
+        <div class="u-bold u-c-primary-text u-fs-13">${mediaSessCount} جلسه رسانه‌ای</div>
+        <div class="u-fs-11 u-c-success-text u-mt-2">${mediaPartsCount} پارت ویدیو</div>
+        <div class="u-fs-10 u-c-accent-text u-mt-2"><i class="fa-solid fa-file-signature"></i> ${mediaQuizzesCount} آزمونک</div>
       `;
     } else {
       categoryBadgeHtml = `
-        <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.25); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
+        <div class="u-flex u-col u-gap-4 u-items-center">
+          <span class="badge u-bg-primary-25 u-c-primary-text u-bd-primary-40 u-fs-11 u-p-3-8 u-r-6 u-w-92p">
             دسته ۱ (${skillSessCount} جلسه)
           </span>
-          <span class="badge" style="background:rgb(var(--primary-rgb) / 0.25); color:var(--primary-text); border:1px solid rgb(var(--primary-rgb) / 0.4); font-size:11px; padding:3px 8px; border-radius:6px; width:92%;">
+          <span class="badge u-bg-primary-25 u-c-primary-text u-bd-primary-40 u-fs-11 u-p-3-8 u-r-6 u-w-92p">
             دسته ۲ (${mediaSessCount} جلسه)
           </span>
         </div>
       `;
       sessionsDisplayHtml = `
-        <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-          <div style="font-weight:bold; color:var(--text); font-size:13px;">
-            <span style="color:var(--primary-text);">${totalRealSess} جلسه</span> | <span style="color:var(--success-text);">${totalRealParts} پارت</span>
+        <div class="u-flex u-col u-items-center u-gap-2">
+          <div class="u-bold u-c-text u-fs-13">
+            <span class="u-c-primary-text">${totalRealSess} جلسه</span> | <span class="u-c-success-text">${totalRealParts} پارت</span>
           </div>
-          <div style="font-size:11px; color:var(--text-soft); display:flex; gap:6px;">
-            <span style="color:var(--primary-text);">${skillSessCount} مهارتی</span> + <span style="color:var(--primary-text);">${mediaSessCount} رسانه‌ای</span>
+          <div class="u-fs-11 u-c-text-soft u-flex u-gap-6">
+            <span class="u-c-primary-text">${skillSessCount} مهارتی</span> + <span class="u-c-primary-text">${mediaSessCount} رسانه‌ای</span>
           </div>
-          <div style="font-size:10px; color:var(--accent-text); background:rgb(var(--accent-rgb) / 0.12); padding:1px 6px; border-radius:4px; border:1px solid rgb(var(--accent-rgb) / 0.3); margin-top:2px;">
+          <div class="u-fs-10 u-c-accent-text u-bg-accent-12 u-p-1-6 u-r-4 u-bd-accent-30 u-mt-2">
             <i class="fa-solid fa-file-signature"></i> ${totalRealQuizzes} آزمونک ثبت‌شده
           </div>
         </div>
@@ -280,25 +280,25 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
 
     return `
       <tr>
-        <td style="text-align:center; font-family:monospace; font-weight:bold; color:var(--color-neon-blue);">MZ${idx}</td>
+        <td class="u-text-center u-mono u-bold u-c-color-neon-blue">MZ${idx}</td>
         <td>
-          <strong style="color:var(--text); font-size:14px; display:flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-location-dot" style="color:var(--accent-text);"></i> ${simpleStationName}
+          <strong class="u-c-text u-fs-14 u-flex u-items-center u-gap-6">
+            <i class="fa-solid fa-location-dot u-c-accent-text"></i> ${simpleStationName}
           </strong>
-          ${st.stayDuration ? `<div style="font-size:11px; color:var(--primary-text); margin-top:2px;"><i class="fa-solid fa-hourglass-half"></i> اقامت: ${st.stayDuration}</div>` : ''}
-          ${st.animationTitle ? `<div style="font-size:10px; color:var(--primary-text); margin-top:2px;"><i class="fa-solid fa-film"></i> ${esc(st.animationTitle)}</div>` : ''}
-          <div style="font-size:11px; color:var(--text-muted); margin-top:3px;">کد ترتیب: منزلگاه ${idx}</div>
+          ${st.stayDuration ? `<div class="u-fs-11 u-c-primary-text u-mt-2"><i class="fa-solid fa-hourglass-half"></i> اقامت: ${st.stayDuration}</div>` : ''}
+          ${st.animationTitle ? `<div class="u-fs-10 u-c-primary-text u-mt-2"><i class="fa-solid fa-film"></i> ${esc(st.animationTitle)}</div>` : ''}
+          <div class="u-fs-11 u-c-text-muted u-mt-3">کد ترتیب: منزلگاه ${idx}</div>
         </td>
         <td>${topicsDisplayHtml}</td>
         <td>${instructorsDisplayHtml}</td>
-        <td style="text-align:center;">${categoryBadgeHtml}</td>
-        <td style="color:var(--text-soft); font-size:12px;">
-          <div style="display:flex; align-items:center; gap:5px; color:var(--primary-text); font-weight:bold;">
+        <td class="u-text-center">${categoryBadgeHtml}</td>
+        <td class="u-c-text-soft u-fs-12">
+          <div class="u-flex u-items-center u-gap-5 u-c-primary-text u-bold">
             <i class="fa-solid fa-calendar-days"></i> ${releaseDateStr}
           </div>
         </td>
-        <td style="text-align:center;">${sessionsDisplayHtml}</td>
-        <td style="text-align:center; vertical-align:middle; cursor:pointer;" data-click="openStationAccessModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+        <td class="u-text-center">${sessionsDisplayHtml}</td>
+        <td class="u-text-center u-va-middle u-pointer" data-click="openStationAccessModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
           ${(() => {
             const isStationTimeLocked = Boolean(st.isTimeLocked || (st.scheduledUnlockTime && new Date() < new Date(st.scheduledUnlockTime)));
             const effectiveIsLocked = Boolean(st.isLocked || st.status === 'locked' || isStationTimeLocked);
@@ -306,13 +306,13 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
             let statusBadge = '';
             if (effectiveIsLocked) {
               statusBadge = `
-                <span class="badge badge-locked" style="font-size:11.5px; padding:4px 10px; border-radius:7px; background:rgb(var(--danger-rgb) / 0.18); color:var(--danger-text); border:1px solid rgb(var(--danger-rgb) / 0.4); display:inline-flex; align-items:center; gap:5px; font-weight:bold; cursor:pointer; transition:all 0.2s;" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+                <span class="badge badge-locked u-fs-11_5 u-p-4-10 u-r-7 u-bg-danger-18 u-c-danger-text u-bd-danger-40 u-inline-flex u-items-center u-gap-5 u-bold u-pointer u-transition" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
                   <i class="fa-solid fa-lock"></i> قفل شده
                 </span>
               `;
             } else {
               statusBadge = `
-                <span class="badge badge-active" style="font-size:11.5px; padding:4px 10px; border-radius:7px; background:rgb(var(--success-rgb) / 0.18); color:var(--success-text); border:1px solid rgb(var(--success-rgb) / 0.4); display:inline-flex; align-items:center; gap:5px; font-weight:bold; cursor:pointer; transition:all 0.2s;" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
+                <span class="badge badge-active u-fs-11_5 u-p-4-10 u-r-7 u-bg-success-18 u-c-success-text u-bd-success-40 u-inline-flex u-items-center u-gap-5 u-bold u-pointer u-transition" title="کلیک برای تغییر وضعیت و تنظیمات بازگشایی">
                   <i class="fa-solid fa-lock-open"></i> فعال
                 </span>
               `;
@@ -325,7 +325,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
                 const timePart = d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
                 const datePart = d.toLocaleDateString('fa-IR');
                 schedTag = `
-                  <div style="font-size:10px; color:var(--primary-text); margin-top:4px; display:inline-flex; align-items:center; gap:3px;" title="زمان بازگشایی خودکار: ${datePart} ساعت ${timePart}">
+                  <div class="u-fs-10 u-c-primary-text u-mt-4 u-inline-flex u-items-center u-gap-3" title="زمان بازگشایی خودکار: ${datePart} ساعت ${timePart}">
                     <i class="fa-regular fa-clock"></i> بازگشایی: ${datePart}
                   </div>
                 `;
@@ -335,14 +335,14 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
             let condTag = '';
             if (st.requirePreviousComplete && idx > 1) {
               condTag = `
-                <div style="font-size:10px; color:var(--primary-text); margin-top:2px; display:inline-flex; align-items:center; gap:3px;" title="مشروط به اتمام مراحل منزلگاه قبل">
+                <div class="u-fs-10 u-c-primary-text u-mt-2 u-inline-flex u-items-center u-gap-3" title="مشروط به اتمام مراحل منزلگاه قبل">
                   <i class="fa-solid fa-link"></i> مشروط به منزلگاه ${idx - 1}
                 </div>
               `;
             }
 
             return `
-              <div style="display:inline-flex; flex-direction:column; align-items:center; cursor:pointer;">
+              <div class="u-inline-flex u-col u-items-center u-pointer">
                 ${statusBadge}
                 ${schedTag}
                 ${condTag}
@@ -350,15 +350,15 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
             `;
           })()}
         </td>
-        <td style="text-align:center;">
-          <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
-            <button type="button" class="page-btn" style="background:var(--primary); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier), String(selectedCategoryFilter)]))}" title="مدیریت پارت‌ها و آزمونک‌ها">
+        <td class="u-text-center">
+          <div class="u-flex u-justify-center u-gap-6 u-wrap">
+            <button type="button" class="page-btn u-bg-primary u-c-white u-p-5-10 u-fs-11 u-r-6 u-bd-none u-pointer" data-click="openStationContentManagerModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier), String(selectedCategoryFilter)]))}" title="مدیریت پارت‌ها و آزمونک‌ها">
               <i class="fa-solid fa-film"></i> پارت‌ها
             </button>
-            <button type="button" class="page-btn" style="background:var(--info); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="editStationModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="ویرایش عنوان و تقویم">
+            <button type="button" class="page-btn u-bg-info u-c-white u-p-5-10 u-fs-11 u-r-6 u-bd-none u-pointer" data-click="editStationModal" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="ویرایش عنوان و تقویم">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="page-btn" style="background:var(--danger); color:white; padding:5px 10px; font-size:11px; border-radius:6px; border:none; cursor:pointer;" data-click="deleteStationRecord" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="حذف">
+            <button type="button" class="page-btn u-bg-danger u-c-white u-p-5-10 u-fs-11 u-r-6 u-bd-none u-pointer" data-click="deleteStationRecord" data-click-args="${esc(JSON.stringify([String(stationIdentifier)]))}" title="حذف">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>

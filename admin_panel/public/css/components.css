@@ -85,3 +85,38 @@
 [data-hover="accent-fill"]:hover { background: rgb(var(--accent-rgb) / 0.35) !important; }
 [data-hover="border-primary"]:hover { border-color: rgb(var(--primary-rgb) / 0.45) !important; }
 [data-hover="row"]:hover { background: rgb(var(--fg-rgb) / 0.03) !important; }
+
+/* ---- Export dropdown and caravan table scrollbar (moved from an inline <style> in index.html) ---- */
+/* Basic dropdown styling for export button */
+.dropdown-wrapper:hover .dropdown-content,
+.dropdown-wrapper.open .dropdown-content { display: block; }
+.dropdown-content {
+  display: none; position: absolute; right: 0; background: var(--bg-card); min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 1000; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+.dropdown-content a {
+  color: var(--text); padding: 10px 15px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; transition: background 0.2s;
+}
+.dropdown-content a:hover { background: rgb(var(--primary-rgb) / 0.25); color: var(--primary-text); }
+
+/* Caravan Table Scrollable Container & Custom Scrollbar */
+.caravans-table-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) rgb(var(--surface-rgb) / 0.6);
+}
+.caravans-table-scroll-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.caravans-table-scroll-container::-webkit-scrollbar-track {
+  background: rgb(var(--surface-rgb) / 0.6);
+  border-radius: 6px;
+}
+.caravans-table-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--primary));
+  border-radius: 6px;
+}
+.caravans-table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}

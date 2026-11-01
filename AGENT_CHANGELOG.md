@@ -2607,3 +2607,25 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Static: 193 handler names resolve, 119 static argument lists are valid JSON. Headless Chrome: 8 delegation checks incl. click sweep over all tabs and 15 modals and a zero-inline-handler DOM check; open-everything (32) and Phase 3–7 suites + smoke green.
   - `node --check` on all scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** In Progress (Phase 7 step 5 pending)
+
+### [2026-11-01 23:20] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 5 (Inline styles → utility classes, tables → NopaTable)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/utilities.css` (Created — 653 generated one-declaration utility classes)
+  - `admin_panel/public/index.html` (Modified — inline styles → classes, utilities.css linked, inline `<style>` block removed, static table placeholders)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — template inline styles → classes; hand-written table state rows → NopaTable)
+  - `admin_panel/public/js/features/lms/reorder-export.js` (Modified — literal colours restored in the Excel export)
+  - `admin_panel/public/style.css` (Modified — mobile `[style*=…]` rules also match utility classes; centred table state icon)
+  - `admin_panel/public/css/components.css` (Modified — export dropdown / caravan scrollbar rules moved from index.html)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v13)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored; Phase 7 completed)
+- **Description of Changes:**
+  - Inline styles 2,344 → 195: every declaration that has a readable name became a utility class (`.u-x:not(#_)`, id+class specificity so the cascade matches the old inline behaviour while JS-set styles still win). Kept inline: JS-toggled display:none, dynamic values, rare one-offs and the standalone Excel export.
+  - 34 hand-written loading/empty/error table rows replaced by NopaTable (colspan from the header); state icon centred.
+  - Fix: the LMS Excel export lost its colours since Phase 2 (CSS variables do not resolve in Excel); literal brand colours restored.
+- **Verification / Checkpoints Executed:**
+  - Computed-style snapshots of 5,124 elements (all tabs, modals incl. hidden, drawers, landing) before vs after: 0 differences at 1440/1024/390 px and in the light theme (only the intended table state rows differ).
+  - Headless Chrome: new step 5 suite 5/5 (utilities loaded last, state rows span the table, empty and error states, no hand-written state rows), Phase 3–7 suites, open-everything (32), smoke, handler static check — all green, no page errors.
+  - `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed (Phase 7 done; Phase 8 pending)

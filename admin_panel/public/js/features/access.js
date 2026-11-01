@@ -215,9 +215,9 @@ function renderSubAdminAccess(roles) {
   try { grants = JSON.parse(row.permissionsJson || '{}') || {}; } catch (_) { grants = {}; }
   document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
   box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:rgb(var(--fg-rgb) / 0.04); padding:8px 10px; border-radius:8px;">
-      <span style="font-size:12.5px;">${PANEL_SECTION_LABELS[key]}</span>
-      <select class="select-ctrl sub-admin-section" data-section="${key}" style="min-width:120px;">
+    <div class="u-flex u-justify-between u-items-center u-gap-8 u-bg-fg-4 u-p-8-10 u-r-8">
+      <span class="u-fs-12_5">${PANEL_SECTION_LABELS[key]}</span>
+      <select class="select-ctrl sub-admin-section u-minw-120" data-section="${key}">
         <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
         <option value="view" ${grants[key] === 'view' ? 'selected' : ''}>فقط مشاهده</option>
         <option value="edit" ${grants[key] === 'edit' ? 'selected' : ''}>مشاهده و ویرایش</option>

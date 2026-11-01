@@ -51,11 +51,11 @@ window.openStationAccessModal = function(stationId) {
   const caravans = window.caravansData || [];
   if (customBox) {
     if (caravans.length === 0) {
-      customBox.innerHTML = '<div style="color:var(--text-muted); font-size:12px; padding:6px;">کاروانی در حافظه بارگذاری نشده است.</div>';
+      customBox.innerHTML = '<div class="u-c-text-muted u-fs-12 u-p-6">کاروانی در حافظه بارگذاری نشده است.</div>';
     } else {
       customBox.innerHTML = caravans.map(c => `
-        <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:12px; color:var(--text-soft); cursor:pointer;">
-          <input type="checkbox" class="sam-caravan-check" value="${c.id}" ${targetCaravans.includes(c.id) ? 'checked' : ''} style="accent-color:var(--primary);">
+        <label class="u-flex u-items-center u-gap-8 u-mb-6 u-fs-12 u-c-text-soft u-pointer">
+          <input type="checkbox" class="sam-caravan-check u-accent-primary" value="${c.id}" ${targetCaravans.includes(c.id) ? 'checked' : ''}>
           <span>${esc(c.name)} (${esc(c.mentorName || c.mentor?.name || 'بدون راهبر')})</span>
         </label>
       `).join('');
@@ -106,7 +106,7 @@ window.openStationAccessModal = function(stationId) {
     if (idx <= 1) {
       condCheckbox.checked = false;
       condCheckbox.disabled = true;
-      condDesc.innerHTML = `<span style="color:var(--accent-text);"><i class="fa-solid fa-circle-info"></i> این منزلگاه، منزلگاه اول (نقطه آغاز مسابقه) است و نیازی به پیش‌نیاز قبلی ندارد.</span>`;
+      condDesc.innerHTML = `<span class="u-c-accent-text"><i class="fa-solid fa-circle-info"></i> این منزلگاه، منزلگاه اول (نقطه آغاز مسابقه) است و نیازی به پیش‌نیاز قبلی ندارد.</span>`;
     } else {
       condCheckbox.disabled = false;
       condCheckbox.checked = Boolean(station.requirePreviousComplete);
@@ -177,7 +177,7 @@ window.updateSamSchedulePreview = function() {
   if (!previewBox) return;
 
   if (!schedDate) {
-    previewBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-text);"></i> لطفاً تاریخ بازگشایی را مشخص کنید.';
+    previewBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation u-c-accent-text"></i> لطفاً تاریخ بازگشایی را مشخص کنید.';
     return;
   }
 
@@ -191,15 +191,15 @@ window.updateSamSchedulePreview = function() {
       const diffDays = Math.floor(diffHours / 24);
       const remainingHours = diffHours % 24;
       previewBox.innerHTML = `
-        <div style="font-weight:bold;"><i class="fa-solid fa-lock" style="color:var(--danger-text);"></i> منزلگاه تا زمان بازگشایی به صورت خودکار قفل خواهد ماند.</div>
-        <div style="font-size:11px; color:var(--text-soft); margin-top:3px;">
+        <div class="u-bold"><i class="fa-solid fa-lock u-c-danger-text"></i> منزلگاه تا زمان بازگشایی به صورت خودکار قفل خواهد ماند.</div>
+        <div class="u-fs-11 u-c-text-soft u-mt-3">
           زمان مقرر: ${target.toLocaleDateString('fa-IR')} ساعت ${target.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
           (حدود ${diffDays > 0 ? diffDays + ' روز و ' : ''}${remainingHours} ساعت باقی‌مانده)
         </div>
       `;
     } else {
       previewBox.innerHTML = `
-        <div style="font-weight:bold; color:var(--success-text);"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده است (منزلگاه فعال و در دسترس).</div>
+        <div class="u-bold u-c-success-text"><i class="fa-solid fa-lock-open"></i> تاریخ بازگشایی فرارسیده است (منزلگاه فعال و در دسترس).</div>
       `;
     }
   } catch (_) {
