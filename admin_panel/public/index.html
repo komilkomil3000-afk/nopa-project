@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="/admin/css/layout.css">
   <link rel="stylesheet" href="/admin/css/landing.css">
   <link rel="stylesheet" href="/admin/css/dashboard.css">
+  <link rel="stylesheet" href="/admin/css/components.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
 </head>
@@ -1177,29 +1178,6 @@
         </div>
       </section>
 
-      <!-- TAB 5: CONTENT & ANNOUNCEMENTS -->
-      <section id="content-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass" style="max-width: 600px;">
-          <div class="panel-title">ارسال اطلاعیه سراسری (Jarchi Broadcast)</div>
-          <form id="announcement-broadcast-form">
-            <div class="form-group">
-              <label>عنوان اطلاعیه</label>
-              <input type="text" id="announcement-title" class="input-ctrl" placeholder="مثال: شروع ایستگاه دوم مسابقه" required>
-            </div>
-            <div class="form-group">
-              <label>ارسال برای کاروان</label>
-              <select id="announcement-caravan" class="select-ctrl" style="width: 100%;">
-                <option value="">کل ۵۰۰+ کاربر (سراسری)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>متن پیام اطلاعیه</label>
-              <textarea id="announcement-message" class="input-ctrl" rows="5" placeholder="متن پیام خود را بنویسید..." required></textarea>
-            </div>
-            <button type="submit" class="btn-primary">ارسال پیام و نوتیفیکیشن</button>
-          </form>
-        </div>
-      </section>
 
       <!-- TAB 6: AUDIT LOGS -->
       <section id="audit-tab" class="tab-panel" style="display: none;">
@@ -1263,23 +1241,35 @@
         </div>
       </section>
 
-      <!-- TAB 8: NOTIFICATIONS -->
+      <!-- MESSAGING: one page for the two kinds of outgoing messages (Phase 7 merge of the former
+           content-tab and notifications-tab). Form ids and handlers are unchanged. -->
       <section id="notifications-tab" class="tab-panel" style="display: none;">
         <div class="ledger-grid">
         <div class="panel-card glass">
-          <div class="panel-title">سامانه هوشمند اطلاع‌رسانی (Tri-Channel Broadcast)</div>
+          <div class="msg-modes" role="tablist" aria-label="نوع پیام">
+            <button type="button" role="tab" class="msg-mode is-active" data-msg-mode="campaign" aria-selected="true" aria-controls="msg-pane-campaign">
+              <i class="fa-solid fa-paper-plane"></i>
+              <span><strong>پیام چندکاناله</strong><small>اعلان اپ، پیامک یا ایمیل با متغیرهای شخصی</small></span>
+            </button>
+            <button type="button" role="tab" class="msg-mode" data-msg-mode="announcement" data-requires-section="content" aria-selected="false" aria-controls="msg-pane-announcement">
+              <i class="fa-solid fa-bullhorn"></i>
+              <span><strong>اطلاعیه جارچی</strong><small>اطلاعیه داخل اپ، سراسری یا برای یک کاروان</small></span>
+            </button>
+          </div>
+
+          <div class="msg-pane" id="msg-pane-campaign" role="tabpanel" data-msg-pane="campaign">
           <p style="font-size: 13px; color: var(--text-soft); margin-bottom: 20px;">قابلیت ارسال اعلان درون‌برنامه‌ای، پیامک و ایمیل با پشتیبانی از متغیرهای داینامیک: {user_name} و {zarik_balance}</p>
-          
+
           <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
              <button id="btn-load-templates" class="btn-action"><i class="fa-solid fa-list"></i> بارگذاری الگوها</button>
           </div>
-          
+
           <form id="notification-broadcast-form">
             <div class="form-group">
               <label>عنوان پیام (نوتیفیکیشن یا سابجکت ایمیل)</label>
               <input type="text" id="notif-title" class="input-ctrl" placeholder="سلام {user_name}، جایزه جدید!" required>
             </div>
-            
+
             <div style="display: flex; gap: 15px;">
               <div class="form-group" style="flex: 1;">
                 <label>جامعه هدف (Audience)</label>
@@ -1311,11 +1301,33 @@
               <label>متن قالب پیام (Message Template)</label>
               <textarea id="notif-message" class="input-ctrl" rows="5" placeholder="شما تا کنون {zarik_balance} زریک جمع آوری کرده‌اید..." required></textarea>
             </div>
-            
-            <button type="submit" class="btn-primary" style="background-color: var(--info);">اجرای کمپین ارسال</button>
+
+            <button type="submit" class="btn-primary">اجرای کمپین ارسال</button>
           </form>
+          </div>
+
+          <div class="msg-pane" id="msg-pane-announcement" role="tabpanel" data-msg-pane="announcement" data-requires-section="content" hidden>
+          <p style="font-size: 13px; color: var(--text-soft); margin-bottom: 20px;">اطلاعیه در تابلوی جارچی اپلیکیشن منتشر و برای مخاطبان نوتیفیکیشن ارسال می‌شود.</p>
+          <form id="announcement-broadcast-form">
+            <div class="form-group">
+              <label>عنوان اطلاعیه</label>
+              <input type="text" id="announcement-title" class="input-ctrl" placeholder="مثال: شروع ایستگاه دوم مسابقه" required>
+            </div>
+            <div class="form-group">
+              <label>ارسال برای کاروان</label>
+              <select id="announcement-caravan" class="select-ctrl" style="width: 100%;">
+                <option value="">کل ۵۰۰+ کاربر (سراسری)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>متن پیام اطلاعیه</label>
+              <textarea id="announcement-message" class="input-ctrl" rows="5" placeholder="متن پیام خود را بنویسید..." required></textarea>
+            </div>
+            <button type="submit" class="btn-primary">ارسال پیام و نوتیفیکیشن</button>
+          </form>
+          </div>
         </div>
-        
+
         <div>
           <div class="panel-card glass" style="margin-bottom: 20px;">
             <div class="panel-title">عملیات و وضعیت کانال‌ها (Channel Overrides)</div>
@@ -1323,7 +1335,7 @@
                <!-- Checkboxes generated dynamically via JS -->
             </div>
           </div>
-          
+
           <div class="panel-card glass">
             <div class="panel-title">لاگ‌های ارسال (Delivery History)</div>
             <div class="table-container" style="max-height: 250px; overflow-y: auto;">
@@ -3913,10 +3925,30 @@
     <script src="js/layout/topnav.js"></script>
     <script src="js/layout/landing.js"></script>
     <script src="js/features/dashboard.js"></script>
-    <script src="app.js"></script>
+    <script src="js/app/bootstrap.js"></script>
+    <script src="js/app/shared.js"></script>
+    <script src="js/features/asset-names.js"></script>
+    <script src="js/features/access.js"></script>
+    <script src="js/features/users.js"></script>
+    <script src="js/features/rewards.js"></script>
+    <script src="js/features/caravans.js"></script>
+    <script src="js/features/mentors.js"></script>
+    <script src="js/features/challenges.js"></script>
+    <script src="js/features/tickets-chat.js"></script>
+    <script src="js/features/messaging.js"></script>
+    <script src="js/features/media.js"></script>
+    <script src="js/features/forms.js"></script>
+    <script src="js/features/audit.js"></script>
+    <script src="js/features/jarchi.js"></script>
+    <script src="js/features/lms-builder.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>
-    <script src="lms.js"></script>
+    <script src="js/features/lms/directory.js"></script>
+    <script src="js/features/lms/content-manager.js"></script>
+    <script src="js/features/lms/quiz.js"></script>
+    <script src="js/features/lms/reorder-export.js"></script>
+    <script src="js/features/lms/station-creator.js"></script>
+    <script src="js/features/lms/access.js"></script>
     <script src="fa-digits.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Modal manager for every .modal-overlay in the panel. Loaded before app.js.
+// Modal manager for every .modal-overlay in the panel. Loaded before the feature modules (js/app, js/features).
 // Existing code opens modals by setting style.display; this watches those changes, so all modals get:
 //   - a stack (nested modals close top-first)
 //   - ESC closes the top modal (through its own close button, so cleanup handlers still run)

@@ -1,5 +1,5 @@
 // Non-blocking toast notifications for the admin panel (bottom-left, auto-hide after 10s).
-// Loaded before app.js. Replaces the blocking window.alert so no message ever locks the UI.
+// Loaded before the feature modules (js/app, js/features). Replaces the blocking window.alert so no message ever locks the UI.
 //   showToast(message, 'error' | 'success' | 'info', { duration })
 (function () {
   var DEFAULT_DURATION = 10000;

@@ -1,4 +1,4 @@
-// Single session store for the admin panel. Loaded before app.js.
+// Single session store for the admin panel. Loaded before the feature modules (js/app, js/features).
 // One key for the token and one for the user; older builds also wrote 'token', 'adminToken'
 // and 'user', which are migrated once and then removed so logout really clears the session.
 (function () {

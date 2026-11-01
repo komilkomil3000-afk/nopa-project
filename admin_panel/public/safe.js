@@ -1,4 +1,4 @@
-// Output-encoding helpers for the admin panel. Loaded before app.js / lms.js.
+// Output-encoding helpers for the admin panel. Loaded before the feature modules (js/app, js/features).
 // Use esc() for every piece of user-controlled data that is placed into an HTML string
 // (innerHTML templates, attribute values). Prefer textContent when no markup is needed.
 (function () {

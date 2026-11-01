@@ -2545,3 +2545,27 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 25 dashboard checks pass; Phase 3 (13), Phase 4 (18), Phase 5 (18) suites and the smoke test still green; screenshots dark/light at 1366/1024/390.
   - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed
+
+### [2026-11-02 05:10] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 steps 1–2 (Module split + Messaging merge)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/app.js` (Deleted — split into modules below)
+  - `admin_panel/public/lms.js` (Deleted — split into modules below)
+  - `admin_panel/public/js/app/bootstrap.js`, `admin_panel/public/js/app/shared.js` (Created)
+  - `admin_panel/public/js/features/{asset-names,access,users,rewards,caravans,mentors,challenges,tickets-chat,messaging,media,forms,audit,jarchi,lms-builder}.js` (Created)
+  - `admin_panel/public/js/features/lms/{directory,content-manager,quiz,reorder-export,station-creator,access}.js` (Created)
+  - `admin_panel/public/css/components.css` (Created)
+  - `admin_panel/public/index.html` (Modified — module script list, merged messaging page, content-tab removed)
+  - `admin_panel/public/js/core/router.js`, `admin_panel/public/js/layout/topnav.js` (Modified)
+  - comments in `auth.js`, `safe.js`, `theme.js`, `toast.js`, `instructors.js`, `js/core/*`, `js/ui/*`, `js/layout/*` (Modified — new paths)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v10)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Removed unreferenced code (41 functions, 6 listeners on non-existent forms), then split app.js into 16 and lms.js into 6 classic-script modules with verified line coverage and load order.
+  - Merged the global announcement tab into the notifications tab: one messaging page with two composers; `#content` deep-links to the announcement composer; generic `data-requires-section` hides parts the user has no grant for.
+  - Fixes: Zarik/asset adjustment (two conflicting handlers; asset type ignored; error toast on every submit) → one handler using the right endpoint per asset; messaging caravan dropdowns never filled and caravan audience never sent a caravan.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 32 modal/drawer openers across modules with 0 errors; 11 messaging/adjustment checks; Phase 3 (13), 4 (18), 5 (18), 6 (25) suites and smoke test green.
+  - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 steps 3+ pending)

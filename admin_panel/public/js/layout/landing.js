@@ -1,4 +1,4 @@
-// Public landing page (#landing-view), shown while signed out. Loaded before app.js.
+// Public landing page (#landing-view), shown while signed out. Loaded before the feature modules (js/app, js/features).
 // - [data-open-login] opens the existing login modal (#login-modal / #admin-login-form)
 // - [data-scroll-to="id"] scrolls to a section (no hash: the hash belongs to the panel router)
 // - Header hides while scrolling down and returns on any scroll up (same feel as the panel header)

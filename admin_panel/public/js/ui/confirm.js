@@ -1,4 +1,4 @@
-// Non-blocking replacement for window.confirm(). Loaded before app.js.
+// Non-blocking replacement for window.confirm(). Loaded before the feature modules (js/app, js/features).
 //   if (!(await NopaConfirm('حذف شود؟', { danger: true }))) return;
 // Options: title, okText, cancelText, danger (red confirm button).
 // Detects danger automatically from the wording (حذف / مسدود / تعلیق / لغو ...) when not given.

@@ -1,4 +1,4 @@
-// The one way the admin panel talks to the API. Loaded before app.js.
+// The one way the admin panel talks to the API. Loaded before the feature modules (js/app, js/features).
 //   request(url, options)      -> Response   (adds the bearer token, handles 401/403)
 //   NopaApi.json(url, options) -> parsed body (throws an Error with the server message on !ok)
 // A string body without a Content-Type is sent as JSON (express.json() ignores bodies otherwise).

@@ -1,5 +1,5 @@
 // "Needs attention" counts (pending mentor documents, submissions waiting for review, open tickets).
-// Used by the header bell (js/layout/topnav.js) and, later, the dashboard. Loaded before app.js.
+// Used by the header bell (js/layout/topnav.js) and, later, the dashboard. Loaded before the feature modules (js/app, js/features).
 //   NopaAttention.fetch(isSectionAllowed) -> Promise<[{ key, label, icon, tab, count }]>
 // Only sections the user may open are requested (sub admins would get 403 otherwise).
 (function () {

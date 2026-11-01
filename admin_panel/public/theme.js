@@ -84,7 +84,7 @@
   apply(preferred(), false);
 
   // Signed in or not, decided before first paint so neither the landing page nor the panel flashes.
-  // css/landing.css hides #landing-view for "in"; app.js keeps the flag current (login / logout / expiry).
+  // css/landing.css hides #landing-view for "in"; js/app/bootstrap.js keeps the flag current (login / logout / expiry).
   try { root.setAttribute('data-session', localStorage.getItem('nopa_admin_token') ? 'in' : 'out'); } catch (_) { root.setAttribute('data-session', 'out'); }
 
   if (media && media.addEventListener) {

@@ -444,4 +444,4 @@ window.refreshAllInstructorPickers = function() {
   });
 };
 
-// Initial load happens in showDashboard() (app.js), i.e. only once the user is signed in
+// Initial load happens in showDashboard() (js/app/bootstrap.js), i.e. only once the user is signed in

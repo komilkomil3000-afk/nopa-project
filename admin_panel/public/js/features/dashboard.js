@@ -1,4 +1,4 @@
-// Bento dashboard (#dashboard-tab). Loaded before app.js; the router calls window.loadDashboard().
+// Bento dashboard (#dashboard-tab). Loaded before the feature modules; the router calls window.loadDashboard().
 // Every tile loads on its own (one slow or forbidden endpoint never blanks the others):
 //   - a tile whose section the user was not granted is never shown (and its endpoint never called)
 //   - a 403 hides the tile; any other failure shows an inline error in that tile

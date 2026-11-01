@@ -1,4 +1,4 @@
-// Table helpers shared by the panel's data tables. Loaded before app.js.
+// Table helpers shared by the panel's data tables. Loaded before the feature modules (js/app, js/features).
 //   NopaTable.loading(tbody)                       -> skeleton row while a request runs
 //   NopaTable.empty(tbody, 'متن', 'fa-icon')        -> friendly empty state
 //   NopaTable.error(tbody, 'متن')                   -> error state

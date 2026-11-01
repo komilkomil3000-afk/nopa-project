@@ -1,4 +1,4 @@
-// Horizontal top navigation, built from the tab registry (js/core/router.js). Loaded before app.js.
+// Horizontal top navigation, built from the tab registry (js/core/router.js). Loaded before the feature modules (js/app, js/features).
 // - Groups with several tabs open a dropdown; a group with a single tab is a direct link.
 // - Sub admins only see tabs whose section they were granted: NopaNav.applyAccess({ all, sections }).
 // - Below NAV_BREAKPOINT the groups move into a slide-in panel (hamburger).
@@ -243,6 +243,10 @@
   function applyAccess(next) {
     access = next && !next.all ? { all: false, sections: next.sections || {} } : { all: true, sections: {} };
     render();
+    // Page parts that need a specific grant: <… data-requires-section="content">
+    document.querySelectorAll('[data-requires-section]').forEach(el => {
+      el.classList.toggle('is-denied', !sectionAllowed(el.dataset.requiresSection));
+    });
     if (next && next.pending) return; // grants still loading: show nothing extra, poll nothing
     startAttention();
     try { window.dispatchEvent(new CustomEvent('nopa:accesschange', { detail: access })); } catch (_) { /* old browser */ }

@@ -1,4 +1,4 @@
-// Tab registry + hash routing for the admin panel. Loaded before app.js.
+// Tab registry + hash routing for the admin panel. Loaded before the feature modules (js/app, js/features).
 // One TABS entry per <section class="tab-panel"> holds everything that used to live in four
 // separate maps (hash aliases, title/description, sub-admin section, data loader) plus the
 // navigation metadata (group / label / icon) the top navigation is built from.
@@ -94,14 +94,10 @@
       load: () => (typeof window.loadNewsAndBanners === 'function' ? call('loadNewsAndBanners') : call('loadNewsTab')),
     },
     'notifications-tab': {
-      hashes: ['notifications'], group: 'outreach', label: 'تنظیمات پیام‌رسانی', icon: 'fa-solid fa-bell', section: 'notifications',
-      title: 'مدیریت اعلان‌ها', desc: 'ارسال و پیگیری پیامک، ایمیل و پوش‌نوتیفیکیشن',
-      load: () => call('loadNotificationData'),
-    },
-    'content-tab': {
-      hashes: ['content'], group: 'outreach', label: 'اطلاعیه سراسری', icon: 'fa-solid fa-bullhorn', section: null,
-      title: 'اطلاعیه‌ها و محتوا', desc: 'مدیریت و انتشار اطلاعیه‌های سراسری و پیام‌های هدفمند',
-      load: () => {},
+      // also the former content-tab (global announcement): #content opens the announcement composer
+      hashes: ['notifications', 'messaging', 'content'], group: 'outreach', label: 'پیام‌رسانی و اطلاعیه‌ها', icon: 'fa-solid fa-paper-plane', section: 'notifications',
+      title: 'پیام‌رسانی', desc: 'پیام چندکاناله (اپ، پیامک، ایمیل) و اطلاعیه‌های جارچی، وضعیت کانال‌ها و لاگ ارسال',
+      load: () => { call('loadNotificationData'); call('loadMessagingCaravans'); call('selectMessagingModeFromHash'); },
     },
     'media-tab': {
       hashes: ['media'], group: 'outreach', label: 'مدیریت فایل‌ها و رسانه', icon: 'fa-solid fa-folder-open', section: null,
@@ -163,7 +159,7 @@
       target.classList.add('active-panel');
     }
 
-    activeTab = tabId; // global state declared in app.js
+    activeTab = tabId; // global state declared in js/app/bootstrap.js
     lastSwitch = { id: tabId, at: Date.now() };
     window.scrollTo({ top: 0 });
 
