@@ -29,22 +29,42 @@ class StationGalleryItem extends StatelessWidget {
   }
 
   void _showFull(BuildContext context, String resolved) {
-    showDialog<void>(
+    showGeneralDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
+      barrierDismissible: true,
+      barrierLabel: 'بستن',
+      barrierColor: Colors.black,
+      pageBuilder: (ctx, _, _) => Scaffold(
         backgroundColor: Colors.black,
-        insetPadding: const EdgeInsets.all(12),
-        child: Stack(
+        body: Stack(
+          fit: StackFit.expand,
           children: [
+            // Pinch to zoom, drag to pan
             InteractiveViewer(
-              child: Center(child: CachedNetworkImage(imageUrl: resolved, fit: BoxFit.contain)),
+              minScale: 1,
+              maxScale: 5,
+              child: Center(
+                child: CachedNetworkImage(
+                  imageUrl: resolved,
+                  fit: BoxFit.contain,
+                  placeholder: (_, _) => const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFC7B299))),
+                  errorWidget: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, color: Colors.white38, size: 48)),
+                ),
+              ),
             ),
             Positioned(
-              top: 4,
-              left: 4,
-              child: IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(ctx),
+              top: 0,
+              left: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton.filled(
+                    style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                    icon: const Icon(Icons.close_rounded, color: Colors.white),
+                    tooltip: 'بستن',
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ),
               ),
             ),
           ],

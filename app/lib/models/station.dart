@@ -122,6 +122,15 @@ class Station {
 
   bool get isCompleted => progress >= 1.0;
 
+  /// The one station picture used everywhere (home, roadmap, station page): the admin-panel image, or empty.
+  static String imageFrom(Map<dynamic, dynamic> json) {
+    for (final key in const ['iconUrl', 'imageUrl']) {
+      final v = json[key]?.toString().trim() ?? '';
+      if (v.isNotEmpty) return v;
+    }
+    return '';
+  }
+
   factory Station.fromJson(Map<String, dynamic> json) {
     var rawCategories = json['categories'] as List? ?? [];
     final int idx = (json['orderIndex'] as num?)?.toInt() ?? 0;
@@ -170,7 +179,7 @@ class Station {
       progress: (json['progress'] ?? 0).toDouble(),
       isLocked: json['isLocked'] ?? false,
       isCurrent: json['isCurrent'] ?? false,
-      imageUrl: json['imageUrl'] ?? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800',
+      imageUrl: imageFrom(json),
       classesCount: json['classesCount'] ?? (rawCategories.isNotEmpty ? '${rawCategories.length} دسته کلاس' : 'فاقد کلاس (محور انیمیشن)'),
       categories: rawCategories.map((c) => ClassCategoryModel.fromJson(c)).toList(),
       orderIndex: idx,

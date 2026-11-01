@@ -128,7 +128,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                       progress: 0.0,
                       isLocked: false,
                       isCurrent: true,
-                      imageUrl: currentStationMap?['imageUrl'] ?? '',
+                      imageUrl: currentStationMap == null ? '' : Station.imageFrom(currentStationMap),
                       orderIndex: stationOrder,
                     );
                     Navigator.pushNamed(context, '/class1', arguments: station);
@@ -511,11 +511,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                                 stationMap['subtitle']?.toString() ??
                                 stationMap['teacher']?.toString() ??
                                 'استاد کاروان نپا';
-                            final String iconUrl = (stationMap['iconUrl'] != null && stationMap['iconUrl'].toString().startsWith('http'))
-                                ? stationMap['iconUrl'].toString()
-                                : ((stationMap['imageUrl'] != null && stationMap['imageUrl'].toString().startsWith('http'))
-                                    ? stationMap['imageUrl'].toString()
-                                    : 'https://images.unsplash.com/photo-1542401886-65d6c61db217?w=400');
+                            final String iconUrl = Station.imageFrom(stationMap);
 
                             final int stationOrder = (stationMap['orderIndex'] as num?)?.toInt() ?? (index + 1);
                             final station = Station(

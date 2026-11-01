@@ -224,11 +224,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
             ? item['description'].toString()
             : 'سرفصل‌ها و جلسات آموزشی کاروان');
 
-    final String iconUrl = (item['iconUrl'] != null && item['iconUrl'].toString().startsWith('http'))
-        ? item['iconUrl'].toString()
-        : ((item['imageUrl'] != null && item['imageUrl'].toString().startsWith('http'))
-            ? item['imageUrl'].toString()
-            : '');
+    final String iconUrl = Station.imageFrom(item);
 
     final String resolvedImg = ApiConstants.resolveImageUrl(iconUrl);
     final bool hasValidImg = resolvedImg.isNotEmpty && resolvedImg.startsWith('http') && !resolvedImg.contains('placeholder');

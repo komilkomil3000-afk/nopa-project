@@ -346,10 +346,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   Widget _buildStationLoreHeader(Map<String, dynamic> station) {
     const double cardWidth = 105.0;
     const double cardHeight = 138.0;
-    final String stationImage = station['imageUrl']?.toString() ?? '';
+    final String stationImage = Station.imageFrom(station);
     final bool hasValidImg =
         stationImage.isNotEmpty &&
-        stationImage.startsWith('http') &&
         !stationImage.contains('placeholder');
     final String ordinalTitle =
         station['title'] ??
@@ -751,7 +750,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         children: [
           // Heading
           const Text(
-            'گالری منزلگاه',
+            'نگارستان منزلگاه',
             textAlign: TextAlign.right,
             style: TextStyle(
               color: Colors.white,

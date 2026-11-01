@@ -578,25 +578,33 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns: 1fr 1.5fr 2fr; gap:12px; margin-bottom:12px;">
+      <div style="display:grid; grid-template-columns: 1fr 2.5fr; gap:12px; margin-bottom:12px;">
         <div>
           <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-hourglass-half" style="color:#38bdf8;"></i> مدت اقامت در منزلگاه:</label>
           <input type="text" id="content-modal-st-duration" class="input-ctrl" value="${station.stayDuration || ''}" placeholder="مثال: ۲ هفته یا ۱۴ روز" style="background:#0f172a; border-color:#475569; color:white;">
         </div>
         <div>
-          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-clapperboard" style="color:#38bdf8;"></i> عنوان انیمیشن معرفی:</label>
-          <input type="text" id="content-modal-st-anim-title" class="input-ctrl" value="${esc(station.animationTitle || '')}" placeholder="مثال: انیمیشن آغاز سفر و منزلگاه اول" style="background:#0f172a; border-color:#475569; color:white;">
-        </div>
-        <div>
-          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-video" style="color:#38bdf8;"></i> آدرس / لینک ویدیو انیمیشن:</label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="content-modal-st-anim-url" class="input-ctrl" value="${esc(station.animationUrl || '')}" placeholder="https://www.aparat.com/v/... یا /uploads/..." style="background:#0f172a; border-color:#475569; color:white; direction:ltr; text-align:left; flex:1;">
-            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px;" title="آپلود مستقیم ویدیو یا انیمیشن">
-              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
-              <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'content-modal-st-anim-url')">
+          <label style="font-size:11px; color:#cbd5e1; display:block; margin-bottom:4px;"><i class="fa-solid fa-image" style="color:#38bdf8;"></i> تصویر منزلگاه (در صفحه اول، آموزگاه و منزلگاه یکسان نمایش داده می‌شود):</label>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" style="width:44px; height:62px; object-fit:cover; border-radius:6px; border:1px solid #475569; background:#0f172a; ${station.iconUrl ? '' : 'visibility:hidden;'}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'">
+            <input type="text" id="content-modal-st-icon" class="input-ctrl" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." style="background:#0f172a; border-color:#475569; color:white; direction:ltr; text-align:left; flex:1;" oninput="document.getElementById('content-modal-st-icon-preview').src = this.value">
+            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود تصویر منزلگاه">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
+              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, 'content-modal-st-icon')">
             </label>
           </div>
         </div>
+      </div>
+
+      <!-- نگارستان منزلگاه -->
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 12px; margin-bottom:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="font-size:12.5px; font-weight:bold; color:#38bdf8;"><i class="fa-solid fa-images"></i> نگارستان منزلگاه</div>
+          <button type="button" onclick="window.addGalleryItemCard('content-modal-gallery-container')" style="background:linear-gradient(135deg,#0284c7,#0369a1); color:white; border:none; padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:bold; cursor:pointer;">
+            <i class="fa-solid fa-plus"></i> افزودن تصویر به نگارستان
+          </button>
+        </div>
+        <div id="content-modal-gallery-container" style="display:flex; flex-direction:column; gap:10px;"></div>
       </div>
 
       <div style="margin-bottom:12px;">
@@ -615,6 +623,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   if (categories.length === 0) {
     html += '<div style="text-align:center; color:#94a3b8; padding:20px;">هیچ دسته‌بندی با این فیلتر برای این منزلگاه پیدا نشد.</div>';
     container.innerHTML = html;
+    window.fillGalleryFromStation('content-modal-gallery-container', station);
     modal.style.display = 'flex';
     modal.style.zIndex = '999999';
     return;
@@ -985,6 +994,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   });
 
   container.innerHTML = html;
+  window.fillGalleryFromStation('content-modal-gallery-container', station);
   modal.style.display = 'flex';
   modal.style.zIndex = '999999';
 
@@ -1004,15 +1014,17 @@ window.saveStationBasicInfoFromContentModal = async function(stationId) {
   const description = document.getElementById('content-modal-st-desc')?.value;
   const releaseDate = document.getElementById('content-modal-st-date')?.value;
   const stayDuration = document.getElementById('content-modal-st-duration')?.value;
-  const animationTitle = document.getElementById('content-modal-st-anim-title')?.value;
-  const animationUrl = document.getElementById('content-modal-st-anim-url')?.value;
+  const iconUrl = document.getElementById('content-modal-st-icon')?.value?.trim() || '';
+  const animations = window.collectGalleryItems('content-modal-gallery-container');
+  const animationTitle = animations.length ? animations[0].title : '';
+  const animationUrl = animations.length ? animations[0].url : '';
 
   const token = localStorage.getItem('token') || localStorage.getItem('adminToken') || '';
   try {
     const res = await fetch(`/api/v1/admin/lms/stations/${stationId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ id: stationId, title, description, releaseDate, stayDuration, animationTitle, animationUrl })
+      body: JSON.stringify({ id: stationId, title, description, releaseDate, stayDuration, iconUrl, animationTitle, animationUrl, animations })
     });
     if (res.ok) {
       alert('مشخصات و محتوای کلی منزلگاه با موفقیت ذخیره شد');
@@ -2068,84 +2080,103 @@ window.exportLmsToExcel = function() {
 
 // ==================== STATION CREATOR & EDIT MODAL (DYNAMIC ANIMATIONS & CATEGORIES) ====================
 
+// ---- نگارستان منزلگاه: image gallery cards (shared by the creator modal and the content manager modal) ----
 window.modalAnimationBlockCounter = 0;
 
-window.addAnimationBlockToCreatorModal = function(animData = null) {
-  const container = document.getElementById('lms-modal-animations-container');
+window.addGalleryItemCard = function(containerId, data = null) {
+  const container = document.getElementById(containerId);
   if (!container) return;
 
   window.modalAnimationBlockCounter++;
-  const blockId = 'modal-anim-block-' + window.modalAnimationBlockCounter;
-  const inputUniqueId = 'modal-anim-url-input-' + window.modalAnimationBlockCounter;
+  const n = window.modalAnimationBlockCounter;
+  const blockId = 'modal-anim-block-' + n;
+  const inputId = 'modal-anim-url-input-' + n;
+  const index = container.querySelectorAll('.modal-animation-card').length + 1;
 
-  const existingCards = container.querySelectorAll('.modal-animation-card');
-  const animIndex = existingCards.length + 1;
+  const title = data?.title || `تصویر ${index}`;
+  const url = data?.url || data?.videoUrl || '';
+  const desc = data?.description || '';
+  const itemId = data?.id || `anim_${Date.now()}_${n}`;
+  const isImage = !url || /\.(jpe?g|png|gif|webp|bmp|heic)(\?.*)?$/i.test(url);
 
-  const defaultTitle = animData?.title || (animIndex === 1 ? 'انیمیشن آغاز سفر' : `انیمیشن قسمت ${animIndex}`);
-  const defaultUrl = animData?.url || animData?.videoUrl || '';
-  const defaultDesc = animData?.description || '';
-  const animId = animData?.id || `anim_${window.modalAnimationBlockCounter}`;
-
-  const cardHtml = `
-    <div id="${blockId}" class="modal-animation-card" data-anim-id="${animId}" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
-        <div style="margin: 0; color: #38bdf8; font-size: 13px; display: flex; align-items: center; gap: 8px; font-weight: bold;">
-          <span class="anim-badge" style="background: #0284c7; color: white; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 11px;">قسمت ${animIndex}</span>
-          <i class="fa-solid fa-clapperboard"></i> <span class="anim-label-display">${esc(defaultTitle)}</span>
-        </div>
-        <button type="button" onclick="window.removeAnimationBlockFromCreatorModal('${blockId}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="حذف این انیمیشن">
-          <i class="fa-solid fa-trash"></i> حذف این قسمت
+  container.insertAdjacentHTML('beforeend', `
+    <div id="${blockId}" class="modal-animation-card" data-anim-id="${esc(itemId)}" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(56, 189, 248, 0.28); border-radius: 10px; padding: 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px;">
+        <span class="anim-badge" style="background:#0284c7; color:white; padding:2px 8px; border-radius:6px; font-weight:bold; font-size:11px;">تصویر ${index}</span>
+        <button type="button" onclick="window.removeGalleryItemCard('${blockId}')" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.35); border-radius:6px; padding:3px 9px; font-size:11px; cursor:pointer;">
+          <i class="fa-solid fa-trash"></i> حذف
         </button>
       </div>
-
-      <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 10px; margin-bottom: 8px;">
-        <div class="form-group">
-          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-heading" style="color:#38bdf8;"></i> عنوان یا نام قسمت انیمیشن:</label>
-          <input type="text" class="modal-anim-title input-ctrl" value="${defaultTitle}" placeholder="مثال: قسمت اول - شروع ماجرا" style="background: #1e293b;" oninput="this.closest('.modal-animation-card').querySelector('.anim-label-display').textContent = this.value">
-        </div>
-        <div class="form-group">
-          <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-photo-film" style="color:#38bdf8;"></i> لینک یا آپلود ویدیو / تصویر:</label>
+      <div style="display:flex; gap:10px; align-items:flex-start;">
+        ${isImage
+          ? `<img class="modal-anim-preview" src="${esc(url)}" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid #475569; background:#0f172a; ${url ? '' : 'visibility:hidden;'}" onerror="this.style.visibility='hidden'" onload="this.style.visibility='visible'">`
+          : `<div style="width:64px; height:64px; border-radius:8px; border:1px solid #475569; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#a78bfa;" title="ویدیو"><i class="fa-solid fa-film"></i></div>`}
+        <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+          <input type="text" class="modal-anim-title input-ctrl" value="${esc(title)}" placeholder="عنوان تصویر" style="background:#1e293b;">
           <div style="display:flex; gap:6px;">
-            <input type="text" id="${inputUniqueId}" class="modal-anim-url input-ctrl" value="${esc(defaultUrl)}" placeholder="https://... یا /uploads/..." style="background: #1e293b; direction:ltr; text-align:left; flex:1;">
-            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;" title="آپلود مستقیم ویدیو">
-              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
-              <input type="file" accept="video/*,image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputUniqueId}')">
+            <input type="text" id="${inputId}" class="modal-anim-url input-ctrl" value="${esc(url)}" placeholder="https://... یا /uploads/..." style="background:#1e293b; direction:ltr; text-align:left; flex:1;" oninput="const p=this.closest('.modal-animation-card').querySelector('.modal-anim-preview'); if(p) p.src=this.value">
+            <label style="background:rgba(56,189,248,0.18); border:1px solid #38bdf8; color:#38bdf8; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:11px; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+              <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
+              <input type="file" accept="image/*" style="display:none;" onchange="window.handleDirectFileUpload(this, '${inputId}')">
             </label>
           </div>
+          <textarea class="modal-anim-desc input-ctrl" rows="1" placeholder="توضیح (اختیاری)" style="background:#1e293b;">${esc(desc)}</textarea>
         </div>
       </div>
-
-      <div class="form-group" style="margin-bottom:0;">
-        <label style="font-size:11.5px; color:#cbd5e1;"><i class="fa-solid fa-align-right" style="color:#38bdf8;"></i> توضیحات و داستان این قسمت از انیمیشن:</label>
-        <textarea class="modal-anim-desc input-ctrl" rows="2" placeholder="توضیحات و داستان این قسمت از انیمیشن..." style="background: #1e293b;">${esc(defaultDesc)}</textarea>
-      </div>
-    </div>
-  `;
-
-  container.insertAdjacentHTML('beforeend', cardHtml);
-  window.reindexModalAnimationCards();
+    </div>`);
 };
 
-window.removeAnimationBlockFromCreatorModal = function(blockId) {
+window.removeGalleryItemCard = function(blockId) {
   const card = document.getElementById(blockId);
   if (!card) return;
-
-  if (confirm('آیا از حذف این قسمت انیمیشن اطمینان دارید؟')) {
-    card.remove();
-    window.reindexModalAnimationCards();
-  }
-};
-
-window.reindexModalAnimationCards = function() {
-  const container = document.getElementById('lms-modal-animations-container');
-  if (!container) return;
-
-  const cards = container.querySelectorAll('.modal-animation-card');
-  cards.forEach((card, idx) => {
-    const badge = card.querySelector('.anim-badge');
-    if (badge) badge.textContent = `قسمت ${idx + 1}`;
+  if (!confirm('این مورد از نگارستان حذف شود؟')) return;
+  const container = card.parentElement;
+  card.remove();
+  container.querySelectorAll('.modal-animation-card').forEach((c, i) => {
+    const badge = c.querySelector('.anim-badge');
+    if (badge) badge.textContent = `تصویر ${i + 1}`;
   });
 };
+
+// Entries already stored on the station (images, or videos added earlier) -> cards
+window.fillGalleryFromStation = function(containerId, station) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  let list = [];
+  if (Array.isArray(station.animations) && station.animations.length > 0) {
+    list = station.animations;
+  } else if (station.animationsJson) {
+    try {
+      const parsed = typeof station.animationsJson === 'string' ? JSON.parse(station.animationsJson) : station.animationsJson;
+      if (Array.isArray(parsed)) list = parsed;
+    } catch (_) {}
+  }
+  if (list.length === 0 && station.animationUrl) {
+    list = [{ title: station.animationTitle || 'تصویر ۱', url: station.animationUrl }];
+  }
+  list.forEach(item => window.addGalleryItemCard(containerId, item));
+};
+
+window.collectGalleryItems = function(containerId) {
+  const items = [];
+  document.querySelectorAll(`#${containerId} .modal-animation-card`).forEach((card, idx) => {
+    const url = card.querySelector('.modal-anim-url')?.value?.trim() || '';
+    if (!url) return; // an entry without a picture is meaningless
+    items.push({
+      id: card.getAttribute('data-anim-id') || `anim_${idx + 1}`,
+      title: card.querySelector('.modal-anim-title')?.value?.trim() || `تصویر ${idx + 1}`,
+      url,
+      videoUrl: url,
+      description: card.querySelector('.modal-anim-desc')?.value?.trim() || '',
+      orderIndex: items.length + 1
+    });
+  });
+  return items;
+};
+
+// Kept for older callers
+window.addAnimationBlockToCreatorModal = function(data) { window.addGalleryItemCard('lms-modal-animations-container', data); };
 
 window.modalCategoryBlockCounter = 0;
 
@@ -2275,10 +2306,9 @@ window.openCreateStationModal = function() {
   document.getElementById('modal-st-duration').value = '۲ هفته';
   document.getElementById('modal-st-details').value = `سرفصل‌ها و اهداف آموزشی ${nextPersianName}`;
 
-  // Reset animations container with 1 default block
-  const animContainer = document.getElementById('lms-modal-animations-container');
-  if (animContainer) animContainer.innerHTML = '';
-  window.addAnimationBlockToCreatorModal({ title: 'انیمیشن آغاز سفر', url: '', description: '' });
+  // Reset the gallery (نگارستان) container
+  const animContainer = document.getElementById("lms-modal-animations-container");
+  if (animContainer) animContainer.innerHTML = "";
 
   // Reset categories container (empty by default, optional!)
   const catContainer = document.getElementById('lms-modal-categories-container');
@@ -2322,33 +2352,8 @@ window.editStationModal = function(stationId) {
   document.getElementById('modal-st-duration').value = station.stayDuration || '';
   document.getElementById('modal-st-details').value = station.description || '';
 
-  // Populate dynamic animations container
-  const animContainer = document.getElementById('lms-modal-animations-container');
-  if (animContainer) animContainer.innerHTML = '';
-
-  let animList = [];
-  if (Array.isArray(station.animations) && station.animations.length > 0) {
-    animList = station.animations;
-  } else if (station.animationsJson) {
-    try {
-      const parsed = typeof station.animationsJson === 'string' ? JSON.parse(station.animationsJson) : station.animationsJson;
-      if (Array.isArray(parsed) && parsed.length > 0) animList = parsed;
-    } catch (_) {}
-  }
-
-  if (animList.length === 0 && (station.animationUrl || station.animationTitle)) {
-    animList.push({
-      title: station.animationTitle || 'انیمیشن معرفی',
-      url: station.animationUrl || '',
-      description: ''
-    });
-  }
-
-  if (animList.length > 0) {
-    animList.forEach(anim => window.addAnimationBlockToCreatorModal(anim));
-  } else {
-    window.addAnimationBlockToCreatorModal({ title: 'انیمیشن آغاز سفر', url: '', description: '' });
-  }
+  // Populate the gallery (نگارستان)
+  window.fillGalleryFromStation("lms-modal-animations-container", station);
 
   // Populate categories dynamically (leave empty if none)
   const container = document.getElementById('lms-modal-categories-container');
@@ -2374,26 +2379,8 @@ window.saveCompleteStation = async function(e) {
   const stayDuration = document.getElementById('modal-st-duration')?.value;
   const description = document.getElementById('modal-st-details')?.value || '';
 
-  // Gather dynamic animations
-  const animCards = document.querySelectorAll('#lms-modal-animations-container .modal-animation-card');
-  const animations = [];
-  animCards.forEach((card, idx) => {
-    const animId = card.getAttribute('data-anim-id') || `anim_${idx + 1}`;
-    const animTitle = card.querySelector('.modal-anim-title')?.value?.trim() || `قسمت ${idx + 1}`;
-    const animUrl = card.querySelector('.modal-anim-url')?.value?.trim() || '';
-    const animDesc = card.querySelector('.modal-anim-desc')?.value?.trim() || '';
-
-    if (animTitle || animUrl || animDesc) {
-      animations.push({
-        id: animId,
-        title: animTitle,
-        url: animUrl,
-        videoUrl: animUrl,
-        description: animDesc,
-        orderIndex: idx + 1
-      });
-    }
-  });
+  // Gather the gallery (نگارستان) items
+  const animations = window.collectGalleryItems("lms-modal-animations-container");
 
   const primaryAnim = animations.length > 0 ? animations[0] : null;
   const animationTitle = primaryAnim ? primaryAnim.title : '';
@@ -2451,7 +2438,7 @@ window.saveCompleteStation = async function(e) {
     });
 
     if (res.ok) {
-      alert('✅ مشخصات منزلگاه، انیمیشن‌ها و دسته‌ها با موفقیت ذخیره شد.');
+      alert('✅ مشخصات منزلگاه، نگارستان و دسته‌ها با موفقیت ذخیره شد.');
       document.getElementById('lms-station-creator-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
     } else {

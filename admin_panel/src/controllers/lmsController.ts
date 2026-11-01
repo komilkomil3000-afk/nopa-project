@@ -218,15 +218,20 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
           subtitle: subtitleVal, 
           description: description !== undefined ? description : '', 
           stayDuration: stayDuration !== undefined ? stayDuration : null,
-          animationTitle: effectiveAnimTitle !== undefined ? effectiveAnimTitle : null,
-          animationUrl: effectiveAnimUrl !== undefined ? effectiveAnimUrl : null,
-          animationsJson: parsedAnimationsJson,
-          iconUrl: iconUrl || '', 
-          orderIndex: orderIndexVal, 
-          releaseDate: releaseDateVal, 
-          releaseTime: releaseTime || null, 
-          scoringCriteriaJson 
+          orderIndex: orderIndexVal,
+          releaseDate: releaseDateVal,
+          releaseTime: releaseTime || null,
+          scoringCriteriaJson
         };
+
+        // Station image and gallery (نگارستان) are only changed when the request actually sends them,
+        // so saving unrelated fields never wipes them.
+        if (iconUrl !== undefined) updateData.iconUrl = iconUrl || '';
+        if (parsedAnimationsJson !== null || animations !== undefined || animationsJson !== undefined || animationUrl !== undefined) {
+          updateData.animationTitle = effectiveAnimTitle !== undefined ? effectiveAnimTitle : null;
+          updateData.animationUrl = effectiveAnimUrl !== undefined ? effectiveAnimUrl : null;
+          updateData.animationsJson = parsedAnimationsJson;
+        }
 
         if (lockedVal !== undefined) updateData.isLocked = lockedVal;
         if (status !== undefined) updateData.status = status;

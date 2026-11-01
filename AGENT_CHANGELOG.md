@@ -2195,3 +2195,26 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (from app/): no issues
 - **Status:** Completed
+
+### [2026-11-01 12:59] - Claude Code (Flutter + CRM)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/widgets/station_gallery_item.dart` (Modified)
+- **Description of Changes:**
+  - Station image: Station.imageFrom() picks iconUrl/imageUrl so home, roadmap and station pages show the same picture (removed http-only checks and unsplash fallbacks)
+  - Admin content manager: added station image field with upload and renamed animation section to نگارستان منزلگاه (multi-image gallery cards, shared by creator modal in index.html/lms.js)
+  - lmsController createOrUpdateStation no longer wipes iconUrl/animations when not sent
+  - App: gallery heading renamed to نگارستان منزلگاه in student and mentor station screens
+  - image viewer now full-screen with pinch zoom and close button (videos keep fullscreen with exit)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): no issues; node --check lms.js; tsc not run (node_modules not installed)
+- **Status:** Completed
