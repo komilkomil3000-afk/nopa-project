@@ -2041,7 +2041,7 @@ window.exportLmsToExcel = function() {
       </xml>
       <![endif]-->
       <style>
-        body { font-family: Tahoma, 'Segoe UI', Arial, sans-serif; direction: rtl; }
+        body { font-family: 'YekanBakh', Tahoma, sans-serif; direction: rtl; }
         table { border-collapse: collapse; width: 100%; direction: rtl; }
         th { background-color: #0f172a; color: #ffffff; font-weight: bold; border: 1px solid #334155; padding: 10px 8px; font-size: 12px; text-align: center; }
         td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12px; vertical-align: middle; }

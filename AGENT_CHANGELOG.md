@@ -2261,3 +2261,20 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - text-only change
 - **Status:** Completed
+
+### [2026-11-01 14:46] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/style.css` (Modified)
+  - `admin_panel/public/fonts/` (Created)
+- **Description of Changes:**
+  - Replaced Vazirmatn (Google Fonts) with self-hosted YekanBakh (Light 300, Regular 400, Bold 700, ExtraBold 800) in public/style.css via @font-face
+  - added ChochoAura English font + --font-en var and .font-en class
+  - copied TTFs from app/assets/fonts to admin_panel/public/fonts (served by express static)
+  - lms.js print window font updated
+  - form controls inherit font
+- **Verification / Checkpoints Executed:**
+  - Static check only, not run in browser
+- **Status:** Completed
