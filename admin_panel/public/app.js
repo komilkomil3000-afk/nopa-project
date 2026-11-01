@@ -18,8 +18,6 @@ let allUsersList = []; // Used for Zarik target selection dropdowns
 // Charts references
 let wealthChart = null;
 let velocityChart = null;
-let analyticsEconomyChart = null;
-let analyticsEngagementChart = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -103,7 +101,7 @@ function showDashboard() {
   if (typeof handleHashRouting === 'function') {
     handleHashRouting();
   } else if (typeof switchTab === 'function') {
-    switchTab('users-tab');
+    switchTab(NopaRouter.DEFAULT_TAB);
   }
 
   // Load initial data
@@ -4673,63 +4671,6 @@ window.exportData = async function(type, format) {
   }
 };
 
-// 3. Analytics Dashboard
-async function loadAnalytics() {
-  const timeframe = document.getElementById('analytics-timeframe')?.value || 'weekly';
-  try {
-    const res = await request(`/api/v1/admin/analytics?timeframe=${timeframe}`);
-    const data = await res.json();
-    
-    document.getElementById('analytics-total-circulation').textContent = data.financial.totalCirculation.toLocaleString();
-    document.getElementById('analytics-completion-rate').textContent = data.engagement.completionRate;
-    document.getElementById('analytics-mentor-rating').textContent = data.evaluation.avgMentorRating;
-    
-    // Draw Charts if Chart.js is loaded
-    if (window.Chart) {
-      const ecCtx = document.getElementById('analyticsEconomyChart')?.getContext('2d');
-      if (ecCtx) {
-        if (analyticsEconomyChart) analyticsEconomyChart.destroy();
-        analyticsEconomyChart = new Chart(ecCtx, {
-          type: 'line',
-          data: {
-            labels: data.charts.labels,
-            datasets: [{
-              label: 'حجم تراکنش مالی',
-              data: data.charts.economyData,
-              borderColor: NopaTheme.rgba('--primary-rgb', 1),
-              tension: 0.4,
-              fill: true,
-              backgroundColor: NopaTheme.rgba('--primary-rgb', 0.2)
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
-      }
-      
-      const enCtx = document.getElementById('analyticsEngagementChart')?.getContext('2d');
-      if (enCtx) {
-        if (analyticsEngagementChart) analyticsEngagementChart.destroy();
-        analyticsEngagementChart = new Chart(enCtx, {
-          type: 'bar',
-          data: {
-            labels: data.charts.labels,
-            datasets: [{
-              label: 'مشارکت (حل چالش)',
-              data: data.charts.engagementData,
-              backgroundColor: NopaTheme.rgba('--accent-rgb', 0.85)
-            }]
-          },
-          options: { responsive: true, maintainAspectRatio: false }
-        });
-      }
-    }
-  } catch (err) {
-    console.error('Analytics load error', err);
-  }
-}
-document.getElementById('analytics-timeframe')?.addEventListener('change', loadAnalytics);
-document.getElementById('btn-refresh-analytics')?.addEventListener('click', loadAnalytics);
-
 // 4. Notifications Engine (Templates, Logs, Overrides)
 async function loadNotificationData() {
   try {
@@ -9124,6 +9065,8 @@ async function applyPanelPermissions() {
       NopaNav.applyAccess({ all: true });
       return;
     }
+    // Until the grants arrive a sub admin sees nothing beyond the dashboard shell
+    NopaNav.applyAccess({ all: false, sections: {}, pending: true });
     const res = await request('/api/v1/admin/panel/me');
     if (!res.ok) {
       const d = await res.json().catch(() => ({}));

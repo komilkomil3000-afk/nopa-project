@@ -2525,3 +2525,23 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: 18 Phase 5 checks pass (landing/auth flows, deep link, session expiry, logout, header hide/show, no flash, 390px), Phase 3 (13) and Phase 4 (18) suites and the smoke test still green; screenshots dark/light at 1366px and 390px.
   - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
 - **Status:** Completed
+
+### [2026-11-02 03:00] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 6 (Bento Dashboard)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/dashboard.css` (Created)
+  - `admin_panel/public/js/features/dashboard.js` (Created)
+  - `admin_panel/public/index.html` (Modified — analytics tab replaced by #dashboard-tab, new assets)
+  - `admin_panel/public/app.js` (Modified — loadAnalytics removed, sub-admin access pending state, default tab fallback)
+  - `admin_panel/public/js/core/router.js` (Modified — dashboard-tab default, #analytics alias)
+  - `admin_panel/public/js/layout/topnav.js` (Modified — dashboard link, sectionAllowed, access events)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v9)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Bento dashboard as the default route: 4 KPI tiles (users, Zarik in circulation, homework approval rate, mentor rating with timeframe filter), needs-attention queues, Zarik distribution chart, quick actions, caravan league top 5, wealthiest users, recent audit events (super admin). Tiles load independently and are filtered by sub-admin section grants; 403 hides a tile silently, other errors show inline.
+  - Old analytics tab removed — it charted placeholder time-series that the backend hard-codes (`getDashboardAnalytics`); flagged for a backend fix, backend not changed.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 25 dashboard checks pass; Phase 3 (13), Phase 4 (18), Phase 5 (18) suites and the smoke test still green; screenshots dark/light at 1366/1024/390.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed

@@ -22,6 +22,12 @@
   ];
 
   const TABS = {
+    // section '*': everyone sees the dashboard; its tiles are filtered per section (js/features/dashboard.js)
+    'dashboard-tab': {
+      hashes: ['dashboard', 'analytics'], group: null, label: 'داشبورد', icon: 'fa-solid fa-chart-pie', section: '*',
+      title: 'داشبورد', desc: 'نمای کلی وضعیت نپا در یک نگاه',
+      load: () => call('loadDashboard'),
+    },
     'users-tab': {
       hashes: ['users'], group: 'audience', label: 'دایرکتوری مخاطبان', icon: 'fa-solid fa-users', section: 'users',
       title: 'دایرکتوری کاربران', desc: 'مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا',
@@ -41,11 +47,6 @@
       hashes: ['assets'], group: 'economy', label: 'نام دارایی‌ها', icon: 'fa-solid fa-tags', section: null,
       title: 'نام دارایی‌ها', desc: 'تغییر نام زریک، کلاف، قالیچه و درفش در اپ، پنل و پیام‌ها',
       load: () => call('loadAssetNames'),
-    },
-    'analytics-tab': {
-      hashes: ['analytics'], group: null, label: 'مرکز ارزیابی و آمار', icon: 'fa-solid fa-chart-line', section: 'analytics',
-      title: 'مرکز ارزیابی و آمار', desc: 'داشبورد جامع شاخص‌های کلیدی عملکرد و رفتار کاربران',
-      load: () => call('loadAnalytics'),
     },
     'mentors-profile-tab': {
       hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',
@@ -124,7 +125,7 @@
     },
   };
 
-  const DEFAULT_TAB = 'users-tab';
+  const DEFAULT_TAB = 'dashboard-tab';
 
   // '#users', '#users-tab', '#caravan-league' ... -> tab id
   const HASH_INDEX = {};

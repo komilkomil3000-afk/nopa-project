@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="/admin/style.css">
   <link rel="stylesheet" href="/admin/css/layout.css">
   <link rel="stylesheet" href="/admin/css/landing.css">
+  <link rel="stylesheet" href="/admin/css/dashboard.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
 </head>
@@ -201,7 +202,7 @@
       <div class="app-header-inner">
         <button type="button" class="btn-icon nav-toggle" id="btn-nav-toggle" aria-label="منوی سامانه" aria-controls="topnav" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
 
-        <a class="app-brand" href="#analytics" aria-label="مدیریت نپا - داشبورد">
+        <a class="app-brand" href="#dashboard" aria-label="مدیریت نپا - داشبورد">
           <span class="app-brand-icon"><i class="fa-solid fa-flag"></i></span>
           <span class="app-brand-text">مدیریت نپا</span>
         </a>
@@ -261,53 +262,104 @@
         <p id="tab-desc-text">مشاهده، فیلتر، ویرایش و مدیریت اطلاعات کاربران نپا</p>
       </div>
 
-      <!-- TAB 0: ANALYTICS DASHBOARD -->
-      <section id="analytics-tab" class="tab-panel" style="display: none;">
-        <div class="actions-header glass" style="margin-bottom: 20px;">
-          <div class="filters-group">
-            <select id="analytics-timeframe" class="select-ctrl">
-              <option value="weekly">هفتگی</option>
-              <option value="daily">روزانه</option>
-              <option value="monthly">ماهانه</option>
-              <option value="annual">سالانه</option>
-            </select>
+      <!-- DASHBOARD (Bento). Filled by js/features/dashboard.js; tiles appear only for granted sections -->
+      <section id="dashboard-tab" class="tab-panel" style="display: none;">
+        <div class="dash-toolbar">
+          <div class="dash-greeting">
+            <strong id="dash-greeting">سلام</strong>
+            <span id="dash-date"></span>
           </div>
-          <button id="btn-refresh-analytics" class="btn-action"><i class="fa-solid fa-sync"></i> بروزرسانی آمار</button>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">مجموع زریک در گردش</div>
-              <div class="stat-value" id="analytics-total-circulation">0</div>
-            </div>
-            <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
-          </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">نرخ تکمیل ایستگاه‌ها</div>
-              <div class="stat-value" id="analytics-completion-rate">0%</div>
-            </div>
-            <div class="stat-icon"><i class="fa-solid fa-graduation-cap"></i></div>
-          </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">میانگین رضایت از مربیان</div>
-              <div class="stat-value" id="analytics-mentor-rating">0</div>
-            </div>
-            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+          <div class="dash-toolbar-actions">
+            <label class="dash-timeframe">
+              <i class="fa-regular fa-calendar"></i>
+              <select id="dash-timeframe" class="select-ctrl" aria-label="بازه زمانی شاخص‌های عملکرد">
+                <option value="daily">۲۴ ساعت اخیر</option>
+                <option value="weekly" selected>۷ روز اخیر</option>
+                <option value="monthly">۳۰ روز اخیر</option>
+                <option value="annual">یک سال اخیر</option>
+                <option value="all">از ابتدا</option>
+              </select>
+            </label>
+            <button type="button" id="btn-dash-refresh" class="btn-icon header-btn" aria-label="بروزرسانی داشبورد" title="بروزرسانی"><i class="fa-solid fa-rotate"></i></button>
           </div>
         </div>
 
-        <div class="ledger-grid" style="margin-top: 20px;">
-          <div class="panel-card glass">
-            <div class="panel-title">شاخص‌های مالی و اقتصاد زریک</div>
-            <canvas id="analyticsEconomyChart" style="max-height: 300px;"></canvas>
-          </div>
-          <div class="panel-card glass">
-            <div class="panel-title">نمودار تعامل و تکمیل دوره‌ها</div>
-            <canvas id="analyticsEngagementChart" style="max-height: 300px;"></canvas>
-          </div>
+        <div class="bento" id="dash-bento">
+          <!-- KPIs -->
+          <article class="tile kpi kpi--brand" data-tile="users" data-section="users" hidden>
+            <div class="kpi-head"><span>کاربران</span><i class="fa-solid fa-users"></i></div>
+            <div class="kpi-value" id="kpi-users">—</div>
+            <div class="kpi-sub" id="kpi-users-sub">&nbsp;</div>
+          </article>
+          <article class="tile kpi kpi--gold" data-tile="zarik" data-section="rewards" hidden>
+            <div class="kpi-head"><span>زریک در گردش</span><i class="fa-solid fa-coins"></i></div>
+            <div class="kpi-value" id="kpi-zarik">—</div>
+            <div class="kpi-sub">مجموع موجودی کیف پول کاربران</div>
+          </article>
+          <article class="tile kpi" data-tile="completion" data-section="analytics" hidden>
+            <div class="kpi-head"><span>نرخ تایید تکالیف</span><i class="fa-solid fa-circle-check"></i></div>
+            <div class="kpi-value" id="kpi-completion">—</div>
+            <div class="kpi-sub" id="kpi-completion-sub">&nbsp;</div>
+          </article>
+          <article class="tile kpi" data-tile="rating" data-section="analytics" hidden>
+            <div class="kpi-head"><span>رضایت از راهبران</span><i class="fa-solid fa-star"></i></div>
+            <div class="kpi-value" id="kpi-rating">—</div>
+            <div class="kpi-sub" id="kpi-rating-sub">&nbsp;</div>
+          </article>
+
+          <!-- Needs attention -->
+          <article class="tile tile--attention" data-tile="attention" hidden>
+            <div class="tile-head">
+              <h3><i class="fa-solid fa-bell"></i> نیازمند رسیدگی</h3>
+              <span class="tile-badge" id="dash-attention-total"></span>
+            </div>
+            <ul class="dash-attention" id="dash-attention"></ul>
+          </article>
+
+          <!-- Zarik distribution -->
+          <article class="tile tile--chart" data-tile="distribution" data-section="rewards" hidden>
+            <div class="tile-head"><h3><i class="fa-solid fa-chart-pie"></i> گردش زریک به تفکیک دسته</h3></div>
+            <div class="dash-chart-wrap"><canvas id="dash-zarik-chart" aria-label="نمودار گردش زریک به تفکیک دسته" role="img"></canvas></div>
+            <div class="dash-empty" id="dash-zarik-empty" hidden>هنوز تراکنشی ثبت نشده است</div>
+          </article>
+
+          <!-- Quick actions -->
+          <article class="tile tile--actions" data-tile="actions" hidden>
+            <div class="tile-head"><h3><i class="fa-solid fa-bolt"></i> دسترسی سریع</h3></div>
+            <div class="dash-actions" id="dash-actions">
+              <button type="button" data-action="new-user" data-section="users"><i class="fa-solid fa-user-plus"></i><span>کاربر جدید</span></button>
+              <button type="button" data-action="new-station" data-section="lms"><i class="fa-solid fa-route"></i><span>منزلگاه جدید</span></button>
+              <button type="button" data-action="new-challenge" data-section="challenges"><i class="fa-solid fa-trophy"></i><span>چالش جدید</span></button>
+              <button type="button" data-action="new-news" data-section="content"><i class="fa-solid fa-bullhorn"></i><span>خبر جارچی</span></button>
+            </div>
+          </article>
+
+          <!-- Caravan league -->
+          <article class="tile tile--league" data-tile="league" data-section="caravans" hidden>
+            <div class="tile-head">
+              <h3><i class="fa-solid fa-trophy"></i> لیگ کاروان‌ها</h3>
+              <a href="#caravans" class="tile-link" data-go="caravans-tab">همه کاروان‌ها <i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            <ol class="dash-league" id="dash-league"></ol>
+          </article>
+
+          <!-- Wealthiest -->
+          <article class="tile tile--earners" data-tile="earners" data-section="rewards" hidden>
+            <div class="tile-head">
+              <h3><i class="fa-solid fa-gem"></i> بیشترین زریک</h3>
+              <a href="#rewards" class="tile-link" data-go="rewards-tab">کیف پول <i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            <ol class="dash-earners" id="dash-earners"></ol>
+          </article>
+
+          <!-- Recent audit events (super admin) -->
+          <article class="tile tile--audit" data-tile="audit" data-section="__super" hidden>
+            <div class="tile-head">
+              <h3><i class="fa-solid fa-clock-rotate-left"></i> آخرین رویدادها</h3>
+              <a href="#audit" class="tile-link" data-go="audit-tab">گزارش کامل <i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            <ul class="dash-audit" id="dash-audit"></ul>
+          </article>
         </div>
       </section>
 
@@ -3860,6 +3912,7 @@
     <script src="js/core/attention.js"></script>
     <script src="js/layout/topnav.js"></script>
     <script src="js/layout/landing.js"></script>
+    <script src="js/features/dashboard.js"></script>
     <script src="app.js"></script>
     <script src="support.js"></script>
     <script src="instructors.js"></script>

@@ -6,7 +6,7 @@
 (function () {
   const NAV_BREAKPOINT = 1180; // keep in sync with css/layout.css
   const ATTENTION_REFRESH_MS = 2 * 60 * 1000;
-  const DASHBOARD = { tabId: 'analytics-tab', label: 'داشبورد', icon: 'fa-solid fa-chart-pie' };
+  const DASHBOARD = { tabId: 'dashboard-tab', label: 'داشبورد', icon: 'fa-solid fa-chart-pie' };
 
   let access = { all: true, sections: {} };
   let attentionTimer = null;
@@ -15,10 +15,11 @@
   function isAllowed(tabId) {
     const t = NopaRouter.TABS[tabId];
     if (!t) return false;
-    if (access.all) return true;
+    if (access.all || t.section === '*') return true;
     return !!(t.section && access.sections[t.section]);
   }
-  const sectionAllowed = section => access.all || !!access.sections[section];
+  // null = super-admin-only area (sub admins never see it)
+  const sectionAllowed = section => access.all || (!!section && !!access.sections[section]);
   const hrefOf = tabId => '#' + NopaRouter.TABS[tabId].hashes[0];
 
   // ---- model ------------------------------------------------------------------------------
@@ -242,7 +243,9 @@
   function applyAccess(next) {
     access = next && !next.all ? { all: false, sections: next.sections || {} } : { all: true, sections: {} };
     render();
+    if (next && next.pending) return; // grants still loading: show nothing extra, poll nothing
     startAttention();
+    try { window.dispatchEvent(new CustomEvent('nopa:accesschange', { detail: access })); } catch (_) { /* old browser */ }
   }
 
   function setUser(user) {
@@ -361,5 +364,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.NopaNav = { applyAccess, setUser, render, refreshAttention, isAllowed };
+  window.NopaNav = { applyAccess, setUser, render, refreshAttention, isAllowed, sectionAllowed };
 })();
