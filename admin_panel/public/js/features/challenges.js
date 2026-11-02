@@ -316,6 +316,7 @@ window.openChallengeRanking = async function(challengeId) {
     const data = await res.json();
     if (!res.ok) { body.innerHTML = `<div class="u-c-danger-text">${esc(data.error || 'خطا')}</div>`; return; }
     document.getElementById('ranking-title').textContent = `رتبه‌بندی کاروان‌ها: ${data.challenge.title}`;
+    if (typeof window.loadInterGroupDesk === 'function') window.loadInterGroupDesk(challengeId);
     const names = window.assetNamesMap || {};
     const tierName = { gold: names.derafsh_gold || 'درفش طلایی', silver: names.derafsh_silver || 'درفش نقره‌ای', bronze: names.derafsh_bronze || 'درفش برنزی', cloth: names.derafsh_cloth || 'درفش پارچه‌ای' };
     const tierColor = { gold: 'var(--accent-text)', silver: 'var(--text-soft)', bronze: 'var(--accent-strong)', cloth: 'var(--text-muted)' };

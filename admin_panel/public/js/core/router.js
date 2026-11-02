@@ -104,10 +104,15 @@
       title: 'مدیریت رسانه‌ها', desc: 'آپلود و دسته‌بندی فایل‌های ویدیویی و تصویری جهت استریم در اپلیکیشن',
       load: () => call('loadMediaAssets'),
     },
+    'support-cases-tab': {
+      hashes: ['support-cases'], group: 'outreach', label: 'پرونده‌های پشتیبانی', icon: 'fa-solid fa-life-ring', section: 'support',
+      title: 'پرونده‌های پشتیبانی', desc: 'صف گفتگوهای پشتیبانی کاربران',
+      load: () => call('loadSupportCases'),
+    },
     'chat-tab': {
       hashes: ['chat'], group: 'outreach', label: 'مدیریت چت', icon: 'fa-solid fa-comments', section: 'chat',
       title: 'مدیریت چت', desc: 'وضعیت چت و مدیریت کانال‌ها و گروه‌ها',
-      load: () => call('loadChatSettings'),
+      load: () => { call('loadChatSettings'); call('loadChatOps'); },
     },
     'roles-tab': {
       hashes: ['roles'], group: 'settings', label: 'نقش‌ها و دسترسی‌ها (RBAC)', icon: 'fa-solid fa-user-lock', section: null,

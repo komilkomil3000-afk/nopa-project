@@ -2782,3 +2782,31 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Real Dart socket client against the local server over WebSocket, including Persian text and model parsing.
   - Not run: the app on a device or emulator; the HTTP fallback in the app; WebSocket through production nginx or CDN; the migration on production data.
 - **Status:** In Progress (3.18 and 3.19 pending)
+
+### [2026-11-02 11:10] - Claude Code / Chat Plan Phases 4 to 10
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261046_chat_workflows/` (Created)
+  - `admin_panel/src/modules/chat/{http,publish,support,topics,evaluation,intergroup,bots,reports,insights}.ts` (Created)
+  - `admin_panel/src/modules/chat/{access,controller,routes,service}.ts`, `admin_panel/src/controllers/{challenge,submission,caravanBanner}Controller.ts`, `admin_panel/src/services/{economy,ledger}.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/server.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/chat-ops.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/features/{challenges,economy}.js` (Modified)
+  - `app/lib/screens/chat/chat_cards.dart`, `app/lib/screens/chat/chat_topic_info_screen.dart` (Created)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/lib/screens/chat/{chat_conversation_screen,chat_home_screen,chat_message_bubble}.dart`, `app/lib/utils/mentor_contact.dart`, `app/lib/widgets/{contact_us_dialog,support_message_dialog}.dart`, `app/test/chat_ui_test.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Phase 4: support conversations with cases, queue, assignment and rating; the ticket form stays in use while chat is off.
+  - Phase 5: in-app bots, moderator commands, scheduled messages, polls, slow mode, banned words, a minute worker, station cards, 72-hour warning and station reports.
+  - Phase 6: challenge cards in the right conversations, topic lifecycle, tags and colours, staff-only tags, best answer and evidence marks.
+  - Phase 7: rule-based participation scoring, criteria weights in the economy policy, evaluation screen, one-shot payment, correction, objection, student report.
+  - Phase 8: read-only arena, private caravan threads, questions to the judges, official entries, anonymous judging, effort tiers, prize by rank and effort, results card. Absent members get nothing and their share is not redistributed.
+  - Phase 9: abuse reports, CSV and printable exports, mentor dashboard, participation and confusion analytics, Eitaa links hidden while chat is on.
+  - Phase 10: InsightProvider with a rule-based engine only. No AI model is connected.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 19/19 in `admin_panel/`.
+  - `flutter analyze` no issues, `flutter test` 11/11, `flutter build apk --debug` in `app/`.
+  - Throwaway Postgres with real HTTP: the whole flow from support through bots, stations, cards, tags, evaluation, parallel payment, correction, a full inter-group competition, reports and exports.
+  - Chrome: chat operations, support queue and the channel manager view, with no refused calls.
+  - Not run: the app on a device or emulator; production WebSocket; the migrations on production data; a load test.
+- **Status:** In Progress (open items are listed in `docs/nopa-chat-plan.md`)

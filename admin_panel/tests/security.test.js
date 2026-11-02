@@ -266,3 +266,56 @@ test('chat rules: who sees a space, who posts, who moderates', () => {
   assert.equal(canModerate(mentor, space('caravan', 'b')), false);
   assert.equal(canModerate({ ...manager, permissions: { ...perms, moderate: false } }, space('public')), false);
 });
+
+test('evaluation: arguments beat greetings, repeats and floods earn nothing', () => {
+  const { scoreConversation, suggestedNakh, messageLevel } = load('modules/chat/evaluation.js');
+  const weights = { relevance: 30, quality: 30, collaboration: 20, initiative: 20 };
+  const msg = (id, senderId, body, extra = {}) => ({ id, senderId, body, marks: [], hasFile: false, reactionsFrom: [], ...extra });
+  const rows = scoreConversation([
+    msg('1', 'a', 'به نظرم چون مقدمه درست است نتیجه هم معتبر می‌شود'),
+    msg('2', 'b', 'سلام'), msg('3', 'b', 'سلام'), msg('4', 'b', 'سلام'), msg('5', 'b', 'سلام'),
+  ], 'نتیجه و مقدمه', weights);
+  const a = rows.find(r => r.userId === 'a'), b = rows.find(r => r.userId === 'b');
+  assert.ok(a.score > b.score);
+  assert.ok(b.flags.includes('پیام تکراری یا بی‌محتوا'));
+  assert.equal(a.share + b.share, 100);
+  assert.equal(messageLevel(msg('x', 'a', 'متن طولانی بدون هیچ چیز خاص', { marks: ['best'] }), new Set(), new Set()), 5);
+  assert.equal(suggestedNakh(72, 0, 10), 7);
+  assert.equal(suggestedNakh(100, 2, 8), 8);
+  assert.equal(suggestedNakh(0, 2, 8), 2);
+
+  const many = (from, to, n) => Array.from({ length: n }, () => from);
+  const mutual = scoreConversation([
+    msg('1', 'a', 'پیام اول با محتوا برای آزمون', { reactionsFrom: many('b', 'a', 3) }),
+    msg('2', 'a', 'پیام دوم با محتوا برای آزمون', { reactionsFrom: ['b'] }),
+    msg('3', 'b', 'پیام سوم با محتوا برای آزمون', { reactionsFrom: many('a', 'b', 3) }),
+  ], '', weights);
+  assert.ok(mutual.every(r => r.flags.includes('ریاکشن متقابل')));
+});
+
+test('inter-group: effort sets the prize, an absent share is never redistributed', () => {
+  const { memberPrize, suggestTier, rankScore } = load('modules/chat/intergroup.js');
+  const { DEFAULT_ECONOMY: c } = load('services/economy.js');
+  assert.equal(memberPrize('gold', 'full', c), 20000);
+  assert.equal(memberPrize('gold', 'partner', c), 12000);
+  assert.equal(memberPrize('silver', 'minimal', c), 3750);
+  assert.equal(memberPrize('gold', 'inactive', c), 0);
+  assert.equal(suggestTier(0), 'inactive');
+  assert.equal(suggestTier(1), 'minimal');
+  assert.equal(suggestTier(5), 'full');
+  assert.equal(rankScore({ judgeAverage: 100, activeShare: 100, onTime: true, delivered: true }, c), 100);
+  assert.equal(rankScore({ judgeAverage: 0, activeShare: 0, onTime: false, delivered: false }, c), 0);
+  // a smaller caravan with the same effort loses nothing: coverage is a share
+  assert.equal(rankScore({ judgeAverage: 80, activeShare: 50, onTime: true, delivered: true }, c), 76);
+});
+
+test('bots: commands, send times and tag colours', () => {
+  const { parseCommand, parseSendAt } = load('modules/chat/bots.js');
+  const { isReadableColor } = load('modules/chat/topics.js');
+  assert.deepEqual(parseCommand('/کند 30'), { name: 'کند', rest: '30' });
+  assert.equal(parseCommand('سلام /کند'), null);
+  assert.equal(parseSendAt('2026-11-20', '18:30').toISOString(), '2026-11-20T15:00:00.000Z');
+  assert.equal(parseSendAt('فردا', '18:30'), null);
+  assert.equal(isReadableColor('#DFB690'), true);
+  assert.equal(isReadableColor('#101010'), false);
+});

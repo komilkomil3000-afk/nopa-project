@@ -83,8 +83,8 @@ const SECTION_RULES: Array<[RegExp, string]> = [
   [/^\/instructors(\/|$)/i, 'instructors'],
   [/^\/(caravans|asset-conversions)(\/|$)/i, 'caravans'],
   [/^\/(lms|stations|courses|quizzes)(\/|$)/i, 'lms'],
-  [/^\/(challenges|submissions)(\/|$)/i, 'challenges'],
-  [/^\/(tickets|messages)(\/|$)/i, 'support'],
+  [/^\/(challenges|submissions|intergroup)(\/|$)/i, 'challenges'],
+  [/^\/(tickets|messages|support-cases)(\/|$)/i, 'support'],
   [/^\/chat-manage(\/|$)/i, 'chat'],
   [/^\/(news|banners|announcements|media|forms)(\/|$)/i, 'content'],
   [/^\/notifications(\/|$)/i, 'notifications'],
@@ -175,6 +175,7 @@ async function channelManagerGate(req: AuthRequest, res: Response, next: NextFun
       return res.status(403).json({ error: 'دسترسی شما به پنل مدیریت فعال نشده است' });
     }
     if (req.path === '/panel/me' || sectionForPath(req.path) === 'chat') return next();
+    if (/^\/support-cases(\/|$)/i.test(req.path) && parseChatPermissions(row?.permissionsJson).privateChats) return next();
     return res.status(403).json({ error: 'این عملیات برای مسئول کانال مجاز نیست' });
   } catch (e) {
     console.error('channelManagerGate error:', e);

@@ -6,10 +6,14 @@ import prisma from '../../config/db';
 import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
 import { getChatSettings } from '../../services/chatSettings';
-import { canModerate, canPostTopLevel, canStartDirect, ChatActor, loadActor } from './access';
-import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
+import { canModerate, canPostTopLevel, canReply, canStartDirect, ChatActor } from './access';
+import { blockedWord, runCommand } from './bots';
+import { handler, requireMessage, requireSpace } from './http';
+import { notifyAbsent, publishMessage, publishUpdate } from './publish';
+import { emitToSpace, refreshUserRooms } from './realtime';
+import { ensureOpenCase } from './support';
 import {
-  attachmentKind, ChatError, createMessage, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
+  attachmentKind, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
   randomStorageName, REACTION_TYPES, serializeMessage, signFileUrl, verifyFileToken, visibleSpaces,
 } from './service';
 
@@ -30,42 +34,6 @@ export const chatUpload = multer({
     cb(null, true);
   },
 });
-
-type Handler = (req: AuthRequest, res: Response, actor: ChatActor) => Promise<unknown>;
-
-/** Loads the caller and turns a ChatError into its response. */
-function handler(fn: Handler) {
-  return async (req: AuthRequest, res: Response) => {
-    try {
-      const actor = await loadActor(req.user!.id);
-      if (!actor) return res.status(401).json({ error: 'کاربر یافت نشد' });
-      await fn(req, res, actor);
-    } catch (e: any) {
-      if (e instanceof ChatError) return res.status(e.status).json({ error: e.message });
-      console.error('chat error:', e);
-      res.status(500).json({ error: 'خطای سرور در چت' });
-    }
-  };
-}
-
-async function requireSpace(actor: ChatActor, spaceId: string) {
-  const found = await findVisibleSpace(actor, spaceId);
-  if (!found) throw new ChatError(404, 'گفتگو یافت نشد');
-  return found;
-}
-
-async function requireMessage(actor: ChatActor, messageId: string) {
-  const message = await prisma.chatMessage.findUnique({ where: { id: messageId } });
-  if (!message) throw new ChatError(404, 'پیام یافت نشد');
-  const { space } = await requireSpace(actor, message.spaceId);
-  return { message, space };
-}
-
-async function publishUpdate(messageId: string) {
-  const row = await prisma.chatMessage.findUniqueOrThrow({ where: { id: messageId }, include: MESSAGE_INCLUDE });
-  emitToSpace(row.spaceId, 'message:update', serializeMessage(row));
-  return row;
-}
 
 export const listSpaces = handler(async (_req, res, actor) => {
   const { spaces, members } = await visibleSpaces(actor);
@@ -98,6 +66,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       unread: Math.max(0, s.lastSeq - (me?.lastReadSeq ?? 0)),
       muted: !!me?.muted,
       canPost: canPostTopLevel(actor, s),
+      canReply: canReply(actor, s),
       canModerate: canModerate(actor, s),
       lastMessage: last && {
         senderName: last.sender?.name || '',
@@ -152,15 +121,20 @@ export const listMessages = handler(async (req, res, actor) => {
   const beforeSeq = Number(req.query.beforeSeq) || undefined;
   const afterSeq = Number(req.query.afterSeq) || undefined;
   const threadRootId = req.query.threadRootId ? String(req.query.threadRootId) : null;
+  const tagId = req.query.tagId ? String(req.query.tagId) : undefined;
+  const stationId = req.query.stationId ? String(req.query.stationId) : undefined;
 
   const rows = await prisma.chatMessage.findMany({
-    where: { spaceId: space.id, threadRootId, seq: { lt: beforeSeq, gt: afterSeq } },
+    where: { spaceId: space.id, threadRootId, stationId, seq: { lt: beforeSeq, gt: afterSeq }, ...(tagId ? { tags: { some: { tagId } } } : {}) },
     orderBy: { seq: afterSeq ? 'asc' : 'desc' },
     take: PAGE_SIZE,
     include: MESSAGE_INCLUDE,
   });
   const ordered = afterSeq ? rows : rows.reverse();
-  res.json({ messages: ordered.map(serializeMessage), lastReadSeq: member?.lastReadSeq ?? 0 });
+  const staffTags = canModerate(actor, space)
+    ? Object.fromEntries(ordered.map(m => [m.id, m.tags.map(t => t.tag).filter(t => t.visibility === 'staff')]).filter(([, tags]) => tags.length))
+    : {};
+  res.json({ messages: ordered.map(serializeMessage), lastReadSeq: member?.lastReadSeq ?? 0, staffTags });
 });
 
 export const sendMessage = handler(async (req, res, actor) => {
@@ -173,9 +147,22 @@ export const sendMessage = handler(async (req, res, actor) => {
   if (!body && attachmentIds.length === 0) throw new ChatError(400, 'پیام خالی است');
   if (body.length > MAX_BODY) throw new ChatError(400, `پیام نباید بیشتر از ${MAX_BODY} نویسه باشد`);
   if (member?.mutedUntil && member.mutedUntil > new Date()) throw new ChatError(403, 'ارسال پیام برای شما موقتاً بسته است');
-  if (!threadRootId && !canPostTopLevel(actor, space)) throw new ChatError(403, 'امکان ارسال پیام در این گفتگو وجود ندارد');
+  const command = await runCommand(actor, space, body, threadRootId);
+  if (command !== null) return res.json({ command: true, result: command, clientMessageId: req.body?.clientMessageId });
 
-  const { row, created } = await createMessage({
+  if (threadRootId ? !canReply(actor, space) : !canPostTopLevel(actor, space)) throw new ChatError(403, 'امکان ارسال پیام در این گفتگو وجود ندارد');
+  if (threadRootId) {
+    const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId } });
+    if (topic && topic.status !== 'open') throw new ChatError(403, 'این چالش بسته شده است');
+  }
+  const word = await blockedWord(body);
+  if (word) throw new ChatError(400, 'این پیام شامل واژه‌ی نامناسب است');
+  if (space.slowSeconds > 0 && !canModerate(actor, space)) {
+    const last = await prisma.chatMessage.findFirst({ where: { spaceId: space.id, senderId: actor.id }, orderBy: { seq: 'desc' }, select: { createdAt: true } });
+    if (last && Date.now() - last.createdAt.getTime() < space.slowSeconds * 1000) throw new ChatError(429, `هر ${space.slowSeconds} ثانیه یک پیام می‌توانید بفرستید`);
+  }
+
+  const { message, created } = await publishMessage({
     spaceId: space.id,
     senderId: actor.id,
     body,
@@ -185,29 +172,12 @@ export const sendMessage = handler(async (req, res, actor) => {
     attachmentIds,
     mentions,
   });
-  const message = serializeMessage(row);
   if (created) {
-    emitToSpace(space.id, 'message:new', message);
-    if (threadRootId) await publishUpdate(threadRootId);
-    await notifyAbsent(space, actor, message.body, mentions);
+    if (space.type === 'support' && space.key === `support:${actor.id}`) await ensureOpenCase(space.id, actor.id, body, message.seq);
+    await notifyAbsent(space, actor.id, actor.name, message.body, mentions);
   }
   res.status(created ? 201 : 200).json(message);
 });
-
-/** People who are offline hear about a mention or a private message through the app's notifications. */
-async function notifyAbsent(space: { id: string; type: string; title: string }, actor: ChatActor, body: string, mentions: string[]) {
-  const targets = new Set(mentions);
-  if (space.type === 'direct') {
-    const others = await prisma.chatMember.findMany({ where: { spaceId: space.id, userId: { not: actor.id } }, select: { userId: true } });
-    others.forEach(o => targets.add(o.userId));
-  }
-  targets.delete(actor.id);
-  const absent = Array.from(targets).filter(id => !isOnline(id));
-  if (absent.length === 0) return;
-  await prisma.notification.createMany({
-    data: absent.map(userId => ({ userId, title: `پیام از ${actor.name}`, message: body.slice(0, 140) || 'فایل', type: 'chat' })),
-  });
-}
 
 export const editMessage = handler(async (req, res, actor) => {
   const { message } = await requireMessage(actor, req.params.id);
@@ -261,6 +231,20 @@ export const toggleReaction = handler(async (req, res, actor) => {
   const existing = await prisma.chatReaction.findUnique({ where: key });
   if (existing) await prisma.chatReaction.delete({ where: key });
   else await prisma.chatReaction.create({ data: { messageId: message.id, userId: actor.id, type } });
+  res.json(serializeMessage(await publishUpdate(message.id)));
+});
+
+export const votePoll = handler(async (req, res, actor) => {
+  const { message } = await requireMessage(actor, req.params.id);
+  const options = (message.meta as any)?.options;
+  const option = Number(req.body?.option);
+  if (message.kind !== 'poll' || !Array.isArray(options)) throw new ChatError(400, 'این پیام نظرسنجی نیست');
+  if (!Number.isInteger(option) || option < 0 || option >= options.length) throw new ChatError(400, 'گزینه معتبر نیست');
+  await prisma.chatPollVote.upsert({
+    where: { messageId_userId: { messageId: message.id, userId: actor.id } },
+    update: { option },
+    create: { messageId: message.id, userId: actor.id, option },
+  });
   res.json(serializeMessage(await publishUpdate(message.id)));
 });
 

@@ -4,7 +4,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:nopa_app/models/chat_models.dart';
+import 'package:nopa_app/models/user_model.dart';
+import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
+import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
+import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/chat_repository.dart';
@@ -41,6 +45,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _uploading = false;
   bool _recording = false;
   List<Map<String, dynamic>> _people = [];
+  List<Map<String, dynamic>> _cases = [];
   List<Map<String, dynamic>> _mentionMatches = [];
   final Set<String> _mentions = {};
 
@@ -57,16 +62,54 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scroll.addListener(_onScroll);
     _input.addListener(_onTyping);
     _chat.addListener(_markReadWhileOpen);
+    _chat.commandResult.addListener(_showCommandResult);
+    _loadCases();
   }
 
   @override
   void dispose() {
     _chat.unwatch(widget.spaceId, threadRootId: _threadId);
     _chat.removeListener(_markReadWhileOpen);
+    _chat.commandResult.removeListener(_showCommandResult);
     _scroll.dispose();
     _input.dispose();
     _recorder.dispose();
     super.dispose();
+  }
+
+  void _showCommandResult() {
+    final text = _chat.commandResult.value;
+    if (text == null || !mounted) return;
+    _chat.commandResult.value = null;
+    AppToast.info(context, text);
+  }
+
+  Future<void> _loadCases() async {
+    final space = _chat.spaceById(widget.spaceId);
+    if (space?.type != 'support') return;
+    final res = await _chat.api('GET', '/chat/support/cases');
+    if (mounted && res.ok) setState(() => _cases = (res.data as List).map((c) => Map<String, dynamic>.from(c as Map)).toList());
+  }
+
+  Future<void> _rateCase(String id, int rating) async {
+    final res = await _chat.api('POST', '/chat/support/cases/$id/rate', body: {'rating': rating});
+    if (!mounted) return;
+    if (res.ok) {
+      AppToast.success(context, 'از امتیاز شما سپاسگزاریم.');
+      _loadCases();
+    }
+  }
+
+  void _openInfo(ChatMessage card, ChatSpace? space) {
+    final recipientOwner = space?.isDirect == true && Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike;
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatTopicInfoScreen(card: card, moderator: space?.canModerate == true || recipientOwner)));
+  }
+
+  void _openChallenge(ChatMessage card) {
+    final meta = card.meta ?? const {};
+    challengeFocusRequest.value = (category: challengeCategoryIndex(meta['category']?.toString().replaceAll('intra_group', 'group')), id: meta['challengeId']?.toString() ?? '');
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    navigateToMainTab(2);
   }
 
   void _markReadWhileOpen() {
@@ -204,7 +247,15 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                 if (_threadId == null) item('thread', Icons.forum_rounded, 'ورود به گفتگوی زیر پیام'),
                 if (message.body.isNotEmpty) item('copy', Icons.copy_rounded, 'کپی متن'),
                 if (mine && message.body.isNotEmpty) item('edit', Icons.edit_rounded, 'ویرایش'),
-                if (space?.canModerate == true) item('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
+                if (space?.canModerate == true) ...[
+                  item('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
+                  item('tag', Icons.label_rounded, 'برچسب'),
+                  if (_threadId != null) ...[
+                    item('best', Icons.workspace_premium_rounded, 'بهترین پاسخ'),
+                    item('evidence', Icons.verified_rounded, 'شاهد امتیاز'),
+                  ],
+                ],
+                if (!mine && space?.isDirect != true) item('report', Icons.flag_rounded, 'گزارش تخلف'),
                 if (mine || space?.canModerate == true) item('delete', Icons.delete_rounded, 'حذف'),
               ],
             ),
@@ -230,7 +281,102 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       await _chat.togglePin(message);
     } else if (action == 'delete') {
       await _chat.delete(message);
+    } else if (action == 'best' || action == 'evidence') {
+      await _chat.mark(message, action);
+      if (mounted) AppToast.success(context, 'ثبت شد.');
+    } else if (action == 'report') {
+      await _chat.report(message, 'گزارش کاربر');
+      if (mounted) AppToast.success(context, 'گزارش شما ثبت شد.');
+    } else if (action == 'tag') {
+      await _chooseTag(message);
     }
+  }
+
+  /// Tag a message, or with no message show what carries a tag.
+  Future<void> _chooseTag(ChatMessage? message) async {
+    final tags = await _chat.tags(widget.spaceId);
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: ChatTheme.surfaceBottom,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(12),
+          children: [
+            if (tags.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text('هنوز تگی ساخته نشده است.', style: ChatTheme.caption, textAlign: TextAlign.center)),
+            for (final tag in tags)
+              ListTile(
+                leading: CircleAvatar(radius: 7, backgroundColor: ChatChip.parse(tag['color'] ?? '#9292E2')),
+                title: Text(tag['name'] ?? '', style: ChatTheme.body),
+                onTap: () => Navigator.pop(ctx, tag),
+              ),
+            if (_chat.spaceById(widget.spaceId)?.canModerate == true)
+              ListTile(
+                leading: const Icon(Icons.add_rounded, color: ChatTheme.accent),
+                title: Text('تگ جدید', style: ChatTheme.body.copyWith(color: ChatTheme.accent)),
+                onTap: () => Navigator.pop(ctx, const {'new': true}),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    if (picked['new'] == true) {
+      await _createTag();
+    } else if (message != null) {
+      await _chat.toggleTag(message, picked['id']);
+    } else {
+      await _showList('پیام‌های «${picked['name']}»', () => _chat.taggedMessages(widget.spaceId, picked['id'], threadRootId: _threadId));
+    }
+  }
+
+  static const List<String> _tagColors = ['#DFB690', '#9292E2', '#EC4899', '#10B981', '#F97316', '#3B82F6', '#EAB308', '#8B5CF6', '#EF4444', '#14B8A6', '#F472B6', '#A3E635'];
+
+  Future<void> _createTag() async {
+    final name = TextEditingController();
+    String color = _tagColors.first;
+    bool staffOnly = false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: StatefulBuilder(
+          builder: (ctx, setDialog) => AlertDialog(
+            backgroundColor: ChatTheme.surfaceBottom,
+            title: Text('تگ جدید', style: ChatTheme.title),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: name, maxLength: 30, style: ChatTheme.body, decoration: chatField('نام تگ')),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final c in _tagColors)
+                    GestureDetector(
+                      onTap: () => setDialog(() => color = c),
+                      child: CircleAvatar(radius: c == color ? 15 : 12, backgroundColor: ChatChip.parse(c), child: c == color ? const Icon(Icons.check, size: 15, color: ChatTheme.surfaceBottom) : null),
+                    ),
+                ]),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: staffOnly,
+                  activeColor: ChatTheme.accent,
+                  title: Text('فقط راهبران ببینند', style: ChatTheme.caption),
+                  onChanged: (v) => setDialog(() => staffOnly = v == true),
+                ),
+              ],
+            ),
+            actions: [ChatButton(label: 'ساختن', onPressed: () => Navigator.pop(ctx, true))],
+          ),
+        ),
+      ),
+    );
+    if (ok == true) {
+      final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/tags', body: {'name': name.text, 'color': color, 'visibility': staffOnly ? 'staff' : 'public'});
+      if (mounted) res.ok ? AppToast.success(context, 'تگ ساخته شد.') : AppToast.error(context, res.error);
+    }
+    name.dispose();
   }
 
   Future<void> _showList(String title, Future<List<ChatMessage>> Function() load) async {
@@ -307,22 +453,56 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           builder: (context, _) {
             final space = _chat.spaceById(widget.spaceId);
             final messages = _chat.messagesOf(widget.spaceId, threadRootId: _threadId);
-            final canWrite = _threadId != null || space?.canPost != false;
+            final threadClosed = widget.threadRoot?.topicId != null && _rootStatus(messages) != 'open';
+            final canWrite = !threadClosed && (_threadId != null ? space?.canReply != false : space?.canPost != false);
             return Column(
               children: [
                 _header(space),
                 if (widget.threadRoot != null) _threadOrigin(),
+                if (space?.type == 'support') _caseBar(),
                 Expanded(child: _list(messages, space, myId)),
                 if (_chat.typingIn(widget.spaceId) != null)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     child: Align(alignment: Alignment.centerRight, child: Text('${_chat.typingIn(widget.spaceId)} در حال نوشتن است', style: ChatTheme.caption)),
                   ),
-                canWrite ? _composer() : _readOnlyBar(),
+                canWrite ? _composer() : _readOnlyBar(threadClosed),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  String? _rootStatus(List<ChatMessage> _) {
+    final top = _chat.messagesOf(widget.spaceId);
+    for (final m in top) {
+      if (m.id == _threadId) return m.topicStatus;
+    }
+    return widget.threadRoot?.topicStatus;
+  }
+
+  Widget _caseBar() {
+    if (_cases.isEmpty) return const SizedBox.shrink();
+    final current = _cases.first;
+    final status = const {'open': 'باز', 'reviewing': 'در بررسی', 'resolved': 'حل‌شده'}[current['status']] ?? '';
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      padding: const EdgeInsets.all(10),
+      decoration: ChatTheme.card(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${current['subject']} · $status', style: ChatTheme.caption, maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (current['status'] == 'resolved' && current['rating'] == null)
+            Row(children: [
+              Text('به این پاسخ امتیاز بدهید: ', style: ChatTheme.caption),
+              for (var i = 1; i <= 5; i++)
+                GestureDetector(onTap: () => _rateCase(current['id'], i), child: const Icon(Icons.star_rounded, size: 22, color: ChatTheme.accent)),
+            ]),
+        ],
       ),
     );
   }
@@ -335,6 +515,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           Expanded(child: Text(_threadId != null ? 'گفتگوی زیر پیام' : (space?.title ?? ''), style: ChatTheme.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
           if (_threadId == null) ...[
             IconButton(onPressed: _search, icon: const Icon(Icons.search_rounded, color: ChatTheme.lavender, size: 22)),
+            IconButton(onPressed: () => _chooseTag(null), icon: const Icon(Icons.label_rounded, color: ChatTheme.lavender, size: 20)),
             IconButton(onPressed: () => _showList('پیام‌های سنجاق‌شده', () => _chat.pins(widget.spaceId)), icon: const Icon(Icons.push_pin_rounded, color: ChatTheme.lavender, size: 20)),
             if (space != null)
               IconButton(
@@ -377,6 +558,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         final message = messages[messages.length - 1 - index];
         final previous = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
         final mine = message.senderId == myId;
+        if (message.kind == 'challenge' && !message.deleted && message.topicId != null) {
+          return ChallengeCard(
+            key: ValueKey(message.id),
+            message: message,
+            onOpenThread: () => _openThread(message),
+            onOpenInfo: () => _openInfo(message, space),
+            onOpenChallenge: () => _openChallenge(message),
+          );
+        }
+        if (message.kind == 'station' && !message.deleted) return StationCard(key: ValueKey(message.id), message: message);
+        if (message.kind == 'result' && !message.deleted) return ResultCard(key: ValueKey(message.id), message: message);
+        if (message.kind == 'poll' && !message.deleted) {
+          return PollCard(key: ValueKey(message.id), message: message, myId: myId, onVote: (o) => _chat.vote(message, o));
+        }
         return ChatMessageBubble(
           key: ValueKey(message.clientMessageId ?? message.id),
           message: message,
@@ -393,9 +588,15 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  Widget _readOnlyBar() => Padding(
+  Widget _readOnlyBar(bool closed) => Padding(
         padding: const EdgeInsets.all(14),
-        child: Text('برای پاسخ، پیام را نگه دارید و وارد گفتگوی زیر آن شوید.', style: ChatTheme.caption, textAlign: TextAlign.center),
+        child: Text(
+          closed
+              ? 'این چالش بسته شده است.'
+              : (_chat.spaceById(widget.spaceId)?.canReply == false ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.' : 'برای پاسخ، پیام را نگه دارید و وارد گفتگوی زیر آن شوید.'),
+          style: ChatTheme.caption,
+          textAlign: TextAlign.center,
+        ),
       );
 
   Widget _composer() {

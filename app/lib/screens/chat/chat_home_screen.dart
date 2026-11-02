@@ -4,6 +4,10 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
+import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
+import 'package:nopa_app/models/user_model.dart';
+import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:provider/provider.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -37,6 +41,18 @@ class ChatHomeScreen extends StatelessWidget {
                     itemCount: chat.spaces.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, i) => _SpaceTile(space: chat.spaces[i]),
+                  ),
+                ),
+              if (Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike)
+                Positioned(
+                  left: 16,
+                  bottom: 68,
+                  child: FloatingActionButton.small(
+                    heroTag: 'chat-dashboard',
+                    backgroundColor: ChatTheme.surfaceTop,
+                    foregroundColor: ChatTheme.accent,
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatDashboardScreen())),
+                    child: const Icon(Icons.dashboard_rounded, size: 20),
                   ),
                 ),
               Positioned(
@@ -99,6 +115,7 @@ class _SpaceTile extends StatelessWidget {
 
   IconData get _icon => switch (space.type) {
         'announcements' => Icons.campaign_rounded,
+        'arena' => Icons.emoji_events_rounded,
         'public' => Icons.forum_rounded,
         'mentors' => Icons.groups_rounded,
         'challenges' => Icons.local_fire_department_rounded,

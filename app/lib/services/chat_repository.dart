@@ -22,6 +22,8 @@ class ChatRepository extends ChangeNotifier {
   sio.Socket? _socket;
   String? _userId;
   bool _flushing = false;
+  /// The private answer to a moderator's command, for the conversation on screen.
+  final ValueNotifier<String?> commandResult = ValueNotifier(null);
   Timer? _offlineTimer;
   bool _offlineRoundRunning = false;
   final Map<String, int> _watching = {};
@@ -370,7 +372,14 @@ class ChatRepository extends ChangeNotifier {
 
     if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
       if (_userId != null) await _store.removeFromOutbox(_userId!, clientId);
-      final message = ChatMessage.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      if (data['command'] == true) {
+        if (at >= 0) list!.removeAt(at);
+        commandResult.value = data['result']?.toString();
+        notifyListeners();
+        return;
+      }
+      final message = ChatMessage.fromJson(data);
       _insert(message);
       final space = spaceById(spaceId);
       if (space != null) {
@@ -383,8 +392,57 @@ class ChatRepository extends ChangeNotifier {
       final refused = res != null && res.statusCode >= 400 && res.statusCode < 500 && res.statusCode != 429;
       if (refused && _userId != null) await _store.removeFromOutbox(_userId!, clientId);
       if (at >= 0) list![at].sendState = ChatSendState.failed;
+      if (res != null && res.statusCode >= 400) commandResult.value = _errorOf(res.body);
     }
     notifyListeners();
+  }
+
+  String _errorOf(String body) {
+    try {
+      return (jsonDecode(body) as Map)['error']?.toString() ?? 'ارسال پیام انجام نشد.';
+    } catch (_) {
+      return 'ارسال پیام انجام نشد.';
+    }
+  }
+
+  /// A call whose result a screen reads itself.
+  Future<ChatApiResult> api(String method, String path, {Map<String, dynamic>? body}) async {
+    final res = await _api.chatCall(method, path, body: body);
+    if (res == null) return const ChatApiResult(false, null, 'اتصال اینترنت برقرار نیست.');
+    final ok = res.statusCode < 300;
+    dynamic data;
+    try {
+      data = jsonDecode(res.body);
+    } catch (_) {}
+    return ChatApiResult(ok, data, ok ? '' : ((data is Map ? data['error']?.toString() : null) ?? 'خطایی رخ داد.'));
+  }
+
+  /// The export opens in the browser, which sends no auth header: the server gives a short-lived link.
+  Future<String?> exportLink(String topicId) async {
+    final res = await api('POST', '/chat/topics/$topicId/export-link', body: {});
+    return res.ok ? (res.data as Map)['url'] as String? : null;
+  }
+
+  Future<bool> vote(ChatMessage message, int option) => _simple('POST', '/chat/messages/${message.id}/vote', {'option': option});
+  Future<bool> report(ChatMessage message, String reason) => _simple('POST', '/chat/messages/${message.id}/report', {'reason': reason});
+  Future<bool> mark(ChatMessage message, String mark) => _simple('POST', '/chat/messages/${message.id}/mark', {'mark': mark});
+  Future<bool> toggleTag(ChatMessage message, String tagId) => _simple('POST', '/chat/messages/${message.id}/tags', {'tagId': tagId});
+
+  Future<List<Map<String, dynamic>>> tags(String spaceId) => _people('/chat/spaces/$spaceId/tags');
+
+  Future<List<ChatMessage>> taggedMessages(String spaceId, String tagId, {String? threadRootId}) async {
+    final query = {'tagId': tagId, 'threadRootId': ?threadRootId};
+    final res = await api('GET', Uri(path: '/chat/spaces/$spaceId/messages', queryParameters: query).toString());
+    if (!res.ok) return [];
+    return ((res.data as Map)['messages'] as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
+  }
+
+  /// The user's conversation with support.
+  Future<ChatSpace?> openSupport() async {
+    final res = await api('POST', '/chat/support/open', body: {});
+    if (!res.ok) return null;
+    await refreshSpaces();
+    return spaceById((res.data as Map)['id'] as String);
   }
 
   Future<void> retry(ChatMessage message) async {
@@ -473,4 +531,11 @@ class ChatRepository extends ChangeNotifier {
     await refreshSpaces();
     return spaceById(id);
   }
+}
+
+class ChatApiResult {
+  final bool ok;
+  final dynamic data;
+  final String error;
+  const ChatApiResult(this.ok, this.data, this.error);
 }

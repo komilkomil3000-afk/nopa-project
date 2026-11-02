@@ -13,6 +13,7 @@ class ChatSpace {
   int unread;
   bool muted;
   final bool canPost;
+  final bool canReply;
   final bool canModerate;
   String preview;
   String previewSender;
@@ -32,6 +33,7 @@ class ChatSpace {
     this.unread = 0,
     this.muted = false,
     this.canPost = true,
+    this.canReply = true,
     this.canModerate = false,
     this.preview = '',
     this.previewSender = '',
@@ -57,6 +59,7 @@ class ChatSpace {
       unread: json['unread'] ?? 0,
       muted: json['muted'] == true,
       canPost: json['canPost'] == true,
+      canReply: json['canReply'] != false,
       canModerate: json['canModerate'] == true,
       preview: last?['preview'] ?? '',
       previewSender: last?['senderName'] ?? '',
@@ -108,6 +111,13 @@ class ChatMessage {
   final String? replyToId;
   final String? replyToSender;
   final String? replyToBody;
+  final String? botKey;
+  final Map<String, dynamic>? meta;
+  final String? topicId;
+  final String? topicStatus;
+  final bool best;
+  final List<Map<String, dynamic>> tags;
+  final List<Map<String, dynamic>> pollVotes;
   final Map<String, dynamic> raw;
   ChatSendState sendState;
 
@@ -134,6 +144,13 @@ class ChatMessage {
     required this.replyToId,
     required this.replyToSender,
     required this.replyToBody,
+    required this.botKey,
+    required this.meta,
+    required this.topicId,
+    required this.topicStatus,
+    required this.best,
+    required this.tags,
+    required this.pollVotes,
     required this.raw,
     this.sendState = ChatSendState.sent,
   });
@@ -141,6 +158,8 @@ class ChatMessage {
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     final sender = json['sender'] as Map<String, dynamic>?;
     final replyTo = json['replyTo'] as Map<String, dynamic>?;
+    final topic = json['topic'] as Map<String, dynamic>?;
+    List<Map<String, dynamic>> maps(String key) => ((json[key] as List?) ?? []).map((r) => Map<String, dynamic>.from(r as Map)).toList();
     return ChatMessage(
       id: json['id'],
       spaceId: json['spaceId'],
@@ -155,7 +174,7 @@ class ChatMessage {
       clientMessageId: json['clientMessageId'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
       senderId: sender?['id'],
-      senderName: sender?['name'] ?? 'نپا',
+      senderName: sender?['name'] ?? (json['botKey'] != null ? 'ربات نپا' : 'نپا'),
       senderAvatarUrl: sender?['avatarUrl'],
       senderGender: sender?['gender'],
       senderIsMentor: sender?['role'] == 'mentor',
@@ -166,6 +185,13 @@ class ChatMessage {
       replyToId: replyTo?['id'],
       replyToSender: replyTo?['senderName'],
       replyToBody: replyTo?['body'],
+      botKey: json['botKey'],
+      meta: json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : null,
+      topicId: topic?['id'],
+      topicStatus: topic?['status'],
+      best: json['best'] == true,
+      tags: maps('tags'),
+      pollVotes: maps('pollVotes'),
       raw: json,
     );
   }

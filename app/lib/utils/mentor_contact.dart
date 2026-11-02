@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/widgets/support_message_dialog.dart';
+import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
+import 'package:nopa_app/services/chat_repository.dart';
 
 bool _isMentorRole(UserModel user) => user.role.isMentorLike;
 
@@ -47,6 +49,19 @@ Future<void> contactMentor(BuildContext context, UserModel user) async {
   }
 
   void showMessage(String text) => AppToast.error(context, text);
+
+  // With chat on, the conversation stays inside the app
+  if (user.chatEnabled) {
+    final navigator = Navigator.of(context);
+    final contacts = await ChatRepository.instance.contacts();
+    final space = contacts.isEmpty ? null : await ChatRepository.instance.openDirect(contacts.first['id']);
+    if (space != null) {
+      await navigator.push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: space.id)));
+    } else if (context.mounted) {
+      showMessage('راهبری برای این کاروان ثبت نشده است.');
+    }
+    return;
+  }
 
   final uri = buildMentorContactUri(user.mentorSocialPlatform, user.mentorSocialHandle);
   if (uri == null) {

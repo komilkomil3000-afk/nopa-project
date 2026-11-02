@@ -6,6 +6,7 @@ import { isMentorRole } from '../utils/roles';
 import { getAssetNames } from '../utils/assetNames';
 import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
+import { removeChallengeCards, syncChallengeCardsQuietly } from '../modules/chat/topics';
 import { EconomyConfig, getEconomyPolicy } from '../services/economy';
 
 /**
@@ -208,6 +209,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       });
     }
 
+    syncChallengeCardsQuietly(challenge.id);
     res.status(201).json(challenge);
   } catch (error) {
     console.error('createChallenge error:', error);
@@ -286,6 +288,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       data: updateData
     });
 
+    syncChallengeCardsQuietly(updated.id);
     res.json(updated);
   } catch (error) {
     console.error('updateChallenge error:', error);
@@ -318,6 +321,7 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
     // (The old code decremented by `score`, which is not the reward for quizzes, and deleted every
     // ledger row whose reason merely contained the challenge title - for ALL users.)
     const revertRewards = String(req.query.revertRewards || '').toLowerCase() === 'true';
+    await removeChallengeCards(id).catch(e => console.error('removeChallengeCards error:', e));
 
     await prisma.$transaction(async (tx) => {
       if (revertRewards) {

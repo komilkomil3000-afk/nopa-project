@@ -5,6 +5,10 @@ import 'package:shamsi_date/shamsi_date.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../services/api_service.dart';
+import '../services/app_state_repository.dart';
+import '../services/chat_repository.dart';
+import '../screens/chat/chat_conversation_screen.dart';
+import 'package:provider/provider.dart';
 import '../services/local_cache.dart';
 import 'nopa_dialog_container.dart';
 
@@ -13,7 +17,16 @@ class SupportMessageDialog extends StatefulWidget {
 
   const SupportMessageDialog({super.key, this.initialSubject});
 
-  static Future<void> show(BuildContext context, {String? initialSubject}) {
+  static Future<void> show(BuildContext context, {String? initialSubject}) async {
+    final navigator = Navigator.of(context);
+    if (Provider.of<AppRepository>(context, listen: false).currentUser.chatEnabled) {
+      final space = await ChatRepository.instance.openSupport();
+      if (space != null) {
+        await navigator.push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: space.id)));
+        return;
+      }
+    }
+    if (!context.mounted) return;
     return showDialog(
       context: context,
       barrierDismissible: true,

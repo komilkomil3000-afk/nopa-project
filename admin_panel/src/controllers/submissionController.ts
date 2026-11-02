@@ -3,7 +3,7 @@ import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
-import { changeBalance } from '../services/ledger';
+import { creditChallengeReward } from '../services/ledger';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -374,16 +374,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
-        await changeBalance(tx, {
-          userId: submission.studentId,
-          asset: assetType,
-          amount: reward,
-          sourceType: 'submission_review',
-          sourceId: id,
-          reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
-          createdBy: req.user!.id,
-          zarikCategory: 'Skill Tasks'
-        });
+        await creditChallengeReward(tx, { submissionId: id, studentId: submission.studentId, asset: assetType, amount: reward, title: submission.challenge.title, actorId: req.user!.id });
       }
     });
     } catch (e: any) {

@@ -76,6 +76,7 @@ model User {
   adminMessages                AdminMessage[]
   chatMessages                 ChatMessage[]
   chatMemberships              ChatMember[]
+  supportCases                 SupportCase[]
   supportTickets               SupportTicket[] @relation("TicketStudent")
   supportReplies               SupportTicketReply[] @relation("ReplyMentor")
   assetConversions             AssetConversionRequest[]
@@ -188,6 +189,7 @@ model Challenge {
   caravan           Caravan?     @relation(fields: [caravanId], references: [id], onDelete: SetNull)
   station           Station?     @relation(fields: [stationId], references: [id], onDelete: SetNull)
   submissions       Submission[]
+  chatTopics        ChatTopic[]
 
   @@index([caravanId])
   @@index([stationId])
@@ -716,10 +718,13 @@ model ChatSpace {
   title     String
   caravanId String?
   lastSeq   Int      @default(0) // messages are numbered inside a space; unread = lastSeq - lastReadSeq
+  slowSeconds Int     @default(0) // seconds between two messages of a member; 0 = off
   createdAt DateTime @default(now())
 
   caravan     Caravan?         @relation(fields: [caravanId], references: [id], onDelete: Cascade)
   members     ChatMember[]
+  topics      ChatTopic[]
+  supportCases SupportCase[]
   messages    ChatMessage[]
   attachments ChatAttachment[]
 
@@ -750,7 +755,11 @@ model ChatMessage {
   spaceId         String
   seq             Int
   senderId        String?   // null for system and bot messages
-  kind            String    @default("text") // "text" | "file" | "system"
+  kind            String    @default("text") // "text" | "file" | "system" | "poll" | "challenge" | "station" | "result"
+  botKey          String?   // the bot that wrote it
+  meta            Json?     // card or poll content
+  stationId       String?   // the station the conversation belongs to
+  marks           String[]  @default([]) // "best" | "evidence", set by a moderator
   body            String    @default("")
   clientMessageId String?   // set by the client; a retry cannot post twice
   replyToId       String?
@@ -769,6 +778,10 @@ model ChatMessage {
   replies     ChatMessage[]    @relation("ChatReply")
   attachments ChatAttachment[]
   reactions   ChatReaction[]
+  topic       ChatTopic?
+  tags        ChatMessageTag[]
+  pollVotes   ChatPollVote[]
+  reports     ChatReport[]
 
   @@unique([spaceId, seq])
   @@unique([senderId, clientMessageId])
@@ -956,3 +969,220 @@ model Instructor {
   updatedAt   DateTime @updatedAt
 }
 
+// A challenge card in a conversation. One per challenge, space and (personal challenges) recipient.
+model ChatTopic {
+  id           String    @id @default(uuid())
+  scopeKey     String    @unique // "<challengeId>:<spaceId>:<recipientId or empty>"
+  messageId    String    @unique
+  spaceId      String
+  challengeId  String
+  recipientId  String?
+  status       String    @default("open") // "open" | "closed" | "paid"
+  closedAt     DateTime?
+  closedBy     String?
+  reminderSent Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  message     ChatMessage           @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  space       ChatSpace             @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  challenge   Challenge             @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  evaluations ChallengeEvaluation[]
+  insight     TopicInsight?
+
+  @@index([challengeId])
+}
+
+model ChatTag {
+  id         String    @id @default(uuid())
+  name       String
+  color      String
+  spaceId    String?   // null = usable everywhere (admins and channel managers)
+  visibility String    @default("public") // "public" | "staff"
+  createdBy  String
+  archivedAt DateTime? // a used tag is archived, so that old reports keep working
+  createdAt  DateTime  @default(now())
+
+  messages ChatMessageTag[]
+
+  @@index([spaceId])
+}
+
+model ChatMessageTag {
+  messageId String
+  tagId     String
+  createdBy String
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  tag     ChatTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, tagId])
+}
+
+model ChatPollVote {
+  messageId String
+  userId    String
+  option    Int
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+}
+
+model ChatReport {
+  id         String    @id @default(uuid())
+  messageId  String
+  reporterId String
+  reason     String
+  status     String    @default("open") // "open" | "resolved"
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, reporterId])
+  @@index([status])
+}
+
+model ChatScheduledMessage {
+  id        String   @id @default(uuid())
+  spaceId   String
+  body      String
+  sendAt    DateTime
+  status    String   @default("pending") // "pending" | "sent" | "cancelled"
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@index([status, sendAt])
+}
+
+// Bot switches. A bot without a row uses its default.
+model ChatBot {
+  key      String  @id
+  enabled  Boolean @default(true)
+  settings Json?
+}
+
+// What the worker already did for a station, so nothing is announced twice
+model StationEvent {
+  key       String   @id // "opened:<stationId>", "closing:<stationId>", "report:<stationId>"
+  createdAt DateTime @default(now())
+}
+
+// A student's standing when a station ended
+model StationReport {
+  id        String   @id @default(uuid())
+  stationId String
+  userId    String
+  capital   Int
+  rank      Int
+  createdAt DateTime @default(now())
+
+  @@unique([stationId, userId])
+}
+
+// One matter a user raised with support; its messages are in the user's support space
+model SupportCase {
+  id         String    @id @default(uuid())
+  spaceId    String
+  userId     String
+  subject    String
+  category   String    @default("general")
+  status     String    @default("open") // "open" | "reviewing" | "resolved"
+  assigneeId String?
+  rating     Int?
+  fromSeq    Int       @default(0)
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  space ChatSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+}
+
+model ChallengeEvaluation {
+  id         String    @id @default(uuid())
+  topicId    String
+  userId     String
+  criteria   Json      // { relevance, quality, collaboration, initiative }, 0 to 100
+  score      Int
+  share      Int       // percent of the conversation's participation
+  suggested  Int
+  finalNakh  Int
+  reason     String?
+  flags      String[]  @default([])
+  objection  String?
+  paidAt     DateTime?
+  updatedAt  DateTime  @updatedAt
+
+  topic ChatTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, userId])
+}
+
+// A caravan's official work in an inter-group challenge
+model InterGroupEntry {
+  id          String   @id @default(uuid())
+  challengeId String
+  caravanId   String
+  anonCode    Int      // shown to judges instead of the caravan
+  body        String
+  fileUrl     String?
+  submittedBy String
+  submittedAt DateTime @default(now())
+
+  scores InterGroupJudgeScore[]
+
+  @@unique([challengeId, caravanId])
+  @@unique([challengeId, anonCode])
+}
+
+model InterGroupJudgeScore {
+  id         String @id @default(uuid())
+  entryId    String
+  judgeId    String
+  score      Int
+  strength   String
+  suggestion String
+
+  entry InterGroupEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, judgeId])
+}
+
+// Effort of one member in an inter-group challenge, confirmed by the mentor or the admin
+model InterGroupMemberTier {
+  id          String  @id @default(uuid())
+  challengeId String
+  caravanId   String
+  userId      String
+  tier        String  // "full" | "partner" | "minimal" | "inactive"
+  confirmedBy String?
+
+  @@unique([challengeId, userId])
+  @@index([challengeId, caravanId])
+}
+
+// Questions go to the judges privately; the answer is published for every caravan
+model InterGroupQuestion {
+  id          String   @id @default(uuid())
+  challengeId String
+  caravanId   String
+  userId      String
+  body        String
+  answer      String?
+  createdAt   DateTime @default(now())
+
+  @@index([challengeId])
+}
+
+model TopicInsight {
+  id        String   @id @default(uuid())
+  topicId   String   @unique
+  provider  String
+  content   Json
+  createdAt DateTime @default(now())
+
+  topic ChatTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}

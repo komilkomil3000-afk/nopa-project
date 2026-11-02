@@ -13,15 +13,16 @@ const FILE_LINK_SECONDS = 60 * 60;
 const GLOBAL_SPACES = [
   { key: 'announcements', type: 'announcements', title: 'کانال اعلانات' },
   { key: 'public', type: 'public', title: 'کانال همگانی' },
+  { key: 'arena', type: 'arena', title: 'میدان آثار' },
   { key: 'mentors', type: 'mentors', title: 'اتاق راهبران' },
 ];
 
 const ensured = new Set<string>();
 
-async function ensureSpace(key: string, data: { type: string; title: string; caravanId?: string }) {
-  if (ensured.has(key)) return;
-  await prisma.chatSpace.upsert({ where: { key }, update: {}, create: { key, ...data } });
+export async function ensureSpace(key: string, data: { type: string; title: string; caravanId?: string }) {
+  const space = await prisma.chatSpace.upsert({ where: { key }, update: {}, create: { key, ...data } });
   ensured.add(key);
+  return space;
 }
 
 /** Caravan ids a user's spaces come from. Admins and channel managers work across all of them. */
@@ -33,13 +34,23 @@ async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
   return Array.from(new Set([...actor.mentoredCaravanIds, ...(actor.caravanId ? [actor.caravanId] : [])]));
 }
 
+export async function ensureCaravanSpaces(caravanId: string) {
+  const caravan = `caravan:${caravanId}`, challenges = `challenges:${caravanId}`;
+  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: 'گروه کاروان', caravanId });
+  if (!ensured.has(challenges)) await ensureSpace(challenges, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
+}
+
+export const globalSpace = (key: 'announcements' | 'public' | 'arena' | 'mentors') => {
+  const s = GLOBAL_SPACES.find(g => g.key === key)!;
+  return ensureSpace(s.key, { type: s.type, title: s.title });
+};
+
 /** Creates the spaces a user should have the first time they are needed. */
 export async function ensureSpacesFor(actor: ChatActor): Promise<void> {
-  for (const s of GLOBAL_SPACES) await ensureSpace(s.key, { type: s.type, title: s.title });
-  for (const caravanId of await caravanIdsOf(actor)) {
-    await ensureSpace(`caravan:${caravanId}`, { type: 'caravan', title: 'گروه کاروان', caravanId });
-    await ensureSpace(`challenges:${caravanId}`, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
+  for (const s of GLOBAL_SPACES) {
+    if (!ensured.has(s.key)) await ensureSpace(s.key, { type: s.type, title: s.title });
   }
+  for (const caravanId of await caravanIdsOf(actor)) await ensureCaravanSpaces(caravanId);
 }
 
 export async function visibleSpaces(actor: ChatActor) {
@@ -50,7 +61,7 @@ export async function visibleSpaces(actor: ChatActor) {
   const candidates = await prisma.chatSpace.findMany({
     where: {
       OR: [
-        { type: { in: ['announcements', 'public', 'mentors'] } },
+        { type: { in: ['announcements', 'public', 'arena', 'mentors'] } },
         { caravanId: { in: caravanIds } },
         { id: { in: Array.from(members.keys()) } },
       ],
@@ -95,6 +106,9 @@ export const MESSAGE_INCLUDE = {
   sender: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } },
   attachments: true,
   reactions: { select: { type: true, userId: true } },
+  pollVotes: { select: { option: true, userId: true } },
+  tags: { select: { tag: { select: { id: true, name: true, color: true, visibility: true } } } },
+  topic: { select: { id: true, status: true, challengeId: true } },
   replyTo: { select: { id: true, body: true, deletedAt: true, sender: { select: { name: true } } } },
 } satisfies Prisma.ChatMessageInclude;
 
@@ -107,6 +121,13 @@ export function serializeMessage(m: MessageRow) {
     spaceId: m.spaceId,
     seq: m.seq,
     kind: m.kind,
+    botKey: m.botKey,
+    meta: m.meta,
+    stationId: m.stationId,
+    best: m.marks.includes('best'),
+    topic: m.topic,
+    pollVotes: m.pollVotes,
+    tags: m.tags.map(t => t.tag).filter(t => t.visibility === 'public'),
     body: deleted ? '' : m.body,
     deleted,
     edited: !!m.editedAt,
@@ -140,7 +161,11 @@ export const randomStorageName = (ext: string) => crypto.randomBytes(16).toStrin
 
 export interface NewMessage {
   spaceId: string;
-  senderId: string;
+  senderId?: string;
+  botKey?: string;
+  kind?: string;
+  meta?: Prisma.InputJsonValue;
+  stationId?: string;
   body: string;
   clientMessageId?: string;
   replyToId?: string;
@@ -159,7 +184,7 @@ export class ChatError extends Error {
  */
 export async function createMessage(input: NewMessage): Promise<{ row: MessageRow; created: boolean }> {
   const { spaceId, senderId, clientMessageId } = input;
-  if (clientMessageId) {
+  if (clientMessageId && senderId) {
     const existing = await prisma.chatMessage.findUnique({
       where: { senderId_clientMessageId: { senderId, clientMessageId } },
       include: MESSAGE_INCLUDE,
@@ -185,7 +210,10 @@ export async function createMessage(input: NewMessage): Promise<{ row: MessageRo
           seq: lastSeq,
           senderId,
           body: input.body,
-          kind: input.attachmentIds.length ? 'file' : 'text',
+          kind: input.kind || (input.attachmentIds.length ? 'file' : 'text'),
+          botKey: input.botKey,
+          meta: input.meta,
+          stationId: input.stationId,
           clientMessageId,
           replyToId: input.replyToId,
           threadRootId: input.threadRootId,
@@ -202,17 +230,19 @@ export async function createMessage(input: NewMessage): Promise<{ row: MessageRo
       if (input.threadRootId) {
         await tx.chatMessage.update({ where: { id: input.threadRootId }, data: { threadReplies: { increment: 1 } } });
       }
-      await tx.chatMember.upsert({
-        where: { spaceId_userId: { spaceId, userId: senderId } },
-        update: { lastReadSeq: lastSeq },
-        create: { spaceId, userId: senderId, lastReadSeq: lastSeq },
-      });
+      if (senderId) {
+        await tx.chatMember.upsert({
+          where: { spaceId_userId: { spaceId, userId: senderId } },
+          update: { lastReadSeq: lastSeq },
+          create: { spaceId, userId: senderId, lastReadSeq: lastSeq },
+        });
+      }
       return tx.chatMessage.findUniqueOrThrow({ where: { id: message.id }, include: MESSAGE_INCLUDE });
     });
     return { row, created: true };
   } catch (e: any) {
     // Two copies of one message raced: the unique index let one through
-    if (e?.code === 'P2002' && clientMessageId) {
+    if (e?.code === 'P2002' && clientMessageId && senderId) {
       const row = await prisma.chatMessage.findUniqueOrThrow({
         where: { senderId_clientMessageId: { senderId, clientMessageId } },
         include: MESSAGE_INCLUDE,

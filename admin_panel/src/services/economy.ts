@@ -7,6 +7,7 @@ export interface EconomyConfig {
   allowBuyNakh: boolean;      // may students turn zarik into nakh
   zarikPerNakh: number;       // price of one nakh while allowBuyNakh is on
   challengeMaxNakh: number;   // highest nakh a personal or group challenge can pay
+  evaluationWeights: { relevance: number; quality: number; collaboration: number; initiative: number }; // percent, must total 100
   interGroup: {
     prizes: { gold: number; silver: number; bronze: number; cloth: number }; // zarik per member, by rank
     tiers: { full: number; partner: number; minimal: number };               // percent of the prize, by effort
@@ -20,6 +21,7 @@ export const DEFAULT_ECONOMY: EconomyConfig = {
   allowBuyNakh: false,
   zarikPerNakh: 500,
   challengeMaxNakh: 10,
+  evaluationWeights: { relevance: 30, quality: 30, collaboration: 20, initiative: 20 },
   interGroup: {
     prizes: { gold: 20000, silver: 15000, bronze: 10000, cloth: 2500 },
     tiers: { full: 100, partner: 60, minimal: 25 },
@@ -36,7 +38,7 @@ export async function getEconomyPolicy(): Promise<EconomyPolicy> {
   if (cached && Date.now() - cached.at < CACHE_MS) return cached.policy;
   const row = await prisma.economyPolicy.findFirst({ orderBy: { version: 'desc' } });
   const policy = row
-    ? { version: row.version, config: row.config as unknown as EconomyConfig }
+    ? { version: row.version, config: { ...DEFAULT_ECONOMY, ...(row.config as unknown as EconomyConfig) } }
     : { version: 0, config: DEFAULT_ECONOMY };
   cached = { policy, at: Date.now() };
   return policy;
@@ -80,6 +82,7 @@ function percents(values: Record<string, unknown>): boolean {
 export function parseEconomyConfig(raw: any): { error: string } | { config: EconomyConfig } {
   const g = raw?.interGroup;
   const prizes = g?.prizes, tiers = g?.tiers, weights = g?.rankWeights;
+  const weightsE = raw?.evaluationWeights ?? DEFAULT_ECONOMY.evaluationWeights;
   if (!prizes || !tiers || !weights) return { error: 'تنظیمات مالی ناقص است' };
 
   const config: EconomyConfig = {
@@ -88,6 +91,9 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
     allowBuyNakh: raw.allowBuyNakh === true,
     zarikPerNakh: raw.zarikPerNakh,
     challengeMaxNakh: raw.challengeMaxNakh,
+    evaluationWeights: {
+      relevance: weightsE?.relevance, quality: weightsE?.quality, collaboration: weightsE?.collaboration, initiative: weightsE?.initiative,
+    },
     interGroup: {
       prizes: { gold: prizes.gold, silver: prizes.silver, bronze: prizes.bronze, cloth: prizes.cloth },
       tiers: { full: tiers.full, partner: tiers.partner, minimal: tiers.minimal },
@@ -95,7 +101,7 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
     },
   };
 
-  const { allowBuyNakh, interGroup, ...numbers } = config;
+  const { allowBuyNakh, interGroup, evaluationWeights, ...numbers } = config;
   if (!positiveInts(numbers)) return { error: 'نرخ‌ها باید عدد صحیح مثبت باشند' };
   if (!positiveInts(config.interGroup.prizes)) return { error: 'جایزه‌ی هر رتبه باید عدد صحیح مثبت باشد' };
   const { gold, silver, bronze, cloth } = config.interGroup.prizes;
@@ -104,6 +110,9 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
   if (!percents(config.interGroup.rankWeights)) return { error: 'وزن معیارها باید بین ۰ تا ۱۰۰ باشد' };
   if (config.interGroup.rankWeights.judges + config.interGroup.rankWeights.coverage + config.interGroup.rankWeights.delivery !== 100) {
     return { error: 'جمع وزن معیارهای رتبه باید ۱۰۰ باشد' };
+  }
+  if (!percents(evaluationWeights) || Object.values(evaluationWeights).reduce((a, b) => a + b, 0) !== 100) {
+    return { error: 'جمع وزن معیارهای ارزیابی باید ۱۰۰ باشد' };
   }
   return { config };
 }

@@ -1442,6 +1442,20 @@
 </section>
 
       <!-- CHAT OVERSIGHT TAB -->
+      <section id="support-cases-tab" class="tab-panel" style="display: none;">
+        <div class="panel-card glass u-maxw-760">
+          <div class="panel-title"><i class="fa-solid fa-life-ring u-c-primary-text u-ml-8"></i>پرونده‌های پشتیبانی</div>
+          <select id="support-cases-filter" class="select-ctrl u-mb-14" data-change="loadSupportCases">
+            <option value="">همه</option>
+            <option value="open">باز</option>
+            <option value="reviewing">در بررسی</option>
+            <option value="resolved">حل‌شده</option>
+          </select>
+          <div id="support-cases-list"></div>
+          <div id="support-case-detail" class="u-mt-15"></div>
+        </div>
+      </section>
+
       <section id="chat-tab" class="tab-panel" style="display: none;">
         <div id="chat-settings-admin" class="panel-card glass u-maxw-760">
           <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>وضعیت چت</div>
@@ -1469,6 +1483,26 @@
           <div class="u-fs-12 u-c-text-muted u-mb-5">گفتگوهای خصوصی از این بخش در دسترس نیستند.</div>
           <div id="chat-spaces-list"></div>
           <div id="chat-space-messages" class="u-mt-15"></div>
+        </div>
+        <div class="panel-card glass u-maxw-760 u-mt-15">
+          <div class="panel-title"><i class="fa-solid fa-paper-plane u-c-primary-text u-ml-8"></i>انتشار و زمان‌بندی</div>
+          <select id="chat-publish-space" class="select-ctrl u-mb-14"></select>
+          <textarea id="chat-publish-body" rows="3" maxlength="4000" placeholder="متن پیام" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5"></textarea>
+          <input type="datetime-local" id="chat-publish-at" class="u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5">
+          <div class="u-fs-12 u-c-text-muted u-mb-5">زمان را خالی بگذارید تا پیام فوراً منتشر شود.</div>
+          <button type="button" class="btn-action btn-add" data-click="publishChatMessage">انتشار</button>
+        </div>
+        <div class="panel-card glass u-maxw-760 u-mt-15">
+          <div class="panel-title"><i class="fa-solid fa-flag u-c-primary-text u-ml-8"></i>گزارش‌های تخلف</div>
+          <div id="chat-reports-list"></div>
+        </div>
+        <div class="panel-card glass u-maxw-760 u-mt-15">
+          <div class="panel-title"><i class="fa-solid fa-robot u-c-primary-text u-ml-8"></i>ربات‌ها</div>
+          <div id="chat-bots-list"></div>
+        </div>
+        <div class="panel-card glass u-maxw-760 u-mt-15">
+          <div class="panel-title"><i class="fa-solid fa-chart-column u-c-primary-text u-ml-8"></i>مشارکت و ابهام</div>
+          <div id="chat-analytics"></div>
         </div>
       </section>
 
@@ -3431,7 +3465,8 @@
           <div id="ranking-title" class="u-fs-15 u-bold u-c-text">رتبه‌بندی کاروان‌ها</div>
           <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;ranking-modal&quot;]" class="u-bg-none u-bd-none u-c-text-muted u-fs-18 u-pointer"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div id="ranking-body" class="u-c-text-soft u-fs-13"></div>
+        <div <div id="intergroup-desk" class="u-mb-14"></div>
+          id="ranking-body" class="u-c-text-soft u-fs-13"></div>
       </div>
     </div>
 
@@ -3833,6 +3868,7 @@
     <script src="js/features/asset-names.js"></script>
     <script src="js/features/economy.js"></script>
     <script src="js/features/chat-settings.js"></script>
+    <script src="js/features/chat-ops.js"></script>
     <script src="js/features/access.js"></script>
     <script src="js/features/users.js"></script>
     <script src="js/features/rewards.js"></script>

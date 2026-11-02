@@ -41,6 +41,10 @@ import { getStations, getClasses, getSessions, getClips, getQuizzes, createStati
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getChatAdminSettings, updateChatAdminSettings } from '../modules/chat/settingsController';
 import { deleteManagedMessage, listManagedMessages, listManagedSpaces } from '../modules/chat/manageController';
+import { listBots, publishFromPanel, updateBot } from '../modules/chat/bots';
+import { chatAnalytics, exportSpace, listReports, resolveReport } from '../modules/chat/reports';
+import { caseMessages, claimCase, listCases, replyCase, resolveCase } from '../modules/chat/support';
+import { adminBoard, answerQuestion } from '../modules/chat/intergroup';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
 import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
@@ -295,6 +299,20 @@ router.put('/chat-settings', updateChatAdminSettings as any);
 router.get('/chat-manage/spaces', listManagedSpaces as any);
 router.get('/chat-manage/spaces/:id/messages', listManagedMessages as any);
 router.delete('/chat-manage/messages/:id', deleteManagedMessage as any);
+router.get('/chat-manage/reports', listReports as any);
+router.post('/chat-manage/reports/:id/resolve', resolveReport as any);
+router.get('/chat-manage/bots', listBots as any);
+router.put('/chat-manage/bots/:key', updateBot as any);
+router.post('/chat-manage/publish', publishFromPanel as any);
+router.get('/chat-manage/analytics', chatAnalytics as any);
+router.get('/chat-manage/spaces/:id/export', exportSpace as any);
+router.get('/support-cases', listCases as any);
+router.get('/support-cases/:id/messages', caseMessages as any);
+router.post('/support-cases/:id/claim', claimCase as any);
+router.post('/support-cases/:id/reply', replyCase as any);
+router.post('/support-cases/:id/resolve', resolveCase as any);
+router.get('/intergroup/:id/board', adminBoard as any);
+router.post('/intergroup/questions/:id/answer', answerQuestion as any);
 
 // 12. Instructors Management (بانک اساتید)
 router.get('/instructors', getInstructors as any);

@@ -46,3 +46,20 @@ export async function changeBalance(tx: Prisma.TransactionClient, change: Balanc
     });
   }
 }
+
+/**
+ * Pays an approved answer. Keyed on the submission, so the panel, the app and the chat evaluation
+ * share one payment: whichever comes second is refused by the ledger's unique index.
+ */
+export function creditChallengeReward(tx: Prisma.TransactionClient, p: { submissionId: string; studentId: string; asset: 'zarik' | 'nakh'; amount: number; title: string; actorId: string }) {
+  return changeBalance(tx, {
+    userId: p.studentId,
+    asset: p.asset,
+    amount: p.amount,
+    sourceType: 'submission_review',
+    sourceId: p.submissionId,
+    reason: `پاداش تایید تکلیف: ${p.title}`,
+    createdBy: p.actorId,
+    zarikCategory: 'Skill Tasks',
+  });
+}

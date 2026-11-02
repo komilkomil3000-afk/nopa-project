@@ -13,6 +13,15 @@ const ECONOMY_GROUPS = [
   },
   { title: 'چالش‌های شخصی و درون‌گروهی', fields: [['challengeMaxNakh', 'سقف جایزه‌ی هر چالش (کلاف)']] },
   {
+    title: 'وزن معیارهای ارزیابی چالش (درصد، جمع ۱۰۰)',
+    fields: [
+      ['evaluationWeights.relevance', 'ارتباط با موضوع'],
+      ['evaluationWeights.quality', 'کیفیت و استدلال'],
+      ['evaluationWeights.collaboration', 'همکاری با دیگران'],
+      ['evaluationWeights.initiative', 'ابتکار و پیشبرد'],
+    ],
+  },
+  {
     title: 'جایزه‌ی فراگروهی برای هر فرد (زریک)',
     fields: [
       ['interGroup.prizes.gold', 'رتبه‌ی اول'],
@@ -44,7 +53,7 @@ const economyGet = (config, key) => economyPath(key).reduce((v, k) => (v == null
 const economyInputId = key => `economy-${key.replace(/\./g, '-')}`;
 
 function economyReadForm() {
-  const config = { interGroup: { prizes: {}, tiers: {}, rankWeights: {} } };
+  const config = { evaluationWeights: {}, interGroup: { prizes: {}, tiers: {}, rankWeights: {} } };
   ECONOMY_GROUPS.forEach(group => group.fields.forEach(([key, , type]) => {
     const input = document.getElementById(economyInputId(key));
     const path = economyPath(key);

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
+import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/audio_exclusivity_service.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -84,6 +85,14 @@ class ChatMessageBubble extends StatelessWidget {
         if (message.replyToId != null) _quote(),
         for (final attachment in message.attachments) _Attachment(attachment: attachment),
         if (message.body.isNotEmpty) Text(message.body, style: ChatTheme.body, textDirection: _directionOf(message.body)),
+        if (message.tags.isNotEmpty || message.best)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Wrap(spacing: 4, runSpacing: 4, children: [
+              if (message.best) const ChatChip(label: 'بهترین پاسخ', color: ChatTheme.accent),
+              for (final tag in message.tags) ChatChip(label: tag['name'] ?? '', color: ChatChip.parse(tag['color'] ?? '#9292E2')),
+            ]),
+          ),
         if (message.reactions.isNotEmpty) _reactions(),
         if (onOpenThread != null && message.threadReplies > 0) _threadLink(),
         _footer(),
