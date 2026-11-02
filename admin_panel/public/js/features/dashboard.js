@@ -190,7 +190,7 @@
               <span class="dash-rank${i < 3 ? ' is-top' : ''}">${fa(i + 1)}</span>
               <div class="dash-league-body">
                 <div class="dash-league-row"><span class="dash-name">${esc(c.name)}</span><b>${fa(pct)}٪</b></div>
-                <div class="dash-progress"><i style="width:${pct}%"></i></div>
+                <div class="dash-progress"><i data-style="width:${pct}%"></i></div>
                 <small>${esc(c.mentorName || 'بدون راهبر')} · ${fa(c.memberCount)} عضو</small>
               </div></li>`;
           }).join('')

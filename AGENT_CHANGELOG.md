@@ -2870,3 +2870,78 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Migration dry run on a throwaway embedded Postgres (script kept outside the repo).
   - Read-only probe of production: /health 200, /socket.io/ 404.
 - **Status:** Completed (production WebSocket check, migration on a copy of real data, quiet hours with Push, scoring calibration and pilot remain)
+### [2026-11-02 10:05] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 2 (Accessibility)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/modal.js` (Modified — drawers handled as dialogs; dialogs named after their heading)
+  - `admin_panel/public/js/ui/actions.js` (Modified — Enter/Space for role="button" targets; skip-link helper)
+  - `admin_panel/public/index.html` (Modified — label for=, aria-labels, close-button labels, skip link, role="button" cards, stray quote fixed)
+  - `admin_panel/public/style.css` (Modified — closed drawer is visibility:hidden)
+  - `admin_panel/public/css/components.css` (Modified — skip link)
+  - `admin_panel/public/css/utilities.css` (Modified — u-outline-none removed)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/{access,asset-names,caravans,challenges,jarchi,lms-builder,media,mentors,tickets-chat,users}.js`, `admin_panel/public/js/features/lms/{content-manager,directory,station-creator}.js` (Modified — template labels, icon button names, image alt, keyboard-reachable click targets)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v15)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Audit over all tabs/modals: unnamed controls, unlabeled fields, unreachable click targets, missing alt, unnamed/unroled dialogs all brought to 0.
+  - Fix: the closed user drawer stayed reachable by Tab/screen readers on every page; it is now hidden when closed and behaves as a dialog when open (ESC, focus trap/return).
+  - Skip link, visible focus ring restored where a utility removed it, Enter/Space on custom buttons.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: accessibility suite 8/8; computed-style diff vs Phase 7 shows only intended changes; Phase 3–8 suites, open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** In Progress (Phase 8 step 3 pending: typography/spacing scale, states pass)
+
+### [2026-11-02 10:32] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 3 (Type scale, spacing, loading/empty/error states)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Modified — --text-2xs)
+  - `admin_panel/public/css/utilities.css` (Modified — font sizes on the --text-* scale, spacing on a fixed set; 653 → 600 classes)
+  - `admin_panel/public/style.css`, `admin_panel/public/css/{layout,landing,dashboard,components}.css` (Modified — px font sizes → tokens; base heading/control sizes; NopaState styles)
+  - `admin_panel/public/js/ui/table.js` (Modified — NopaState for non-table containers)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — renamed utility classes; empty/error states in 13 loaders; escaped mentor filter options; completionRate guard)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v16)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored; all phases done)
+- **Description of Changes:**
+  - 18 font sizes → 8-step scale (max change 2px per element); spacing snapped to one set; bare headings/controls on the scale.
+  - Every list/table now shows a loading/empty/error state (13 containers stayed blank before); notifications load their two parts independently; reward rules/notifications no longer throw on error responses.
+  - Security fix: mentor names were inserted unescaped into the caravans mentor filter.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: step 3 suite 9/9, blank-container check 0, before/after screenshots (1440 / 390px); Phase 3–8 suites (incl. a11y and CSP), open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** Completed (redesign roadmap Phases 1–8 done)
+
+### [2026-11-02 11:28] - Claude Code (Opus 5.5) / Admin Panel — Follow-ups: CSP without 'unsafe-inline', pink token, brand PWA icons
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/style-attr.js` (Created — data-style → element.style via the CSSOM)
+  - `admin_panel/src/config/csp.ts` (Modified — `style-src-attr 'none'`)
+  - `admin_panel/tests/security.test.js` (Modified — no 'unsafe-inline' anywhere)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — every style="" → class or data-style)
+  - `admin_panel/public/css/tokens.css` (Modified — --pink family), `admin_panel/public/css/components.css` (Modified — pink / one-off classes, pre-script hide rule)
+  - `admin_panel/public/icons/*` (Modified — regenerated in the brand gradient), `admin_panel/public/manifest.webmanifest` (Modified — brand colours)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v17)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - CSP now has no 'unsafe-inline' at all: the panel ships no style attributes; data-dependent and JS-toggled styles go through data-style + CSSOM (allowed by CSP), with identical computed results.
+  - Five ad-hoc pinks unified into a --pink token (contrast-safe in the light theme). PWA icons and manifest colours moved to the brand purple.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome under the real header: CSP suite 9/9 (no violations over all tabs, clicks and modals; injected style attributes blocked; data-style applied for late inserts). Computed-style diff at 1440 / 390 px and light theme shows only the pink / gradient changes. Phase 3–8 suites, a11y, open-everything, smoke, blank-state check green.
+  - `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`. Deploy: rebuild on the server for the new header.
+- **Status:** Completed
+
+### [2026-11-02 18:30] - Claude Code / Merge of origin/main (panel redesign) into chat work
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `AGENT_CHANGELOG.md`, `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/tickets-chat.js` (Modified: conflict resolution)
+- **Description of Changes:**
+  - Merged c3a1907 and a7a2259 (design tokens, CSP without inline style attributes) with the chat commits.
+  - index.html: kept the support-cases and new chat tabs; challenge forms take the new classes but stay kalaf-only with a 0 to 10 default range; fixed the malformed inter-group desk / ranking markup; converted the chat tab's remaining `style=""` to `data-style=""` (the new CSP blocks style attributes); removed 101 doubled quotes (`id="x""`) left by the redesign.
+  - tickets-chat.js: the legacy chat oversight stays removed (its API was disabled in phase 0).
+  - sw.js: cache version v21, above both sides.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6 in `admin_panel/`, including the panel in Chrome with no console or CSP errors.
+- **Status:** Completed (merge commit left to the user)

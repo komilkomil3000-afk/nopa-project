@@ -81,17 +81,21 @@ window.loadAssetNames = async function() {
   try {
     const res = await request('/api/v1/admin/assets');
     const rows = await res.json();
-    if (!res.ok) return;
+    if (!res.ok || !Array.isArray(rows)) return NopaState.error(box, 'خطا در دریافت نام دارایی‌ها');
     window.assetNamesMap = Object.fromEntries(rows.map(r => [r.key, r.nameFa]));
     window.applyAssetNames();
     if (!box) return;
+    if (!rows.length) return NopaState.empty(box, 'دارایی‌ای تعریف نشده است');
     box.innerHTML = rows.map(r => `
       <div class="u-flex u-gap-6 u-items-center">
-        <span class="u-fs-11 u-c-text-muted u-minw-78">${esc(r.key)}</span>
-        <input type="text" id="asset-name-${r.key}" value="${esc(r.nameFa)}" maxlength="30" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
-        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action u-p-5-10 u-fs-11 u-pointer">ذخیره</button>
+        <span class="u-fs-2xs u-c-text-muted u-minw-78">${esc(r.key)}</span>
+        <input type="text" id="asset-name-${esc(r.key)}" aria-label="نام فارسی ${esc(r.key)}" value="${esc(r.nameFa)}" maxlength="30" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-sm">
+        <button type="button" data-click="saveAssetName" data-click-args="${esc(JSON.stringify([String(r.key)]))}" class="btn-action u-p-6-10 u-fs-2xs u-pointer">ذخیره</button>
       </div>`).join('');
-  } catch (e) { console.error('loadAssetNames error', e); }
+  } catch (e) {
+    console.error('loadAssetNames error', e);
+    NopaState.error(box, 'خطا در دریافت نام دارایی‌ها');
+  }
 };
 
 window.saveAssetName = async function(key) {

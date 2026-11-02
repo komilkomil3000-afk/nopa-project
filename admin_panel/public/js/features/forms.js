@@ -4,11 +4,13 @@
 
 // FORM BUILDER LOGIC
 async function loadDynForms() {
+  const tbody = document.querySelector('#dyn-forms-table tbody');
   try {
     const res = await request('/api/v1/admin/forms');
     const forms = await res.json();
-    const tbody = document.querySelector('#dyn-forms-table tbody');
     if(!tbody) return;
+    if (!res.ok || !Array.isArray(forms)) return NopaTable.error(tbody, 'خطا در دریافت فرم‌ها');
+    if (!forms.length) return NopaTable.empty(tbody, 'هنوز فرمی ساخته نشده است');
     tbody.innerHTML = '';
     forms.forEach(f => {
       const tr = document.createElement('tr');
@@ -22,7 +24,7 @@ async function loadDynForms() {
       `;
       tbody.appendChild(tr);
     });
-  } catch(e) { console.error(e); }
+  } catch(e) { console.error(e); NopaTable.error(tbody, 'خطا در دریافت فرم‌ها'); }
 }
 
 async function submitDynamicForm(e) {

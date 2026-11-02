@@ -27,12 +27,12 @@ window.loadAuditLogs = async function(role = null) {
     
     NopaTable.render(tbody, logs, l => `
       <tr>
-        <td><span class="u-fs-0_8rem">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
+        <td><span class="u-fs-xs">${new Date(l.createdAt).toLocaleString('fa-IR')}</span></td>
         <td>${esc(l.actorName)}</td>
         <td><span class="badge badge-mentor">${esc(l.actorRole || '')}</span></td>
         <td>${esc(l.action)}</td>
         <td>${esc(l.targetEntity)}</td>
-        <td><span class="u-fs-0_8rem">${esc(l.details)}</span></td>
+        <td><span class="u-fs-xs">${esc(l.details)}</span></td>
         <td>${esc(l.ipAddress || '-')}</td>
       </tr>
     `, { empty: 'رویدادی با این فیلترها ثبت نشده است', emptyIcon: 'fa-solid fa-clock-rotate-left' });

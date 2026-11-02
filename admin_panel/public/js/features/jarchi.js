@@ -106,24 +106,24 @@ window.loadBannersTab = async function() {
     }
 
     const positionLabels = {
-      'home_top': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
-      'bazaar_top': '<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
-      'lms_slider': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
-      'general': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-globe"></i> عمومی</span>'
+      'home_top': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-house"></i> بالای صفحه اصلی</span>',
+      'bazaar_top': '<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-store"></i> بالای صفحه بازار</span>',
+      'lms_slider': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-graduation-cap"></i> آموزش و منزلگاه</span>',
+      'general': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-globe"></i> عمومی</span>'
     };
 
     tbody.innerHTML = bannerList.map(b => {
       const posLabel = positionLabels[b.position] || `<span class="badge">${b.position}</span>`;
       const isBannerActive = (b.isActive === true || b.isActive === 1 || b.isActive === 'true');
       const statusBadge = isBannerActive
-        ? `<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-11 u-p-3-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), true]))}" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
-        : `<span class="badge u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-fs-11 u-p-3-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), false]))}" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
+        ? `<span role="button" tabindex="0" class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), true]))}" title="کلیک برای غیرفعال کردن"><i class="fa-solid fa-check"></i> فعال</span>`
+        : `<span role="button" tabindex="0" class="badge u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-fs-2xs u-p-4-8 u-r-6 u-pointer" data-click="toggleBannerStatus" data-click-args="${esc(JSON.stringify([String(b.id), false]))}" title="کلیک برای فعال کردن"><i class="fa-solid fa-xmark"></i> غیرفعال</span>`;
       
       const imgMarkup = b.imageUrl
-        ? `<img src="${esc(b.imageUrl)}" class="u-w-75 u-h-42 u-r-6 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" data-error="NopaActions.fallbackSrc" data-error-args="[&quot;$this&quot;,&quot;/uploads/banner1.jpg&quot;]" />`
+        ? `<img src="${esc(b.imageUrl)}" alt="${esc(b.title || '')}" class="u-w-75 u-h-42 u-r-6 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" data-error="NopaActions.fallbackSrc" data-error-args="[&quot;$this&quot;,&quot;/uploads/banner1.jpg&quot;]" />`
         : '<div class="u-w-75 u-h-42 u-r-6 u-bg-fg-5 u-flex u-items-center u-justify-center u-c-text-faint"><i class="fa-solid fa-image"></i></div>';
 
-      const targetText = b.targetRoute ? `<code class="u-bg-fg-6 u-p-2-6 u-r-4 u-fs-11 u-c-text-soft" dir="ltr">${esc(b.targetRoute)}</code>` : '<span class="u-c-text-faint">-</span>';
+      const targetText = b.targetRoute ? `<code class="u-bg-fg-6 u-p-2-6 u-r-4 u-fs-2xs u-c-text-soft" dir="ltr">${esc(b.targetRoute)}</code>` : '<span class="u-c-text-faint">-</span>';
 
       return `
         <tr>
@@ -383,9 +383,9 @@ window.renderNewsTable = function(newsList) {
   };
 
   const audienceLabels = {
-    'ALL': '<span class="badge u-bg-fg-8 u-c-text-soft u-bd-fg-10 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-users"></i> عمومی</span>',
-    'STUDENTS': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
-    'MENTORS': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
+    'ALL': '<span class="badge u-bg-fg-8 u-c-text-soft u-bd-fg-10 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-users"></i> عمومی</span>',
+    'STUDENTS': '<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-user-graduate"></i> دانش‌آموزان</span>',
+    'MENTORS': '<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-user-tie"></i> راهبران</span>'
   };
 
   tbody.innerHTML = newsList.map(n => {
@@ -394,40 +394,40 @@ window.renderNewsTable = function(newsList) {
     const pDate = n.publishDate ? new Date(n.publishDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
     
     const imageMarkup = n.imageUrl 
-      ? `<img src="${esc(n.imageUrl)}" class="u-w-50 u-h-50 u-r-8 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" />`
-      : `<div class="u-w-50 u-h-50 u-r-8 u-bg-fg-5 u-flex u-items-center u-justify-center u-c-text-faint u-bd-fg-8"><i class="fa-solid fa-image u-fs-18"></i></div>`;
+      ? `<img src="${esc(n.imageUrl)}" alt="${esc(n.title || '')}" class="u-w-50 u-h-50 u-r-8 u-fit-cover u-bd-fg-10 u-shadow-0-2-6-shade-30" />`
+      : `<div class="u-w-50 u-h-50 u-r-8 u-bg-fg-5 u-flex u-items-center u-justify-center u-c-text-faint u-bd-fg-8"><i class="fa-solid fa-image u-fs-lg"></i></div>`;
 
     const statusBadge = n.isPublished
-      ? `<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-check"></i> منتشرشده</span>`
-      : `<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-11 u-p-3-8 u-r-6"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
+      ? `<span class="badge u-bg-success-15 u-c-success-text u-bd-success-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-check"></i> منتشرشده</span>`
+      : `<span class="badge u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-fs-2xs u-p-4-8 u-r-6"><i class="fa-solid fa-clock"></i> پیش‌نویس</span>`;
 
     return `
       <tr>
         <td class="u-text-center">${imageMarkup}</td>
         <td>
-          <div class="u-bold u-c-text u-fs-13 u-mb-3">${esc(n.title || 'بدون عنوان')}</div>
-          ${n.subtitle ? `<div class="u-fs-11 u-c-text-muted u-lh-1_4">${esc(n.subtitle)}</div>` : ''}
+          <div class="u-bold u-c-text u-fs-sm u-mb-4">${esc(n.title || 'بدون عنوان')}</div>
+          ${n.subtitle ? `<div class="u-fs-2xs u-c-text-muted u-lh-1_4">${esc(n.subtitle)}</div>` : ''}
         </td>
         <td class="u-text-center">
-          <span class="badge u-fs-11 u-p-3-8 u-r-6 u-bold" style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}">
+          <span class="badge u-fs-2xs u-p-4-8 u-r-6 u-bold" data-style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}">
             ${esc(n.category || 'عمومی')}
           </span>
         </td>
         <td>
-          <div class="u-fs-12 u-c-text-soft u-flex u-items-center u-gap-5">
-            <i class="fa-solid fa-user-pen u-c-primary-text u-fs-11"></i>
+          <div class="u-fs-xs u-c-text-soft u-flex u-items-center u-gap-6">
+            <i class="fa-solid fa-user-pen u-c-primary-text u-fs-2xs"></i>
             <span>${esc(n.reporter || 'ستاد نپا')}</span>
           </div>
         </td>
-        <td dir="ltr" class="u-text-right u-fs-11 u-c-text-muted">${pDate}</td>
+        <td dir="ltr" class="u-text-right u-fs-2xs u-c-text-muted">${pDate}</td>
         <td class="u-text-center">${audienceBadge}</td>
         <td class="u-text-center">${statusBadge}</td>
         <td class="u-text-center">
           <div class="u-flex u-justify-center u-gap-6">
-            <button type="button" class="btn-action u-bg-primary-15 u-bd-primary-30 u-c-primary-text u-p-5-8 u-r-6 u-pointer" data-click="editNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="ویرایش خبر">
+            <button type="button" class="btn-action u-bg-primary-15 u-bd-primary-30 u-c-primary-text u-p-6-8 u-r-6 u-pointer" data-click="editNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="ویرایش خبر">
               <i class="fa-solid fa-pen"></i>
             </button>
-            <button type="button" class="btn-action u-bg-danger-15 u-bd-danger-30 u-c-danger-text u-p-5-8 u-r-6 u-pointer" data-click="deleteNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="حذف خبر">
+            <button type="button" class="btn-action u-bg-danger-15 u-bd-danger-30 u-c-danger-text u-p-6-8 u-r-6 u-pointer" data-click="deleteNews" data-click-args="${esc(JSON.stringify([String(n.id)]))}" title="حذف خبر">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>

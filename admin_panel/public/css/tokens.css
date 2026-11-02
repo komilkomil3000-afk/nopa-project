@@ -57,6 +57,12 @@
   --info-text: #93C5FD;
   --info-rgb: 59 130 246;
 
+  /* Category colour (challenges, quizzes in the LMS builder, the female badge); replaces 5 ad-hoc pinks */
+  --pink: #EC4899;
+  --pink-strong: #DB2777;
+  --pink-text: #F472B6;
+  --pink-rgb: 236 72 153;
+
   --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.25);
   --shadow-lg: 0 25px 50px -12px rgb(0 0 0 / 0.8);
   --page-glow-1: rgb(139 92 246 / 0.16);
@@ -109,6 +115,11 @@
   --info-text: #1D4ED8;
   --info-rgb: 37 99 235;
 
+  --pink: #DB2777;
+  --pink-strong: #BE185D;
+  --pink-text: #BE185D;        /* #F472B6 fails text contrast on white */
+  --pink-rgb: 219 39 119;
+
   --shadow-sm: 0 2px 8px rgb(60 40 110 / 0.08);
   --shadow-lg: 0 25px 50px -12px rgb(60 40 110 / 0.25);
   --page-glow-1: rgb(124 58 237 / 0.08);
@@ -128,6 +139,9 @@
   --radius-md: 12px;
   --radius-lg: 20px;
 
+  /* Type scale: every font size in the panel is one of these steps (Phase 8).
+     2xs = badges, meta lines, table captions; xs/sm = secondary text; base = body; md+ = headings */
+  --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;

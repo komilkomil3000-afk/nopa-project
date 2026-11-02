@@ -1,5 +1,5 @@
 /* Utility classes generated from the inline styles that used to live in index.html and the JS
- * templates (Phase 7). One declaration per class; shorthands come before longhands so a longhand
+ * templates (Phase 7). Font sizes use the --text-* scale and spacing a fixed set (Phase 8). Font sizes use the --text-* scale and spacing a fixed set (Phase 8). One declaration per class; shorthands come before longhands so a longhand
  * on the same element still wins. Loaded last.
  *
  * :not(#_) lifts each class to id+class specificity, close to the inline style it replaces, so component
@@ -158,67 +158,47 @@
 .u-m-0-auto-10-auto:not(#_){margin:0 auto 10px auto}
 .u-m-2:not(#_){margin:2px}
 .u-m-4-0-0-0:not(#_){margin:4px 0 0 0}
-.u-m-5-0-0-0:not(#_){margin:5px 0 0 0}
+.u-m-6-0-0-0:not(#_){margin:6px 0 0 0}
 .u-m-6-0-16:not(#_){margin:6px 0 16px}
 .u-m-8-0-0:not(#_){margin:8px 0 0}
 .u-m-10-0:not(#_){margin:10px 0}
 .u-m-10-0-4:not(#_){margin:10px 0 4px}
 .u-m-10-10-0-0:not(#_){margin:10px 10px 0 0}
-.u-m-15-0:not(#_){margin:15px 0}
-.u-outline-none:not(#_){outline:none}
+.u-m-16-0:not(#_){margin:16px 0}
 .u-overflow-auto:not(#_){overflow:auto}
 .u-overflow-hidden:not(#_){overflow:hidden}
 .u-p-0:not(#_){padding:0}
 .u-p-0-2:not(#_){padding:0 2px}
-.u-p-0-15-15:not(#_){padding:0 15px 15px}
+.u-p-0-16-16:not(#_){padding:0 16px 16px}
 .u-p-0-20-20-20:not(#_){padding:0 20px 20px 20px}
-.u-p-1-5:not(#_){padding:1px 5px}
 .u-p-1-6:not(#_){padding:1px 6px}
-.u-p-1-7:not(#_){padding:1px 7px}
+.u-p-1-8:not(#_){padding:1px 8px}
 .u-p-2:not(#_){padding:2px}
 .u-p-2-6:not(#_){padding:2px 6px}
-.u-p-2-7:not(#_){padding:2px 7px}
 .u-p-2-8:not(#_){padding:2px 8px}
-.u-p-2-9:not(#_){padding:2px 9px}
-.u-p-3-0-0-0:not(#_){padding:3px 0 0 0}
-.u-p-3-8:not(#_){padding:3px 8px}
-.u-p-3-9:not(#_){padding:3px 9px}
-.u-p-3-10:not(#_){padding:3px 10px}
+.u-p-2-10:not(#_){padding:2px 10px}
 .u-p-4:not(#_){padding:4px}
 .u-p-4-0:not(#_){padding:4px 0}
+.u-p-4-0-0-0:not(#_){padding:4px 0 0 0}
 .u-p-4-6:not(#_){padding:4px 6px}
 .u-p-4-8:not(#_){padding:4px 8px}
-.u-p-4-9:not(#_){padding:4px 9px}
 .u-p-4-10:not(#_){padding:4px 10px}
 .u-p-4-12:not(#_){padding:4px 12px}
-.u-p-5-6:not(#_){padding:5px 6px}
-.u-p-5-8:not(#_){padding:5px 8px}
-.u-p-5-9:not(#_){padding:5px 9px}
-.u-p-5-10:not(#_){padding:5px 10px}
-.u-p-5-12:not(#_){padding:5px 12px}
 .u-p-6:not(#_){padding:6px}
 .u-p-6-0:not(#_){padding:6px 0}
+.u-p-6-6:not(#_){padding:6px 6px}
 .u-p-6-8:not(#_){padding:6px 8px}
 .u-p-6-10:not(#_){padding:6px 10px}
 .u-p-6-12:not(#_){padding:6px 12px}
 .u-p-6-14:not(#_){padding:6px 14px}
-.u-p-7-10:not(#_){padding:7px 10px}
-.u-p-7-12:not(#_){padding:7px 12px}
-.u-p-7-14:not(#_){padding:7px 14px}
-.u-p-7-16:not(#_){padding:7px 16px}
 .u-p-8:not(#_){padding:8px}
 .u-p-8-10:not(#_){padding:8px 10px}
 .u-p-8-12:not(#_){padding:8px 12px}
 .u-p-8-14:not(#_){padding:8px 14px}
 .u-p-8-16:not(#_){padding:8px 16px}
-.u-p-8-18:not(#_){padding:8px 18px}
 .u-p-8-20:not(#_){padding:8px 20px}
-.u-p-8-22:not(#_){padding:8px 22px}
-.u-p-8-36-8-12:not(#_){padding:8px 36px 8px 12px}
-.u-p-9-18:not(#_){padding:9px 18px}
-.u-p-9-20:not(#_){padding:9px 20px}
-.u-p-9-24:not(#_){padding:9px 24px}
-.u-p-9-26:not(#_){padding:9px 26px}
+.u-p-8-24:not(#_){padding:8px 24px}
+.u-p-8-32-8-12:not(#_){padding:8px 32px 8px 12px}
 .u-p-10:not(#_){padding:10px}
 .u-p-10-8:not(#_){padding:10px 8px}
 .u-p-10-12:not(#_){padding:10px 12px}
@@ -228,25 +208,19 @@
 .u-p-12:not(#_){padding:12px}
 .u-p-12-10:not(#_){padding:12px 10px}
 .u-p-12-14:not(#_){padding:12px 14px}
-.u-p-12-15:not(#_){padding:12px 15px}
 .u-p-12-16:not(#_){padding:12px 16px}
 .u-p-14:not(#_){padding:14px}
-.u-p-15:not(#_){padding:15px}
 .u-p-16:not(#_){padding:16px}
 .u-p-16-0:not(#_){padding:16px 0}
-.u-p-18:not(#_){padding:18px}
-.u-p-18-20:not(#_){padding:18px 20px}
-.u-p-18-24:not(#_){padding:18px 24px}
 .u-p-20:not(#_){padding:20px}
 .u-p-20-0:not(#_){padding:20px 0}
 .u-p-20-0-0-0:not(#_){padding:20px 0 0 0}
-.u-p-22:not(#_){padding:22px}
+.u-p-20-20:not(#_){padding:20px 20px}
+.u-p-20-24:not(#_){padding:20px 24px}
 .u-p-24:not(#_){padding:24px}
-.u-p-25:not(#_){padding:25px}
-.u-p-26:not(#_){padding:26px}
-.u-p-28-12:not(#_){padding:28px 12px}
-.u-p-30:not(#_){padding:30px}
-.u-p-35-20:not(#_){padding:35px 20px}
+.u-p-24-12:not(#_){padding:24px 12px}
+.u-p-32:not(#_){padding:32px}
+.u-p-32-20:not(#_){padding:32px 20px}
 .u-p-40:not(#_){padding:40px}
 .u-no-underline:not(#_){text-decoration:none}
 .u-td-underline:not(#_){text-decoration:underline}
@@ -367,28 +341,15 @@
 .u-wrap:not(#_){flex-wrap:wrap}
 .u-float-left:not(#_){float:left}
 .u-mono:not(#_){font-family:monospace}
-.u-fs-0_8rem:not(#_){font-size:0.8rem}
-.u-fs-0_9rem:not(#_){font-size:0.9rem}
-.u-fs-9:not(#_){font-size:9px}
-.u-fs-10:not(#_){font-size:10px}
-.u-fs-10_5:not(#_){font-size:10.5px}
-.u-fs-11:not(#_){font-size:11px}
-.u-fs-11_5:not(#_){font-size:11.5px}
-.u-fs-12:not(#_){font-size:12px}
-.u-fs-12_5:not(#_){font-size:12.5px}
-.u-fs-13:not(#_){font-size:13px}
-.u-fs-13_5:not(#_){font-size:13.5px}
-.u-fs-14:not(#_){font-size:14px}
-.u-fs-14_5:not(#_){font-size:14.5px}
-.u-fs-15:not(#_){font-size:15px}
-.u-fs-16:not(#_){font-size:16px}
-.u-fs-17:not(#_){font-size:17px}
-.u-fs-18:not(#_){font-size:18px}
-.u-fs-20:not(#_){font-size:20px}
-.u-fs-22:not(#_){font-size:22px}
-.u-fs-24:not(#_){font-size:24px}
-.u-fs-32:not(#_){font-size:32px}
+.u-fs-2xl:not(#_){font-size:var(--text-2xl)}
+.u-fs-2xs:not(#_){font-size:var(--text-2xs)}
 .u-fs-40:not(#_){font-size:40px}
+.u-fs-base:not(#_){font-size:var(--text-base)}
+.u-fs-lg:not(#_){font-size:var(--text-lg)}
+.u-fs-md:not(#_){font-size:var(--text-md)}
+.u-fs-sm:not(#_){font-size:var(--text-sm)}
+.u-fs-xl:not(#_){font-size:var(--text-xl)}
+.u-fs-xs:not(#_){font-size:var(--text-xs)}
 .u-bold:not(#_){font-weight:bold}
 .u-fw-500:not(#_){font-weight:500}
 .u-fw-600:not(#_){font-weight:600}
@@ -396,9 +357,7 @@
 .u-fw-800:not(#_){font-weight:800}
 .u-fw-normal:not(#_){font-weight:normal}
 .u-gap-2:not(#_){gap:2px}
-.u-gap-3:not(#_){gap:3px}
 .u-gap-4:not(#_){gap:4px}
-.u-gap-5:not(#_){gap:5px}
 .u-gap-6:not(#_){gap:6px}
 .u-gap-6-12:not(#_){gap:6px 12px}
 .u-gap-8:not(#_){gap:8px}
@@ -407,7 +366,6 @@
 .u-gap-14:not(#_){gap:14px}
 .u-gap-15:not(#_){gap:15px}
 .u-gap-16:not(#_){gap:16px}
-.u-gap-18:not(#_){gap:18px}
 .u-gap-20:not(#_){gap:20px}
 .u-col-span-span-2:not(#_){grid-column:span 2}
 .u-h-6:not(#_){height:6px}
@@ -454,39 +412,30 @@
 .u-lh-1_8:not(#_){line-height:1.8}
 .u-mb-0:not(#_){margin-bottom:0}
 .u-mb-2:not(#_){margin-bottom:2px}
-.u-mb-3:not(#_){margin-bottom:3px}
 .u-mb-4:not(#_){margin-bottom:4px}
-.u-mb-5:not(#_){margin-bottom:5px}
 .u-mb-6:not(#_){margin-bottom:6px}
 .u-mb-8:not(#_){margin-bottom:8px}
 .u-mb-10:not(#_){margin-bottom:10px}
 .u-mb-12:not(#_){margin-bottom:12px}
 .u-mb-14:not(#_){margin-bottom:14px}
-.u-mb-15:not(#_){margin-bottom:15px}
 .u-mb-16:not(#_){margin-bottom:16px}
-.u-mb-18:not(#_){margin-bottom:18px}
 .u-mb-20:not(#_){margin-bottom:20px}
-.u-mb-22:not(#_){margin-bottom:22px}
 .u-mb-24:not(#_){margin-bottom:24px}
-.u-ml-3:not(#_){margin-left:3px}
 .u-ml-4:not(#_){margin-left:4px}
 .u-ml-6:not(#_){margin-left:6px}
 .u-ml-8:not(#_){margin-left:8px}
-.u-ml-15:not(#_){margin-left:15px}
+.u-ml-16:not(#_){margin-left:16px}
 .u-mr-4:not(#_){margin-right:4px}
 .u-mr-6:not(#_){margin-right:6px}
 .u-mr-8:not(#_){margin-right:8px}
 .u-mr-auto:not(#_){margin-right:auto}
 .u-mt-2:not(#_){margin-top:2px}
-.u-mt-3:not(#_){margin-top:3px}
 .u-mt-4:not(#_){margin-top:4px}
-.u-mt-5:not(#_){margin-top:5px}
 .u-mt-6:not(#_){margin-top:6px}
 .u-mt-8:not(#_){margin-top:8px}
 .u-mt-10:not(#_){margin-top:10px}
 .u-mt-12:not(#_){margin-top:12px}
 .u-mt-14:not(#_){margin-top:14px}
-.u-mt-15:not(#_){margin-top:15px}
 .u-mt-16:not(#_){margin-top:16px}
 .u-mt-20:not(#_){margin-top:20px}
 .u-mt-40:not(#_){margin-top:40px}
@@ -561,26 +510,24 @@
 .u-scroll-x:not(#_){overflow-x:auto}
 .u-scroll-y:not(#_){overflow-y:auto}
 .u-overscroll-contain:not(#_){overscroll-behavior:contain}
-.u-pb-5:not(#_){padding-bottom:5px}
 .u-pb-6:not(#_){padding-bottom:6px}
 .u-pb-8:not(#_){padding-bottom:8px}
 .u-pb-10:not(#_){padding-bottom:10px}
 .u-pb-12:not(#_){padding-bottom:12px}
 .u-pb-14:not(#_){padding-bottom:14px}
-.u-pb-15:not(#_){padding-bottom:15px}
+.u-pb-16:not(#_){padding-bottom:16px}
 .u-pl-4:not(#_){padding-left:4px}
 .u-pl-10:not(#_){padding-left:10px}
 .u-pl-12:not(#_){padding-left:12px}
 .u-pr-10:not(#_){padding-right:10px}
 .u-pr-12:not(#_){padding-right:12px}
-.u-pr-15:not(#_){padding-right:15px}
+.u-pr-16:not(#_){padding-right:16px}
 .u-pr-20:not(#_){padding-right:20px}
 .u-pr-32:not(#_){padding-right:32px}
 .u-pt-8:not(#_){padding-top:8px}
 .u-pt-10:not(#_){padding-top:10px}
 .u-pt-12:not(#_){padding-top:12px}
 .u-pt-14:not(#_){padding-top:14px}
-.u-pt-15:not(#_){padding-top:15px}
 .u-pt-16:not(#_){padding-top:16px}
 .u-absolute:not(#_){position:absolute}
 .u-pos-sticky:not(#_){position:sticky}

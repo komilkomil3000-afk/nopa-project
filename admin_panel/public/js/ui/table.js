@@ -54,4 +54,23 @@
   };
 
   window.NopaTable = NopaTable;
+
+  // The same three states for containers that are not tables (lists, card grids):
+  //   NopaState.loading(el) / NopaState.empty(el, 'متن', 'fa-icon') / NopaState.error(el, 'متن')
+  function blockState(el, html, cls) {
+    if (!el) return;
+    const tag = /^(UL|OL)$/.test(el.tagName) ? 'li' : 'div';
+    el.innerHTML = `<${tag} class="nopa-state ${cls}">${html}</${tag}>`;
+  }
+  window.NopaState = {
+    loading(el, text) {
+      blockState(el, `<i class="fa-solid fa-circle-notch fa-spin"></i> ${esc(text || 'در حال بارگذاری...')}`, 'is-loading');
+    },
+    empty(el, text, icon) {
+      blockState(el, `<i class="${esc(icon || 'fa-solid fa-inbox')}"></i><div>${esc(text || 'موردی یافت نشد')}</div>`, 'is-empty');
+    },
+    error(el, text) {
+      blockState(el, `<i class="fa-solid fa-triangle-exclamation"></i><div>${esc(text || 'خطا در دریافت اطلاعات')}</div>`, 'is-error');
+    },
+  };
 })();

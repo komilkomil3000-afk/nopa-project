@@ -147,8 +147,9 @@ test('admin panel CSP: no inline scripts or handlers, stylesheets same-origin on
   const header = cspHeader();
   assert.match(header, /(^|;)script-src 'self'(;|$)/);
   assert.match(header, /(^|;)script-src-attr 'none'(;|$)/);
-  // 'unsafe-inline' only for style attributes, nowhere else
-  assert.deepEqual(header.split(';').filter(d => d.includes('unsafe-inline')), ["style-src-attr 'unsafe-inline'"]);
+  // no 'unsafe-inline' anywhere; style attributes are blocked too (data-style + CSSOM instead)
+  assert.ok(!header.includes('unsafe-inline'));
+  assert.match(header, /(^|;)style-src-attr 'none'(;|$)/);
   assert.ok(!header.includes('unsafe-eval'));
 });
 

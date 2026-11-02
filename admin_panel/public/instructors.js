@@ -14,9 +14,12 @@ window.fetchInstructorsList = async function() {
       if (typeof window.refreshAllInstructorPickers === 'function') {
         window.refreshAllInstructorPickers();
       }
+    } else {
+      NopaTable.error(document.getElementById('instructors-table-tbody'), 'خطا در دریافت فهرست اساتید');
     }
   } catch (err) {
     console.error('Error fetching instructors:', err);
+    NopaTable.error(document.getElementById('instructors-table-tbody'), 'خطا در دریافت فهرست اساتید');
   }
 };
 
@@ -49,45 +52,45 @@ window.renderInstructorsTable = function(list = null) {
   instructors.forEach((inst, index) => {
     const avatar = inst.avatarUrl 
       ? `<img src="${esc(inst.avatarUrl)}" alt="${esc(inst.name)}" class="u-w-40 u-h-40 u-r-50p u-fit-cover u-bd-2-solid-primary">`
-      : `<div class="u-w-40 u-h-40 u-r-50p u-bg-grad-primary u-flex u-items-center u-justify-center u-c-white u-bold u-fs-15 u-bd-2-solid-primary"><i class="fa-solid fa-chalkboard-user"></i></div>`;
+      : `<div class="u-w-40 u-h-40 u-r-50p u-bg-grad-primary u-flex u-items-center u-justify-center u-c-white u-bold u-fs-md u-bd-2-solid-primary"><i class="fa-solid fa-chalkboard-user"></i></div>`;
 
     const degreeBadge = inst.degree 
-      ? `<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-11 u-p-2-8 u-r-6">${esc(inst.degree)}</span>`
-      : `<span class="u-c-text-faint u-fs-11">-</span>`;
+      ? `<span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-fs-2xs u-p-2-8 u-r-6">${esc(inst.degree)}</span>`
+      : `<span class="u-c-text-faint u-fs-2xs">-</span>`;
 
     const phoneDisplay = inst.phoneNumber 
-      ? `<span class="u-mono u-direction-ltr u-inline-block u-c-text-soft"><i class="fa-solid fa-phone u-fs-10 u-c-primary-text"></i> ${esc(inst.phoneNumber)}</span>`
-      : `<span class="u-c-text-faint u-fs-11">-</span>`;
+      ? `<span class="u-mono u-direction-ltr u-inline-block u-c-text-soft"><i class="fa-solid fa-phone u-fs-2xs u-c-primary-text"></i> ${esc(inst.phoneNumber)}</span>`
+      : `<span class="u-c-text-faint u-fs-2xs">-</span>`;
 
     const nationalIdDisplay = inst.nationalId
-      ? `<span class="u-mono u-c-text-soft"><i class="fa-solid fa-id-card u-fs-10 u-c-primary-text"></i> ${esc(inst.nationalId)}</span>`
-      : `<span class="u-c-text-faint u-fs-11">-</span>`;
+      ? `<span class="u-mono u-c-text-soft"><i class="fa-solid fa-id-card u-fs-2xs u-c-primary-text"></i> ${esc(inst.nationalId)}</span>`
+      : `<span class="u-c-text-faint u-fs-2xs">-</span>`;
 
     const classesDisplay = inst.classes
-      ? `<div class="u-maxw-220 u-fs-12 u-c-text u-lh-1_4">${esc(inst.classes)}</div>`
-      : `<span class="u-c-text-faint u-fs-11">تعریف‌نشده</span>`;
+      ? `<div class="u-maxw-220 u-fs-xs u-c-text u-lh-1_4">${esc(inst.classes)}</div>`
+      : `<span class="u-c-text-faint u-fs-2xs">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume
-      ? `<div class="u-maxw-240 u-fs-11_5 u-c-text-muted u-lh-1_4 u-overflow-hidden" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
-      : `<span class="u-c-text-faint u-fs-11">-</span>`;
+      ? `<div class="u-maxw-240 u-fs-xs u-c-text-muted u-lh-1_4 u-overflow-hidden u-clamp-2" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
+      : `<span class="u-c-text-faint u-fs-2xs">-</span>`;
 
     html += `
       <tr class="u-bb-fg-6 u-tr-background-0_2s" data-hover="row">
-        <td class="u-p-12 u-text-center u-c-text-muted u-fs-12">${index + 1}</td>
+        <td class="u-p-12 u-text-center u-c-text-muted u-fs-xs">${index + 1}</td>
         <td class="u-p-12">
           <div class="u-flex u-items-center u-gap-12">
             ${avatar}
             <div>
-              <div class="u-bold u-c-text u-fs-13_5 u-flex u-items-center u-gap-6">
+              <div class="u-bold u-c-text u-fs-base u-flex u-items-center u-gap-6">
                 ${esc(inst.name)}
               </div>
-              <div class="u-fs-11 u-c-text-muted u-mt-2">
+              <div class="u-fs-2xs u-c-text-muted u-mt-2">
                 ${degreeBadge}
               </div>
             </div>
           </div>
         </td>
-        <td class="u-p-12 u-fs-12">
+        <td class="u-p-12 u-fs-xs">
           <div class="u-flex u-col u-gap-4">
             ${phoneDisplay}
             ${nationalIdDisplay}
@@ -97,10 +100,10 @@ window.renderInstructorsTable = function(list = null) {
         <td class="u-p-12">${resumeDisplay}</td>
         <td class="u-p-12 u-text-center">
           <div class="u-flex u-gap-6 u-justify-center">
-            <button type="button" class="btn-action u-p-5-10 u-fs-11_5 u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-6 u-pointer" data-click="openInstructorModal" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="ویرایش مشخصات استاد">
+            <button type="button" class="btn-action u-p-6-10 u-fs-xs u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-6 u-pointer" data-click="openInstructorModal" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="ویرایش مشخصات استاد">
               <i class="fa-solid fa-pen-to-square"></i> ویرایش
             </button>
-            <button type="button" class="btn-action u-p-5-10 u-fs-11_5 u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-r-6 u-pointer" data-click="deleteInstructorRecord" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="حذف استاد">
+            <button type="button" class="btn-action u-p-6-10 u-fs-xs u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-r-6 u-pointer" data-click="deleteInstructorRecord" data-click-args="${esc(JSON.stringify([String(inst.id)]))}" title="حذف استاد">
               <i class="fa-solid fa-trash"></i>
             </button>
           </div>
@@ -325,17 +328,17 @@ window.renderSelectedInstructorBadges = function(blockId) {
     .filter(s => s.length > 0);
 
   if (selectedNames.length === 0) {
-    box.innerHTML = `<span class="u-c-text-faint u-fs-12 u-select-none">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
+    box.innerHTML = `<span class="u-c-text-faint u-fs-xs u-select-none">یک یا چند استاد را از بانک اساتید انتخاب کنید...</span>`;
     return;
   }
 
   let html = '';
   selectedNames.forEach(name => {
     html += `
-      <span class="inst-selected-tag u-bg-primary-20 u-bd-primary-45 u-c-primary-text u-fs-11_5 u-bold u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-5">
-        <i class="fa-solid fa-user-check u-fs-10"></i>
+      <span class="inst-selected-tag u-bg-primary-20 u-bd-primary-45 u-c-primary-text u-fs-xs u-bold u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-6">
+        <i class="fa-solid fa-user-check u-fs-2xs"></i>
         <span>${esc(name)}</span>
-        <span class="inst-tag-remove-btn u-pointer u-c-danger-text u-fs-13 u-lh-1 u-p-0-2" data-click="removeInstructorFromBlock" data-click-args="${esc(JSON.stringify([String(blockId), String(name), "$event"]))}" title="حذف">&times;</span>
+        <span role="button" tabindex="0" aria-label="حذف استاد" class="inst-tag-remove-btn u-pointer u-c-danger-text u-fs-sm u-lh-1 u-p-0-2" data-click="removeInstructorFromBlock" data-click-args="${esc(JSON.stringify([String(blockId), String(name), "$event"]))}" title="حذف">&times;</span>
       </span>
     `;
   });
@@ -364,9 +367,9 @@ window.populateInstructorDropdownOptions = function(blockId) {
 
   if (instructors.length === 0) {
     dropdown.innerHTML = `
-      <div class="u-p-10 u-text-center u-c-text-muted u-fs-11_5">
+      <div class="u-p-10 u-text-center u-c-text-muted u-fs-xs">
         <div>هیچ استادی در بانک اساتید ثبت نشده است.</div>
-        <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-mt-6 u-bg-primary u-c-white u-bd-none u-p-4-10 u-r-6 u-fs-11 u-pointer">
+        <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-mt-6 u-bg-primary u-c-white u-bd-none u-p-4-10 u-r-6 u-fs-2xs u-pointer">
           <i class="fa-solid fa-plus"></i> ثبت اولین استاد
         </button>
       </div>
@@ -376,8 +379,8 @@ window.populateInstructorDropdownOptions = function(blockId) {
 
   let html = `
     <div class="u-p-4-6 u-bb-fg-8 u-mb-6 u-flex u-justify-between u-items-center">
-      <span class="u-fs-11 u-c-text-muted"><i class="fa-solid fa-database u-c-primary-text"></i> اساتید ثبت‌شده در بانک:</span>
-      <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-none u-bd-none u-c-primary-text u-fs-11 u-pointer u-flex u-items-center u-gap-3">
+      <span class="u-fs-2xs u-c-text-muted"><i class="fa-solid fa-database u-c-primary-text"></i> اساتید ثبت‌شده در بانک:</span>
+      <button type="button" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-none u-bd-none u-c-primary-text u-fs-2xs u-pointer u-flex u-items-center u-gap-4">
         <i class="fa-solid fa-plus"></i> افزودن جدید
       </button>
     </div>
@@ -387,12 +390,12 @@ window.populateInstructorDropdownOptions = function(blockId) {
   instructors.forEach(inst => {
     const isChecked = selectedNames.has(inst.name);
     html += `
-      <label class="u-flex u-items-center u-justify-between u-p-6-8 u-r-6 u-pointer u-tr-background-0_15s" style="background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'}" data-hover="primary-soft">
+      <label class="u-flex u-items-center u-justify-between u-p-6-8 u-r-6 u-pointer u-tr-background-0_15s" data-style="background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'}" data-hover="primary-soft">
         <div class="u-flex u-items-center u-gap-8">
           <input type="checkbox" ${isChecked ? 'checked' : ''} data-change="selectInstructorForBlock" data-change-args="${esc(JSON.stringify([String(blockId), String(inst.name), "$checked"]))}" class="u-pointer u-w-15 u-h-15 u-accent-primary">
           <div>
-            <div class="u-fs-12_5 u-bold u-c-text">${esc(inst.name)}</div>
-            <div class="u-fs-10_5 u-c-text-muted">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
+            <div class="u-fs-sm u-bold u-c-text">${esc(inst.name)}</div>
+            <div class="u-fs-2xs u-c-text-muted">${esc(inst.degree || inst.classes || 'مدرس دوره')}</div>
           </div>
         </div>
         ${inst.avatarUrl ? `<img src="${esc(inst.avatarUrl)}" class="u-w-24 u-h-24 u-r-50p u-fit-cover">` : ''}

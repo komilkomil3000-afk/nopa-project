@@ -56,6 +56,16 @@
   }
 
   BUBBLING.forEach(t => document.addEventListener(t, dispatch(t)));
+
+  // Keyboard for non-native click targets (<div role="button" tabindex="0" data-click="…">):
+  // Enter and Space activate them like a real button.
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const el = event.target;
+    if (!(el instanceof Element) || !el.matches('[role="button"][data-click]') || el.matches('button, a[href], input, select, textarea')) return;
+    event.preventDefault();
+    el.click();
+  });
   CAPTURED.forEach(t => document.addEventListener(t, event => {
     const el = event.target;
     if (el instanceof Element && el.hasAttribute(`data-${t}`)) run(el, t, event);
@@ -83,6 +93,15 @@
     setVisibility: (el, value) => { el.style.visibility = value; },
     // <img data-error="NopaActions.fallbackSrc" data-error-args='["$this", "/uploads/x.jpg"]'>
     fallbackSrc: (el, src) => { if (!el.dataset.fellBack) { el.dataset.fellBack = '1'; el.src = src; } },
+    // skip link: focus the visible <main> (panel when signed in, landing page otherwise)
+    skipToContent: () => {
+      const main = document.documentElement.getAttribute('data-session') === 'in'
+        ? document.getElementById('main-content') : document.getElementById('landing-top');
+      if (!main) return;
+      if (!main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+      main.focus({ preventScroll: true });
+      main.scrollIntoView({ behavior: window.NopaMotion ? NopaMotion.scrollBehavior() : 'auto', block: 'start' });
+    },
     // call fn when Enter is pressed (keydown)
     onEnter: (event, name) => {
       if (event.key !== 'Enter') return;

@@ -140,8 +140,8 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     // Format caravans badges
     const caravans = m.mentoredCaravans || (m.caravan ? [m.caravan] : []);
     const caravansHtml = caravans.length > 0
-      ? caravans.map(c => `<span class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-3-8 u-r-6 u-fs-11 u-m-2 u-inline-block"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
-      : '<span class="u-c-text-faint u-fs-12">فاقد کاروان</span>';
+      ? caravans.map(c => `<span class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-4-8 u-r-6 u-fs-2xs u-m-2 u-inline-block"><i class="fa-solid fa-people-group"></i> ${esc(c.name)}</span>`).join(' ')
+      : '<span class="u-c-text-faint u-fs-xs">فاقد کاروان</span>';
 
     // Status indicator
     const isSuspended = m.accountStatus === 'SUSPENDED' || m.blocked || m.isDeleted;
@@ -150,34 +150,34 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     // National ID (only real data)
     const nationalIdText = (m.nationalId && m.nationalId !== 'null' && m.nationalId.trim() && !m.nationalId.startsWith('۱۲۳۴۵۶') && !m.nationalId.startsWith('123456'))
       ? `<span class="u-mono u-c-text-soft">${esc(m.nationalId)}</span>`
-      : '<span class="u-c-text-faint u-fs-11">وارد نشده است</span>';
+      : '<span class="u-c-text-faint u-fs-2xs">وارد نشده است</span>';
 
     return `
       <tr class="u-tr-all-0_2s-ease">
         <td class="u-text-center">
-          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-13 u-m-0-auto u-shadow-0-2-6-shade-30" style="background:linear-gradient(135deg, var(--primary), var(--primary))">
+          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-sm u-m-0-auto u-shadow-0-2-6-shade-30 u-bg-primary">
             ${avatarInitials}
           </div>
         </td>
         <td>
           <div class="u-flex u-items-center u-gap-6">
             ${statusDot}
-            <strong class="u-c-text u-fs-13_5">${esc(m.name || 'راهبر بدون نام')}</strong>
+            <strong class="u-c-text u-fs-base">${esc(m.name || 'راهبر بدون نام')}</strong>
           </div>
-          ${m.role === 'SUPER_MENTOR' ? '<span class="u-fs-10 u-c-accent-text u-bg-accent-15 u-p-1-6 u-r-4">سرراهبر</span>' : ''}
+          ${m.role === 'SUPER_MENTOR' ? '<span class="u-fs-2xs u-c-accent-text u-bg-accent-15 u-p-1-6 u-r-4">سرراهبر</span>' : ''}
         </td>
         <td class="u-mono u-direction-ltr u-text-right u-c-text-soft">${esc(m.phoneNumber || '-')}</td>
         <td class="u-text-center">${nationalIdText}</td>
         <td>${caravansHtml}</td>
         <td class="u-text-center u-nowrap">
           <div class="u-inline-flex u-gap-6 u-items-center">
-            <button class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="نمایش شناسنامه جامع">
+            <button class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="viewMentorDossier" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="نمایش شناسنامه جامع">
               <i class="fa-solid fa-eye"></i> شناسنامه
             </button>
-            <button class="btn-action u-bg-success-15 u-c-success-text u-bd-success-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="ویرایش اطلاعات">
+            <button class="btn-action u-bg-success-15 u-c-success-text u-bd-success-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="editMentor" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="ویرایش اطلاعات">
               <i class="fa-solid fa-pen"></i> ویرایش
             </button>
-            <button class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-5-9 u-fs-11_5 u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="مدیریت وضعیت و تعلیق">
+            <button class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-6-10 u-fs-xs u-pointer u-fw-500 u-inline-flex u-items-center u-gap-4" data-click="openMentorModerationModal" data-click-args="${esc(JSON.stringify([String(m.id)]))}" title="مدیریت وضعیت و تعلیق">
               <i class="fa-solid fa-user-shield"></i> وضعیت
             </button>
           </div>
@@ -199,7 +199,7 @@ window.viewMentorDossier = async function(mentorId) {
   window.currentMentorId = mentorId;
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal)';
-  body.innerHTML = '<div class="u-text-center u-p-30 u-c-primary-text"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div class="u-mt-10">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
+  body.innerHTML = '<div class="u-text-center u-p-32 u-c-primary-text"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><div class="u-mt-10">در حال بارگذاری شناسنامه جامع راهبر...</div></div>';
 
   let mentor = window.mentorsMasterList.find(m => m.id === mentorId);
 
@@ -228,87 +228,87 @@ window.viewMentorDossier = async function(mentorId) {
     const caravans = dossier?.caravans || mentor?.mentoredCaravans || [];
     const students = dossier?.supervisedStudents || [];
     const starsInfo = window.calculateMentorStars(mentor?.ratingsReceived, mentor?.evaluationsReceived);
-    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span class="u-fs-12 u-c-text-muted">/ ۵</span>` : `<span class="u-fs-15 u-c-text-muted">فاقد ارزیابی</span>`;
+    const scoreTitle = starsInfo.score !== null ? `${starsInfo.score} <span class="u-fs-xs u-c-text-muted">/ ۵</span>` : `<span class="u-fs-md u-c-text-muted">فاقد ارزیابی</span>`;
     const scoreSub = starsInfo.count > 0 ? `از میان ${starsInfo.count} ارزیابی ثبت‌شده` : `هنوز ارزیابی یا امتیازی برای این راهبر ثبت نشده است`;
 
     body.innerHTML = `
       <!-- TOP STATS CARDS -->
-      <div class="u-grid u-cols-fit-200 u-gap-12 u-mb-18">
+      <div class="u-grid u-cols-fit-200 u-gap-12 u-mb-20">
         <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-people-group u-c-primary-text"></i> کاروان‌های تحت راهبری</div>
-          <div class="u-fs-22 u-bold u-c-primary-text">${caravans.length} <span class="u-fs-12 u-c-text-muted">کاروان</span></div>
-          <div class="u-fs-11 u-c-text-muted u-mt-2">گروه‌های فعال آموزشی</div>
+          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-people-group u-c-primary-text"></i> کاروان‌های تحت راهبری</div>
+          <div class="u-fs-xl u-bold u-c-primary-text">${caravans.length} <span class="u-fs-xs u-c-text-muted">کاروان</span></div>
+          <div class="u-fs-2xs u-c-text-muted u-mt-2">گروه‌های فعال آموزشی</div>
         </div>
 
         <div class="u-bg-surface-2-70 u-bd-success-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-users u-c-success-text"></i> دانش‌آموزان تحت نظارت</div>
-          <div class="u-fs-22 u-bold u-c-success-text">${students.length} <span class="u-fs-12 u-c-text-muted">دانش‌آموز</span></div>
-          <div class="u-fs-11 u-c-text-muted u-mt-2">افراد تحت سرپرستی این راهبر</div>
+          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-users u-c-success-text"></i> دانش‌آموزان تحت نظارت</div>
+          <div class="u-fs-xl u-bold u-c-success-text">${students.length} <span class="u-fs-xs u-c-text-muted">دانش‌آموز</span></div>
+          <div class="u-fs-2xs u-c-text-muted u-mt-2">افراد تحت سرپرستی این راهبر</div>
         </div>
 
         <div class="u-bg-surface-2-70 u-bd-primary-30 u-r-12 u-p-14 u-text-center">
-          <div class="u-fs-11 u-c-text-soft u-mb-4"><i class="fa-solid fa-shield-halved u-c-primary-text"></i> وضعیت حساب کاربری</div>
-          <div class="u-fs-18 u-bold u-c-success-text u-mt-4">${mentor?.accountStatus || 'ACTIVE'}</div>
-          <div class="u-fs-11 u-c-text-muted u-mt-4">دسترسی به پنل راهبر</div>
+          <div class="u-fs-2xs u-c-text-soft u-mb-4"><i class="fa-solid fa-shield-halved u-c-primary-text"></i> وضعیت حساب کاربری</div>
+          <div class="u-fs-lg u-bold u-c-success-text u-mt-4">${mentor?.accountStatus || 'ACTIVE'}</div>
+          <div class="u-fs-2xs u-c-text-muted u-mt-4">دسترسی به پنل راهبر</div>
         </div>
       </div>
 
       <!-- PERSONAL & IDENTITY DOSSIER -->
       <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-        <div class="u-bold u-c-primary-text u-fs-13_5 u-mb-12 u-flex u-items-center u-gap-6">
+        <div class="u-bold u-c-primary-text u-fs-base u-mb-12 u-flex u-items-center u-gap-6">
           <i class="fa-solid fa-user-check"></i> مشخصات هویتی و فردی راهبر
         </div>
-        <div class="u-grid u-cols-fit-200 u-gap-12 u-fs-12_5">
+        <div class="u-grid u-cols-fit-200 u-gap-12 u-fs-sm">
           <div><strong class="u-c-text-muted">نام کامل:</strong> <span class="u-c-text">${esc(mentorName)}</span></div>
           <div><strong class="u-c-text-muted">شماره همراه:</strong> <span class="u-c-text u-mono">${esc(mentor?.phoneNumber || '-')}</span></div>
           <div><strong class="u-c-text-muted">کد ملی:</strong> <span class="u-c-text u-mono">${mentor?.nationalId && mentor?.nationalId !== 'null' && !mentor?.nationalId.startsWith('۱۲۳۴۵۶') && !mentor?.nationalId.startsWith('123456') ? esc(mentor.nationalId) : 'وارد نشده است'}</span></div>
           <div><strong class="u-c-text-muted">تاریخ تولد:</strong> <span class="u-c-text">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
           <div><strong class="u-c-text-muted">شهر محل سکونت:</strong> <span class="u-c-text">${esc(mentor?.city || 'ثبت نشده')}</span></div>
           <div><strong class="u-c-text-muted">پلتفرم پیام‌رسان:</strong> <span class="u-c-text">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
+          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span data-style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
         </div>
       </div>
 
       <!-- CARAVANS LIST -->
       <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-        <div class="u-bold u-c-primary-text u-fs-13_5 u-mb-12 u-flex u-items-center u-gap-6">
+        <div class="u-bold u-c-primary-text u-fs-base u-mb-12 u-flex u-items-center u-gap-6">
           <i class="fa-solid fa-caravan"></i> وضعیت کاروان‌های تحت نظارت
         </div>
         ${caravans.length > 0 ? `
           <div class="u-grid u-cols-fit-240 u-gap-10">
             ${caravans.map(c => `
               <div class="u-bg-surface-2-70 u-bd-fg-6 u-r-10 u-p-12">
-                <div class="u-flex u-justify-between u-fs-13 u-bold u-c-primary-text u-mb-6">
+                <div class="u-flex u-justify-between u-fs-sm u-bold u-c-primary-text u-mb-6">
                   <span>${esc(c.name)}</span>
-                  <span class="u-fs-11 u-c-text-soft">${c.memberCount || 0} عضو</span>
+                  <span class="u-fs-2xs u-c-text-soft">${c.memberCount || 0} عضو</span>
                 </div>
-                <div class="u-fs-11 u-c-text-muted u-mb-6">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
+                <div class="u-fs-2xs u-c-text-muted u-mb-6">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
                 <div class="u-bg-shade-30 u-h-6 u-r-3 u-overflow-hidden">
-                  <div class="u-h-full" style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
+                  <div class="u-h-full" data-style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
                 </div>
               </div>
             `).join('')}
           </div>
-        ` : '<div class="u-c-text-muted u-fs-12">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
+        ` : '<div class="u-c-text-muted u-fs-xs">راهبر در حال حاضر به کاروانی منتسب نشده است.</div>'}
       </div>
 
       <!-- SUPERVISED STUDENTS SECTION (افراد تحت سرپرستی این راهبر) -->
-      <div class="u-bg-surface-60 u-bd-primary-30 u-r-14 u-p-18 u-mb-16 u-shadow-0-4-20-shade-30">
+      <div class="u-bg-surface-60 u-bd-primary-30 u-r-14 u-p-20 u-mb-16 u-shadow-0-4-20-shade-30">
         <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-mb-16 u-bb-fg-8 u-pb-14">
           <div class="u-flex u-items-center u-gap-10">
-            <div class="u-w-38 u-h-38 u-r-10 u-bg-primary-15 u-bd-primary-30 u-flex u-items-center u-justify-center u-c-primary-text u-fs-17">
+            <div class="u-w-38 u-h-38 u-r-10 u-bg-primary-15 u-bd-primary-30 u-flex u-items-center u-justify-center u-c-primary-text u-fs-md">
               <i class="fa-solid fa-users"></i>
             </div>
             <div>
-              <div class="u-bold u-c-primary-text u-fs-14_5">دانش‌آموزان تحت سرپرستی این راهبر</div>
-              <div class="u-fs-11_5 u-c-text-muted u-mt-2">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
+              <div class="u-bold u-c-primary-text u-fs-base">دانش‌آموزان تحت سرپرستی این راهبر</div>
+              <div class="u-fs-xs u-c-text-muted u-mt-2">فقط دانش‌آموزان کاروان‌های این راهبر به همراه تیکت‌ها و رفت‌وبرگشت چالش‌ها</div>
             </div>
           </div>
           <div class="u-flex u-items-center u-gap-10">
-            <span class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-5-12 u-r-20 u-fs-12 u-bold">
+            <span class="u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-6-12 u-r-20 u-fs-xs u-bold">
               ${students.length} دانش‌آموز تحت نظارت
             </span>
-            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" class="u-bg-shade-35 u-bd-fg-15 u-c-text u-p-6-12 u-r-8 u-fs-12 u-outline-none u-w-210">
+            <input type="text" id="dossier-student-filter-input" placeholder="جستجو در نام، موبایل یا کاروان..." data-input="filterDossierStudents" data-input-args="[&quot;$value&quot;]" class="u-bg-shade-35 u-bd-fg-15 u-c-text u-p-6-12 u-r-8 u-fs-xs u-w-210">
           </div>
         </div>
 
@@ -321,7 +321,7 @@ window.viewMentorDossier = async function(mentorId) {
     window.renderDossierStudents(students, mentorId);
 
     footerActions.innerHTML = `
-      <button type="button" class="btn-primary u-bg-grad-success u-c-white u-bd-none u-p-8-18 u-r-8 u-bold u-pointer u-inline-flex u-items-center u-gap-6" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}">
+      <button type="button" class="btn-primary u-bg-grad-success u-c-white u-bd-none u-p-8-20 u-r-8 u-bold u-pointer u-inline-flex u-items-center u-gap-6" data-click="editMentorFromDossier" data-click-args="${esc(JSON.stringify([String(mentorId)]))}">
         <i class="fa-solid fa-pen"></i> ویرایش مشخصات این راهبر
       </button>
     `;
@@ -337,10 +337,10 @@ window.renderDossierStudents = function(students, mentorId) {
 
   if (!students || students.length === 0) {
     container.innerHTML = `
-      <div class="u-text-center u-p-35-20 u-bg-shade-20 u-r-12 u-c-text-muted u-bd-1-dashed-fg-8">
+      <div class="u-text-center u-p-32-20 u-bg-shade-20 u-r-12 u-c-text-muted u-bd-1-dashed-fg-8">
         <i class="fa-solid fa-user-graduate fa-2x u-c-text-faint u-mb-8"></i>
-        <div class="u-fs-13_5 u-bold u-c-text-soft">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
-        <div class="u-fs-11_5 u-mt-4">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
+        <div class="u-fs-base u-bold u-c-text-soft">هیچ دانش‌آموزی در کاروان‌های این راهبر یافت نشد</div>
+        <div class="u-fs-xs u-mt-4">به محض انتساب دانش‌آموزان به کاروان‌های این راهبر، لیست آن‌ها به همراه سوابق تعاملی در این قسمت نمایش می‌یابد.</div>
       </div>
     `;
     return;
@@ -351,28 +351,28 @@ window.renderDossierStudents = function(students, mentorId) {
       ${students.map(s => {
         const initials = (s.name || 'دا').trim().split(' ').map(n => n[0]).join('').substring(0, 2);
         const openTicketsBadge = s.stats.openTickets > 0 ? 
-          `<span class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-2-7 u-r-6 u-fs-10_5 u-bold">${s.stats.openTickets} تیکت باز</span>` : 
-          `<span class="u-bg-success-15 u-c-success-text u-p-2-7 u-r-6 u-fs-10_5">تیکت بازی ندارد</span>`;
+          `<span class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-2-8 u-r-6 u-fs-2xs u-bold">${s.stats.openTickets} تیکت باز</span>` : 
+          `<span class="u-bg-success-15 u-c-success-text u-p-2-8 u-r-6 u-fs-2xs">تیکت بازی ندارد</span>`;
         
         const pendingSubmissionsBadge = s.stats.pendingSubmissions > 0 ?
-          `<span class="u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-p-2-7 u-r-6 u-fs-10_5 u-bold">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
-          `<span class="u-bg-success-15 u-c-success-text u-p-2-7 u-r-6 u-fs-10_5">تکالیف بررسی‌شده</span>`;
+          `<span class="u-bg-accent-20 u-c-accent-text u-bd-accent-40 u-p-2-8 u-r-6 u-fs-2xs u-bold">${s.stats.pendingSubmissions} در انتظار بررسی</span>` :
+          `<span class="u-bg-success-15 u-c-success-text u-p-2-8 u-r-6 u-fs-2xs">تکالیف بررسی‌شده</span>`;
 
         return `
           <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-14 u-flex u-justify-between u-items-center u-wrap u-gap-14 u-transition" data-hover="border-primary">
             <!-- Student Bio & Info -->
             <div class="u-flex u-items-center u-gap-12 u-minw-240">
-              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-15 u-c-white u-bd-2-solid-fg-20 u-shrink-0" style="background:linear-gradient(135deg, var(--success), var(--primary))">
+              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-md u-c-white u-bd-2-solid-fg-20 u-shrink-0 u-grad-success-primary">
                 ${initials}
               </div>
               <div>
-                <div class="u-bold u-c-text u-fs-14 u-flex u-items-center u-gap-8">
+                <div class="u-bold u-c-text u-fs-base u-flex u-items-center u-gap-8">
                   <span>${esc(s.name)}</span>
-                  <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-1-7 u-r-5 u-fs-11 u-fw-normal">
+                  <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-1-8 u-r-5 u-fs-2xs u-fw-normal">
                     <i class="fa-solid fa-campground"></i> ${esc(s.caravanName)}
                   </span>
                 </div>
-                <div class="u-fs-11_5 u-c-text-muted u-mt-3 u-flex u-gap-12 u-mono">
+                <div class="u-fs-xs u-c-text-muted u-mt-4 u-flex u-gap-12 u-mono">
                   <span>موبایل: ${esc(s.phoneNumber || '-')}</span>
                   <span>کد: ${s.userCode || '-'}</span>
                   <span class="u-c-accent-text">${s.zarikBalance || 0} زریک</span>
@@ -382,13 +382,13 @@ window.renderDossierStudents = function(students, mentorId) {
 
             <!-- Stats Indicators -->
             <div class="u-flex u-gap-10 u-items-center u-wrap">
-              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-11_5 u-flex u-items-center u-gap-6">
+              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-xs u-flex u-items-center u-gap-6">
                 <i class="fa-solid fa-headset u-c-accent-text"></i>
                 <span class="u-c-text-soft">کل تیکت‌ها: ${s.stats.totalTickets}</span>
                 ${openTicketsBadge}
               </div>
 
-              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-11_5 u-flex u-items-center u-gap-6">
+              <div class="u-bg-surface-70 u-bd-fg-6 u-r-8 u-p-6-10 u-fs-xs u-flex u-items-center u-gap-6">
                 <i class="fa-solid fa-trophy u-c-primary-text"></i>
                 <span class="u-c-text-soft">ارسال‌ها: ${s.stats.totalSubmissions}</span>
                 ${pendingSubmissionsBadge}
@@ -397,11 +397,11 @@ window.renderDossierStudents = function(students, mentorId) {
 
             <!-- Action Buttons for Tickets & Challenges -->
             <div class="u-flex u-gap-8 u-items-center u-wrap">
-              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-7-14 u-r-8 u-fs-12 u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28))" data-hover="accent-fill">
+              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-accent-soft" data-hover="accent-fill">
                 <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
               </button>
 
-              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-7-14 u-r-8 u-fs-12 u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28))" data-hover="primary-fill">
+              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-primary-soft" data-hover="primary-fill">
                 <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
               </button>
             </div>
@@ -435,27 +435,27 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset u-c-accent-text"></i> تیکت‌ها و مکالمات: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-12 u-c-text-muted u-fw-normal">(تحت سرپرستی: ${mentorName})</span>`;
+  document.getElementById('student-tickets-title').innerHTML = `<i class="fa-solid fa-headset u-c-accent-text"></i> تیکت‌ها و مکالمات: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-xs u-c-text-muted u-fw-normal">(تحت سرپرستی: ${mentorName})</span>`;
   document.getElementById('student-tickets-subtitle').textContent = `کاروان: ${student.caravanName} | موبایل: ${student.phoneNumber || '-'} | کد دانش‌آموزی: ${student.userCode || '-'}`;
 
   const tickets = student.tickets || [];
   if (tickets.length === 0) {
     body.innerHTML = `
-      <div class="u-text-center u-p-35-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
+      <div class="u-text-center u-p-32-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
         <i class="fa-solid fa-inbox fa-3x u-c-text-faint u-mb-12"></i>
-        <div class="u-fs-14 u-bold u-c-text-soft">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
-        <div class="u-fs-12 u-mt-6 u-c-text-muted">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
+        <div class="u-fs-base u-bold u-c-text-soft">هیچ تیکتی بین این دانش‌آموز و این راهبر رد و بدل نشده است</div>
+        <div class="u-fs-xs u-mt-6 u-c-text-muted">تیکت‌های مطرح‌شده توسط دانش‌آموز در کاروان و پاسخ‌های ارسالی راهبر، به صورت خودکار در این تاریخچه ثبت می‌شوند.</div>
       </div>
     `;
   } else {
     body.innerHTML = tickets.map(t => {
       let statusBadge = '';
       if (t.status === 'resolved') {
-        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-3-8 u-r-6 u-fs-11 u-bold">حل‌شده</span>';
+        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-4-8 u-r-6 u-fs-2xs u-bold">حل‌شده</span>';
       } else if (t.status === 'answered') {
-        statusBadge = '<span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-3-8 u-r-6 u-fs-11 u-bold">پاسخ داده شده</span>';
+        statusBadge = '<span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-4-8 u-r-6 u-fs-2xs u-bold">پاسخ داده شده</span>';
       } else {
-        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-3-8 u-r-6 u-fs-11 u-bold">در انتظار پاسخ</span>';
+        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-4-8 u-r-6 u-fs-2xs u-bold">در انتظار پاسخ</span>';
       }
 
       const tDate = t.createdAt ? new Date(t.createdAt).toLocaleDateString('fa-IR') : '';
@@ -466,25 +466,25 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
           <!-- Ticket Header -->
           <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bb-fg-6 u-pb-10">
             <div class="u-flex u-items-center u-gap-8">
-              <span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-2-8 u-r-6 u-fs-11_5 u-bold">
+              <span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-2-8 u-r-6 u-fs-xs u-bold">
                 ${esc(t.category || 'پشتیبانی')}
               </span>
-              <span class="u-bold u-c-text u-fs-13_5">${esc(t.subject || 'بدون موضوع')}</span>
+              <span class="u-bold u-c-text u-fs-base">${esc(t.subject || 'بدون موضوع')}</span>
             </div>
             <div class="u-flex u-items-center u-gap-10">
-              <span class="u-fs-11_5 u-c-text-muted u-mono">${tDate}</span>
+              <span class="u-fs-xs u-c-text-muted u-mono">${tDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Initial Message from Student -->
           <div class="u-bg-surface-60 u-r-10 u-p-12 u-mb-12 u-br-3-solid-primary">
-            <div class="u-fs-11_5 u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
+            <div class="u-fs-xs u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-user-graduate"></i> پیام دانش‌آموز (${esc(student.name)}):
             </div>
-            <div class="u-fs-13 u-c-text u-lh-1_6">${esc(t.subject || '')}</div>
+            <div class="u-fs-sm u-c-text u-lh-1_6">${esc(t.subject || '')}</div>
             ${t.voiceUrl ? `<div class="u-mt-8"><audio controls src="${esc(t.voiceUrl)}" class="u-h-34 u-w-full u-maxw-320"></audio></div>` : ''}
-            ${t.attachmentUrl ? `<div class="u-mt-8"><a href="${esc(t.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-12 u-no-underline"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+            ${t.attachmentUrl ? `<div class="u-mt-8"><a href="${esc(t.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-xs u-no-underline"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
           </div>
 
           <!-- Conversation Replies History -->
@@ -494,30 +494,30 @@ window.openStudentTicketsModal = function(mentorId, studentId) {
                 const rDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('fa-IR') : '';
                 return `
                   <div class="u-bg-surface-80 u-bd-fg-6 u-r-8 u-p-10-12">
-                    <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-11_5">
+                    <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-xs">
                       <span class="u-bold u-c-success-text u-flex u-items-center u-gap-6">
                         <i class="fa-solid fa-reply"></i> پاسخ راهبر (${esc(r.mentor?.name || mentorName)}):
                       </span>
                       <span class="u-c-text-muted u-mono">${rDate}</span>
                     </div>
-                    <div class="u-fs-12_5 u-c-text u-lh-1_6">${esc(r.message)}</div>
+                    <div class="u-fs-sm u-c-text u-lh-1_6">${esc(r.message)}</div>
                     ${r.voiceUrl ? `<div class="u-mt-6"><audio controls src="${esc(r.voiceUrl)}" class="u-h-30 u-w-full u-maxw-300"></audio></div>` : ''}
-                    ${r.attachmentUrl ? `<div class="u-mt-6"><a href="${esc(r.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-11_5"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
+                    ${r.attachmentUrl ? `<div class="u-mt-6"><a href="${esc(r.attachmentUrl)}" target="_blank" class="u-c-primary-text u-fs-xs"><i class="fa-solid fa-paperclip"></i> مشاهده فایل ضمیمه</a></div>` : ''}
                   </div>
                 `;
               }).join('')}
             </div>
-          ` : '<div class="u-fs-11_5 u-c-text-muted u-mb-12 u-p-6-0">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
+          ` : '<div class="u-fs-xs u-c-text-muted u-mb-12 u-p-6-0">هنوز پاسخی به این تیکت ثبت نشده است.</div>'}
 
           <!-- Quick Reply & Action Form -->
           <div class="u-bg-surface-50 u-bd-fg-5 u-r-8 u-p-10 u-flex u-col u-gap-8">
             <div class="u-flex u-gap-8">
-              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." class="u-flex-1 u-bg-shade-30 u-bd-fg-15 u-c-text u-p-8-12 u-r-8 u-fs-12_5 u-outline-none">
-              <button type="button" data-click="sendTicketReply" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-accent u-c-white u-bd-none u-p-8-16 u-r-8 u-bold u-pointer u-fs-12 u-inline-flex u-items-center u-gap-6">
+              <input type="text" id="ticket-reply-input-${t.id}" placeholder="ثبت پاسخ راهبر به دانش‌آموز..." class="u-flex-1 u-bg-shade-30 u-bd-fg-15 u-c-text u-p-8-12 u-r-8 u-fs-sm">
+              <button type="button" data-click="sendTicketReply" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-accent u-c-white u-bd-none u-p-8-16 u-r-8 u-bold u-pointer u-fs-xs u-inline-flex u-items-center u-gap-6">
                 <i class="fa-solid fa-paper-plane"></i> ارسال پاسخ
               </button>
               ${t.status !== 'resolved' ? `
-                <button type="button" data-click="resolveStudentTicket" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-success-15 u-bd-success-35 u-c-success-text u-p-8-12 u-r-8 u-pointer u-fs-12 u-inline-flex u-items-center u-gap-5" title="تغییر وضعیت تیکت به حل‌شده">
+                <button type="button" data-click="resolveStudentTicket" data-click-args="${esc(JSON.stringify([String(t.id), String(mentorId), String(studentId)]))}" class="u-bg-success-15 u-bd-success-35 u-c-success-text u-p-8-12 u-r-8 u-pointer u-fs-xs u-inline-flex u-items-center u-gap-6" title="تغییر وضعیت تیکت به حل‌شده">
                   <i class="fa-solid fa-check"></i> حل‌شد
                 </button>
               ` : ''}
@@ -597,7 +597,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
   }
 
   const mentorName = window.currentDossierData?.identity?.name || 'راهبر آموزشی';
-  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy u-c-primary-text"></i> رفت و برگشت چالش‌ها و تکالیف: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-12 u-c-text-muted u-fw-normal">(راهبر: ${mentorName})</span>`;
+  document.getElementById('student-challenges-title').innerHTML = `<i class="fa-solid fa-trophy u-c-primary-text"></i> رفت و برگشت چالش‌ها و تکالیف: <span class="u-c-text">${esc(student.name)}</span> <span class="u-fs-xs u-c-text-muted u-fw-normal">(راهبر: ${mentorName})</span>`;
   document.getElementById('student-challenges-subtitle').textContent = `کاروان: ${student.caravanName} | تکالیف، فایل‌های ارسالی، نمرات و بازخوردهای اصلاحی راهبر`;
 
   const submissions = student.submissions || [];
@@ -605,21 +605,21 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
 
   if (submissions.length === 0 && quizSubs.length === 0) {
     body.innerHTML = `
-      <div class="u-text-center u-p-35-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
+      <div class="u-text-center u-p-32-20 u-c-text-muted u-bg-shade-25 u-r-12 u-bd-1-dashed-fg-10">
         <i class="fa-solid fa-file-circle-xmark fa-3x u-c-text-faint u-mb-12"></i>
-        <div class="u-fs-14 u-bold u-c-text-soft">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
-        <div class="u-fs-12 u-mt-6 u-c-text-muted">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
+        <div class="u-fs-base u-bold u-c-text-soft">هیچ ارسال چالشی از طرف این دانش‌آموز ثبت نشده است</div>
+        <div class="u-fs-xs u-mt-6 u-c-text-muted">به محض ارسال تکالیف یا آزمون‌های کاروان توسط دانش‌آموز، جهت بررسی و ثبت بازخورد در این قسمت قرار می‌گیرند.</div>
       </div>
     `;
   } else {
     body.innerHTML = submissions.map(sub => {
       let statusBadge = '';
       if (sub.status === 'approved' || sub.status === 'APPROVED') {
-        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">تایید شده</span>';
+        statusBadge = '<span class="u-bg-success-15 u-c-success-text u-bd-success-30 u-p-4-10 u-r-6 u-fs-xs u-bold">تایید شده</span>';
       } else if (sub.status === 'rejected' || sub.status === 'REJECTED') {
-        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">نیاز به اصلاح / رد شده</span>';
+        statusBadge = '<span class="u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-p-4-10 u-r-6 u-fs-xs u-bold">نیاز به اصلاح / رد شده</span>';
       } else {
-        statusBadge = '<span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-3-10 u-r-6 u-fs-11_5 u-bold">در انتظار بررسی راهبر</span>';
+        statusBadge = '<span class="u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-p-4-10 u-r-6 u-fs-xs u-bold">در انتظار بررسی راهبر</span>';
       }
 
       const subDate = sub.submittedAt ? new Date(sub.submittedAt).toLocaleDateString('fa-IR') : '';
@@ -630,26 +630,26 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
           <!-- Challenge Header -->
           <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bb-fg-6 u-pb-10">
             <div class="u-flex u-items-center u-gap-8">
-              <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-2-8 u-r-6 u-fs-11_5 u-bold">
+              <span class="u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-2-8 u-r-6 u-fs-xs u-bold">
                 چالش کاروان
               </span>
-              <span class="u-bold u-c-text u-fs-14"><i class="fa-solid fa-award u-c-accent-text"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
+              <span class="u-bold u-c-text u-fs-base"><i class="fa-solid fa-award u-c-accent-text"></i> ${esc(sub.challenge?.title || 'عنوان چالش')}</span>
             </div>
             <div class="u-flex u-items-center u-gap-10">
-              <span class="u-fs-11_5 u-c-text-muted u-mono">${subDate}</span>
+              <span class="u-fs-xs u-c-text-muted u-mono">${subDate}</span>
               ${statusBadge}
             </div>
           </div>
 
           <!-- Student Submission Box -->
           <div class="u-bg-surface-60 u-r-10 u-p-12 u-mb-12 u-br-3-solid-primary">
-            <div class="u-fs-11_5 u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
+            <div class="u-fs-xs u-bold u-c-primary-text u-mb-4 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-user-pen"></i> پاسخ ارسالی دانش‌آموز (${esc(student.name)}):
             </div>
-            <div class="u-fs-13 u-c-text u-lh-1_7">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
+            <div class="u-fs-sm u-c-text u-lh-1_7">${esc(sub.answerText || 'فاقد متن ارسالی (فقط فایل ضمیمه)')}</div>
             ${sub.fileUrl ? `
               <div class="u-mt-8">
-                <a href="${esc(sub.fileUrl)}" target="_blank" class="u-inline-flex u-items-center u-gap-6 u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-5-12 u-r-6 u-fs-12 u-no-underline">
+                <a href="${esc(sub.fileUrl)}" target="_blank" class="u-inline-flex u-items-center u-gap-6 u-bg-primary-12 u-bd-primary-30 u-c-primary-text u-p-6-12 u-r-6 u-fs-xs u-no-underline">
                   <i class="fa-solid fa-arrow-up-right-from-square"></i> مشاهده فایل / تصویر پیوست دانش‌آموز
                 </a>
               </div>
@@ -659,31 +659,31 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
           <!-- Mentor Feedback History (if any) -->
           ${sub.mentorFeedback ? `
             <div class="u-bg-success-8 u-bd-success-20 u-r-10 u-p-12 u-mb-12">
-              <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-12">
+              <div class="u-flex u-justify-between u-items-center u-mb-4 u-fs-xs">
                 <span class="u-bold u-c-success-text u-flex u-items-center u-gap-6">
                   <i class="fa-solid fa-comments"></i> بازخورد ثبت‌شده توسط راهبر:
                 </span>
-                <span class="u-bg-success-20 u-c-success-text u-p-2-8 u-r-6 u-bold u-fs-11">
+                <span class="u-bg-success-20 u-c-success-text u-p-2-8 u-r-6 u-bold u-fs-2xs">
                   امتیاز اعطایی: ${sub.score || 0} زریک
                 </span>
               </div>
-              <div class="u-fs-12_5 u-c-text u-lh-1_6">${esc(sub.mentorFeedback)}</div>
+              <div class="u-fs-sm u-c-text u-lh-1_6">${esc(sub.mentorFeedback)}</div>
             </div>
           ` : ''}
 
           <!-- Mentor Review / Correction Form -->
           <div class="u-bg-surface-70 u-bd-primary-20 u-r-10 u-p-12">
-            <div class="u-fs-12 u-bold u-c-primary-text u-mb-8 u-flex u-items-center u-gap-6">
+            <div class="u-fs-xs u-bold u-c-primary-text u-mb-8 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-pen-to-square"></i> ثبت / بازنویسی نمره و بازخورد راهبر:
             </div>
-            <div class="u-grid u-gap-10 u-items-center" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto">
-              <select id="review-status-${sub.id}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
+            <div class="u-grid u-gap-10 u-items-center u-cols-fit-140-auto">
+              <select id="review-status-${sub.id}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-8-10 u-r-6 u-fs-xs">
                 <option value="approved" ${sub.status === 'approved' || sub.status === 'APPROVED' ? 'selected' : ''}>تایید تکلیف (قبول)</option>
                 <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>
               </select>
-              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
-              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" class="u-col-span-span-2 u-bg-surface-2 u-bd-fg-20 u-c-text u-p-7-10 u-r-6 u-fs-12">
-              <button type="button" data-click="submitSubmissionReview" data-click-args="${esc(JSON.stringify([String(sub.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-success u-c-white u-bd-none u-p-7-16 u-r-6 u-bold u-pointer u-fs-12 u-inline-flex u-items-center u-gap-6 u-nowrap">
+              <input type="number" id="review-score-${sub.id}" placeholder="امتیاز زریک" value="${defaultScore}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-8-10 u-r-6 u-fs-xs">
+              <input type="text" id="review-feedback-${sub.id}" placeholder="متن بازخورد و راهنمایی راهبر..." value="${esc(sub.mentorFeedback || '')}" class="u-col-span-span-2 u-bg-surface-2 u-bd-fg-20 u-c-text u-p-8-10 u-r-6 u-fs-xs">
+              <button type="button" data-click="submitSubmissionReview" data-click-args="${esc(JSON.stringify([String(sub.id), String(mentorId), String(studentId)]))}" class="u-bg-grad-success u-c-white u-bd-none u-p-8-16 u-r-6 u-bold u-pointer u-fs-xs u-inline-flex u-items-center u-gap-6 u-nowrap">
                 <i class="fa-solid fa-floppy-disk"></i> ثبت بازخورد
               </button>
             </div>
@@ -836,7 +836,7 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
   const container = document.getElementById('modal-mentor-caravans-list');
   if (!container) return;
 
-  container.innerHTML = '<span class="u-fs-11 u-c-text-muted"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
+  container.innerHTML = '<span class="u-fs-2xs u-c-text-muted"><i class="fa-solid fa-spinner fa-spin"></i> در حال بارگذاری کاروان‌ها...</span>';
   
   try {
     const res = await request('/api/v1/admin/caravans');
@@ -844,19 +844,19 @@ window.populateMentorCaravansChecklist = async function(assignedIds = []) {
     window.cachedCaravansForMentorModal = Array.isArray(caravans) ? caravans : [];
 
     if (window.cachedCaravansForMentorModal.length === 0) {
-      container.innerHTML = '<span class="u-fs-12 u-c-text-muted">هیچ کاروانی در سامانه ثبت نشده است.</span>';
+      container.innerHTML = '<span class="u-fs-xs u-c-text-muted">هیچ کاروانی در سامانه ثبت نشده است.</span>';
       return;
     }
 
     container.innerHTML = window.cachedCaravansForMentorModal.map(c => `
-      <label class="mentor-caravan-item-label u-flex u-items-center u-gap-8 u-bg-surface-85 u-bd-fg-12 u-r-8 u-p-8-12 u-c-text u-fs-12_5 u-pointer u-transition" data-caravan-name="${(c.name || '').toLowerCase()}">
+      <label class="mentor-caravan-item-label u-flex u-items-center u-gap-8 u-bg-surface-85 u-bd-fg-12 u-r-8 u-p-8-12 u-c-text u-fs-sm u-pointer u-transition" data-caravan-name="${(c.name || '').toLowerCase()}">
         <input type="checkbox" class="mentor-caravan-checkbox u-w-16 u-h-16 u-pointer" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}>
         <span class="u-fw-500">${esc(c.name)}</span>
       </label>
     `).join('');
   } catch (e) {
     console.error('Error fetching caravans checklist:', e);
-    container.innerHTML = '<span class="u-fs-12 u-c-danger-text">خطا در دریافت لیست کاروان‌ها</span>';
+    container.innerHTML = '<span class="u-fs-xs u-c-danger-text">خطا در دریافت لیست کاروان‌ها</span>';
   }
 };
 
@@ -1005,13 +1005,14 @@ let _mentorDocsCache = [];
 let _currentMentorDocId = null;
 
 window.loadMentorDocs = async function() {
+  const tbody = document.querySelector('#mentor-docs-table tbody');
   try {
     const res = await request('/api/v1/admin/mentors/documents/pending');
-    if(!res.ok) return console.error('Failed to load mentor docs');
+    if (!res.ok) { console.error('Failed to load mentor docs'); return NopaTable.error(tbody, 'خطا در دریافت مدارک'); }
     const docs = await res.json();
-    _mentorDocsCache = docs;
-    const tbody = document.querySelector('#mentor-docs-table tbody');
+    _mentorDocsCache = Array.isArray(docs) ? docs : [];
     if (!tbody) return;
+    if (!_mentorDocsCache.length) return NopaTable.empty(tbody, 'مدرکی در انتظار بررسی نیست', 'fa-solid fa-circle-check');
     tbody.innerHTML = docs.map(d => `
       <tr>
         <td>${esc(d.user?.name || 'نامعلوم')}</td>
@@ -1020,14 +1021,15 @@ window.loadMentorDocs = async function() {
         <td>${new Date(d.createdAt).toLocaleString('fa-IR')}</td>
         <td>${d.status || 'pending'}</td>
         <td>
-          <button class="btn-icon" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button class="btn-icon u-c-green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
-          <button class="btn-icon u-c-red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
+          <button title="مشاهده‌ی مدرک" aria-label="مشاهده‌ی مدرک" class="btn-icon" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-eye"></i></button>
+          <button title="تأیید مدرک" aria-label="تأیید مدرک" class="btn-icon u-c-green" data-click="quickApproveMentorDoc" data-click-args="${esc(JSON.stringify([String(d.id)]))}"><i class="fa-solid fa-check"></i></button>
+          <button title="رد مدرک" aria-label="رد مدرک" class="btn-icon u-c-red" data-click="openMentorDocModal" data-click-args="${esc(JSON.stringify([String(d.id), true]))}"><i class="fa-solid fa-ban"></i></button>
         </td>
       </tr>
     `).join('');
   } catch(e) {
     console.error('Failed to load mentor docs', e);
+    NopaTable.error(tbody, 'خطا در دریافت مدارک');
   }
 }
 
