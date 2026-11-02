@@ -2968,3 +2968,22 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - `npx tsc --noEmit` and `npm test` in `admin_panel/`: pass; `node --check` on chat-settings.js
   - Not run: on-device test of the market screen, browser test of the toolbar, e2e suite against a live DB
 - **Status:** Completed
+
+### [2026-11-02 12:54] - Claude Code (Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/market/market_screen.dart` (Created, moved from `app/lib/screens/mentor/market/mentor_market_screen.dart` with git mv)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Deleted)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+- **Description of Changes:**
+  - Merged the near-identical student and mentor market screens (~2,630 lines each) into one `MarketScreen({required MarketMode mode})`. app_shell passes the mode from the role.
+  - Per-role behavior kept: student sees own capital, the exchange panel and "ارتباط با راهبر"; mentor sees the caravan subtitle, members report / exchanges tabs (synced to the picked caravan, cancel flow) and pull-to-refresh (disabled for students via notificationPredicate). Shared: rate sheet and leaderboard.
+  - Students no longer call the mentor-only `/mentor/caravan-progress` endpoint (returned 403) or load exchange data they never display. After a student exchange, the balance and the leaderboard refresh.
+  - Removed the unreachable mentor branch of the "سرمایه های شما" section and the unused `typedef MarketScreen` aliases.
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (whole app, from `app/`): no issues
+  - `flutter test`: all 11 tests pass
+  - No remaining references to the old class names or paths
+  - Not run: on-device check of both roles
+- **Status:** Completed

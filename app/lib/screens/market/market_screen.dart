@@ -16,14 +16,23 @@ import 'package:nopa_app/widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/utils/constants.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
 
-class MentorMarketScreen extends StatefulWidget {
-  const MentorMarketScreen({super.key});
+/// Who the market is shown to. The two share the rate sheet and the leaderboard:
+/// - student: own capital, the exchange panel and "contact mentor";
+/// - mentor: the caravan's members report and exchanges (observer view, can cancel), synced to the picked caravan.
+enum MarketMode { student, mentor }
+
+/// The بازارچه tab for students and mentors (app_shell picks the mode from the role).
+class MarketScreen extends StatefulWidget {
+  final MarketMode mode;
+  const MarketScreen({super.key, required this.mode});
 
   @override
-  State<MentorMarketScreen> createState() => _MarketScreenState();
+  State<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends State<MentorMarketScreen> {
+class _MarketScreenState extends State<MarketScreen> {
+  bool get _isMentor => widget.mode == MarketMode.mentor;
+
   // Rate sheet; kalaf and carpet follow the rules set in the panel, banners are only won
   List<Map<String, dynamic>> get _rateItems => [
     {
@@ -189,7 +198,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     super.initState();
     _amountController.addListener(_recalculateExchange);
     _recalculateExchange();
-    _loadMarketData();
+    if (_isMentor) _loadMarketData();
     _loadLeaderboards();
   }
 
@@ -426,7 +435,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             if (error == null) {
                               AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد');
                               repository.refreshUser();
-                              _loadMarketData();
+                              _loadLeaderboards();
                             } else {
                               AppToast.error(context, error);
                             }
@@ -505,7 +514,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
         final user = repository.currentUser;
-        final bool isMentor = user.role.isMentorLike;
+        final bool isMentor = _isMentor;
 
         // The mentor switched caravans (or the caravan list arrived after the first load): resync
         if (isMentor && _loadedCaravanId != null && repository.selectedCaravanId != _loadedCaravanId) {
@@ -517,6 +526,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
 
         return RefreshIndicator(
           onRefresh: _refreshAll,
+          notificationPredicate: isMentor ? defaultScrollNotificationPredicate : (_) => false,
           child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -560,7 +570,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
 
               // 3. Section 2: سرمایه های شما (Your Capital - only for student)
               if (!isMentor) ...[
-                _buildAssetsSection(user, isMentor: isMentor),
+                _buildAssetsSection(user),
                 const SizedBox(height: 24),
               ],
 
@@ -746,20 +756,12 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     );
   }
 
-  /// Section 2: سرمایه های شما / مجموع سرمایه های کاروان
-  Widget _buildAssetsSection(UserModel? user, {bool isMentor = false}) {
-    final title = isMentor ? 'مجموع سرمایه های کاروان' : 'سرمایه های شما';
-
-    // A mentor holds no capital of their own: show the caravan total (0 until it loads)
-    int totalZarik = isMentor ? 0 : (user?.zarik ?? 0);
-    int totalNakh = isMentor ? 0 : (user?.nakh ?? 0);
-    int totalFarsh = isMentor ? 0 : (user?.farsh ?? 0);
-
-    if (isMentor && _mentorMembersAssets.isNotEmpty) {
-      totalZarik = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['zarik'] as num?)?.toInt() ?? (m['zarikBalance'] as num?)?.toInt() ?? 0));
-      totalNakh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['nakh'] as num?)?.toInt() ?? 0));
-      totalFarsh = _mentorMembersAssets.fold<int>(0, (sum, m) => sum + ((m['farsh'] as num?)?.toInt() ?? 0));
-    }
+  /// Section 2: سرمایه های شما (student only; the mentor sees caravan totals under گزارش اعضا)
+  Widget _buildAssetsSection(UserModel? user) {
+    const title = 'سرمایه های شما';
+    final int totalZarik = user?.zarik ?? 0;
+    final int totalNakh = user?.nakh ?? 0;
+    final int totalFarsh = user?.farsh ?? 0;
 
     final zarikVal = totalZarik.toPersian();
     final beyrahVal = Provider.of<AppRepository>(context).caravanBannerTotal.toPersian();
@@ -2031,7 +2033,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                             children: [
                               Expanded(
                                 child: _buildInteractiveActionButton(
-                                  text: 'پیام به پشتیبانی',
+                                  text: 'ارتباط با راهبر',
                                   isActive: _activeActionButton == 2,
                                   strokeBorderColor: const Color(0xFF6E688E),
                                   onTap: _contactMentor,
@@ -2082,7 +2084,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                                 children: [
                                   Expanded(
                                     child: _buildInteractiveActionButton(
-                                      text: 'پیام به پشتیبانی',
+                                      text: 'ارتباط با راهبر',
                                       isActive: _activeActionButton == 2,
                                       strokeBorderColor: const Color(0xFF6E688E),
                                       onTap: _contactMentor,
@@ -2710,7 +2712,3 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     );
   }
 }
-
-
-
-typedef MarketScreen = MentorMarketScreen;
