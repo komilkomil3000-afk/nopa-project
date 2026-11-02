@@ -27,7 +27,7 @@
     const fam = STATUS_FAMILY[key];
     const tint = fam ? `rgb(var(--${fam}-rgb) / ` : 'rgb(var(--muted-rgb) / ';
     const text = fam ? `var(--${fam}-text)` : 'var(--text-muted)';
-    return `<span class="u-p-2-9 u-r-8 u-fs-11_5 u-bold" style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4)">${esc(STATUS_LABEL[key] || key)}</span>`;
+    return `<span class="u-p-2-10 u-r-8 u-fs-xs u-bold" style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4)">${esc(STATUS_LABEL[key] || key)}</span>`;
   }
 
   function ensureView() {
@@ -36,7 +36,7 @@
     view.dataset.ready = '1';
     view.innerHTML = `
       <div class="u-flex u-justify-between u-items-center u-wrap u-gap-10 u-mb-14">
-        <h4 class="u-m-0 u-c-text u-fs-15 u-flex u-items-center u-gap-6">
+        <h4 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-6">
           <i class="fa-solid fa-headset u-c-primary-text"></i> صندوق پیام‌های پشتیبانی
         </h4>
         <div class="u-flex u-gap-8 u-wrap">
@@ -75,13 +75,13 @@
         <div class="modal-content glass u-maxw-760 u-w-92p u-flex u-col u-bg-surface-2-97">
           <div class="modal-header u-bb-fg-10">
             <h3 id="support-modal-title" class="u-m-0">پیام پشتیبانی</h3>
-            <button type="button" class="modal-close" id="support-modal-close">&times;</button>
+            <button aria-label="بستن" type="button" class="modal-close" id="support-modal-close">&times;</button>
           </div>
-          <div class="u-p-18 u-flex u-col u-gap-14 u-maxh-70vh u-scroll-y">
+          <div class="u-p-20 u-flex u-col u-gap-14 u-maxh-70vh u-scroll-y">
             <div id="support-thread"></div>
             <div class="u-flex u-col u-gap-8">
-              <label class="u-c-text-muted">پاسخ پشتیبانی (برای فرستنده اعلان می‌شود)</label>
-              <textarea id="support-reply-text" class="input-ctrl" rows="4" placeholder="متن پاسخ را بنویسید..."></textarea>
+              <label for="support-reply-text" class="u-c-text-muted">پاسخ پشتیبانی (برای فرستنده اعلان می‌شود)</label>
+              <textarea id="support-reply-text"" class="input-ctrl" rows="4" placeholder="متن پاسخ را بنویسید..."></textarea>
               <div class="u-flex u-gap-8 u-justify-end u-wrap">
                 <button type="button" id="support-resolve" class="btn-action u-r-8 u-p-8-16 u-pointer">
                   <i class="fa-solid fa-circle-check"></i> بستن و حل‌شده
@@ -144,12 +144,12 @@
 
     tbody.innerHTML = rows.map(t => `
       <tr>
-        <td>${esc(t.student?.name || 'ناشناس')}<div class="u-fs-11 u-c-text-muted u-direction-ltr u-text-right">${esc(t.student?.phoneNumber || '')}</div></td>
+        <td>${esc(t.student?.name || 'ناشناس')}<div class="u-fs-2xs u-c-text-muted u-direction-ltr u-text-right">${esc(t.student?.phoneNumber || '')}</div></td>
         <td>${esc(roleLabel(t.student?.role))}${t.student?.caravan?.name ? ' • ' + esc(t.student.caravan.name) : ''}</td>
-        <td class="u-maxw-320">${t.category !== SUPPORT_CATEGORY ? `<span class="u-c-text-muted u-fs-11">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
+        <td class="u-maxw-320">${t.category !== SUPPORT_CATEGORY ? `<span class="u-c-text-muted u-fs-2xs">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
         <td>${statusBadge(t.status)}</td>
         <td>${fmtDate(t.createdAt)}</td>
-        <td><button type="button" class="page-btn btn-view" data-support-open="${esc(t.id)}"><i class="fa-solid fa-eye"></i></button></td>
+        <td><button title="مشاهده‌ی تیکت" aria-label="مشاهده‌ی تیکت" type="button" class="page-btn btn-view" data-support-open="${esc(t.id)}"><i class="fa-solid fa-eye"></i></button></td>
       </tr>`).join('');
 
     tbody.querySelectorAll('[data-support-open]').forEach(btn =>
@@ -160,12 +160,12 @@
     return `
       <div class="u-p-12-14 u-bg-fg-5 u-r-12 u-mb-10">
         <div class="u-flex u-justify-between u-gap-10 u-wrap">
-          <strong>${esc(author)} <span class="u-fs-11 u-c-text-muted u-fw-normal">${esc(role)}</span></strong>
-          <span class="u-fs-11 u-c-text-muted">${esc(when)}</span>
+          <strong>${esc(author)} <span class="u-fs-2xs u-c-text-muted u-fw-normal">${esc(role)}</span></strong>
+          <span class="u-fs-2xs u-c-text-muted">${esc(when)}</span>
         </div>
-        <p class="u-m-8-0-0 u-fs-13 u-lh-1_8 u-ws-pre-wrap">${text ? esc(text) : '<em>بدون متن</em>'}</p>
+        <p class="u-m-8-0-0 u-fs-sm u-lh-1_8 u-ws-pre-wrap">${text ? esc(text) : '<em>بدون متن</em>'}</p>
         ${voiceUrl ? `<audio controls class="u-w-full u-mt-8" src="${esc(voiceUrl)}"></audio>` : ''}
-        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" class="u-inline-block u-mt-8 u-c-success-text u-fs-12"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
+        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" class="u-inline-block u-mt-8 u-c-success-text u-fs-xs"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
       </div>`;
   }
 

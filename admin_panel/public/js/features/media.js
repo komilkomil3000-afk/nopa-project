@@ -53,10 +53,10 @@ function renderStoredFiles() {
     const icon = k === 'video' ? 'fa-video' : k === 'image' ? 'fa-image' : k === 'audio' ? 'fa-music' : 'fa-file';
     const abs = window.location.origin + f.url;
     const preview = k === 'image'
-      ? `<a href="${esc(f.url)}" target="_blank"><img src="${esc(f.url)}" loading="lazy" class="u-w-48 u-h-48 u-fit-cover u-r-8"></a>`
-      : `<a href="${esc(f.url)}" target="_blank"><i class="fa-solid ${icon} u-fs-22 u-c-color-neon-blue"></i></a>`;
+      ? `<a title="باز کردن فایل" aria-label="باز کردن فایل" href="${esc(f.url)}" target="_blank"><img src="${esc(f.url)}" alt="${esc(f.name || '')}" loading="lazy" class="u-w-48 u-h-48 u-fit-cover u-r-8"></a>`
+      : `<a title="باز کردن فایل" aria-label="باز کردن فایل" href="${esc(f.url)}" target="_blank"><i class="fa-solid ${icon} u-fs-xl u-c-color-neon-blue"></i></a>`;
     const sub = (f.title || f.path !== f.name)
-      ? `<div class="u-fs-10 u-c-text-secondary u-direction-ltr">${esc(f.path)}</div>` : '';
+      ? `<div class="u-fs-2xs u-c-text-secondary u-direction-ltr">${esc(f.path)}</div>` : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="checkbox" class="file-check" data-path="${esc(f.path)}"></td>
@@ -65,10 +65,10 @@ function renderStoredFiles() {
       <td><span class="badge badge-student">${esc(f.mimeType)}</span></td>
       <td>${_fmtSize(f.size)}</td>
       <td><div class="u-flex u-items-center u-gap-8">
-        <input type="text" readonly class="input-ctrl u-mono u-fs-11 u-p-4 u-h-26 u-direction-ltr" value="${esc(abs)}">
-        <button class="page-btn file-copy u-p-4-8 u-fs-11 u-shrink-0" data-url="${esc(abs)}"><i class="fa-solid fa-copy"></i></button></div></td>
-      <td class="u-fs-11 u-c-text-secondary">${new Date(f.modifiedAt).toLocaleString('fa-IR')}</td>
-      <td><button class="page-btn file-del u-p-4-8 u-fs-11 u-c-danger-text" data-path="${esc(f.path)}"><i class="fa-solid fa-trash"></i></button></td>`;
+        <input type="text" readonly class="input-ctrl u-mono u-fs-2xs u-p-4 u-h-26 u-direction-ltr" value="${esc(abs)}">
+        <button title="کپی لینک" aria-label="کپی لینک" class="page-btn file-copy u-p-4-8 u-fs-2xs u-shrink-0" data-url="${esc(abs)}"><i class="fa-solid fa-copy"></i></button></div></td>
+      <td class="u-fs-2xs u-c-text-secondary">${new Date(f.modifiedAt).toLocaleString('fa-IR')}</td>
+      <td><button title="حذف فایل" aria-label="حذف فایل" class="page-btn file-del u-p-4-8 u-fs-2xs u-c-danger-text" data-path="${esc(f.path)}"><i class="fa-solid fa-trash"></i></button></td>`;
     tbody.appendChild(tr);
   });
 }

@@ -71,17 +71,17 @@ async function loadRoles() {
     NopaTable.render(tbody, roles, r => `
       <tr>
         <td>${esc(r.roleName)}</td>
-        <td><input type="checkbox" ${r.maskPhoneNumbers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "maskPhoneNumbers", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.restrictZarik ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "restrictZarik", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.lockUserDeletions ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "lockUserDeletions", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.manageContent ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "manageContent", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canSendMessage ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canSendMessage", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canJoinClasses ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canJoinClasses", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canScoreAndEvaluate ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canScoreAndEvaluate", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canConvertAssets ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canConvertAssets", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canCreateChallenges ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canCreateChallenges", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canViewGlobalAnalytics ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canViewGlobalAnalytics", "$checked"]))}"></td>
-        <td><input type="checkbox" ${r.canManageUsers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canManageUsers", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — مخفی‌سازی موبایل" ${r.maskPhoneNumbers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "maskPhoneNumbers", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — محدودیت زریک" ${r.restrictZarik ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "restrictZarik", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — قفل حذف کاربر" ${r.lockUserDeletions ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "lockUserDeletions", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — مدیریت محتوا" ${r.manageContent ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "manageContent", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — پیام و چت" ${r.canSendMessage ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canSendMessage", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — شرکت در کلاس" ${r.canJoinClasses ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canJoinClasses", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — ارزیابی تکالیف" ${r.canScoreAndEvaluate ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canScoreAndEvaluate", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — تبدیل سرمایه" ${r.canConvertAssets ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canConvertAssets", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — ایجاد چالش" ${r.canCreateChallenges ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canCreateChallenges", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — آمار کلی" ${r.canViewGlobalAnalytics ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canViewGlobalAnalytics", "$checked"]))}"></td>
+        <td><input type="checkbox" aria-label="${esc(r.roleName)} — مدیریت کاربران" ${r.canManageUsers ? 'checked' : ''} data-change="updateRole" data-change-args="${esc(JSON.stringify([String(r.roleName), "canManageUsers", "$checked"]))}"></td>
         <td>-</td>
       </tr>
     `, { empty: 'نقشی تعریف نشده است', emptyIcon: 'fa-solid fa-user-lock' });
@@ -216,8 +216,8 @@ function renderSubAdminAccess(roles) {
   document.getElementById('sub-admin-can-login').checked = row.canLoginPanel === true;
   box.innerHTML = Object.keys(PANEL_SECTION_LABELS).map(key => `
     <div class="u-flex u-justify-between u-items-center u-gap-8 u-bg-fg-4 u-p-8-10 u-r-8">
-      <span class="u-fs-12_5">${PANEL_SECTION_LABELS[key]}</span>
-      <select class="select-ctrl sub-admin-section u-minw-120" data-section="${key}">
+      <span class="u-fs-sm">${PANEL_SECTION_LABELS[key]}</span>
+      <select class="select-ctrl sub-admin-section u-minw-120" data-section="${key}" aria-label="دسترسی ${PANEL_SECTION_LABELS[key]}">
         <option value="" ${!grants[key] ? 'selected' : ''}>بدون دسترسی</option>
         <option value="view" ${grants[key] === 'view' ? 'selected' : ''}>فقط مشاهده</option>
         <option value="edit" ${grants[key] === 'edit' ? 'selected' : ''}>مشاهده و ویرایش</option>

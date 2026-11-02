@@ -95,15 +95,15 @@ window.renderReorderList = function() {
     html += `
       <div class="u-flex u-items-center u-justify-between u-bg-surface-2-85 u-bd-fg-8 u-r-10 u-p-12-16 u-transition">
         <div class="u-flex u-items-center u-gap-12">
-          <div class="u-bg-grad-primary u-c-white u-bold u-fs-13_5 u-w-38 u-h-38 u-r-8 u-flex u-items-center u-justify-center u-shadow-0-2-6-shade-30">
+          <div class="u-bg-grad-primary u-c-white u-bold u-fs-base u-w-38 u-h-38 u-r-8 u-flex u-items-center u-justify-center u-shadow-0-2-6-shade-30">
             ${currentNumber}
           </div>
           <div>
-            <div class="u-bold u-c-text u-fs-14 u-flex u-items-center u-gap-8">
+            <div class="u-bold u-c-text u-fs-base u-flex u-items-center u-gap-8">
               <span>${persianStationTitle}</span>
-              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span class="u-fs-12 u-c-primary-text u-fw-normal">(${esc(st.title)})</span>` : ''}
+              ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span class="u-fs-xs u-c-primary-text u-fw-normal">(${esc(st.title)})</span>` : ''}
             </div>
-            <div class="u-fs-11_5 u-c-text-muted u-mt-3 u-flex u-items-center u-gap-8 u-wrap">
+            <div class="u-fs-xs u-c-text-muted u-mt-4 u-flex u-items-center u-gap-8 u-wrap">
               <span class="u-c-primary-text"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
               <span class="u-c-text-faint">|</span>
               <span class="u-c-primary-text"><i class="fa-solid fa-photo-film"></i> رسانه‌ای: ${mediaTopic}</span>
@@ -114,10 +114,10 @@ window.renderReorderList = function() {
         </div>
 
         <div class="u-flex u-gap-6 u-items-center">
-          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx - 1)]))}" ${isFirst ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-14 u-flex u-items-center u-justify-center" style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirst ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx - 1)]))}" ${isFirst ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-base u-flex u-items-center u-justify-center" style="background:${isFirst ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirst ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirst ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirst ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">
             <i class="fa-solid fa-arrow-up"></i>
           </button>
-          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx + 1)]))}" ${isLast ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-14 u-flex u-items-center u-justify-center" style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLast ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">
+          <button type="button" data-click="moveStationInReorder" data-click-args="${esc(JSON.stringify([(idx), (idx + 1)]))}" ${isLast ? 'disabled' : ''} class="u-w-36 u-h-36 u-r-8 u-fs-base u-flex u-items-center u-justify-center" style="background:${isLast ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLast ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLast ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLast ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">
             <i class="fa-solid fa-arrow-down"></i>
           </button>
         </div>

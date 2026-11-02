@@ -4,11 +4,11 @@
 
 // Tickets
 async function loadTickets() {
+  const tbody = document.querySelector('#mentor-tickets-table tbody');
   try {
     const res = await request('/api/v1/admin/tickets');
-    if (!res.ok) return;
+    if (!res.ok) return NopaTable.error(tbody, 'خطا در دریافت تیکت‌ها');
     const tickets = await res.json();
-    const tbody = document.querySelector('#mentor-tickets-table tbody');
     if (!tbody) return;
     
     NopaTable.render(tbody, tickets, t => `
@@ -20,24 +20,26 @@ async function loadTickets() {
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.rating || '-'}</td>
         <td>
-          <button class="page-btn btn-view" data-click="showToast" data-click-args="[&quot;نمایش جزئیات به زودی&quot;,&quot;info&quot;]"><i class="fa-solid fa-eye"></i></button>
+          <button title="مشاهده‌ی جزئیات" aria-label="مشاهده‌ی جزئیات" class="page-btn btn-view" data-click="showToast" data-click-args="[&quot;نمایش جزئیات به زودی&quot;,&quot;info&quot;]"><i class="fa-solid fa-eye"></i></button>
         </td>
       </tr>
     `, { empty: 'تیکتی ثبت نشده است', emptyIcon: 'fa-solid fa-inbox' });
   } catch (e) {
     console.error('Error loading tickets', e);
+    NopaTable.error(tbody, 'خطا در دریافت تیکت‌ها');
   }
 }
 
 // ---- CHAT OVERSIGHT ----
 let chatPage = 1;
 async function loadChats() {
+  const tbody = document.querySelector('#chat-logs-table tbody');
   try {
     const filterCaravanId = document.getElementById('chat-filter-caravanId').value || '';
     const res = await request(`/api/v1/admin/chat?page=${chatPage}&limit=50&caravanId=${encodeURIComponent(filterCaravanId)}`);
     const data = await res.json();
 
-    const tbody = document.querySelector('#chat-logs-table tbody');
+    if (!res.ok || !data || !Array.isArray(data.messages)) return NopaTable.error(tbody, 'خطا در دریافت پیام‌ها');
     tbody.innerHTML = '';
 
     if (data.messages.length === 0) {
@@ -56,13 +58,14 @@ async function loadChats() {
         <td class="u-maxw-250 u-overflow-hidden u-ellipsis u-nowrap">${esc(msg.messageText)}</td>
         <td>${fileBadge}</td>
         <td>
-          <button class="btn-icon u-c-danger" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
+          <button title="حذف گفتگو" aria-label="حذف گفتگو" class="btn-icon u-c-danger" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
     console.error('Failed to load chats:', err);
+    NopaTable.error(tbody, 'خطا در دریافت پیام‌ها');
   }
 }
 
@@ -103,7 +106,7 @@ async function loadMentorTickets() {
         <td>${new Date(t.createdAt).toLocaleDateString('fa-IR')}</td>
         <td>${t.ratingGiven || '-'}</td>
         <td>
-          <button class="btn-icon" data-click="viewTicketThread" data-click-args="${esc(JSON.stringify([String(t.id)]))}"><i class="fa-solid fa-reply"></i></button>
+          <button title="پاسخ به تیکت" aria-label="پاسخ به تیکت" class="btn-icon" data-click="viewTicketThread" data-click-args="${esc(JSON.stringify([String(t.id)]))}"><i class="fa-solid fa-reply"></i></button>
         </td>
       </tr>
     `).join('');
@@ -134,15 +137,15 @@ window.viewTicketThread = async function(ticketId) {
       <div class="u-p-14 u-bg-fg-5 u-r-12 u-mb-12">
         <div class="u-flex u-justify-between u-wrap u-gap-10 u-items-center">
           <strong>${esc(author)}</strong>
-          <span class="u-fs-11 u-c-text-muted">${esc(role)}</span>
+          <span class="u-fs-2xs u-c-text-muted">${esc(role)}</span>
         </div>
-        <p class="u-mt-10 u-fs-13 u-lh-1_6">${message ? esc(message) : '<em>بدون متن</em>'}</p>
+        <p class="u-mt-10 u-fs-sm u-lh-1_6">${message ? esc(message) : '<em>بدون متن</em>'}</p>
     `;
     if (voiceUrl) {
       card += `<audio controls class="u-w-full u-mt-8" src="${esc(voiceUrl)}"></audio>`;
     }
     if (attachmentUrl) {
-      card += `<a href="${esc(attachmentUrl)}" target="_blank" class="u-inline-block u-mt-8 u-c-success-text u-fs-12 u-no-underline"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
+      card += `<a href="${esc(attachmentUrl)}" target="_blank" class="u-inline-block u-mt-8 u-c-success-text u-fs-xs u-no-underline"><i class="fa-solid fa-download"></i> دانلود پیوست</a>`;
     }
     card += '</div>';
     return card;

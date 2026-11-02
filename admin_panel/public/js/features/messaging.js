@@ -29,13 +29,17 @@ async function handleAnnouncementBroadcast(e) {
 }
 
 // 4. Notifications Engine (Templates, Logs, Overrides)
+// The two parts load independently: a failure in one must not leave the other blank.
 async function loadNotificationData() {
+  await Promise.all([loadChannelOverrides(), loadNotificationLogs()]);
+}
+
+async function loadChannelOverrides() {
+  const container = document.getElementById('channel-overrides-list');
   try {
-    // 1. Fetch Overrides
     const resOv = await request('/api/v1/admin/notifications/overrides');
     const overrides = await resOv.json();
-    
-    const container = document.getElementById('channel-overrides-list');
+    if (!resOv.ok || !Array.isArray(overrides)) return NopaState.error(container, 'خطا در دریافت تنظیمات کانال‌ها');
     if (container) {
       container.innerHTML = '';
       ['in_app', 'sms', 'email'].forEach(ch => {
@@ -52,12 +56,19 @@ async function loadNotificationData() {
         `;
       });
     }
+  } catch (err) {
+    console.error('Notification overrides error', err);
+    NopaState.error(container, 'خطا در دریافت تنظیمات کانال‌ها');
+  }
+}
 
-    // 2. Fetch Logs
+async function loadNotificationLogs() {
+  const tbody = document.querySelector('#notification-logs-table tbody');
+  try {
     const resLogs = await request('/api/v1/admin/notifications/logs');
     const logs = await resLogs.json();
-    
-    const tbody = document.querySelector('#notification-logs-table tbody');
+    if (!resLogs.ok || !Array.isArray(logs)) return NopaTable.error(tbody, 'خطا در دریافت گزارش ارسال‌ها');
+    if (!logs.length) return NopaTable.empty(tbody, 'هنوز اعلانی ارسال نشده است');
     if (tbody) {
       tbody.innerHTML = '';
       logs.forEach(l => {
@@ -66,13 +77,14 @@ async function loadNotificationData() {
           <td><span class="badge ${l.channel === 'in_app' ? 'badge-admin' : 'badge-student'}">${esc(l.channel)}</span></td>
           <td>${esc(l.targetAudience)}</td>
           <td><span style="color: ${l.status === 'success' ? 'var(--success-text)' : 'var(--danger)'}">${l.status === 'success' ? 'موفق' : 'خطا'}</span></td>
-          <td class="u-fs-11 u-c-text-muted">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
+          <td class="u-fs-2xs u-c-text-muted">${new Date(l.createdAt).toLocaleString('fa-IR')}</td>
         `;
         tbody.appendChild(tr);
       });
     }
   } catch (err) {
-    console.error('Notification data error', err);
+    console.error('Notification logs error', err);
+    NopaTable.error(tbody, 'خطا در دریافت گزارش ارسال‌ها');
   }
 }
 

@@ -1,10 +1,13 @@
-// Modal manager for every .modal-overlay in the panel. Loaded before the feature modules (js/app, js/features).
-// Existing code opens modals by setting style.display; this watches those changes, so all modals get:
+// Modal manager for every .modal-overlay (and the .drawer-content side drawers) in the panel. Loaded before
+// the feature modules (js/app, js/features).
+// Existing code opens modals by setting style.display (drawers: the "active" class); this watches those
+// changes, so all modals get:
 //   - a stack (nested modals close top-first)
 //   - ESC closes the top modal (through its own close button, so cleanup handlers still run)
 //   - click on the backdrop closes it, unless it contains form fields (no accidental data loss)
 //     or has data-modal-static
 //   - focus moves into the modal, Tab stays inside it, focus returns to the opener on close
+//   - role="dialog", aria-modal and a name (aria-labelledby → the modal's heading) for screen readers
 //   - the page behind does not scroll
 // New code can use NopaModal.open(idOrEl) / NopaModal.close(idOrEl).
 (function () {
@@ -12,10 +15,24 @@
   const opener = new WeakMap();
   const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const EXCLUDED = new Set(); // ids of overlays the manager should ignore
+  const WATCHED = ['modal-overlay', 'drawer-content'];
+  let headingSeq = 0;
 
   const resolve = el => (typeof el === 'string' ? document.getElementById(el) : el);
-  const isOpen = el => el.isConnected && getComputedStyle(el).display !== 'none' && !el.classList.contains('hidden');
+  const isDrawer = el => el.classList.contains('drawer-content');
+  const isOpen = el => el.isConnected && (isDrawer(el) ? el.classList.contains('active')
+    : getComputedStyle(el).display !== 'none' && !el.classList.contains('hidden'));
   const visibleFocusables = el => Array.from(el.querySelectorAll(FOCUSABLE)).filter(n => n.offsetParent !== null);
+  const watched = n => n.nodeType === 1 && WATCHED.some(c => n.classList.contains(c));
+
+  // Name the dialog after its first visible heading (titles are often rewritten when the modal opens)
+  function label(el) {
+    if (el.getAttribute('aria-label') || (el.getAttribute('aria-labelledby') && document.getElementById(el.getAttribute('aria-labelledby')))) return;
+    const h = Array.from(el.querySelectorAll('h1, h2, h3, h4')).find(n => n.offsetParent !== null && n.textContent.trim());
+    if (!h) return;
+    if (!h.id) h.id = 'nopa-dialog-title-' + (++headingSeq);
+    el.setAttribute('aria-labelledby', h.id);
+  }
 
   function onOpened(el) {
     if (stack.includes(el)) return;
@@ -23,6 +40,7 @@
     stack.push(el);
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
+    label(el);
     document.body.classList.add('modal-open');
     // Focus the first field (or the dialog itself) once it is laid out
     requestAnimationFrame(() => {
@@ -52,7 +70,7 @@
     // Prefer the modal's own close control: it may reset state (e.g. closeCaravanDrawer)
     const btn = el.querySelector('.modal-close, [data-modal-close]');
     if (btn && btn.offsetParent !== null) btn.click();
-    if (isOpen(el)) el.style.display = 'none';
+    if (isOpen(el)) { if (isDrawer(el)) el.classList.remove('active'); else el.style.display = 'none'; }
   }
 
   function open(el) {
@@ -97,16 +115,16 @@
     const observer = new MutationObserver(records => {
       const touched = new Set();
       records.forEach(r => {
-        if (r.type === 'attributes' && r.target.classList && r.target.classList.contains('modal-overlay')) touched.add(r.target);
+        if (r.type === 'attributes' && r.target.classList && watched(r.target)) touched.add(r.target);
         if (r.type === 'childList') {
-          r.addedNodes.forEach(n => { if (n.nodeType === 1 && n.classList.contains('modal-overlay')) touched.add(n); });
+          r.addedNodes.forEach(n => { if (watched(n)) touched.add(n); });
           r.removedNodes.forEach(n => { if (n.nodeType === 1 && stack.includes(n)) onClosed(n); });
         }
       });
       touched.forEach(sync);
     });
     observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['style', 'class'] });
-    document.querySelectorAll('.modal-overlay').forEach(sync);
+    document.querySelectorAll('.modal-overlay, .drawer-content').forEach(sync);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);

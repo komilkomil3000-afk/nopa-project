@@ -4,18 +4,19 @@
 
 // 8. Toggle Dark/Light Mode
 async function loadLevelsAndCertificatesTab() {
+  const tbody = document.querySelector('#levels-data-table tbody');
   try {
     const res = await request('/api/v1/admin/levels-and-certificates');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error);
 
-    const tbody = document.querySelector('#levels-data-table tbody');
     if (!tbody) return;
+    if (!data.data || !data.data.length) return NopaTable.empty(tbody, 'کاربری برای نمایش وجود ندارد');
     tbody.innerHTML = '';
 
     data.data.forEach(user => {
       const levelNames = { 1: 'تازه وارد', 2: 'نقره‌ای', 3: 'طلایی' };
-      const levelBadge = `<span class="badge u-bg-primary u-c-white u-fs-10">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
+      const levelBadge = `<span class="badge u-bg-primary u-c-white u-fs-2xs">${levelNames[user.levelFrame] || 'نامشخص'}</span>`;
       
       const lastCert = user.certificates && user.certificates.length > 0 ? user.certificates[0].title : 'بدون گواهینامه';
       
@@ -33,13 +34,14 @@ async function loadLevelsAndCertificatesTab() {
         <td>${user.registrationCompleted ? '<span class="u-c-color-success">تکمیل شده</span>' : '<span class="u-c-color-danger">ناقص</span>'}</td>
         <td>${physicalReqs}</td>
         <td>
-          <button class="page-btn btn-edit u-p-4-8 u-fs-11" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
+          <button class="page-btn btn-edit u-p-4-8 u-fs-2xs" data-click="promptLevelOverride" data-click-args="${esc(JSON.stringify([String(user.id), (user.levelFrame)]))}" title="تغییر سطح دستی"><i class="fa-solid fa-edit"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
     console.error('Failed to load levels and certificates:', err);
+    NopaTable.error(tbody, 'خطا در دریافت سطوح و گواهینامه‌ها');
   }
 }
 
@@ -110,7 +112,7 @@ async function loadUsers() {
       let roleBadge = `<span class="badge badge-${u.role}">${roleLabel(u.role)}</span>`;
       if (u.role === 'mentor' && u.mentorLevel) {
         const levelName = u.mentorLevel === 3 ? 'راهنمای کل' : u.mentorLevel === 2 ? 'استاد' : 'یاور';
-        roleBadge += ` <span class="badge u-bg-primary u-c-white u-fs-10">${levelName}</span>`;
+        roleBadge += ` <span class="badge u-bg-primary u-c-white u-fs-2xs">${levelName}</span>`;
       }
       
       const blockBadge = u.blocked ? `<span class="badge badge-blocked">مسدود شده</span>` : '';
@@ -119,25 +121,25 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-10">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-10" style="background:#db2777">زن</span>' : ''} ${blockBadge}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-2xs">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-2xs" style="background:#db2777">زن</span>' : ''} ${blockBadge}</td>
         <td class="u-mono">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
         <td><strong class="u-c-color-neon-blue">${(u.zarikBalance || 0).toLocaleString()}</strong></td>
-        <td class="u-fs-12 u-c-text-secondary u-nowrap">${regDate}</td>
+        <td class="u-fs-xs u-c-text-secondary u-nowrap">${regDate}</td>
         <td>
           <div class="u-flex u-items-center u-gap-8">
             <div class="progress-bar-container u-flex-1 u-m-0 u-w-60">
-              <div class="progress-bar-fill" style="width: ${u.completionRate}%"></div>
+              <div class="progress-bar-fill" style="width: ${Number(u.completionRate) || 0}%"></div>
             </div>
-            <span class="u-fs-11">${u.completionRate}%</span>
+            <span class="u-fs-2xs">${Number(u.completionRate) || 0}%</span>
           </div>
         </td>
         <td>
-          <button class="page-btn btn-view u-p-4-8 u-fs-11" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
-          <button class="page-btn btn-edit u-p-4-8 u-fs-11" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
-          <button class="page-btn btn-block u-p-4-8 u-fs-11" style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
-          <button class="page-btn btn-delete u-p-4-8 u-fs-11 u-c-color-danger" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
+          <button title="مشاهده‌ی جزئیات کاربر" aria-label="مشاهده‌ی جزئیات کاربر" class="page-btn btn-view u-p-4-8 u-fs-2xs" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
+          <button title="ویرایش کاربر" aria-label="ویرایش کاربر" class="page-btn btn-edit u-p-4-8 u-fs-2xs" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
+          <button title="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" aria-label="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" class="page-btn btn-block u-p-4-8 u-fs-2xs" style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
+          <button title="حذف کاربر" aria-label="حذف کاربر" class="page-btn btn-delete u-p-4-8 u-fs-2xs u-c-color-danger" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -162,11 +164,11 @@ async function viewUserDetails(userId) {
       <h3 id="drawer-user-name">${esc(user.name)}</h3>
       <div class="u-flex-1"></div>
       ${(user.isDualRole || user.role === 'mentor') ? `
-        <button id="btn-role-switcher" class="btn-action u-bgc-success u-c-white u-ml-15" data-click="toggleDualRoleView">
+        <button id="btn-role-switcher" class="btn-action u-bgc-success u-c-white u-ml-16" data-click="toggleDualRoleView">
           <i class="fa-solid fa-exchange-alt"></i> تغییر نمای کاربر (راهبر / دانش‌آموز)
         </button>
       ` : ''}
-      <button class="modal-close" id="btn-close-drawer" data-click="closeUserDetailDrawer">&times;</button>
+      <button aria-label="بستن" class="modal-close" id="btn-close-drawer" data-click="closeUserDetailDrawer">&times;</button>
     `;
 
     // Calculate age
@@ -186,27 +188,27 @@ async function viewUserDetails(userId) {
     const body = document.getElementById('drawer-body-info');
     body.innerHTML = `
       <div id="student-view-container">
-        <div class="u-flex u-gap-18 u-items-start u-wrap">
+        <div class="u-flex u-gap-20 u-items-start u-wrap">
           <div class="glass u-flex-0-0-200 u-text-center u-p-20 u-r-12">
-            <div class="user-avatar u-w-100 u-h-100 u-fs-32 u-m-0-auto-10-auto">${esc(user.name.substring(0,2))}</div>
+            <div class="user-avatar u-w-100 u-h-100 u-fs-2xl u-m-0-auto-10-auto">${esc(user.name.substring(0,2))}</div>
             <div class="u-mt-8"><span class="badge badge-${user.role}">${roleLabel(user.role)}</span></div>
-            <div class="u-mt-10 u-fs-13 u-c-text-secondary">${esc(user.phoneNumber)}</div>
-            <div class="u-mt-5 u-fs-12 u-c-text-muted">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
-            <hr class="u-bdc-fg-10 u-m-15-0" />
-            <div class="u-text-right u-fs-13">
+            <div class="u-mt-10 u-fs-sm u-c-text-secondary">${esc(user.phoneNumber)}</div>
+            <div class="u-mt-6 u-fs-xs u-c-text-muted">شناسه اختصاصی: ${user.userCode || 'فاقد شناسه'}</div>
+            <hr class="u-bdc-fg-10 u-m-16-0" />
+            <div class="u-text-right u-fs-sm">
               <p><strong>زریک:</strong> <span class="u-c-color-neon-blue">${payload.balances.zarik.toLocaleString()}</span></p>
               <p><strong>کلاف:</strong> ${payload.balances.nakh}</p>
               <p><strong>درفش:</strong> ${payload.balances.beyragh}</p>
               <p><strong>قالیچه:</strong> ${payload.balances.farsh}</p>
             </div>
-            <div class="u-mt-15 u-flex u-gap-5 u-wrap u-justify-between">
-              <button class="btn-primary u-flex-1 u-fs-11" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
-              <button class="btn-action u-flex-1 u-bg-danger u-c-white u-fs-11 u-p-6" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
+            <div class="u-mt-16 u-flex u-gap-6 u-wrap u-justify-between">
+              <button class="btn-primary u-flex-1 u-fs-2xs" data-click="openPasswordOverride" data-click-args="${esc(JSON.stringify([String(user.id)]))}">تغییر رمز</button>
+              <button class="btn-action u-flex-1 u-bg-danger u-c-white u-fs-2xs u-p-6" data-click="setAccountStatus" data-click-args="${esc(JSON.stringify([String(user.id), "SUSPENDED"]))}">تعلیق</button>
             </div>
           </div>
 
           <div class="u-flex-1 u-minw-300">
-            <div class="tabs-header u-flex u-gap-10 u-mb-15 u-bb-fg-10 u-pb-10">
+            <div class="tabs-header u-flex u-gap-10 u-mb-16 u-bb-fg-10 u-pb-10">
               <button class="btn-action active" data-click="switchDrawerTab" data-click-args="[&quot;tab-identity&quot;]" id="btn-tab-identity"><i class="fa-solid fa-id-card"></i> هویت و پروفایل</button>
               <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-class-progress&quot;]" id="btn-tab-class-progress"><i class="fa-solid fa-graduation-cap"></i> کلاس‌ها و آزمون</button>
               <button class="btn-action" data-click="switchDrawerTab" data-click-args="[&quot;tab-support&quot;]" id="btn-tab-support"><i class="fa-solid fa-headset"></i> پشتیبانی و کاروان</button>
@@ -214,7 +216,7 @@ async function viewUserDetails(userId) {
             
             <div id="tab-identity" class="drawer-tab-content active u-block">
               <div class="panel-card glass u-mb-12 u-p-20">
-                <h4 class="u-mb-15 u-c-color-neon-blue">اطلاعات هویتی کامل</h4>
+                <h4 class="u-mb-16 u-c-color-neon-blue">اطلاعات هویتی کامل</h4>
                 <div class="u-grid u-cols-2 u-gap-15">
                   <p><strong>نام کامل:</strong> ${esc(user.name)}</p>
                   <p><strong>کد ملی:</strong> ${esc(user.nationalId || 'ثبت نشده')}</p>
@@ -234,39 +236,39 @@ async function viewUserDetails(userId) {
                 <!-- 5 Stats Summary Cards Bar -->
                 <div class="u-grid u-cols-fit-115 u-gap-8 u-mb-14">
                   <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-11 u-c-primary-text u-bold"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
-                    <div id="drawer-stat-stations" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۵</div>
+                    <div class="u-fs-2xs u-c-primary-text u-bold"><i class="fa-solid fa-map-location-dot"></i> منزلگاه‌ها</div>
+                    <div id="drawer-stat-stations" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۵</div>
                   </div>
                   <div class="u-bg-primary-12 u-bd-primary-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-11 u-c-primary-text u-bold"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
-                    <div id="drawer-stat-classes" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
+                    <div class="u-fs-2xs u-c-primary-text u-bold"><i class="fa-solid fa-chalkboard-user"></i> کلاس‌ها</div>
+                    <div id="drawer-stat-classes" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                   <div class="u-bg-success-12 u-bd-success-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-11 u-c-success-text u-bold"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
-                    <div id="drawer-stat-parts" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
+                    <div class="u-fs-2xs u-c-success-text u-bold"><i class="fa-solid fa-circle-play"></i> پارت‌ها</div>
+                    <div id="drawer-stat-parts" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                   <div class="u-bg-accent-12 u-bd-accent-30 u-r-10 u-p-10 u-text-center">
-                    <div class="u-fs-11 u-c-accent-text u-bold"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
-                    <div id="drawer-stat-quizzes" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
+                    <div class="u-fs-2xs u-c-accent-text u-bold"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
+                    <div id="drawer-stat-quizzes" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                   <div class="u-r-10 u-p-10 u-text-center" style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3)">
-                    <div class="u-fs-11 u-bold" style="color: #f472b6"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
-                    <div id="drawer-stat-challenges" class="u-fs-15 u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
+                    <div class="u-fs-2xs u-bold" style="color: #f472b6"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
+                    <div id="drawer-stat-challenges" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                 </div>
 
                 <!-- Filter Chips & Search Bar -->
                 <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-12 u-bg-shade-25 u-p-8-10 u-r-8 u-bd-fg-6">
                   <div class="u-flex u-gap-6 u-wrap" id="drawer-class-filter-chips">
-                    <button type="button" class="btn-action active u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all">همه موارد</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes">کلاس‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts">پارت‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations">منزلگاه‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes">آزمون‌ها</button>
-                    <button type="button" class="btn-action u-p-4-8 u-fs-11 u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges">چالش‌ها</button>
+                    <button type="button" class="btn-action active u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;all&quot;]" id="btn-prog-filter-all">همه موارد</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;classes&quot;]" id="btn-prog-filter-classes">کلاس‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;parts&quot;]" id="btn-prog-filter-parts">پارت‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;stations&quot;]" id="btn-prog-filter-stations">منزلگاه‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;quizzes&quot;]" id="btn-prog-filter-quizzes">آزمون‌ها</button>
+                    <button type="button" class="btn-action u-p-4-8 u-fs-2xs u-r-6" data-click="filterDrawerClassProgress" data-click-args="[&quot;challenges&quot;]" id="btn-prog-filter-challenges">چالش‌ها</button>
                   </div>
                   <div class="u-relative u-flex-1-1-150 u-maxw-220">
-                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" class="u-w-full u-p-5-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-11_5 u-border-box">
+                    <input type="text" id="drawer-class-search-input" placeholder="جستجو در جدول..." data-input="filterDrawerClassProgress" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs u-border-box">
                   </div>
                 </div>
 
@@ -293,11 +295,11 @@ async function viewUserDetails(userId) {
 
             <div id="tab-support" class="drawer-tab-content" style="display:none;">
               <div class="panel-card glass u-p-12 u-mb-12">
-                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-5">اطلاعات کاروان</h5>
+                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-6">اطلاعات کاروان</h5>
                 <p class="u-mt-10"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
               </div>
               <div class="panel-card glass u-p-12">
-                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-5">تاریخچه تیکت‌ها</h5>
+                <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-6">تاریخچه تیکت‌ها</h5>
                 <div id="drawer-ticket-list" class="u-maxh-200 u-overflow-auto u-pl-12 u-mt-10"></div>
               </div>
             </div>
@@ -320,7 +322,7 @@ async function viewUserDetails(userId) {
              <div class="stat-value">${user.mentorLevel || 1}</div>
            </div>
         </div>
-        <div class="panel-card glass u-mt-20 u-p-15">
+        <div class="panel-card glass u-mt-20 u-p-16">
            <h4 class="u-mb-10">لیست کاروان‌ها</h4>
            <ul class="u-list-none u-p-0">
              ${payload.mentoredCaravans?.map(c => '<li class="u-p-10 u-bb-fg-10">' + esc(c.name) + ' (شناسه: ' + esc(c.id) + ')</li>').join('') || '<li>کاروانی یافت نشد</li>'}
@@ -339,8 +341,8 @@ async function viewUserDetails(userId) {
     if (payload.tickets && payload.tickets.length > 0) {
       payload.tickets.forEach(t => {
         tList.innerHTML += `<div class="u-p-8 u-bg-shade-20 u-r-8 u-mb-8">
-          <strong>${esc(t.subject)}</strong> <span class="badge u-float-left u-fs-10">${t.status}</span>
-          <p class="u-fs-12 u-mt-5 u-c-text-secondary">${esc(t.description)}</p>
+          <strong>${esc(t.subject)}</strong> <span class="badge u-float-left u-fs-2xs">${t.status}</span>
+          <p class="u-fs-xs u-mt-6 u-c-text-secondary">${esc(t.description)}</p>
         </div>`;
       });
     } else {
@@ -657,27 +659,27 @@ window.renderDrawerClassProgressTable = function() {
     if (r.stationNumber && r.stationNumber !== '-') {
       stationCell = `
         <div class="u-flex u-col u-gap-4">
-          <span class="badge u-bg-primary-22 u-c-primary-text u-fs-10 u-w-fit-content u-bd-primary-30">
-            <i class="fa-solid fa-map-location-dot u-ml-3"></i>منزلگاه ${r.stationNumber}
+          <span class="badge u-bg-primary-22 u-c-primary-text u-fs-2xs u-w-fit-content u-bd-primary-30">
+            <i class="fa-solid fa-map-location-dot u-ml-4"></i>منزلگاه ${r.stationNumber}
           </span>
-          <strong class="u-fs-12 u-c-text">${esc(r.stationTitle)}</strong>
+          <strong class="u-fs-xs u-c-text">${esc(r.stationTitle)}</strong>
         </div>`;
     } else {
-      stationCell = `<span class="badge u-bg-fg-8 u-c-text-muted u-fs-11"><i class="fa-solid fa-layer-group u-ml-3"></i>عمومی / کاروان</span>`;
+      stationCell = `<span class="badge u-bg-fg-8 u-c-text-muted u-fs-2xs"><i class="fa-solid fa-layer-group u-ml-4"></i>عمومی / کاروان</span>`;
     }
 
     // 2. کلاس
     let classCell = '';
     if (r.sessionTitle && r.sessionTitle !== '-' && r.sessionId) {
       classCell = `
-        <div class="u-flex u-col u-gap-3">
-          <strong class="u-fs-12 u-c-primary-text">
+        <div class="u-flex u-col u-gap-4">
+          <strong class="u-fs-xs u-c-primary-text">
             <i class="fa-solid fa-chalkboard-user u-ml-4 u-o-0_85"></i>${esc(r.sessionTitle)}
           </strong>
-          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span class="u-fs-10_5 u-c-text-secondary">${esc(r.categoryTitle)}</span>` : ''}
+          ${r.categoryTitle && r.categoryTitle !== '-' ? `<span class="u-fs-2xs u-c-text-secondary">${esc(r.categoryTitle)}</span>` : ''}
         </div>`;
     } else {
-      classCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
+      classCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
     }
 
     // 3. پارت
@@ -685,22 +687,22 @@ window.renderDrawerClassProgressTable = function() {
     if (r.clips && r.clips.length > 0) {
       partCell = `
         <div class="u-flex u-col u-gap-4">
-          <span class="badge u-fs-10_5 u-w-fit-content" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
-            <i class="fa-solid fa-circle-play u-ml-3"></i>${r.clips.length} پارت
+          <span class="badge u-fs-2xs u-w-fit-content" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
+            <i class="fa-solid fa-circle-play u-ml-4"></i>${r.clips.length} پارت
           </span>
-          <div class="u-fs-10_5" style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
+          <div class="u-fs-2xs" style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
             ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
       partCell = `
-        <div class="u-flex u-items-center u-gap-5">
-          <span class="badge u-fs-10_5" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
-            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'} u-ml-3"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
+        <div class="u-flex u-items-center u-gap-6">
+          <span class="badge u-fs-2xs" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
+            <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'} u-ml-4"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
           </span>
         </div>`;
     } else {
-      partCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
+      partCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
     }
 
     // 4. آزمون
@@ -710,31 +712,31 @@ window.renderDrawerClassProgressTable = function() {
       const qSub = (r.quizSubmissions && r.quizSubmissions[0]) || null;
       if (r.quizPassed || (qSub && qSub.score >= 50)) {
         quizCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-success-20 u-c-success-text u-fs-10_5 u-w-fit-content u-bd-success-30">
-              <i class="fa-solid fa-check-double u-ml-3"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-success-20 u-c-success-text u-fs-2xs u-w-fit-content u-bd-success-30">
+              <i class="fa-solid fa-check-double u-ml-4"></i>قبول شده ${qSub?.score ? `(${qSub.score})` : ''}
             </span>
-            <span class="u-fs-10_5 u-c-text-soft">${esc(q.title || 'آزمون پایان کلاس')}</span>
+            <span class="u-fs-2xs u-c-text-soft">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       } else if (qSub) {
         quizCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-10_5 u-w-fit-content u-bd-danger-30">
-              <i class="fa-solid fa-xmark u-ml-3"></i>مردود (${qSub.score})
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-2xs u-w-fit-content u-bd-danger-30">
+              <i class="fa-solid fa-xmark u-ml-4"></i>مردود (${qSub.score})
             </span>
-            <span class="u-fs-10_5 u-c-text-soft">${esc(q.title || 'آزمون')}</span>
+            <span class="u-fs-2xs u-c-text-soft">${esc(q.title || 'آزمون')}</span>
           </div>`;
       } else {
         quizCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-accent-15 u-c-accent-text u-fs-10 u-w-fit-content u-bd-accent-30">
-              <i class="fa-regular fa-clock u-ml-3"></i>شرکت نکرده
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-accent-15 u-c-accent-text u-fs-2xs u-w-fit-content u-bd-accent-30">
+              <i class="fa-regular fa-clock u-ml-4"></i>شرکت نکرده
             </span>
-            <span class="u-fs-10_5 u-c-text-secondary">${esc(q.title || 'آزمون پایان کلاس')}</span>
+            <span class="u-fs-2xs u-c-text-secondary">${esc(q.title || 'آزمون پایان کلاس')}</span>
           </div>`;
       }
     } else {
-      quizCell = `<span class="u-c-text-secondary u-fs-11">بدون آزمون</span>`;
+      quizCell = `<span class="u-c-text-secondary u-fs-2xs">بدون آزمون</span>`;
     }
 
     // 5. چالش
@@ -745,39 +747,39 @@ window.renderDrawerClassProgressTable = function() {
       const chTypeLabel = ch.type === 'quiz' ? 'کوئیز' : ch.type === 'file' ? 'فایلی' : 'مهارتی';
       if (sub && sub.status === 'approved') {
         challengeCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-success-20 u-c-success-text u-fs-10_5 u-w-fit-content u-bd-success-30">
-              <i class="fa-solid fa-trophy u-ml-3"></i>تایید (+${ch.rewardZarik || 50} زریک)
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-success-20 u-c-success-text u-fs-2xs u-w-fit-content u-bd-success-30">
+              <i class="fa-solid fa-trophy u-ml-4"></i>تایید (+${ch.rewardZarik || 50} زریک)
             </span>
-            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'pending') {
         challengeCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-accent-20 u-c-accent-text u-fs-10_5 u-w-fit-content u-bd-accent-30">
-              <i class="fa-solid fa-hourglass-start u-ml-3"></i>در انتظار ارزیابی
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-accent-20 u-c-accent-text u-fs-2xs u-w-fit-content u-bd-accent-30">
+              <i class="fa-solid fa-hourglass-start u-ml-4"></i>در انتظار ارزیابی
             </span>
-            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else if (sub && sub.status === 'rejected') {
         challengeCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-10_5 u-w-fit-content u-bd-danger-30">
-              <i class="fa-solid fa-xmark u-ml-3"></i>نیازمند اصلاح
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-bg-danger-20 u-c-danger-text u-fs-2xs u-w-fit-content u-bd-danger-30">
+              <i class="fa-solid fa-xmark u-ml-4"></i>نیازمند اصلاح
             </span>
-            <span class="u-fs-10_5 u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-2xs u-c-text-soft" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       } else {
         challengeCell = `
-          <div class="u-flex u-col u-gap-3">
-            <span class="badge u-fs-10 u-w-fit-content" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; border: 1px solid rgba(236, 72, 153, 0.25)">
-              <i class="fa-regular fa-circle u-ml-3"></i>انجام نشده (${chTypeLabel})
+          <div class="u-flex u-col u-gap-4">
+            <span class="badge u-fs-2xs u-w-fit-content" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; border: 1px solid rgba(236, 72, 153, 0.25)">
+              <i class="fa-regular fa-circle u-ml-4"></i>انجام نشده (${chTypeLabel})
             </span>
-            <span class="u-fs-10_5 u-c-text-secondary" title="${esc(ch.title)}">${esc(ch.title)}</span>
+            <span class="u-fs-2xs u-c-text-secondary" title="${esc(ch.title)}">${esc(ch.title)}</span>
           </div>`;
       }
     } else {
-      challengeCell = `<span class="u-c-text-secondary u-fs-11">-</span>`;
+      challengeCell = `<span class="u-c-text-secondary u-fs-2xs">-</span>`;
     }
 
     // 6. وضعیت پیشرفت
@@ -790,7 +792,7 @@ window.renderDrawerClassProgressTable = function() {
         <div class="u-w-full u-h-6 u-bg-fg-10 u-r-4 u-overflow-hidden">
           <div class="u-h-full u-r-4 u-tr-width-0_3s-ease" style="width:${pct}%; background:${barColor}"></div>
         </div>
-        <span class="u-fs-10 u-bold" style="color:${barColor}">${statusText}</span>
+        <span class="u-fs-2xs u-bold" style="color:${barColor}">${statusText}</span>
       </div>`;
 
     return `

@@ -211,7 +211,7 @@
   justify-content: center;
   position: relative;
   color: var(--primary-text);
-  font-size: 20px;
+  font-size: var(--text-lg);
 }
 .hero-ring::before {
   content: '';
@@ -305,7 +305,7 @@
   justify-content: center;
   background: rgb(var(--primary-rgb) / 0.12);
   color: var(--primary-text);
-  font-size: 19px;
+  font-size: var(--text-lg);
   margin-bottom: 18px;
 }
 .landing-card--accent .landing-card-icon { background: rgb(var(--accent-rgb) / 0.2); color: var(--accent-text); }
@@ -403,7 +403,7 @@
   gap: 12px;
 }
 .landing-footer .app-brand { font-size: var(--text-sm); }
-.landing-footer .app-brand-icon { width: 28px; height: 28px; font-size: 12px; border-radius: 8px; }
+.landing-footer .app-brand-icon { width: 28px; height: 28px; font-size: var(--text-xs); border-radius: 8px; }
 
 /* ---------- Reveal on scroll (only once landing.js is running) ---------- */
 :root.landing-reveal [data-reveal] {

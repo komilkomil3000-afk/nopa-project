@@ -33,11 +33,11 @@
   flex-shrink: 0;
   background: rgb(var(--fg-rgb) / 0.06);
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 .msg-mode span { display: flex; flex-direction: column; gap: 3px; }
 .msg-mode strong { font-size: var(--text-sm); color: var(--text); }
-.msg-mode small { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+.msg-mode small { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.6; }
 .msg-mode:hover { border-color: rgb(var(--primary-rgb) / 0.35); }
 .msg-mode.is-active {
   border-color: rgb(var(--primary-rgb) / 0.55);
@@ -67,7 +67,7 @@
   display: block;
   min-height: 0;
   margin-top: 4px;
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--danger-text);
 }
 .field-error:empty { display: none; }
@@ -96,7 +96,7 @@
   border: 1px solid var(--border-color);
 }
 .dropdown-content a {
-  color: var(--text); padding: 10px 15px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; transition: background 0.2s;
+  color: var(--text); padding: 10px 15px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); cursor: pointer; transition: background 0.2s;
 }
 .dropdown-content a:hover { background: rgb(var(--primary-rgb) / 0.25); color: var(--primary-text); }
 
@@ -135,3 +135,21 @@
     animation-iteration-count: infinite !important;
   }
 }
+
+/* ---- Skip link: hidden until it receives keyboard focus ---- */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: var(--z-toast);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; }
+/* the focused <main> target needs no ring of its own */
+main[tabindex="-1"]:focus { outline: none; }

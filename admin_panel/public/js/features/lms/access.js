@@ -51,10 +51,10 @@ window.openStationAccessModal = function(stationId) {
   const caravans = window.caravansData || [];
   if (customBox) {
     if (caravans.length === 0) {
-      customBox.innerHTML = '<div class="u-c-text-muted u-fs-12 u-p-6">کاروانی در حافظه بارگذاری نشده است.</div>';
+      customBox.innerHTML = '<div class="u-c-text-muted u-fs-xs u-p-6">کاروانی در حافظه بارگذاری نشده است.</div>';
     } else {
       customBox.innerHTML = caravans.map(c => `
-        <label class="u-flex u-items-center u-gap-8 u-mb-6 u-fs-12 u-c-text-soft u-pointer">
+        <label class="u-flex u-items-center u-gap-8 u-mb-6 u-fs-xs u-c-text-soft u-pointer">
           <input type="checkbox" class="sam-caravan-check u-accent-primary" value="${c.id}" ${targetCaravans.includes(c.id) ? 'checked' : ''}>
           <span>${esc(c.name)} (${esc(c.mentorName || c.mentor?.name || 'بدون راهبر')})</span>
         </label>
@@ -192,7 +192,7 @@ window.updateSamSchedulePreview = function() {
       const remainingHours = diffHours % 24;
       previewBox.innerHTML = `
         <div class="u-bold"><i class="fa-solid fa-lock u-c-danger-text"></i> منزلگاه تا زمان بازگشایی به صورت خودکار قفل خواهد ماند.</div>
-        <div class="u-fs-11 u-c-text-soft u-mt-3">
+        <div class="u-fs-2xs u-c-text-soft u-mt-4">
           زمان مقرر: ${target.toLocaleDateString('fa-IR')} ساعت ${target.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}
           (حدود ${diffDays > 0 ? diffDays + ' روز و ' : ''}${remainingHours} ساعت باقی‌مانده)
         </div>

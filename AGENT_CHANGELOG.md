@@ -2653,3 +2653,45 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - helmet output equals `cspHeader()`; `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`.
   - Deploy: rebuild needed on the server for the new header.
 - **Status:** In Progress (Phase 8 steps 2–3 pending: accessibility, typography/spacing/states)
+
+### [2026-11-02 10:05] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 2 (Accessibility)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/modal.js` (Modified — drawers handled as dialogs; dialogs named after their heading)
+  - `admin_panel/public/js/ui/actions.js` (Modified — Enter/Space for role="button" targets; skip-link helper)
+  - `admin_panel/public/index.html` (Modified — label for=, aria-labels, close-button labels, skip link, role="button" cards, stray quote fixed)
+  - `admin_panel/public/style.css` (Modified — closed drawer is visibility:hidden)
+  - `admin_panel/public/css/components.css` (Modified — skip link)
+  - `admin_panel/public/css/utilities.css` (Modified — u-outline-none removed)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/{access,asset-names,caravans,challenges,jarchi,lms-builder,media,mentors,tickets-chat,users}.js`, `admin_panel/public/js/features/lms/{content-manager,directory,station-creator}.js` (Modified — template labels, icon button names, image alt, keyboard-reachable click targets)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v15)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Audit over all tabs/modals: unnamed controls, unlabeled fields, unreachable click targets, missing alt, unnamed/unroled dialogs all brought to 0.
+  - Fix: the closed user drawer stayed reachable by Tab/screen readers on every page; it is now hidden when closed and behaves as a dialog when open (ESC, focus trap/return).
+  - Skip link, visible focus ring restored where a utility removed it, Enter/Space on custom buttons.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: accessibility suite 8/8; computed-style diff vs Phase 7 shows only intended changes; Phase 3–8 suites, open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** In Progress (Phase 8 step 3 pending: typography/spacing scale, states pass)
+
+### [2026-11-02 10:32] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 3 (Type scale, spacing, loading/empty/error states)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Modified — --text-2xs)
+  - `admin_panel/public/css/utilities.css` (Modified — font sizes on the --text-* scale, spacing on a fixed set; 653 → 600 classes)
+  - `admin_panel/public/style.css`, `admin_panel/public/css/{layout,landing,dashboard,components}.css` (Modified — px font sizes → tokens; base heading/control sizes; NopaState styles)
+  - `admin_panel/public/js/ui/table.js` (Modified — NopaState for non-table containers)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — renamed utility classes; empty/error states in 13 loaders; escaped mentor filter options; completionRate guard)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v16)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored; all phases done)
+- **Description of Changes:**
+  - 18 font sizes → 8-step scale (max change 2px per element); spacing snapped to one set; bare headings/controls on the scale.
+  - Every list/table now shows a loading/empty/error state (13 containers stayed blank before); notifications load their two parts independently; reward rules/notifications no longer throw on error responses.
+  - Security fix: mentor names were inserted unescaped into the caravans mentor filter.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: step 3 suite 9/9, blank-container check 0, before/after screenshots (1440 / 390px); Phase 3–8 suites (incl. a11y and CSP), open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** Completed (redesign roadmap Phases 1–8 done)
