@@ -2,7 +2,8 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,6 +72,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   _CountryOption _selectedCountry = _availableCountries.first;
   bool _isPasswordVisible = false;
   bool _isLoading = false;
+  // True while we look for a saved session on startup; shows a loading screen instead of the form.
+  bool _checkingSession = true;
 
   // OTP Countdown Timer (119s -> 01:59)
   Timer? _countdownTimer;
@@ -133,24 +136,31 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Future<void> _checkAutoLogin() async {
-    await _apiService.loadSavedTokens();
-    if (_apiService.hasSession) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
-      AppRepository().recordActivity();
+    try {
+      await _apiService.loadSavedTokens();
+      if (_apiService.hasSession) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('last_app_exit_timestamp', DateTime.now().millisecondsSinceEpoch);
+        AppRepository().recordActivity();
 
-      final user = await _apiService.getMe();
-      if (user != null && mounted) {
-        final appRepo = Provider.of<AppRepository>(context, listen: false);
-        appRepo.updateUser(user);
-        if (user.isDualRole || user.role == UserRole.admin) {
-          _showDualRoleSelectionDialog(user);
-        } else {
-          AuthService.selectedRole = user.role;
-          Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+        final user = await _apiService.getMe();
+        if (user != null && mounted) {
+          final appRepo = Provider.of<AppRepository>(context, listen: false);
+          appRepo.updateUser(user);
+          if (user.isDualRole || user.role == UserRole.admin) {
+            setState(() => _checkingSession = false);
+            _showDualRoleSelectionDialog(user);
+          } else {
+            AuthService.selectedRole = user.role;
+            Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+          }
+          return;
         }
       }
+    } catch (e) {
+      debugPrint('Auto-login check failed: $e');
     }
+    if (mounted) setState(() => _checkingSession = false);
   }
 
   Future<void> _navigateToDashboardWithWelcome(UserRole role) async {
@@ -553,6 +563,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         resolvedRole = UserRole.superMentor;
       } else if (userRoleStr == 'mentor') {
         resolvedRole = UserRole.mentor;
+      } else if (userRoleStr == 'channel_manager') {
+        resolvedRole = UserRole.channelManager;
       }
 
       final userPhone = userData['phoneNumber'] ?? _phoneCtrl.text.trim();
@@ -842,7 +854,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               fit: BoxFit.cover,
             ),
           ),
-          child: SafeArea(
+          child: _checkingSession
+              ? const _SessionLoading()
+              : SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
@@ -1286,3 +1300,34 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
 
 typedef AuthScreen = LoginScreen;
+
+/// Shown on startup while a saved session is being verified.
+class _SessionLoading extends StatelessWidget {
+  const _SessionLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset('assets/images/nopa_logo.svg', height: 110),
+          const SizedBox(height: 32),
+          const SizedBox(
+            width: 34,
+            height: 34,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFCD8449)),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'در حال ورود به نپا',
+            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}

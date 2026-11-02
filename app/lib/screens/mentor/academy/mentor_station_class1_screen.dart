@@ -2,7 +2,8 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -72,6 +73,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               'title': anim['title'] ?? 'انیمیشن منزلگاه',
               'videoUrl': anim['videoUrl'] ?? anim['url'],
               'description': anim['description'],
+              'coverImageUrl': anim['coverImageUrl'],
             });
           }
         }
@@ -346,10 +348,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   Widget _buildStationLoreHeader(Map<String, dynamic> station) {
     const double cardWidth = 105.0;
     const double cardHeight = 138.0;
-    final String stationImage = station['imageUrl']?.toString() ?? '';
+    final String stationImage = Station.imageFrom(station);
     final bool hasValidImg =
         stationImage.isNotEmpty &&
-        stationImage.startsWith('http') &&
         !stationImage.contains('placeholder');
     final String ordinalTitle =
         station['title'] ??
@@ -751,7 +752,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         children: [
           // Heading
           const Text(
-            'گالری منزلگاه',
+            'نگارستان منزلگاه',
             textAlign: TextAlign.right,
             style: TextStyle(
               color: Colors.white,

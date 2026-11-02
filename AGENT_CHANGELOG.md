@@ -2195,3 +2195,753 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze lib (from app/): no issues
 - **Status:** Completed
+
+### [2026-11-01 12:59] - Claude Code (Flutter + CRM)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/widgets/station_gallery_item.dart` (Modified)
+- **Description of Changes:**
+  - Station image: Station.imageFrom() picks iconUrl/imageUrl so home, roadmap and station pages show the same picture (removed http-only checks and unsplash fallbacks)
+  - Admin content manager: added station image field with upload and renamed animation section to نگارستان منزلگاه (multi-image gallery cards, shared by creator modal in index.html/lms.js)
+  - lmsController createOrUpdateStation no longer wipes iconUrl/animations when not sent
+  - App: gallery heading renamed to نگارستان منزلگاه in student and mentor station screens
+  - image viewer now full-screen with pinch zoom and close button (videos keep fullscreen with exit)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): no issues; node --check lms.js; tsc not run (node_modules not installed)
+- **Status:** Completed
+
+### [2026-11-01 13:11] - Claude Code (Flutter + CRM)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/class_model.dart` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261041_clip_cover_image/` (Created)
+- **Description of Changes:**
+  - Added video cover (preview) link: VideoClip.coverImageUrl column (schema.prisma + migration 20261041_clip_cover_image)
+  - lmsController clip create/update/batch/station-save persist it
+  - lms.js clip rows get cover URL field with preview and upload, and gallery cards get an optional cover
+  - app: VideoClipModel/StationAnimation parse coverImageUrl, class2 player and class1/mentor gallery pass it to the video player
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): no issues; node --check lms.js; prisma migrate/tsc not run
+- **Status:** Completed
+
+### [2026-11-01 13:38] - Flutter App Specialist
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `app/lib/models/class_model.dart` (Modified)
+  - `app/lib/models/station.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261041_clip_cover_image/` (Created)
+- **Description of Changes:**
+  - Trophy (cup) dialog after the last station now shows its own text (final destination), separate from the story dialog (station_progress_stepper.dart)
+- **Verification / Checkpoints Executed:**
+  - text-only change
+- **Status:** Completed
+
+### [2026-11-01 14:46] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/style.css` (Modified)
+  - `admin_panel/public/fonts/` (Created)
+- **Description of Changes:**
+  - Replaced Vazirmatn (Google Fonts) with self-hosted YekanBakh (Light 300, Regular 400, Bold 700, ExtraBold 800) in public/style.css via @font-face
+  - added ChochoAura English font + --font-en var and .font-en class
+  - copied TTFs from app/assets/fonts to admin_panel/public/fonts (served by express static)
+  - lms.js print window font updated
+  - form controls inherit font
+- **Verification / Checkpoints Executed:**
+  - Static check only, not run in browser
+- **Status:** Completed
+
+### [2026-11-01 15:35] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/sw.js` (Modified)
+  - `admin_panel/src/controllers/mediaController.ts` (Modified)
+  - `admin_panel/src/routes/admin.ts` (Modified)
+  - `app/android/app/src/main/res/drawable-v21/launch_background.xml` (Modified)
+  - `app/android/app/src/main/res/drawable/launch_background.xml` (Modified)
+  - `app/android/app/src/main/res/values-night/styles.xml` (Modified)
+  - `app/android/app/src/main/res/values/colors.xml` (Modified)
+  - `app/android/app/src/main/res/values/styles.xml` (Modified)
+  - `app/ios/Runner/Base.lproj/LaunchScreen.storyboard` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenge_grading_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_academy_roadmap_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/app_toast.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/bottom_nav_bar.dart` (Modified)
+  - `app/lib/widgets/caravan_banners_dialog.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/contact_us_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/lib/widgets/home_challenges_section.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/logout_dialog.dart` (Modified)
+  - `app/lib/widgets/nopa_inline_video_player.dart` (Modified)
+  - `app/lib/widgets/pending_challenges_dialog.dart` (Modified)
+  - `app/lib/widgets/reward_popup.dart` (Modified)
+  - `app/lib/widgets/safe_avatar.dart` (Modified)
+  - `app/lib/widgets/station_card.dart` (Modified)
+  - `app/lib/widgets/station_progress_stepper.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+  - `app/lib/widgets/welcome_dialog.dart` (Modified)
+  - `admin_panel/public/fa-digits.js` (Created)
+  - `app/android/app/src/main/res/values-v31/` (Created)
+  - `app/lib/widgets/fa_text.dart` (Created)
+- **Description of Changes:**
+  - App: new widgets/fa_text.dart (drop-in Text that renders Persian digits, links untouched) and all screens/widgets now import it instead of material Text
+  - login_screen shows a 'در حال ورود به نپا' loading view with spinner while a saved session is verified so logged-in users go straight into the app
+  - native Android/iOS launch background changed from white to app background color (#201A36, plus values-v31 splash style). Admin panel: GET /admin/media/files and POST /admin/media/files/delete (path-traversal safe) in mediaController/routes
+  - media-tab rebuilt as a file manager of the uploads folder (preview, search, type filter, copy link, single/bulk delete) and added to sidebar
+  - new public/fa-digits.js converts visible digits to Persian
+  - sw cache bumped to v3
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check app.js; backend tsc not run (node_modules missing)
+- **Status:** Completed
+
+### [2026-11-01 15:57] - Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/public/app.js` (Modified)
+  - `admin_panel/public/caravanWorkspace.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/toast.js` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanBannerController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/certificateController.ts` (Modified)
+  - `admin_panel/src/controllers/challengeController.ts` (Modified)
+  - `admin_panel/src/controllers/evaluationController.ts` (Modified)
+  - `admin_panel/src/controllers/exportController.ts` (Modified)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/newsController.ts` (Modified)
+  - `admin_panel/src/controllers/notificationController.ts` (Modified)
+  - `admin_panel/src/controllers/studentController.ts` (Modified)
+  - `admin_panel/src/controllers/submissionController.ts` (Modified)
+  - `admin_panel/src/controllers/userController.ts` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificate_detail_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_certificates_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/widgets/complete_profile_dialog.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - Removed emojis from all user-facing text, titles, toasts, alerts, select options and server notification titles in app/lib, admin_panel/public (app.js, lms.js, index.html, instructors.js, caravanWorkspace.js) and admin_panel/src controllers
+  - status dots and icon-only emojis replaced by CSS dots / Font Awesome icons
+  - toast.js type-detection regex no longer relies on emoji
+  - news notifications no longer get the 📢 prefix (client still strips it from old records). Kept: country flags in login picker, arrow/triangle button glyphs
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app): no issues; node --check on panel JS
+- **Status:** Completed
+
+### [2026-11-01 18:48] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 1 (Cleanup & Dedupe)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/REDESIGN_ROADMAP.md` (Created — local working roadmap, git-ignored)
+  - `admin_panel/.gitignore` (Modified — ignore REDESIGN_ROADMAP.md)
+  - `admin_panel/public/auth.js` (Created)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v4)
+  - `admin_panel/public/news.js` (Deleted — not loaded anywhere)
+  - `admin_panel/public/caravanWorkspace.js` (Deleted — not loaded anywhere)
+- **Description of Changes:**
+  - New `auth.js` session store (`NopaAuth`): single `nopa_admin_token` / `nopa_admin_user` keys, one-time migration from legacy `token` / `adminToken` / `user`, logout and 401 clear everything; global `token` is now a live getter (was stale after login until reload).
+  - Removed duplicate/dead code in app.js: unused `handleAdminLogin`, `fetchWithFallback`, a second DOMContentLoaded that loaded data before login, a corrupted duplicated block (form builder + caravan functions), and ~20 redefined functions (kept the copy that actually won at runtime). lms.js: duplicate `openQuizModalForClip`; instructors.js / lms.js no longer fetch before login (moved into showDashboard).
+  - index.html: removed duplicate `roles-tab`, `notifications-tab`, `audit-tab` sections and duplicate mentor / moderation / legacy dossier modals (24 duplicate IDs -> 0). The live mentor modal is now the complete one (gender, caravan search) with RESTRICTED status and free-text messenger platform preserved; the full RBAC matrix (#roles-table) is shown in the roles tab; audit tab merged (role buttons incl. "all", search, action filter, header matches rows).
+  - Routing: added #media, #chat, #content; #mentors-league now opens the mentors profile.
+  - Bug fixes: Levels tab crash (functions pasted inside setupEventListeners moved to top level); setAccountStatus used PUT but route is PATCH; audit tab only showed student logs; certificate approve/reject buttons in mentor modal called undefined functions (added inlineApproveCert / inlineRejectCert); create-challenge modal opened twice.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on all panel scripts; static check that every inline handler resolves to a defined function.
+  - Headless Chrome smoke test (stubbed API) on HEAD vs new: all 17 nav tabs open with 0 page errors (HEAD: levels-tab threw), 0 API calls before login, form login works, legacy token migrated.
+  - `npx tsc --noEmit` and `npm test` (9/9) in `admin_panel/` after `npx prisma generate` (local Prisma client was stale; no repo change).
+- **Status:** Completed
+
+### [2026-11-01 20:10] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 2 (Design Tokens & Dark/Light Theme)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Created)
+  - `admin_panel/public/theme.js` (Created)
+  - `admin_panel/public/style.css` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/support.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v5)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Design tokens for dark and light themes using the app brand (purple #8B5CF6 + gold #EAB308): surfaces, text, brand, status families with *-text (contrast-safe) and *-rgb (tints) variants, spacing/radius/type scales and an ordered z-index scale.
+  - theme.js: theme applied in <head> before paint, follows prefers-color-scheme until the user chooses, choice stored in localStorage `nopa_theme`, updates meta theme-color, recolours Chart.js on change, `nopa:themechange` event. Toggle button in the top bar and on the login card.
+  - ~2,500 hard-coded colours in style.css, index.html inline styles, JS template styles and el.style assignments rewritten to tokens (property-aware; white text kept only on solid fills); legacy CSS variables now alias the tokens; modal overlay/close-button chrome moved from inline styles to classes; inline z-index values mapped to the scale.
+  - Charts use theme colours via NopaTheme.cssVar/rgba; fixed wealth chart border (`var()` is not valid on canvas) and missing chart fonts. support.js status badges use token families instead of hex+alpha concatenation.
+  - Fixes: closed user drawer shadow leaking on the page edge, login screen on a dim backdrop, unstyled `.btn-icon` buttons, low-contrast open accordion header.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome screenshots, dark + light, 1280px and 390px, for login, users, caravans, LMS, roles, audit, news, rewards, submissions and the mentor modal (0 page errors).
+  - Smoke test: theme toggle flips + persists + charts recolour; all Phase 1 checks still pass (17 tabs, routes, 0 duplicate IDs, 0 API calls before login).
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
+
+### [2026-11-01 22:05] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 3 (Core JS Layer)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/core/api.js` (Created)
+  - `admin_panel/public/js/core/router.js` (Created)
+  - `admin_panel/public/js/ui/modal.js` (Created)
+  - `admin_panel/public/js/ui/confirm.js` (Created)
+  - `admin_panel/public/js/ui/table.js` (Created)
+  - `admin_panel/public/app.js` (Modified)
+  - `admin_panel/public/lms.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/support.js` (Modified)
+  - `admin_panel/public/index.html` (Modified — load new modules)
+  - `admin_panel/public/style.css` (Modified — confirm, table states, pagination, scroll lock)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v6)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - api.js: single `request()` (bearer token, 401/403 handling, automatic JSON Content-Type for string bodies — fixes saves whose body express.json() ignored) and `NopaApi.json()`; 77 raw fetch calls migrated, 49 now-unused token locals removed.
+  - router.js: one TABS registry (hash aliases, title/desc, sub-admin section, loader, nav group/label/icon) replaces HASH_TAB_MAP, TAB_REVERSE_HASH_MAP, titlesMap, TAB_SECTION and the switchTab if/else chain; back/forward no longer double-loads; duplicate and dead per-tab click loaders removed.
+  - modal.js: stack, ESC, focus trap/restore, scroll lock and safe backdrop close for every .modal-overlay (observes existing open/close code). confirm.js: promise-based NopaConfirm replaces all 29 confirm() calls. table.js: loading/empty/error states + pagination, adopted in users, tickets, audit logs and role matrix.
+  - 259 alert() calls replaced by typed showToast().
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 13 Phase 3 behaviour checks pass (confirm ESC/OK, modal ESC/focus/scroll lock/backdrop, request headers, back navigation, sub-admin menu filtering, empty state); Phase 1–2 smoke test still green (17 tabs, 0 page errors, 0 duplicate IDs, 0 API calls before login); confirm dialog screenshots in dark and light.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
+
+### [2026-11-01 23:55] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 4 (Top Navigation)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/layout.css` (Created)
+  - `admin_panel/public/js/layout/topnav.js` (Created)
+  - `admin_panel/public/js/core/attention.js` (Created)
+  - `admin_panel/public/js/core/api.js` (Modified — `silent` option for background polls)
+  - `admin_panel/public/js/core/router.js` (Modified — chat/content tabs in the outreach group, sidebar code removed)
+  - `admin_panel/public/index.html` (Modified — sidebar + old top bar replaced by the app header)
+  - `admin_panel/public/app.js` (Modified — sidebar controls, scroll header, accordion and menu-item code removed; permissions feed the top nav)
+  - `admin_panel/public/style.css` (Modified — sidebar / old top-bar rules removed)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v7)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Horizontal top navigation generated from the tab registry: brand, dashboard link + 7 groups with dropdowns (label + description), section search (`/`, Ctrl+K), "needs attention" bell (pending mentor documents, submissions, open tickets — only for granted sections), theme toggle and user menu with logout.
+  - Responsive tiers down to 390px; ≤1180px uses a slide-in panel with accordion groups. Keyboard support (Enter/arrows/ESC, focus return) and real hrefs on every link.
+  - Sub-admin access now filters the nav and the bell through the registry sections; chat oversight and global announcement tabs became reachable.
+  - Removed the sidebar (resize, compact mode, mobile drawer, hide-on-scroll header) — ~330 lines JS, ~140 lines markup, ~500 lines CSS.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 18 navigation checks pass (desktop menus, keyboard, search, bell counts, user menu, 1024px/390px panel, sub-admin filtering and polling); header overlap measured at 1181–1920px; Phase 1–3 suites still green (20 tabs, 0 page errors, 0 duplicate IDs); screenshots dark/light at 1366/1024/390.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
+
+### [2026-11-02 01:20] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 5 (Landing Page & Login Modal) + hide-on-scroll header
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/landing.css` (Created)
+  - `admin_panel/public/js/layout/landing.js` (Created)
+  - `admin_panel/public/index.html` (Modified — #landing-view, login modal closable, new assets)
+  - `admin_panel/public/app.js` (Modified — showLanding / showLogin / showDashboard auth gate)
+  - `admin_panel/public/theme.js` (Modified — data-session flag before first paint)
+  - `admin_panel/public/js/core/router.js` (Modified — ignore hashes while signed out)
+  - `admin_panel/public/js/ui/modal.js` (Modified — login modal managed like the others)
+  - `admin_panel/public/js/layout/topnav.js` (Modified — hide on scroll down / show on scroll up)
+  - `admin_panel/public/css/layout.css` (Modified — fixed header, hide state, mobile panel fix)
+  - `admin_panel/public/style.css` (Modified — login modal styles)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v8)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Public landing page for signed-out visitors (hero with decorative bento preview, feature bento, learning path, roles, CTA, footer) with login in the top-left; login opens the existing form in a closable modal. Signed-out panel links open the login and land on the linked tab; 401 shows the landing page with the login open; logout returns to the landing page. No landing/panel flash thanks to a pre-paint session flag.
+  - Requested: the panel header (and landing header) hides while scrolling down and reappears on any upward scroll anywhere on the page; stays visible while its menus/search/mobile panel are in use; reveals on tab change and keyboard focus.
+  - Headers switched from sticky to fixed (sticky broke under overflow-x: hidden ancestors); removed will-change: transform that clipped the mobile nav panel.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 18 Phase 5 checks pass (landing/auth flows, deep link, session expiry, logout, header hide/show, no flash, 390px), Phase 3 (13) and Phase 4 (18) suites and the smoke test still green; screenshots dark/light at 1366px and 390px.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
+
+### [2026-11-02 03:00] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 6 (Bento Dashboard)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/dashboard.css` (Created)
+  - `admin_panel/public/js/features/dashboard.js` (Created)
+  - `admin_panel/public/index.html` (Modified — analytics tab replaced by #dashboard-tab, new assets)
+  - `admin_panel/public/app.js` (Modified — loadAnalytics removed, sub-admin access pending state, default tab fallback)
+  - `admin_panel/public/js/core/router.js` (Modified — dashboard-tab default, #analytics alias)
+  - `admin_panel/public/js/layout/topnav.js` (Modified — dashboard link, sectionAllowed, access events)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v9)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Bento dashboard as the default route: 4 KPI tiles (users, Zarik in circulation, homework approval rate, mentor rating with timeframe filter), needs-attention queues, Zarik distribution chart, quick actions, caravan league top 5, wealthiest users, recent audit events (super admin). Tiles load independently and are filtered by sub-admin section grants; 403 hides a tile silently, other errors show inline.
+  - Old analytics tab removed — it charted placeholder time-series that the backend hard-codes (`getDashboardAnalytics`); flagged for a backend fix, backend not changed.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 25 dashboard checks pass; Phase 3 (13), Phase 4 (18), Phase 5 (18) suites and the smoke test still green; screenshots dark/light at 1366/1024/390.
+  - `node --check` on all panel scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed
+
+### [2026-11-02 05:10] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 steps 1–2 (Module split + Messaging merge)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/app.js` (Deleted — split into modules below)
+  - `admin_panel/public/lms.js` (Deleted — split into modules below)
+  - `admin_panel/public/js/app/bootstrap.js`, `admin_panel/public/js/app/shared.js` (Created)
+  - `admin_panel/public/js/features/{asset-names,access,users,rewards,caravans,mentors,challenges,tickets-chat,messaging,media,forms,audit,jarchi,lms-builder}.js` (Created)
+  - `admin_panel/public/js/features/lms/{directory,content-manager,quiz,reorder-export,station-creator,access}.js` (Created)
+  - `admin_panel/public/css/components.css` (Created)
+  - `admin_panel/public/index.html` (Modified — module script list, merged messaging page, content-tab removed)
+  - `admin_panel/public/js/core/router.js`, `admin_panel/public/js/layout/topnav.js` (Modified)
+  - comments in `auth.js`, `safe.js`, `theme.js`, `toast.js`, `instructors.js`, `js/core/*`, `js/ui/*`, `js/layout/*` (Modified — new paths)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v10)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Removed unreferenced code (41 functions, 6 listeners on non-existent forms), then split app.js into 16 and lms.js into 6 classic-script modules with verified line coverage and load order.
+  - Merged the global announcement tab into the notifications tab: one messaging page with two composers; `#content` deep-links to the announcement composer; generic `data-requires-section` hides parts the user has no grant for.
+  - Fixes: Zarik/asset adjustment (two conflicting handlers; asset type ignored; error toast on every submit) → one handler using the right endpoint per asset; messaging caravan dropdowns never filled and caravan audience never sent a caravan.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 32 modal/drawer openers across modules with 0 errors; 11 messaging/adjustment checks; Phase 3 (13), 4 (18), 5 (18), 6 (25) suites and smoke test green.
+  - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 steps 3+ pending)
+
+### [2026-11-02 06:30] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 3 (Shared person fields)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/person-fields.js` (Created)
+  - `admin_panel/public/index.html` (Modified — person-field containers in user + mentor modals, student modal removed)
+  - `admin_panel/public/js/features/users.js` (Modified — user modal uses NopaPersonFields; dead student modal code removed; zarik balance guard)
+  - `admin_panel/public/js/features/mentors.js` (Modified — mentor modal uses NopaPersonFields)
+  - `admin_panel/public/css/components.css` (Modified — person fields, inline field errors)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v11)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - One shared identity-field component (name, phone, national id, birth date, gender, city) for the user and mentor modals with inline validation and normalisation that mirrors the server's normalizePhone.
+  - Fixes: users created with Persian-digit phones could not log in (create path stored the raw text); editing with phone masking on overwrote the real phone with the masked one — untouched phones are now omitted from updates.
+  - Removed the unreachable student modal and its handlers (the user modal covers students).
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: 9 person-field checks pass; open-everything (32 openers), Phase 3–7 suites and smoke test green.
+  - `node --check` on all modules; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 steps 4–5 pending)
+
+### [2026-11-02 08:00] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 4 (Inline handlers → delegated data-actions)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/actions.js` (Created)
+  - `admin_panel/public/index.html` (Modified — 178 inline handlers → data-attributes, actions.js loaded)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — template handlers → data-attributes; small named handler functions)
+  - `admin_panel/public/css/components.css` (Modified — [data-hover] states)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v12)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Replaced all 347 inline event handlers with delegated `data-<event>` / `data-<event>-args` handled by one listener per event (inline semantics preserved: bubbling order, stopPropagation, return false). Hover handlers moved to CSS. Prepares dropping 'unsafe-inline' for script attributes in the CSP.
+  - Fixes: station creator "add gallery item" button always threw (unquoted id); banner image fallback could loop; stale hover colour.
+- **Verification / Checkpoints Executed:**
+  - Static: 193 handler names resolve, 119 static argument lists are valid JSON. Headless Chrome: 8 delegation checks incl. click sweep over all tabs and 15 modals and a zero-inline-handler DOM check; open-everything (32) and Phase 3–7 suites + smoke green.
+  - `node --check` on all scripts; `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** In Progress (Phase 7 step 5 pending)
+
+### [2026-11-01 23:20] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 7 step 5 (Inline styles → utility classes, tables → NopaTable)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/utilities.css` (Created — 653 generated one-declaration utility classes)
+  - `admin_panel/public/index.html` (Modified — inline styles → classes, utilities.css linked, inline `<style>` block removed, static table placeholders)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — template inline styles → classes; hand-written table state rows → NopaTable)
+  - `admin_panel/public/js/features/lms/reorder-export.js` (Modified — literal colours restored in the Excel export)
+  - `admin_panel/public/style.css` (Modified — mobile `[style*=…]` rules also match utility classes; centred table state icon)
+  - `admin_panel/public/css/components.css` (Modified — export dropdown / caravan scrollbar rules moved from index.html)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v13)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored; Phase 7 completed)
+- **Description of Changes:**
+  - Inline styles 2,344 → 195: every declaration that has a readable name became a utility class (`.u-x:not(#_)`, id+class specificity so the cascade matches the old inline behaviour while JS-set styles still win). Kept inline: JS-toggled display:none, dynamic values, rare one-offs and the standalone Excel export.
+  - 34 hand-written loading/empty/error table rows replaced by NopaTable (colspan from the header); state icon centred.
+  - Fix: the LMS Excel export lost its colours since Phase 2 (CSS variables do not resolve in Excel); literal brand colours restored.
+- **Verification / Checkpoints Executed:**
+  - Computed-style snapshots of 5,124 elements (all tabs, modals incl. hidden, drawers, landing) before vs after: 0 differences at 1440/1024/390 px and in the light theme (only the intended table state rows differ).
+  - Headless Chrome: new step 5 suite 5/5 (utilities loaded last, state rows span the table, empty and error states, no hand-written state rows), Phase 3–7 suites, open-everything (32), smoke, handler static check — all green, no page errors.
+  - `npx tsc --noEmit`; `npm test` 9/9 in `admin_panel/`.
+- **Status:** Completed (Phase 7 done; Phase 8 pending)
+
+### [2026-11-01 23:30] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 1 (Strict CSP + reduced motion)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/config/csp.ts` (Created — CSP directives + header helper)
+  - `admin_panel/src/app.ts` (Modified — helmet uses config/csp.ts)
+  - `admin_panel/tests/security.test.js` (Modified — CSP test)
+  - `admin_panel/public/js/app/sw-register.js` (Created — was an inline script)
+  - `admin_panel/public/index.html` (Modified — inline script removed, javascript: links → href="#")
+  - `admin_panel/public/js/ui/actions.js` (Modified — no navigation for a[href="#"] handlers)
+  - `admin_panel/public/theme.js` (Modified — NopaMotion; Chart.js animations off with reduced motion)
+  - `admin_panel/public/css/components.css` (Modified — global reduced-motion rule)
+  - `admin_panel/public/js/features/{caravans,lms-builder,rewards}.js`, `admin_panel/public/js/features/lms/station-creator.js`, `admin_panel/public/js/layout/landing.js` (Modified — scrolling via NopaMotion, javascript: link)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v14)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - CSP: `script-src 'self'`, `script-src-attr 'none'`, `style-src 'self'`; 'unsafe-inline' only for style attributes. Injected inline scripts/handlers are blocked.
+  - Reduced motion respected in CSS, JS scrolling and charts.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome under the real header: Phase 8 suite 8/8 (no violations over all tabs, a click sweep and 14 modals; injection blocked; export links; reduced/normal motion); Phase 3–7 suites, open-everything, smoke green.
+  - helmet output equals `cspHeader()`; `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`.
+  - Deploy: rebuild needed on the server for the new header.
+- **Status:** In Progress (Phase 8 steps 2–3 pending: accessibility, typography/spacing/states)
+
+### [2026-11-02 03:15] - Claude Code / Chat Plan Phase 0
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/chatController.ts` (Modified)
+  - `admin_panel/src/controllers/supportController.ts` (Modified)
+  - `admin_panel/src/middleware/adminAccess.ts` (Modified)
+  - `admin_panel/src/middleware/auth.ts` (Modified)
+  - `admin_panel/src/routes/api.ts` (Modified)
+  - `admin_panel/tests/security.test.js` (Modified)
+  - `app/lib/core/constants/api_constants.dart` (Modified)
+  - `app/lib/models/user_model.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/market/student_market_screen.dart` (Modified)
+  - `app/lib/screens/student/messages/student_notifications_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/app_state_repository.dart` (Modified)
+  - `app/lib/utils/mentor_contact.dart` (Modified)
+  - `app/lib/widgets/avatar_picker_sheet.dart` (Modified)
+  - `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `admin_panel/prisma/migrations/20261042_enable_rls_missing_tables/` (Created)
+  - `docs/nopa-chat-plan.md` (Created — local only, *.md is git-ignored)
+- **Description of Changes:**
+  - Saved the chat plan (v3) and completed Phase 0 of it.
+  - Removed the unused /chat/direct, /chat/caravan and /chat/send routes, which had no membership checks, plus their app client methods; mentors can no longer read GET /admin/chat.
+  - Added ownership checks to caravan broadcast and to ticket reply/resolve on both the user and admin routes; a mentor can no longer spoof mentorId on a reply, and only the sender can rate a ticket.
+  - Extracted verifyAccessToken from authenticateJWT for socket reuse; bad or expired JWTs now return 401 so the app refreshes them.
+  - App now uses https://nopa-app.ir; SUPER_MENTOR parses to superMentor; added UserRole.isMentorLike and replaced repeated checks.
+  - Added migration 20261042 enabling RLS on SubmissionEvent, AssetType and CaravanBanner.
+  - No change for uploads/: it is git-ignored, so checkout -f in post-receive leaves it in place.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 11/11 in `admin_panel/` (new test: expired/forged tokens give 401).
+  - `flutter analyze` no issues and `flutter test` pass in `app/`.
+  - curl: https://nopa-app.ir has a valid certificate; http does not redirect.
+  - Not run: ownership checks against a real database; the migration against any database; the app on a device.
+- **Status:** Completed
+
+
+### [2026-11-02 04:10] - Claude Code / Chat Plan Phase 1 (Economy)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/prisma/migrations/20261043_economy_policy_and_ledger/` (Created)
+  - `admin_panel/src/services/economy.ts`, `admin_panel/src/services/ledger.ts`, `admin_panel/src/controllers/economyController.ts` (Created)
+  - `admin_panel/src/controllers/{admin,caravan,challenge,league,lms,reward,student,submission,user}Controller.ts` (Modified)
+  - `admin_panel/src/routes/api.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/economy.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/features/challenges.js`, `admin_panel/public/sw.js` (Modified)
+  - `app/lib/core/economy_rates.dart` (Created)
+  - `app/lib/services/api_service.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/screens/student/market/student_market_screen.dart`, `app/lib/screens/mentor/market/mentor_market_screen.dart`, `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Versioned EconomyPolicy edited in the panel tab سرمایه‌ها (super admin only), with impact preview and history; the app reads it through GET /economy.
+  - AssetTransaction ledger for all assets, with opening rows. Every balance writer now goes through changeBalance, which blocks negative balances and repeat payments.
+  - Rules applied: nakh cannot be bought, 10 nakh make 1 farsh, farsh sells for 50,000 zarik, new personal and group challenges pay 0 to 10 nakh.
+  - One ranking formula: zarik plus nakh and farsh at zarik value, with nakh value derived from the farsh rules. Caravans rank by average member capital. Activity points no longer count.
+  - Existing balances are untouched. An existing zarik challenge keeps paying zarik until it is edited.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 13/13 in `admin_panel/`.
+  - `flutter analyze` no issues and `flutter test` pass in `app/`.
+  - Throwaway local Postgres: all migrations applied. Real HTTP API checks passed for conversions, sale and cancel, ranking neutrality, policy changes and access, Phase 0 ownership, parallel payments and reviews, and clawback.
+  - Not run: the panel page in a browser; the app on a device; the migration on production data.
+- **Status:** Completed
+
+### [2026-11-02 05:20] - Claude Code / Chat Plan Phase 2 (Chat Switch and Channel Manager)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/migrations/20261044_channel_manager_role/` (Created)
+  - `admin_panel/src/services/chatSettings.ts`, `admin_panel/src/modules/chat/routes.ts`, `admin_panel/src/modules/chat/settingsController.ts` (Created)
+  - `admin_panel/src/controllers/chatController.ts` (Deleted)
+  - `admin_panel/src/utils/roles.ts`, `admin_panel/src/middleware/auth.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/src/routes/api.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/controllers/userController.ts`, `admin_panel/src/controllers/adminController.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/chat-settings.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/app/bootstrap.js`, `admin_panel/public/js/features/access.js`, `admin_panel/public/js/features/tickets-chat.js` (Modified)
+  - `app/assets/svg_icons/chat01.svg`, `app/lib/screens/chat/chat_home_screen.dart`, `app/lib/screens/chat/channel_manager_shell.dart`, `app/test/chat_nav_test.dart` (Created)
+  - `app/lib/core/constants/app_strings.dart`, `app/lib/models/user_model.dart`, `app/lib/screens/auth/login_screen.dart`, `app/lib/screens/shell/app_shell.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/widgets/bottom_nav_bar.dart`, `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Three-state chat switch (off, pilot, on) in the panel tab مدیریت چت, super admin only. It is enforced on the server by requireChatEnabled and reaches the app through features.chat in getMe. It stays off until an admin turns it on.
+  - The legacy chat oversight tab and its routes were removed; ChatMessage stays until Phase 3 replaces it.
+  - New channel_manager role with per-feature chat access in the panel. It is confined by an API allowlist in authenticateJWT and a default-deny gate on /admin.
+  - In the app chat takes the profile slot in the bottom bar while enabled; profile keeps index 4 and stays in the drawer. A channel manager gets a chat-only shell. The chat screen is an empty state until Phase 3.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 15/15 in `admin_panel/`.
+  - `flutter analyze` no issues and `flutter test` 4/4 in `app/`.
+  - Throwaway Postgres and real HTTP API: switch states, role confinement, role assignment, and all Phase 0 and 1 checks again.
+  - Chrome: chat tab and economy tab as super admin, saving the switch, and the panel as a channel manager with no refused calls.
+  - Not run: the app on a device, including the channel manager shell and the switch taking effect live; the migration on production data.
+- **Status:** Completed
+
+### [2026-11-02 07:30] - Claude Code / Chat Plan Phase 3 (Chat Core)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261045_chat_core/` (Created)
+  - `admin_panel/src/modules/chat/{access,service,realtime,controller,manageController}.ts` (Created), `admin_panel/src/modules/chat/{routes,settingsController}.ts` (Modified)
+  - `admin_panel/src/server.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/package.json`, `admin_panel/package-lock.json`, `admin_panel/.gitignore`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/chat-settings.js` (Modified)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/lib/services/chat_local_store.dart`, `app/lib/screens/chat/{chat_theme,chat_message_bubble,chat_conversation_screen}.dart`, `app/test/chat_ui_test.dart` (Created)
+  - `app/lib/screens/chat/chat_home_screen.dart`, `app/lib/screens/chat/channel_manager_shell.dart`, `app/lib/screens/shell/app_shell.dart`, `app/lib/widgets/bottom_nav_bar.dart`, `app/lib/services/api_service.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/main.dart`, `app/pubspec.yaml`, `app/pubspec.lock`, `app/android/app/src/main/AndroidManifest.xml`, `app/ios/Runner/Info.plist` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Spaces, per-user state, messages with per-space numbering, one-level threads, reactions, pins, mentions, search and private files behind expiring signed links.
+  - Caravan spaces take members from the caravan itself, so transfers need no sync. Direct conversations are for their members only, including against admins and the panel.
+  - Messages are stored first and then published over Socket.IO. Sockets are authenticated like HTTP, revalidated on a timer and whenever the switch changes.
+  - App: conversation list, conversation and thread screens, voice and file sending, offline cache and send queue on sqflite, unread badge, slower polling while the socket is live.
+  - The Dart client has no long-polling transport, so without WebSocket the app reads the open conversation over HTTP every 5 seconds.
+  - The old ChatMessage table is kept as ChatMessage_legacy.
+  - Not done: real push (3.18, only in-app notifications for offline users) and the pilot (3.19).
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 16/16 in `admin_panel/`.
+  - `flutter analyze` no issues, `flutter test` 8/8, `flutter build apk --debug` succeeded in `app/`.
+  - Throwaway Postgres, real HTTP and socket clients: access, no leak between caravans, retries, parallel sends, threads, reactions, private conversations, files, caravan transfer, panel oversight, and the switch closing live sockets.
+  - Real Dart socket client against the local server over WebSocket, including Persian text and model parsing.
+  - Not run: the app on a device or emulator; the HTTP fallback in the app; WebSocket through production nginx or CDN; the migration on production data.
+- **Status:** In Progress (3.18 and 3.19 pending)
+
+### [2026-11-02 11:10] - Claude Code / Chat Plan Phases 4 to 10
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261046_chat_workflows/` (Created)
+  - `admin_panel/src/modules/chat/{http,publish,support,topics,evaluation,intergroup,bots,reports,insights}.ts` (Created)
+  - `admin_panel/src/modules/chat/{access,controller,routes,service}.ts`, `admin_panel/src/controllers/{challenge,submission,caravanBanner}Controller.ts`, `admin_panel/src/services/{economy,ledger}.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/server.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/chat-ops.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/features/{challenges,economy}.js` (Modified)
+  - `app/lib/screens/chat/chat_cards.dart`, `app/lib/screens/chat/chat_topic_info_screen.dart` (Created)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/lib/screens/chat/{chat_conversation_screen,chat_home_screen,chat_message_bubble}.dart`, `app/lib/utils/mentor_contact.dart`, `app/lib/widgets/{contact_us_dialog,support_message_dialog}.dart`, `app/test/chat_ui_test.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Phase 4: support conversations with cases, queue, assignment and rating; the ticket form stays in use while chat is off.
+  - Phase 5: in-app bots, moderator commands, scheduled messages, polls, slow mode, banned words, a minute worker, station cards, 72-hour warning and station reports.
+  - Phase 6: challenge cards in the right conversations, topic lifecycle, tags and colours, staff-only tags, best answer and evidence marks.
+  - Phase 7: rule-based participation scoring, criteria weights in the economy policy, evaluation screen, one-shot payment, correction, objection, student report.
+  - Phase 8: read-only arena, private caravan threads, questions to the judges, official entries, anonymous judging, effort tiers, prize by rank and effort, results card. Absent members get nothing and their share is not redistributed.
+  - Phase 9: abuse reports, CSV and printable exports, mentor dashboard, participation and confusion analytics, Eitaa links hidden while chat is on.
+  - Phase 10: InsightProvider with a rule-based engine only. No AI model is connected.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 19/19 in `admin_panel/`.
+  - `flutter analyze` no issues, `flutter test` 11/11, `flutter build apk --debug` in `app/`.
+  - Throwaway Postgres with real HTTP: the whole flow from support through bots, stations, cards, tags, evaluation, parallel payment, correction, a full inter-group competition, reports and exports.
+  - Chrome: chat operations, support queue and the channel manager view, with no refused calls.
+  - Not run: the app on a device or emulator; production WebSocket; the migrations on production data; a load test.
+- **Status:** In Progress (open items are listed in `docs/nopa-chat-plan.md`)
+
+### [2026-11-02 12:30] - Claude Code / Chat Review
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs
+- **Files Modified / Created / Deleted:**
+  - `docs/nopa-chat-review.md` (Created, local only)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Reviewed phases 0 to 10 against the code and wrote the findings and a staged fix plan.
+  - Reopened eight checklist items that had been marked done but were incomplete.
+- **Verification / Checkpoints Executed:**
+  - Findings confirmed by reading the code at commit 88fb304. No code changed and no reproduction tests written yet.
+- **Status:** Completed
+
+### [2026-11-02 14:40] - Claude Code / Chat Review Fixes
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/tests/e2e/` (Created: runner, harness and six suites), `admin_panel/package.json`, `admin_panel/package-lock.json` (Modified: test:e2e, dev dependencies)
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261047_chat_review_fixes/` (Created)
+  - `admin_panel/src/modules/chat/groups.ts` (Created); `admin_panel/src/modules/chat/{access,bots,controller,evaluation,intergroup,manageController,reports,routes,service,settingsController,support,topics}.ts` (Modified)
+  - `admin_panel/src/controllers/{admin,analytics,caravan,caravanBanner,reward,submission}Controller.ts`, `admin_panel/src/services/economy.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/{chat-ops,chat-settings,challenges}.js` (Modified)
+  - `app/lib/screens/chat/{chat_groups_screen,channel_manager_profile_screen,challenge_chat_button}.dart` (Created)
+  - `app/lib/screens/chat/{chat_conversation_screen,chat_home_screen,chat_message_bubble,chat_cards,chat_topic_info_screen}.dart`, `app/lib/models/chat_models.dart`, `app/lib/services/{chat_repository,app_state_repository,api_service}.dart`, `app/lib/core/constants/api_constants.dart`, `app/lib/widgets/custom_drawer.dart`, `app/lib/screens/{student,mentor}/challenges/*_challenges_screen.dart`, `app/pubspec.yaml`, `app/pubspec.lock` (Modified)
+  - `docs/nopa-chat-review.md`, `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Fixed review findings A1 to A10, B1 to B7 and C1 to C15 except quiet hours: mentions, support membership, kalaf payment of old zarik challenges, minimum reward, correction errors, export link, deleted files, enter-groups in the panel, locked evidence, live room updates, inter-group judging lock, file entries, tiers in the panel, run-without-chat prizes, prize preview, closing competitions, card backfill and start dates, final answer, objections, budget totals, groups, mute, templates, panel files, support in the list, station baseline, panel top list, upload cleanup and quota.
+  - Mentors and channel managers can create, rename and delete media groups and manage their members, in the app and in the panel.
+  - App on HTTPS for real: the startup host logic had kept it on http://nopa-app.ir. Local-network host discovery is now development only.
+  - Emulator run fixed a header overflow, a keyboard layout collapse, a crash in every chat dialog, overlapping buttons and the previous-average figure.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6 suites in `admin_panel/` (including the panel in Chrome).
+  - `flutter analyze` no issues, `flutter test` 11/11 in `app/`.
+  - Android emulator against a local demo server: student and mentor flows through chat, live socket delivery, poll, evaluation and payment, groups.
+  - Not run: voice recording, file sending from a device, offline mode, the channel manager app shell, iOS, production WebSocket, migrations on production data.
+  - Note: one emulator login attempt with a demo number reached the production login before D1 was found; the server answered 404 and nothing was created.
+- **Status:** Completed (7.2 to 7.6 and quiet hours remain, listed in `docs/nopa-chat-review.md`)
+
+### [2026-11-02 17:10] - Claude Code / Chat Load, Migration and WebSocket Checks
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/service.ts` (Modified: concurrent first-open space creation no longer fails)
+  - `admin_panel/src/middleware/rateLimit.ts` (Modified: API limit per signed-in user, per IP otherwise)
+  - `admin_panel/src/modules/chat/realtime.ts` (Modified: socket client IP behind the proxy for the IP blacklist)
+  - `admin_panel/tests/e2e/load.e2e.js` (Created), `admin_panel/tests/e2e/run.js`, `admin_panel/tests/e2e/chat.e2e.js` (Modified)
+  - `admin_panel/deploy/nginx-chat.conf` (Created), `admin_panel/ecosystem.config.js` (Modified: comment only)
+  - `docs/nopa-chat-review.md` (Modified, local only)
+- **Description of Changes:**
+  - Load check with 120 users (10 caravans): found a 500 on the first chat open when many users open it at once (Prisma upsert race on ChatSpace.key), fixed by reading the row on a unique-key conflict.
+  - The global 1000 requests / 15 min limit was per IP, so a class on one Wi-Fi or carrier NAT shared one budget; requests with a validly signed token now count per user.
+  - Socket handshakes used the proxy address, so the IP blacklist never matched behind nginx; now resolved with the same trust-proxy rule as HTTP.
+  - nginx/Arvan WebSocket config and check command for deployment; production currently answers 404 on /socket.io/ (chat not deployed yet).
+  - Migration dry run on seeded data (202 users with balances, 500 legacy chat messages): 20261042 to 20261047 apply cleanly, ledger sums equal balances, balances unchanged.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6, `npm run test:e2e -- load` passed in `admin_panel/`.
+  - Migration dry run on a throwaway embedded Postgres (script kept outside the repo).
+  - Read-only probe of production: /health 200, /socket.io/ 404.
+- **Status:** Completed (production WebSocket check, migration on a copy of real data, quiet hours with Push, scoring calibration and pilot remain)
+### [2026-11-02 10:05] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 2 (Accessibility)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/modal.js` (Modified — drawers handled as dialogs; dialogs named after their heading)
+  - `admin_panel/public/js/ui/actions.js` (Modified — Enter/Space for role="button" targets; skip-link helper)
+  - `admin_panel/public/index.html` (Modified — label for=, aria-labels, close-button labels, skip link, role="button" cards, stray quote fixed)
+  - `admin_panel/public/style.css` (Modified — closed drawer is visibility:hidden)
+  - `admin_panel/public/css/components.css` (Modified — skip link)
+  - `admin_panel/public/css/utilities.css` (Modified — u-outline-none removed)
+  - `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/{access,asset-names,caravans,challenges,jarchi,lms-builder,media,mentors,tickets-chat,users}.js`, `admin_panel/public/js/features/lms/{content-manager,directory,station-creator}.js` (Modified — template labels, icon button names, image alt, keyboard-reachable click targets)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v15)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - Audit over all tabs/modals: unnamed controls, unlabeled fields, unreachable click targets, missing alt, unnamed/unroled dialogs all brought to 0.
+  - Fix: the closed user drawer stayed reachable by Tab/screen readers on every page; it is now hidden when closed and behaves as a dialog when open (ESC, focus trap/return).
+  - Skip link, visible focus ring restored where a utility removed it, Enter/Space on custom buttons.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: accessibility suite 8/8; computed-style diff vs Phase 7 shows only intended changes; Phase 3–8 suites, open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** In Progress (Phase 8 step 3 pending: typography/spacing scale, states pass)
+
+### [2026-11-02 10:32] - Claude Code (Opus 5.5) / Admin Panel Redesign — Phase 8 step 3 (Type scale, spacing, loading/empty/error states)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Modified — --text-2xs)
+  - `admin_panel/public/css/utilities.css` (Modified — font sizes on the --text-* scale, spacing on a fixed set; 653 → 600 classes)
+  - `admin_panel/public/style.css`, `admin_panel/public/css/{layout,landing,dashboard,components}.css` (Modified — px font sizes → tokens; base heading/control sizes; NopaState styles)
+  - `admin_panel/public/js/ui/table.js` (Modified — NopaState for non-table containers)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — renamed utility classes; empty/error states in 13 loaders; escaped mentor filter options; completionRate guard)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v16)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored; all phases done)
+- **Description of Changes:**
+  - 18 font sizes → 8-step scale (max change 2px per element); spacing snapped to one set; bare headings/controls on the scale.
+  - Every list/table now shows a loading/empty/error state (13 containers stayed blank before); notifications load their two parts independently; reward rules/notifications no longer throw on error responses.
+  - Security fix: mentor names were inserted unescaped into the caravans mentor filter.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome: step 3 suite 9/9, blank-container check 0, before/after screenshots (1440 / 390px); Phase 3–8 suites (incl. a11y and CSP), open-everything, smoke, handler static check green.
+  - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
+- **Status:** Completed (redesign roadmap Phases 1–8 done)
+
+### [2026-11-02 11:28] - Claude Code (Opus 5.5) / Admin Panel — Follow-ups: CSP without 'unsafe-inline', pink token, brand PWA icons
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/style-attr.js` (Created — data-style → element.style via the CSSOM)
+  - `admin_panel/src/config/csp.ts` (Modified — `style-src-attr 'none'`)
+  - `admin_panel/tests/security.test.js` (Modified — no 'unsafe-inline' anywhere)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — every style="" → class or data-style)
+  - `admin_panel/public/css/tokens.css` (Modified — --pink family), `admin_panel/public/css/components.css` (Modified — pink / one-off classes, pre-script hide rule)
+  - `admin_panel/public/icons/*` (Modified — regenerated in the brand gradient), `admin_panel/public/manifest.webmanifest` (Modified — brand colours)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v17)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - CSP now has no 'unsafe-inline' at all: the panel ships no style attributes; data-dependent and JS-toggled styles go through data-style + CSSOM (allowed by CSP), with identical computed results.
+  - Five ad-hoc pinks unified into a --pink token (contrast-safe in the light theme). PWA icons and manifest colours moved to the brand purple.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome under the real header: CSP suite 9/9 (no violations over all tabs, clicks and modals; injected style attributes blocked; data-style applied for late inserts). Computed-style diff at 1440 / 390 px and light theme shows only the pink / gradient changes. Phase 3–8 suites, a11y, open-everything, smoke, blank-state check green.
+  - `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`. Deploy: rebuild on the server for the new header.
+- **Status:** Completed
+
+### [2026-11-02 18:30] - Claude Code / Merge of origin/main (panel redesign) into chat work
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `AGENT_CHANGELOG.md`, `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/tickets-chat.js` (Modified: conflict resolution)
+- **Description of Changes:**
+  - Merged c3a1907 and a7a2259 (design tokens, CSP without inline style attributes) with the chat commits.
+  - index.html: kept the support-cases and new chat tabs; challenge forms take the new classes but stay kalaf-only with a 0 to 10 default range; fixed the malformed inter-group desk / ranking markup; converted the chat tab's remaining `style=""` to `data-style=""` (the new CSP blocks style attributes); removed 101 doubled quotes (`id="x""`) left by the redesign.
+  - tickets-chat.js: the legacy chat oversight stays removed (its API was disabled in phase 0).
+  - sw.js: cache version v21, above both sides.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6 in `admin_panel/`, including the panel in Chrome with no console or CSP errors.
+- **Status:** Completed (merge commit left to the user)

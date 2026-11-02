@@ -43,7 +43,7 @@ export const evaluateStudentProgress = async (userId: string) => {
       await prisma.notification.create({
         data: {
           userId,
-          title: 'ارتقای سطح قاب پروفایل 🏆',
+          title: 'ارتقای سطح قاب پروفایل',
           message: `تبریک! با توجه به پیشرفت شما، قاب پروفایل شما به سطح ${levelNames[newLevelFrame as keyof typeof levelNames]} ارتقا یافت.`,
           type: 'reward'
         }
@@ -87,7 +87,7 @@ export const evaluateStudentProgress = async (userId: string) => {
           await prisma.notification.create({
             data: {
               userId,
-              title: 'صدور گواهینامه جدید 📜',
+              title: 'صدور گواهینامه جدید',
               message: `تبریک! شما تمامی دروس دوره "${category.title}" را با موفقیت گذراندید و گواهینامه مربوطه برای شما صادر شد.`,
               type: 'reward'
             }

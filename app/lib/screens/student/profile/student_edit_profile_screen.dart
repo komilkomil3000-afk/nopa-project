@@ -2,7 +2,8 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:io' as io;
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPicker;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -225,7 +226,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                     if (context.mounted) {
                                       final isSuccess = res != null;
                                       if (isSuccess) {
-      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد 📎');
+      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
     } else {
       AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
     }
@@ -300,7 +301,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
+      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد');
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
@@ -317,7 +318,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final mentorName = (widget.user.caravanMentor != null && widget.user.caravanMentor!.isNotEmpty)
         ? widget.user.caravanMentor!
         : 'راهبر کاروان';
-    final isMentor = widget.user.role == UserRole.mentor || widget.user.role == UserRole.superMentor;
+    final isMentor = widget.user.role.isMentorLike;
 
     return AppScaffold(
       showBackButton: true,
@@ -1170,7 +1171,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       }
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;
@@ -1521,7 +1522,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
       return;
     }
     Navigator.pop(context);
-    AppToast.info(context, 'رمز عبور با موفقیت تغییر کرد ✅');
+    AppToast.info(context, 'رمز عبور با موفقیت تغییر کرد');
   }
 
   Widget _field(String label, TextEditingController c,

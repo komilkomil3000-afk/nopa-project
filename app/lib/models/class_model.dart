@@ -87,6 +87,7 @@ class VideoClipModel {
   final String sessionId;
   final String title;
   final String videoUrl;
+  final String? coverImageUrl;
   final int clipOrder;
   final int? duration;
   final String? unlockDate;
@@ -100,6 +101,7 @@ class VideoClipModel {
     required this.sessionId,
     required this.title,
     required this.videoUrl,
+    this.coverImageUrl,
     required this.clipOrder,
     this.duration,
     this.unlockDate,
@@ -122,6 +124,7 @@ class VideoClipModel {
       sessionId: json['sessionId'] ?? '',
       title: json['title'] ?? 'پارت ویدیو',
       videoUrl: json['videoUrl'] ?? '',
+      coverImageUrl: (json['coverImageUrl']?.toString().trim().isNotEmpty ?? false) ? json['coverImageUrl'].toString().trim() : null,
       clipOrder: json['clipOrder'] ?? 0,
       duration: json['duration'],
       unlockDate: json['unlockDate'],

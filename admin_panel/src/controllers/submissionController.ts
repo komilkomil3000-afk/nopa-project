@@ -3,6 +3,8 @@ import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { creditChallengeReward } from '../services/ledger';
+import { validateRewardGrant } from './rewardController';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -115,7 +117,7 @@ export async function submitTask(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'پاسخ جدید دریافت شد 📝',
+            title: 'پاسخ جدید دریافت شد',
             message: `دانش‌آموز "${student.name}" پاسخی برای چالش "${challenge?.title || 'تکلیف'}" ثبت کرد.`,
             type: 'alert'
           }
@@ -356,6 +358,14 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: allowedMin === allowedMax ? `مقدار پاداش این چالش ${allowedMin} ${assetLabel} است` : `مقدار پاداش باید بین ${allowedMin} و ${allowedMax} ${assetLabel} باشد` });
     }
 
+    if (status === 'approved' && req.user.role === 'mentor' && reward > 0) {
+      try {
+        await validateRewardGrant(req.user.id, submission.student?.caravanId || '', submission.challenge.stationId || '', 'CHALLENGE', reward);
+      } catch (e: any) {
+        return res.status(400).json({ error: e.message });
+      }
+    }
+
     let updatedSubmission;
     try {
     await prisma.$transaction(async (tx) => {
@@ -373,28 +383,12 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
-        // Credit the asset the challenge pays in
-        await tx.user.update({
-          where: { id: submission.studentId },
-          data: assetType === 'nakh' ? { nakh: { increment: reward } } : { zarikBalance: { increment: reward } }
-        });
-
-        // Zarik movements are ledgered; nakh has no ledger table
-        if (assetType === 'zarik' && reward > 0) {
-          await tx.zarikTransaction.create({
-            data: {
-              userId: submission.studentId,
-              amount: reward,
-              category: 'Skill Tasks',
-              reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
-              createdBy: req.user!.id
-            }
-          });
-        }
+        await creditChallengeReward(tx, { submissionId: id, studentId: submission.studentId, asset: assetType, amount: reward, title: submission.challenge.title, actorId: req.user!.id });
       }
     });
     } catch (e: any) {
-      if (e?.message === 'ALREADY_APPROVED') {
+      // P2002: a rejected answer approved again; its reward was already paid the first time
+      if (e?.message === 'ALREADY_APPROVED' || e?.code === 'P2002') {
         return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
       }
       throw e;
@@ -418,7 +412,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: submission.studentId,
-        title: status === 'approved' ? 'تکلیف تایید شد ✅' : 'تکلیف نیاز به اصلاح دارد ✍️',
+        title: status === 'approved' ? 'تکلیف تایید شد' : 'تکلیف نیاز به اصلاح دارد',
         message: status === 'approved'
             ? (bannerOnly
               ? `پاسخ شما به چالش "${submission.challenge.title}" تایید شد. ${assetNames.derafsh} بر اساس رتبه‌بندی نهایی کاروان‌ها اعطا می‌شود.`
@@ -437,7 +431,7 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان ✅' : 'نتیجه تکلیف دانش‌آموز کاروان ❌',
+            title: status === 'approved' ? 'نتیجه تکلیف دانش‌آموز کاروان' : 'نتیجه تکلیف دانش‌آموز کاروان',
             message: `تکلیف دانش‌آموز "${submission.student.name}" در چالش "${submission.challenge.title}" توسط ${req.user?.role === 'admin' ? 'مدیر سیستم' : 'راهبر'} ${status === 'approved' ? 'تایید شد (+ ' + reward + ' ' + assetLabel + ')' : 'رد شد'}.`,
             type: 'alert'
           }

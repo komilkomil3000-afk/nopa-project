@@ -1,11 +1,14 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
+import '../services/app_state_repository.dart';
+import 'package:provider/provider.dart';
 import 'nopa_dialog_container.dart';
 
 class ContactUsDialog extends StatelessWidget {
@@ -106,14 +109,16 @@ class ContactUsDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // 3. ایتا – بله – سروش
-                _buildContactRow(
-                  context,
-                  label: 'ایتا – بله – سروش',
-                  value: 'komeil-graph',
-                  onTap: () => _launch(context, 'https://eitaa.com/komeil_graph'),
-                ),
-                const SizedBox(height: 12),
+                // 3. ایتا – بله – سروش (with chat on, the app itself is the channel)
+                if (!Provider.of<AppRepository>(context, listen: false).currentUser.chatEnabled) ...[
+                  _buildContactRow(
+                    context,
+                    label: 'ایتا – بله – سروش',
+                    value: 'komeil-graph',
+                    onTap: () => _launch(context, 'https://eitaa.com/komeil_graph'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // 4. سایت
                 _buildContactRow(

@@ -1,5 +1,9 @@
+import 'package:nopa_app/main.dart' show navigatorKey;
+import 'package:nopa_app/screens/chat/channel_manager_profile_screen.dart';
+import 'package:nopa_app/widgets/support_message_dialog.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'safe_avatar.dart';
 import 'avatar_picker_sheet.dart';
@@ -76,10 +80,10 @@ class CustomDrawer extends StatelessWidget {
                 const SizedBox(height: 14),
                 const Text(
                   'به کاروان یادگیری نپا خوش آمدید!\n\n'
-                  '🔹 **آموزگاه:** مشاهده نقشه‌ی سفر، گذراندن منزلگاه‌ها و جلسات مهارتی و رسانه‌ای.\n'
-                  '🔹 **چالش‌ها:** حل ماموریت‌ها و ارسال پاسخ جهت ارزیابی توسط راهبر کاروان.\n'
-                  '🔹 **بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
-                  '🔹 **پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
+                  '**آموزگاه:** مشاهده نقشه‌ی سفر، گذراندن منزلگاه‌ها و جلسات مهارتی و رسانه‌ای.\n'
+                  '**چالش‌ها:** حل ماموریت‌ها و ارسال پاسخ جهت ارزیابی توسط راهبر کاروان.\n'
+                  '**بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
+                  '**پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
                   style: TextStyle(
                     color: Color(0xFFD3D0E3),
                     fontSize: 12.5,
@@ -117,14 +121,17 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMentor = role == UserRole.mentor || role == UserRole.superMentor;
+    final isMentor = role.isMentorLike;
+    final isChannelManager = role.isChannelManager;
     final currentUser = Provider.of<AppRepository>(context).currentUser;
 
     final String displayName = currentUser.name.trim().isNotEmpty
         ? currentUser.name
         : (isMentor ? 'راهبر کاروان' : 'کمیل عباس');
 
-    final String displaySubtitle = currentUser.caravanName != null &&
+    final String displaySubtitle = isChannelManager
+        ? 'مسئول کانال و گروه‌ها'
+        : currentUser.caravanName != null &&
             currentUser.caravanName!.isNotEmpty &&
             currentUser.caravanName != 'فاقد کاروان'
         ? 'عضو ${currentUser.caravanName}'
@@ -278,6 +285,7 @@ class CustomDrawer extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   children: [
                     // Group 1: Main Tabs
+                    if (!isChannelManager) ...[
                     _buildMenuItem(
                       title: 'خانه',
                       svgPath: 'assets/svg_icons/home01.svg',
@@ -342,7 +350,21 @@ class CustomDrawer extends StatelessWidget {
                     // Middle Gradient Divider
                     _buildGradientDivider(),
 
+                    ],
+
                     // Group 2: Support, Help & Exit
+                    if (isChannelManager)
+                      _buildMenuItem(
+                        title: 'حساب کاربری',
+                        svgPath: 'assets/svg_icons/profile01.svg',
+                        isSelected: false,
+                        iconSize: 22,
+                        onTap: () {
+                          Navigator.pop(context);
+                          navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const ChannelManagerProfileScreen()));
+                        },
+                      ),
+                    if (!isChannelManager)
                     _buildMenuItem(
                       title: 'پشتیبانی',
                       svgPath: 'assets/svg_icons/Support01.svg',
@@ -350,7 +372,13 @@ class CustomDrawer extends StatelessWidget {
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        ContactUsDialog.show(context);
+                        // With chat on, support is a conversation; otherwise the contact details
+                        final shell = navigatorKey.currentContext;
+                        if (currentUser.chatEnabled && shell != null) {
+                          SupportMessageDialog.show(shell);
+                        } else {
+                          ContactUsDialog.show(context);
+                        }
                       },
                     ),
                     _buildMenuItem(

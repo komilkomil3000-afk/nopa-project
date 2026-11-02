@@ -47,7 +47,7 @@ export async function syncNewsNotifications(article: any) {
       select: { id: true }
     });
 
-    const notifTitle = `📢 ${article.title}`;
+    const notifTitle = `${article.title}`;
     const messageContent = article.subtitle ? `${article.subtitle}\n\n${article.body}` : article.body;
 
     for (const u of users) {
@@ -147,7 +147,7 @@ export const deleteNews = async (req: Request, res: Response) => {
     const { id } = req.params;
     const article = await prisma.newsArticle.findUnique({ where: { id } });
     if (article) {
-      const notifTitle = `📢 ${article.title}`;
+      const notifTitle = `${article.title}`;
       await prisma.notification.deleteMany({
         where: {
           OR: [

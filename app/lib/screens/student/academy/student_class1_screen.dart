@@ -5,7 +5,8 @@ import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/station_categories.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -204,6 +205,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               'title': anim.title,
               'videoUrl': anim.videoUrl,
               'description': anim.description,
+              'coverImageUrl': anim.coverImageUrl,
             });
           }
         }
@@ -467,7 +469,6 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     final String stationImage = _station?.imageUrl ?? '';
     final bool hasValidImg =
         stationImage.isNotEmpty &&
-        stationImage.startsWith('http') &&
         !stationImage.contains('placeholder');
     final String ordinalTitle =
         (_station?.title != null && _station!.title.trim().isNotEmpty)
@@ -790,7 +791,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       children: [
         // Heading
         const Text(
-          'گالری منزلگاه',
+          'نگارستان منزلگاه',
           textAlign: TextAlign.right,
           style: TextStyle(
             color: Colors.white,

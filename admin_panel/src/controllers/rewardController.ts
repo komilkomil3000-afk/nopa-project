@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { AuthRequest } from '../middleware/auth';
 import { logAdminAction } from './adminController';
 
@@ -15,21 +16,15 @@ export async function grantPromotionalZarik(req: AuthRequest, res: Response) {
     const user = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
     
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: targetUserId },
-        data: { zarikBalance: { increment: amount } }
-      }),
-      prisma.zarikTransaction.create({
-        data: {
-          userId: targetUserId,
-          amount,
-          category: 'Special Campaigns',
-          reason,
-          createdBy: req.user!.id
-        }
-      })
-    ]);
+    await prisma.$transaction(tx => changeBalance(tx, {
+      userId: targetUserId,
+      asset: 'zarik',
+      amount,
+      sourceType: 'promotional_grant',
+      reason,
+      createdBy: req.user!.id,
+      zarikCategory: 'Special Campaigns'
+    }));
     
     await logAdminAction(req.user!.id, 'Admin', 'GRANT_ZARIK', 'User', targetUserId, `Granted ${amount} Zarik. Reason: ${reason}`, req.ip || '');
     
@@ -115,6 +110,18 @@ export async function deleteMentorRewardRule(req: AuthRequest, res: Response) {
   }
 }
 
+/** What a mentor already paid inside a rule's window. */
+async function grantedSoFar(mentorId: string, timeframe: string, stationId: string | null): Promise<number> {
+  const where: any = { createdBy: mentorId, sourceType: 'submission_review', amount: { gt: 0 } };
+  if (timeframe === 'DAILY') where.createdAt = { gte: new Date(new Date().setHours(0, 0, 0, 0)) };
+  if (timeframe === 'PER_STATION' && stationId) {
+    const subs = await prisma.submission.findMany({ where: { challenge: { stationId } }, select: { id: true } });
+    where.sourceId = { in: subs.map(s => s.id) };
+  }
+  const sum = await prisma.assetTransaction.aggregate({ where, _sum: { amount: true } });
+  return sum._sum.amount || 0;
+}
+
 export async function validateRewardGrant(mentorId: string, caravanId: string | null, stationId: string | null, rewardType: string, amount: number) {
   // Find applicable rules
   const rules = await prisma.mentorRewardRule.findMany({
@@ -133,11 +140,9 @@ export async function validateRewardGrant(mentorId: string, caravanId: string | 
     // If rule specifies station, it must match
     if (rule.stationId && rule.stationId !== stationId) continue;
     
-    if (amount > rule.maxGrantLimit) {
+    const granted = await grantedSoFar(mentorId, rule.timeframe, rule.stationId || stationId);
+    if (granted + amount > rule.maxGrantLimit) {
       throw new Error('سقف مجاز اعطای پاداش در این بخش رعایت نشده است');
     }
-    
-    // In a full implementation, we'd also check the historical sum based on timeframe (DAILY, PER_STATION)
-    // For now, we enforce the per-transaction limit 'maxGrantLimit' strictly.
   }
 }

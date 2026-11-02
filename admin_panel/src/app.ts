@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { apiLimiter } from './middleware/rateLimit';
 import { scrubResponses } from './middleware/responseScrubber';
+import { cspDirectives } from './config/csp';
 import apiRouter from './routes/api';
 
 // Load Environment Config
@@ -26,27 +27,10 @@ app.use(compression());
 // Security & Request Parsing Middlewares
 app.use(
   helmet({
-    // CSP for the admin panel. The panel still uses inline scripts/handlers, so 'unsafe-inline'
-    // is required for now; the important parts are: no third-party scripts, no connections to
-    // other origins (an injected script cannot send the token elsewhere via fetch/XHR),
-    // no plugins/objects, no framing by other sites, and forms only to this origin.
+    // CSP for the admin panel: see config/csp.ts
     contentSecurityPolicy: {
       useDefaults: false,
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrcAttr: ["'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-        mediaSrc: ["'self'", 'blob:', 'https:'],
-        fontSrc: ["'self'", 'data:'],
-        connectSrc: ["'self'"],
-        frameSrc: ["'self'", 'https://www.aparat.com'],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        frameAncestors: ["'self'"],
-      },
+      directives: cspDirectives,
     },
   })
 );

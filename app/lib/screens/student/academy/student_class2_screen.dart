@@ -6,7 +6,8 @@ import 'package:nopa_app/models/user_model.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/services/api_service.dart';
@@ -146,7 +147,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
   /// Mentors are not bound by the release schedule (the server does the same for stations).
   bool get _isMentorUser {
     final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    return role == UserRole.mentor || role == UserRole.superMentor;
+    return role.isMentorLike;
   }
 
   /// When a session that has not started yet opens; null when it is open (or has no schedule).
@@ -510,6 +511,16 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return url.trim();
   }
 
+  /// Preview picture of the clip being shown (set per part in the admin panel), if any.
+  String? get _currentCoverUrl {
+    final session = _activeSession;
+    if (session == null) return null;
+    final clips = session['videoClips'] as List? ?? [];
+    if (clips.isEmpty || _currentClipIndex >= clips.length) return null;
+    final cover = clips[_currentClipIndex]['coverImageUrl']?.toString().trim();
+    return (cover == null || cover.isEmpty) ? null : cover;
+  }
+
   void _onVideoProgress(Duration position, Duration duration) {
     final pos = position.inMilliseconds;
     final dur = duration.inMilliseconds;
@@ -713,6 +724,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     return NopaInlineVideoPlayer(
       key: ValueKey('class2_video_${_videoSessionToken}_$url'),
       videoUrl: url,
+      coverImageUrl: _currentCoverUrl,
       title: _currentPlayingTitle,
       autoPlay: url.isNotEmpty && _playRequested,
       onProgress: _onVideoProgress,
@@ -1747,7 +1759,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
               });
             } else {
               Navigator.pop(context);
-              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد! 📂✅');
+              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد!');
             }
           });
 

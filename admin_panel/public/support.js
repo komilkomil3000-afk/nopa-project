@@ -6,7 +6,7 @@
 (function () {
   const SUPPORT_CATEGORY = 'پیام به پشتیبانی';
   const STATUS_LABEL = { open: 'باز', answered: 'پاسخ داده شده', resolved: 'حل شده' };
-  const STATUS_COLOR = { open: '#f59e0b', answered: '#38bdf8', resolved: '#10b981' };
+  const STATUS_FAMILY = { open: 'accent', answered: 'info', resolved: 'success' };
 
   let allTickets = [];
   let currentTicketId = null;
@@ -24,8 +24,10 @@
 
   function statusBadge(status) {
     const key = String(status || 'open').toLowerCase();
-    const color = STATUS_COLOR[key] || '#94a3b8';
-    return `<span style="background:${color}22; color:${color}; border:1px solid ${color}66; padding:2px 9px; border-radius:8px; font-size:11.5px; font-weight:bold;">${esc(STATUS_LABEL[key] || key)}</span>`;
+    const fam = STATUS_FAMILY[key];
+    const tint = fam ? `rgb(var(--${fam}-rgb) / ` : 'rgb(var(--muted-rgb) / ';
+    const text = fam ? `var(--${fam}-text)` : 'var(--text-muted)';
+    return `<span class="u-p-2-10 u-r-8 u-fs-xs u-bold" data-style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4)">${esc(STATUS_LABEL[key] || key)}</span>`;
   }
 
   function ensureView() {
@@ -33,23 +35,23 @@
     if (!view || view.dataset.ready) return view;
     view.dataset.ready = '1';
     view.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-        <h4 style="margin:0; color:#f8fafc; font-size:15px; display:flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-headset" style="color:#38bdf8;"></i> صندوق پیام‌های پشتیبانی
+      <div class="u-flex u-justify-between u-items-center u-wrap u-gap-10 u-mb-14">
+        <h4 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-6">
+          <i class="fa-solid fa-headset u-c-primary-text"></i> صندوق پیام‌های پشتیبانی
         </h4>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <select id="support-filter-scope" class="input-ctrl" style="min-width:170px;">
+        <div class="u-flex u-gap-8 u-wrap">
+          <select id="support-filter-scope" class="input-ctrl u-minw-170">
             <option value="support">فقط پیام‌های «ارسال به پشتیبانی»</option>
             <option value="all">همه تیکت‌ها (شامل درخواست‌های دیگر)</option>
           </select>
-          <select id="support-filter-status" class="input-ctrl" style="min-width:130px;">
+          <select id="support-filter-status" class="input-ctrl u-minw-130">
             <option value="all">همه وضعیت‌ها</option>
             <option value="open">باز</option>
             <option value="answered">پاسخ داده شده</option>
             <option value="resolved">حل شده</option>
           </select>
-          <input id="support-filter-search" class="input-ctrl" placeholder="جستجو در نام یا متن پیام" style="min-width:180px;">
-          <button type="button" id="support-refresh" class="btn-action" style="border-radius:8px; padding:8px 14px; cursor:pointer;">
+          <input id="support-filter-search" class="input-ctrl u-minw-180" placeholder="جستجو در نام یا متن پیام">
+          <button type="button" id="support-refresh" class="btn-action u-r-8 u-p-8-14 u-pointer">
             <i class="fa-solid fa-sync"></i> بروزرسانی
           </button>
         </div>
@@ -69,19 +71,19 @@
           <tbody id="support-tbody"></tbody>
         </table>
       </div>
-      <div id="support-ticket-modal" class="modal-overlay" style="display:none; align-items:center; justify-content:center;">
-        <div class="modal-content glass" style="max-width:760px; width:92%; display:flex; flex-direction:column; background:rgba(30,41,59,0.97);">
-          <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.1);">
-            <h3 id="support-modal-title" style="margin:0;">پیام پشتیبانی</h3>
-            <button type="button" class="modal-close" id="support-modal-close">&times;</button>
+      <div id="support-ticket-modal" class="modal-overlay u-items-center u-justify-center" data-style="display:none">
+        <div class="modal-content glass u-maxw-760 u-w-92p u-flex u-col u-bg-surface-2-97">
+          <div class="modal-header u-bb-fg-10">
+            <h3 id="support-modal-title" class="u-m-0">پیام پشتیبانی</h3>
+            <button aria-label="بستن" type="button" class="modal-close" id="support-modal-close">&times;</button>
           </div>
-          <div style="padding:18px; display:flex; flex-direction:column; gap:14px; max-height:70vh; overflow-y:auto;">
+          <div class="u-p-20 u-flex u-col u-gap-14 u-maxh-70vh u-scroll-y">
             <div id="support-thread"></div>
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              <label style="color:var(--text-muted);">پاسخ پشتیبانی (برای فرستنده اعلان می‌شود)</label>
-              <textarea id="support-reply-text" class="input-ctrl" rows="4" placeholder="متن پاسخ را بنویسید..."></textarea>
-              <div style="display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap;">
-                <button type="button" id="support-resolve" class="btn-action" style="border-radius:8px; padding:8px 16px; cursor:pointer;">
+            <div class="u-flex u-col u-gap-8">
+              <label for="support-reply-text" class="u-c-text-muted">پاسخ پشتیبانی (برای فرستنده اعلان می‌شود)</label>
+              <textarea id="support-reply-text"" class="input-ctrl" rows="4" placeholder="متن پاسخ را بنویسید..."></textarea>
+              <div class="u-flex u-gap-8 u-justify-end u-wrap">
+                <button type="button" id="support-resolve" class="btn-action u-r-8 u-p-8-16 u-pointer">
                   <i class="fa-solid fa-circle-check"></i> بستن و حل‌شده
                 </button>
                 <button type="button" id="support-send" class="btn-primary">ارسال پاسخ</button>
@@ -136,18 +138,18 @@
     });
 
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:24px;">پیامی یافت نشد</td></tr>';
+      NopaTable.empty(tbody, 'پیامی یافت نشد');
       return;
     }
 
     tbody.innerHTML = rows.map(t => `
       <tr>
-        <td>${esc(t.student?.name || 'ناشناس')}<div style="font-size:11px; color:#94a3b8; direction:ltr; text-align:right;">${esc(t.student?.phoneNumber || '')}</div></td>
+        <td>${esc(t.student?.name || 'ناشناس')}<div class="u-fs-2xs u-c-text-muted u-direction-ltr u-text-right">${esc(t.student?.phoneNumber || '')}</div></td>
         <td>${esc(roleLabel(t.student?.role))}${t.student?.caravan?.name ? ' • ' + esc(t.student.caravan.name) : ''}</td>
-        <td style="max-width:320px;">${t.category !== SUPPORT_CATEGORY ? `<span style="color:#94a3b8; font-size:11px;">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
+        <td class="u-maxw-320">${t.category !== SUPPORT_CATEGORY ? `<span class="u-c-text-muted u-fs-2xs">[${esc(t.category)}]</span> ` : ''}${esc(String(t.subject || '').slice(0, 120))}</td>
         <td>${statusBadge(t.status)}</td>
         <td>${fmtDate(t.createdAt)}</td>
-        <td><button type="button" class="page-btn btn-view" data-support-open="${esc(t.id)}"><i class="fa-solid fa-eye"></i></button></td>
+        <td><button title="مشاهده‌ی تیکت" aria-label="مشاهده‌ی تیکت" type="button" class="page-btn btn-view" data-support-open="${esc(t.id)}"><i class="fa-solid fa-eye"></i></button></td>
       </tr>`).join('');
 
     tbody.querySelectorAll('[data-support-open]').forEach(btn =>
@@ -156,14 +158,14 @@
 
   function messageCard(author, role, text, when, voiceUrl, attachmentUrl) {
     return `
-      <div style="padding:12px 14px; background:rgba(255,255,255,0.05); border-radius:12px; margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-          <strong>${esc(author)} <span style="font-size:11px; color:#9ca3af; font-weight:normal;">${esc(role)}</span></strong>
-          <span style="font-size:11px; color:#9ca3af;">${esc(when)}</span>
+      <div class="u-p-12-14 u-bg-fg-5 u-r-12 u-mb-10">
+        <div class="u-flex u-justify-between u-gap-10 u-wrap">
+          <strong>${esc(author)} <span class="u-fs-2xs u-c-text-muted u-fw-normal">${esc(role)}</span></strong>
+          <span class="u-fs-2xs u-c-text-muted">${esc(when)}</span>
         </div>
-        <p style="margin:8px 0 0; font-size:13px; line-height:1.8; white-space:pre-wrap;">${text ? esc(text) : '<em>بدون متن</em>'}</p>
-        ${voiceUrl ? `<audio controls style="width:100%; margin-top:8px;" src="${esc(voiceUrl)}"></audio>` : ''}
-        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" style="display:inline-block; margin-top:8px; color:#10b981; font-size:12px;"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
+        <p class="u-m-8-0-0 u-fs-sm u-lh-1_8 u-ws-pre-wrap">${text ? esc(text) : '<em>بدون متن</em>'}</p>
+        ${voiceUrl ? `<audio controls class="u-w-full u-mt-8" src="${esc(voiceUrl)}"></audio>` : ''}
+        ${attachmentUrl ? `<a href="${esc(attachmentUrl)}" target="_blank" rel="noopener" class="u-inline-block u-mt-8 u-c-success-text u-fs-xs"><i class="fa-solid fa-download"></i> دانلود پیوست</a>` : ''}
       </div>`;
   }
 
@@ -199,7 +201,7 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'خطا در ثبت پاسخ');
+        showToast(data.error || 'خطا در ثبت پاسخ', 'error');
         return;
       }
       const id = currentTicketId;
@@ -207,7 +209,7 @@
       openTicket(id);
     } catch (e) {
       console.error(e);
-      alert('خطا در ارسال پاسخ');
+      showToast('خطا در ارسال پاسخ', 'error');
     }
   }
 
@@ -216,7 +218,7 @@
     try {
       const res = await request(`/api/v1/admin/tickets/${currentTicketId}/resolve`, { method: 'POST' });
       if (!res.ok) {
-        alert('خطا در تغییر وضعیت');
+        showToast('خطا در تغییر وضعیت', 'error');
         return;
       }
       closeModal();
@@ -234,9 +236,9 @@
     if (subtab !== 'support') {
       if (supportView) supportView.style.display = 'none';
       if (supportBtn) {
-        supportBtn.style.background = 'rgba(255,255,255,0.06)';
-        supportBtn.style.color = '#94a3b8';
-        supportBtn.style.border = '1px solid rgba(255,255,255,0.1)';
+        supportBtn.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+        supportBtn.style.color = 'var(--text-muted)';
+        supportBtn.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
         supportBtn.style.boxShadow = 'none';
       }
       if (typeof originalSwitch === 'function') originalSwitch(subtab);
@@ -250,16 +252,16 @@
     ['subtab-btn-banners', 'subtab-btn-news'].forEach(id => {
       const b = document.getElementById(id);
       if (!b) return;
-      b.style.background = 'rgba(255,255,255,0.06)';
-      b.style.color = '#94a3b8';
+      b.style.background = 'rgb(var(--fg-rgb) / 0.06)';
+      b.style.color = 'var(--text-muted)';
       b.style.boxShadow = 'none';
-      b.style.border = '1px solid rgba(255,255,255,0.1)';
+      b.style.border = '1px solid rgb(var(--fg-rgb) / 0.1)';
     });
     if (supportBtn) {
-      supportBtn.style.background = 'linear-gradient(135deg, #0284c7, #0369a1)';
+      supportBtn.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-strong))';
       supportBtn.style.color = 'white';
       supportBtn.style.border = 'none';
-      supportBtn.style.boxShadow = '0 4px 12px rgba(2, 132, 199, 0.35)';
+      supportBtn.style.boxShadow = '0 4px 12px rgb(var(--primary-rgb) / 0.35)';
     }
     ensureView();
     if (supportView) supportView.style.display = 'block';

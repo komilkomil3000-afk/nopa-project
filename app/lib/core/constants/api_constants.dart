@@ -1,10 +1,11 @@
 class ApiConstants {
   /// Production domain and server host
-  static const String host = 'nopa-app.ir';
+  static const String host = String.fromEnvironment('API_HOST', defaultValue: 'nopa-app.ir');
+  static const String scheme = String.fromEnvironment('API_SCHEME', defaultValue: 'https');
   static const String hostIp = host;
   static const int? port = null;
-  static const String baseUrl = 'http://$host/api/v1';
-  static const String mediaBaseUrl = 'http://$host';
+  static const String baseUrl = '$scheme://$host/api/v1';
+  static const String mediaBaseUrl = '$scheme://$host';
 
   /// Prepend [mediaBaseUrl] to relative image/media paths (e.g. '/uploads/...').
   /// Leaves absolute URLs (http:// or https://) untouched, but translates localhost/127.0.0.1 references.

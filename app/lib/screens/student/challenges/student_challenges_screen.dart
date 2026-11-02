@@ -1,8 +1,10 @@
+import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
@@ -288,7 +290,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final user = repository.currentUser;
-    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final bool isMentor = user.role.isMentorLike;
 
     if (isMentor) {
       return _buildMentorChallengesView(context, repository, user);
@@ -1130,7 +1132,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد 🏆');
+                                AppToast.info(context, 'چالش "${titleCtrl.text}" با موفقیت ایجاد و برای کاروان ابلاغ شد');
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1327,7 +1329,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد ✉️');
+                            AppToast.info(context, 'پیام "${titleCtrl.text}" با موفقیت برای اعضای کاروان ارسال شد');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1771,6 +1773,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
+          if (isExpanded) ChallengeChatButton(challengeId: id),
           if (isExpanded)
             Container(
               decoration: BoxDecoration(

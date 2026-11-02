@@ -5,22 +5,29 @@ import { stripAnswerKeys } from '../utils/answerKeys';
 import { isMentorRole } from '../utils/roles';
 import { getAssetNames } from '../utils/assetNames';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
+import { removeChallengeCards, syncChallengeCardsQuietly } from '../modules/chat/topics';
+import { EconomyConfig, getEconomyPolicy } from '../services/economy';
 
-/** Validates the reward asset and the min/max range a mentor chooses from when approving an answer. */
-function parseRewardRange(body: any): { error: string } | { data: { rewardAssetType: string; rewardMin: number; rewardMax: number } } {
-  const rewardAssetType = String(body.rewardAssetType || 'zarik').toLowerCase();
-  if (!['zarik', 'nakh'].includes(rewardAssetType)) {
-    return { error: 'نوع دارایی جایزه باید زریک یا کلاف باشد' };
-  }
-  const rewardMin = Number(body.rewardMin ?? 0);
-  const rewardMax = Number(body.rewardMax ?? 0);
+/**
+ * Personal and group challenges pay nakh, from rewardMin up to the policy's ceiling.
+ * An older app version still sends a zarik range: its numbers mean nothing in nakh, so the full range applies.
+ */
+function parseRewardRange(body: any, config: EconomyConfig): { error: string } | { data: { rewardAssetType: string; rewardMin: number; rewardMax: number } } {
+  const ceiling = config.challengeMaxNakh;
+  const inNakh = String(body.rewardAssetType || 'nakh').toLowerCase() === 'nakh';
+  const rewardMin = inNakh ? Number(body.rewardMin ?? 0) : 0;
+  const rewardMax = inNakh ? Number(body.rewardMax || ceiling) : ceiling;
   if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax < 0) {
     return { error: 'حداقل و حداکثر جایزه باید عدد صحیح نامنفی باشند' };
   }
   if (rewardMin > rewardMax) {
     return { error: 'حداقل جایزه نمی‌تواند از حداکثر بیشتر باشد' };
   }
-  return { data: { rewardAssetType, rewardMin, rewardMax } };
+  if (rewardMax > ceiling) {
+    return { error: `سقف جایزه‌ی هر چالش ${ceiling} کلاف است` };
+  }
+  return { data: { rewardAssetType: 'nakh', rewardMin, rewardMax } };
 }
 
 /**
@@ -52,7 +59,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
 
     const { id, title, description, type, questions, rewardZarik, caravanId, targetMentorId, stationId, dueDate, startDate } = req.body;
 
-    const rewardRange = parseRewardRange(req.body);
+    const rewardRange = parseRewardRange(req.body, (await getEconomyPolicy()).config);
     if ('error' in rewardRange) {
       return res.status(400).json({ error: rewardRange.error });
     }
@@ -157,7 +164,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: caravan.mentorId,
-            title: 'ابلاغ چالش جدید در کاروان 🚩',
+            title: 'ابلاغ چالش جدید در کاروان',
             message: `چالش جدید "${title}" توسط ${creatorName} برای اعضای کاروان "${caravan.name}" ثبت گردید.`,
             type: 'challenge'
           }
@@ -178,7 +185,7 @@ export async function createChallenge(req: AuthRequest, res: Response) {
         await prisma.notification.createMany({
           data: mentors.map(m => ({
             userId: m.id,
-            title: 'چالش عمومی جدید ابلاغ شد 🏆',
+            title: 'چالش عمومی جدید ابلاغ شد',
             message: `چالش جدید "${title}" توسط ${creatorName} برای تمامی کاروان‌ها منتشر گردید.`,
             type: 'challenge'
           }))
@@ -195,13 +202,14 @@ export async function createChallenge(req: AuthRequest, res: Response) {
       await prisma.notification.createMany({
         data: targetStudents.map(s => ({
           userId: s.id,
-          title: 'چالش جدید ابلاغ شد 🏆',
-          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText} 🪙`,
+          title: 'چالش جدید ابلاغ شد',
+          message: `چالش جدید "${title}" توسط ${creatorName} منتشر گردید. پاداش: ${rewardText}`,
           type: 'challenge'
         }))
       });
     }
 
+    syncChallengeCardsQuietly(challenge.id);
     res.status(201).json(challenge);
   } catch (error) {
     console.error('createChallenge error:', error);
@@ -251,7 +259,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
         rewardAssetType: req.body.rewardAssetType ?? existing.rewardAssetType,
         rewardMin: req.body.rewardMin ?? existing.rewardMin,
         rewardMax: req.body.rewardMax ?? existing.rewardMax
-      });
+      }, (await getEconomyPolicy()).config);
       if ('error' in range) return res.status(400).json({ error: range.error });
       Object.assign(updateData, range.data);
       if (range.data.rewardMax > 0) updateData.rewardZarik = range.data.rewardMax;
@@ -280,6 +288,7 @@ export async function updateChallenge(req: AuthRequest, res: Response) {
       data: updateData
     });
 
+    syncChallengeCardsQuietly(updated.id);
     res.json(updated);
   } catch (error) {
     console.error('updateChallenge error:', error);
@@ -312,49 +321,57 @@ export async function deleteChallenge(req: AuthRequest, res: Response) {
     // (The old code decremented by `score`, which is not the reward for quizzes, and deleted every
     // ledger row whose reason merely contained the challenge title - for ALL users.)
     const revertRewards = String(req.query.revertRewards || '').toLowerCase() === 'true';
+    await removeChallengeCards(id).catch(e => console.error('removeChallengeCards error:', e));
 
     await prisma.$transaction(async (tx) => {
       if (revertRewards) {
         const approved = await tx.submission.findMany({
           where: { challengeId: id, status: 'approved' },
-          select: { studentId: true }
+          select: { id: true, studentId: true }
         });
-        const studentIds = Array.from(new Set(approved.map(a => a.studentId)));
-
-        if (studentIds.length > 0) {
-          // Exact reason strings written when these rewards were granted, limited to the students
-          // who actually have an approved submission on this challenge.
+        if (approved.length > 0) {
           const reasons = [
             `پاداش شرکت در آزمون چالش: ${existing.title}`,
             `پاداش تایید تکلیف: ${existing.title}`
           ];
-          const granted = await tx.zarikTransaction.findMany({
-            where: { userId: { in: studentIds }, reason: { in: reasons }, amount: { gt: 0 } }
+          const granted = await tx.assetTransaction.findMany({
+            where: {
+              userId: { in: approved.map(a => a.studentId) },
+              amount: { gt: 0 },
+              sourceType: { in: ['submission_review', 'challenge_quiz'] },
+              sourceId: { in: approved.map(a => a.id) }
+            }
           });
+          const legacy = await tx.zarikTransaction.findMany({
+            where: { userId: { in: approved.map(a => a.studentId) }, reason: { in: reasons }, amount: { gt: 0 } }
+          });
+          const inLedger = new Set(granted.map(g => g.userId));
 
-          const perStudent = new Map<string, number>();
-          for (const g of granted) {
-            perStudent.set(g.userId, (perStudent.get(g.userId) || 0) + g.amount);
-          }
+          const owed = new Map<string, { userId: string; asset: 'zarik' | 'nakh'; total: number }>();
+          const add = (userId: string, asset: 'zarik' | 'nakh', amount: number) => {
+            const key = `${userId}:${asset}`;
+            const row = owed.get(key) || { userId, asset, total: 0 };
+            row.total += amount;
+            owed.set(key, row);
+          };
+          for (const g of granted) add(g.userId, g.asset === 'nakh' ? 'nakh' : 'zarik', g.amount);
+          for (const l of legacy) if (!inLedger.has(l.userId)) add(l.userId, 'zarik', l.amount);
 
-          for (const [studentId, total] of perStudent) {
-            const student = await tx.user.findUnique({ where: { id: studentId }, select: { zarikBalance: true } });
+          for (const { userId, asset, total } of owed.values()) {
+            const student = await tx.user.findUnique({ where: { id: userId }, select: { zarikBalance: true, nakh: true } });
             if (!student) continue;
-            const clawback = Math.min(total, Math.max(student.zarikBalance, 0)); // never below zero
-            if (clawback <= 0) continue;
-            await tx.user.update({
-              where: { id: studentId },
-              data: { zarikBalance: { decrement: clawback } }
-            });
+            const held = asset === 'nakh' ? student.nakh : student.zarikBalance;
+            const clawback = Math.min(total, Math.max(held, 0)); // never below zero
             // Compensating ledger entry instead of deleting history
-            await tx.zarikTransaction.create({
-              data: {
-                userId: studentId,
-                amount: -clawback,
-                category: 'Reversal',
-                reason: `بازگشت پاداش به دلیل حذف چالش: ${existing.title}`,
-                createdBy: req.user!.id
-              }
+            await changeBalance(tx, {
+              userId,
+              asset,
+              amount: -clawback,
+              sourceType: 'challenge_delete',
+              sourceId: id,
+              reason: `بازگشت پاداش به دلیل حذف چالش: ${existing.title}`,
+              createdBy: req.user!.id,
+              zarikCategory: 'Reversal'
             });
           }
         }
@@ -701,36 +718,27 @@ export async function submitQuiz(req: AuthRequest, res: Response) {
       });
 
       if (calculatedReward > 0) {
-        // Credit the asset the challenge pays in
-        updatedUser = await tx.user.update({
-          where: { id: req.user!.id },
-          data: assetType === 'nakh' ? { nakh: { increment: calculatedReward } } : { zarikBalance: { increment: calculatedReward } }
-        });
-
-        // Zarik movements are ledgered; nakh has no ledger table
-        if (assetType === 'zarik') {
-          await tx.zarikTransaction.create({
-            data: {
-              userId: req.user!.id,
-              amount: calculatedReward,
-              category: 'Quiz Rewards',
-              reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
-              createdBy: req.user!.id
-            }
-          });
-        }
-      } else {
-        updatedUser = await tx.user.findUnique({
-          where: { id: req.user!.id }
+        await changeBalance(tx, {
+          userId: req.user!.id,
+          asset: assetType,
+          amount: calculatedReward,
+          sourceType: 'challenge_quiz',
+          sourceId: submission.id,
+          reason: `پاداش شرکت در آزمون چالش: ${challenge.title}`,
+          createdBy: req.user!.id,
+          zarikCategory: 'Quiz Rewards'
         });
       }
+      updatedUser = await tx.user.findUnique({
+        where: { id: req.user!.id }
+      });
     });
 
     // Result notification: score plus the asset that was added
     await prisma.notification.create({
       data: {
         userId: req.user.id,
-        title: calculatedReward > 0 ? 'ثبت پاداش آزمون 💰' : 'نتیجه آزمون',
+        title: calculatedReward > 0 ? 'ثبت پاداش آزمون' : 'نتیجه آزمون',
         message: `آزمون "${challenge.title}" بررسی شد. پاسخ‌های صحیح: ${correctCount} از ${questionsList.length}.` +
           (calculatedReward > 0 ? ` مقدار پاداش: +${calculatedReward} ${assetLabel} به حساب شما اضافه شد.` : ''),
         type: 'reward'

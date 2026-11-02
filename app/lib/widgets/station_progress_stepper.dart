@@ -1,6 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
@@ -260,9 +261,7 @@ class StationProgressStepper extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'داستان سفر به سرزمین نپا\n\n'
-                  'علاءالملک، حاکم سرزمین نپا با گنجینه‌ای حیرت‌آور و بی‌نظیر در انتظار زنان و مردانی است که شایستگی خود را برای کسب آن نشان دهند.\n\n'
-                  'تو در این مسیر، عضو کاروانی هستی که راهبری زبردست شما را به سوی سرزمین نپا می‌برد. مسیر مابین هر منزلگاه، عیار هر کس را می‌سنجد و توقف موقت هر کاروان در این منزلگاه‌ها، مقدمه‌ای برای طی کردن مسیرهای دشوار بعدی است.',
+                  'سرزمین نپا، مقصد نهایی شماست. جایی که گنجبنه‌ی علاء‌الملک زنان و مردان باهوش و سرسخت را به مبارزه با مسیری دشوار فراخوانده است. فراخوانی که در نهایت به میهمانی بزرگی ختم خواهد شد.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,

@@ -387,6 +387,8 @@ class HttpApiService {
   Future<List<String>> _buildHostCandidates() async {
     final candidates = <String>[];
     candidates.add(_defaultHost);
+    // Only development looks around the local network: a release build never sends a token to a stranger
+    if (kReleaseMode) return candidates;
     if (_envHost.isNotEmpty && !candidates.contains(_envHost)) {
       candidates.add(_envHost);
     }
@@ -417,6 +419,8 @@ class HttpApiService {
     if (host.startsWith('http://') || host.startsWith('https://')) {
       return host.endsWith('/') ? host.substring(0, host.length - 1) : host;
     }
+    // The configured server keeps its scheme: this is what puts the app on HTTPS
+    if (host == ApiConstants.host) return ApiConstants.mediaBaseUrl;
     if (host == 'nopa-app.ir' || (!host.contains(':') && !RegExp(r'^\d+\.\d+\.\d+\.\d+$').hasMatch(host))) {
       return 'http://$host';
     }
@@ -464,7 +468,7 @@ class HttpApiService {
 
     // Always prefer the production domain (nopa-app.ir) if reachable,
     // avoiding being trapped on stale LAN IPs cached during development.
-    final targetHost = (_defaultHost == 'nopa-app.ir')
+    final targetHost = (_defaultHost == ApiConstants.host)
         ? _defaultHost
         : (cachedHost ?? (_envHost.isNotEmpty ? _envHost : _defaultHost));
     _activeHost = targetHost;
@@ -1578,69 +1582,6 @@ class HttpApiService {
     }
   }
 
-  // --- CHAT API ---
-  Future<List<dynamic>> getDirectMessages(String mentorId, {int? limit}) async {
-    try {
-      final queryParams = <String, String>{};
-      if (limit != null) queryParams['limit'] = limit.toString();
-
-      final uri = queryParams.isNotEmpty
-          ? Uri.parse('$baseUrl/chat/direct/$mentorId').replace(queryParameters: queryParams)
-          : Uri.parse('$baseUrl/chat/direct/$mentorId');
-
-      final response = await _get(uri, headers: _getHeaders());
-      if (response.statusCode == 200) {
-        final dynamic data = await parseJsonAsync(response.body);
-        if (data is List) return data;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('HTTP getDirectMessages error: $e');
-      return [];
-    }
-  }
-
-  Future<List<dynamic>> getCaravanMessages(String caravanId, {int? limit}) async {
-    try {
-      final queryParams = <String, String>{};
-      if (limit != null) queryParams['limit'] = limit.toString();
-
-      final uri = queryParams.isNotEmpty
-          ? Uri.parse('$baseUrl/chat/caravan/$caravanId').replace(queryParameters: queryParams)
-          : Uri.parse('$baseUrl/chat/caravan/$caravanId');
-
-      final response = await _get(uri, headers: _getHeaders());
-      if (response.statusCode == 200) {
-        final dynamic data = await parseJsonAsync(response.body);
-        if (data is List) return data;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('HTTP getCaravanMessages error: $e');
-      return [];
-    }
-  }
-
-  Future<bool> sendChatMessage({String? receiverId, String? caravanId, String? text, String? fileUrl, String? fileType}) async {
-    try {
-      final response = await _post(
-        Uri.parse('$baseUrl/chat/send'),
-        headers: _getHeaders(),
-        body: jsonEncode({
-          'receiverId': receiverId,
-          'caravanId': caravanId,
-          'messageText': text,
-          'fileUrl': fileUrl,
-          'fileType': fileType,
-        }),
-      );
-      return response.statusCode == 201;
-    } catch (e) {
-      debugPrint('HTTP sendChatMessage error: $e');
-      return false;
-    }
-  }
-
   Future<List<Map<String, dynamic>>> getBookmarks(String sessionId) async {
     try {
       final res = await _get(Uri.parse('$baseUrl/lms/bookmarks/$sessionId'), headers: _getHeaders());
@@ -1928,6 +1869,55 @@ class HttpApiService {
       debugPrint('getAssetTypes error: $e');
     }
     return [];
+  }
+
+  /// A chat call, relative to the API root. Null when the network failed.
+  Future<http.Response?> chatCall(String method, String path, {Map<String, dynamic>? body}) async {
+    try {
+      final response = await _sendWithAuthRetry(
+        method,
+        Uri.parse('$baseUrl$path'),
+        headers: _getHeaders(),
+        body: body == null ? null : jsonEncode(body),
+      );
+      return response.statusCode == 503 ? null : response;
+    } catch (e) {
+      debugPrint('chatCall error: $e');
+      return null;
+    }
+  }
+
+  /// Uploads a private chat file: {id, name, kind, url}.
+  Future<Map<String, dynamic>?> uploadChatFile(io.File file, String spaceId) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/chat/uploads'));
+      if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      request.fields['spaceId'] = spaceId;
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      final resp = await http.Response.fromStream(await request.send().timeout(const Duration(minutes: 3)));
+      if (resp.statusCode == 201) {
+        final data = await parseJsonAsync(resp.body);
+        return data as Map<String, dynamic>?;
+      }
+      debugPrint('uploadChatFile failed: ${resp.statusCode} ${resp.body}');
+    } catch (e) {
+      debugPrint('uploadChatFile error: $e');
+    }
+    return null;
+  }
+
+  /// Money rules set in the panel.
+  Future<Map<String, dynamic>?> getEconomyRates() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/economy'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is Map<String, dynamic>) return data;
+      }
+    } catch (e) {
+      debugPrint('getEconomyRates error: $e');
+    }
+    return null;
   }
 
   /// Banners (درفش) of the user's caravan: {total, byTier, items}. Mentors may pick the caravan.

@@ -3,7 +3,8 @@ import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
 import 'package:nopa_app/widgets/app_toast.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -224,11 +225,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
             ? item['description'].toString()
             : 'سرفصل‌ها و جلسات آموزشی کاروان');
 
-    final String iconUrl = (item['iconUrl'] != null && item['iconUrl'].toString().startsWith('http'))
-        ? item['iconUrl'].toString()
-        : ((item['imageUrl'] != null && item['imageUrl'].toString().startsWith('http'))
-            ? item['imageUrl'].toString()
-            : '');
+    final String iconUrl = Station.imageFrom(item);
 
     final String resolvedImg = ApiConstants.resolveImageUrl(iconUrl);
     final bool hasValidImg = resolvedImg.isNotEmpty && resolvedImg.startsWith('http') && !resolvedImg.contains('placeholder');

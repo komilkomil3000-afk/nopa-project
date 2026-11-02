@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/constants/api_constants.dart';
@@ -102,7 +103,7 @@ class JarchiItem extends StatelessWidget {
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          AppToast.info(context, 'در حال باز کردن لینک: $link 🔗');
+                          AppToast.info(context, 'در حال باز کردن لینک: $link');
                         },
                         icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
                         label: const Text(

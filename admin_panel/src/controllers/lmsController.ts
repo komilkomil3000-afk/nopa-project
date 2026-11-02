@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
 import { isMentorRole } from '../utils/roles';
@@ -218,15 +219,20 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
           subtitle: subtitleVal, 
           description: description !== undefined ? description : '', 
           stayDuration: stayDuration !== undefined ? stayDuration : null,
-          animationTitle: effectiveAnimTitle !== undefined ? effectiveAnimTitle : null,
-          animationUrl: effectiveAnimUrl !== undefined ? effectiveAnimUrl : null,
-          animationsJson: parsedAnimationsJson,
-          iconUrl: iconUrl || '', 
-          orderIndex: orderIndexVal, 
-          releaseDate: releaseDateVal, 
-          releaseTime: releaseTime || null, 
-          scoringCriteriaJson 
+          orderIndex: orderIndexVal,
+          releaseDate: releaseDateVal,
+          releaseTime: releaseTime || null,
+          scoringCriteriaJson
         };
+
+        // Station image and gallery (نگارستان) are only changed when the request actually sends them,
+        // so saving unrelated fields never wipes them.
+        if (iconUrl !== undefined) updateData.iconUrl = iconUrl || '';
+        if (parsedAnimationsJson !== null || animations !== undefined || animationsJson !== undefined || animationUrl !== undefined) {
+          updateData.animationTitle = effectiveAnimTitle !== undefined ? effectiveAnimTitle : null;
+          updateData.animationUrl = effectiveAnimUrl !== undefined ? effectiveAnimUrl : null;
+          updateData.animationsJson = parsedAnimationsJson;
+        }
 
         if (lockedVal !== undefined) updateData.isLocked = lockedVal;
         if (status !== undefined) updateData.status = status;
@@ -406,6 +412,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
               const clipData = {
                 title: clip.title || `پارت ${k + 1}`,
                 videoUrl: clip.videoUrl || '',
+                ...(clip.coverImageUrl !== undefined ? { coverImageUrl: clip.coverImageUrl || null } : {}),
                 clipOrder: parseInt(clip.clipOrder) || (k + 1),
                 duration: parseInt(clip.duration) || 0
               };
@@ -541,7 +548,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
   try {
     const { id: paramId } = req.params;
     const {
-      id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, duration,
+      id: bodyId, clipId, sessionId, title, clipOrder, videoUrl, coverImageUrl, duration,
       unlockDate, unlockTime, scheduledUnlockTime, isLocked
     } = req.body;
     const finalSessionId = sessionId || paramId;
@@ -569,6 +576,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
         data: {
           ...(title ? { title } : {}),
           ...(videoUrl !== undefined ? { videoUrl } : {}),
+          ...(coverImageUrl !== undefined ? { coverImageUrl: coverImageUrl || null } : {}),
           ...(clipOrder !== undefined ? { clipOrder: Number(clipOrder) } : {}),
           ...(duration !== undefined ? { duration: Number(duration) } : {}),
           ...(unlockDate !== undefined ? { unlockDate: unlockDate || null } : {}),
@@ -583,6 +591,7 @@ export const createOrUpdateClip = async (req: Request, res: Response) => {
           sessionId: finalSessionId,
           title: title || 'پارت جدید',
           videoUrl: videoUrl || '',
+          coverImageUrl: coverImageUrl || null,
           clipOrder: Number(clipOrder || 1),
           duration: Number(duration || 0),
           unlockDate: unlockDate || null,
@@ -640,6 +649,7 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
             const clipUpdate: any = {};
             if (clip.title) clipUpdate.title = clip.title;
             if (clip.videoUrl !== undefined) clipUpdate.videoUrl = clip.videoUrl;
+            if (clip.coverImageUrl !== undefined) clipUpdate.coverImageUrl = clip.coverImageUrl || null;
             if (clip.clipOrder !== undefined) clipUpdate.clipOrder = Number(clip.clipOrder);
             if (clip.unlockDate !== undefined) clipUpdate.unlockDate = clip.unlockDate || null;
             if (clip.unlockTime !== undefined) clipUpdate.unlockTime = clip.unlockTime || null;
@@ -1149,28 +1159,17 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       });
 
       if (isFirstPass) {
-        // Increment student balance and assets
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            zarikBalance: { increment: rewardZarik },
-            nakh: { increment: rewardNakh },
-            farsh: { increment: rewardFarsh }
-          }
-        });
-
-        // Log transaction in ZarikTransaction if zarik is awarded
-        if (rewardZarik > 0) {
-          await tx.zarikTransaction.create({
-            data: {
-              userId,
-              amount: rewardZarik,
-              category: 'Quiz Rewards',
-              reason: `پاداش شرکت در آزمون کلاس: ${session.title}`,
-              createdBy: userId
-            }
-          });
-        }
+        const reward = {
+          userId,
+          sourceType: 'class_quiz',
+          sourceId: submission.id,
+          reason: `پاداش شرکت در آزمون کلاس: ${session.title}`,
+          createdBy: userId,
+          zarikCategory: 'Quiz Rewards'
+        };
+        await changeBalance(tx, { ...reward, asset: 'zarik', amount: rewardZarik });
+        await changeBalance(tx, { ...reward, asset: 'nakh', amount: rewardNakh });
+        await changeBalance(tx, { ...reward, asset: 'farsh', amount: rewardFarsh });
 
         const clip = await tx.videoClip.findFirst({
           where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
@@ -1207,7 +1206,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       await prisma.notification.create({
         data: {
           userId,
-          title: 'افزوده شدن سرمایه 💰',
+          title: 'افزوده شدن سرمایه',
           message: `${rewardZarik} زریک به سرمایه شما اضافه شد. علت: شرکت موفق در آزمون «${session.title}».`,
           type: 'reward'
         }

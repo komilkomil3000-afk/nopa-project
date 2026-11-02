@@ -1,8 +1,28 @@
 import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
+import { Request } from 'express';
+import { getJwtSecret } from '../config/secrets';
+
+/**
+ * Signed-in requests are counted per user, the rest per IP. A class on one school Wi-Fi, or many phones
+ * behind one mobile carrier address, would otherwise share a single budget and lock each other out once
+ * chat is in use. Only a token with a valid signature gets its own budget, so a made-up one cannot.
+ */
+function limiterKey(req: Request): string {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(header.slice(7), getJwtSecret(), { algorithms: ['HS256'] }) as { id?: string };
+      if (payload.id) return `user:${payload.id}`;
+    } catch { /* expired or forged: counted by IP */ }
+  }
+  return `ip:${req.ip}`;
+}
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
+  max: 1000, // per signed-in user, or per IP for everything else
+  keyGenerator: limiterKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

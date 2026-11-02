@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import '../core/avatar_catalog.dart';
 import '../models/models.dart';
 import '../services/app_state_repository.dart';
@@ -9,7 +10,7 @@ import 'nopa_dialog_container.dart';
 /// Mentors cannot choose: their picture is the fixed mentor picture of their gender.
 Future<void> showAvatarPicker(BuildContext context) async {
   final user = AppRepository().currentUser;
-  final isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+  final isMentor = user.role.isMentorLike;
   if (isMentor) {
     AppToast.info(context, 'تصویر راهبر بر اساس جنسیت تعیین می‌شود.');
     return;

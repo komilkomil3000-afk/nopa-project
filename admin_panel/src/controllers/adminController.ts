@@ -1,6 +1,10 @@
+import { mentorOwnsTicket } from './supportController';
+import { isMentorRole } from '../utils/roles';
 import { Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
+import { capitalValue, getEconomyPolicy, topByCapital } from '../services/economy';
 import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
@@ -483,7 +487,7 @@ export async function createUser(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'نقش انتخاب‌شده نامعتبر است' });
     }
     // Only a super admin can create admin / sub admin accounts
-    if ((role === ROLE_ADMIN || role === 'sub_admin') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
+    if ((role === ROLE_ADMIN || role === 'sub_admin' || role === 'channel_manager') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
       return res.status(403).json({ error: 'ایجاد حساب مدیر فقط برای سوپر ادمین مجاز است' });
     }
     
@@ -611,7 +615,7 @@ export async function updateUser(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: id,
-        title: 'بروزرسانی حساب کاربری 🔄',
+        title: 'بروزرسانی حساب کاربری',
         message: 'مدیریت اطلاعات حساب کاربری شما را ویرایش کرد.',
         type: 'alert'
       }
@@ -815,10 +819,11 @@ export async function getZarikLedger(req: AuthRequest, res: Response) {
 
 export async function getAssetLeaderboard(req: AuthRequest, res: Response) {
   try {
+    const { config } = await getEconomyPolicy();
     const students = await prisma.user.findMany({ where: { role: 'student' }, select: { id:true, name:true, phoneNumber:true, zarikBalance:true, nakh:true, beyragh:true, farsh:true } });
     const enriched = students.map(s => ({
       ...s,
-      totalAssets: (s.zarikBalance || 0) + (s.nakh || 0) + (s.beyragh || 0) + (s.farsh || 0)
+      totalAssets: capitalValue(s, config),
     }));
     enriched.sort((a,b) => b.totalAssets - a.totalAssets);
     res.json(enriched.slice(0, 200));
@@ -879,29 +884,25 @@ export async function adjustZarik(req: AuthRequest, res: Response) {
     }
 
     // Transaction execution
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { zarikBalance: newBalance },
-      }),
-      prisma.zarikTransaction.create({
+    await prisma.$transaction(async (tx) => {
+      await changeBalance(tx, {
+        userId,
+        asset: 'zarik',
+        amount,
+        sourceType: 'zarik_adjust',
+        reason,
+        createdBy: req.user?.phoneNumber || 'Admin',
+        zarikCategory: category,
+      });
+      await tx.notification.create({
         data: {
           userId,
-          amount,
-          category,
-          reason,
-          createdBy: req.user?.phoneNumber || 'Admin',
-        },
-      }),
-      prisma.notification.create({
-        data: {
-          userId,
-          title: 'تراکنش زریک 💰',
+          title: 'تراکنش زریک',
           message: `موجودی شما تغییر کرد. مقدار: ${amount > 0 ? '+' : ''}${amount} زریک. بابت: ${reason}`,
           type: 'reward'
         }
-      })
-    ]);
+      });
+    });
 
     // Invalidate Cache
     zarikAnalyticsCache = null;
@@ -934,11 +935,7 @@ export async function getZarikAnalytics(req: AuthRequest, res: Response) {
       _sum: { zarikBalance: true },
     });
 
-    const topWealthy = await prisma.user.findMany({
-      take: 5,
-      orderBy: { zarikBalance: 'desc' },
-      select: { name: true, zarikBalance: true },
-    });
+    const topWealthy = await topByCapital(5);
 
     const categoriesDistribution = await prisma.zarikTransaction.groupBy({
       by: ['category'],
@@ -979,11 +976,7 @@ export async function getEconomyHub(req: AuthRequest, res: Response) {
       },
     });
 
-    const topIndividuals = await prisma.user.findMany({
-      take: 5,
-      orderBy: { zarikBalance: 'desc' },
-      select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true },
-    });
+    const topIndividuals = await topByCapital(5);
 
     res.json({
       totalZarik: aggregates._sum.zarikBalance || 0,
@@ -1463,12 +1456,15 @@ export async function replyTicketAdmin(req: AuthRequest, res: Response) {
     if (!ticket) {
       return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
     }
+    if (isMentorRole(req.user?.role) && !(await mentorOwnsTicket(req.user!.id, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
+    }
 
     const reply = await prisma.supportTicketReply.create({
       data: {
         ticketId: id,
         message: message.trim(),
-        mentorId: mentorId || req.user?.id || null,
+        mentorId: isMentorRole(req.user?.role) ? req.user!.id : (mentorId || req.user?.id || null),
         voiceUrl: voiceUrl || null,
         attachmentUrl: attachmentUrl || null
       },
@@ -1504,6 +1500,9 @@ export async function resolveTicketAdmin(req: AuthRequest, res: Response) {
     const ticket = await prisma.supportTicket.findUnique({ where: { id } });
     if (!ticket) {
       return res.status(404).json({ error: 'تیکت مورد نظر یافت نشد' });
+    }
+    if (isMentorRole(req.user?.role) && !(await mentorOwnsTicket(req.user!.id, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
     }
 
     await prisma.supportTicket.update({
@@ -1786,22 +1785,17 @@ export async function grantUserLevel(req: AuthRequest, res: Response) {
     const user = await prisma.$transaction(async (tx) => {
       const updated = await tx.user.update({
         where: { id: targetUserId },
-        data: {
-          levelFrame,
-          zarikBalance: { increment: bonus }
-        }
+        data: { levelFrame }
       });
-      if (bonus > 0) {
-        await tx.zarikTransaction.create({
-          data: {
-            userId: targetUserId,
-            amount: bonus,
-            category: 'Special Campaigns',
-            reason: `هدیه ارتقا سطح به قاب ${levelFrame}`,
-            createdBy: req.user?.id || 'system'
-          }
-        });
-      }
+      await changeBalance(tx, {
+        userId: targetUserId,
+        asset: 'zarik',
+        amount: bonus,
+        sourceType: 'level_grant',
+        reason: `هدیه ارتقا سطح به قاب ${levelFrame}`,
+        createdBy: req.user?.id || 'system',
+        zarikCategory: 'Special Campaigns'
+      });
       return updated;
     });
 
@@ -1818,7 +1812,7 @@ export async function grantUserLevel(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: targetUserId,
-        title: 'ارتقا سطح کاربری 🌟',
+        title: 'ارتقا سطح کاربری',
         message: `سطح کاربری شما به قاب ${levelFrame} ارتقا یافت!${zarikBonus ? ` و ${zarikBonus} زریک پاداش گرفتید.` : ''}`,
         type: 'reward'
       }

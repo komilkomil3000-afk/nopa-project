@@ -2,6 +2,8 @@ import { Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { getAssetNames } from '../utils/assetNames';
+import { closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
+import { getEconomyPolicy } from '../services/economy';
 
 const MEDALS = ['gold', 'silver', 'bronze'] as const;
 const TIER_KEYS: Record<string, string> = {
@@ -11,16 +13,22 @@ const TIER_KEYS: Record<string, string> = {
   cloth: 'derafsh_cloth',
 };
 
-/** Caravans that took part in an inter-group challenge: at least one member has answered. */
+/**
+ * Caravans that took part in an inter-group challenge: those that delivered an official work.
+ * Challenges run without the chat have no works, so an answer from a member counts for them.
+ */
 async function participatingCaravans(challengeId: string) {
-  const subs = await prisma.submission.findMany({
-    where: { challengeId },
-    select: { student: { select: { caravanId: true } } },
-  });
-  const counts = new Map<string, number>();
-  for (const s of subs) {
-    const cid = s.student?.caravanId;
-    if (cid) counts.set(cid, (counts.get(cid) || 0) + 1);
+  const entries = await prisma.interGroupEntry.findMany({ where: { challengeId }, select: { caravanId: true } });
+  const counts = new Map<string, number>(entries.map(e => [e.caravanId, 1]));
+  if (entries.length === 0) {
+    const subs = await prisma.submission.findMany({
+      where: { challengeId },
+      select: { student: { select: { caravanId: true } } },
+    });
+    for (const s of subs) {
+      const cid = s.student?.caravanId;
+      if (cid) counts.set(cid, (counts.get(cid) || 0) + 1);
+    }
   }
   if (counts.size === 0) return [];
   const caravans = await prisma.caravan.findMany({
@@ -46,8 +54,10 @@ export async function getChallengeRanking(req: AuthRequest, res: Response) {
     }
     const caravans = await participatingCaravans(id);
     const banners = await prisma.caravanBanner.findMany({ where: { challengeId: id }, orderBy: [{ rank: 'asc' }] });
+    const { config } = await getEconomyPolicy();
     res.json({
       challenge: { id: challenge.id, title: challenge.title, finalized: !!challenge.rankingFinalizedAt },
+      prizes: config.interGroup.prizes,
       caravans,
       result: banners.map(b => ({
         caravanId: b.caravanId,
@@ -100,6 +110,15 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
         : { caravanId: c.id, tier: 'cloth', rank: null as number | null };
     });
 
+    const plan = await prizePlan(id, ranking, caravans.map(c => c.id));
+    const unconfirmed = await unconfirmedCaravans(id, caravans);
+    if (req.body?.preview === true) {
+      return res.json({ preview: true, total: plan.reduce((sum, p) => sum + p.amount, 0), paidMembers: plan.filter(p => p.amount > 0).length, members: plan.length, unconfirmed });
+    }
+    if (unconfirmed.length > 0 && req.body?.acceptUnconfirmed !== true) {
+      return res.status(400).json({ error: `سطح اعضای این کاروان‌ها تأیید نشده است: ${unconfirmed.join('، ')}` });
+    }
+
     await prisma.$transaction(async (tx) => {
       const claimed = await tx.challenge.updateMany({
         where: { id, rankingFinalizedAt: null },
@@ -109,6 +128,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
       await tx.caravanBanner.createMany({
         data: rows.map(r => ({ ...r, challengeId: id, awardedBy: req.user!.id })),
       });
+      await payPrizes(tx, challenge, plan, req.user!.id);
     });
 
     // Tell every member and the mentor of each caravan
@@ -125,11 +145,13 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
       const recipients = new Set<string>(students.filter(m => m.caravanId === r.caravanId).map(m => m.id));
       const mentorId = caravanRows.find(c => c.id === r.caravanId)?.mentorId;
       if (mentorId) recipients.add(mentorId);
-      for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان 🚩`, message: msg, type: 'reward' });
+      for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
+    await publishResults(id, challenge.title, ranking).catch(e => console.error('publishResults error:', e));
+    await closeCompetitionTopics(id).catch(e => console.error('closeCompetitionTopics error:', e));
 
-    res.json({ success: true, result: rows });
+    res.json({ success: true, result: rows, paid: plan.reduce((sum, p) => sum + p.amount, 0) });
   } catch (error: any) {
     if (error?.message === 'ALREADY_FINALIZED') {
       return res.status(409).json({ error: 'رتبه‌بندی این چالش قبلاً تایید شده است' });

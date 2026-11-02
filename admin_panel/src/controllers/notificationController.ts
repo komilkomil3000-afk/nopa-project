@@ -22,8 +22,8 @@ export async function getNotifications(req: AuthRequest, res: Response) {
         await prisma.notification.create({
           data: {
             userId: req.user.id,
-            title: 'تکمیل پروفایل و دریافت سکه 🎁',
-            message: 'پروفایلتان را تکمیل کنید و ۱۰۰ سکه هدیه دریافت کنید! 🪙',
+            title: 'تکمیل پروفایل و دریافت سکه',
+            message: 'پروفایلتان را تکمیل کنید و ۱۰۰ سکه هدیه دریافت کنید!',
             type: 'profile_completion'
           }
         });
@@ -48,7 +48,7 @@ export async function getNotifications(req: AuthRequest, res: Response) {
         else if (aud === 'CARAVAN_LEADERS' && (userRole === 'mentor' || userRole === 'admin')) isTarget = true;
 
         if (isTarget) {
-          const notifTitle = `📢 ${news.title}`;
+          const notifTitle = `${news.title}`;
           const existing = await prisma.notification.findFirst({
             where: {
               userId: req.user.id,

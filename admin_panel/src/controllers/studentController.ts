@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import bcrypt from 'bcryptjs';
 
 
@@ -77,27 +78,26 @@ export async function adjustBalance(req: AuthRequest, res: Response) {
         return res.status(400).json({ error: 'موجودی نمی‌تواند منفی شود' });
     }
 
-    // Balance change and ledger entry (zarik) are written atomically
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({ where: { id }, data: updateData });
-      if (assetType === 'zarik') {
-        await tx.zarikTransaction.create({
-          data: {
-            userId: id,
-            amount,
-            category: 'Special Campaigns',
-            reason: note ? String(note) : 'تغییر دستی موجودی توسط مدیر',
-            createdBy: req.user!.id
-          }
-        });
-      }
-    });
+    try {
+      await prisma.$transaction(tx => changeBalance(tx, {
+        userId: id,
+        asset: assetType,
+        amount,
+        sourceType: 'admin_adjust',
+        reason: note ? String(note) : 'تغییر دستی موجودی توسط مدیر',
+        createdBy: req.user!.id,
+        zarikCategory: 'Special Campaigns'
+      }));
+    } catch (e: any) {
+      if (e?.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'موجودی نمی‌تواند منفی شود' });
+      throw e;
+    }
 
     // Notify the user
     await prisma.notification.create({
       data: {
         userId: id,
-        title: amount > 0 ? 'پاداش جدید 🎁' : 'کسر موجودی ⚖️',
+        title: amount > 0 ? 'پاداش جدید' : 'کسر موجودی',
         message: `موجودی ${assetType} شما به میزان ${Math.abs(amount)} تغییر کرد. بابت: ${note}`,
         type: 'alert'
       }
@@ -135,7 +135,7 @@ export async function adjustLevelFrame(req: AuthRequest, res: Response) {
     await prisma.notification.create({
       data: {
         userId: id,
-        title: 'ارتقای سطح 🚀',
+        title: 'ارتقای سطح',
         message: `سطح فریم شما به ${levelFrame} ارتقا یافت!`,
         type: 'alert'
       }

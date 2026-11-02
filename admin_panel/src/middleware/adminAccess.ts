@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth';
 import prisma from '../config/db';
-import { isSubAdminRole, parseSectionGrants, PANEL_SECTIONS, SectionGrants, SectionLevel } from '../utils/roles';
+import { isChannelManagerRole, isSubAdminRole, parseChatPermissions, parseSectionGrants, PANEL_SECTIONS, ROLE_CHANNEL_MANAGER, SectionGrants, SectionLevel } from '../utils/roles';
 
 /**
  * Default-deny gate for the /admin router.
@@ -12,6 +12,7 @@ import { isSubAdminRole, parseSectionGrants, PANEL_SECTIONS, SectionGrants, Sect
  * - mentor / SUPER_MENTOR: may only call the explicit allowlist below. Anything that
  *   mints currency, changes roles, deletes or exports users, rewrites RBAC, edits system
  *   settings or content, or broadcasts globally is admin-only simply because it is not listed.
+ * - channel_manager: only the chat management routes, and only with panel access.
  * - everyone else (students...): rejected.
  *
  * New admin routes are therefore super-admin-only until someone deliberately adds them.
@@ -39,7 +40,6 @@ const MENTOR_ALLOWED: Rule[] = [
   { methods: GET, path: /^\/analytics$/i },
   { methods: GET, path: /^\/leaderboard\/(assets|individuals|caravans)$/i },
   { methods: GET, path: /^\/rewards\/ledger$/i },
-  { methods: GET, path: /^\/chat$/i },
   { methods: GET, path: /^\/messages$/i },
   { methods: GET, path: /^\/lms\/(stations|classes|sessions|clips|quizzes)$/i },
   { methods: GET, path: /^\/courses\/hierarchy$/i },
@@ -69,6 +69,7 @@ const SUPER_ONLY: RegExp[] = [
   /^\/roles(\/|$)/i,
   /^\/security(\/|$)/i,
   /^\/settings(\/|$)/i,
+  /^\/economy(\/|$)/i,
   /^\/audit(\/|$)/i,
   /^\/export(\/|$)/i,
   /^\/users\/export$/i,
@@ -82,8 +83,9 @@ const SECTION_RULES: Array<[RegExp, string]> = [
   [/^\/instructors(\/|$)/i, 'instructors'],
   [/^\/(caravans|asset-conversions)(\/|$)/i, 'caravans'],
   [/^\/(lms|stations|courses|quizzes)(\/|$)/i, 'lms'],
-  [/^\/(challenges|submissions)(\/|$)/i, 'challenges'],
-  [/^\/(tickets|messages|chat)(\/|$)/i, 'support'],
+  [/^\/(challenges|submissions|intergroup)(\/|$)/i, 'challenges'],
+  [/^\/(tickets|messages|support-cases)(\/|$)/i, 'support'],
+  [/^\/chat-manage(\/|$)/i, 'chat'],
   [/^\/(news|banners|announcements|media|forms)(\/|$)/i, 'content'],
   [/^\/notifications(\/|$)/i, 'notifications'],
   [/^\/(analytics|leaderboard)(\/|$)/i, 'analytics'],
@@ -132,7 +134,7 @@ async function targetsProtectedAccount(req: AuthRequest): Promise<boolean> {
     const target = await prisma.user.findUnique({ where: { id }, select: { role: true } });
     if (target) {
       const r = String(target.role || '').toLowerCase();
-      if (r === 'admin' || r === 'sub_admin') return true;
+      if (r === 'admin' || r === 'sub_admin' || r === ROLE_CHANNEL_MANAGER) return true;
     }
   }
   return false;
@@ -162,6 +164,21 @@ async function subAdminGate(req: AuthRequest, res: Response, next: NextFunction)
     return next();
   } catch (e) {
     console.error('subAdminGate error:', e);
+    return res.status(500).json({ error: 'خطای سرور در بررسی دسترسی' });
+  }
+}
+
+async function channelManagerGate(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const row = await prisma.rolePermission.findUnique({ where: { roleName: ROLE_CHANNEL_MANAGER } });
+    if (!(req.user?.panelAccess ?? row?.canLoginPanel ?? false)) {
+      return res.status(403).json({ error: 'دسترسی شما به پنل مدیریت فعال نشده است' });
+    }
+    if (req.path === '/panel/me' || sectionForPath(req.path) === 'chat') return next();
+    if (/^\/support-cases(\/|$)/i.test(req.path) && parseChatPermissions(row?.permissionsJson).privateChats) return next();
+    return res.status(403).json({ error: 'این عملیات برای مسئول کانال مجاز نیست' });
+  } catch (e) {
+    console.error('channelManagerGate error:', e);
     return res.status(500).json({ error: 'خطای سرور در بررسی دسترسی' });
   }
 }
@@ -202,6 +219,10 @@ export async function getPanelMe(req: AuthRequest, res: Response) {
     const profile = await loadSubAdminProfile(req.user as any);
     return res.json({ role: 'sub_admin', superAdmin: false, sections: profile.grants });
   }
+  if (isChannelManagerRole(role)) {
+    const row = await prisma.rolePermission.findUnique({ where: { roleName: ROLE_CHANNEL_MANAGER } });
+    return res.json({ role: ROLE_CHANNEL_MANAGER, superAdmin: false, sections: { chat: 'edit' }, chatPermissions: parseChatPermissions(row?.permissionsJson) });
+  }
   // Mentors keep their fixed allowlist; the UI shows the mentor tabs only
   return res.json({ role, superAdmin: false, sections: {} });
 }
@@ -215,6 +236,10 @@ export function restrictNonAdmins(req: AuthRequest, res: Response, next: NextFun
 
   if (isSubAdminRole(role)) {
     return subAdminGate(req, res, next);
+  }
+
+  if (isChannelManagerRole(role)) {
+    return channelManagerGate(req, res, next);
   }
 
   // Defence in depth: only mentor roles get the allowlist; any other role is rejected here too

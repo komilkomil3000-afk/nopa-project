@@ -1,0 +1,278 @@
+import crypto from 'crypto';
+import path from 'path';
+import jwt from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
+import prisma from '../../config/db';
+import { getJwtSecret } from '../../config/secrets';
+import { ChatActor, canSee, SpaceRef } from './access';
+import { isMentorRole } from '../../utils/roles';
+
+export const CHAT_FILES_DIR = process.env.CHAT_FILES_DIR || path.join(__dirname, '../../../chat-files');
+export const REACTION_TYPES = ['bravo', 'agree', 'idea', 'question', 'confused'];
+export const MAX_BODY = 4000;
+export const PAGE_SIZE = 40;
+const FILE_LINK_SECONDS = 60 * 60;
+
+const GLOBAL_SPACES = [
+  { key: 'announcements', type: 'announcements', title: 'کانال اعلانات' },
+  { key: 'public', type: 'public', title: 'کانال همگانی' },
+  { key: 'arena', type: 'arena', title: 'میدان آثار' },
+  { key: 'mentors', type: 'mentors', title: 'اتاق راهبران' },
+];
+
+const ensured = new Set<string>();
+
+/**
+ * Creates a space once. Prisma's upsert is a read then an insert, so two requests opening chat at the
+ * same moment both try to insert: the loser reads the row the winner made instead of failing.
+ */
+export async function ensureSpace(key: string, data: { type: string; title: string; caravanId?: string }) {
+  let space;
+  try {
+    space = await prisma.chatSpace.upsert({ where: { key }, update: {}, create: { key, ...data } });
+  } catch (e) {
+    if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e;
+    space = await prisma.chatSpace.findUniqueOrThrow({ where: { key } });
+  }
+  ensured.add(key);
+  return space;
+}
+
+/** Caravan ids a user's spaces come from. Admins and channel managers work across all of them. */
+async function caravanIdsOf(actor: ChatActor): Promise<string[]> {
+  const role = String(actor.role).toLowerCase();
+  if (role === 'admin' || role === 'sub_admin' || role === 'channel_manager') {
+    return (await prisma.caravan.findMany({ select: { id: true } })).map(c => c.id);
+  }
+  return Array.from(new Set([...actor.mentoredCaravanIds, ...(actor.caravanId ? [actor.caravanId] : [])]));
+}
+
+export async function ensureCaravanSpaces(caravanId: string) {
+  const caravan = `caravan:${caravanId}`, challenges = `challenges:${caravanId}`;
+  if (!ensured.has(caravan)) await ensureSpace(caravan, { type: 'caravan', title: 'گروه کاروان', caravanId });
+  if (!ensured.has(challenges)) await ensureSpace(challenges, { type: 'challenges', title: 'گروه چالش‌ها', caravanId });
+}
+
+export const globalSpace = (key: 'announcements' | 'public' | 'arena' | 'mentors') => {
+  const s = GLOBAL_SPACES.find(g => g.key === key)!;
+  return ensureSpace(s.key, { type: s.type, title: s.title });
+};
+
+/** Creates the spaces a user should have the first time they are needed. */
+export async function ensureSpacesFor(actor: ChatActor): Promise<void> {
+  for (const s of GLOBAL_SPACES) {
+    if (!ensured.has(s.key)) await ensureSpace(s.key, { type: s.type, title: s.title });
+  }
+  for (const caravanId of await caravanIdsOf(actor)) await ensureCaravanSpaces(caravanId);
+  // Support is always one tap away, not something to discover
+  const role = String(actor.role).toLowerCase();
+  const supportKey = `support:${actor.id}`;
+  if ((role === 'student' || isMentorRole(role)) && !ensured.has(supportKey)) {
+    const space = await ensureSpace(supportKey, { type: 'support', title: 'پشتیبانی نپا' });
+    await prisma.chatMember.createMany({ data: [{ spaceId: space.id, userId: actor.id }], skipDuplicates: true });
+  }
+}
+
+export async function visibleSpaces(actor: ChatActor) {
+  await ensureSpacesFor(actor);
+  const memberOf = await prisma.chatMember.findMany({ where: { userId: actor.id } });
+  const members = new Map(memberOf.map(m => [m.spaceId, m]));
+  const caravanIds = await caravanIdsOf(actor);
+  const candidates = await prisma.chatSpace.findMany({
+    where: {
+      OR: [
+        { type: { in: ['announcements', 'public', 'arena', 'mentors'] } },
+        { caravanId: { in: caravanIds } },
+        { id: { in: Array.from(members.keys()) } },
+      ],
+    },
+    include: { caravan: { select: { name: true } } },
+  });
+  return { spaces: candidates.filter(s => canSee(actor, s, members.has(s.id))), members };
+}
+
+export async function visibleSpaceIds(actor: ChatActor): Promise<string[]> {
+  return (await visibleSpaces(actor)).spaces.map(s => s.id);
+}
+
+/** A space the actor can see, or null, so a hidden space looks the same as a missing one. */
+export async function findVisibleSpace(actor: ChatActor, spaceId: string) {
+  const space = await prisma.chatSpace.findUnique({ where: { id: spaceId } });
+  if (!space) return null;
+  const member = await prisma.chatMember.findUnique({ where: { spaceId_userId: { spaceId, userId: actor.id } } });
+  return canSee(actor, space, !!member) ? { space, member } : null;
+}
+
+export function directKey(a: string, b: string): string {
+  return `direct:${[a, b].sort().join(':')}`;
+}
+
+/** Link to a private file. It expires, so it cannot circulate the way a public URL can. */
+export function signFileUrl(attachmentId: string): string {
+  const token = jwt.sign({ a: attachmentId }, getJwtSecret(), { algorithm: 'HS256', expiresIn: FILE_LINK_SECONDS, audience: 'chat-file' });
+  return `/api/v1/chat/files/${attachmentId}?t=${token}`;
+}
+
+export function verifyFileToken(attachmentId: string, token: string): boolean {
+  try {
+    const payload = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'], audience: 'chat-file' }) as { a?: string };
+    return payload.a === attachmentId;
+  } catch {
+    return false;
+  }
+}
+
+export const MESSAGE_INCLUDE = {
+  sender: { select: { id: true, name: true, avatarUrl: true, role: true, gender: true } },
+  attachments: true,
+  reactions: { select: { type: true, userId: true } },
+  pollVotes: { select: { option: true, userId: true } },
+  tags: { select: { tag: { select: { id: true, name: true, color: true, visibility: true } } } },
+  topic: { select: { id: true, status: true, challengeId: true } },
+  replyTo: { select: { id: true, body: true, deletedAt: true, sender: { select: { name: true } } } },
+} satisfies Prisma.ChatMessageInclude;
+
+type MessageRow = Prisma.ChatMessageGetPayload<{ include: typeof MESSAGE_INCLUDE }>;
+
+export function serializeMessage(m: MessageRow) {
+  const deleted = !!m.deletedAt;
+  return {
+    id: m.id,
+    spaceId: m.spaceId,
+    seq: m.seq,
+    kind: m.kind,
+    botKey: m.botKey,
+    meta: m.meta,
+    stationId: m.stationId,
+    best: m.marks.includes('best'),
+    topic: m.topic,
+    pollVotes: m.pollVotes,
+    tags: m.tags.map(t => t.tag).filter(t => t.visibility === 'public'),
+    body: deleted ? '' : m.body,
+    deleted,
+    edited: !!m.editedAt,
+    threadRootId: m.threadRootId,
+    threadReplies: m.threadReplies,
+    pinned: !!m.pinnedAt,
+    clientMessageId: m.clientMessageId,
+    createdAt: m.createdAt,
+    sender: m.sender,
+    mentions: m.mentions,
+    reactions: m.reactions,
+    replyTo: m.replyTo && {
+      id: m.replyTo.id,
+      senderName: m.replyTo.sender?.name || '',
+      body: m.replyTo.deletedAt ? '' : m.replyTo.body.slice(0, 120),
+    },
+    attachments: deleted ? [] : m.attachments.map(a => ({
+      id: a.id, name: a.name, mime: a.mime, size: a.size, kind: a.kind, url: signFileUrl(a.id),
+    })),
+  };
+}
+
+export function attachmentKind(mime: string): string {
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (mime.startsWith('video/')) return 'video';
+  return 'file';
+}
+
+export const randomStorageName = (ext: string) => crypto.randomBytes(16).toString('hex') + ext;
+
+export interface NewMessage {
+  spaceId: string;
+  senderId?: string;
+  botKey?: string;
+  kind?: string;
+  meta?: Prisma.InputJsonValue;
+  stationId?: string;
+  body: string;
+  clientMessageId?: string;
+  replyToId?: string;
+  threadRootId?: string;
+  attachmentIds: string[];
+  mentions: string[];
+  /** Staff answering in a user's support space stay outside it. */
+  stayOutside?: boolean;
+}
+
+export class ChatError extends Error {
+  constructor(public status: number, message: string) { super(message); }
+}
+
+/**
+ * Writes a message, taking its place in the space from the row lock on the counter. A retry with
+ * the same clientMessageId returns the first copy, so a flaky connection cannot post twice.
+ */
+export async function createMessage(input: NewMessage): Promise<{ row: MessageRow; created: boolean }> {
+  const { spaceId, senderId, clientMessageId } = input;
+  if (clientMessageId && senderId) {
+    const existing = await prisma.chatMessage.findUnique({
+      where: { senderId_clientMessageId: { senderId, clientMessageId } },
+      include: MESSAGE_INCLUDE,
+    });
+    if (existing) return { row: existing, created: false };
+  }
+
+  try {
+    const row = await prisma.$transaction(async (tx) => {
+      if (input.threadRootId) {
+        const root = await tx.chatMessage.findUnique({ where: { id: input.threadRootId } });
+        if (!root || root.spaceId !== spaceId || root.threadRootId) throw new ChatError(400, 'رشته‌ی گفتگو معتبر نیست');
+      }
+      if (input.replyToId) {
+        const target = await tx.chatMessage.findUnique({ where: { id: input.replyToId } });
+        if (!target || target.spaceId !== spaceId) throw new ChatError(400, 'پیام انتخاب‌شده معتبر نیست');
+      }
+      const { lastSeq } = await tx.chatSpace.update({ where: { id: spaceId }, data: { lastSeq: { increment: 1 } } });
+
+      const message = await tx.chatMessage.create({
+        data: {
+          spaceId,
+          seq: lastSeq,
+          senderId,
+          body: input.body,
+          kind: input.kind || (input.attachmentIds.length ? 'file' : 'text'),
+          botKey: input.botKey,
+          meta: input.meta,
+          stationId: input.stationId,
+          clientMessageId,
+          replyToId: input.replyToId,
+          threadRootId: input.threadRootId,
+          mentions: input.mentions,
+        },
+      });
+      if (input.attachmentIds.length) {
+        const claimed = await tx.chatAttachment.updateMany({
+          where: { id: { in: input.attachmentIds }, uploaderId: senderId, spaceId, messageId: null },
+          data: { messageId: message.id },
+        });
+        if (claimed.count !== input.attachmentIds.length) throw new ChatError(400, 'فایل پیوست معتبر نیست');
+      }
+      if (input.threadRootId) {
+        await tx.chatMessage.update({ where: { id: input.threadRootId }, data: { threadReplies: { increment: 1 } } });
+      }
+      if (senderId && !input.stayOutside) {
+        await tx.chatMember.upsert({
+          where: { spaceId_userId: { spaceId, userId: senderId } },
+          update: { lastReadSeq: lastSeq },
+          create: { spaceId, userId: senderId, lastReadSeq: lastSeq },
+        });
+      }
+      return tx.chatMessage.findUniqueOrThrow({ where: { id: message.id }, include: MESSAGE_INCLUDE });
+    });
+    return { row, created: true };
+  } catch (e: any) {
+    // Two copies of one message raced: the unique index let one through
+    if (e?.code === 'P2002' && clientMessageId && senderId) {
+      const row = await prisma.chatMessage.findUniqueOrThrow({
+        where: { senderId_clientMessageId: { senderId, clientMessageId } },
+        include: MESSAGE_INCLUDE,
+      });
+      return { row, created: false };
+    }
+    throw e;
+  }
+}
+
+export type { SpaceRef };

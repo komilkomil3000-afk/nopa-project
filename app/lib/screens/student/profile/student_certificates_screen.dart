@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -112,7 +113,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
       ),
     );
 
-    AppToast.success(context, 'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد ✅');
+    AppToast.success(context, 'گواهی مجازی «${course['title']}» با موفقیت صادر و آماده مشاهده شد');
   }
 
   @override

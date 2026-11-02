@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -182,7 +183,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(ctx);
-                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد 📎');
+                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFC09268),
@@ -251,7 +252,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
       await Provider.of<AppRepository>(context, listen: false).refreshUser();
 
       if (!mounted) return;
-      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد ✅');
+      AppToast.info(context, 'تغییرات با موفقیت ذخیره شد');
       Navigator.pop(context);
     } catch (e) {
       setState(() => _isSaving = false);
@@ -268,7 +269,7 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
     final mentorName = (widget.user.caravanMentor != null && widget.user.caravanMentor!.isNotEmpty)
         ? widget.user.caravanMentor!
         : 'راهبر کاروان';
-    final isMentor = widget.user.role == UserRole.mentor || widget.user.role == UserRole.superMentor;
+    final isMentor = widget.user.role.isMentorLike;
 
     return AppScaffold(
       showBackButton: true,
@@ -1058,7 +1059,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
       if (!mounted) return;
       Navigator.pop(context);
 
-      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد ✅');
+      AppToast.info(context, 'درخواست شما با موفقیت برای پشتیبانی ارسال شد');
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (!mounted) return;

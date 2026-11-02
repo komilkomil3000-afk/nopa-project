@@ -1,5 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -268,7 +269,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
 
   bool get _isMentor {
     final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    return role == UserRole.mentor || role == UserRole.superMentor;
+    return role.isMentorLike;
   }
 
   String _resolveActionLabel(Map<String, dynamic> notify) => _classify(notify, isMentor: _isMentor).label;
@@ -358,7 +359,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final user = repository.currentUser;
-    final isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final isMentor = user.role.isMentorLike;
 
     // Filter list based on mentor role
     final allList = repository.notifications

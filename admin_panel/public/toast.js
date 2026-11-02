@@ -1,5 +1,5 @@
 // Non-blocking toast notifications for the admin panel (bottom-left, auto-hide after 10s).
-// Loaded before app.js. Replaces the blocking window.alert so no message ever locks the UI.
+// Loaded before the feature modules (js/app, js/features). Replaces the blocking window.alert so no message ever locks the UI.
 //   showToast(message, 'error' | 'success' | 'info', { duration })
 (function () {
   var DEFAULT_DURATION = 10000;
@@ -30,8 +30,8 @@
   // Guess the type of a legacy alert() message from its wording.
   function detectType(text) {
     var t = String(text || '');
-    if (/خطا|ناموفق|نامعتبر|نادرست|اشتباه|برقرار نشد|یافت نشد|منقضی|دسترسی ندارید|مجاز نیست|غیرمجاز|❌|⚠|error|fail/i.test(t)) return 'error';
-    if (/موفق|✅|ذخیره شد|ثبت شد|حذف شد|تایید شد|ارسال شد|ارسال گردید|اضافه شد|انجام شد|بروزرسانی شد|به‌روزرسانی/.test(t)) return 'success';
+    if (/خطا|ناموفق|نامعتبر|نادرست|اشتباه|برقرار نشد|یافت نشد|منقضی|دسترسی ندارید|مجاز نیست|غیرمجاز|error|fail/i.test(t)) return 'error';
+    if (/موفق|ذخیره شد|ثبت شد|حذف شد|تایید شد|ارسال شد|ارسال گردید|اضافه شد|انجام شد|بروزرسانی شد|به‌روزرسانی/.test(t)) return 'success';
     if (/لطفا|لطفاً|ابتدا|الزامی|وارد کنید|انتخاب کنید|تکمیل|انتخاب نشده/.test(t)) return 'error';
     return 'info';
   }

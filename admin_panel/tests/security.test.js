@@ -136,3 +136,206 @@ test('section grants parser drops unknown sections and levels', () => {
   assert.deepEqual(parseSectionGrants('not json'), {});
   assert.deepEqual(parseSectionGrants(null), {});
 });
+
+test('admin panel CSP: no inline scripts or handlers, stylesheets same-origin only', () => {
+  const { cspDirectives, cspHeader } = load('config/csp.js');
+  assert.deepEqual(cspDirectives.scriptSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.scriptSrcAttr, ["'none'"]);
+  assert.deepEqual(cspDirectives.styleSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.connectSrc, ["'self'"]);
+  assert.deepEqual(cspDirectives.objectSrc, ["'none'"]);
+  const header = cspHeader();
+  assert.match(header, /(^|;)script-src 'self'(;|$)/);
+  assert.match(header, /(^|;)script-src-attr 'none'(;|$)/);
+  // no 'unsafe-inline' anywhere; style attributes are blocked too (data-style + CSSOM instead)
+  assert.ok(!header.includes('unsafe-inline'));
+  assert.match(header, /(^|;)style-src-attr 'none'(;|$)/);
+  assert.ok(!header.includes('unsafe-eval'));
+});
+
+test('access tokens: expired and forged tokens are a 401, so clients refresh them', async () => {
+  const jwt = require('jsonwebtoken');
+  const save = process.env.JWT_SECRET;
+  const secret = 'k3Y'.repeat(14);
+  process.env.JWT_SECRET = secret;
+  process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test';
+  try {
+    const { verifyAccessToken } = load('middleware/auth.js');
+    const expired = jwt.sign({ id: 'u1', role: 'student' }, secret, { expiresIn: -10 });
+    const forged = jwt.sign({ id: 'u1', role: 'admin' }, 'x'.repeat(40));
+    for (const token of [expired, forged, 'not-a-token']) {
+      const result = await verifyAccessToken(token, '127.0.0.1');
+      assert.equal(result.ok, false);
+      assert.equal(result.status, 401);
+    }
+  } finally {
+    if (save === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = save;
+  }
+});
+
+test('economy: ranking capital, exchanges and policy validation', () => {
+  const { DEFAULT_ECONOMY: c, capitalValue, conversionRule, nakhValue, parseEconomyConfig } = load('services/economy.js');
+  assert.equal(nakhValue(c), 5000);
+  assert.equal(capitalValue({ zarikBalance: 100, nakh: 3, farsh: 2 }, c), 100 + 15000 + 100000);
+
+  // converting or selling must not move anyone in the ranking
+  assert.equal(capitalValue({ nakh: 10 }, c), capitalValue({ farsh: 1 }, c));
+  assert.equal(capitalValue({ farsh: 1 }, c), capitalValue({ zarikBalance: 50000 }, c));
+
+  assert.deepEqual(conversionRule('nakh', 'farsh', c), { step: 10, pays: 1 });
+  assert.deepEqual(conversionRule('farsh', 'zarik', c), { step: 1, pays: 50000 });
+  assert.equal(conversionRule('zarik', 'nakh', c), null, 'nakh cannot be bought');
+  assert.deepEqual(conversionRule('zarik', 'nakh', { ...c, allowBuyNakh: true }), { step: 500, pays: 1 });
+  assert.equal(conversionRule('zarik', 'farsh', c), null);
+
+  assert.ok('config' in parseEconomyConfig(c));
+  assert.ok('error' in parseEconomyConfig({ ...c, nakhPerFarsh: 0 }));
+  assert.ok('error' in parseEconomyConfig({ ...c, farshSalePrice: 1.5 }));
+  assert.ok('error' in parseEconomyConfig({ ...c, interGroup: { ...c.interGroup, rankWeights: { judges: 50, coverage: 25, delivery: 15 } } }));
+  assert.ok('error' in parseEconomyConfig({ ...c, interGroup: { ...c.interGroup, prizes: { gold: 1, silver: 2, bronze: 1, cloth: 1 } } }));
+  assert.ok('error' in parseEconomyConfig(null));
+});
+
+test('economy: changing the money rules is super-admin only', () => {
+  const { sectionForPath } = load('middleware/adminAccess.js');
+  assert.equal(sectionForPath('/economy'), undefined);
+});
+
+test('channel manager: only chat areas of the API, private chats off by default', () => {
+  const { channelManagerMayCall, parseChatPermissions, DEFAULT_CHAT_PERMISSIONS } = load('utils/roles.js');
+  for (const ok of ['/users/me', '/auth/logout', '/notifications', '/assets', '/chat/status', '/admin/panel/me']) {
+    assert.equal(channelManagerMayCall(ok), true, ok);
+  }
+  for (const no of ['/challenges', '/economy', '/users/mentor/1', '/leagues/wealthiest', '/caravans/submit-exchange', '/support/tickets', '/assets/x']) {
+    assert.equal(channelManagerMayCall(no), false, no);
+  }
+  assert.equal(DEFAULT_CHAT_PERMISSIONS.privateChats, false);
+  assert.equal(parseChatPermissions('{"chat":{"export":true,"unknown":true}}').export, true);
+  assert.equal(parseChatPermissions('{"chat":{"export":true,"unknown":true}}').unknown, undefined);
+  assert.deepEqual(parseChatPermissions('not json'), DEFAULT_CHAT_PERMISSIONS);
+});
+
+test('chat switch: off for all, pilot for staff and chosen caravans, on for all', () => {
+  const { canUseChat } = load('services/chatSettings.js');
+  const student = c => ({ role: 'student', caravanId: c });
+  const off = { mode: 'off', pilotCaravanIds: ['a'] };
+  const pilot = { mode: 'pilot', pilotCaravanIds: ['a'] };
+  const on = { mode: 'on', pilotCaravanIds: [] };
+  assert.equal(canUseChat({ role: 'admin' }, off), false);
+  assert.equal(canUseChat(student('a'), off), false);
+  assert.equal(canUseChat(student('a'), pilot), true);
+  assert.equal(canUseChat(student('b'), pilot), false);
+  assert.equal(canUseChat(student(null), pilot), false);
+  for (const role of ['admin', 'sub_admin', 'mentor', 'SUPER_MENTOR', 'channel_manager']) {
+    assert.equal(canUseChat({ role }, pilot), true, role);
+  }
+  assert.equal(canUseChat(student(null), on), true);
+});
+
+test('chat rules: who sees a space, who posts, who moderates', () => {
+  const { canSee, canPostTopLevel, canModerate } = load('modules/chat/access.js');
+  const { DEFAULT_CHAT_PERMISSIONS: perms } = load('utils/roles.js');
+  const actor = (role, extra = {}) => ({ id: 'u', name: 'n', role, caravanId: null, mentoredCaravanIds: [], permissions: perms, ...extra });
+  const student = actor('student', { caravanId: 'a' });
+  const mentor = actor('mentor', { mentoredCaravanIds: ['a'] });
+  const manager = actor('channel_manager');
+  const admin = actor('admin');
+  const space = (type, caravanId = null) => ({ id: 's', type, caravanId });
+
+  assert.equal(canSee(student, space('caravan', 'a'), false), true);
+  assert.equal(canSee(student, space('caravan', 'b'), false), false, 'another caravan stays closed');
+  assert.equal(canSee(mentor, space('challenges', 'a'), false), true);
+  assert.equal(canSee(mentor, space('caravan', 'b'), false), false);
+  assert.equal(canSee(student, space('mentors'), false), false);
+  assert.equal(canSee(manager, space('caravan', 'b'), false), true);
+  assert.equal(canSee({ ...manager, permissions: { ...perms, enterGroups: false } }, space('caravan', 'b'), false), false);
+  for (const who of [admin, mentor, manager, student]) {
+    assert.equal(canSee(who, space('direct'), false), false, 'private is for members alone');
+    assert.equal(canModerate(who, space('direct')), false);
+  }
+  assert.equal(canSee(student, space('direct'), true), true);
+
+  assert.equal(canPostTopLevel(student, space('announcements')), false);
+  assert.equal(canPostTopLevel(manager, space('announcements')), true);
+  assert.equal(canPostTopLevel({ ...manager, permissions: { ...perms, publishChannels: false } }, space('announcements')), false);
+  assert.equal(canPostTopLevel(student, space('challenges', 'a')), false);
+  assert.equal(canPostTopLevel(mentor, space('challenges', 'a')), true);
+  assert.equal(canPostTopLevel(student, space('caravan', 'a')), true);
+
+  assert.equal(canModerate(student, space('caravan', 'a')), false);
+  assert.equal(canModerate(mentor, space('caravan', 'a')), true);
+  assert.equal(canModerate(mentor, space('caravan', 'b')), false);
+  assert.equal(canModerate({ ...manager, permissions: { ...perms, moderate: false } }, space('public')), false);
+});
+
+test('evaluation: arguments beat greetings, repeats and floods earn nothing', () => {
+  const { scoreConversation, suggestedNakh, messageLevel } = load('modules/chat/evaluation.js');
+  const weights = { relevance: 30, quality: 30, collaboration: 20, initiative: 20 };
+  const msg = (id, senderId, body, extra = {}) => ({ id, senderId, body, marks: [], hasFile: false, reactionsFrom: [], ...extra });
+  const rows = scoreConversation([
+    msg('1', 'a', 'به نظرم چون مقدمه درست است نتیجه هم معتبر می‌شود'),
+    msg('2', 'b', 'سلام'), msg('3', 'b', 'سلام'), msg('4', 'b', 'سلام'), msg('5', 'b', 'سلام'),
+  ], 'نتیجه و مقدمه', weights);
+  const a = rows.find(r => r.userId === 'a'), b = rows.find(r => r.userId === 'b');
+  assert.ok(a.score > b.score);
+  assert.ok(b.flags.includes('پیام تکراری یا بی‌محتوا'));
+  assert.equal(a.share + b.share, 100);
+  assert.equal(messageLevel(msg('x', 'a', 'متن طولانی بدون هیچ چیز خاص', { marks: ['best'] }), new Set(), new Set()), 5);
+  assert.equal(suggestedNakh(72, 0, 10), 7);
+  assert.equal(suggestedNakh(100, 2, 8), 8);
+  assert.equal(suggestedNakh(0, 2, 8), 2);
+
+  const many = (from, to, n) => Array.from({ length: n }, () => from);
+  const mutual = scoreConversation([
+    msg('1', 'a', 'پیام اول با محتوا برای آزمون', { reactionsFrom: many('b', 'a', 3) }),
+    msg('2', 'a', 'پیام دوم با محتوا برای آزمون', { reactionsFrom: ['b'] }),
+    msg('3', 'b', 'پیام سوم با محتوا برای آزمون', { reactionsFrom: many('a', 'b', 3) }),
+  ], '', weights);
+  assert.ok(mutual.every(r => r.flags.includes('ریاکشن متقابل')));
+});
+
+test('inter-group: effort sets the prize, an absent share is never redistributed', () => {
+  const { memberPrize, suggestTier, rankScore } = load('modules/chat/intergroup.js');
+  const { DEFAULT_ECONOMY: c } = load('services/economy.js');
+  assert.equal(memberPrize('gold', 'full', c), 20000);
+  assert.equal(memberPrize('gold', 'partner', c), 12000);
+  assert.equal(memberPrize('silver', 'minimal', c), 3750);
+  assert.equal(memberPrize('gold', 'inactive', c), 0);
+  assert.equal(suggestTier(0), 'inactive');
+  assert.equal(suggestTier(1), 'minimal');
+  assert.equal(suggestTier(5), 'full');
+  assert.equal(rankScore({ judgeAverage: 100, activeShare: 100, onTime: true, delivered: true }, c), 100);
+  assert.equal(rankScore({ judgeAverage: 0, activeShare: 0, onTime: false, delivered: false }, c), 0);
+  // a smaller caravan with the same effort loses nothing: coverage is a share
+  assert.equal(rankScore({ judgeAverage: 80, activeShare: 50, onTime: true, delivered: true }, c), 76);
+});
+
+test('bots: commands, send times and tag colours', () => {
+  const { parseCommand, parseSendAt } = load('modules/chat/bots.js');
+  const { isReadableColor } = load('modules/chat/topics.js');
+  assert.deepEqual(parseCommand('/کند 30'), { name: 'کند', rest: '30' });
+  assert.equal(parseCommand('سلام /کند'), null);
+  assert.equal(parseSendAt('2026-11-20', '18:30').toISOString(), '2026-11-20T15:00:00.000Z');
+  assert.equal(parseSendAt('فردا', '18:30'), null);
+  assert.equal(isReadableColor('#DFB690'), true);
+  assert.equal(isReadableColor('#101010'), false);
+});
+
+test('inter-group judging opens after the deadline or by the admin, not before', () => {
+  const { judgingOpen } = load('modules/chat/intergroup.js');
+  const now = new Date('2026-11-10T10:00:00Z');
+  assert.equal(judgingOpen({ dueDate: null, judgingStartedAt: null }, now), false);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-11T10:00:00Z'), judgingStartedAt: null }, now), false);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-09T10:00:00Z'), judgingStartedAt: null }, now), true);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-11T10:00:00Z'), judgingStartedAt: now }, now), true);
+});
+
+test('a channel manager without "enter groups" stays out of caravan spaces only', () => {
+  const { managerMayEnter } = load('modules/chat/access.js');
+  const { DEFAULT_CHAT_PERMISSIONS: perms } = load('utils/roles.js');
+  const manager = { role: 'channel_manager', permissions: { ...perms, enterGroups: false } };
+  assert.equal(managerMayEnter(manager, { type: 'caravan' }), false);
+  assert.equal(managerMayEnter(manager, { type: 'media' }), false);
+  assert.equal(managerMayEnter(manager, { type: 'announcements' }), true);
+  assert.equal(managerMayEnter({ role: 'admin', permissions: perms }, { type: 'caravan' }), true);
+});

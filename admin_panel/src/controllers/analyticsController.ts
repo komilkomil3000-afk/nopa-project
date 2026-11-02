@@ -1,3 +1,4 @@
+import { topByCapital } from '../services/economy';
 import { Request, Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
@@ -32,11 +33,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       }
     });
 
-    const topEarners = await prisma.user.findMany({
-      orderBy: { zarikBalance: 'desc' },
-      take: 5,
-      select: { name: true, zarikBalance: true }
-    });
+    const topEarners = await topByCapital(5);
 
     // Product & Course Engagement
     const submissions = await prisma.submission.findMany({

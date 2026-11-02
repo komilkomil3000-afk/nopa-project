@@ -1,3 +1,4 @@
+import 'package:nopa_app/services/chat_repository.dart';
 export 'screens/shell/app_shell.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -55,6 +56,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AppRepository()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider.value(value: ChatRepository.instance),
       ],
       child: const NepaApp(),
     ),

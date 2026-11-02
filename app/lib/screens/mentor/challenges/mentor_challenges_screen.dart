@@ -1,9 +1,13 @@
+import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
+import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -35,9 +39,18 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   int _currentBannerIndex = 0;
   Timer? _bannerAutoScrollTimer;
 
+  /// Opening a challenge from its chat card: land on its category.
+  void _applyFocusRequest() {
+    final req = challengeFocusRequest.value;
+    if (req == null) return;
+    challengeFocusRequest.value = null;
+    if (mounted) setState(() => _selectedCategoryIndex = req.category);
+  }
+
   @override
   void initState() {
     super.initState();
+    challengeFocusRequest.addListener(_applyFocusRequest);
     _bannerPageCtrl = PageController(viewportFraction: 0.92);
     _startBannerAutoScroll();
 
@@ -66,6 +79,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   @override
   void dispose() {
+    challengeFocusRequest.removeListener(_applyFocusRequest);
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
     super.dispose();
@@ -182,7 +196,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   void _showSubmissionDialog(Map<String, dynamic> challenge) {
     // Mentors manage challenges, they never answer them
     final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
-    if (role == UserRole.mentor || role == UserRole.superMentor) return;
+    if (role.isMentorLike) return;
 
     final TextEditingController textCtrl = TextEditingController(text: challenge['myAnswerText']?.toString() ?? '');
     int selectedOptionIndex = -1;
@@ -279,6 +293,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         ),
 
                         const SizedBox(height: 20),
+
+                        ChallengeChatButton(challengeId: challenge['id']?.toString() ?? ''),
 
                         // 2. Row: تیتر: | Title
                         Row(
@@ -677,7 +693,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final user = repository.currentUser;
-    final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+    final bool isMentor = user.role.isMentorLike;
 
     if (isMentor) {
       return _buildMentorChallengesView(context, repository, user);
@@ -1313,7 +1329,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             ],
           ),
         );
-    String selectedAsset = 'زریک';
+    String selectedAsset = 'کلاف';
+    rewardMinCtrl.text = '0';
+    rewardMaxCtrl.text = EconomyRates.challengeMaxNakh.toString();
     bool submitting = false;
     String selectedType = 'چند گزینه ای';
     // Recipients: every member (default) or a non-empty selection of them
@@ -1323,10 +1341,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
     if (existing != null) {
       selectedType = existing['type'] == 'quiz' ? 'چند گزینه ای' : 'تشریحی';
-      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'کلاف' : 'زریک';
-      final int exMax = (existing['rewardMax'] as num?)?.toInt() ?? 0;
-      rewardMaxCtrl.text = (exMax > 0 ? exMax : (existing['reward'] as num?)?.toInt() ?? 0).toString();
-      rewardMinCtrl.text = (exMax > 0 ? (existing['rewardMin'] as num?)?.toInt() ?? 0 : 0).toString();
+      // Older challenges may hold a zarik range: editing one moves it to the kalaf range
+      if (existing['rewardAsset'] == 'nakh') {
+        rewardMaxCtrl.text = ((existing['rewardMax'] as num?)?.toInt() ?? EconomyRates.challengeMaxNakh).toString();
+        rewardMinCtrl.text = ((existing['rewardMin'] as num?)?.toInt() ?? 0).toString();
+      }
       final qs = existing['questions'];
       if (existing['type'] == 'quiz' && qs is List && qs.isNotEmpty && qs.first is Map) {
         final q = qs.first as Map;
@@ -1509,7 +1528,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         ),
                                         icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
                                         isExpanded: true,
-                                        items: ['زریک', 'کلاف']
+                                        items: ['کلاف']
                                             .map((a) => DropdownMenuItem(value: a, child: Text(AssetNames.labelFor(a))))
                                             .toList(),
                                         onChanged: (v) {
@@ -2183,7 +2202,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             titleCtrl.clearDraft();
                             messageCtrl.clearDraft();
                             Navigator.pop(ctx);
-                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد ✉️');
+                            AppToast.info(context, 'پیام برای ${sent.toPersian()} عضو کاروان ارسال شد');
                           },
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -39,7 +39,14 @@ import {
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
-import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
+import { getChatAdminSettings, updateChatAdminSettings } from '../modules/chat/settingsController';
+import { deleteManagedMessage, listManagedMessages, listManagedSpaces } from '../modules/chat/manageController';
+import { listBots, publishFromPanel, updateBot } from '../modules/chat/bots';
+import { chatAnalytics, exportSpace, listReports, resolveReport } from '../modules/chat/reports';
+import { caseMessages, claimCase, listCases, replyCase, resolveCase } from '../modules/chat/support';
+import { adminBoard, answerQuestion, getTiers, saveTiers, startJudging } from '../modules/chat/intergroup';
+import { chatUpload, muteMember, uploadFile } from '../modules/chat/controller';
+import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup } from '../modules/chat/groups';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
 import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
@@ -48,6 +55,7 @@ import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
 import { listAssetTypes, updateAssetType } from '../controllers/assetController';
+import { getEconomyAdmin, updateEconomy } from '../controllers/economyController';
 import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
@@ -74,7 +82,7 @@ const router = Router();
 
 // Apply JWT authentication and authorize only admin or mentor roles to the admin panel
 router.use(authenticateJWT as any);
-router.use(authorizeRoles('admin', 'sub_admin', 'mentor', 'SUPER_MENTOR') as any);
+router.use(authorizeRoles('admin', 'sub_admin', 'channel_manager', 'mentor', 'SUPER_MENTOR') as any);
 // Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
 router.use(restrictNonAdmins as any);
 
@@ -151,6 +159,8 @@ router.get('/challenges/:id/ranking', getChallengeRanking as any);
 router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
 router.get('/assets', listAssetTypes as any);
 router.put('/assets/:key', updateAssetType as any);
+router.get('/economy', getEconomyAdmin as any);
+router.put('/economy', updateEconomy as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
 router.patch('/submissions/:id/review', reviewSubmission as any);
@@ -170,10 +180,12 @@ router.get('/users/:id/analytics', getUserAnalytics as any);
 
 import { getAdminNews, createNews, updateNews, deleteNews } from '../controllers/newsController';
 import { getAdminBanners, createBanner, updateBanner, deleteBanner } from '../controllers/bannerController';
-import { upload, uploadMedia } from '../controllers/mediaController';
+import { upload, uploadMedia, listStoredFiles, deleteStoredFiles } from '../controllers/mediaController';
 
 // 5. Educational Content, Banners, News & Announcements
 router.post('/media/upload', upload.single('file') as any, uploadMedia as any);
+router.get('/media/files', listStoredFiles as any);
+router.post('/media/files/delete', deleteStoredFiles as any);
 router.post('/announcements/broadcast', createGlobalAnnouncement as any);
 
 router.get('/news', getAdminNews as any);
@@ -283,9 +295,38 @@ router.get('/rewards/mentor-rules', getMentorRewardRules as any);
 router.post('/rewards/mentor-rules', createMentorRewardRule as any);
 router.delete('/rewards/mentor-rules/:id', deleteMentorRewardRule as any);
 
-// 11. Chat Oversight
-router.get('/chat', getAllChatsAdmin as any);
-router.delete('/chat/:id', deleteMessage as any);
+// 11. Chat switch and channel manager access (super admin only: not mapped to any section)
+router.get('/chat-settings', getChatAdminSettings as any);
+router.put('/chat-settings', updateChatAdminSettings as any);
+router.get('/chat-manage/spaces', listManagedSpaces as any);
+router.get('/chat-manage/spaces/:id/messages', listManagedMessages as any);
+router.delete('/chat-manage/messages/:id', deleteManagedMessage as any);
+router.get('/chat-manage/reports', listReports as any);
+router.post('/chat-manage/reports/:id/resolve', resolveReport as any);
+router.get('/chat-manage/bots', listBots as any);
+router.put('/chat-manage/bots/:key', updateBot as any);
+router.post('/chat-manage/publish', publishFromPanel as any);
+router.post('/chat-manage/spaces/:id/members/:userId/mute', muteMember as any);
+router.get('/chat-manage/analytics', chatAnalytics as any);
+router.get('/chat-manage/spaces/:id/export', exportSpace as any);
+router.get('/support-cases', listCases as any);
+router.get('/support-cases/:id/messages', caseMessages as any);
+router.post('/support-cases/:id/claim', claimCase as any);
+router.post('/support-cases/:id/reply', replyCase as any);
+router.post('/support-cases/:id/resolve', resolveCase as any);
+router.get('/intergroup/:id/board', adminBoard as any);
+router.post('/intergroup/:id/start-judging', startJudging as any);
+router.get('/intergroup/:id/tiers', getTiers as any);
+router.put('/intergroup/:id/tiers', saveTiers as any);
+router.post('/chat-manage/uploads', chatUpload.single('file') as any, uploadFile as any);
+router.get('/chat-manage/groups', listGroups as any);
+router.get('/chat-manage/groups/candidates', groupCandidates as any);
+router.post('/chat-manage/groups', createGroup as any);
+router.patch('/chat-manage/groups/:id', renameGroup as any);
+router.delete('/chat-manage/groups/:id', deleteGroup as any);
+router.post('/chat-manage/groups/:id/members', addGroupMembers as any);
+router.delete('/chat-manage/groups/:id/members/:userId', removeGroupMember as any);
+router.post('/intergroup/questions/:id/answer', answerQuestion as any);
 
 // 12. Instructors Management (بانک اساتید)
 router.get('/instructors', getInstructors as any);

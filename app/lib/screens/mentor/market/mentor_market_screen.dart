@@ -1,6 +1,8 @@
+import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -22,37 +24,32 @@ class MentorMarketScreen extends StatefulWidget {
 }
 
 class _MarketScreenState extends State<MentorMarketScreen> {
-  // 5 Standard Market Rate Items matching screenshot
-  final List<Map<String, dynamic>> _rateItems = const [
+  // Rate sheet; kalaf and carpet follow the rules set in the panel, banners are only won
+  List<Map<String, dynamic>> get _rateItems => [
     {
       'title': 'کلاف',
-      'priceText': '500 زریک',
+      'priceText': EconomyRates.allowBuyNakh ? '${EconomyRates.zarikPerNakh} زریک' : 'غیر قابل خرید',
       'assetKey': 'کلاف',
-      'zarikCost': 500,
     },
     {
       'title': 'قالیچه',
-      'priceText': '5 کلاف',
+      'priceText': '${EconomyRates.nakhPerFarsh} کلاف',
       'assetKey': 'قالیچه',
-      'zarikCost': 2500,
     },
     {
       'title': 'درفش برنزی',
-      'priceText': '5 کلاف',
+      'priceText': 'غیر قابل خرید',
       'assetKey': 'درفش برنزی',
-      'zarikCost': 2500,
     },
     {
       'title': 'درفش نقره ای',
-      'priceText': '3 قالیچه',
+      'priceText': 'غیر قابل خرید',
       'assetKey': 'درفش نقره ای',
-      'zarikCost': 7500,
     },
     {
       'title': 'درفش طلایی',
       'priceText': 'غیر قابل خرید',
       'assetKey': 'درفش طلایی',
-      'zarikCost': 22500,
     },
   ];
 
@@ -69,15 +66,15 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   List<String> _caravanIds = [];
 
   // Exchange calculator states
-  String _sourceAsset = 'زریک';
-  String _targetAsset = 'کلاف';
-  final TextEditingController _amountController = TextEditingController(text: '500');
+  String _sourceAsset = 'کلاف';
+  String _targetAsset = 'قالیچه';
+  final TextEditingController _amountController = TextEditingController(text: EconomyRates.nakhPerFarsh.toString());
   double _calculatedResult = 1.0;
 
   // Interactive button selection states (0: none, 1: submit active, 2: mentor active)
   int _activeActionButton = 1; // Default: 'ثبت درخواست' is active/colored
 
-  final List<String> _availableAssets = ['زریک', 'کلاف', 'قالیچه', 'درفش برنزی', 'درفش نقره ای', 'درفش طلایی'];
+  final List<String> _availableAssets = ['زریک', 'کلاف', 'قالیچه'];
 
   // Mentor Market States
   int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
@@ -157,60 +154,30 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     super.dispose();
   }
 
-  double _getAssetValueInZarik(String asset) {
-    switch (asset) {
-      case 'زریک':
-        return 1.0;
-      case 'کلاف':
-        return 500.0;
-      case 'قالیچه':
-      case 'درفش برنزی':
-        return 2500.0; // 5 Nakh * 500
-      case 'درفش نقره ای':
-      case 'درفش نقره‌ای':
-        return 7500.0; // 3 Carpet * 2500
-      case 'درفش طلایی':
-        return 22500.0; // 3 Silver * 7500
-      default:
-        return 1.0;
-    }
-  }
-
   void _recalculateExchange() {
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
-    final double sourceVal = _getAssetValueInZarik(_sourceAsset);
-    final double targetVal = _getAssetValueInZarik(_targetAsset);
+    final rule = EconomyRates.rule(_sourceAsset, _targetAsset);
 
     setState(() {
-      if (targetVal > 0 && amount > 0) {
-        _calculatedResult = ((amount * sourceVal) / targetVal);
-      } else {
-        _calculatedResult = 0.0;
-      }
+      _calculatedResult = rule != null && amount > 0 ? (amount / rule.step) * rule.pays : 0.0;
     });
   }
 
   void _submitExchangeRequest() {
     setState(() => _activeActionButton = 1);
     final double amount = double.tryParse(_amountController.text) ?? 0.0;
-    if (amount <= 0 || _calculatedResult <= 0) {
+    if (amount <= 0) {
       AppToast.error(context, 'لطفاً مقدار معتبری برای مبادله وارد کنید.');
       return;
     }
 
-    // Conversion path rules (flag rules are defined separately)
-    const capitals = ['زریک', 'کلاف', 'قالیچه'];
-    if (capitals.contains(_sourceAsset) &&
-        capitals.contains(_targetAsset) &&
-        !((_sourceAsset == 'زریک' && _targetAsset == 'کلاف') ||
-            (_sourceAsset == 'کلاف' && _targetAsset == 'قالیچه'))) {
+    final rule = EconomyRates.rule(_sourceAsset, _targetAsset);
+    if (rule == null) {
       AppToast.error(context, 'تبدیل $_sourceAsset به $_targetAsset امکان‌پذیر نیست.');
       return;
     }
-
-    final int rate = _sourceAsset == 'زریک' ? 500 : 5;
-    if (amount % rate != 0) {
-      AppToast.error(context, 'مقدار $_sourceAsset باید مضربی از ${rate.toString().toPersianDigits()} باشد.');
+    if (amount % rule.step != 0) {
+      AppToast.error(context, 'مقدار $_sourceAsset باید مضربی از ${rule.step.toString().toPersianDigits()} باشد.');
       return;
     }
 
@@ -412,7 +379,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                           );
                           if (mounted) {
                             if (error == null) {
-                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد ✅');
+                              AppToast.success(context, 'مبادله انجام شد و راهبر از آن مطلع شد');
                               repository.refreshUser();
                               _loadMarketData();
                             } else {
@@ -470,12 +437,12 @@ class _MarketScreenState extends State<MentorMarketScreen> {
         _memberIds = members.map((m) => m['id']?.toString() ?? '').toList();
         _topMembers = members.take(3).map((m) => {
               'name': m['name']?.toString() ?? '-',
-              'zarik': '${_formatScore(m['zarikBalance'])} زریک',
+              'zarik': '${_formatScore(m['capital'] ?? m['zarikBalance'])} زریک',
             }).toList();
         _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
         _topCaravans = caravans.take(3).map((c) => {
               'name': c['name']?.toString() ?? '-',
-              'zarik': '${_formatScore(c['totalWealth'])} زریک',
+              'zarik': '${_formatScore(c['averageWealth'] ?? c['totalWealth'])} زریک',
             }).toList();
       });
     } catch (e) {
@@ -493,7 +460,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     return Consumer<AppRepository>(
       builder: (context, repository, _) {
         final user = repository.currentUser;
-        final bool isMentor = user.role == UserRole.mentor || user.role == UserRole.superMentor;
+        final bool isMentor = user.role.isMentorLike;
 
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),

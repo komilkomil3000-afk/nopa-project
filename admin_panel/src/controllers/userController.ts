@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { canUseChat, getChatSettings } from '../services/chatSettings';
+import { changeBalance } from '../services/ledger';
 import { STUDENT_AVATARS, isMentorRole } from '../utils/avatar';
 
 /**
@@ -104,6 +106,8 @@ export async function getMe(req: AuthRequest, res: Response) {
       ? ((assignedCaravan as any).mentor || user)
       : user.caravan?.mentor;
 
+    const chatSettings = await getChatSettings();
+
     res.json({
       id: user.id,
       name: user.name,
@@ -111,6 +115,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       userCode: user.userCode,
       role: user.role,
       isDualRole,
+      features: { chat: canUseChat(user, chatSettings) },
       caravanId: assignedCaravan ? assignedCaravan.id : user.caravanId,
       caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
       caravanMentor: assignedCaravan ? ((assignedCaravan as any).mentor?.name || user.name) : (user.caravan?.mentor?.name || 'تعیین نشده'),
@@ -200,10 +205,6 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'نقش کاربری نامعتبر' });
     }
 
-    if (isEligibleForReward) {
-      updateData.zarikBalance = { increment: rewardAmount };
-    }
-
     let updatedUser: any;
     await prisma.$transaction(async (tx) => {
       updatedUser = await tx.user.update({
@@ -212,15 +213,17 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       });
 
       if (isEligibleForReward) {
-        await tx.zarikTransaction.create({
-          data: {
-            userId: user.id,
-            amount: rewardAmount,
-            category: 'Profile Completion',
-            reason: 'پاداش تکمیل پروفایل',
-            createdBy: 'SYSTEM'
-          }
+        await changeBalance(tx, {
+          userId: user.id,
+          asset: 'zarik',
+          amount: rewardAmount,
+          sourceType: 'profile_completion',
+          sourceId: user.id,
+          reason: 'پاداش تکمیل پروفایل',
+          createdBy: 'SYSTEM',
+          zarikCategory: 'Profile Completion'
         });
+        updatedUser = await tx.user.findUnique({ where: { id: user.id } });
 
         // Clean up prompt notifications
         await tx.notification.deleteMany({
@@ -234,7 +237,7 @@ export async function completeProfile(req: AuthRequest, res: Response) {
         await tx.notification.create({
           data: {
             userId: user.id,
-            title: 'پاداش تکمیل پروفایل واریز شد 🎉',
+            title: 'پاداش تکمیل پروفایل واریز شد',
             message: 'مشخصات شما با موفقیت ثبت شد و ۱۰۰ زریک به کیف پول شما افزوده گردید.',
             type: 'reward'
           }
@@ -247,7 +250,7 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       rewardZarik: rewardAmount,
       zarikBalance: updatedUser.zarikBalance,
       message: isEligibleForReward
-        ? 'پروفایل با موفقیت تایید شد و ۱۰۰ زریک هدیه دریافت کردید! 🎉'
+        ? 'پروفایل با موفقیت تایید شد و ۱۰۰ زریک هدیه دریافت کردید!'
         : 'پروفایل با موفقیت بروزرسانی شد'
     });
   } catch (error) {

@@ -7,6 +7,8 @@ import { getMe, getMentorById, completeProfile, updateMyAvatar } from '../contro
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
 import { listAssetTypes } from '../controllers/assetController';
+import { getEconomyRates } from '../controllers/economyController';
+import chatRouter from '../modules/chat/routes';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
@@ -20,7 +22,6 @@ import { getMentorAnalytics } from '../controllers/analyticsController';
 import { getNews } from '../controllers/newsController';
 import { getBanners } from '../controllers/bannerController';
 import { upload, uploadMedia, getMediaAssets } from '../controllers/mediaController';
-import { getDirectMessages, getCaravanMessages, sendMessage } from '../controllers/chatController';
 import { getCaravanAssetConversions, submitStudentAssetConversion, cancelAssetConversion, getCaravans, getCaravanDetails, removeMemberFromCaravan, addMemberToCaravan } from '../controllers/caravanController';
 import { createTicket, getTickets, replyTicket, resolveTicket } from '../controllers/supportController';
 import { requestPhysicalCertificate } from '../controllers/certificateController';
@@ -60,6 +61,7 @@ router.post('/certificates/:id/physical-order', authenticateJWT as any, requestP
 router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createChallenge as any);
 router.get('/challenges', authenticateJWT as any, getChallenges as any);
 router.get('/assets', authenticateJWT as any, listAssetTypes as any);
+router.get('/economy', authenticateJWT as any, getEconomyRates as any);
 router.get('/my-caravan/banners', authenticateJWT as any, getMyCaravanBanners as any);
 router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);
@@ -91,6 +93,7 @@ router.get('/banners', authenticateJWT as any, getBanners as any);
 
 // H. Admin CRM Routes
 router.use('/admin', adminRouter);
+router.use('/chat', chatRouter);
 
 // H. Media Routes
 router.post('/media/upload', authenticateJWT as any, upload.single('file'), uploadMedia as any);
@@ -116,10 +119,6 @@ router.get('/calendar/events', authenticateJWT as any, getCalendarEvents as any)
 router.get('/instructors', authenticateJWT as any, getInstructors as any);
 
 
-// J. Chat & Messaging Routes
-router.get('/chat/direct/:mentorId', authenticateJWT as any, getDirectMessages as any);
-router.get('/chat/caravan/:caravanId', authenticateJWT as any, getCaravanMessages as any);
-router.post('/chat/send', authenticateJWT as any, sendMessage as any);
 
 // K. Support Tickets
 router.post('/support/tickets', authenticateJWT as any, createTicket as any);

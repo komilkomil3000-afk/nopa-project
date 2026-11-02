@@ -1,6 +1,22 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { isMentorRole } from '../utils/roles';
+
+/** A mentor may act on a ticket only if its sender is in one of the mentor's caravans. */
+export async function mentorOwnsTicket(mentorId: string, studentId: string): Promise<boolean> {
+  const student = await prisma.user.findUnique({ where: { id: studentId }, select: { caravanId: true } });
+  if (!student?.caravanId) return false;
+  const caravan = await prisma.caravan.findFirst({ where: { id: student.caravanId, mentorId }, select: { id: true } });
+  return !!caravan;
+}
+
+/** The ticket's sender, the mentor of their caravan and admins may act on a ticket. */
+async function canActOnTicket(user: NonNullable<AuthRequest['user']>, studentId: string): Promise<boolean> {
+  if (user.id === studentId) return true;
+  if (String(user.role).toLowerCase() === 'admin') return true;
+  return isMentorRole(user.role) && mentorOwnsTicket(user.id, studentId);
+}
 
 export async function createTicket(req: AuthRequest, res: Response) {
   try {
@@ -92,6 +108,9 @@ export async function replyTicket(req: AuthRequest, res: Response) {
     
     const ticket = await prisma.supportTicket.findUnique({ where: { id } });
     if (!ticket) return res.status(404).json({ error: 'تیکت یافت نشد' });
+    if (!(await canActOnTicket(req.user!, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
+    }
     
     const reply = await prisma.supportTicketReply.create({
       data: {
@@ -99,7 +118,7 @@ export async function replyTicket(req: AuthRequest, res: Response) {
         message,
         voiceUrl,
         attachmentUrl,
-        mentorId: req.user!.role === 'mentor' ? req.user!.id : null
+        mentorId: isMentorRole(req.user!.role) ? req.user!.id : null
       }
     });
     res.json(reply);
@@ -112,10 +131,16 @@ export async function resolveTicket(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const { rating } = req.body; // Student can provide rating when resolving
-    
+
+    const ticket = await prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) return res.status(404).json({ error: 'تیکت یافت نشد' });
+    if (!(await canActOnTicket(req.user!, ticket.studentId))) {
+      return res.status(403).json({ error: 'به این تیکت دسترسی ندارید' });
+    }
+
     await prisma.supportTicket.update({
       where: { id },
-      data: { status: 'resolved', ratingGiven: rating }
+      data: { status: 'resolved', ratingGiven: req.user!.id === ticket.studentId ? rating : undefined }
     });
     
     res.json({ success: true });

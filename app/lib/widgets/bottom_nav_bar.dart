@@ -1,18 +1,28 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
+class AppTabs {
+  static const int profile = 4;
+  static const int chat = 5;
+}
+
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final UserRole role;
+  final bool chatEnabled;
+  final int chatUnread;
   final Function(int) onTap;
 
   const CustomBottomNavBar({
     super.key,
     required this.currentIndex,
     required this.role,
+    this.chatEnabled = false,
+    this.chatUnread = 0,
     required this.onTap,
   });
 
@@ -43,6 +53,11 @@ class CustomBottomNavBar extends StatelessWidget {
         iconPath: 'assets/svg_icons/profile01.svg',
         fallbackIcon: Icons.person_rounded,
         label: AppStrings.navProfile,
+      ),
+      const _NavItemData(
+        iconPath: 'assets/svg_icons/chat01.svg',
+        fallbackIcon: Icons.chat_bubble_rounded,
+        label: AppStrings.navChat,
       ),
     ];
 
@@ -78,9 +93,10 @@ class CustomBottomNavBar extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          // Visual order (right to left): profile, market, home, academy, challenges.
-          // Tab indices stay unchanged; only the display order differs.
-          children: const [4, 3, 0, 1, 2].map((index) {
+          // Visual order (right to left): chat or profile, market, home, academy, challenges.
+          // Tab indices stay unchanged; only the display order differs. Profile keeps index 4 and
+          // stays reachable from the drawer while chat takes its place here.
+          children: [chatEnabled ? AppTabs.chat : AppTabs.profile, 3, 0, 1, 2].map((index) {
             final isSelected = currentIndex == index;
             final item = items[index];
 
@@ -91,7 +107,18 @@ class CustomBottomNavBar extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildNavIcon(item, isSelected),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildNavIcon(item, isSelected),
+                        if (index == AppTabs.chat && chatUnread > 0)
+                          const Positioned(
+                            top: -2,
+                            right: -4,
+                            child: CircleAvatar(radius: 4.5, backgroundColor: Color(0xFFDFB690)),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       item.label,

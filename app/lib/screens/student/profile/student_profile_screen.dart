@@ -3,7 +3,8 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/asset_names.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -62,7 +63,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final currentUser = repository.currentUser;
-    final bool isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final bool isMentor = currentUser.role.isMentorLike;
 
     return RefreshIndicator(
       onRefresh: () => Provider.of<AppRepository>(context, listen: false).refreshUser(),
@@ -860,7 +861,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
-                                      ? 'مشاهده‌شده و تایید شده ✓'
+                                      ? 'مشاهده‌شده و تایید شده'
                                       : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
                                   style: TextStyle(
                                     color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),

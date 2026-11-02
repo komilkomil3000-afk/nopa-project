@@ -1,4 +1,6 @@
 import 'package:nopa_app/core/asset_names.dart';
+import '../core/economy_rates.dart';
+import 'chat_repository.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -73,6 +75,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Live-sync interval: profile, challenges and notifications are re-requested this often while the app is open.
   static const Duration pollInterval = Duration(seconds: 3);
+  /// While the chat socket is live, polling runs on every 5th tick (about 15 seconds).
+  static const int slowPollEvery = 5;
+  int _socketTicks = 0;
   bool _pollInFlight = false;
   bool _appInForeground = true;
 
@@ -82,6 +87,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
       // One request round at a time (a slow network must not pile up requests) and none while in background.
       if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
+      if (ChatRepository.instance.connected && ++_socketTicks % slowPollEvery != 0) return;
       _pollInFlight = true;
       try {
         await _pollOnce(heavy: ++tick % 10 == 0);
@@ -100,6 +106,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     if (user != null && !_apiService.isUnchanged('me')) {
       _applyUser(user);
       notifyListeners();
+    }
+    if (currentUser.role.isChannelManager) {
+      await fetchNotifications(onlyIfChanged: true);
+      return;
     }
     await Future.wait([
       syncChallenges(onlyIfChanged: true),
@@ -136,6 +146,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     try {
       _appInForeground = state == AppLifecycleState.resumed;
+      ChatRepository.instance.setForeground(_appInForeground);
       if (state == AppLifecycleState.resumed) {
         recordActivity();
         if (_apiService.isAuthenticated) {
@@ -161,6 +172,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Admin-editable asset names (once per session) – the app keeps its built-in defaults when this fails.
   Future<void> loadAssetNames() async {
+    final rates = await _apiService.getEconomyRates();
+    if (rates != null) EconomyRates.apply(rates);
     if (_assetNamesLoaded) return;
     final rows = await _apiService.getAssetTypes();
     if (rows.isEmpty) return;
@@ -174,7 +187,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   Map<String, dynamic> caravanBanners = {};
 
   Future<void> fetchCaravanBanners() async {
-    final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+    final isMentor = currentUser.role.isMentorLike;
     final data = await _apiService.getCaravanBanners(caravanId: isMentor ? _selectedCaravanId : null);
     if (data != null) {
       caravanBanners = data;
@@ -321,6 +334,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   String? get activeCaravanId => currentUser.caravanId ?? _selectedCaravanId;
 
   Future<void> logout() async {
+    ChatRepository.instance.reset();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(prefKeyLastActive);
@@ -479,7 +493,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       if (onlyIfChanged && _apiService.isUnchanged('notifications')) return;
       if (data != null && data['notifications'] is List) {
         final List notifs = data['notifications'];
-        final isMentor = currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor;
+        final isMentor = currentUser.role.isMentorLike;
         final List<Map<String, dynamic>> updatedNotifs = [];
         for (final item in notifs) {
           String timeStr = 'اعلان سیستم';
@@ -522,7 +536,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   int get unreadNotificationsCount {
-    return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)).length;
+    return notifications.where((n) => !n['isRead'] && n['isForMentor'] == (currentUser.role.isMentorLike)).length;
   }
 
   Future<void> markNotificationAsRead(String id) async {
@@ -542,7 +556,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   void markAllNotificationsAsRead() {
     for (var n in notifications) {
-      if (n['isForMentor'] == (currentUser.role == UserRole.mentor || currentUser.role == UserRole.superMentor)) {
+      if (n['isForMentor'] == (currentUser.role.isMentorLike)) {
         if (n['isRead'] == false && n['id'] != null && n['id'].toString().isNotEmpty) {
           _apiService.markNotificationAsRead(n['id'].toString());
         }
