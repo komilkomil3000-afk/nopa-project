@@ -9,6 +9,25 @@ import { loadActor } from './access';
 let io: Server | null = null;
 const REVALIDATE_MS = 5 * 60 * 1000;
 
+/**
+ * The client's IP under the same 'trust proxy' rule as HTTP requests (app.ts). Behind nginx the socket
+ * address is the proxy's, so the IP blacklist would never match without this.
+ */
+function clientIp(socket: Socket): string {
+  const remote = socket.request.socket.remoteAddress || socket.handshake.address || 'unknown';
+  // Loaded on use: app.ts imports the chat routes, which lead back here
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const app = require('../../app').default as import('express').Express;
+  const trust = app.get('trust proxy fn') as ((addr: string, i: number) => boolean) | undefined;
+  const header = socket.handshake.headers['x-forwarded-for'];
+  if (!trust || !header) return remote;
+  const forwarded = String(header).split(',').map(a => a.trim()).filter(Boolean).reverse();
+  const chain = [remote, ...forwarded];
+  let i = 0;
+  while (i < chain.length - 1 && trust(chain[i], i)) i++;
+  return chain[i];
+}
+
 export function emitToSpace(spaceId: string, event: string, payload: unknown): void {
   io?.to(`space:${spaceId}`).emit(event, payload);
 }
@@ -63,7 +82,7 @@ export function attachChatSocket(server: HttpServer): void {
   io.use(async (socket, next) => {
     try {
       const token = String(socket.handshake.auth?.token || '');
-      const ip = socket.handshake.address || 'unknown';
+      const ip = clientIp(socket);
       const check = await verifyAccessToken(token, ip);
       if (!check.ok) return next(new Error('UNAUTHORIZED'));
       const actor = await loadActor(check.user.id);

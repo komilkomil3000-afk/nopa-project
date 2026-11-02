@@ -2848,3 +2848,25 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Not run: voice recording, file sending from a device, offline mode, the channel manager app shell, iOS, production WebSocket, migrations on production data.
   - Note: one emulator login attempt with a demo number reached the production login before D1 was found; the server answered 404 and nothing was created.
 - **Status:** Completed (7.2 to 7.6 and quiet hours remain, listed in `docs/nopa-chat-review.md`)
+
+### [2026-11-02 17:10] - Claude Code / Chat Load, Migration and WebSocket Checks
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/service.ts` (Modified: concurrent first-open space creation no longer fails)
+  - `admin_panel/src/middleware/rateLimit.ts` (Modified: API limit per signed-in user, per IP otherwise)
+  - `admin_panel/src/modules/chat/realtime.ts` (Modified: socket client IP behind the proxy for the IP blacklist)
+  - `admin_panel/tests/e2e/load.e2e.js` (Created), `admin_panel/tests/e2e/run.js`, `admin_panel/tests/e2e/chat.e2e.js` (Modified)
+  - `admin_panel/deploy/nginx-chat.conf` (Created), `admin_panel/ecosystem.config.js` (Modified: comment only)
+  - `docs/nopa-chat-review.md` (Modified, local only)
+- **Description of Changes:**
+  - Load check with 120 users (10 caravans): found a 500 on the first chat open when many users open it at once (Prisma upsert race on ChatSpace.key), fixed by reading the row on a unique-key conflict.
+  - The global 1000 requests / 15 min limit was per IP, so a class on one Wi-Fi or carrier NAT shared one budget; requests with a validly signed token now count per user.
+  - Socket handshakes used the proxy address, so the IP blacklist never matched behind nginx; now resolved with the same trust-proxy rule as HTTP.
+  - nginx/Arvan WebSocket config and check command for deployment; production currently answers 404 on /socket.io/ (chat not deployed yet).
+  - Migration dry run on seeded data (202 users with balances, 500 legacy chat messages): 20261042 to 20261047 apply cleanly, ledger sums equal balances, balances unchanged.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6, `npm run test:e2e -- load` passed in `admin_panel/`.
+  - Migration dry run on a throwaway embedded Postgres (script kept outside the repo).
+  - Read-only probe of production: /health 200, /socket.io/ 404.
+- **Status:** Completed (production WebSocket check, migration on a copy of real data, quiet hours with Push, scoring calibration and pilot remain)

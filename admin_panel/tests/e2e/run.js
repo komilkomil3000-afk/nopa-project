@@ -9,7 +9,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const PORT = 54329;
 const only = process.argv[2];
-const suites = fs.readdirSync(__dirname).filter(f => f.endsWith('.e2e.js') && (!only || f.startsWith(only)));
+// The load check is slow, so it runs only when named: npm run test:e2e -- load
+const suites = fs.readdirSync(__dirname).filter(f => f.endsWith('.e2e.js') && (only ? f.startsWith(only) : !f.startsWith('load')));
 
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'nopa-e2e-'));

@@ -22,8 +22,18 @@ const GLOBAL_SPACES = [
 
 const ensured = new Set<string>();
 
+/**
+ * Creates a space once. Prisma's upsert is a read then an insert, so two requests opening chat at the
+ * same moment both try to insert: the loser reads the row the winner made instead of failing.
+ */
 export async function ensureSpace(key: string, data: { type: string; title: string; caravanId?: string }) {
-  const space = await prisma.chatSpace.upsert({ where: { key }, update: {}, create: { key, ...data } });
+  let space;
+  try {
+    space = await prisma.chatSpace.upsert({ where: { key }, update: {}, create: { key, ...data } });
+  } catch (e) {
+    if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002')) throw e;
+    space = await prisma.chatSpace.findUniqueOrThrow({ where: { key } });
+  }
   ensured.add(key);
   return space;
 }

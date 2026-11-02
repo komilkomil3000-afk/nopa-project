@@ -40,6 +40,18 @@ run(async () => {
   });
   await assert.rejects(new Promise((res, rej) => { const k = io(origin, { auth: { token: 'bad' }, transports: ['websocket'], reconnection: false }); k.on('connect', res); k.on('connect_error', rej); }));
   console.log('socket refuses a bad token OK');
+
+  // Behind nginx the socket sees the proxy's address: the blacklist must check the forwarded client IP
+  await prisma.blacklist.create({ data: { type: 'ip', value: '203.0.113.9' } });
+  const viaProxy = ip => new Promise((res, rej) => {
+    const k = io(origin, { auth: { token: s2.token }, transports: ['websocket'], reconnection: false, forceNew: true, extraHeaders: { 'X-Forwarded-For': ip } });
+    k.on('ready', () => { k.close(); res(); });
+    k.on('connect_error', rej);
+  });
+  await assert.rejects(viaProxy('203.0.113.9'));
+  await viaProxy('203.0.113.10');
+  await prisma.blacklist.deleteMany({});
+  console.log('socket checks the forwarded IP OK');
   const sock1 = await connect(s1), sock2 = await connect(s2), sockOther = await connect(other);
 
   const sent = await call(s1, 'POST', `/chat/spaces/${caravan1.id}/messages`, { body: 'سلام', clientMessageId: 'c1' });
