@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1116" preserveAspectRatio="xMidYMid slice">
+  <!-- Nopa admin panel background, light theme: the dark background's six curved bands in the light app
+       palette, soft lavender in the top-left fading to near-white, with a faint warm tint in the bottom-right -->
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#DAD7F1"/>
+      <stop offset="0.3" stop-color="#E6E4F6"/>
+      <stop offset="0.55" stop-color="#F0EFF9"/>
+      <stop offset="0.8" stop-color="#F7F6FC"/>
+      <stop offset="1" stop-color="#FBFAFE"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9292E2" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#9292E2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="warm" cx="1880" cy="1116" r="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E1BC96" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#E1BC96" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="2000" height="1116" fill="url(#base)"/>
+  <g fill="#6B68A8" fill-opacity="0.035">
+    <path d="M0,0 H2000 V90 C1860,240 1760,430 1715,650 C1685,820 1670,980 1680,1116 H0 Z"/>
+    <path d="M0,0 H1670 C1480,140 1380,330 1345,520 C1320,700 1400,900 1340,1116 H0 Z"/>
+    <path d="M0,0 H1330 C1150,180 1090,400 1010,600 C900,880 700,1040 520,1116 H0 Z"/>
+    <path d="M0,0 H1070 C900,230 800,480 600,660 C430,810 230,880 0,905 Z"/>
+    <path d="M0,0 H850 C700,240 450,470 0,560 Z"/>
+    <path d="M0,0 H510 C380,170 200,300 0,345 Z"/>
+  </g>
+  <rect width="2000" height="1116" fill="url(#glow)"/>
+  <rect width="2000" height="1116" fill="url(#warm)"/>
+</svg>

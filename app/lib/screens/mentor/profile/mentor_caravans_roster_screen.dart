@@ -1081,9 +1081,15 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
 
   Map get _clipStatus => (_memberData?['clipStatus'] as Map?) ?? const {};
 
-  /// All sessions (skill, then media) of a station with their parts.
+  /// All sessions of a station (every class category, in admin-panel order) with their parts.
   List<Map> _sessionsOf(Map<String, dynamic>? station) {
     if (station == null) return [];
+    final cats = station['classCategories'];
+    if (cats is List) {
+      return [
+        for (final c in cats.whereType<Map>()) ...((c['sessions'] as List?) ?? []).whereType<Map>(),
+      ];
+    }
     return [
       ...((station['skillSessions'] as List?) ?? []).whereType<Map>(),
       ...((station['mediaSessions'] as List?) ?? []).whereType<Map>(),
@@ -1131,7 +1137,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
     return n;
   }
 
-  String _ofText(int part, int total) => '§{part.toPersian()} از §{total.toPersian()}';
+  String _ofText(int part, int total) => '${part.toPersian()} از ${total.toPersian()}';
 
   /// Sessions of a station as shown in the accordion, from the member's real watch records.
   List<Map<String, dynamic>> _getStationSessions(Map<String, dynamic>? stationData) {

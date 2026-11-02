@@ -247,8 +247,16 @@ export async function getCaravanAssetConversions(req: AuthRequest, res: Response
     const userId = req.user!.id;
     const userRole = req.user!.role?.toLowerCase();
 
-    // Mentors see every exchange of their caravan (observer view); students only their own
-    const mentorCaravan = await prisma.caravan.findFirst({ where: { mentorId: userId } });
+    // Mentors see every exchange of their caravan (observer view); students only their own.
+    // A mentor of several caravans passes the one picked in the app as ?caravanId.
+    const requestedCaravanId = typeof req.query.caravanId === 'string' ? req.query.caravanId : '';
+    const mentorCaravan = await prisma.caravan.findFirst({
+      where: {
+        ...(requestedCaravanId ? { id: requestedCaravanId } : {}),
+        ...(userRole === 'admin' && requestedCaravanId ? {} : { mentorId: userId }),
+      },
+      orderBy: { name: 'asc' },
+    });
 
     const whereClause: any = {};
     if (mentorCaravan) {

@@ -4,8 +4,10 @@
 // changes, so all modals get:
 //   - a stack (nested modals close top-first)
 //   - ESC closes the top modal (through its own close button, so cleanup handlers still run)
-//   - click on the backdrop closes it, unless it contains form fields (no accidental data loss)
-//     or has data-modal-static
+//   - click on the backdrop closes it, unless it has unsaved edits: a field the user focused no longer holds the
+//     value it had then (search boxes and [data-modal-nodirty] fields don't count), or the modal's own guard
+//     (NopaModal.guard(id, fn)) says so. Then it stays open, gives a small shake and says why. A form submit
+//     inside it counts as saved. data-modal-static keeps a modal open on any backdrop click.
 //   - focus moves into the modal, Tab stays inside it, focus returns to the opener on close
 //   - role="dialog", aria-modal and a name (aria-labelledby → the modal's heading) for screen readers
 //   - the page behind does not scroll
@@ -17,6 +19,51 @@
   const EXCLUDED = new Set(); // ids of overlays the manager should ignore
   const WATCHED = ['modal-overlay', 'drawer-content'];
   let headingSeq = 0;
+
+  // ---- unsaved edits ----
+  const edited = new WeakMap(); // modal -> Map(field -> value when the user first focused it)
+  const guards = new Map();     // modal id -> () => true while it must stay open
+  const fieldValue = f => (f.type === 'checkbox' || f.type === 'radio' ? f.checked : f.value);
+  const IGNORED_FIELD = 'input[type="hidden"], input[type="search"], input[type="button"], input[type="submit"], input[type="file"], [data-modal-nodirty], [data-modal-nodirty] *, .search-box *';
+
+  document.addEventListener('focusin', e => {
+    const f = e.target;
+    if (!(f instanceof Element) || !f.matches('input, textarea, select') || f.matches(IGNORED_FIELD)) return;
+    const el = f.closest('.modal-overlay');
+    if (!el || !stack.includes(el)) return;
+    if (!edited.has(el)) edited.set(el, new Map());
+    const fields = edited.get(el);
+    if (!fields.has(f)) fields.set(f, fieldValue(f));
+  });
+  // a submitted form inside a modal is saved
+  document.addEventListener('submit', e => {
+    const el = e.target instanceof Element ? e.target.closest('.modal-overlay') : null;
+    if (el) edited.delete(el);
+  }, true);
+
+  function hasUnsaved(el) {
+    // a modal with its own guard (it knows its draft) is not second-guessed by the field check
+    const guard = el.id && guards.get(el.id);
+    if (guard) { try { return !!guard(); } catch (_) { return false; } }
+    const fields = edited.get(el);
+    if (!fields) return false;
+    for (const [f, value] of fields) {
+      if (f.isConnected && el.contains(f) && fieldValue(f) !== value) return true;
+    }
+    return false;
+  }
+
+  let lastNudge = 0;
+  function nudge(el) {
+    const box = el.firstElementChild;
+    if (box && typeof box.animate === 'function' && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+      box.animate([{ transform: 'none' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(7px)' }, { transform: 'translateX(-4px)' }, { transform: 'none' }], { duration: 320, easing: 'ease-out' });
+    }
+    if (Date.now() - lastNudge > 2500 && typeof window.showToast === 'function') {
+      window.showToast('تغییرات ذخیره‌نشده دارید؛ ابتدا ذخیره کنید یا با دکمه بستن خارج شوید.', 'info');
+    }
+    lastNudge = Date.now();
+  }
 
   const resolve = el => (typeof el === 'string' ? document.getElementById(el) : el);
   const isDrawer = el => el.classList.contains('drawer-content');
@@ -36,6 +83,7 @@
 
   function onOpened(el) {
     if (stack.includes(el)) return;
+    edited.delete(el);
     opener.set(el, document.activeElement);
     stack.push(el);
     el.setAttribute('role', 'dialog');
@@ -107,7 +155,8 @@
   document.addEventListener('click', e => {
     const el = e.target;
     if (el !== downOnBackdrop || el !== top()) return;
-    if (el.hasAttribute('data-modal-static') || el.querySelector('input:not([type="hidden"]), textarea, select')) return;
+    if (el.hasAttribute('data-modal-static')) return;
+    if (hasUnsaved(el)) { nudge(el); return; }
     close(el);
   });
 
@@ -130,5 +179,12 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.NopaModal = { open, close, top, stack };
+  // fn() returns true while the modal must not close on a backdrop click (e.g. a draft not saved yet)
+  function guard(idOrEl, fn) {
+    const el = resolve(idOrEl);
+    const id = el ? el.id : String(idOrEl);
+    if (id) guards.set(id, fn);
+  }
+
+  window.NopaModal = { open, close, top, stack, guard, hasUnsaved: el => { el = resolve(el); return !!el && hasUnsaved(el); } };
 })();

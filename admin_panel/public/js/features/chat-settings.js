@@ -45,6 +45,7 @@ window.saveChatSettings = async function() {
       }),
     });
     showToast('تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.', 'success');
+    if (window.NopaChatSwitch) NopaChatSwitch.refresh();
   } catch (e) {
     showToast(e.message || 'خطا در ذخیره تنظیمات چت', 'error');
   }
@@ -95,3 +96,134 @@ window.deleteChatMessage = async function(id) {
     showToast(e.message || 'خطا در حذف پیام', 'error');
   }
 };
+
+// ---- Header toolbar switch (super admin): the chat state at a glance, switched from any page ----
+window.NopaChatSwitch = (function () {
+  const MODE_LABELS = { off: 'خاموش', pilot: 'آزمایشی', on: 'روشن' };
+  const $ = id => document.getElementById(id);
+  let state = null; // last GET /admin/chat-settings
+  let busy = false;
+
+  function render() {
+    const dot = $('chat-switch-dot');
+    const btn = $('btn-chat-switch');
+    const note = $('chat-switch-note');
+    if (!dot || !btn) return;
+    const mode = state ? state.mode : 'unknown';
+    dot.dataset.mode = mode;
+    const label = state ? `چت: ${MODE_LABELS[mode]}` : 'وضعیت چت';
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+    document.querySelectorAll('.chat-switch-mode').forEach(b => {
+      b.setAttribute('aria-checked', String(!!state && b.dataset.chatMode === mode));
+      b.disabled = busy;
+    });
+    if (!note) return;
+    if (!state) { note.textContent = 'وضعیت چت دریافت نشد.'; return; }
+    const pilotNames = state.caravans.filter(c => state.pilotCaravanIds.includes(c.id)).map(c => c.name);
+    note.textContent = {
+      off: 'چت برای هیچ کاربری در اپ نمایش داده نمی‌شود. پیام‌ها پاک نمی‌شوند.',
+      pilot: `فقط ادمین‌ها، راهبران، مسئول کانال و ${pilotNames.length.toLocaleString('fa-IR')} کاروان آزمایشی چت را می‌بینند${pilotNames.length ? `: ${pilotNames.join('، ')}` : ''}.`,
+      on: 'چت برای همه کاربران اپ فعال است.',
+    }[state.mode];
+  }
+
+  // Mirror the header state into the radios of the chat tab when it is open
+  function syncTabRadios() {
+    if (!state) return;
+    document.querySelectorAll('input[name="chat-mode"]').forEach(r => { r.checked = r.value === state.mode; });
+  }
+
+  async function refresh() {
+    if (!(typeof isSuperAdminUser === 'function' && isSuperAdminUser())) return;
+    try {
+      state = await NopaApi.json('/api/v1/admin/chat-settings');
+    } catch (e) {
+      state = null;
+    }
+    render();
+  }
+
+  function closeDropdown() {
+    const menu = $('chat-switch-menu');
+    if (!menu) return;
+    menu.classList.remove('is-open');
+    $('btn-chat-switch').setAttribute('aria-expanded', 'false');
+    $('chat-switch-dropdown').hidden = true;
+  }
+
+  function openChatTab(preselectMode) {
+    closeDropdown();
+    NopaRouter.switchTab('chat-tab', true);
+    if (preselectMode) {
+      // The tab loads its settings asynchronously; select the mode once they are in
+      setTimeout(() => {
+        const radio = document.querySelector(`input[name="chat-mode"][value="${preselectMode}"]`);
+        if (radio) radio.checked = true;
+        const box = $('chat-pilot-caravans');
+        if (box) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 600);
+    }
+  }
+
+  async function setMode(mode) {
+    if (busy || !state || state.mode === mode) return;
+    if (mode === 'pilot' && state.pilotCaravanIds.length === 0) {
+      showToast('برای حالت آزمایشی ابتدا کاروان‌های آزمایشی را انتخاب و ذخیره کنید.', 'info');
+      openChatTab('pilot');
+      return;
+    }
+    const question = {
+      off: 'چت برای همه کاربران اپ خاموش می‌شود (پیام‌ها پاک نمی‌شوند). ادامه می‌دهید؟',
+      pilot: 'چت فقط برای کادر و کاروان‌های آزمایشی نمایش داده می‌شود. ادامه می‌دهید؟',
+      on: 'چت برای همه کاربران اپ روشن می‌شود. ادامه می‌دهید؟',
+    }[mode];
+    if (!(await NopaConfirm(question))) return;
+    busy = true;
+    render();
+    try {
+      // The endpoint stores the whole setting: keep the pilot list and the channel manager's access as they are
+      await NopaApi.json('/api/v1/admin/chat-settings', {
+        method: 'PUT',
+        body: JSON.stringify({ mode, pilotCaravanIds: state.pilotCaravanIds, permissions: state.permissions }),
+      });
+      state = { ...state, mode };
+      syncTabRadios();
+      showToast(`چت ${MODE_LABELS[mode]} شد و تا چند ثانیه در اپ اعمال می‌شود.`, 'success');
+    } catch (e) {
+      showToast(e.message || 'خطا در تغییر وضعیت چت', 'error');
+      await refresh();
+    } finally {
+      busy = false;
+      render();
+    }
+  }
+
+  function applyRole() {
+    const menu = $('chat-switch-menu');
+    if (!menu) return;
+    const allowed = typeof isSuperAdminUser === 'function' && isSuperAdminUser();
+    menu.hidden = !allowed;
+    if (allowed) refresh();
+    else closeDropdown();
+  }
+
+  function init() {
+    const menu = $('chat-switch-menu');
+    if (!menu) return;
+    menu.querySelectorAll('.chat-switch-mode').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      setMode(b.dataset.chatMode);
+    }));
+    $('btn-chat-switch-manage').addEventListener('click', () => openChatTab());
+    // The generic header-menu toggle (js/layout/topnav.js) opens the dropdown; fetch fresh state on open
+    $('btn-chat-switch').addEventListener('click', () => { if (menu.classList.contains('is-open')) refresh(); });
+    window.addEventListener('nopa:accesschange', applyRole);
+    applyRole();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+
+  return { refresh };
+})();

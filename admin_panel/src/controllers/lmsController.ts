@@ -4,6 +4,7 @@ import { changeBalance } from '../services/ledger';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
 import { isMentorRole } from '../utils/roles';
+import { CATEGORY_ORDER_BY, trackTypeForCategory } from '../utils/stationCategories';
 
 export const getStations = async (req: Request, res: Response) => {
   try {
@@ -23,7 +24,7 @@ export const getStations = async (req: Request, res: Response) => {
               orderBy: { orderIndex: 'asc' }
             }
           },
-          orderBy: { orderIndex: 'asc' }
+          orderBy: CATEGORY_ORDER_BY
         }
       },
       orderBy: { orderIndex: 'asc' }
@@ -105,7 +106,7 @@ export const getStations = async (req: Request, res: Response) => {
 export const getClasses = async (req: Request, res: Response) => {
   try {
     const classes = await prisma.classCategory.findMany({
-      orderBy: { orderIndex: 'asc' }
+      orderBy: CATEGORY_ORDER_BY
     });
     res.json(classes);
   } catch (error) {
@@ -325,7 +326,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
             const partsCount = parseInt(cat.partsPerSession) || 2;
             incomingSessions = [];
             for (let s = 1; s <= count; s++) {
-              const isSkill = catOrder === 1 || (cat.title && cat.title.includes('مهارت'));
+              const isSkill = i === 0;
               const sessionDay = isSkill ? (s === 1 ? 'شنبه' : 'دوشنبه') : (s === 1 ? 'پنجشنبه' : 'جمعه');
               const clips = [];
               const quizzes = [];
@@ -348,7 +349,7 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
               }
               incomingSessions.push({
                 title: `جلسه ${s} (${sessionDay}): ${cat.title}`,
-                instructor: cat.instructor || (isSkill ? 'استاد مهارتی' : 'استاد رسانه‌ای'),
+                instructor: cat.instructor || 'استاد دوره',
                 orderIndex: s,
                 videoClips: clips,
                 quizzes: quizzes
@@ -477,14 +478,26 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
     const { id, stationId, packageId, title, orderIndex } = req.body;
     const finalStationId = stationId || packageId;
     let category;
-    if (id) {
+    const targetId = id || req.params.id;
+    if (targetId) {
+      // Only what was sent changes: renaming a category must not reset its position (that used to move every
+      // renamed category to the front, so the app and the panel showed it under the wrong class tab)
       category = await prisma.classCategory.update({
-        where: { id },
-        data: { title, orderIndex: Number(orderIndex || 0) }
+        where: { id: targetId },
+        data: {
+          ...(title !== undefined && String(title).trim() ? { title: String(title).trim() } : {}),
+          ...(orderIndex !== undefined && orderIndex !== null && orderIndex !== '' ? { orderIndex: Number(orderIndex) || 0 } : {})
+        }
       });
     } else {
+      if (!finalStationId) return res.status(400).json({ error: 'stationId is required' });
+      let order = Number(orderIndex);
+      if (!order) {
+        const last = await prisma.classCategory.findFirst({ where: { stationId: finalStationId }, orderBy: { orderIndex: 'desc' } });
+        order = (last?.orderIndex || 0) + 1;
+      }
       category = await prisma.classCategory.create({
-        data: { stationId: finalStationId, title, orderIndex: Number(orderIndex || 0) }
+        data: { stationId: finalStationId, title: String(title || '').trim() || 'دسته کلاس', orderIndex: order }
       });
     }
     res.json({ message: 'Saved successfully', data: category });
@@ -512,11 +525,13 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
           ...(finalInstructor !== undefined ? { instructor: finalInstructor } : {}),
           ...(sessionDate !== undefined ? { sessionDate } : {}),
           ...(sessionTime !== undefined ? { sessionTime } : {}),
-          minWatchThreshold: Number(minWatchThreshold || 70), 
-          minPassScore: Number(minPassScore || 0), 
-          maxZarikReward: Number(maxZarikReward || 0), 
-          maxPointsReward: Number(maxPointsReward || 0), 
-          orderIndex: Number(orderIndex || 0) 
+          ...(finalCategoryId ? { categoryId: finalCategoryId } : {}),
+          // Saving a session's details must not reset what was not sent (order, rewards, watch threshold)
+          ...(minWatchThreshold !== undefined ? { minWatchThreshold: Number(minWatchThreshold) || 70 } : {}),
+          ...(minPassScore !== undefined ? { minPassScore: Number(minPassScore) || 0 } : {}),
+          ...(maxZarikReward !== undefined ? { maxZarikReward: Number(maxZarikReward) || 0 } : {}),
+          ...(maxPointsReward !== undefined ? { maxPointsReward: Number(maxPointsReward) || 0 } : {}),
+          ...(orderIndex !== undefined ? { orderIndex: Number(orderIndex) || 0 } : {})
         }
       });
     } else {
@@ -1120,7 +1135,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
             create: {
               userId,
               clipId: clip.id,
-              trackType: session.category?.title?.includes('مهارت') ? 'skill' : 'media',
+              trackType: await trackTypeForCategory(prisma, session.category?.id, session.category?.stationId),
               stationId: session.category?.stationId || 'unknown',
               sessionId: session.id,
               quizPassed: true
@@ -1175,7 +1190,7 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
           where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }
         });
         if (clip) {
-          const trackType = session.category?.title?.includes('مهارت') ? 'skill' : 'media';
+          const trackType = await trackTypeForCategory(tx, session.category?.id, session.category?.stationId);
           const stationId = session.category?.stationId || 'unknown';
           let progress = await tx.userProgress.findUnique({
              where: { userId_clipId: { userId, clipId: clip.id } }

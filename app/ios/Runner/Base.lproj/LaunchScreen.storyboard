@@ -16,11 +16,17 @@
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" image="LaunchBackground" translatesAutoresizingMaskIntoConstraints="NO" id="bgV-lb-001">
+                            </imageView>
                             <imageView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" image="LaunchImage" translatesAutoresizingMaskIntoConstraints="NO" id="YRO-k0-Ey4">
                             </imageView>
                         </subviews>
                         <color key="backgroundColor" red="0.1255" green="0.1020" blue="0.2118" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
+                            <constraint firstItem="bgV-lb-001" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="bgC-lb-001"/>
+                            <constraint firstItem="bgV-lb-001" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="bgC-lb-002"/>
+                            <constraint firstItem="bgV-lb-001" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="bgC-lb-003"/>
+                            <constraint firstItem="bgV-lb-001" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="bgC-lb-004"/>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="1a2-6s-vTC"/>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="4X2-HB-R7a"/>
                         </constraints>
@@ -33,5 +39,6 @@
     </scenes>
     <resources>
         <image name="LaunchImage" width="168" height="185"/>
+        <image name="LaunchBackground" width="322" height="589"/>
     </resources>
 </document>

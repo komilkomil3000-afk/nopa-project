@@ -4,6 +4,7 @@ import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:provider/provider.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import '../core/schedule_utils.dart';
+import '../core/station_categories.dart';
 import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
 import 'app_toast.dart';
@@ -24,6 +25,13 @@ class CalendarEvent {
   final String? instructor;
   final String? id;
   final String? stationId;
+  /// Position of the event's class category in its station (admin-panel order); -1 for non-class events.
+  final int categoryIndex;
+  /// Title of the class category as defined in the admin panel.
+  final String? categoryTitle;
+  final String? categoryId;
+
+  bool get isClass => type == EventType.skillClass || type == EventType.mediaClass;
 
   CalendarEvent({
     required this.year,
@@ -35,6 +43,9 @@ class CalendarEvent {
     this.instructor,
     this.id,
     this.stationId,
+    this.categoryIndex = -1,
+    this.categoryTitle,
+    this.categoryId,
   });
 }
 
@@ -173,6 +184,12 @@ class _EducationCalendarState extends State<EducationCalendar> {
             instructor: e['instructor'],
             id: e['id']?.toString(),
             stationId: e['stationId']?.toString(),
+            // Older servers send only the type: skillClass = first category, mediaClass = second
+            categoryIndex: (type == EventType.skillClass || type == EventType.mediaClass)
+                ? ((e['categoryIndex'] as num?)?.toInt() ?? (type == EventType.mediaClass ? 1 : 0))
+                : -1,
+            categoryTitle: e['categoryTitle']?.toString(),
+            categoryId: e['categoryId']?.toString(),
           ));
         }
       }
@@ -409,8 +426,8 @@ class _EducationCalendarState extends State<EducationCalendar> {
                 e.month == dayJalali.month &&
                 e.day == dayNum).toList();
 
-            final bool hasMedia = dayEvents.any((e) => e.type == EventType.mediaClass);
-            final bool hasSkill = dayEvents.any((e) => e.type == EventType.skillClass);
+            final List<int> classCategories =
+                (dayEvents.where((e) => e.isClass).map((e) => e.categoryIndex).toSet().toList()..sort());
             final bool hasOverdue = dayEvents.any((e) => e.type == EventType.overdue);
 
             return _buildDayCard(
@@ -418,8 +435,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
               weekDayName: weekDayName,
               isSelected: isSelected,
               isToday: isToday,
-              hasMedia: hasMedia,
-              hasSkill: hasSkill,
+              classCategories: classCategories,
               hasOverdue: hasOverdue,
               onTap: () {
                 setState(() {
@@ -440,8 +456,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
     required String weekDayName,
     required bool isSelected,
     required bool isToday,
-    required bool hasMedia,
-    required bool hasSkill,
+    required List<int> classCategories,
     required bool hasOverdue,
     required VoidCallback onTap,
   }) {
@@ -533,23 +548,14 @@ class _EducationCalendarState extends State<EducationCalendar> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (hasMedia)
+                  // One dot per class category that has a class this day (category colours as in the card below)
+                  for (final ci in classCategories)
                     Container(
                       width: 5.5,
                       height: 5.5,
                       margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF38CCD6), // Cyan dot
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  if (hasSkill)
-                    Container(
-                      width: 5.5,
-                      height: 5.5,
-                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF9E872), // Yellow dot
+                      decoration: BoxDecoration(
+                        color: _categoryColor(ci),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -563,7 +569,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
                         shape: BoxShape.circle,
                       ),
                     ),
-                  if (!hasMedia && !hasSkill && !hasOverdue)
+                  if (classCategories.isEmpty && !hasOverdue)
                     const SizedBox(height: 5.5),
                 ],
               ),
@@ -581,14 +587,14 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     // A class that has not started yet only shows when it opens
     if (!isMentor) {
-      final start = ScheduleUtils.startInstant('§{event.year}/§{event.month}/§{event.day}', event.time);
+      final start = ScheduleUtils.startInstant('${event.year}/${event.month}/${event.day}', event.time);
       if (!ScheduleUtils.hasStarted(start)) {
-        AppToast.info(context, 'این کلاس هنوز باز نشده است و §{ScheduleUtils.describe(start!)} باز می‌شود.');
+        AppToast.info(context, 'این کلاس هنوز باز نشده است و ${ScheduleUtils.describe(start!)} باز می‌شود.');
         return;
       }
     }
 
-    final int tab = event.type == EventType.mediaClass ? 1 : 0;
+    final int tab = event.categoryIndex < 0 ? 0 : event.categoryIndex;
     final stations = await HttpApiService().getStations();
     if (!mounted) return;
 
@@ -623,7 +629,9 @@ class _EducationCalendarState extends State<EducationCalendar> {
         'stationIndex': stationIndex,
         'initialTab': tab,
         'tab': tab,
-        'type': event.type == EventType.mediaClass ? 'media' : 'skill',
+        'categoryIndex': tab,
+        if (event.categoryId != null) 'categoryId': event.categoryId,
+        if (event.id != null) 'sessionId': event.id,
         'sessionTitle': event.title,
         'title': event.title,
         'instructor': event.instructor,
@@ -669,7 +677,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
   Widget _buildEventColumnList({
     required List<CalendarEvent> events,
-    required bool isSkill,
+    required Color accentColor,
   }) {
     if (events.isEmpty) {
       return const Padding(
@@ -687,7 +695,6 @@ class _EducationCalendarState extends State<EducationCalendar> {
       );
     }
 
-    final accentColor = isSkill ? const Color(0xFFF9E872) : const Color(0xFF4DE2EC);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -748,14 +755,50 @@ class _EducationCalendarState extends State<EducationCalendar> {
     );
   }
 
+  static const List<Color> _categoryColors = [
+    Color(0xFFF9E872), // first category (yellow)
+    Color(0xFF4DE2EC), // second category (cyan)
+    Color(0xFFF59ED8),
+    Color(0xFF8BE38B),
+  ];
+
+  Color _categoryColor(int index) => _categoryColors[(index < 0 ? 0 : index) % _categoryColors.length];
+
+  /// Header of a category column: the admin-panel title of that category (from the day's classes, otherwise the
+  /// title used most often at that position), e.g. "کلاس شناختی".
+  String _categoryLabel(int index, List<CalendarEvent> dayEvents) {
+    String? title;
+    for (final e in dayEvents) {
+      if (e.isClass && e.categoryIndex == index && (e.categoryTitle?.trim().isNotEmpty ?? false)) {
+        title = e.categoryTitle;
+        break;
+      }
+    }
+    if (title == null) {
+      final counts = <String, int>{};
+      for (final e in _events) {
+        final t = e.categoryTitle?.trim();
+        if (e.isClass && e.categoryIndex == index && t != null && t.isNotEmpty) counts[t] = (counts[t] ?? 0) + 1;
+      }
+      if (counts.isNotEmpty) {
+        title = (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).first.key;
+      }
+    }
+    const digits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    final number = (index + 1).toString().split('').map((d) => digits[int.parse(d)]).join();
+    return title == null ? 'دسته $number' : 'کلاس ${StationCategories.shortLabel(title)}';
+  }
+
   Widget _buildClassesSummaryCard() {
     final dayEvents = _events.where((e) =>
         e.year == _selectedYear &&
         e.month == _selectedMonth &&
         e.day == _selectedDay).toList();
 
-    final mediaEvents = dayEvents.where((e) => e.type == EventType.mediaClass).toList();
-    final skillEvents = dayEvents.where((e) => e.type == EventType.skillClass).toList();
+    // One column per class category (by position, under its admin-panel title). The first two always show,
+    // so the usual two-column layout stays; a station with more categories adds columns on its days.
+    final Set<int> indexes = {0, 1, ...dayEvents.where((e) => e.isClass).map((e) => e.categoryIndex)};
+    final List<int> columns = indexes.toList()..sort();
 
     return Container(
       decoration: BoxDecoration(
@@ -778,87 +821,52 @@ class _EducationCalendarState extends State<EducationCalendar> {
         ),
         child: Column(
           children: [
-            // 2 Column Headers (Right: کلاس‌های مهارتی • | Left: کلاس‌های رسانه‌ای •)
+            // Column headers: the class categories (right to left, in admin-panel order)
             Directionality(
               textDirection: TextDirection.rtl,
               child: Row(
                 children: [
-                  // Right Column Header: مهارتی (Yellow)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF9E872),
-                            shape: BoxShape.circle,
+                  for (int i = 0; i < columns.length; i++) ...[
+                    if (i > 0)
+                      Container(
+                        width: 1,
+                        height: 16,
+                        color: Colors.white.withValues(alpha: 0.1),
+                      ),
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: _categoryColor(columns[i]),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 5),
-                        const Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'کلاس مهارتی',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFFF9E872),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _categoryLabel(columns[i], dayEvents),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _categoryColor(columns[i]),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontFamilyFallback: AppTheme.fontFamilyFallback,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-
-                  // Divider between columns
-                  Container(
-                    width: 1,
-                    height: 16,
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-
-                  // Left Column Header: رسانه‌ای (Cyan)
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF4DE2EC),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        const Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'کلاس رسانه‌ای',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Color(0xFF4DE2EC),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -871,29 +879,21 @@ class _EducationCalendarState extends State<EducationCalendar> {
             ),
             const SizedBox(height: 10),
 
-            // 2 Column Values Row
+            // Column values: the day's classes of each category
             Directionality(
               textDirection: TextDirection.rtl,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Right Column Value: Skill Classes
-                  Expanded(
-                    child: _buildEventColumnList(
-                      events: skillEvents,
-                      isSkill: true,
+                  for (int i = 0; i < columns.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildEventColumnList(
+                        events: dayEvents.where((e) => e.isClass && e.categoryIndex == columns[i]).toList(),
+                        accentColor: _categoryColor(columns[i]),
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Left Column Value: Media Classes
-                  Expanded(
-                    child: _buildEventColumnList(
-                      events: mediaEvents,
-                      isSkill: false,
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),

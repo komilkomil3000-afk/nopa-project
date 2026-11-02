@@ -6,7 +6,7 @@
   <title>پنل مدیریت اختصاصی نپا | Nopa Custom CRM</title>
   <!-- PWA -->
   <link rel="manifest" href="/admin/manifest.webmanifest">
-  <meta name="theme-color" content="#120C1F">
+  <meta name="theme-color" content="#201A36">
   <!-- Theme first: sets <html data-theme> before anything paints -->
   <script src="/admin/theme.js"></script>
   <link rel="icon" type="image/png" sizes="192x192" href="/admin/icons/icon-192.png">
@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/admin/css/landing.css">
   <link rel="stylesheet" href="/admin/css/dashboard.css">
   <link rel="stylesheet" href="/admin/css/components.css">
+  <link rel="stylesheet" href="/admin/css/stations.css">
   <link rel="stylesheet" href="/admin/css/utilities.css">
   <!-- Chart.js (Local) -->
   <script src="/admin/libs/chartjs/chart.umd.js"></script>
@@ -235,6 +236,23 @@
             <div class="header-dropdown" id="attention-dropdown" hidden>
               <div class="header-dropdown-title">نیازمند رسیدگی</div>
               <ul class="attention-list" id="attention-list"><li class="attention-empty">در حال بارگذاری...</li></ul>
+            </div>
+          </div>
+
+          <!-- Chat switch (super admin only): off / pilot / on, filled by js/features/chat-settings.js -->
+          <div class="header-menu chat-switch" id="chat-switch-menu" hidden>
+            <button type="button" class="btn-icon header-btn" id="btn-chat-switch" aria-haspopup="true" aria-expanded="false" aria-label="وضعیت چت" title="وضعیت چت">
+              <i class="fa-solid fa-comments"></i><span class="chat-switch-dot" id="chat-switch-dot" data-mode="unknown"></span>
+            </button>
+            <div class="header-dropdown chat-switch-dropdown" id="chat-switch-dropdown" hidden>
+              <div class="header-dropdown-title">وضعیت چت در اپ</div>
+              <div class="chat-switch-modes" role="radiogroup" aria-label="وضعیت چت">
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="off"><i class="fa-solid fa-power-off"></i><span>خاموش</span></button>
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="pilot"><i class="fa-solid fa-flask"></i><span>آزمایشی</span></button>
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="on"><i class="fa-solid fa-circle-check"></i><span>روشن</span></button>
+              </div>
+              <div class="chat-switch-note" id="chat-switch-note">در حال بارگذاری...</div>
+              <button type="button" class="header-dropdown-item" id="btn-chat-switch-manage"><i class="fa-solid fa-sliders"></i> مدیریت چت، کاروان‌های آزمایشی و دسترسی‌ها</button>
             </div>
           </div>
 
@@ -1769,389 +1787,143 @@
 
       <!-- LMS -->
       <section id="lms-tab" class="tab-panel" data-style="display: none;">
+        <div id="lms-overview-view">
         <div class="u-flex u-justify-between u-items-center u-mb-20">
           <h3>ساختار منزلگاه‌ها و مدیریت کلاس‌ها و آزمون‌ها</h3>
           <div class="u-flex u-gap-10">
-            <button type="button" data-click="openReorderStationsModal" class="btn-action u-bg-success-15 u-c-success-text u-bd-success-40 u-r-8 u-p-8-16 u-bold u-pointer u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-arrow-down-1-9"></i> مرتب‌سازی و اصلاح ترتیب منزلگاه‌ها
-            </button>
             <button type="button" data-click="openCreateStationModal" class="btn-primary u-bgc-primary">
               <i class="fa-solid fa-plus"></i> ایجاد منزلگاه جدید
             </button>
           </div>
         </div>
 
-        <!-- 4 Key Stat Cards -->
-        <div class="stats-grid u-mb-20">
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">کل منزلگاه‌های آموزشی</div>
-              <div class="stat-value u-c-primary-text" id="lms-stat-stations">۵ منزلگاه</div>
+        <!-- Stations bento: all stations (large tile) + stats, status, quick access, unlocks, instructors, gaps -->
+        <div class="lst-bento">
+          <div class="lst-tile lst-tile-stations glass">
+            <div class="lst-tile-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-route"></i> همه منزلگاه‌ها <span class="lst-tile-sub">نشانگر را روی منزلگاه ببرید تا خلاصه‌اش را ببینید؛ برای ورود بزنید</span></h4>
+              <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input aria-label="جستجوی منزلگاه‌ها" type="text" id="lms-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام منزلگاه، سرفصل یا استاد..." data-input="filterLmsTable">
+              </div>
             </div>
-            <div class="stat-icon u-c-primary-text u-bg-primary-10"><i class="fa-solid fa-compass"></i></div>
-          </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">مجموع جلسات مصوب</div>
-              <div class="stat-value u-c-success-text" id="lms-stat-sessions">۵۰ جلسه</div>
+            <div id="lms-bento-stations" class="lst-station-grid" aria-busy="true">
             </div>
-            <div class="stat-icon u-c-success-text u-bg-success-10"><i class="fa-solid fa-graduation-cap"></i></div>
           </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">پارت‌های ویدیویی</div>
-              <div class="stat-value u-c-primary-text" id="lms-stat-parts">۲۰۰ پارت ویدیو</div>
-            </div>
-            <div class="stat-icon u-c-primary-text u-bg-primary-10"><i class="fa-solid fa-video"></i></div>
-          </div>
-          <div class="stat-card glass">
-            <div>
-              <div class="stat-label">بانک آزمونک‌ها و سوالات</div>
-              <div class="stat-value u-c-accent-text" id="lms-stat-quizzes">۴۰۰ آزمونک</div>
-            </div>
-            <div class="stat-icon u-c-accent-text u-bg-accent-10"><i class="fa-solid fa-file-signature"></i></div>
-          </div>
-        </div>
 
-        <!-- Actions & Filters Header -->
-        <div class="actions-header glass u-mb-20">
-          <div class="filters-group u-flex-1">
-            <div class="search-box u-flex-1 u-minw-250">
-              <i class="fa-solid fa-search"></i>
-              <input aria-label="جستجوی منزلگاه‌ها" type="text" id="lms-search-input" class="input-ctrl" placeholder="جستجو بر اساس نام منزلگاه، سرفصل یا استاد..." data-input="filterLmsTable">
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+            <div class="lst-mini-stats">
+              <div class="lst-mini-stat"><span class="stat-label">منزلگاه‌ها</span><span class="stat-value u-c-primary-text" id="lms-stat-stations">-</span></div>
+              <div class="lst-mini-stat"><span class="stat-label">جلسات</span><span class="stat-value u-c-success-text" id="lms-stat-sessions">-</span></div>
+              <div class="lst-mini-stat"><span class="stat-label">پارت‌های ویدیو</span><span class="stat-value u-c-info-text" id="lms-stat-parts">-</span></div>
+              <div class="lst-mini-stat"><span class="stat-label">آزمونک‌ها</span><span class="stat-value u-c-accent-text" id="lms-stat-quizzes">-</span></div>
             </div>
-            <select aria-label="فیلتر دسته" id="lms-filter-category" class="select-ctrl" data-change="filterLmsTable">
-              <option value="all">همه دسته‌ها (مهارتی + رسانه‌ای)</option>
-              <option value="مهارتی">فقط کلاس‌های مهارتی</option>
-              <option value="رسانه‌ای">فقط کلاس‌های رسانه‌ای</option>
-            </select>
-            <select aria-label="فیلتر استاد" id="lms-filter-instructor" class="select-ctrl" data-change="filterLmsTable">
-              <option value="all">همه اساتید</option>
-              <option value="خوش‌منظر">علیرضا خوش‌منظر</option>
-              <option value="پیراینه‌گر">پیراینه‌گر</option>
-              <option value="پیرچهره‌تراش">پیرچهره‌تراش</option>
-              <option value="پیردیده‌بان">پیردیده‌بان</option>
-              <option value="پیرناخدا">پیرناخدا</option>
-              <option value="پیرمنجم">پیرمنجم</option>
-              <option value="حیدری">حیدری</option>
-              <option value="زاهدی">کمیل زاهدی</option>
-            </select>
           </div>
-          <div class="u-flex u-gap-10">
-            <button type="button" data-click="exportLmsToExcel" class="btn-action btn-export">
-              <i class="fa-solid fa-file-excel u-c-success-text"></i> خروجی اکسل
-            </button>
-            <button type="button" data-click="fetchLiveLmsStations" class="btn-action btn-export">
-              <i class="fa-solid fa-sync"></i> بروزرسانی
-            </button>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-key"></i> وضعیت دسترسی</h4>
+            <div id="lms-bento-status"></div>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+            <div class="lst-quick">
+              <button type="button" class="lst-quick-btn" data-click="openCreateStationModal"><i class="fa-solid fa-plus"></i> منزلگاه جدید</button>
+              <button type="button" class="lst-quick-btn" data-click="openLmsInstructorsBank"><i class="fa-solid fa-address-book"></i> بانک اساتید</button>
+              <button type="button" class="lst-quick-btn" data-click="exportLmsToExcel"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
+              <button type="button" class="lst-quick-btn" data-click="reloadLmsStations"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              <button type="button" class="lst-quick-btn" data-click="openInstructorModal"><i class="fa-solid fa-user-plus"></i> استاد جدید</button>
+            </div>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-regular fa-calendar-check"></i> بازگشایی‌های پیش‌رو</h4>
+            <div id="lms-bento-upcoming"></div>
+          </div>
+
+          <div class="lst-tile glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-chalkboard-user"></i> اساتید فعال منزلگاه‌ها</h4>
+            <div id="lms-bento-instructors"></div>
+          </div>
+
+          <div class="lst-tile lst-tile-wide glass">
+            <h4 class="lst-tile-title"><i class="fa-solid fa-list-check"></i> نیازمند تکمیل</h4>
+            <div id="lms-bento-health"></div>
           </div>
         </div>
 
-        <!-- LMS Stations Data Table -->
-        <div class="table-container glass">
-          <table class="data-table" id="lms-stations-table">
-            <thead>
-              <tr>
-                <th class="u-w-70 u-text-center">کد</th>
-                <th class="u-minw-130">نام منزلگاه</th>
-                <th class="u-minw-200">موضوعات دسته کلاس‌ها</th>
-                <th>اساتید دوره</th>
-                <th class="u-text-center">دسته کلاس</th>
-                <th>زمان‌بندی</th>
-                <th class="u-text-center">جلسات و پارت‌ها</th>
-                <th class="u-text-center">وضعیت</th>
-                <th class="u-w-130 u-text-center">عملیات</th>
-              </tr>
-            </thead>
-            <tbody id="lms-directory-tbody">
-              <!-- Dynamically rendered -->
-            </tbody>
-          </table>
         </div>
 
-        <!-- Station Inspector & Edit Modal -->
-        <div id="lms-station-creator-modal" class="modal-overlay u-z-z-drawer" data-style="display: none">
-          <div class="modal-content glass u-maxw-860 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-primary-30 u-shadow-modal-7 u-p-24 u-c-text">
-            
-            <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
-              <div>
-                <h3 id="station-modal-title" class="u-m-0 u-c-color-neon-blue u-fs-lg u-flex u-items-center u-gap-8">
-                  <i class="fa-solid fa-graduation-cap"></i> تعریف / ویرایش منزلگاه آموزشی
-                </h3>
-                <div class="u-fs-xs u-c-text-muted u-mt-4">مشخصات منزلگاه، تفکیک دسته ۱ و ۲، تعداد جلسات، پارت‌های ویدیو و آزمونک‌های بین پارت‌ها</div>
-              </div>
-              <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-creator-modal&quot;]">&times;</button>
-            </div>
+        <!-- Single-station view (js/features/lms/station-view.js) -->
+        <div id="lms-station-view" data-style="display: none;"></div>
 
-            <form id="lms-creator-form" data-submit="saveCompleteStation" data-submit-args="[&quot;$event&quot;]">
-              <input type="hidden" id="modal-st-id">
-              
-              <!-- بخش اطلاعات پایه منزلگاه -->
-              <div class="u-bg-surface-2-50 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-                <div class="u-fs-sm u-bold u-c-primary-text u-mb-12 u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-circle-info"></i> مشخصات کلی منزلگاه
-                </div>
-                <div class="u-grid u-cols-1fr-2fr-1_5fr u-gap-12 u-mb-12">
-                  <div class="form-group">
-                    <label for="modal-st-index" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-hashtag u-c-primary-text"></i> شماره منزلگاه (خودکار و یکتا):</label>
-                    <input type="number" id="modal-st-index" class="input-ctrl u-bg-surface u-bdc-border-strong u-c-primary-text u-bold u-cursor-not-allowed" min="0" step="1" title="شماره منزلگاه به صورت خودکار و یکتا تخصیص داده می‌شود. برای تغییر ترتیب از دکمه «مرتب‌سازی منزلگاه‌ها» استفاده نمایید.">
-                  </div>
-                  <div class="form-group">
-                    <label for="modal-st-title" class="u-fs-xs u-c-text-soft">عنوان منزلگاه:</label>
-                    <input type="text" id="modal-st-title" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: مبانی شناخت و رسانه (شوک و اینشات)" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="modal-st-release-date" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-calendar-days u-c-primary-text"></i> تاریخ شروع/انتشار (تقویم):</label>
-                    <input type="date" id="modal-st-release-date" class="input-ctrl u-c-text u-bg-surface-2 u-bdc-border-strong" required>
-                  </div>
-                </div>
-                <div class="u-grid u-cols-1fr-2fr u-gap-12 u-mb-12">
-                  <div class="form-group">
-                    <label for="modal-st-duration" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-hourglass-half u-c-primary-text"></i> مدت اقامت در منزلگاه:</label>
-                    <input type="text" id="modal-st-duration" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: ۲ هفته یا ۱۴ روز">
-                  </div>
-                  <div class="form-group">
-                    <label for="modal-st-details" class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-align-right u-c-primary-text"></i> متن معرفی، داستان و سرفصل‌های کلی منزلگاه:</label>
-                    <textarea id="modal-st-details" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" rows="2" placeholder="توضیحات، داستان، اهداف و سرفصل‌های کلی این منزلگاه را وارد نمایید..."></textarea>
-                  </div>
-                </div>
-
-                <!-- فیلدهای پنهان برای سازگاری عقب‌رو -->
-                <input type="hidden" id="modal-st-anim-title" value="">
-                <input type="hidden" id="modal-st-anim-url" value="">
-
-                <!-- بخش انیمیشن‌های چندگانه و اسلایدر اپلیکیشن -->
-                <div class="u-bg-surface-70 u-bd-primary-28 u-r-10 u-p-14 u-mt-14">
-                  <div class="u-flex u-justify-between u-items-center u-mb-12 u-bb-fg-7 u-pb-8">
-                    <div>
-                      <div class="u-fs-sm u-bold u-c-primary-text u-flex u-items-center u-gap-6">
-                        <i class="fa-solid fa-images"></i> نگارستان منزلگاه (نمایش اسلایدی در اپلیکیشن)
-                      </div>
-                      <div class="u-fs-2xs u-c-text-muted u-mt-2">
-                        می‌توانید چند تصویر مختلف برای نگارستان این منزلگاه آپلود کنید؛ در اپلیکیشن به صورت اسلاید نمایش داده می‌شوند و قابل بزرگنمایی هستند.
-                      </div>
-                    </div>
-                    <button type="button" data-click="addGalleryItemCard" data-click-args="[&quot;lms-modal-animations-container&quot;]" class="u-bg-grad-primary u-c-white u-bd-none u-p-6-14 u-r-7 u-fs-xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-8-primary-30">
-                      <i class="fa-solid fa-plus"></i> + افزودن تصویر به نگارستان
-                    </button>
-                  </div>
-
-                  <div id="lms-modal-animations-container" class="u-flex u-col u-gap-10">
-                    <!-- Dynamically populated with gallery cards -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- بخش دسته‌بندی‌های کلاس (اختیاری: با قابلیت افزودن و حذف نامحدود دسته‌ها) -->
-              <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-16 u-mb-16">
-                <div class="u-flex u-justify-between u-items-center u-mb-14 u-bb-fg-8 u-pb-10">
-                  <div>
-                    <h4 class="u-m-0 u-c-primary-text u-fs-md u-flex u-items-center u-gap-8">
-                      <i class="fa-solid fa-layer-group"></i> دسته‌بندی‌های کلاس این منزلگاه
-                      <span class="u-fs-2xs u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-p-2-8 u-r-12 u-fw-normal">(اختیاری)</span>
-                    </h4>
-                    <div class="u-fs-2xs u-c-text-muted u-mt-2">تعریف دسته‌بندی کلاس اختیاری است. می‌توانید بدون تعریف کلاس و صرفاً با انیمیشن و توضیحات، منزلگاه را ثبت فرمایید.</div>
-                  </div>
-                  <button type="button" data-click="addCategoryBlockToCreatorModal" class="u-bg-grad-primary u-c-white u-bd-none u-p-8-16 u-r-8 u-fs-xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-8-primary-30">
-                    <i class="fa-solid fa-plus"></i> + افزودن دسته جدید
-                  </button>
-                </div>
-
-                <div id="lms-modal-categories-container" class="u-flex u-col u-gap-14">
-                  <!-- Dynamically populated with category cards -->
-                </div>
-              </div>
-
-              <!-- بخش راهنمای آزمونک‌های بین پارت‌ها -->
-              <div class="u-bg-accent-10 u-bd-1-dashed-accent-40 u-r-10 u-p-12 u-mb-20 u-fs-xs u-c-accent-text u-flex u-items-center u-gap-10">
-                <i class="fa-solid fa-circle-question u-fs-lg u-c-accent-text"></i>
-                <div>
-                  <strong>مدیریت پارت‌ها و آزمونک‌های بین هر پارت:</strong>
-                  پارت‌های ویدیویی و آزمونک‌های تستی مستقل هر پارت به صورت خودکار بر اساس تعداد بالا تولید می‌شوند. پس از ذخیره می‌توانید از دکمه «<i class="fa-solid fa-photo-film"></i> مدیریت پارت‌ها و آزمونک‌ها» در جدول، سوالات آزمونک هر پارت و لینک ویدیوها را تنظیم و ویرایش نمایید.
-                </div>
-              </div>
-
-              <!-- دکمه‌های اقدام -->
-              <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-16">
-                <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-creator-modal&quot;]">انصراف</button>
-                <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-primary u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-8">
-                  <i class="fa-solid fa-check"></i> ذخیره و ثبت منزلگاه
-                </button>
-              </div>
-            </form>
+        <!-- Station editor: one modal for creating (steps) and editing (tabs) a station, with a single save.
+             Drawn by js/features/lms/station-editor.js; styles in css/stations.css (.lse-*) -->
+        <div id="lms-station-editor-modal" class="modal-overlay lse-overlay" data-style="display: none">
+          <div class="lse" aria-labelledby="lse-title">
+            <header class="lse-head">
+              <div class="lse-id" id="lse-id"></div>
+              <nav class="lse-tabs" id="lse-tabs" aria-label="بخش‌های ویرایشگر"></nav>
+              <button type="button" class="lsv-round" data-modal-close data-click="lmsEditorClose" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="lse-body" id="lse-body" tabindex="-1"></div>
+            <footer class="lse-foot" id="lse-foot"></footer>
           </div>
         </div>
 
-        <!-- Station Reorder & Unique Numbering Modal -->
-        <div id="lms-station-reorder-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
-          <div class="modal-content glass u-maxw-680 u-w-95p u-maxh-85vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-success-35 u-shadow-modal-8 u-p-24 u-c-text">
-            <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
-              <div>
-                <h3 class="u-m-0 u-c-success-text u-fs-md u-flex u-items-center u-gap-8">
-                  <i class="fa-solid fa-arrow-down-1-9"></i> مرتب‌سازی و اصلاح ترتیب منزلگاه‌ها
-                </h3>
-                <div class="u-fs-xs u-c-text-muted u-mt-4">با دکمه‌های بالا و پایین ترتیب منزلگاه‌ها را تغییر دهید. شماره‌ها بدون تکرار و به ترتیب (۱ تا N) ذخیره می‌شوند.</div>
-              </div>
-              <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-reorder-modal&quot;]">&times;</button>
-            </div>
-
-            <div id="lms-reorder-list-container" class="u-flex u-col u-gap-8 u-mb-20">
-              <!-- Dynamically populated station items with up/down buttons -->
-            </div>
-
-            <div class="u-flex u-justify-between u-items-center u-bt-fg-10 u-pt-16">
-              <span class="u-fs-2xs u-c-primary-text"><i class="fa-solid fa-shield-halved"></i> تضمین عدم وجود شماره تکراری در سیستم</span>
-              <div class="u-flex u-gap-10">
-                <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;lms-station-reorder-modal&quot;]">انصراف</button>
-                <button type="button" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-success u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-8" data-click="saveStationsReorder">
-                  <i class="fa-solid fa-check"></i> ذخیره و ثبت ترتیب جدید
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LMS Session Content, Video Links & Mini-Quiz Manager Modal -->
-        <div id="lms-content-manager-modal" class="modal-overlay" data-style="display: none;">
-          <div class="modal-content glass u-maxw-900 u-w-95p u-maxh-90vh u-scroll-y u-p-24">
-            <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
-              <div>
-                <h3 id="lms-content-modal-title" class="u-m-0 u-c-color-neon-blue u-fs-lg">
-                  <i class="fa-solid fa-photo-film"></i> مدیریت پارت‌های ویدیو و آزمونک‌های منزلگاه
-                </h3>
-                <div id="lms-content-modal-subtitle" class="u-fs-xs u-c-text-muted u-mt-4">مشاهده و اصلاح لینک‌های ویدیو (پارت‌ها) و مدیریت آزمونک‌های هر جلسه</div>
-              </div>
-              <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-content-manager-modal&quot;]">&times;</button>
-            </div>
-
-            <div id="lms-content-modal-body">
-              <!-- Dynamically populated with Categories -> Sessions -> Clips (Video Links) -> Quizzes -->
-            </div>
-
-            <div class="u-flex u-justify-between u-items-center u-bt-fg-10 u-pt-16 u-mt-20 u-wrap u-gap-12">
-              <div class="u-fs-xs u-c-text-muted u-flex u-items-center u-gap-6">
-                <i class="fa-solid fa-circle-info u-c-primary-text"></i> پس از اعمال تغییرات در جلسات و پارت‌ها، دکمه «ثبت نهایی تغییرات» را بزنید.
-              </div>
-              <div class="u-flex u-gap-10">
-                <button type="button" class="btn-action u-p-10-20 u-bold u-r-8 u-pointer" data-click="cancelLmsContentManagerModal">
-                  <i class="fa-solid fa-xmark u-ml-4"></i> انصراف و بستن
-                </button>
-                <button type="button" class="btn-primary u-bg-grad-success u-c-white u-p-10-24 u-bold u-r-8 u-bd-none u-pointer u-shadow-0-4-12-success-35 u-flex u-items-center u-gap-8" data-click="openFinalLmsSaveConfirmationModal">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> ثبت نهایی تغییرات
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LMS Two-Step Confirmation Modal for Final Save -->
-        <div id="lms-final-confirm-modal" class="modal-overlay u-z-z-modal-confirm" data-style="display: none">
-          <div class="modal-content glass u-maxw-520 u-w-92p u-p-24 u-r-16 u-bg-surface u-bd-success-50 u-shadow-modal-9 u-text-right">
-            <div class="u-flex u-items-center u-gap-12 u-mb-16">
-              <div class="u-w-44 u-h-44 u-r-12 u-bg-success-15 u-flex u-items-center u-justify-center u-c-success-text u-fs-xl u-bd-success-30">
-                <i class="fa-solid fa-shield-check"></i>
-              </div>
-              <div>
-                <h3 class="u-m-0 u-c-text u-fs-md u-bold">تایید دومرحله‌ای ثبت نهایی تغییرات</h3>
-                <span class="u-fs-xs u-c-text-muted">مرحله ۲ از ۲: بررسی و تایید پایگاه‌داده</span>
-              </div>
-            </div>
-
-            <div class="u-bg-success-8 u-bd-success-20 u-r-10 u-p-14 u-mb-20">
-              <div class="u-c-text u-fs-sm u-lh-1_7 u-mb-8">
-                آیا از ثبت نهایی و ذخیره‌سازی قطعی کلیه تغییرات ایجادشده در مشخصات، کلاس‌ها، پارت‌های ویدیویی و محتوای این منزلگاه اطمینان دارید؟
-              </div>
-              <div id="lms-confirm-summary-list" class="u-fs-xs u-c-text-soft u-bt-1-dashed-fg-10 u-pt-8">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
-
-            <div class="u-flex u-justify-end u-gap-10">
-              <button type="button" data-click="NopaActions.hide" data-click-args="[&quot;lms-final-confirm-modal&quot;]" class="btn-action u-p-8-20 u-r-8 u-bold u-pointer">
-                انصراف و بازگشت
-              </button>
-              <button type="button" id="btn-confirm-save-lms-final" data-click="executeFinalLmsSave" class="btn-primary u-bg-success u-c-white u-p-8-24 u-r-8 u-bold u-bd-none u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-success-40">
-                <i class="fa-solid fa-check-double"></i> تایید نهایی و ذخیره در دیتابیس
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quiz Editor Modal for Mini-Quizzes -->
-        <div id="lms-quiz-editor-modal" class="modal-overlay u-z-z-modal-nested" data-style="display: none">
-          <div class="modal-content glass u-maxw-680 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-accent-40 u-shadow-modal-8 u-p-24 u-c-text">
-            <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
-              <div>
-                <h3 id="quiz-modal-title" class="u-m-0 u-c-accent-text u-fs-md u-flex u-items-center u-gap-8">
-                  <i class="fa-solid fa-circle-question"></i> طراحی و اصلاح آزمونک پارت ویدیو
-                </h3>
-                <div class="u-fs-xs u-c-text-muted u-mt-4">تنظیم پاداش زریک، صورت سوال، گزینه‌ها و مشخص کردن پاسخ صحیح</div>
-              </div>
-              <button aria-label="بستن" type="button" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]">&times;</button>
-            </div>
-
-            <form id="lms-quiz-form" data-submit="saveQuizFromModal" data-submit-args="[&quot;$event&quot;]">
-              <input type="hidden" id="quiz-modal-id">
-              <input type="hidden" id="quiz-modal-session-id">
-              <input type="hidden" id="quiz-modal-clip-id">
-
-              <div class="u-grid u-cols-2fr-1fr u-gap-12 u-mb-14">
-                <div class="form-group">
-                  <label for="quiz-modal-title-input" class="u-fs-xs u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-heading u-c-primary-text"></i> عنوان آزمونک:</label>
-                  <input type="text" id="quiz-modal-title-input" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" placeholder="مثال: آزمونک پارت ۱..." required>
-                </div>
-                <div class="form-group">
-                  <label for="quiz-modal-zarik" class="u-fs-xs u-c-accent-text u-bold u-block u-mb-4"><i class="fa-solid fa-coins"></i> تخصیص پاداش زریک:</label>
-                  <input type="number" id="quiz-modal-zarik" class="input-ctrl u-bg-surface-2 u-bdc-accent u-c-accent-text u-bold" value="10" min="0" max="500" required>
+        <!-- Quiz editor (a part's mini-quiz), opened from the station editor -->
+        <div id="lms-quiz-editor-modal" class="modal-overlay lse-overlay u-z-z-modal-nested" data-style="display: none">
+          <div class="lse lse-sm">
+            <header class="lse-head lse-head-plain">
+              <div class="lse-id">
+                <span class="lse-id-icon is-accent"><i class="fa-solid fa-circle-question"></i></span>
+                <div class="lse-id-text">
+                  <h3 id="quiz-modal-title">آزمونک پارت ویدیو</h3>
+                  <span>سوال، چهار گزینه، پاسخ درست و پاداش زریک</span>
                 </div>
               </div>
+              <button type="button" class="lsv-round modal-close-round" data-modal-close data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+            </header>
 
-              <div class="form-group u-mb-16">
-                <label for="quiz-modal-q-text" class="u-fs-xs u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-question u-c-primary-text"></i> متن صورت سوال آزمونک:</label>
-                <textarea id="quiz-modal-q-text" class="input-ctrl u-bg-surface-2 u-bdc-border-strong" rows="2" placeholder="متن کامل صورت سوال این پارت را اینجا وارد نمایید..." required></textarea>
-              </div>
+            <form id="lms-quiz-form" class="lse-form" data-submit="saveQuizFromModal" data-submit-args="[&quot;$event&quot;]">
+              <div class="lse-body">
+                <input type="hidden" id="quiz-modal-id">
+                <input type="hidden" id="quiz-modal-session-id">
+                <input type="hidden" id="quiz-modal-clip-id">
 
-              <div class="u-bg-surface-2-70 u-bd-fg-10 u-r-10 u-p-14 u-mb-16">
-                <div class="u-flex u-justify-between u-items-center u-mb-12">
-                  <label class="u-c-primary-text u-bold u-fs-sm u-flex u-items-center u-gap-6">
-                    <i class="fa-solid fa-list-check"></i> گزینه‌های پاسخ (دایره گزینه صحیح را انتخاب نمایید):
+                <div class="lse-grid lse-grid-quiz">
+                  <label class="lse-field">
+                    <span>عنوان آزمونک</span>
+                    <input type="text" id="quiz-modal-title-input" class="input-ctrl" placeholder="مثال: آزمونک پارت ۱" required>
                   </label>
-                  <span class="u-fs-2xs u-c-text-muted">۱ گزینه درست و ۳ گزینه نادرست</span>
+                  <label class="lse-field">
+                    <span><i class="fa-solid fa-coins"></i> پاداش زریک</span>
+                    <input type="number" id="quiz-modal-zarik" class="input-ctrl" value="10" min="0" max="500" required>
+                  </label>
                 </div>
-                
-                <div class="u-flex u-col u-gap-8">
-                  <div class="u-flex u-items-center u-gap-10 u-bg-surface-80 u-p-8-12 u-r-8 u-bd-fg-6">
-                    <input type="radio" name="quiz-correct-opt" value="0" id="opt-radio-0" class="u-pointer u-w-18 u-h-18 u-accent-success" checked>
-                    <span class="u-fs-xs u-bold u-c-text-soft u-minw-55">گزینه ۱:</span>
-                    <input type="text" id="quiz-opt-0" class="input-ctrl u-flex-1 u-bg-surface u-bdc-border-strong" placeholder="متن گزینه اول..." required>
-                  </div>
-                  
-                  <div class="u-flex u-items-center u-gap-10 u-bg-surface-80 u-p-8-12 u-r-8 u-bd-fg-6">
-                    <input type="radio" name="quiz-correct-opt" value="1" id="opt-radio-1" class="u-pointer u-w-18 u-h-18 u-accent-success">
-                    <span class="u-fs-xs u-bold u-c-text-soft u-minw-55">گزینه ۲:</span>
-                    <input type="text" id="quiz-opt-1" class="input-ctrl u-flex-1 u-bg-surface u-bdc-border-strong" placeholder="متن گزینه دوم..." required>
-                  </div>
 
-                  <div class="u-flex u-items-center u-gap-10 u-bg-surface-80 u-p-8-12 u-r-8 u-bd-fg-6">
-                    <input type="radio" name="quiz-correct-opt" value="2" id="opt-radio-2" class="u-pointer u-w-18 u-h-18 u-accent-success">
-                    <span class="u-fs-xs u-bold u-c-text-soft u-minw-55">گزینه ۳:</span>
-                    <input type="text" id="quiz-opt-2" class="input-ctrl u-flex-1 u-bg-surface u-bdc-border-strong" placeholder="متن گزینه سوم..." required>
-                  </div>
+                <label class="lse-field">
+                  <span>صورت سوال</span>
+                  <textarea id="quiz-modal-q-text" class="input-ctrl" rows="2" placeholder="متن سوال این پارت..." required></textarea>
+                </label>
 
-                  <div class="u-flex u-items-center u-gap-10 u-bg-surface-80 u-p-8-12 u-r-8 u-bd-fg-6">
-                    <input type="radio" name="quiz-correct-opt" value="3" id="opt-radio-3" class="u-pointer u-w-18 u-h-18 u-accent-success">
-                    <span class="u-fs-xs u-bold u-c-text-soft u-minw-55">گزینه ۴:</span>
-                    <input type="text" id="quiz-opt-3" class="input-ctrl u-flex-1 u-bg-surface u-bdc-border-strong" placeholder="متن گزینه چهارم..." required>
-                  </div>
-                </div>
+                <fieldset class="lse-options">
+                  <legend>گزینه‌ها <small>دایره کنار پاسخ درست را انتخاب کنید</small></legend>
+                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="0" id="opt-radio-0" checked><span>۱</span><input type="text" id="quiz-opt-0" class="input-ctrl" placeholder="گزینه اول" required></label>
+                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="1" id="opt-radio-1"><span>۲</span><input type="text" id="quiz-opt-1" class="input-ctrl" placeholder="گزینه دوم" required></label>
+                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="2" id="opt-radio-2"><span>۳</span><input type="text" id="quiz-opt-2" class="input-ctrl" placeholder="گزینه سوم" required></label>
+                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="3" id="opt-radio-3"><span>۴</span><input type="text" id="quiz-opt-3" class="input-ctrl" placeholder="گزینه چهارم" required></label>
+                </fieldset>
               </div>
 
-              <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-16">
-                <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]">انصراف</button>
-                <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-accent u-c-black u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-save"></i> ذخیره و ثبت آزمونک در دیتابیس
-                </button>
-              </div>
+              <footer class="lse-foot">
+                <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> آزمونک جداگانه و همین‌جا ذخیره می‌شود.</span>
+                <div class="lse-foot-actions">
+                  <button type="button" class="lse-btn" data-click="NopaActions.hide" data-click-args="[&quot;lms-quiz-editor-modal&quot;]">انصراف</button>
+                  <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره آزمونک</button>
+                </div>
+              </footer>
             </form>
           </div>
         </div>
@@ -3876,6 +3648,8 @@
     <script src="js/ui/table.js"></script>
     <script src="js/ui/actions.js"></script>
     <script src="js/ui/person-fields.js"></script>
+    <script src="js/ui/flip.js"></script>
+    <script src="js/ui/lightbox.js"></script>
     <script src="js/core/attention.js"></script>
     <script src="js/layout/topnav.js"></script>
     <script src="js/layout/landing.js"></script>
@@ -3903,10 +3677,12 @@
     <script src="instructors.js"></script>
     <script src="js/features/lms/directory.js"></script>
     <script src="js/features/lms/content-manager.js"></script>
+    <script src="js/features/lms/station-editor.js"></script>
     <script src="js/features/lms/quiz.js"></script>
     <script src="js/features/lms/reorder-export.js"></script>
-    <script src="js/features/lms/station-creator.js"></script>
     <script src="js/features/lms/access.js"></script>
+    <script src="js/features/lms/station-view.js"></script>
+    <script src="js/features/lms/station-dnd.js"></script>
     <script src="fa-digits.js"></script>
 </body>
 </html>

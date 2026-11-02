@@ -50,8 +50,12 @@
   --color-success: var(--success);
   --color-warning: var(--accent);
   --color-danger: var(--danger);
-  --glass-bg: rgb(var(--surface-rgb) / 0.78);
+  /* One glass level for every main box in the panel (.glass, dashboard tiles, the station page panels):
+     half-transparent surface over a blurred page background. Modals stay nearly opaque for reading. */
+  --glass-bg: rgb(var(--surface-rgb) / 0.5);
+  --glass-blur: blur(16px) saturate(1.2);
   --glass-border: var(--border);
+  --glass-modal-bg: rgb(var(--surface-rgb) / 0.94);
   --bg-card: rgb(var(--surface-rgb) / 0.95);
   --sidebar-width: 280px;
 }
@@ -71,9 +75,20 @@ body {
   direction: rtl;
   min-height: 100vh;
   overflow-x: hidden;
-  background-image: radial-gradient(circle at 10% 20%, var(--page-glow-1) 0%, transparent 40%),
-                    radial-gradient(circle at 90% 80%, var(--page-glow-2) 0%, transparent 45%);
-  background-attachment: fixed;
+}
+
+/* Page background (css/tokens.css --page-bg-image: curved bands on desktop, the app's background on phones)
+   on a fixed layer behind everything; background-attachment: fixed is unreliable on mobile browsers */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--page-bg-image, none), var(--page-gradient, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* Animations */
@@ -108,11 +123,12 @@ body {
 /* Glassmorphism Classes */
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
 }
+.modal-content.glass { background: var(--glass-modal-bg); }
 
 /* Login Screen */
 #login-screen {

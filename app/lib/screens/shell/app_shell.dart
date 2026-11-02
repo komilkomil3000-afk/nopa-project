@@ -18,14 +18,13 @@ import 'package:nopa_app/screens/chat/chat_home_screen.dart';
 import 'package:nopa_app/screens/student/home/student_home_screen.dart';
 import 'package:nopa_app/screens/student/academy/student_academy_roadmap_screen.dart';
 import 'package:nopa_app/screens/student/challenges/student_challenges_screen.dart';
-import 'package:nopa_app/screens/student/market/student_market_screen.dart';
+import 'package:nopa_app/screens/market/market_screen.dart';
 import 'package:nopa_app/screens/student/profile/student_profile_screen.dart';
 
 // Mentor screen imports
 import 'package:nopa_app/screens/mentor/home/mentor_home_screen.dart';
 import 'package:nopa_app/screens/mentor/academy/mentor_station_class1_screen.dart';
 import 'package:nopa_app/screens/mentor/challenges/mentor_challenges_screen.dart';
-import 'package:nopa_app/screens/mentor/market/mentor_market_screen.dart';
 import 'package:nopa_app/screens/mentor/profile/mentor_profile_screen.dart';
 
 final GlobalKey<MainScreenState> mainScreenKey = GlobalKey<MainScreenState>();
@@ -120,7 +119,7 @@ class MainScreenState extends State<AppShell> {
             const MentorHomeScreen(),
             const MentorStationClass1Screen(),
             const MentorChallengesScreen(),
-            const MentorMarketScreen(),
+            const MarketScreen(mode: MarketMode.mentor),
             const MentorProfileScreen(),
             chatTab,
           ]
@@ -128,7 +127,7 @@ class MainScreenState extends State<AppShell> {
             const StudentHomeScreen(),
             const StudentAcademyRoadmapScreen(),
             const StudentChallengesScreen(),
-            const StudentMarketScreen(),
+            const MarketScreen(mode: MarketMode.student),
             const StudentProfileScreen(),
             chatTab,
           ];

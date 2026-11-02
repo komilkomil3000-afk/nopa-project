@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 322 589" preserveAspectRatio="xMidYMid slice">
+  <!-- Nopa admin panel background, light theme on phones: the app's login_bg.png (a lavender diagonal with a
+       soft beam from the top-left) in the light app palette -->
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#D8D5F0"/>
+      <stop offset="0.45" stop-color="#ECEBF7"/>
+      <stop offset="1" stop-color="#F8F7FD"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0.6">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="322" height="589" fill="url(#base)"/>
+  <path d="M60,0 H200 L20,589 H0 V230 Z" fill="url(#beam)"/>
+</svg>

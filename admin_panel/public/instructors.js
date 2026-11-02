@@ -430,6 +430,8 @@ window.selectInstructorForBlock = function(blockId, instName, isChecked) {
   }
 
   hiddenInput.value = selectedNames.join('، ');
+  // lets the station editor's draft see the change (js/features/lms/station-editor.js)
+  hiddenInput.dispatchEvent(new Event('input', { bubbles: true }));
   window.renderSelectedInstructorBadges(blockId);
   window.populateInstructorDropdownOptions(blockId);
 };
@@ -442,7 +444,7 @@ window.removeInstructorFromBlock = function(blockId, instName, event) {
 
 // Re-render all instructor pickers currently on screen
 window.refreshAllInstructorPickers = function() {
-  document.querySelectorAll('.modal-category-card').forEach(card => {
+  document.querySelectorAll('.modal-category-card, [data-inst-picker]').forEach(card => {
     window.renderSelectedInstructorBadges(card.id);
   });
 };

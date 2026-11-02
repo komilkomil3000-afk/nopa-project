@@ -341,6 +341,8 @@ export async function getCaravanLeague(req: Request, res: Response) {
           select: { name: true }
         },
         members: {
+          // Only active students count toward a caravan's wealth and progress
+          where: { role: 'student', isDeleted: false },
           select: { id: true, zarikBalance: true, nakh: true, farsh: true, beyragh: true }
         }
       }
@@ -361,7 +363,8 @@ export async function getCaravanLeague(req: Request, res: Response) {
       let caravanProgress = 0;
       const totalMembers = c.members.length;
 
-      if (totalMembers > 0 && totalAvailableCurriculumItems > 0) {
+      // The wealth ranking (the app's market) does not need progress, which costs two queries per member
+      if (sortBy !== 'wealth' && totalMembers > 0 && totalAvailableCurriculumItems > 0) {
         let passedQuizzesCount = 0;
         let watchedSessionsCount = 0;
 
@@ -428,7 +431,7 @@ export async function getWealthiestLeague(req: Request, res: Response) {
   try {
     const { config } = await getEconomyPolicy();
     const students = await prisma.user.findMany({
-      where: { role: 'student' },
+      where: { role: 'student', isDeleted: false },
       select: {
         id: true,
         name: true,
