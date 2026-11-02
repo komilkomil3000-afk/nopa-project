@@ -2185,10 +2185,13 @@ class HttpApiService {
   }
 
   // --- Caravan Asset Conversions & Exchanges ---
-  Future<List<Map<String, dynamic>>> getCaravanAssetConversions() async {
+  /// Exchanges of the mentor's caravan ([caravanId] picks one when they manage several), or the student's own.
+  Future<List<Map<String, dynamic>>> getCaravanAssetConversions({String? caravanId}) async {
     try {
       final response = await _get(
-        Uri.parse('$baseUrl/caravans/asset-conversions'),
+        Uri.parse('$baseUrl/caravans/asset-conversions').replace(
+          queryParameters: (caravanId != null && caravanId.isNotEmpty) ? {'caravanId': caravanId} : null,
+        ),
         headers: _getHeaders(),
       );
       if (response.statusCode == 200) {

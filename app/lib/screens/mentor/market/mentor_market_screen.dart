@@ -78,11 +78,31 @@ class _MarketScreenState extends State<MentorMarketScreen> {
 
   // Mentor Market States
   int _selectedMentorMarketTab = 0; // 0: گزارش اعضا, 1: مبادلات
-  final Set<String> _expandedMemberAssetIds = {'mem_1'};
-  final Set<String> _expandedExchangeIds = {'ex_1'};
+  final Set<String> _expandedMemberAssetIds = {};
+  final Set<String> _expandedExchangeIds = {};
 
   List<Map<String, dynamic>> _mentorMembersAssets = [];
   List<Map<String, dynamic>> _mentorExchangeRequests = [];
+
+  // Sync state: the caravan the lists belong to, so switching caravans reloads them
+  String? _loadedCaravanId;
+  bool _marketLoading = true;
+  bool _marketLoadFailed = false;
+  int _marketLoadToken = 0;
+
+  static int _asInt(dynamic v) => v is num ? v.toInt() : (int.tryParse(v?.toString() ?? '') ?? 0);
+
+  /// Title of an exchange row: the stored note, or "N source → M target" built from the request.
+  String _exchangeTitle(Map<String, dynamic> req) {
+    final note = req['note']?.toString().trim() ?? '';
+    if (note.isNotEmpty) return note;
+    final source = req['sourceAsset']?.toString();
+    final target = req['targetAsset']?.toString();
+    if (source == null || target == null) return 'درخواست تبدیل دارایی';
+    String label(String key) => AssetNames.of(key);
+    return '${_asInt(req['sourceAmount']).toString().toPersianDigits()} ${label(source)} به '
+        '${_asInt(req['targetAmount']).toString().toPersianDigits()} ${label(target)}';
+  }
 
   String _formatPersianDate(dynamic date) {
     if (date == null) {
@@ -99,45 +119,70 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     return date.toString().toPersianDigits();
   }
 
+  /// Loads the members report and the exchanges of the caravan picked in the app.
+  /// A newer call wins: a slow answer for a caravan the mentor already left is dropped.
   Future<void> _loadMarketData() async {
+    final caravanId = Provider.of<AppRepository>(context, listen: false).selectedCaravanId;
+    final token = ++_marketLoadToken;
+    _loadedCaravanId = caravanId;
+    if (mounted) {
+      setState(() {
+        _marketLoading = true;
+        _marketLoadFailed = false;
+      });
+    }
     try {
-      final caravanId = Provider.of<AppRepository>(context, listen: false).selectedCaravanId;
-      final progressData = await HttpApiService().getMentorCaravanProgress(caravanId: caravanId);
-      final exchangeData = await HttpApiService().getCaravanAssetConversions();
+      final api = HttpApiService();
+      final results = await Future.wait<dynamic>([
+        api.getMentorCaravanProgress(caravanId: caravanId),
+        api.getCaravanAssetConversions(caravanId: caravanId),
+      ]);
+      if (!mounted || token != _marketLoadToken) return;
+      final progressData = results[0] as Map<String, dynamic>?;
+      final exchangeData = results[1] as List<Map<String, dynamic>>;
 
-      if (mounted) {
-        setState(() {
-          if (progressData != null && progressData['members'] != null) {
-            final list = List<Map<String, dynamic>>.from(progressData['members'] ?? []);
-            if (list.isNotEmpty) {
-              _mentorMembersAssets = list;
-              if (_expandedMemberAssetIds.isEmpty) {
-                _expandedMemberAssetIds.add(list.first['id']?.toString() ?? '1');
-              }
-            }
-          }
-          if (exchangeData.isNotEmpty) {
-            _mentorExchangeRequests = exchangeData.map((req) {
-              final student = req['user'] as Map<String, dynamic>?;
-              final String title = req['note']?.toString() ?? 'درخواست تبدیل دارایی';
-              final date = _formatPersianDate(req['createdAt']);
-              return {
-                'id': req['id']?.toString() ?? '',
-                'studentName': student?['name']?.toString() ?? 'دانش‌آموز',
-                'studentId': req['requestedBy']?.toString() ?? '',
-                'title': title,
-                'date': date,
-                'status': req['status']?.toString() ?? 'completed',
-                'createdAt': req['createdAt']?.toString() ?? '',
-              };
-            }).toList();
-          }
-        });
-      }
+      setState(() {
+        _marketLoading = false;
+        if (progressData == null) {
+          _marketLoadFailed = true;
+        } else {
+          final members = (progressData['members'] as List?) ?? const [];
+          _mentorMembersAssets = members.whereType<Map<String, dynamic>>().map((m) => {
+                ...m,
+                'id': m['id']?.toString() ?? '',
+                'name': m['name']?.toString() ?? 'عضو کاروان',
+                'zarik': _asInt(m['zarik'] ?? m['zarikBalance']),
+                'nakh': _asInt(m['nakh']),
+                'farsh': _asInt(m['farsh']),
+                'beyragh': _asInt(m['beyragh']),
+              }).toList();
+          _expandedMemberAssetIds.retainWhere((id) => _mentorMembersAssets.any((m) => m['id'] == id));
+        }
+        _mentorExchangeRequests = exchangeData.map((req) {
+          final student = req['user'] as Map<String, dynamic>?;
+          return <String, dynamic>{
+            'id': req['id']?.toString() ?? '',
+            'studentName': student?['name']?.toString() ?? 'دانش‌آموز',
+            'studentId': req['requestedBy']?.toString() ?? '',
+            'title': _exchangeTitle(req),
+            'date': _formatPersianDate(req['createdAt']),
+            'status': req['status']?.toString() ?? 'completed',
+            'createdAt': req['createdAt']?.toString() ?? '',
+          };
+        }).toList();
+      });
     } catch (e) {
       debugPrint('Error loading market data: $e');
+      if (mounted && token == _marketLoadToken) {
+        setState(() {
+          _marketLoading = false;
+          _marketLoadFailed = true;
+        });
+      }
     }
   }
+
+  Future<void> _refreshAll() => Future.wait([_loadMarketData(), _loadLeaderboards()]);
 
   @override
   void initState() {
@@ -462,7 +507,17 @@ class _MarketScreenState extends State<MentorMarketScreen> {
         final user = repository.currentUser;
         final bool isMentor = user.role.isMentorLike;
 
-        return SingleChildScrollView(
+        // The mentor switched caravans (or the caravan list arrived after the first load): resync
+        if (isMentor && _loadedCaravanId != null && repository.selectedCaravanId != _loadedCaravanId) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _loadMarketData();
+          });
+          _loadedCaravanId = repository.selectedCaravanId;
+        }
+
+        return RefreshIndicator(
+          onRefresh: _refreshAll,
+          child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -487,7 +542,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   child: Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      user.caravanName ?? 'کاروان پنجم رضا جلالی',
+                      repository.selectedCaravanName,
                       style: TextStyle(
                         fontFamily: AppTheme.fontFamily,
                         fontSize: 13,
@@ -517,10 +572,11 @@ class _MarketScreenState extends State<MentorMarketScreen> {
               const SizedBox(height: 26),
 
               // 5. Section 4: برترین ها (لیگ / لیدربورد)
-              _buildLeaderboardSection(user),
+              _buildLeaderboardSection(user, myCaravanId: isMentor ? repository.selectedCaravanId : user.caravanId),
               const SizedBox(height: 40),
             ],
           ),
+        ),
         );
       },
     );
@@ -855,7 +911,45 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   }
 
   /// List of Member Assets for Mentor
+  /// Loading, failure and empty placeholder shared by the members report and the exchanges list.
+  Widget? _marketStatusPlaceholder({required bool isEmpty, required String emptyText}) {
+    if (_marketLoading && isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.4))),
+      );
+    }
+    if (!_marketLoadFailed && !isEmpty) return null;
+    final failed = _marketLoadFailed;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      child: Column(
+        children: [
+          Text(
+            failed ? 'دریافت اطلاعات بازارچه ناموفق بود.' : emptyText,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12.5, color: Color(0xFFB3AFD0)),
+          ),
+          if (failed)
+            TextButton(
+              onPressed: _loadMarketData,
+              child: const Text(
+                'تلاش دوباره',
+                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.buttonCamel),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMentorMembersReportList() {
+    final placeholder = _marketStatusPlaceholder(
+      isEmpty: _mentorMembersAssets.isEmpty,
+      emptyText: 'هنوز عضوی در این کاروان نیست.',
+    );
+    if (placeholder != null && _mentorMembersAssets.isEmpty) return placeholder;
+
     int totalZarik = 0;
     int totalNakh = 0;
     int totalFarsh = 0;
@@ -922,7 +1016,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
                   ),
                 ),
                 Text(
-                  'نخ: ${totalNakh.toString().toPersian()}',
+                  '${AssetNames.labelFor('کلاف')}: ${totalNakh.toString().toPersian()}',
                   style: TextStyle(
                     fontFamily: AppTheme.fontFamily,
                     fontSize: 10.5,
@@ -957,11 +1051,11 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   }
 
   Widget _buildMentorMemberAssetCard(Map<String, dynamic> member, String memberId, bool isExpanded) {
-    final name = member['name'] as String;
-    final zarik = (member['zarik'] as int).toString();
-    final derafsh = (member['beyragh'] as int).toString();
-    final nakh = (member['nakh'] as int).toString();
-    final farsh = (member['farsh'] as int).toString();
+    final name = member['name']?.toString() ?? 'عضو کاروان';
+    final zarik = _asInt(member['zarik']).toString();
+    final derafsh = _asInt(member['beyragh']).toString();
+    final nakh = _asInt(member['nakh']).toString();
+    final farsh = _asInt(member['farsh']).toString();
 
     return Container(
       decoration: BoxDecoration(
@@ -1181,18 +1275,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   /// List of Student Exchange Requests for Mentor
   Widget _buildMentorExchangesList() {
     if (_mentorExchangeRequests.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'هیچ مبادله‌ای ثبت نشده است',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
-          ),
-        ),
-      );
+      return _marketStatusPlaceholder(isEmpty: true, emptyText: 'هیچ مبادله‌ای ثبت نشده است')!;
     }
 
     return ListView.separated(
@@ -2292,7 +2375,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
   }
 
   /// Section 4: برترین ها (لیگ) - Top 3 Podium & Leaderboard Switcher
-  Widget _buildLeaderboardSection(UserModel? user) {
+  Widget _buildLeaderboardSection(UserModel? user, {String? myCaravanId}) {
     // Top 3 of the selected tab, read from the leaderboard API (padded when fewer than 3 exist)
     const podiumColors = [Color(0xFFFFD580), Color(0xFFCBD5E1), Color(0xFFC8824C)];
     const podiumSizes = [92.0, 78.0, 72.0];
@@ -2314,7 +2397,7 @@ class _MarketScreenState extends State<MentorMarketScreen> {
     final thirdPlace = currentList[2];
 
     final List<String> rankedIds = isMembersTab ? _memberIds : _caravanIds;
-    final String? myId = isMembersTab ? user?.id : user?.caravanId;
+    final String? myId = isMembersTab ? user?.id : myCaravanId;
     final int myIndex = myId == null ? -1 : rankedIds.indexOf(myId);
     final String totalText = rankedIds.length.toString();
     final String myRankText = myIndex >= 0 ? (myIndex + 1).toString() : '-';

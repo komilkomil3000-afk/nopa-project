@@ -238,6 +238,23 @@
             </div>
           </div>
 
+          <!-- Chat switch (super admin only): off / pilot / on, filled by js/features/chat-settings.js -->
+          <div class="header-menu chat-switch" id="chat-switch-menu" hidden>
+            <button type="button" class="btn-icon header-btn" id="btn-chat-switch" aria-haspopup="true" aria-expanded="false" aria-label="وضعیت چت" title="وضعیت چت">
+              <i class="fa-solid fa-comments"></i><span class="chat-switch-dot" id="chat-switch-dot" data-mode="unknown"></span>
+            </button>
+            <div class="header-dropdown chat-switch-dropdown" id="chat-switch-dropdown" hidden>
+              <div class="header-dropdown-title">وضعیت چت در اپ</div>
+              <div class="chat-switch-modes" role="radiogroup" aria-label="وضعیت چت">
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="off"><i class="fa-solid fa-power-off"></i><span>خاموش</span></button>
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="pilot"><i class="fa-solid fa-flask"></i><span>آزمایشی</span></button>
+                <button type="button" class="chat-switch-mode" role="radio" aria-checked="false" data-chat-mode="on"><i class="fa-solid fa-circle-check"></i><span>روشن</span></button>
+              </div>
+              <div class="chat-switch-note" id="chat-switch-note">در حال بارگذاری...</div>
+              <button type="button" class="header-dropdown-item" id="btn-chat-switch-manage"><i class="fa-solid fa-sliders"></i> مدیریت چت، کاروان‌های آزمایشی و دسترسی‌ها</button>
+            </div>
+          </div>
+
           <button type="button" class="btn-icon theme-toggle" data-theme-toggle aria-label="تغییر تم"><i class="fa-solid fa-sun"></i></button>
 
           <div class="header-menu" id="user-menu">

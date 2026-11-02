@@ -2945,3 +2945,26 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6 in `admin_panel/`, including the panel in Chrome with no console or CSP errors.
 - **Status:** Completed (merge commit left to the user)
+
+### [2026-11-02 12:40] - Claude Code (Flutter App + CRM / Integration)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/mentor/market/mentor_market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `admin_panel/src/controllers/caravanController.ts` (Modified)
+  - `admin_panel/src/controllers/leagueController.ts` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/css/layout.css` (Modified)
+  - `admin_panel/public/js/features/chat-settings.js` (Modified)
+- **Description of Changes:**
+  - Mentor market sync: members report, exchanges and caravan totals now load for the caravan picked in the app and reload when the mentor switches caravans (previously loaded once, often before the caravan list arrived, and kept stale data whenever a new result was empty). Requests run in parallel; stale responses are dropped; pull-to-refresh, loading, empty and retry states added.
+  - Mentor market header shows the selected caravan name instead of the hard-coded placeholder; caravan "your rank" uses the selected caravan; kalaf label uses AssetNames; numeric fields parsed safely; exchange titles fall back to "N source to M target".
+  - `GET /caravans/asset-conversions` accepts `?caravanId=` (only a caravan the mentor runs; admin may pick any). The app passes it.
+  - Leagues: wealthiest list excludes deleted students; caravan league counts only active students and skips the per-member progress queries when `sortBy=wealth` (the market's call), which made it slow.
+  - Admin panel header toolbar: new chat switch (super admin only) with a status dot and off / pilot / on modes, confirmation, pilot-caravan summary and a link to the full chat management tab. Pilot without caravans opens the chat tab to pick them. Saves keep the pilot list and channel-manager permissions intact. The chat tab and the toolbar keep each other in sync.
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` on the changed Dart files (from `app/`): no issues
+  - `npx tsc --noEmit` and `npm test` in `admin_panel/`: pass; `node --check` on chat-settings.js
+  - Not run: on-device test of the market screen, browser test of the toolbar, e2e suite against a live DB
+- **Status:** Completed
