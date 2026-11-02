@@ -4,6 +4,60 @@
 // LMS Stations Management & Directory Logic with Robust Station Finder & Modal Trigger
 window.lmsStationsMasterList = [];
 
+// A station's class categories are free text and there can be any number of them. Nothing here classifies a
+// category by keywords in its title ("مهارت" / "رسانه"): a category is its position (orderIndex, ties broken by
+// creation time) and is shown under its own title. The app uses the same rule, so its class tabs match this list.
+window.lmsOrderedCategories = function(station) {
+  return (station && station.categories ? station.categories : [])
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => {
+      const oa = Number(a.c.orderIndex) || 0;
+      const ob = Number(b.c.orderIndex) || 0;
+      if (oa !== ob) return oa - ob;
+      const ta = a.c.createdAt ? new Date(a.c.createdAt).getTime() : 0;
+      const tb = b.c.createdAt ? new Date(b.c.createdAt).getTime() : 0;
+      return ta !== tb ? ta - tb : a.i - b.i;
+    })
+    .map(x => x.c);
+};
+
+// Category filter value -> category position (0-based), or -1 for "all". Old values (مهارتی / رسانه‌ای) still work.
+window.lmsCategoryFilterIndex = function(value) {
+  if (!value || value === 'all') return -1;
+  const m = String(value).match(/^cat:(\d+)$/);
+  if (m) return Number(m[1]);
+  if (value === 'مهارتی' || value === 'skill') return 0;
+  if (value === 'رسانه‌ای' || value === 'media') return 1;
+  return -1;
+};
+
+window.lmsCategoryColor = function(index) {
+  return ['var(--info-text)', 'var(--primary-text)', 'var(--accent-text)', 'var(--success-text)'][index % 4];
+};
+
+// The category filter lists one entry per category position with the titles used at that position
+window.refreshLmsCategoryFilterOptions = function() {
+  const select = document.getElementById('lms-filter-category');
+  if (!select) return;
+  const current = select.value;
+  const titlesByIndex = [];
+  (window.lmsStationsMasterList || []).forEach(st => {
+    window.lmsOrderedCategories(st).forEach((c, i) => {
+      titlesByIndex[i] = titlesByIndex[i] || new Set();
+      if (c.title) titlesByIndex[i].add(c.title.trim());
+    });
+  });
+  const options = ['<option value="all">همه دسته‌ها</option>'];
+  titlesByIndex.forEach((set, i) => {
+    const names = Array.from(set || []);
+    const label = names.length ? names.slice(0, 3).join(' / ') + (names.length > 3 ? ' ...' : '') : '';
+    options.push(`<option value="cat:${i}">دسته ${i + 1}${label ? ': ' + esc(label) : ''}</option>`);
+  });
+  select.innerHTML = options.join('');
+  const idx = window.lmsCategoryFilterIndex(current);
+  select.value = idx >= 0 && idx < titlesByIndex.length ? `cat:${idx}` : 'all';
+};
+
 window.fetchLiveLmsStations = async function() {
   const tbody = document.getElementById('lms-directory-tbody');
   if (!tbody) return;
@@ -60,6 +114,7 @@ window.fetchLiveLmsStations = async function() {
   const statQuizzesEl = document.getElementById('lms-stat-quizzes');
   if (statQuizzesEl) statQuizzesEl.textContent = `${totalQuizzes} آزمونک فعال`;
 
+  window.refreshLmsCategoryFilterOptions();
   window.filterLmsTable();
 };
 
@@ -73,114 +128,41 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
   }
 
   const PERSIAN_NUMS = ['صفر', 'اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم'];
-  const DEFAULT_STATION_TOPICS = {
-    1: { skill: 'شناخت هوش و حافظه', media: 'پادکست و مبانی رسانه' },
-    2: { skill: 'خودشناسی جامع', media: 'تولید پادکست حرفه‌ای' },
-    3: { skill: 'تفکر نقادانه و حل مسئله', media: 'عکاسی و تصویربرداری' },
-    4: { skill: 'کار تیمی و مدیریت چالش‌ها', media: 'تدوین ویدیو و سناریونویسی' },
-    5: { skill: 'هدف‌گذاری و مدیریت زمان', media: 'هوش مصنوعی و رسانه' }
-  };
+  const filterIndex = window.lmsCategoryFilterIndex(selectedCategoryFilter);
 
   tbody.innerHTML = list.map((st, i) => {
     const idx = st.orderIndex ?? st.index ?? (i + 1);
     const stationIdentifier = st.id || ('MZ' + idx);
     const simpleStationName = PERSIAN_NUMS[idx - 1] ? `منزلگاه ${PERSIAN_NUMS[idx - 1]}` : `منزلگاه ${idx}`;
-    
-    // Process categories & real session, part, and quiz counts
+
+    // Every category of the station, in order, with its real session / part / quiz counts
     const categories = st.categories || [];
-    const skillCategory = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || {
-      title: 'کلاس‌های مهارتی',
-      sessions: []
-    };
-    const mediaCategory = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || {
-      title: 'کلاس‌های رسانه‌ای',
-      sessions: []
-    };
-
-    // Helper to get clean category topic
-    const defaultTopics = DEFAULT_STATION_TOPICS[idx] || { skill: 'کلاس‌های مهارتی', media: 'کلاس‌های رسانه‌ای' };
-    
-    function getCleanTopic(cat, fallback) {
-      if (!cat) return fallback;
-      if (cat.title && !cat.title.startsWith('کلاس') && !cat.title.startsWith('دسته') && cat.title.length > 2) {
-        return cat.title;
-      }
-      const firstSess = (cat.sessions || [])[0];
-      if (firstSess && firstSess.title) {
-        let clean = firstSess.title.replace(/^جلسه\s*\d+\s*[:\-–]?\s*/i, '').replace(/^کلاس\s*\d+\s*[:\-–]?\s*/i, '').replace(/\([^)]*\)/g, '').trim();
-        if (clean && clean.length > 2 && !clean.includes('مهارتی') && !clean.includes('رسانه‌ای')) {
-          return clean;
-        }
-      }
-      return fallback;
-    }
-
-    const skillTopic = getCleanTopic(skillCategory, defaultTopics.skill);
-    const mediaTopic = getCleanTopic(mediaCategory, defaultTopics.media);
-
-    const skillSessions = skillCategory.sessions || [];
-    let skillPartsCount = 0;
-    let skillQuizzesCount = 0;
-    skillSessions.forEach(s => {
-      const clips = s.videoClips || [];
-      skillPartsCount += clips.length;
-      skillQuizzesCount += (s.quizzes || []).length;
-      clips.forEach(clip => {
-        skillQuizzesCount += (clip.quizzes || []).length;
+    const catStats = window.lmsOrderedCategories(st).map((cat, ci) => {
+      const sessions = (cat.sessions || []).filter(s => !s.isDeleted);
+      let parts = 0;
+      let quizzes = 0;
+      sessions.forEach(s => {
+        const clips = s.videoClips || [];
+        parts += clips.length;
+        quizzes += (s.quizzes || []).length;
+        clips.forEach(clip => { quizzes += (clip.quizzes || []).length; });
       });
+      return { index: ci, title: cat.title || `دسته ${ci + 1}`, sessions: sessions.length, parts, quizzes };
     });
+    const shownStats = filterIndex >= 0 ? catStats.filter(c => c.index === filterIndex) : catStats;
 
-    const mediaSessions = mediaCategory.sessions || [];
-    let mediaPartsCount = 0;
-    let mediaQuizzesCount = 0;
-    mediaSessions.forEach(s => {
-      const clips = s.videoClips || [];
-      mediaPartsCount += clips.length;
-      mediaQuizzesCount += (s.quizzes || []).length;
-      clips.forEach(clip => {
-        mediaQuizzesCount += (clip.quizzes || []).length;
-      });
-    });
+    const totalRealSess = shownStats.reduce((n, c) => n + c.sessions, 0);
+    const totalRealParts = shownStats.reduce((n, c) => n + c.parts, 0);
+    const totalRealQuizzes = shownStats.reduce((n, c) => n + c.quizzes, 0);
 
-    const skillSessCount = skillSessions.length;
-    const mediaSessCount = mediaSessions.length;
-    const totalRealSess = skillSessCount + mediaSessCount;
-    const totalRealParts = skillPartsCount + mediaPartsCount;
-    const totalRealQuizzes = skillQuizzesCount + mediaQuizzesCount;
-
-    // Topics column HTML
-    let topicsDisplayHtml = '';
-    const isSkillOnly = selectedCategoryFilter === 'مهارتی' || selectedCategoryFilter === 'skill';
-    const isMediaOnly = selectedCategoryFilter === 'رسانه‌ای' || selectedCategoryFilter === 'media';
-
-    if (isSkillOnly) {
-      topicsDisplayHtml = `
-        <div class="u-flex u-items-center u-gap-6">
-          <span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-fs-xs u-p-4-10 u-r-6 u-fw-600">
-            <i class="fa-solid fa-person-running u-ml-4"></i> ${esc(skillTopic)}
-          </span>
-        </div>
-      `;
-    } else if (isMediaOnly) {
-      topicsDisplayHtml = `
-        <div class="u-flex u-items-center u-gap-6">
-          <span class="badge u-bg-primary-15 u-c-primary-text u-bd-primary-35 u-fs-xs u-p-4-10 u-r-6 u-fw-600">
-            <i class="fa-solid fa-microphone-lines u-ml-4"></i> ${esc(mediaTopic)}
-          </span>
-        </div>
-      `;
-    } else {
-      topicsDisplayHtml = `
-        <div class="u-flex u-col u-gap-4">
+    // Topics column HTML: the categories under their own titles
+    const topicsDisplayHtml = shownStats.length === 0
+      ? '<span class="u-fs-2xs u-c-text-muted">دسته‌ای تعریف نشده است</span>'
+      : `<div class="u-flex u-col u-gap-4">${shownStats.map(c => `
           <span class="badge u-bg-primary-12 u-c-primary-text u-bd-primary-30 u-fs-xs u-p-4-8 u-r-6 u-fw-600 u-inline-flex u-items-center u-gap-6">
-            <i class="fa-solid fa-person-running u-fs-2xs"></i> <strong>مهارتی:</strong> ${skillTopic}
-          </span>
-          <span class="badge u-bg-primary-12 u-c-primary-text u-bd-primary-30 u-fs-xs u-p-4-8 u-r-6 u-fw-600 u-inline-flex u-items-center u-gap-6">
-            <i class="fa-solid fa-microphone-lines u-fs-2xs"></i> <strong>رسانه‌ای:</strong> ${mediaTopic}
-          </span>
-        </div>
-      `;
-    }
+            <i class="fa-solid fa-layer-group u-fs-2xs" data-style="color:${window.lmsCategoryColor(c.index)}"></i> <strong>دسته ${c.index + 1}:</strong> ${esc(c.title)}
+          </span>`).join('')}
+        </div>`;
 
     // Extract unique instructors teaching in this station
     const stationInstructors = new Set();
@@ -225,48 +207,27 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
       `;
     }
 
-    let categoryBadgeHtml = '';
-    let sessionsDisplayHtml = '';
-
-    if (isSkillOnly) {
-      categoryBadgeHtml = `<span class="badge u-bg-primary u-c-white u-fs-2xs u-p-4-10 u-r-6">دسته ۱: مهارتی (${skillSessCount} جلسه | ${skillPartsCount} پارت)</span>`;
-      sessionsDisplayHtml = `
-        <div class="u-bold u-c-primary-text u-fs-sm">${skillSessCount} جلسه مهارتی</div>
-        <div class="u-fs-2xs u-c-success-text u-mt-2">${skillPartsCount} پارت ویدیو</div>
-        <div class="u-fs-2xs u-c-accent-text u-mt-2"><i class="fa-solid fa-file-signature"></i> ${skillQuizzesCount} آزمونک</div>
-      `;
-    } else if (isMediaOnly) {
-      categoryBadgeHtml = `<span class="badge u-bg-primary-strong u-c-white u-fs-2xs u-p-4-10 u-r-6">دسته ۲: رسانه‌ای (${mediaSessCount} جلسه | ${mediaPartsCount} پارت)</span>`;
-      sessionsDisplayHtml = `
-        <div class="u-bold u-c-primary-text u-fs-sm">${mediaSessCount} جلسه رسانه‌ای</div>
-        <div class="u-fs-2xs u-c-success-text u-mt-2">${mediaPartsCount} پارت ویدیو</div>
-        <div class="u-fs-2xs u-c-accent-text u-mt-2"><i class="fa-solid fa-file-signature"></i> ${mediaQuizzesCount} آزمونک</div>
-      `;
-    } else {
-      categoryBadgeHtml = `
+    const categoryBadgeHtml = `
         <div class="u-flex u-col u-gap-4 u-items-center">
-          <span class="badge u-bg-primary-25 u-c-primary-text u-bd-primary-40 u-fs-2xs u-p-4-8 u-r-6 u-w-92p">
-            دسته ۱ (${skillSessCount} جلسه)
-          </span>
-          <span class="badge u-bg-primary-25 u-c-primary-text u-bd-primary-40 u-fs-2xs u-p-4-8 u-r-6 u-w-92p">
-            دسته ۲ (${mediaSessCount} جلسه)
-          </span>
+          ${shownStats.map(c => `
+          <span class="badge u-bg-primary-25 u-c-primary-text u-bd-primary-40 u-fs-2xs u-p-4-8 u-r-6 u-w-92p" title="${esc(c.title)}">
+            دسته ${c.index + 1}: ${esc(c.title)} (${c.sessions} جلسه)
+          </span>`).join('') || '<span class="u-fs-2xs u-c-text-muted">-</span>'}
         </div>
       `;
-      sessionsDisplayHtml = `
+    const sessionsDisplayHtml = `
         <div class="u-flex u-col u-items-center u-gap-2">
           <div class="u-bold u-c-text u-fs-sm">
             <span class="u-c-primary-text">${totalRealSess} جلسه</span> | <span class="u-c-success-text">${totalRealParts} پارت</span>
           </div>
-          <div class="u-fs-2xs u-c-text-soft u-flex u-gap-6">
-            <span class="u-c-primary-text">${skillSessCount} مهارتی</span> + <span class="u-c-primary-text">${mediaSessCount} رسانه‌ای</span>
-          </div>
+          ${shownStats.length > 1 ? `<div class="u-fs-2xs u-c-text-soft u-flex u-gap-6 u-wrap u-justify-center">
+            ${shownStats.map(c => `<span class="u-c-primary-text">${c.sessions} ${esc(c.title)}</span>`).join(' + ')}
+          </div>` : ''}
           <div class="u-fs-2xs u-c-accent-text u-bg-accent-12 u-p-1-6 u-r-4 u-bd-accent-30 u-mt-2">
             <i class="fa-solid fa-file-signature"></i> ${totalRealQuizzes} آزمونک ثبت‌شده
           </div>
         </div>
       `;
-    }
 
     let releaseDateStr = 'نامشخص';
     if (st.releaseDate) {
@@ -399,17 +360,8 @@ window.filterLmsTable = function() {
     const matchesQuery = !query || titleMatch || descMatch || hasQueryInSessions;
     const matchesInstructor = instructorFilter === 'all' || hasInstructorMatch;
 
-    let matchesCat = true;
-    if (catFilter !== 'all') {
-      const hasSkill = categories.some(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت')));
-      const hasMedia = categories.some(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه')));
-
-      if (catFilter === 'مهارتی' || catFilter === 'skill') {
-        matchesCat = hasSkill;
-      } else if (catFilter === 'رسانه‌ای' || catFilter === 'media') {
-        matchesCat = hasMedia;
-      }
-    }
+    const catIndex = window.lmsCategoryFilterIndex(catFilter);
+    const matchesCat = catIndex < 0 || categories.length > catIndex;
 
     return matchesQuery && matchesCat && matchesInstructor;
   });

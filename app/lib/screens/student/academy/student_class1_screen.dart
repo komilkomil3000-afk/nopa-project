@@ -45,7 +45,7 @@ typedef StationDetailScreen = Class1Screen;
 class _Class1ScreenState extends State<StudentClass1Screen> {
   Station? _station;
   List<Map<String, dynamic>> _allStationsData = [];
-  Map<String, List<Map<String, dynamic>>> _classCategories = {};
+  List<StationCategory> _classCategories = [];
   List<Map<String, dynamic>> _allClips = [];
   int _currentClipIndex = 0;
   bool _isDescriptionExpanded = false;
@@ -176,25 +176,9 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         _station = Station.fromJson(stationData);
       }
 
-      final Map<String, List<Map<String, dynamic>>> map = {};
+      // Class categories exactly as defined in the admin panel (any number, own titles, admin order)
+      final categories = StationCategories.parse(stationData['categories'] as List?);
       final List<Map<String, dynamic>> clipsList = [];
-
-      if (stationData.containsKey('categories') &&
-          stationData['categories'] != null) {
-        final categoriesList = stationData['categories'] as List? ?? [];
-        for (final item in categoriesList) {
-          if (item is Map) {
-            final cat = item as Map<String, dynamic>;
-            final catTitle = cat['title']?.toString() ?? 'کلاس‌ها';
-            final sessions =
-                (cat['sessions'] as List?)
-                    ?.map((s) => s as Map<String, dynamic>)
-                    .toList() ??
-                [];
-            map[catTitle] = sessions;
-          }
-        }
-      }
 
       final List<Map<String, dynamic>> animClips = [];
       if (_station != null && _station!.animations.isNotEmpty) {
@@ -223,7 +207,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
       if (mounted) {
         setState(() {
-          _classCategories = map;
+          _classCategories = categories;
           _allClips = clipsList;
           _currentClipIndex = 0;
         });
@@ -258,17 +242,20 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     _loadClassCategories();
   }
 
-  void _navigateToClass(String categoryKeyword) {
-    final split = StationCategories.splitByTitle(_classCategories);
-    final List<Map<String, dynamic>> targetSessions =
-        split[categoryKeyword.contains('رسانه') ? StationCategories.media : StationCategories.skill]!;
-
-    if (targetSessions.isEmpty) {
+  /// Opens the classes screen on the category at [categoryIndex] (its tabs are the station's categories).
+  void _navigateToClass([int categoryIndex = 0]) {
+    final bool hasAnySession = _classCategories.any((c) => c.sessions.isNotEmpty);
+    if (!hasAnySession) {
       AppToast.info(
         context,
-        'جلسات $categoryKeyword برای این منزلگاه به زودی منتشر می‌شود.',
+        'جلسات کلاس‌های این منزلگاه به زودی منتشر می‌شود.',
       );
       return;
+    }
+    // Start on the requested category, or the first one that has sessions
+    int tab = categoryIndex;
+    if (tab < 0 || tab >= _classCategories.length || _classCategories[tab].sessions.isEmpty) {
+      tab = _classCategories.indexWhere((c) => c.sessions.isNotEmpty);
     }
 
     // Leaving this page closes any open box
@@ -280,12 +267,12 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       context,
       '/class2',
       arguments: {
-        'classes': targetSessions,
         'initialIndex': 0,
         'stationIndex': _currentStationIndex,
         'stationNumber': _station?.orderIndex,
         'stationTitle': _station?.title,
-        'type': categoryKeyword.contains('رسانه') ? 'media' : 'skill',
+        'categoryIndex': tab,
+        'categoryId': _classCategories[tab].id,
       },
     );
   }
@@ -322,15 +309,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       serverLocked: _station?.isLocked ?? false,
     ).isLocked;
 
-    // Dynamic counts from categories
-    int skillSessionsCount = 0;
-    int mediaSessionsCount = 0;
-    final splitSessions = StationCategories.splitByTitle(_classCategories);
-    skillSessionsCount = splitSessions[StationCategories.skill]!.length;
-    mediaSessionsCount = splitSessions[StationCategories.media]!.length;
-
-    final String skillText = '${skillSessionsCount.toPersian()} جلسه';
-    final String mediaText = '${mediaSessionsCount.toPersian()} جلسه';
+    // One stat per class category, under the title given in the admin panel
+    final List<MapEntry<String, String>> classStats = [
+      for (final c in _classCategories)
+        MapEntry(c.classLabel, '${c.sessions.length.toPersian()} جلسه'),
+    ];
     // Photos added to the gallery are not animations
     final int animCount = _allClips
         .where((c) => !StationGalleryItem.isImageUrl(c['videoUrl']?.toString() ?? ''))
@@ -376,8 +359,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
             // 4. Class Information & Statistics Strip
             _buildStatsStrip(
-              skillText: skillText,
-              mediaText: mediaText,
+              classStats: classStats,
               animText: animText,
               stayText: stayText,
             ),
@@ -693,8 +675,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
 
   /// 4. Class Information & Statistics Strip (Right-aligned, 2 lines on tap)
   Widget _buildStatsStrip({
-    required String skillText,
-    required String mediaText,
+    required List<MapEntry<String, String>> classStats,
     required String animText,
     required String stayText,
   }) {
@@ -705,10 +686,11 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItem('کلاس مهارتی', skillText),
-            _buildVerticalDivider(),
-            _buildStatItem('کلاس رسانه‌ای', mediaText),
-            _buildVerticalDivider(),
+            // One box per class category of the station (as many as the admin panel defines)
+            for (final stat in classStats) ...[
+              _buildStatItem(stat.key, stat.value),
+              _buildVerticalDivider(),
+            ],
             _buildStatItem('انیمیشن', animText),
             _buildVerticalDivider(),
             _buildStatItem('زمان اقامت', stayText),
@@ -742,7 +724,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                 Text(
                   title,
                   textAlign: TextAlign.right,
-                  maxLines: 1,
+                  maxLines: isExpanded ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
@@ -976,7 +958,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               title: 'ورود به کلاس‌ها',
               enabled: true,
               animatedStroke: true,
-              onTap: () => _navigateToClass('مهارت'),
+              onTap: () => _navigateToClass(0),
             ),
           ),
           const SizedBox(width: 10),

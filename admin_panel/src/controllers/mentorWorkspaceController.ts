@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { CATEGORY_ORDER_BY, trackTypeFor } from '../utils/stationCategories';
 
 export async function createMentorChallenge(req: AuthRequest, res: Response) {
   try {
@@ -142,19 +143,6 @@ export async function replyMentorTicket(req: AuthRequest, res: Response) {
   }
 }
 
-// A category title is free text: the keyword wins, otherwise the first free kind by position
-// (first = skill, second = media), the same rule the app and the admin panel use.
-function categoryKinds(titles: string[]): Array<'skill' | 'media' | null> {
-  const kinds: Array<'skill' | 'media' | null> = titles.map(t =>
-    t.includes('مهارت') ? 'skill' : (t.includes('رسانه') ? 'media' : null));
-  kinds.forEach((k, i) => {
-    if (k) return;
-    if (!kinds.includes('skill')) kinds[i] = 'skill';
-    else if (!kinds.includes('media')) kinds[i] = 'media';
-  });
-  return kinds;
-}
-
 function parseQuestions(raw: any): any[] {
   if (!raw) return [];
   try {
@@ -239,7 +227,7 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
               orderBy: { orderIndex: 'asc' }
             }
           },
-          orderBy: { orderIndex: 'asc' }
+          orderBy: CATEGORY_ORDER_BY
         }
       },
       orderBy: { orderIndex: 'asc' }
@@ -261,33 +249,32 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
       where: { userId: { in: memberIds }, OR: [{ isWatched: true }, { quizPassed: true }] }
     });
 
-    // Format stations with structured skillSessions, mediaSessions, and quizzes
+    // Format stations: every class category (any number, in admin-panel order, under its own title) with its
+    // sessions, plus the quizzes. skillSessions / mediaSessions are the first two categories, kept for older app builds.
     const stations = rawStations.map((st, sIdx) => {
-      const catKinds = categoryKinds(st.categories.map(c => c.title || ''));
-      const skillCats = st.categories.filter((_, i) => catKinds[i] === 'skill');
-      const mediaCats = st.categories.filter((_, i) => catKinds[i] === 'media');
-
       const liveSessions = (cat: any): any[] => (cat.sessions || []).filter((x: any) => !x.isDeleted);
-
-      const skillSessions = skillCats.length ? skillCats.flatMap(c => liveSessions(c)).map((sess: any, idx: number) => ({
+      const toReportSessions = (cat: any) => liveSessions(cat).map((sess: any, idx: number) => ({
         id: sess.id,
         title: sess.title || `جلسه ${idx + 1}`,
         totalParts: sess.videoClips.length,
         clips: sess.videoClips
-      })) : [];
+      }));
 
-      const mediaSessions = mediaCats.length ? mediaCats.flatMap(c => liveSessions(c)).map((sess: any, idx: number) => ({
-        id: sess.id,
-        title: sess.title || `جلسه ${idx + 1}`,
-        totalParts: sess.videoClips.length,
-        clips: sess.videoClips
-      })) : [];
+      const classCategories = st.categories.map((cat: any, ci: number) => ({
+        id: cat.id,
+        title: cat.title,
+        orderIndex: cat.orderIndex,
+        trackType: trackTypeFor(ci),
+        sessions: toReportSessions(cat)
+      }));
+      const skillSessions = classCategories[0]?.sessions || [];
+      const mediaSessions = classCategories[1]?.sessions || [];
 
       // One entry per quiz ("آزمونک" of a part) with the clip it belongs to, so a member's result can be matched
       const allQuizzes: any[] = [];
       for (let ci = 0; ci < st.categories.length; ci++) {
         const cat = st.categories[ci];
-        const trackType = catKinds[ci] === 'media' ? 'media' : 'skill';
+        const trackType = trackTypeFor(ci);
         for (const sess of liveSessions(cat)) {
           for (const q of sess.quizzes) {
             const clip = (q.clipId && sess.videoClips.find((c: any) => c.id === q.clipId))
@@ -295,12 +282,14 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
               || null;
             allQuizzes.push({
               id: q.id,
-              title: q.title || `آزمون §{sess.title}`,
+              title: q.title || `آزمون ${sess.title}`,
               sessionId: sess.id,
               sessionTitle: sess.title,
               clipId: clip ? clip.id : null,
               clipTitle: clip ? clip.title : null,
               trackType,
+              categoryId: cat.id,
+              categoryTitle: cat.title,
               orderIndex: q.orderIndex,
               type: q.type,
               totalQuestions: parseQuestions(q.questionsJson).length || 1
@@ -315,6 +304,7 @@ export async function getMentorCaravanProgress(req: AuthRequest, res: Response) 
         description: st.subtitle || st.description || 'توضیحات منزلگاه',
         imageUrl: st.iconUrl,
         orderIndex: st.orderIndex,
+        classCategories,
         skillSessions,
         mediaSessions,
         quizzes: allQuizzes,

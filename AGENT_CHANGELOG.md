@@ -2987,3 +2987,47 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - No remaining references to the old class names or paths
   - Not run: on-device check of both roles
 - **Status:** Completed
+
+### [2026-11-02 16:56] - Claude Code (Opus 5.5) / Integration & Sync Auditor + Flutter LMS
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/utils/stationCategories.ts` (Created)
+  - `admin_panel/src/scripts/repairCategoryOrder.ts` (Created)
+  - `admin_panel/src/controllers/lmsController.ts` (Modified)
+  - `admin_panel/src/controllers/mentorWorkspaceController.ts` (Modified)
+  - `admin_panel/src/controllers/calendarController.ts` (Modified)
+  - `admin_panel/src/controllers/adminController.ts` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/js/features/lms/directory.js` (Modified)
+  - `admin_panel/public/js/features/lms/content-manager.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-creator.js` (Modified)
+  - `admin_panel/public/js/features/lms/reorder-export.js` (Modified)
+  - `admin_panel/public/js/features/caravans.js` (Modified)
+  - `app/lib/core/station_categories.dart` (Modified, rewritten)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/widgets/education_calendar.dart` (Modified)
+  - `app/test/station_categories_test.dart` (Created)
+  - `app/android/app/src/main/res/drawable/launch_background.xml`, `drawable-v21/launch_background.xml` (Modified)
+  - `app/android/app/src/main/res/drawable/splash_icon_transparent.xml`, `drawable-nodpi/splash_bg.png` (Created)
+  - `app/android/app/src/main/res/values/styles.xml`, `values-night/styles.xml`, `values-v31/styles.xml` (Modified)
+  - `app/ios/Runner/Base.lproj/LaunchScreen.storyboard` (Modified), `app/ios/Runner/Assets.xcassets/LaunchBackground.imageset/` (Created)
+- **Description of Changes:**
+  - Root cause of "renamed category stays مهارتی/رسانه‌ای": `createOrUpdateCategory` reset `orderIndex` to 0 on every title save, and app/CRM/backend classified categories by the keywords "مهارت"/"رسانه" in the title or by orderIndex 1/2. A renamed category lost both signals and landed in the wrong place. Category update now changes only the sent fields; session update no longer resets orderIndex/rewards/watch threshold.
+  - Categories are now dynamic everywhere: identified by position (orderIndex, ties by createdAt) and shown under their CRM title; no keyword classification remains. Any number of categories is supported.
+  - App: classes screen tabs = station categories (same count, names, order) + "مشخصات جلسه"; station page and mentor station page show one stat per category; mentor report tabs per category; mentor roster counts all categories; calendar columns/dots per category with CRM titles and opens the exact session by id.
+  - Backend: mentor workspace returns `classCategories`; calendar events carry `categoryId/categoryTitle/categoryIndex`; skill/media fields kept for older app builds. Progress `trackType` is index based (`skill`, `media`, `category_N`).
+  - CRM: dynamic category filter; directory/export/reorder list every category by title; content manager can add, reorder (▲▼), delete categories and add/delete sessions; new "مشخصات جلسه" editor (session description) per session, saved with the session.
+  - Fixed broken `§{...}` string interpolation (should be `${...}`) in education_calendar, mentor roster and mentor workspace controller.
+  - Splash: Android pre-12 and iOS launch screens now use the app background image; Android 12+ system splash icon made transparent (that API only allows a flat colour), so the logo is shown by the first Flutter screen on the app background.
+  - Added `src/scripts/repairCategoryOrder.ts` (dry run by default, `--apply` to save) to renumber categories whose orderIndex was already reset in the database. NOT run.
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (whole app, from `app/`): no issues
+  - `flutter test test/station_categories_test.dart`: 4/4 pass
+  - `npx tsc --noEmit` in `admin_panel/`: no errors
+  - `node --check` on every changed CRM JS file: OK
+  - Not run: on-device check, server deploy, the repair script against the database
+- **Status:** Completed

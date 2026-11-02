@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { CATEGORY_ORDER_BY, calendarTypeFor, trackTypeFor } from '../utils/stationCategories';
 
 // Standard Jalali to Gregorian algorithm
 function jalaliToGregorian(jy: number, jm: number, jd: number) {
@@ -124,8 +125,10 @@ export const getCalendarEvents = async (req: AuthRequest, res: Response) => {
       orderBy: { orderIndex: 'asc' },
       include: {
         categories: {
+          orderBy: CATEGORY_ORDER_BY,
           include: {
             sessions: {
+              where: { isDeleted: false },
               orderBy: { orderIndex: 'asc' },
             },
           },
@@ -138,9 +141,10 @@ export const getCalendarEvents = async (req: AuthRequest, res: Response) => {
     stations.forEach((st) => {
       const stNum = st.orderIndex || 1;
 
-      st.categories.forEach((cat) => {
-        const isMedia = cat.title.includes('رسانه');
-        const type = isMedia ? 'mediaClass' : 'skillClass';
+      // A category is identified by its position, not by keywords in its (free text) title
+      st.categories.forEach((cat, catIndex) => {
+        const isMedia = catIndex > 0;
+        const type = calendarTypeFor(catIndex);
 
         cat.sessions.forEach((sess) => {
           const sessNum = sess.orderIndex || 1;
@@ -167,6 +171,10 @@ export const getCalendarEvents = async (req: AuthRequest, res: Response) => {
             title: sess.title,
             instructor,
             type,
+            categoryId: cat.id,
+            categoryTitle: cat.title,
+            categoryIndex: catIndex,
+            trackType: trackTypeFor(catIndex),
             time: timeStr,
             jalaliDate: jalaliDateStr,
             year: jYear,

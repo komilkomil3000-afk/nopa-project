@@ -2,6 +2,7 @@ import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
+import 'package:nopa_app/core/station_categories.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -26,15 +27,45 @@ class MentorStationClass1Screen extends StatefulWidget {
   State<MentorStationClass1Screen> createState() => _MentorStationScreenState();
 }
 
-enum _ReportTab { skillClass, mediaClass, quizzes }
-
 enum _ReportDot { none, done, wrong, pending }
+
+/// A class category of a station in the mentor report (as defined in the admin panel).
+class _ReportCategory {
+  final String title;
+  final List<dynamic> sessions;
+  const _ReportCategory(this.title, this.sessions);
+}
 
 class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   int _selectedStationIndex = 0;
   bool _isDescriptionExpanded = false;
   bool _isReportExpanded = false;
-  _ReportTab _selectedTab = _ReportTab.skillClass;
+  // Report tabs: one per class category of the station, then the quizzes
+  int _reportCategoryIndex = 0;
+  bool _reportQuizzesSelected = false;
+
+  /// The station's class categories in admin-panel order, under their own titles (any number of them).
+  /// Older servers only send skillSessions / mediaSessions: those become the first two categories.
+  List<_ReportCategory> _reportCategories(Map<String, dynamic> station) {
+    final raw = station['classCategories'];
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((c) => _ReportCategory(
+                (c['title']?.toString().trim().isNotEmpty ?? false) ? c['title'].toString().trim() : 'کلاس‌ها',
+                (c['sessions'] as List?) ?? const [],
+              ))
+          .toList();
+    }
+    final rawCats = StationCategories.parse(station['categories'] as List?);
+    if (rawCats.isNotEmpty) {
+      return rawCats.map((c) => _ReportCategory(c.title, c.sessions)).toList();
+    }
+    return [
+      if (station['skillSessions'] is List) _ReportCategory('کلاس‌های مهارتی', station['skillSessions'] as List),
+      if (station['mediaSessions'] is List) _ReportCategory('کلاس‌های رسانه‌ای', station['mediaSessions'] as List),
+    ];
+  }
   final Set<String> _expandedMemberIds = {};
   final Set<String> _expandedStatKeys = {};
   bool _isLoading = true;
@@ -251,6 +282,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 onStationSelected: (index) {
                   setState(() {
                     _selectedStationIndex = index;
+                    _reportCategoryIndex = 0; // another station may have other categories
                     _isDescriptionExpanded = false;
                     _currentClipIndex = 0;
                   });
@@ -269,12 +301,13 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
               // 3. Class Information & Statistics Strip
               _buildStatsStrip(
-                skillText: currentStationData['skillSessions'] != null
-                    ? '${(currentStationData['skillSessions'] as List).length} جلسه'
-                    : '۲ جلسه',
-                mediaText: currentStationData['mediaSessions'] != null
-                    ? '${(currentStationData['mediaSessions'] as List).length} جلسه'
-                    : '۴ جلسه',
+                classStats: [
+                  for (final c in _reportCategories(currentStationData))
+                    MapEntry(
+                      'کلاس ${StationCategories.shortLabel(c.title)}',
+                      '${c.sessions.length.toString().toPersianDigits()} جلسه',
+                    ),
+                ],
                 animText:
                     currentStationData['animationEpisodes'] ??
                     '${_currentStationClips.length} قسمت',
@@ -311,7 +344,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 const SizedBox(height: 16),
 
                 // 6. Pill Tabs styled like login screen mode switcher (stroke gradient & dark surface gradient)
-                _buildPillTabs(),
+                _buildPillTabs(currentStationData),
 
                 const SizedBox(height: 10),
 
@@ -579,8 +612,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
   /// Class Information & Statistics Strip (Matching Class1 Screen)
   Widget _buildStatsStrip({
-    required String skillText,
-    required String mediaText,
+    required List<MapEntry<String, String>> classStats,
     required String animText,
     required String stayText,
   }) {
@@ -591,10 +623,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItem('کلاس مهارتی', skillText),
-            _buildVerticalDivider(),
-            _buildStatItem('کلاس رسانه‌ای', mediaText),
-            _buildVerticalDivider(),
+            // One box per class category of the station (as many as the admin panel defines)
+            for (final stat in classStats) ...[
+              _buildStatItem(stat.key, stat.value),
+              _buildVerticalDivider(),
+            ],
             _buildStatItem('انیمیشن', animText),
             _buildVerticalDivider(),
             _buildStatItem('زمان اقامت', stayText),
@@ -629,7 +662,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 Text(
                   title,
                   textAlign: TextAlign.right,
-                  maxLines: 1,
+                  maxLines: isExpanded ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
@@ -1009,7 +1042,8 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
   }
 
   /// Pill Tabs styled like login screen mode switcher (strokeGradient, darkSurfaceGradient, accentGradient)
-  Widget _buildPillTabs() {
+  Widget _buildPillTabs(Map<String, dynamic> station) {
+    final categories = _reportCategories(station);
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Container(
@@ -1029,32 +1063,26 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildTabButton(
-                  'کلاس مهارتی',
-                  _selectedTab == _ReportTab.skillClass,
-                  () {
-                    setState(() {
-                      _selectedTab = _ReportTab.skillClass;
-                    });
-                  },
-                ),
-                const SizedBox(width: 4),
-                _buildTabButton(
-                  'کلاس رسانه ای',
-                  _selectedTab == _ReportTab.mediaClass,
-                  () {
-                    setState(() {
-                      _selectedTab = _ReportTab.mediaClass;
-                    });
-                  },
-                ),
-                const SizedBox(width: 4),
+                // One tab per class category of the station, under its admin-panel title
+                for (int i = 0; i < categories.length; i++) ...[
+                  _buildTabButton(
+                    'کلاس ${StationCategories.shortLabel(categories[i].title)}',
+                    !_reportQuizzesSelected && _reportCategoryIndex == i,
+                    () {
+                      setState(() {
+                        _reportCategoryIndex = i;
+                        _reportQuizzesSelected = false;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                ],
                 _buildTabButton(
                   'آزمون ها',
-                  _selectedTab == _ReportTab.quizzes,
+                  _reportQuizzesSelected || categories.isEmpty,
                   () {
                     setState(() {
-                      _selectedTab = _ReportTab.quizzes;
+                      _reportQuizzesSelected = true;
                     });
                   },
                 ),
@@ -1355,15 +1383,13 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     Map<String, dynamic> member,
     Map<String, dynamic> station,
   ) {
-    if (_selectedTab == _ReportTab.quizzes) {
+    final categories = _reportCategories(station);
+    if (_reportQuizzesSelected || categories.isEmpty) {
       return _buildQuizzesProgress(member, station);
     }
 
-    final isSkill = _selectedTab == _ReportTab.skillClass;
     final sessionList =
-        (isSkill ? station['skillSessions'] : station['mediaSessions'])
-            as List? ??
-        [];
+        categories[_reportCategoryIndex.clamp(0, categories.length - 1)].sessions;
     final clipStatus = (member['clipStatus'] as Map?) ?? const {};
 
     if (sessionList.isEmpty) {

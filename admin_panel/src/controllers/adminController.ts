@@ -3,6 +3,7 @@ import { isMentorRole } from '../utils/roles';
 import { Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
+import { orderCategories } from '../utils/stationCategories';
 import { changeBalance } from '../services/ledger';
 import { capitalValue, getEconomyPolicy, topByCapital } from '../services/economy';
 import { createQuizMock } from './quizController';
@@ -403,6 +404,7 @@ export async function getUserAnalytics(req: AuthRequest, res: Response) {
         isUnlocked,
         isCompleted,
         categoriesCount: (st.categories || []).length,
+        categoryTitles: orderCategories(st.categories || []).map((c: any) => c.title),
         totalClasses: stTotalSessions,
         completedClasses: stCompletedSessions,
         totalParts: stTotalClips,

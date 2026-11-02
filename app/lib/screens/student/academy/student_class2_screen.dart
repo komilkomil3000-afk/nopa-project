@@ -31,12 +31,17 @@ typedef ClassPlayerScreen = Class2Screen;
 
 class _Class2ScreenState extends State<StudentClass2Screen> {
   // Navigation & Category state
-  int _selectedTab = 0; // 0: مهارتی, 1: رسانه ای, 2: مشخصات جلسه
+  // One tab per class category of the station (same number, names and order as the admin panel),
+  // followed by the "مشخصات جلسه" tab.
+  int _selectedTab = 0; // index into _categories
+  bool _detailsTabSelected = false; // the "مشخصات جلسه" tab
   int _currentStationIndex = 0;
 
-  // Sessions & Clips
-  List<Map<String, dynamic>> _skillSessions = [];
-  List<Map<String, dynamic>> _mediaSessions = [];
+  // Sessions & Clips, grouped by category
+  List<StationCategory> _categories = [];
+  // Requested by the opening screen; resolved once the categories are known
+  String? _targetSessionId;
+  String? _targetCategoryId;
   int _expandedSessionIndex = 0;
   int _currentClipIndex = 0;
   bool _isLoadingClasses = true;
@@ -240,6 +245,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     if (_lastSeenApplied || !_progressLoaded || !_sessionsLoaded) return;
     _lastSeenApplied = true;
     if (_targetSessionTitle != null && _targetSessionTitle!.trim().isNotEmpty) return;
+    if (_targetSessionId != null || _targetCategoryId != null) return;
 
     String latest = '';
     int? bestTab;
@@ -249,8 +255,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (p['isWatched'] != true && p['quizPassed'] != true) continue;
       final updated = p['updatedAt']?.toString() ?? '';
       if (updated.compareTo(latest) < 0) continue;
-      for (int tab = 0; tab < 2; tab++) {
-        final sessions = tab == 1 ? _mediaSessions : _skillSessions;
+      for (int tab = 0; tab < _categories.length; tab++) {
+        final sessions = _categories[tab].sessions;
         for (int s = 0; s < sessions.length; s++) {
           if (sessions[s]['id']?.toString() != p['sessionId']?.toString()) continue;
           final clips = sessions[s]['videoClips'] as List? ?? [];
@@ -269,6 +275,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     if (bestTab == null) return;
     setState(() {
       _selectedTab = bestTab!;
+      _detailsTabSelected = false;
       _expandedSessionIndex = bestSession;
       _currentClipIndex = bestClip;
       _playRequested = false;
@@ -278,7 +285,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   bool _argumentsLoaded = false;
   String? _targetSessionTitle;
-  String? _targetInstructor;
 
   @override
   void didChangeDependencies() {
@@ -299,45 +305,26 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       if (args['stationTitle'] is String) _stationTitle = args['stationTitle'];
       if (args['stationNumber'] is int) _stationNumber = args['stationNumber'];
 
-      if (args['initialTab'] is int) {
-        _selectedTab = args['initialTab'];
-      } else if (args['tab'] is int) {
-        _selectedTab = args['tab'];
-      } else if (args['type'] == 'media' || args['type'] == 'mediaClass') {
-        _selectedTab = 1;
-      } else if (args['type'] == 'skill' || args['type'] == 'skillClass') {
-        _selectedTab = 0;
+      // Which tab to open: a category id / session id is exact; an index or the old 'skill' / 'media' type
+      // points at the first / second category
+      final requestedTab = args['initialTab'] ?? args['tab'];
+      if (requestedTab is int) {
+        _selectedTab = requestedTab;
+      } else {
+        _selectedTab = StationCategories.indexForTrackType(args['type']?.toString()) ?? 0;
       }
+      if (args['categoryIndex'] is int) _selectedTab = args['categoryIndex'];
+      _targetCategoryId = args['categoryId']?.toString();
+      _targetSessionId = args['sessionId']?.toString();
 
       if (args['initialIndex'] is int) {
         _expandedSessionIndex = args['initialIndex'];
       }
 
       _targetSessionTitle = args['sessionTitle'] as String? ?? args['title'] as String?;
-      _targetInstructor = args['instructor'] as String?;
 
-      final passedCategories = args['categories'] as Map<String, List<Map<String, dynamic>>>?;
-      final passedClasses = args['classes'] as List?;
       if (args['stationData'] is Map) {
         _stationDataArg = Map<String, dynamic>.from(args['stationData'] as Map);
-      }
-
-      if (passedCategories != null && passedCategories.isNotEmpty) {
-        final split = StationCategories.splitByTitle(passedCategories);
-        _skillSessions = split[StationCategories.skill]!;
-        _mediaSessions = split[StationCategories.media]!;
-      } else if (passedClasses != null && passedClasses.isNotEmpty) {
-        // Only one class type is passed: put it under the tab that was asked for
-        final sessions = passedClasses.whereType<Map>().map((c) {
-          final map = Map<String, dynamic>.from(c);
-          map['videoClips'] = (map['videoClips'] as List?)?.map((cp) => Map<String, dynamic>.from(cp as Map)).toList() ?? [];
-          return map;
-        }).toList();
-        if (_selectedTab == 1) {
-          _mediaSessions = sessions;
-        } else {
-          _skillSessions = sessions;
-        }
       }
     }
 
@@ -346,15 +333,13 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     _loadAnsweredQuizzes();
   }
 
+  static String _cleanTitle(String s) => s.replaceAll(RegExp(r'[\s\.\:\-_()0-9۰-۹]'), '');
+
   Future<void> _fetchData({bool force = false}) async {
     try {
       final apiService = HttpApiService();
 
       final stations = await apiService.getStations();
-      if (force) {
-        _skillSessions = [];
-        _mediaSessions = [];
-      }
       if (stations.isNotEmpty) {
         final sIndex = _currentStationIndex.clamp(0, stations.length - 1);
         _stationsData = stations;
@@ -366,55 +351,52 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
         _stationNumber = (shown['orderIndex'] as num?)?.toInt() ?? StationNumbering.numberAt(sIndex + 1);
       }
 
-      if (_skillSessions.isEmpty || _mediaSessions.isEmpty) {
-        final Map<String, dynamic>? stationData = _stationDataArg ??
-            (stations.isNotEmpty ? stations[_currentStationIndex.clamp(0, stations.length - 1)] : null);
-        if (stationData != null) {
-          final split = StationCategories.split(stationData['categories'] as List? ?? []);
-          if (_skillSessions.isEmpty) _skillSessions = split[StationCategories.skill]!;
-          if (_mediaSessions.isEmpty) _mediaSessions = split[StationCategories.media]!;
-        }
+      // The tabs are always built from the station's current categories, so a category renamed, added,
+      // removed or reordered in the admin panel shows here exactly as it is there
+      final Map<String, dynamic>? stationData = _stationDataArg ??
+          (stations.isNotEmpty ? stations[_currentStationIndex.clamp(0, stations.length - 1)] : null);
+      _categories = StationCategories.parse(stationData?['categories'] as List?);
+
+      if (_targetCategoryId != null) {
+        final i = _categories.indexWhere((c) => c.id == _targetCategoryId);
+        if (i >= 0) _selectedTab = i;
       }
 
-      // If a specific session was requested, select and expand it
-      if (_targetSessionTitle != null && _targetSessionTitle!.trim().isNotEmpty) {
-        final cleanTarget = _targetSessionTitle!.replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
-        int foundInSkill = -1;
-        int foundInMedia = -1;
-
-        for (int i = 0; i < _skillSessions.length; i++) {
-          final t = (_skillSessions[i]['title']?.toString() ?? '').replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
-          if (t.isNotEmpty && cleanTarget.isNotEmpty && (t.contains(cleanTarget) || cleanTarget.contains(t))) {
-            foundInSkill = i;
+      // A specific session was requested: select its tab and expand it (by id first, then by title)
+      bool found = false;
+      if (_targetSessionId != null) {
+        for (int c = 0; c < _categories.length && !found; c++) {
+          final s = _categories[c].sessions.indexWhere((x) => x['id']?.toString() == _targetSessionId);
+          if (s >= 0) {
+            _selectedTab = c;
+            _expandedSessionIndex = s;
+            found = true;
+          }
+        }
+      }
+      if (!found && _targetSessionTitle != null && _targetSessionTitle!.trim().isNotEmpty) {
+        final cleanTarget = _cleanTitle(_targetSessionTitle!);
+        // The requested tab is searched first, then the others
+        final order = [
+          if (_selectedTab >= 0 && _selectedTab < _categories.length) _selectedTab,
+          for (int c = 0; c < _categories.length; c++)
+            if (c != _selectedTab) c,
+        ];
+        for (final c in order) {
+          final sessions = _categories[c].sessions;
+          final s = sessions.indexWhere((x) {
+            final t = _cleanTitle(x['title']?.toString() ?? '');
+            return t.isNotEmpty && cleanTarget.isNotEmpty && (t.contains(cleanTarget) || cleanTarget.contains(t));
+          });
+          if (s >= 0) {
+            _selectedTab = c;
+            _expandedSessionIndex = s;
             break;
           }
         }
-
-        for (int i = 0; i < _mediaSessions.length; i++) {
-          final t = (_mediaSessions[i]['title']?.toString() ?? '').replaceAll(RegExp(r'[\s\.\:\-_()0-9\u06F0-\u06F9]'), '');
-          if (t.isNotEmpty && cleanTarget.isNotEmpty && (t.contains(cleanTarget) || cleanTarget.contains(t))) {
-            foundInMedia = i;
-            break;
-          }
-        }
-
-        if (foundInSkill != -1 && (_selectedTab == 0 || foundInMedia == -1)) {
-          _selectedTab = 0;
-          _expandedSessionIndex = foundInSkill;
-        } else if (foundInMedia != -1) {
-          _selectedTab = 1;
-          _expandedSessionIndex = foundInMedia;
-        } else {
-          // Fallback: update active tab's first session title to match requested session
-          final targetList = _selectedTab == 1 ? _mediaSessions : _skillSessions;
-          if (targetList.isNotEmpty) {
-            targetList[0]['title'] = _targetSessionTitle;
-            if (_targetInstructor != null) {
-              targetList[0]['instructor'] = _targetInstructor;
-            }
-            _expandedSessionIndex = 0;
-          }
-        }
+      }
+      if (_categories.isEmpty || _selectedTab < 0 || _selectedTab >= _categories.length) {
+        _selectedTab = 0;
       }
 
       if (mounted) {
@@ -459,17 +441,20 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       _expandedSessionIndex = 0;
       _currentClipIndex = 0;
       _playRequested = false;
-      _targetSessionTitle = null; // the requested session belonged to the previous station
+      // The requested session / category belonged to the previous station
+      _targetSessionTitle = null;
+      _targetSessionId = null;
+      _targetCategoryId = null;
       _stationDataArg = null;
       _isLoadingClasses = true;
     });
     await _fetchData(force: true);
   }
 
-  List<Map<String, dynamic>> get _currentSessions {
-    if (_selectedTab == 1) return _mediaSessions;
-    return _skillSessions;
-  }
+  StationCategory? get _currentCategory =>
+      (_selectedTab >= 0 && _selectedTab < _categories.length) ? _categories[_selectedTab] : null;
+
+  List<Map<String, dynamic>> get _currentSessions => _currentCategory?.sessions ?? const [];
 
   Map<String, dynamic>? get _activeSession {
     final list = _currentSessions;
@@ -555,16 +540,19 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     if (mounted) setState(() {});
   }
 
-  /// Saves the watched clip to the database under its own track (skill / media).
+  /// Saves the watched clip to the database under the track of its category.
   void _recordClipWatched(Map<String, dynamic> session, int clipIndex) {
     final clips = session['videoClips'] as List? ?? [];
     if (clipIndex >= clips.length) return;
     final clipId = clips[clipIndex]['id']?.toString();
     if (clipId == null || clipId.isEmpty) return;
-    final bool isMedia = _mediaSessions.any((s) => s['id'] == session['id']);
+    final category = _categories.firstWhere(
+      (c) => c.sessions.any((s) => s['id'] == session['id']),
+      orElse: () => _currentCategory ?? const StationCategory(id: '', title: '', index: 0, sessions: []),
+    );
     HttpApiService().markClipWatched(
       clipId,
-      trackType: isMedia ? 'media' : 'skill',
+      trackType: category.trackType,
       stationId: _stationId,
       sessionId: session['id']?.toString(),
     );
@@ -693,12 +681,12 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Navigation Tabs Row (مهارتی | رسانه ای | مشخصات جلسه)
+                  // Navigation Tabs Row: one tab per class category (as defined in the admin panel) | مشخصات جلسه
                   _buildTabsRow(),
                   const SizedBox(height: 12),
 
                   // Tab Body Content (باکس‌های جلسات و پارت‌ها منطبق بر رفرنس عکس)
-                  if (_selectedTab == 2)
+                  if (_detailsTabSelected)
                     _buildSessionDetailsTab()
                   else
                     _buildSessionsAccordion(),
@@ -733,19 +721,34 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     );
   }
 
-  /// 3. Tabs Row (مهارتی | رسانه ای | مشخصات جلسه)
+  /// 3. Tabs Row: the station's class categories (same number, names and order as the admin panel) | مشخصات جلسه
   Widget _buildTabsRow() {
+    final tabs = <Widget>[
+      for (final cat in _categories)
+        _buildTabItem(
+          title: cat.shortTitle,
+          isSelected: !_detailsTabSelected && _selectedTab == cat.index,
+          onTap: () => _selectCategoryTab(cat.index),
+          expanded: _categories.length <= 3,
+        ),
+      _buildTabItem(
+        title: 'مشخصات جلسه',
+        isSelected: _detailsTabSelected,
+        onTap: _selectDetailsTab,
+        expanded: _categories.length <= 3,
+      ),
+    ];
     return Column(
       children: [
         Directionality(
           textDirection: TextDirection.rtl,
-          child: Row(
-            children: [
-              _buildTabItem(title: 'مهارتی', index: 0),
-              _buildTabItem(title: 'رسانه ای', index: 1),
-              _buildTabItem(title: 'مشخصات جلسه', index: 2),
-            ],
-          ),
+          // Up to three categories share the width; more scroll sideways
+          child: _categories.length <= 3
+              ? Row(children: tabs)
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: tabs),
+                ),
         ),
         const SizedBox(height: 5),
         Container(
@@ -756,25 +759,41 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     );
   }
 
-  Widget _buildTabItem({required String title, required int index}) {
-    final isSelected = _selectedTab == index;
-    return Expanded(child: GestureDetector(
+  void _selectCategoryTab(int index) {
+    setState(() {
+      _selectedTab = index;
+      _detailsTabSelected = false;
+      _currentClipIndex = 0;
+      _playRequested = false;
+    });
+    _initializeVideoForCurrentSession();
+  }
+
+  void _selectDetailsTab() {
+    setState(() {
+      _detailsTabSelected = true;
+      _currentClipIndex = 0;
+      _playRequested = false;
+    });
+  }
+
+  Widget _buildTabItem({
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool expanded,
+  }) {
+    final child = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        setState(() {
-          _selectedTab = index;
-          _currentClipIndex = 0;
-          _playRequested = false;
-        });
-        if (index != 2) {
-          _initializeVideoForCurrentSession();
-        }
-      },
+      onTap: onTap,
       child: Container(
         alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: expanded ? 4 : 12, vertical: 12),
         child: Text(
           title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: isSelected ? const Color(0xFFE5B888) : const Color(0xFF9D99B8),
             fontSize: isSelected ? 13.5 : 12.5,
@@ -784,7 +803,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
           ),
         ),
       ),
-    ));
+    );
+    return expanded ? Expanded(child: child) : child;
   }
 
   String _formatDuration(dynamic duration) {
@@ -1252,7 +1272,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          session['category']?.toString() ?? 'استاد راهنمای جلسات کاروان',
+                          _currentCategory?.title ?? 'استاد راهنمای جلسات کاروان',
                           style: const TextStyle(
                             color: Color(0xFF9D99B8),
                             fontSize: 10.5,

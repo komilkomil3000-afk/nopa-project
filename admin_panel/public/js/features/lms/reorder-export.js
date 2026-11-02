@@ -48,29 +48,6 @@ window.renderReorderList = function() {
   }
 
   const PERSIAN_NUMS = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم', 'نهم', 'دهم', 'یازدهم', 'دوازدهم', 'سیزدهم', 'چهاردهم', 'پانزدهم'];
-  const DEFAULT_STATION_TOPICS = {
-    1: { skill: 'شناخت هوش و حافظه', media: 'پادکست و مبانی رسانه' },
-    2: { skill: 'خودشناسی جامع', media: 'تولید پادکست حرفه‌ای' },
-    3: { skill: 'تفکر نقادانه و حل مسئله', media: 'عکاسی و تصویربرداری' },
-    4: { skill: 'کار تیمی و مدیریت چالش‌ها', media: 'تدوین ویدیو و سناریونویسی' },
-    5: { skill: 'هدف‌گذاری و مدیریت زمان', media: 'هوش مصنوعی و رسانه' }
-  };
-
-  function getCleanTopic(cat, fallback) {
-    if (!cat) return fallback;
-    if (cat.title && !cat.title.startsWith('کلاس') && !cat.title.startsWith('دسته') && cat.title.length > 2) {
-      return cat.title;
-    }
-    const firstSess = (cat.sessions || [])[0];
-    if (firstSess && firstSess.title) {
-      let clean = firstSess.title.replace(/^جلسه\s*\d+\s*[:\-–]?\s*/i, '').replace(/^کلاس\s*\d+\s*[:\-–]?\s*/i, '').replace(/\([^)]*\)/g, '').trim();
-      if (clean && clean.length > 2 && !clean.includes('مهارتی') && !clean.includes('رسانه‌ای')) {
-        return clean;
-      }
-    }
-    return fallback;
-  }
-
   let html = '';
   window.lmsReorderList.forEach((st, idx) => {
     const isFirst = idx === 0;
@@ -81,13 +58,10 @@ window.renderReorderList = function() {
     // Persian station title matching main table exactly: منزلگاه اول، منزلگاه دوم، ...
     const persianStationTitle = PERSIAN_NUMS[idx] ? `منزلگاه ${PERSIAN_NUMS[idx]}` : `منزلگاه ${idx + 1}`;
 
-    const categories = st.categories || [];
-    const skillCategory = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || categories[0];
-    const mediaCategory = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || categories[1];
-    
-    const defaultTopics = DEFAULT_STATION_TOPICS[originalIdx] || DEFAULT_STATION_TOPICS[currentNumber] || { skill: 'کلاس‌های مهارتی', media: 'کلاس‌های رسانه‌ای' };
-    const skillTopic = getCleanTopic(skillCategory, defaultTopics.skill);
-    const mediaTopic = getCleanTopic(mediaCategory, defaultTopics.media);
+    const categories = window.lmsOrderedCategories ? window.lmsOrderedCategories(st) : (st.categories || []);
+    const categoriesHtml = categories.map((c, ci) =>
+      `<span class="u-c-primary-text"><i class="fa-solid fa-layer-group"></i> ${esc(c.title || `دسته ${ci + 1}`)}</span>`
+    ).join('<span class="u-c-text-faint">|</span>');
 
     let totalSessions = 0;
     categories.forEach(c => totalSessions += (c.sessions || []).length);
@@ -104,10 +78,8 @@ window.renderReorderList = function() {
               ${st.title && !st.title.startsWith('Station') && !st.title.startsWith('منزلگاه') ? `<span class="u-fs-xs u-c-primary-text u-fw-normal">(${esc(st.title)})</span>` : ''}
             </div>
             <div class="u-fs-xs u-c-text-muted u-mt-4 u-flex u-items-center u-gap-8 u-wrap">
-              <span class="u-c-primary-text"><i class="fa-solid fa-brain"></i> مهارتی: ${skillTopic}</span>
-              <span class="u-c-text-faint">|</span>
-              <span class="u-c-primary-text"><i class="fa-solid fa-photo-film"></i> رسانه‌ای: ${mediaTopic}</span>
-              <span class="u-c-text-faint">|</span>
+              ${categoriesHtml}
+              ${categoriesHtml ? '<span class="u-c-text-faint">|</span>' : ''}
               <span class="u-c-text-soft">${totalSessions} جلسه مصوب</span>
             </div>
           </div>
@@ -169,8 +141,7 @@ window.exportLmsToExcel = function() {
   }
 
   let totalAllSessions = 0;
-  let totalAllSkill = 0;
-  let totalAllMedia = 0;
+  let totalAllCategories = 0;
   let totalAllClips = 0;
   let totalAllQuizzes = 0;
 
@@ -190,17 +161,14 @@ window.exportLmsToExcel = function() {
       }
     }
 
-    const categories = st.categories || [];
-    const skillCat = categories.find(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت'))) || { sessions: [] };
-    const mediaCat = categories.find(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه'))) || { sessions: [] };
-
-    const skillSessions = (skillCat.sessions || []).length;
-    const mediaSessions = (mediaCat.sessions || []).length;
-    const totalSessions = skillSessions + mediaSessions;
+    // Every category under its own title, in order (any number of them)
+    const categories = window.lmsOrderedCategories ? window.lmsOrderedCategories(st) : (st.categories || []);
+    const perCategory = categories.map(c => ({ title: c.title || 'دسته', count: (c.sessions || []).filter(s => !s.isDeleted).length }));
+    const totalSessions = perCategory.reduce((n, c) => n + c.count, 0);
+    const perCategoryStr = perCategory.map(c => `${c.title}: ${c.count} جلسه`).join(' | ') || '-';
 
     totalAllSessions += totalSessions;
-    totalAllSkill += skillSessions;
-    totalAllMedia += mediaSessions;
+    totalAllCategories += categories.length;
 
     const instructors = new Set();
     let totalClips = 0;
@@ -226,8 +194,7 @@ window.exportLmsToExcel = function() {
         <td style="font-weight:bold; color:#1E1633;">${esc(title)}</td>
         <td>${esc(instructorsStr)}</td>
         <td style="text-align:center;">${categories.length} دسته</td>
-        <td style="text-align:center;">${skillSessions} جلسه</td>
-        <td style="text-align:center;">${mediaSessions} جلسه</td>
+        <td>${esc(perCategoryStr)}</td>
         <td style="text-align:center; font-weight:bold; color:#7C3AED;">${totalSessions} جلسه</td>
         <td style="text-align:center;">${totalClips} پارت</td>
         <td style="text-align:center; font-weight:bold; color:#A16207;">${totalQuizzes} آزمونک</td>
@@ -242,9 +209,8 @@ window.exportLmsToExcel = function() {
   tableRows += `
     <tr style="background-color:#f3f0ff; font-weight:bold;">
       <td colspan="4" style="text-align:center; padding:10px; font-size:13px; color:#1E1633;">مجموع کل سامانه نپا</td>
-      <td style="text-align:center; color:#7C3AED;">۱۰ دسته</td>
-      <td style="text-align:center; color:#7C3AED;">${totalAllSkill} جلسه</td>
-      <td style="text-align:center; color:#7C3AED;">${totalAllMedia} جلسه</td>
+      <td style="text-align:center; color:#7C3AED;">${totalAllCategories} دسته</td>
+      <td style="text-align:center; color:#7C3AED;">-</td>
       <td style="text-align:center; color:#7C3AED; font-size:13px;">${totalAllSessions} جلسه</td>
       <td style="text-align:center; color:#7C3AED;">${totalAllClips} پارت</td>
       <td style="text-align:center; color:#A16207; font-size:13px;">${totalAllQuizzes} آزمونک</td>
@@ -291,8 +257,7 @@ window.exportLmsToExcel = function() {
             <th style="width:220px;">نام و عنوان منزلگاه</th>
             <th style="width:180px;">اساتید و مربیان</th>
             <th style="width:90px;">دسته‌ها</th>
-            <th style="width:90px;">جلسات مهارتی</th>
-            <th style="width:90px;">جلسات رسانه‌ای</th>
+            <th style="width:220px;">جلسات هر دسته</th>
             <th style="width:90px;">مجموع جلسات</th>
             <th style="width:80px;">پارت‌ها</th>
             <th style="width:80px;">آزمونک‌ها</th>

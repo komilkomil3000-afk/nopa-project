@@ -491,7 +491,7 @@ window.viewStudentDetails = async function(studentId) {
             <div class="u-grid u-cols-2 u-gap-6-12 u-fs-xs">
               <div class="u-c-text-muted">
                 <i class="fa-solid fa-layer-group u-c-primary-text u-w-16"></i> 
-                <strong>دسته‌های کلاس:</strong> <span class="u-c-text u-bold">${st.categoriesCount || 2} دسته</span> <span class="u-fs-2xs u-c-text-faint">(مهارتی و رسانه‌ای)</span>
+                <strong>دسته‌های کلاس:</strong> <span class="u-c-text u-bold">${st.categoriesCount ?? 0} دسته</span>${Array.isArray(st.categoryTitles) && st.categoryTitles.length ? ` <span class="u-fs-2xs u-c-text-faint">(${esc(st.categoryTitles.join("، "))})</span>` : ""}
               </div>
 
               <div class="u-c-text-muted">

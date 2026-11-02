@@ -288,7 +288,7 @@ window.editStationModal = function(stationId) {
   const container = document.getElementById('lms-modal-categories-container');
   if (container) container.innerHTML = '';
 
-  const categories = station.categories || [];
+  const categories = window.lmsOrderedCategories ? window.lmsOrderedCategories(station) : (station.categories || []);
   if (categories.length > 0) {
     categories.forEach(cat => window.addCategoryBlockToCreatorModal(cat));
   }

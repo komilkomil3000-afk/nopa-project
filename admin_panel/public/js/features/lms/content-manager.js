@@ -36,11 +36,13 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
   const stationIdx = station.orderIndex ?? 1;
   const simpleStationName = PERSIAN_NUMS[stationIdx] ? `منزلگاه ${PERSIAN_NUMS[stationIdx]}` : `منزلگاه ${stationIdx}`;
 
+  // Categories in the order the app shows them as class tabs; each keeps its position for colours and labels
+  const orderedCategories = window.lmsOrderedCategories(station);
+  const filterIndex = window.lmsCategoryFilterIndex(currentCatFilter);
+
   let filterTitleSuffix = '';
-  if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
-    filterTitleSuffix = ' <span class="u-fs-xs u-c-primary-text u-fw-normal u-bg-primary-20 u-p-2-8 u-r-10 u-mr-6">(فقط کلاس‌های مهارتی)</span>';
-  } else if (currentCatFilter === 'رسانه‌ای' || currentCatFilter === 'media') {
-    filterTitleSuffix = ' <span class="u-fs-xs u-c-primary-text u-fw-normal u-bg-primary-20 u-p-2-8 u-r-10 u-mr-6">(فقط کلاس‌های رسانه‌ای)</span>';
+  if (filterIndex >= 0 && orderedCategories[filterIndex]) {
+    filterTitleSuffix = ` <span class="u-fs-xs u-c-primary-text u-fw-normal u-bg-primary-20 u-p-2-8 u-r-10 u-mr-6">(فقط دسته ${filterIndex + 1}: ${esc(orderedCategories[filterIndex].title || '')})</span>`;
   }
 
   const titleEl = document.getElementById('lms-content-modal-title');
@@ -123,14 +125,10 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
     desc: station.description || ''
   };
 
-  let categories = station.categories || [];
-
-  // Filter categories according to selected category filter
-  if (currentCatFilter === 'مهارتی' || currentCatFilter === 'skill') {
-    categories = categories.filter(c => c.orderIndex === 1 || (c.title && c.title.includes('مهارت')));
-  } else if (currentCatFilter === 'رسانه‌ای' || currentCatFilter === 'media') {
-    categories = categories.filter(c => c.orderIndex === 2 || (c.title && c.title.includes('رسانه')));
-  }
+  // Filter categories according to selected category filter (by position, not by title keywords)
+  const categories = filterIndex >= 0
+    ? orderedCategories.filter((_, i) => i === filterIndex)
+    : orderedCategories;
 
   // --- SECTION 1: STATION BASIC INFO & CONTENT EDITOR CARD ---
   let html = `
@@ -201,6 +199,24 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
     </div>
   `;
 
+  // Adds a category (it becomes a new class tab in the app, after the existing ones)
+  const addCategoryBarHtml = `
+    <div class="u-bg-primary-8 u-bd-1-dashed-primary-40 u-r-10 u-p-12-14 u-mb-20 u-flex u-justify-between u-items-center u-wrap u-gap-10">
+      <div class="u-fs-xs u-c-text-soft">
+        <i class="fa-solid fa-layer-group u-c-primary-text"></i>
+        این منزلگاه <strong class="u-c-primary-text">${orderedCategories.length}</strong> دسته کلاس دارد. تب‌های صفحه کلاس‌ها در اپلیکیشن دقیقاً به همین تعداد، با همین نام‌ها و به همین ترتیب نمایش داده می‌شوند.
+      </div>
+      <div class="u-flex u-items-center u-gap-6">
+        <label for="new-cat-title-${station.id}" class="u-fs-2xs u-c-text-soft u-nowrap">عنوان دسته جدید:</label>
+        <input type="text" id="new-cat-title-${station.id}" class="input-ctrl u-bg-surface u-fs-xs u-p-6-10 u-w-170" placeholder="مثال: کلاس‌های شناختی">
+        <button type="button" data-click="addNewCategoryToStation" data-click-args="${esc(JSON.stringify([String(station.id)]))}" class="u-bg-grad-primary u-c-white u-bd-none u-p-6-14 u-r-6 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-6 u-nowrap">
+          <i class="fa-solid fa-plus"></i> افزودن دسته کلاس
+        </button>
+      </div>
+    </div>
+  `;
+  html += addCategoryBarHtml;
+
   if (categories.length === 0) {
     html += '<div class="u-text-center u-c-text-muted u-p-20">هیچ دسته‌بندی با این فیلتر برای این منزلگاه پیدا نشد.</div>';
     container.innerHTML = html;
@@ -212,10 +228,14 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
   // --- SECTION 2: CATEGORIES, SESSIONS, VIDEO CLIPS (WITH REORDER) & QUIZZES ---
   categories.forEach(cat => {
-    const isSkill = cat.orderIndex === 1 || (cat.title && cat.title.includes('مهارت'));
+    const catPos = orderedCategories.indexOf(cat); // 0-based position = tab position in the app
+    const isFirstCat = catPos === 0;
+    const isLastCat = catPos === orderedCategories.length - 1;
+    // Only used for colours and the calendar fallback times: a category's kind is never read from its title
+    const isSkill = catPos % 2 === 0;
     const color = isSkill ? 'var(--info-text)' : 'var(--primary-text)';
     const bg = isSkill ? 'rgb(var(--info-rgb) / 0.12)' : 'rgb(var(--primary-rgb) / 0.12)';
-    const sessions = cat.sessions || [];
+    const sessions = (cat.sessions || []).filter(s => !s.isDeleted);
 
     html += `
       <div class="u-r-12 u-p-16 u-mb-20" data-style="background:${bg}; border:1px solid ${color}44">
@@ -224,20 +244,28 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         <div class="u-m-0-0-14-0 u-bg-surface-85 u-r-10 u-p-12-14 u-flex u-items-center u-justify-between u-wrap u-gap-12" data-style="border:1px solid ${color}55">
           <div class="u-flex u-items-center u-gap-10 u-flex-1 u-minw-280">
             <span class="badge u-c-white u-p-6-10 u-r-6 u-fs-xs u-bold u-nowrap" data-style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
-              ${isSkill ? 'دسته ۱ (مهارتی)' : 'دسته ۲ (رسانه‌ای)'}
+              دسته ${catPos + 1} (تب ${catPos + 1} اپلیکیشن)
             </span>
             <div class="u-flex-1 u-flex u-items-center u-gap-6">
               <label for="cat-title-${cat.id}" class="u-fs-2xs u-c-text-soft u-nowrap"><i class="fa-solid fa-pen" data-style="color:${color};"></i> عنوان دسته کلاس:</label>
-              <input type="text" id="cat-title-${cat.id}"" class="input-ctrl u-bg-surface u-c-text u-bold u-fs-sm u-p-6-12" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." data-style="border-color:${color}66">
+              <input type="text" id="cat-title-${cat.id}" class="input-ctrl u-bg-surface u-c-text u-bold u-fs-sm u-p-6-12" value="${esc(cat.title || `دسته کلاس ${catPos + 1}`)}" placeholder="عنوان دسته کلاس..." data-style="border-color:${color}66">
             </div>
           </div>
-          
-          <div class="u-flex u-items-center u-gap-8">
+
+          <div class="u-flex u-items-center u-gap-8 u-wrap">
             <span class="u-fs-xs u-c-text-soft u-bg-shade-40 u-p-6-12 u-r-6 u-bd-fg-6 u-bold">
               ${sessions.length} جلسه
             </span>
+            <button type="button" data-click="moveCategoryInStation" data-click-args="${esc(JSON.stringify([String(station.id), String(cat.id), -1]))}" ${isFirstCat ? 'disabled' : ''} class="u-bg-surface-2 u-c-primary-text u-bd-primary-30 u-p-6-10 u-r-6 u-fs-2xs u-pointer" title="انتقال این دسته به قبل (تب قبلی در اپلیکیشن)">▲</button>
+            <button type="button" data-click="moveCategoryInStation" data-click-args="${esc(JSON.stringify([String(station.id), String(cat.id), 1]))}" ${isLastCat ? 'disabled' : ''} class="u-bg-surface-2 u-c-primary-text u-bd-primary-30 u-p-6-10 u-r-6 u-fs-2xs u-pointer" title="انتقال این دسته به بعد (تب بعدی در اپلیکیشن)">▼</button>
             <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-c-white u-bd-none u-p-6-14 u-r-6 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30" data-style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'})" title="ذخیره مستقیم عنوان این دسته">
               <i class="fa-solid fa-save"></i> ذخیره عنوان دسته
+            </button>
+            <button type="button" data-click="addNewSessionToCategory" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-bg-primary u-c-white u-bd-none u-p-6-12 u-r-6 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-4" title="افزودن جلسه جدید به این دسته">
+              <i class="fa-solid fa-plus"></i> جلسه جدید
+            </button>
+            <button type="button" data-click="deleteCategoryRecord" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-p-6-10 u-r-6 u-fs-2xs u-pointer" title="حذف این دسته و همه جلسات آن">
+              <i class="fa-solid fa-trash"></i>
             </button>
           </div>
         </div>
@@ -290,7 +318,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         const quizzes = sess.quizzes || [];
 
         const sessOrder = sess.orderIndex || (sIdx + 1);
-        const curFallback = window.getCurriculumSessionDate ? window.getCurriculumSessionDate(stationIdx, !isSkill, sessOrder) : { date: '1405/07/02', time: isSkill ? '۱۶:۰۰ الی ۱۷:۳۰' : '۱۸:۰۰ الی ۱۹:۳۰' };
+        const curFallback = window.getCurriculumSessionDate ? window.getCurriculumSessionDate(stationIdx, catPos > 0, sessOrder) : { date: '1405/07/02', time: catPos === 0 ? '۱۶:۰۰ الی ۱۷:۳۰' : '۱۸:۰۰ الی ۱۹:۳۰' };
         const sessDate = sess.sessionDate || curFallback.date;
         const sessTime = sess.sessionTime || curFallback.time;
 
@@ -365,6 +393,28 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                 </button>
                 <button type="button" class="u-bg-primary u-c-white u-bd-none u-r-6 u-p-8-12 u-fs-2xs u-pointer u-bold u-flex u-items-center u-gap-4 u-nowrap" data-click="addNewClipToSession" data-click-args="${esc(JSON.stringify([String(sess.id)]))}" title="افزودن پارت ویدیویی جدید به این کلاس">
                   <i class="fa-solid fa-plus"></i> پارت جدید
+                </button>
+                <button type="button" class="u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-r-6 u-p-8-10 u-fs-2xs u-pointer" data-click="deleteSessionRecord" data-click-args="${esc(JSON.stringify([String(sess.id), String(station.id)]))}" title="حذف این جلسه">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- مشخصات جلسه: what the app shows in the "مشخصات جلسه" tab of the classes screen -->
+            <div class="u-bg-surface-70 u-bd-primary-25 u-r-8 u-p-10-14 u-mb-12">
+              <div class="u-flex u-justify-between u-items-center u-wrap u-gap-8 u-mb-6">
+                <label for="sess-desc-${sess.id}" class="u-fs-xs u-bold u-c-primary-text u-flex u-items-center u-gap-6">
+                  <i class="fa-solid fa-circle-info"></i> مشخصات جلسه
+                  <span class="u-fs-2xs u-c-text-muted u-fw-normal">(در تب «مشخصات جلسه» صفحه کلاس‌های اپلیکیشن، همراه با نام استاد و دسته نمایش داده می‌شود)</span>
+                </label>
+                <span class="u-fs-2xs u-c-text-soft">
+                  <i class="fa-solid fa-chalkboard-user"></i> ${esc(sess.instructor || 'استاد تعیین نشده')} · <i class="fa-solid fa-layer-group"></i> ${esc(cat.title || '')}
+                </span>
+              </div>
+              <textarea id="sess-desc-${sess.id}" class="input-ctrl u-bg-surface u-fs-xs" rows="3" placeholder="توضیحات، اهداف و سرفصل‌های این جلسه...">${esc(sess.description || '')}</textarea>
+              <div class="u-flex u-justify-end u-mt-6">
+                <button type="button" class="u-bg-grad-success u-c-white u-bd-none u-r-6 u-p-6-14 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-6" data-click="saveSessionDetails" data-click-args="${esc(JSON.stringify([String(sess.id), String(station.id)]))}">
+                  <i class="fa-solid fa-floppy-disk"></i> ذخیره مشخصات جلسه
                 </button>
               </div>
             </div>
@@ -1059,20 +1109,24 @@ window.saveSessionDetails = async function(sessionId, stationId) {
   const instructor = document.getElementById(`sess-instructor-${sessionId}`)?.value || '';
   const sessionDate = document.getElementById(`sess-date-${sessionId}`)?.value?.trim() || '';
   const sessionTime = document.getElementById(`sess-time-${sessionId}`)?.value?.trim() || '';
+  const descEl = document.getElementById(`sess-desc-${sessionId}`);
 
   if (!title) {
     showToast('لطفاً عنوان جلسه را وارد نمایید', 'error');
     return;
   }
 
+  const body = { id: sessionId, title, instructor, sessionDate, sessionTime };
+  if (descEl) body.description = descEl.value.trim();
+
   try {
     const res = await request(`/api/v1/admin/lms/sessions/${sessionId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
-        
+
       },
-      body: JSON.stringify({ id: sessionId, title, instructor, sessionDate, sessionTime })
+      body: JSON.stringify(body)
     });
 
     if (res.ok) {
@@ -1127,6 +1181,141 @@ window.applyBatchInstructorToCategory = async function(categoryId, stationId) {
     }
   } catch (err) {
     console.error('Batch instructor error:', err);
+    showToast('ارتباط با سرور برقرار نشد', 'error');
+  }
+};
+
+// ==================== CLASS CATEGORIES (= CLASS TABS IN THE APP) & SESSIONS ====================
+// The app shows one class tab per category of the station, under the category's title and in this order.
+
+async function lmsReloadContentModal(stationId) {
+  await window.fetchLiveLmsStations();
+  if (stationId) window.openStationContentManagerModal(stationId);
+}
+
+async function lmsErrorText(res) {
+  try { const d = await res.json(); return d.error || 'خطای سرور'; } catch (_) { return 'خطای سرور'; }
+}
+
+function lmsFindStation(stationId) {
+  return (window.lmsStationsMasterList || []).find(s => String(s.id) === String(stationId));
+}
+
+window.addNewCategoryToStation = async function(stationId) {
+  const input = document.getElementById(`new-cat-title-${stationId}`);
+  const title = (input?.value || '').trim();
+  if (!title) {
+    showToast('لطفاً عنوان دسته کلاس جدید را وارد نمایید.', 'error');
+    input?.focus();
+    return;
+  }
+  const station = lmsFindStation(stationId);
+  const ordered = window.lmsOrderedCategories(station);
+  const nextOrder = ordered.reduce((m, c) => Math.max(m, Number(c.orderIndex) || 0), 0) + 1;
+  try {
+    const res = await request('/api/v1/admin/lms/classes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stationId, title, orderIndex: nextOrder })
+    });
+    if (!res.ok) {
+      showToast('خطا در افزودن دسته: ' + (await lmsErrorText(res)), 'error');
+      return;
+    }
+    showToast(`دسته «${title}» اضافه شد و در اپلیکیشن به‌عنوان تب ${ordered.length + 1} صفحه کلاس‌ها نمایش داده می‌شود.`, 'success');
+    await lmsReloadContentModal(stationId);
+  } catch (err) {
+    console.error('Add category error:', err);
+    showToast('ارتباط با سرور برقرار نشد', 'error');
+  }
+};
+
+// Moves a category one step; every category of the station is renumbered 1..n so the order is unambiguous
+window.moveCategoryInStation = async function(stationId, categoryId, delta) {
+  const station = lmsFindStation(stationId);
+  const ordered = window.lmsOrderedCategories(station).slice();
+  const from = ordered.findIndex(c => String(c.id) === String(categoryId));
+  const to = from + Number(delta);
+  if (from < 0 || to < 0 || to >= ordered.length) return;
+  const [moved] = ordered.splice(from, 1);
+  ordered.splice(to, 0, moved);
+  try {
+    for (let i = 0; i < ordered.length; i++) {
+      if (Number(ordered[i].orderIndex) === i + 1) continue;
+      const res = await request(`/api/v1/admin/lms/classes/${ordered[i].id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: ordered[i].id, orderIndex: i + 1 })
+      });
+      if (!res.ok) {
+        showToast('خطا در جابجایی دسته: ' + (await lmsErrorText(res)), 'error');
+        break;
+      }
+    }
+    showToast('ترتیب دسته‌ها (و تب‌های صفحه کلاس‌ها در اپلیکیشن) به‌روزرسانی شد.', 'success');
+  } catch (err) {
+    console.error('Move category error:', err);
+    showToast('ارتباط با سرور برقرار نشد', 'error');
+  }
+  await lmsReloadContentModal(stationId);
+};
+
+window.deleteCategoryRecord = async function(categoryId, stationId) {
+  const station = lmsFindStation(stationId);
+  const cat = window.lmsOrderedCategories(station).find(c => String(c.id) === String(categoryId));
+  const count = cat ? (cat.sessions || []).filter(s => !s.isDeleted).length : 0;
+  const ok = await NopaConfirm(`آیا از حذف دسته «${cat?.title || ''}» اطمینان دارید؟ ${count} جلسه این دسته به همراه پارت‌ها و آزمونک‌هایشان حذف می‌شوند و تب آن از صفحه کلاس‌های اپلیکیشن برداشته می‌شود.`);
+  if (!ok) return;
+  try {
+    const res = await request(`/api/v1/admin/lms/classes/${categoryId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      showToast('خطا در حذف دسته: ' + (await lmsErrorText(res)), 'error');
+      return;
+    }
+    showToast('دسته کلاس حذف شد.', 'success');
+    await lmsReloadContentModal(stationId);
+  } catch (err) {
+    console.error('Delete category error:', err);
+    showToast('ارتباط با سرور برقرار نشد', 'error');
+  }
+};
+
+window.addNewSessionToCategory = async function(categoryId, stationId) {
+  const station = lmsFindStation(stationId);
+  const cat = window.lmsOrderedCategories(station).find(c => String(c.id) === String(categoryId));
+  const sessions = cat ? (cat.sessions || []).filter(s => !s.isDeleted) : [];
+  const nextOrder = sessions.reduce((m, s) => Math.max(m, Number(s.orderIndex) || 0), 0) + 1;
+  const instructor = sessions.length ? (sessions[sessions.length - 1].instructor || '') : '';
+  try {
+    const res = await request('/api/v1/admin/lms/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryId, title: `جلسه ${nextOrder}`, instructor, orderIndex: nextOrder })
+    });
+    if (!res.ok) {
+      showToast('خطا در افزودن جلسه: ' + (await lmsErrorText(res)), 'error');
+      return;
+    }
+    showToast(`جلسه ${nextOrder} به دسته «${cat?.title || ''}» اضافه شد. اکنون عنوان، تاریخ، مشخصات و پارت‌های آن را تکمیل کنید.`, 'success');
+    await lmsReloadContentModal(stationId);
+  } catch (err) {
+    console.error('Add session error:', err);
+    showToast('ارتباط با سرور برقرار نشد', 'error');
+  }
+};
+
+window.deleteSessionRecord = async function(sessionId, stationId) {
+  if (!(await NopaConfirm('آیا از حذف این جلسه به همراه همه پارت‌ها و آزمونک‌های آن اطمینان دارید؟'))) return;
+  try {
+    const res = await request(`/api/v1/admin/lms/sessions/${sessionId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      showToast('خطا در حذف جلسه: ' + (await lmsErrorText(res)), 'error');
+      return;
+    }
+    showToast('جلسه حذف شد.', 'success');
+    await lmsReloadContentModal(stationId);
+  } catch (err) {
+    console.error('Delete session error:', err);
     showToast('ارتباط با سرور برقرار نشد', 'error');
   }
 };
