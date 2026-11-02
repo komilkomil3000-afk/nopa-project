@@ -1,3 +1,6 @@
+import 'package:nopa_app/main.dart' show navigatorKey;
+import 'package:nopa_app/screens/chat/channel_manager_profile_screen.dart';
+import 'package:nopa_app/widgets/support_message_dialog.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -350,6 +353,17 @@ class CustomDrawer extends StatelessWidget {
                     ],
 
                     // Group 2: Support, Help & Exit
+                    if (isChannelManager)
+                      _buildMenuItem(
+                        title: 'حساب کاربری',
+                        svgPath: 'assets/svg_icons/profile01.svg',
+                        isSelected: false,
+                        iconSize: 22,
+                        onTap: () {
+                          Navigator.pop(context);
+                          navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const ChannelManagerProfileScreen()));
+                        },
+                      ),
                     if (!isChannelManager)
                     _buildMenuItem(
                       title: 'پشتیبانی',
@@ -358,7 +372,13 @@ class CustomDrawer extends StatelessWidget {
                       iconSize: 22,
                       onTap: () {
                         Navigator.pop(context);
-                        ContactUsDialog.show(context);
+                        // With chat on, support is a conversation; otherwise the contact details
+                        final shell = navigatorKey.currentContext;
+                        if (currentUser.chatEnabled && shell != null) {
+                          SupportMessageDialog.show(shell);
+                        } else {
+                          ContactUsDialog.show(context);
+                        }
                       },
                     ),
                     _buildMenuItem(

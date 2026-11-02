@@ -1,10 +1,13 @@
 import crypto from 'crypto';
+import path from 'path';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import prisma from '../../config/db';
 import { getJwtSecret } from '../../config/secrets';
 import { ChatActor, canSee, SpaceRef } from './access';
+import { isMentorRole } from '../../utils/roles';
 
+export const CHAT_FILES_DIR = process.env.CHAT_FILES_DIR || path.join(__dirname, '../../../chat-files');
 export const REACTION_TYPES = ['bravo', 'agree', 'idea', 'question', 'confused'];
 export const MAX_BODY = 4000;
 export const PAGE_SIZE = 40;
@@ -51,6 +54,13 @@ export async function ensureSpacesFor(actor: ChatActor): Promise<void> {
     if (!ensured.has(s.key)) await ensureSpace(s.key, { type: s.type, title: s.title });
   }
   for (const caravanId of await caravanIdsOf(actor)) await ensureCaravanSpaces(caravanId);
+  // Support is always one tap away, not something to discover
+  const role = String(actor.role).toLowerCase();
+  const supportKey = `support:${actor.id}`;
+  if ((role === 'student' || isMentorRole(role)) && !ensured.has(supportKey)) {
+    const space = await ensureSpace(supportKey, { type: 'support', title: 'پشتیبانی نپا' });
+    await prisma.chatMember.createMany({ data: [{ spaceId: space.id, userId: actor.id }], skipDuplicates: true });
+  }
 }
 
 export async function visibleSpaces(actor: ChatActor) {
@@ -172,6 +182,8 @@ export interface NewMessage {
   threadRootId?: string;
   attachmentIds: string[];
   mentions: string[];
+  /** Staff answering in a user's support space stay outside it. */
+  stayOutside?: boolean;
 }
 
 export class ChatError extends Error {
@@ -230,7 +242,7 @@ export async function createMessage(input: NewMessage): Promise<{ row: MessageRo
       if (input.threadRootId) {
         await tx.chatMessage.update({ where: { id: input.threadRootId }, data: { threadReplies: { increment: 1 } } });
       }
-      if (senderId) {
+      if (senderId && !input.stayOutside) {
         await tx.chatMember.upsert({
           where: { spaceId_userId: { spaceId, userId: senderId } },
           update: { lastReadSeq: lastSeq },

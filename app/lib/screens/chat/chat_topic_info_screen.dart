@@ -1,3 +1,6 @@
+import 'dart:io' as io;
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/models/chat_models.dart';
@@ -16,6 +19,7 @@ InputDecoration chatField(String hint) => InputDecoration(
       hintText: hint,
       hintStyle: ChatTheme.caption,
       isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(ChatTheme.radius), borderSide: BorderSide(color: ChatTheme.stroke.withValues(alpha: 0.55))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(ChatTheme.radius), borderSide: const BorderSide(color: ChatTheme.accent)),
     );
@@ -44,8 +48,9 @@ class ChatButton extends StatelessWidget {
 class ChatTopicInfoScreen extends StatefulWidget {
   final ChatMessage card;
   final bool moderator;
+  final String spaceId;
 
-  const ChatTopicInfoScreen({super.key, required this.card, required this.moderator});
+  const ChatTopicInfoScreen({super.key, required this.card, required this.moderator, required this.spaceId});
 
   @override
   State<ChatTopicInfoScreen> createState() => _ChatTopicInfoScreenState();
@@ -103,6 +108,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   }
 
   List<Map<String, dynamic>> get _rows => ((_evaluation?['rows'] as List?) ?? const []).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+  bool get _legacy => _evaluation?['topic']?['legacy'] == true;
   String get _status => _evaluation?['topic']?['status'] ?? widget.card.topicStatus ?? 'open';
 
   Future<void> _run(String method, String path, {Map<String, dynamic>? body, String? done}) async {
@@ -156,7 +162,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
                   ]),
                   if (meta['reward'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('جایزه: ${meta['reward']}', style: ChatTheme.caption)),
                   const SizedBox(height: 14),
-                  if (_interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator),
+                  if (_interGroup) InterGroupSection(challengeId: _challengeId, mentor: widget.moderator, spaceId: widget.spaceId),
                   if (!_interGroup && !widget.moderator) _studentReport(),
                   if (!_interGroup && widget.moderator) ..._mentorPanel(),
                   if (_insight != null) _insightCard(),
@@ -188,7 +194,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: ChatButton(label: 'ثبت اعتراض', primary: false, onPressed: _object),
             ),
-          if (report['objection'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text('اعتراض شما ثبت شد.', style: ChatTheme.caption)),
+          if (report['objection'] != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(report['objectionResponse'] != null ? 'پاسخ راهبر: ${report['objectionResponse']}' : 'اعتراض شما ثبت شد.', style: ChatTheme.caption)),
         ],
       ),
     );
@@ -208,7 +214,6 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         ),
       ),
     );
-    controller.dispose();
     if (text != null && text.trim().isNotEmpty) {
       await _run('POST', '/chat/topics/$_topicId/objection', body: {'text': text}, done: 'اعتراض ثبت شد.');
     }
@@ -223,11 +228,12 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         children: [
           if (status == 'open') ChatButton(label: 'بستن چالش', onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/close', done: 'چالش بسته شد.')),
           if (status == 'closed') ChatButton(label: 'بازکردن دوباره', primary: false, onPressed: _busy ? null : () => _run('POST', '/chat/topics/$_topicId/reopen')),
-          if (status == 'closed' && _rows.isNotEmpty) ChatButton(label: 'تأیید و پرداخت', onPressed: _busy ? null : _saveAndPay),
+          if (status == 'closed' && _rows.isNotEmpty && !_legacy) ChatButton(label: 'تأیید و پرداخت', onPressed: _busy ? null : _saveAndPay),
           ChatButton(label: 'خروجی', primary: false, onPressed: _export),
         ],
       ),
       const SizedBox(height: 14),
+      if (_legacy) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text('این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود.', style: ChatTheme.caption.copyWith(fontSize: 13))),
       if (_rows.isEmpty) Text('هنوز کسی در این چالش شرکت نکرده است.', style: ChatTheme.caption.copyWith(fontSize: 13)),
       for (final row in _rows) _evaluationRow(row, status),
     ];
@@ -270,6 +276,14 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           if (flags.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Wrap(spacing: 4, children: [for (final f in flags) ChatChip(label: f, color: ChatTheme.danger)])),
           for (final e in evidence) Padding(padding: const EdgeInsets.only(top: 4), child: Text('«${e['body']}»', style: ChatTheme.caption, maxLines: 2, overflow: TextOverflow.ellipsis)),
           if (row['objection'] != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text('اعتراض: ${row['objection']}', style: ChatTheme.caption.copyWith(color: ChatTheme.danger))),
+          if (row['objectionStatus'] == 'pending')
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(spacing: 8, children: [
+                ChatButton(label: 'پذیرش', primary: false, onPressed: () => _answerObjection(id, true, value)),
+                ChatButton(label: 'رد', primary: false, onPressed: () => _answerObjection(id, false, value)),
+              ]),
+            ),
           const SizedBox(height: 6),
           Row(
             children: [
@@ -284,6 +298,37 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _answerObjection(String userId, bool accept, int current) async {
+    final amount = TextEditingController(text: '$current');
+    final response = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: ChatTheme.surfaceBottom,
+          title: Text(accept ? 'پذیرش اعتراض' : 'رد اعتراض', style: ChatTheme.title),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (accept) ...[
+              TextField(controller: amount, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('کلاف نهایی')),
+              const SizedBox(height: 8),
+            ],
+            TextField(controller: response, style: ChatTheme.body, decoration: chatField('پاسخ به دانش‌آموز')),
+          ]),
+          actions: [ChatButton(label: 'ثبت', onPressed: () => Navigator.pop(ctx, true))],
+        ),
+      ),
+    );
+    if (ok == true) {
+      await _run('POST', '/chat/topics/$_topicId/objection/resolve', body: {
+        'userId': userId,
+        'accept': accept,
+        'response': response.text,
+        if (accept) 'finalNakh': int.tryParse(amount.text),
+      }, done: 'پاسخ ثبت شد.');
+    }
   }
 
   Future<void> _correct(String userId, int current) async {
@@ -308,8 +353,6 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     if (ok == true) {
       await _run('POST', '/chat/topics/$_topicId/correct', body: {'userId': userId, 'finalNakh': int.tryParse(amount.text), 'reason': reason.text}, done: 'نتیجه اصلاح شد.');
     }
-    amount.dispose();
-    reason.dispose();
   }
 
   Widget _insightCard() {
@@ -347,7 +390,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
 class InterGroupSection extends StatefulWidget {
   final String challengeId;
   final bool mentor;
-  const InterGroupSection({super.key, required this.challengeId, required this.mentor});
+  final String spaceId;
+  const InterGroupSection({super.key, required this.challengeId, required this.mentor, required this.spaceId});
 
   @override
   State<InterGroupSection> createState() => _InterGroupSectionState();
@@ -359,6 +403,8 @@ class _InterGroupSectionState extends State<InterGroupSection> {
   final TextEditingController _question = TextEditingController();
   List<Map<String, dynamic>> _tiers = [];
   List<Map<String, dynamic>> _works = [];
+  String? _judgingNote;
+  ChatAttachment? _file;
   final Map<String, String> _chosen = {};
 
   String get _base => '/chat/intergroup/${widget.challengeId}';
@@ -387,8 +433,25 @@ class _InterGroupSectionState extends State<InterGroupSection> {
           _chosen[r['user']['id']] = r['tier'];
         }
       }
-      if (works.ok) _works = (works.data as List).map((w) => Map<String, dynamic>.from(w as Map)).toList();
+      if (works.ok) {
+        _works = (works.data as List).map((w) => Map<String, dynamic>.from(w as Map)).toList();
+      } else {
+        _judgingNote = works.error;
+      }
     });
+  }
+
+  Future<void> _pickFile() async {
+    final picked = await FilePicker.platform.pickFiles();
+    final path = picked?.files.single.path;
+    if (path == null) return;
+    final file = await _chat.upload(io.File(path), widget.spaceId);
+    if (!mounted) return;
+    if (file == null) {
+      AppToast.error(context, 'ارسال فایل انجام نشد.');
+    } else {
+      setState(() => _file = file);
+    }
   }
 
   Future<void> _submit(String method, String path, Map<String, dynamic> body, String done) async {
@@ -430,7 +493,11 @@ class _InterGroupSectionState extends State<InterGroupSection> {
         const SizedBox(height: 6),
         TextField(controller: _entry, maxLines: 4, style: ChatTheme.body, decoration: chatField('متن نهایی اثر')),
         const SizedBox(height: 6),
-        ChatButton(label: 'ثبت اثر', onPressed: () => _submit('POST', '$_base/entry', {'body': _entry.text}, 'اثر کاروان ثبت شد.')),
+        Row(children: [
+          ChatButton(label: _file == null ? 'پیوست فایل' : _file!.name, primary: false, onPressed: _pickFile),
+          const SizedBox(width: 8),
+          ChatButton(label: 'ثبت اثر', onPressed: () => _submit('POST', '$_base/entry', {'body': _entry.text, 'attachmentId': _file?.id}, 'اثر کاروان ثبت شد.')),
+        ]),
         const SizedBox(height: 16),
         Text('سطح تلاش اعضا', style: ChatTheme.title),
         for (final r in _tiers)
@@ -450,7 +517,7 @@ class _InterGroupSectionState extends State<InterGroupSection> {
         if (_tiers.isNotEmpty) ChatButton(label: 'تأیید سطوح', onPressed: () => _submit('PUT', '$_base/tiers', {'tiers': _chosen}, 'سطوح ثبت شد.')),
         const SizedBox(height: 16),
         Text('داوری آثار ناشناس', style: ChatTheme.title),
-        if (_works.isEmpty) Text('اثری برای داوری وجود ندارد.', style: ChatTheme.caption),
+        if (_works.isEmpty) Text(_judgingNote ?? 'اثری برای داوری وجود ندارد.', style: ChatTheme.caption),
         for (final w in _works) _JudgeForm(work: w, onSubmit: (body) => _submit('POST', '/chat/intergroup/entries/${w['id']}/judge', body, 'داوری ثبت شد.')),
       ],
     );
@@ -490,6 +557,11 @@ class _JudgeFormState extends State<_JudgeForm> {
         children: [
           Text('اثر ${widget.work['code']}', style: ChatTheme.title),
           Text(widget.work['body'] ?? '', style: ChatTheme.body),
+          if (widget.work['fileUrl'] != null)
+            GestureDetector(
+              onTap: () => launchUrl(Uri.parse(ApiConstants.resolveImageUrl(widget.work['fileUrl'])), mode: LaunchMode.externalApplication),
+              child: Padding(padding: const EdgeInsets.only(top: 4), child: Text('دیدن فایل اثر', style: ChatTheme.caption.copyWith(color: ChatTheme.accent))),
+            ),
           const SizedBox(height: 6),
           TextField(controller: _score, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('نمره از ۱۰۰')),
           const SizedBox(height: 6),

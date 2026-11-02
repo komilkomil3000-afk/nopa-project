@@ -1,6 +1,7 @@
 import prisma from '../../config/db';
 import { validateRewardGrant } from '../../controllers/rewardController';
 import { getEconomyPolicy } from '../../services/economy';
+import crypto from 'crypto';
 import { changeBalance, creditChallengeReward } from '../../services/ledger';
 import { isMentorRole } from '../../utils/roles';
 import { handler } from './http';
@@ -149,7 +150,17 @@ export async function buildEvaluation(topicId: string) {
   return { topic, rows: scored, messages: rows };
 }
 
-const rangeOf = (c: { rewardMin: number; rewardMax: number }) => ({ min: c.rewardMin || 0, max: c.rewardMax || 0 });
+/** The kalaf a challenge can pay. The ceiling of the money rules binds even a challenge made before them. */
+async function rangeOf(c: { rewardMin: number; rewardMax: number }) {
+  const { config } = await getEconomyPolicy();
+  const max = Math.min(c.rewardMax || config.challengeMaxNakh, config.challengeMaxNakh);
+  return { min: Math.min(c.rewardMin || 0, max), max };
+}
+
+/** Old challenges that pay zarik keep their own review path: their numbers mean nothing in kalaf. */
+function assertPaysKalaf(c: { rewardAssetType: string }) {
+  if (c.rewardAssetType !== 'nakh') throw new ChatError(400, 'این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود');
+}
 
 export const getEvaluation = handler(async (req, res, actor) => {
   const { moderator } = await requireTopic(actor, req.params.id);
@@ -157,11 +168,11 @@ export const getEvaluation = handler(async (req, res, actor) => {
   const { topic, rows, messages } = await buildEvaluation(req.params.id);
   const saved = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id } });
   const users = await prisma.user.findMany({ where: { id: { in: rows.map(r => r.userId) } }, select: { id: true, name: true, avatarUrl: true, gender: true } });
-  const history = await prisma.challengeEvaluation.groupBy({ by: ['userId'], where: { userId: { in: rows.map(r => r.userId) }, paidAt: { not: null } }, _avg: { score: true }, _count: { _all: true } });
-  const range = rangeOf(topic.challenge);
+  const history = await prisma.challengeEvaluation.groupBy({ by: ['userId'], where: { userId: { in: rows.map(r => r.userId) }, paidAt: { not: null }, topicId: { not: topic.id } }, _avg: { score: true }, _count: { _all: true } });
+  const range = await rangeOf(topic.challenge);
 
   res.json({
-    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, messageCount: messages.length },
+    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, messageCount: messages.length, legacy: topic.challenge.rewardAssetType !== 'nakh' },
     rows: rows.map(r => {
       const s = saved.find(x => x.userId === r.userId);
       const suggested = suggestedNakh(r.score, range.min, range.max);
@@ -173,6 +184,7 @@ export const getEvaluation = handler(async (req, res, actor) => {
         finalNakh: s?.finalNakh ?? suggested,
         reason: s?.reason ?? null,
         objection: s?.objection ?? null,
+        objectionStatus: s?.objectionStatus ?? null,
         paid: !!s?.paidAt,
         previousAverage: h?._avg.score != null ? Math.round(h._avg.score) : null,
         previousCount: h?._count._all ?? 0,
@@ -191,14 +203,15 @@ export const saveEvaluation = handler(async (req, res, actor) => {
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   const { topic, rows } = await buildEvaluation(req.params.id);
   if (topic.status === 'paid') throw new ChatError(400, 'این چالش پرداخت شده است');
-  const range = rangeOf(topic.challenge);
+  assertPaysKalaf(topic.challenge);
+  const range = await rangeOf(topic.challenge);
   const input: any[] = Array.isArray(req.body?.rows) ? req.body.rows : [];
 
   for (const item of input) {
     const row = rows.find(r => r.userId === item.userId);
     if (!row) throw new ChatError(400, 'فقط شرکت‌کنندگان واقعی ارزیابی می‌شوند');
     const finalNakh = Number(item.finalNakh);
-    if (!Number.isInteger(finalNakh) || finalNakh < 0 || finalNakh > range.max) throw new ChatError(400, `مقدار کلاف باید بین ۰ و ${range.max} باشد`);
+    if (!Number.isInteger(finalNakh) || finalNakh < range.min || finalNakh > range.max) throw new ChatError(400, `مقدار کلاف باید بین ${range.min} و ${range.max} باشد`);
     const suggested = suggestedNakh(row.score, range.min, range.max);
     const reason = String(item.reason || '').trim().slice(0, 300) || null;
     if (Math.abs(finalNakh - suggested) >= 3 && !reason) throw new ChatError(400, 'برای اختلاف زیاد با پیشنهاد سیستم، دلیل لازم است');
@@ -217,22 +230,24 @@ export const payEvaluation = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   if (topic.challenge.category === 'inter_group') throw new ChatError(400, 'جایزه‌ی چالش فراگروهی از مسیر رتبه‌بندی پرداخت می‌شود');
+  assertPaysKalaf(topic.challenge);
   if (topic.status === 'open') throw new ChatError(400, 'اول چالش را ببندید');
   const rows = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: null } });
   if (rows.length === 0) throw new ChatError(400, 'ارزیابی ثبت‌شده‌ای وجود ندارد');
 
   const space = await prisma.chatSpace.findUnique({ where: { id: topic.spaceId }, select: { caravanId: true } });
   if (isMentorRole(actor.role)) {
-    for (const row of rows) {
-      try {
-        await validateRewardGrant(actor.id, space?.caravanId || '', topic.challenge.stationId || '', 'CHALLENGE', row.finalNakh);
-      } catch (e: any) {
-        throw new ChatError(400, e.message);
-      }
+    try {
+      await validateRewardGrant(actor.id, space?.caravanId || '', topic.challenge.stationId || '', 'CHALLENGE', rows.reduce((sum, r) => sum + r.finalNakh, 0));
+    } catch (e: any) {
+      throw new ChatError(400, e.message);
     }
   }
 
   const skipped: string[] = [];
+  const finalAnswer = topic.finalMessageId
+    ? (await prisma.chatMessage.findUnique({ where: { id: topic.finalMessageId }, select: { body: true } }))?.body
+    : null;
   await prisma.$transaction(async (tx) => {
     const claimed = await tx.chatTopic.updateMany({ where: { id: topic.id, status: 'closed' }, data: { status: 'paid' } });
     if (claimed.count !== 1) throw new ChatError(400, 'این چالش قبلاً پرداخت شده است');
@@ -245,10 +260,13 @@ export const payEvaluation = handler(async (req, res, actor) => {
       const submission = await tx.submission.upsert({
         where: { challengeId_studentId: { challengeId: topic.challengeId, studentId: row.userId } },
         update: { status: 'approved', score: row.finalNakh, mentorFeedback: row.reason },
-        create: { challengeId: topic.challengeId, studentId: row.userId, status: 'approved', score: row.finalNakh, mentorFeedback: row.reason, answerText: 'ارزیابی از گفتگوی چالش' },
+        create: { challengeId: topic.challengeId, studentId: row.userId, status: 'approved', score: row.finalNakh, mentorFeedback: row.reason, answerText: finalAnswer || 'ارزیابی از گفتگوی چالش' },
       });
       await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: 'nakh', amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
       await tx.challengeEvaluation.update({ where: { id: row.id }, data: { paidAt: new Date() } });
+      await tx.submissionEvent.create({
+        data: { submissionId: submission.id, challengeId: topic.challengeId, studentId: row.userId, action: 'approved', feedback: row.reason, score: row.finalNakh, actorId: actor.id, actorName: actor.name },
+      });
       await tx.notification.create({
         data: { userId: row.userId, title: 'نتیجه‌ی چالش', message: `در چالش «${topic.challenge.title}» ${row.finalNakh} کلاف گرفتید. سهم مشارکت شما: ${row.share}٪`, type: 'reward' },
       });
@@ -260,36 +278,61 @@ export const payEvaluation = handler(async (req, res, actor) => {
 });
 
 /** A change after payment: the difference moves in the ledger, the first payment stays on record. */
+async function applyCorrection(actor: { id: string }, topic: { id: string; challengeId: string; challenge: { title: string; rewardMax: number; rewardMin: number } }, userId: string, finalNakh: number, reason: string) {
+  const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId } } });
+  if (!row?.paidAt) throw new ChatError(404, 'پرداختی برای این فرد ثبت نشده است');
+  const range = await rangeOf(topic.challenge);
+  if (!Number.isInteger(finalNakh) || finalNakh < range.min || finalNakh > range.max) throw new ChatError(400, 'مقدار کلاف معتبر نیست');
+  if (!reason) throw new ChatError(400, 'دلیل اصلاح الزامی است');
+  const delta = finalNakh - row.finalNakh;
+  if (delta === 0) return 0;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.challengeEvaluation.updateMany({ where: { id: row.id, finalNakh: row.finalNakh }, data: { finalNakh, reason } });
+      if (updated.count !== 1) throw new ChatError(409, 'این ردیف هم‌زمان تغییر کرده است');
+      await tx.submission.updateMany({ where: { challengeId: topic.challengeId, studentId: userId }, data: { score: finalNakh } });
+      await changeBalance(tx, {
+        userId, asset: 'nakh', amount: delta, sourceType: 'evaluation_correction', sourceId: crypto.randomUUID(),
+        reason: `اصلاح ارزیابی چالش «${topic.challenge.title}»: ${reason}`, createdBy: actor.id,
+      });
+      await tx.notification.create({ data: { userId, title: 'اصلاح نتیجه‌ی چالش', message: `نتیجه‌ی چالش «${topic.challenge.title}» به ${finalNakh} کلاف اصلاح شد. ${reason}`, type: 'reward' } });
+    });
+  } catch (e: any) {
+    if (e?.message === 'INSUFFICIENT_BALANCE') throw new ChatError(400, 'موجودی کلاف این فرد برای کسر کافی نیست؛ او آن را تبدیل کرده است');
+    throw e;
+  }
+  return delta;
+}
+
 export const correctEvaluation = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
-  const userId = String(req.body?.userId || '');
-  const finalNakh = Number(req.body?.finalNakh);
-  const reason = String(req.body?.reason || '').trim();
-  const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId } } });
-  if (!row?.paidAt) throw new ChatError(404, 'پرداختی برای این فرد ثبت نشده است');
-  if (!Number.isInteger(finalNakh) || finalNakh < 0 || finalNakh > topic.challenge.rewardMax) throw new ChatError(400, 'مقدار کلاف معتبر نیست');
-  if (!reason) throw new ChatError(400, 'دلیل اصلاح الزامی است');
-  const delta = finalNakh - row.finalNakh;
-  if (delta === 0) return res.json({ delta: 0 });
-
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.challengeEvaluation.updateMany({ where: { id: row.id, finalNakh: row.finalNakh }, data: { finalNakh, reason } });
-    if (updated.count !== 1) throw new ChatError(409, 'این ردیف هم‌زمان تغییر کرده است');
-    await changeBalance(tx, {
-      userId, asset: 'nakh', amount: delta, sourceType: 'evaluation_correction', sourceId: `${row.id}:${row.finalNakh}:${finalNakh}`,
-      reason: `اصلاح ارزیابی چالش «${topic.challenge.title}»: ${reason}`, createdBy: actor.id,
-    });
-    await tx.notification.create({ data: { userId, title: 'اصلاح نتیجه‌ی چالش', message: `نتیجه‌ی چالش «${topic.challenge.title}» به ${finalNakh} کلاف اصلاح شد. ${reason}`, type: 'reward' } });
-  });
+  const delta = await applyCorrection(actor, topic, String(req.body?.userId || ''), Number(req.body?.finalNakh), String(req.body?.reason || '').trim());
   res.json({ delta });
+});
+
+/** Body: { userId, accept, response, finalNakh? }. An accepted objection can change the result. */
+export const resolveObjection = handler(async (req, res, actor) => {
+  const { topic, moderator } = await requireTopic(actor, req.params.id);
+  if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
+  const userId = String(req.body?.userId || '');
+  const response = String(req.body?.response || '').trim().slice(0, 300);
+  if (!response) throw new ChatError(400, 'پاسخ به اعتراض الزامی است');
+  const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId } } });
+  if (row?.objectionStatus !== 'pending') throw new ChatError(404, 'اعتراض بازی برای این فرد وجود ندارد');
+  const accept = req.body?.accept === true;
+  if (accept && req.body?.finalNakh !== undefined) await applyCorrection(actor, topic, userId, Number(req.body.finalNakh), response);
+  await prisma.challengeEvaluation.update({ where: { id: row.id }, data: { objectionStatus: accept ? 'accepted' : 'rejected', objectionResponse: response } });
+  await prisma.notification.create({ data: { userId, title: 'پاسخ اعتراض', message: `${topic.challenge.title}: ${response}`, type: 'alert' } });
+  res.json({ success: true });
 });
 
 export const myReport = handler(async (req, res, actor) => {
   const { topic } = await requireTopic(actor, req.params.id);
   const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId: actor.id } } });
   if (!row?.paidAt) return res.json({ ready: false });
-  res.json({ ready: true, score: row.score, share: row.share, finalNakh: row.finalNakh, criteria: row.criteria, reason: row.reason, objection: row.objection, canObject: Date.now() - row.paidAt.getTime() < 24 * 3600 * 1000 && !row.objection });
+  res.json({ ready: true, score: row.score, share: row.share, finalNakh: row.finalNakh, criteria: row.criteria, reason: row.reason, objection: row.objection, objectionStatus: row.objectionStatus, objectionResponse: row.objectionResponse, canObject: Date.now() - row.paidAt.getTime() < 24 * 3600 * 1000 && !row.objection });
 });
 
 export const fileObjection = handler(async (req, res, actor) => {
@@ -300,7 +343,7 @@ export const fileObjection = handler(async (req, res, actor) => {
   if (!row?.paidAt) throw new ChatError(404, 'کارنامه‌ای برای شما ثبت نشده است');
   if (Date.now() - row.paidAt.getTime() > 24 * 3600 * 1000) throw new ChatError(400, 'مهلت ۲۴ ساعته‌ی اعتراض تمام شده است');
   if (row.objection) throw new ChatError(400, 'اعتراض شما قبلاً ثبت شده است');
-  await prisma.challengeEvaluation.update({ where: { id: row.id }, data: { objection: text } });
+  await prisma.challengeEvaluation.update({ where: { id: row.id }, data: { objection: text, objectionStatus: 'pending' } });
   await prisma.notification.create({ data: { userId: topic.challenge.createdByMentorId, title: 'اعتراض به ارزیابی', message: `${actor.name}: ${text.slice(0, 120)}`, type: 'alert' } });
   res.json({ success: true });
 });

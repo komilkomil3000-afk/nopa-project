@@ -15,6 +15,7 @@ class ChatSpace {
   final bool canPost;
   final bool canReply;
   final bool canModerate;
+  final bool canTag;
   String preview;
   String previewSender;
   DateTime? lastActivity;
@@ -35,6 +36,7 @@ class ChatSpace {
     this.canPost = true,
     this.canReply = true,
     this.canModerate = false,
+    this.canTag = false,
     this.preview = '',
     this.previewSender = '',
     this.lastActivity,
@@ -61,6 +63,7 @@ class ChatSpace {
       canPost: json['canPost'] == true,
       canReply: json['canReply'] != false,
       canModerate: json['canModerate'] == true,
+      canTag: json['canTag'] == true,
       preview: last?['preview'] ?? '',
       previewSender: last?['senderName'] ?? '',
       lastActivity: DateTime.tryParse(last?['createdAt'] ?? ''),

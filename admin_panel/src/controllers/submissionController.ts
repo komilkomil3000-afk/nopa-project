@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
 import { creditChallengeReward } from '../services/ledger';
+import { validateRewardGrant } from './rewardController';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -355,6 +356,14 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
     }
     if (status === 'approved' && req.user.role === 'mentor' && (!Number.isInteger(reward) || reward < allowedMin || reward > allowedMax)) {
       return res.status(400).json({ error: allowedMin === allowedMax ? `مقدار پاداش این چالش ${allowedMin} ${assetLabel} است` : `مقدار پاداش باید بین ${allowedMin} و ${allowedMax} ${assetLabel} باشد` });
+    }
+
+    if (status === 'approved' && req.user.role === 'mentor' && reward > 0) {
+      try {
+        await validateRewardGrant(req.user.id, submission.student?.caravanId || '', submission.challenge.stationId || '', 'CHALLENGE', reward);
+      } catch (e: any) {
+        return res.status(400).json({ error: e.message });
+      }
     }
 
     let updatedSubmission;

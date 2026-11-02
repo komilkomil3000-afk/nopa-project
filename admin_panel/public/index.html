@@ -1485,12 +1485,27 @@
           <div id="chat-space-messages" class="u-mt-15"></div>
         </div>
         <div class="panel-card glass u-maxw-760 u-mt-15">
+          <div class="panel-title"><i class="fa-solid fa-people-group u-c-primary-text u-ml-8"></i>گروه‌های رسانه‌ای</div>
+          <div id="chat-groups-list" class="u-mb-14"></div>
+          <div class="u-flex u-gap-6 u-items-center u-mb-14">
+            <input type="text" id="chat-group-title" maxlength="60" placeholder="نام گروه" class="u-flex-1 u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5">
+            <select id="chat-group-caravan" class="select-ctrl"></select>
+            <button type="button" class="btn-action btn-add" data-click="createChatGroup">ساخت گروه</button>
+          </div>
+          <div id="chat-group-members"></div>
+        </div>
+        <div class="panel-card glass u-maxw-760 u-mt-15">
           <div class="panel-title"><i class="fa-solid fa-paper-plane u-c-primary-text u-ml-8"></i>انتشار و زمان‌بندی</div>
           <select id="chat-publish-space" class="select-ctrl u-mb-14"></select>
+          <select id="chat-template" class="select-ctrl u-mb-14" data-change="applyChatTemplate"></select>
           <textarea id="chat-publish-body" rows="3" maxlength="4000" placeholder="متن پیام" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5"></textarea>
           <input type="datetime-local" id="chat-publish-at" class="u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5">
+          <input type="file" id="chat-publish-file" class="u-fs-12 u-mb-5">
           <div class="u-fs-12 u-c-text-muted u-mb-5">زمان را خالی بگذارید تا پیام فوراً منتشر شود.</div>
           <button type="button" class="btn-action btn-add" data-click="publishChatMessage">انتشار</button>
+          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5 u-mt-15">قالب‌های پیام (هر خط: عنوان | متن)</div>
+          <textarea id="chat-templates-edit" rows="3" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-5"></textarea>
+          <button type="button" class="btn-action" data-click="saveChatTemplates">ذخیره‌ی قالب‌ها</button>
         </div>
         <div class="panel-card glass u-maxw-760 u-mt-15">
           <div class="panel-title"><i class="fa-solid fa-flag u-c-primary-text u-ml-8"></i>گزارش‌های تخلف</div>

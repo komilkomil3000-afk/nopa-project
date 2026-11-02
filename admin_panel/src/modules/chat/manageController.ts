@@ -5,18 +5,20 @@ import { logAdminAction } from '../../controllers/adminController';
 import { isChannelManagerRole, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
 import { emitToSpace } from './realtime';
 import { MESSAGE_INCLUDE, serializeMessage } from './service';
+import { loadActor, managerMayEnter } from './access';
 
 // Oversight from the panel. Private conversations are not reachable from here.
 const SHARED_TYPES = ['announcements', 'public', 'mentors', 'caravan', 'challenges', 'media'];
 
-export async function listManagedSpaces(_req: AuthRequest, res: Response) {
+export async function listManagedSpaces(req: AuthRequest, res: Response) {
   try {
+    const actor = await loadActor(req.user!.id);
     const spaces = await prisma.chatSpace.findMany({
       where: { type: { in: SHARED_TYPES } },
       orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
       include: { caravan: { select: { name: true } } },
     });
-    res.json(spaces.map(s => ({ id: s.id, type: s.type, title: s.title, caravanName: s.caravan?.name || null, messageCount: s.lastSeq })));
+    res.json(spaces.filter(s => actor && managerMayEnter(actor, s)).map(s => ({ id: s.id, type: s.type, title: s.title, caravanName: s.caravan?.name || null, messageCount: s.lastSeq, caravanId: s.caravanId })));
   } catch (error) {
     console.error('listManagedSpaces error:', error);
     res.status(500).json({ error: 'خطا در دریافت فضاها' });
@@ -27,6 +29,8 @@ export async function listManagedMessages(req: AuthRequest, res: Response) {
   try {
     const space = await prisma.chatSpace.findFirst({ where: { id: req.params.id, type: { in: SHARED_TYPES } } });
     if (!space) return res.status(404).json({ error: 'فضا یافت نشد' });
+    const actor = await loadActor(req.user!.id);
+    if (!actor || !managerMayEnter(actor, space)) return res.status(403).json({ error: 'دسترسی ورود به گروه‌ها برای شما فعال نیست' });
     const rows = await prisma.chatMessage.findMany({ where: { spaceId: space.id }, orderBy: { seq: 'desc' }, take: 100, include: MESSAGE_INCLUDE });
     res.json(rows.map(serializeMessage));
   } catch (error) {

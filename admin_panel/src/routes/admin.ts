@@ -44,7 +44,9 @@ import { deleteManagedMessage, listManagedMessages, listManagedSpaces } from '..
 import { listBots, publishFromPanel, updateBot } from '../modules/chat/bots';
 import { chatAnalytics, exportSpace, listReports, resolveReport } from '../modules/chat/reports';
 import { caseMessages, claimCase, listCases, replyCase, resolveCase } from '../modules/chat/support';
-import { adminBoard, answerQuestion } from '../modules/chat/intergroup';
+import { adminBoard, answerQuestion, getTiers, saveTiers, startJudging } from '../modules/chat/intergroup';
+import { chatUpload, muteMember, uploadFile } from '../modules/chat/controller';
+import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup } from '../modules/chat/groups';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
 import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
@@ -304,6 +306,7 @@ router.post('/chat-manage/reports/:id/resolve', resolveReport as any);
 router.get('/chat-manage/bots', listBots as any);
 router.put('/chat-manage/bots/:key', updateBot as any);
 router.post('/chat-manage/publish', publishFromPanel as any);
+router.post('/chat-manage/spaces/:id/members/:userId/mute', muteMember as any);
 router.get('/chat-manage/analytics', chatAnalytics as any);
 router.get('/chat-manage/spaces/:id/export', exportSpace as any);
 router.get('/support-cases', listCases as any);
@@ -312,6 +315,17 @@ router.post('/support-cases/:id/claim', claimCase as any);
 router.post('/support-cases/:id/reply', replyCase as any);
 router.post('/support-cases/:id/resolve', resolveCase as any);
 router.get('/intergroup/:id/board', adminBoard as any);
+router.post('/intergroup/:id/start-judging', startJudging as any);
+router.get('/intergroup/:id/tiers', getTiers as any);
+router.put('/intergroup/:id/tiers', saveTiers as any);
+router.post('/chat-manage/uploads', chatUpload.single('file') as any, uploadFile as any);
+router.get('/chat-manage/groups', listGroups as any);
+router.get('/chat-manage/groups/candidates', groupCandidates as any);
+router.post('/chat-manage/groups', createGroup as any);
+router.patch('/chat-manage/groups/:id', renameGroup as any);
+router.delete('/chat-manage/groups/:id', deleteGroup as any);
+router.post('/chat-manage/groups/:id/members', addGroupMembers as any);
+router.delete('/chat-manage/groups/:id/members/:userId', removeGroupMember as any);
 router.post('/intergroup/questions/:id/answer', answerQuestion as any);
 
 // 12. Instructors Management (بانک اساتید)

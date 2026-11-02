@@ -5,6 +5,7 @@ import { logAdminAction } from '../../controllers/adminController';
 import { CHAT_MODES, ChatMode, getChatSettings, saveChatSettings } from '../../services/chatSettings';
 import { CHAT_PERMISSION_LABELS, ChatPermissions, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
 import { revalidateAllSockets } from './realtime';
+import { backfillChallengeCards } from './topics';
 
 async function loadRolePermissions(): Promise<ChatPermissions> {
   const row = await prisma.rolePermission.findUnique({ where: { roleName: ROLE_CHANNEL_MANAGER } });
@@ -50,6 +51,7 @@ export async function updateChatAdminSettings(req: AuthRequest, res: Response) {
       `حالت ${mode}، ${requested.length} کاروان آزمایشی، دسترسی‌ها: ${permissionsJson}`, req.ip || ''
     );
     await revalidateAllSockets();
+    if (mode !== 'off') backfillChallengeCards().catch(e => console.error('backfillChallengeCards error:', e));
     res.json({ success: true });
   } catch (error) {
     console.error('updateChatAdminSettings error:', error);

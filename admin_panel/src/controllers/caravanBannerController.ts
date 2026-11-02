@@ -2,7 +2,7 @@ import { Response } from 'express';
 import prisma from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { getAssetNames } from '../utils/assetNames';
-import { payPrizes, prizePlan, publishResults } from '../modules/chat/intergroup';
+import { closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
 import { getEconomyPolicy } from '../services/economy';
 
 const MEDALS = ['gold', 'silver', 'bronze'] as const;
@@ -111,8 +111,12 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     });
 
     const plan = await prizePlan(id, ranking, caravans.map(c => c.id));
+    const unconfirmed = await unconfirmedCaravans(id, caravans);
     if (req.body?.preview === true) {
-      return res.json({ preview: true, total: plan.reduce((sum, p) => sum + p.amount, 0), paidMembers: plan.filter(p => p.amount > 0).length, members: plan.length });
+      return res.json({ preview: true, total: plan.reduce((sum, p) => sum + p.amount, 0), paidMembers: plan.filter(p => p.amount > 0).length, members: plan.length, unconfirmed });
+    }
+    if (unconfirmed.length > 0 && req.body?.acceptUnconfirmed !== true) {
+      return res.status(400).json({ error: `سطح اعضای این کاروان‌ها تأیید نشده است: ${unconfirmed.join('، ')}` });
     }
 
     await prisma.$transaction(async (tx) => {
@@ -145,6 +149,7 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     }
     if (notes.length > 0) await prisma.notification.createMany({ data: notes });
     await publishResults(id, challenge.title, ranking).catch(e => console.error('publishResults error:', e));
+    await closeCompetitionTopics(id).catch(e => console.error('closeCompetitionTopics error:', e));
 
     res.json({ success: true, result: rows, paid: plan.reduce((sum, p) => sum + p.amount, 0) });
   } catch (error: any) {

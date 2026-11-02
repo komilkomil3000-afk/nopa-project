@@ -72,6 +72,7 @@ class ChallengeCard extends StatelessWidget {
           line('ایجادکننده', meta['creatorName']),
           line('مهلت', meta['dueDate'] == null ? null : chatDateText(meta['dueDate'])),
           line('جایزه', meta['reward']),
+          line('پاسخ نهایی گروه', meta['finalAnswer']),
           const SizedBox(height: 8),
           Row(
             children: [

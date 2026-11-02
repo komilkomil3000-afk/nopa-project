@@ -1,3 +1,5 @@
+import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
 import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
@@ -37,9 +39,18 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   int _currentBannerIndex = 0;
   Timer? _bannerAutoScrollTimer;
 
+  /// Opening a challenge from its chat card: land on its category.
+  void _applyFocusRequest() {
+    final req = challengeFocusRequest.value;
+    if (req == null) return;
+    challengeFocusRequest.value = null;
+    if (mounted) setState(() => _selectedCategoryIndex = req.category);
+  }
+
   @override
   void initState() {
     super.initState();
+    challengeFocusRequest.addListener(_applyFocusRequest);
     _bannerPageCtrl = PageController(viewportFraction: 0.92);
     _startBannerAutoScroll();
 
@@ -68,6 +79,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
   @override
   void dispose() {
+    challengeFocusRequest.removeListener(_applyFocusRequest);
     _bannerAutoScrollTimer?.cancel();
     _bannerPageCtrl.dispose();
     super.dispose();
@@ -281,6 +293,8 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                         ),
 
                         const SizedBox(height: 20),
+
+                        ChallengeChatButton(challengeId: challenge['id']?.toString() ?? ''),
 
                         // 2. Row: تیتر: | Title
                         Row(

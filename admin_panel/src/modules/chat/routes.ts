@@ -3,8 +3,9 @@ import rateLimit from 'express-rate-limit';
 import { authenticateJWT, AuthRequest } from '../../middleware/auth';
 import { requireChatEnabled } from '../../services/chatSettings';
 import * as chat from './controller';
-import { createTag, archiveTag, closeTopic, listTags, reopenTopic, toggleMark, toggleMessageTag } from './topics';
-import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluation, saveEvaluation } from './evaluation';
+import { createTag, archiveTag, closeTopic, listTags, reopenTopic, setFinalAnswer, toggleMark, toggleMessageTag, topicByChallenge } from './topics';
+import { addGroupMembers, createGroup, deleteGroup, groupCandidates, listGroups, removeGroupMember, renameGroup } from './groups';
+import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluation, resolveObjection, saveEvaluation } from './evaluation';
 import { askJudge, getTiers, judgeEntry, judgeList, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
@@ -47,6 +48,8 @@ router.post('/spaces/:id/mute', chat.setMuted as any);
 router.get('/spaces/:id/pins', chat.listPins as any);
 router.get('/spaces/:id/search', chat.searchMessages as any);
 router.get('/spaces/:id/people', chat.listPeople as any);
+router.post('/spaces/:id/members/:userId/mute', chat.muteMember as any);
+router.get('/spaces/:id/stations', chat.listSpaceStations as any);
 router.patch('/messages/:id', chat.editMessage as any);
 router.delete('/messages/:id', chat.deleteMessage as any);
 router.post('/messages/:id/reactions', chat.toggleReaction as any);
@@ -61,7 +64,10 @@ router.get('/spaces/:id/tags', listTags as any);
 router.post('/spaces/:id/tags', createTag as any);
 router.delete('/tags/:id', archiveTag as any);
 
+router.get('/topics/by-challenge/:id', topicByChallenge as any);
 router.post('/topics/:id/close', closeTopic as any);
+router.post('/topics/:id/final-answer', setFinalAnswer as any);
+router.post('/topics/:id/objection/resolve', resolveObjection as any);
 router.post('/topics/:id/reopen', reopenTopic as any);
 router.get('/topics/:id/evaluation', getEvaluation as any);
 router.put('/topics/:id/evaluation', saveEvaluation as any);
@@ -74,6 +80,14 @@ router.get('/topics/:id/export', exportTopic as any);
 router.post('/topics/:id/export-link', exportTopicLink as any);
 
 router.get('/dashboard', mentorDashboard as any);
+
+router.get('/groups', listGroups as any);
+router.get('/groups/candidates', groupCandidates as any);
+router.post('/groups', createGroup as any);
+router.patch('/groups/:id', renameGroup as any);
+router.delete('/groups/:id', deleteGroup as any);
+router.post('/groups/:id/members', addGroupMembers as any);
+router.delete('/groups/:id/members/:userId', removeGroupMember as any);
 
 router.post('/support/open', openSupport as any);
 router.get('/support/cases', myCases as any);

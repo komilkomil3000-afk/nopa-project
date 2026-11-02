@@ -33,6 +33,7 @@ dependencies:
   sqflite: ^2.4.5
   path_provider: ^2.1.6
   path: ^1.9.1
+  flutter_image_compress: ^2.5.1
 
 dev_dependencies:
   flutter_test:

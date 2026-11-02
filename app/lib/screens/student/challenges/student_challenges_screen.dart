@@ -1,3 +1,4 @@
+import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
@@ -1772,6 +1773,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           )),
 
           // 2. Expanded Area: Opens on Click and Shows Description + Details + Participate Button
+          if (isExpanded) ChallengeChatButton(challengeId: id),
           if (isExpanded)
             Container(
               decoration: BoxDecoration(

@@ -8,6 +8,7 @@ import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
@@ -102,7 +103,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   void _openInfo(ChatMessage card, ChatSpace? space) {
     final recipientOwner = space?.isDirect == true && Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike;
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatTopicInfoScreen(card: card, moderator: space?.canModerate == true || recipientOwner)));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatTopicInfoScreen(card: card, moderator: space?.canModerate == true || recipientOwner, spaceId: widget.spaceId)));
   }
 
   void _openChallenge(ChatMessage card) {
@@ -171,8 +172,22 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     await _chat.send(spaceId: widget.spaceId, sender: _me(), body: text, threadRootId: _threadId, replyTo: replyTo, mentions: mentions);
   }
 
-  Future<void> _sendFile(io.File file) async {
+  /// A photo goes at a sensible size. If that fails the original is sent.
+  Future<io.File> _shrink(io.File file) async {
+    if (!RegExp(r'\.(jpe?g|png|webp)$', caseSensitive: false).hasMatch(file.path)) return file;
+    try {
+      final dir = await getTemporaryDirectory();
+      final target = p.join(dir.path, 'chat-${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final out = await FlutterImageCompress.compressAndGetFile(file.path, target, quality: 80, minWidth: 1600, minHeight: 1600);
+      return out == null ? file : io.File(out.path);
+    } catch (e) {
+      return file;
+    }
+  }
+
+  Future<void> _sendFile(io.File original) async {
     setState(() => _uploading = true);
+    final file = await _shrink(original);
     final attachment = await _chat.upload(file, widget.spaceId);
     if (!mounted) return;
     setState(() => _uploading = false);
@@ -246,17 +261,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                 item('reply', Icons.reply_rounded, 'پاسخ'),
                 if (_threadId == null) item('thread', Icons.forum_rounded, 'ورود به گفتگوی زیر پیام'),
                 if (message.body.isNotEmpty) item('copy', Icons.copy_rounded, 'کپی متن'),
-                if (mine && message.body.isNotEmpty) item('edit', Icons.edit_rounded, 'ویرایش'),
-                if (space?.canModerate == true) ...[
-                  item('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
+                if (mine && message.body.isNotEmpty && !_threadIsClosed) item('edit', Icons.edit_rounded, 'ویرایش'),
+                if (space?.canModerate == true) item('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
+                if (space?.canModerate == true && !mine && message.senderId != null) item('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
+                if (space?.canTag == true) ...[
                   item('tag', Icons.label_rounded, 'برچسب'),
                   if (_threadId != null) ...[
                     item('best', Icons.workspace_premium_rounded, 'بهترین پاسخ'),
                     item('evidence', Icons.verified_rounded, 'شاهد امتیاز'),
+                    if (widget.threadRoot?.topicId != null) item('final', Icons.task_alt_rounded, 'پاسخ نهایی گروه'),
                   ],
                 ],
                 if (!mine && space?.isDirect != true) item('report', Icons.flag_rounded, 'گزارش تخلف'),
-                if (mine || space?.canModerate == true) item('delete', Icons.delete_rounded, 'حذف'),
+                if ((mine && !_threadIsClosed) || space?.canModerate == true) item('delete', Icons.delete_rounded, 'حذف'),
               ],
             ),
           ),
@@ -289,6 +306,12 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (mounted) AppToast.success(context, 'گزارش شما ثبت شد.');
     } else if (action == 'tag') {
       await _chooseTag(message);
+    } else if (action == 'mute') {
+      final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/members/${message.senderId}/mute', body: {'minutes': 60});
+      if (mounted) res.ok ? AppToast.success(context, 'این عضو تا یک ساعت پیام نمی‌فرستد.') : AppToast.error(context, res.error);
+    } else if (action == 'final') {
+      final res = await _chat.api('POST', '/chat/topics/${widget.threadRoot!.topicId}/final-answer', body: {'messageId': message.id});
+      if (mounted) res.ok ? AppToast.success(context, 'پاسخ نهایی ثبت شد.') : AppToast.error(context, res.error);
     }
   }
 
@@ -313,7 +336,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                 title: Text(tag['name'] ?? '', style: ChatTheme.body),
                 onTap: () => Navigator.pop(ctx, tag),
               ),
-            if (_chat.spaceById(widget.spaceId)?.canModerate == true)
+            if (_chat.spaceById(widget.spaceId)?.canTag == true)
               ListTile(
                 leading: const Icon(Icons.add_rounded, color: ChatTheme.accent),
                 title: Text('تگ جدید', style: ChatTheme.body.copyWith(color: ChatTheme.accent)),
@@ -375,8 +398,30 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (ok == true) {
       final res = await _chat.api('POST', '/chat/spaces/${widget.spaceId}/tags', body: {'name': name.text, 'color': color, 'visibility': staffOnly ? 'staff' : 'public'});
       if (mounted) res.ok ? AppToast.success(context, 'تگ ساخته شد.') : AppToast.error(context, res.error);
-    }
-    name.dispose();
+    }  }
+
+  /// What was said in one station of this conversation.
+  Future<void> _chooseStation() async {
+    final res = await _chat.api('GET', '/chat/spaces/${widget.spaceId}/stations');
+    if (!mounted || !res.ok) return;
+    final stations = (res.data as List).map((s) => Map<String, dynamic>.from(s as Map)).toList();
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: ChatTheme.surfaceBottom,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(12),
+          children: [
+            if (stations.isEmpty) Padding(padding: const EdgeInsets.all(16), child: Text('هنوز پیامی به منزلگاهی وصل نشده است.', style: ChatTheme.caption, textAlign: TextAlign.center)),
+            for (final station in stations) ListTile(title: Text(station['title'] ?? '', style: ChatTheme.body), onTap: () => Navigator.pop(ctx, station)),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) await _showList(picked['title'] ?? '', () => _chat.stationMessages(widget.spaceId, picked['id']));
   }
 
   Future<void> _showList(String title, Future<List<ChatMessage>> Function() load) async {
@@ -432,9 +477,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           ],
         ),
       ),
-    );
-    controller.dispose();
-    if (query != null && query.trim().length >= 2) {
+    );    if (query != null && query.trim().length >= 2) {
       await _showList('نتایج جستجو', () => _chat.search(widget.spaceId, query.trim()));
     }
   }
@@ -458,7 +501,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
             return Column(
               children: [
                 _header(space),
-                if (widget.threadRoot != null) _threadOrigin(),
+                // With the keyboard open the conversation needs every pixel
+                if (widget.threadRoot != null && MediaQuery.of(context).viewInsets.bottom == 0) _threadOrigin(),
                 if (space?.type == 'support') _caseBar(),
                 Expanded(child: _list(messages, space, myId)),
                 if (_chat.typingIn(widget.spaceId) != null)
@@ -474,6 +518,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       ),
     );
   }
+
+  bool get _threadIsClosed => widget.threadRoot?.topicId != null && _rootStatus(const []) != 'open';
 
   String? _rootStatus(List<ChatMessage> _) {
     final top = _chat.messagesOf(widget.spaceId);
@@ -507,26 +553,56 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
+  /// Title and search stay in sight; the rest of the tools sit in one menu so the title always fits.
   Widget _header(ChatSpace? space) {
+    final title = _threadId != null ? 'گفتگوی زیر پیام' : (space?.title ?? '');
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
       child: Row(
         children: [
-          Expanded(child: Text(_threadId != null ? 'گفتگوی زیر پیام' : (space?.title ?? ''), style: ChatTheme.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+          Expanded(child: Text(title, style: ChatTheme.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
           if (_threadId == null) ...[
             IconButton(onPressed: _search, icon: const Icon(Icons.search_rounded, color: ChatTheme.lavender, size: 22)),
-            IconButton(onPressed: () => _chooseTag(null), icon: const Icon(Icons.label_rounded, color: ChatTheme.lavender, size: 20)),
-            IconButton(onPressed: () => _showList('پیام‌های سنجاق‌شده', () => _chat.pins(widget.spaceId)), icon: const Icon(Icons.push_pin_rounded, color: ChatTheme.lavender, size: 20)),
-            if (space != null)
-              IconButton(
-                onPressed: () => _chat.setMuted(space, !space.muted),
-                icon: Icon(space.muted ? Icons.notifications_off_rounded : Icons.notifications_rounded, color: ChatTheme.lavender, size: 20),
-              ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded, color: ChatTheme.lavender),
+              color: ChatTheme.surfaceBottom,
+              onSelected: (value) {
+                switch (value) {
+                  case 'tags':
+                    _chooseTag(null);
+                  case 'stations':
+                    _chooseStation();
+                  case 'pins':
+                    _showList('پیام‌های سنجاق‌شده', () => _chat.pins(widget.spaceId));
+                  case 'mute':
+                    if (space != null) _chat.setMuted(space, !space.muted);
+                }
+              },
+              itemBuilder: (_) => [
+                _menuItem('pins', Icons.push_pin_rounded, 'پیام‌های سنجاق‌شده'),
+                _menuItem('tags', Icons.label_rounded, 'پیام‌های برچسب‌دار'),
+                _menuItem('stations', Icons.flag_rounded, 'پیام‌های هر منزلگاه'),
+                if (space != null)
+                  _menuItem('mute', space.muted ? Icons.notifications_rounded : Icons.notifications_off_rounded, space.muted ? 'روشن کردن اعلان' : 'بی‌صدا کردن گفتگو'),
+              ],
+            ),
           ],
         ],
       ),
     );
   }
+
+  PopupMenuItem<String> _menuItem(String value, IconData icon, String label) => PopupMenuItem(
+        value: value,
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(children: [
+            Icon(icon, color: ChatTheme.lavender, size: 18),
+            const SizedBox(width: 10),
+            Text(label, style: ChatTheme.body),
+          ]),
+        ),
+      );
 
   Widget _threadOrigin() {
     final root = widget.threadRoot!;
@@ -538,8 +614,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
-          Text(root.body.isEmpty ? 'فایل' : root.body, style: ChatTheme.body, maxLines: 3, overflow: TextOverflow.ellipsis),
+          Text(root.meta?['tag']?.toString() ?? root.senderName, style: ChatTheme.caption.copyWith(color: ChatTheme.accent)),
+          Text(root.meta?['title']?.toString() ?? (root.body.isEmpty ? 'فایل' : root.body), style: ChatTheme.body, maxLines: 2, overflow: TextOverflow.ellipsis),
         ],
       ),
     );
@@ -559,24 +635,32 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         final previous = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
         final mine = message.senderId == myId;
         if (message.kind == 'challenge' && !message.deleted && message.topicId != null) {
-          return ChallengeCard(
+          return GestureDetector(
             key: ValueKey(message.id),
-            message: message,
-            onOpenThread: () => _openThread(message),
-            onOpenInfo: () => _openInfo(message, space),
-            onOpenChallenge: () => _openChallenge(message),
+            onLongPress: () => _showActions(message, space, false),
+            child: ChallengeCard(
+              message: message,
+              onOpenThread: () => _openThread(message),
+              onOpenInfo: () => _openInfo(message, space),
+              onOpenChallenge: () => _openChallenge(message),
+            ),
           );
         }
         if (message.kind == 'station' && !message.deleted) return StationCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'result' && !message.deleted) return ResultCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'poll' && !message.deleted) {
-          return PollCard(key: ValueKey(message.id), message: message, myId: myId, onVote: (o) => _chat.vote(message, o));
+          return GestureDetector(
+            key: ValueKey(message.id),
+            onLongPress: () => _showActions(message, space, false),
+            child: PollCard(message: message, myId: myId, onVote: (o) => _chat.vote(message, o)),
+          );
         }
         return ChatMessageBubble(
           key: ValueKey(message.clientMessageId ?? message.id),
           message: message,
           mine: mine,
           myId: myId,
+          staffTags: _chat.staffTagsOf(message.id),
           showSender: previous?.senderId != message.senderId && space?.isDirect != true,
           seen: space != null && space.isDirect && message.seq > 0 && message.seq <= space.peerReadSeq,
           onLongPress: () => _showActions(message, space, mine),
@@ -593,7 +677,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         child: Text(
           closed
               ? 'این چالش بسته شده است.'
-              : (_chat.spaceById(widget.spaceId)?.canReply == false ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.' : 'برای پاسخ، پیام را نگه دارید و وارد گفتگوی زیر آن شوید.'),
+              : (_chat.spaceById(widget.spaceId)?.canReply == false ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.' : 'برای گفتگو، روی «ورود به گفتگو» در کارت چالش یا اعلان بزنید.'),
           style: ChatTheme.caption,
           textAlign: TextAlign.center,
         ),

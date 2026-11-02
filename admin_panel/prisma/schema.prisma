@@ -181,6 +181,7 @@ model Challenge {
   caravanId         String?
   stationId         String?
   rankingFinalizedAt DateTime?                              // inter-group: when the admin confirmed the caravans' ranking
+  judgingStartedAt  DateTime?                                // inter-group: works are final and judges can read them
   startDate         DateTime?                                // challenge opens at this moment (null = already open)
   dueDate           DateTime?
   createdAt         DateTime     @default(now())
@@ -980,6 +981,7 @@ model ChatTopic {
   status       String    @default("open") // "open" | "closed" | "paid"
   closedAt     DateTime?
   closedBy     String?
+  finalMessageId String?  // the message chosen as the group's final answer
   reminderSent Boolean   @default(false)
   createdAt    DateTime  @default(now())
 
@@ -1113,6 +1115,8 @@ model ChallengeEvaluation {
   reason     String?
   flags      String[]  @default([])
   objection  String?
+  objectionStatus String?  // "pending" | "accepted" | "rejected"
+  objectionResponse String?
   paidAt     DateTime?
   updatedAt  DateTime  @updatedAt
 

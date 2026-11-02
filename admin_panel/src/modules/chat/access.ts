@@ -88,6 +88,17 @@ export function canModerate(a: ChatActor, s: SpaceRef): boolean {
   return isAdmin(a) || leadsCaravan(a, s) || (isManager(a) && a.permissions.moderate);
 }
 
+/** Tags and marks. A personal challenge lives in a private conversation, which its mentor still runs. */
+export function canTag(a: ChatActor, s: SpaceRef): boolean {
+  return canModerate(a, s) || (s.type === 'direct' && (isAdmin(a) || isMentorRole(a.role)));
+}
+
+/** "Enter groups" also binds a channel manager in the panel. */
+export function managerMayEnter(a: ChatActor, s: { type: string }): boolean {
+  if (!isManager(a) || a.permissions.enterGroups) return true;
+  return !['caravan', 'challenges', 'media'].includes(s.type);
+}
+
 /** Students talk privately with their own mentor only; staff talk to whoever they work with. */
 export async function canStartDirect(a: ChatActor, otherId: string): Promise<boolean> {
   if (a.id === otherId) return false;

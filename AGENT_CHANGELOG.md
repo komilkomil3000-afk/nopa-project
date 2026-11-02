@@ -2810,3 +2810,41 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Chrome: chat operations, support queue and the channel manager view, with no refused calls.
   - Not run: the app on a device or emulator; production WebSocket; the migrations on production data; a load test.
 - **Status:** In Progress (open items are listed in `docs/nopa-chat-plan.md`)
+
+### [2026-11-02 12:30] - Claude Code / Chat Review
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** docs
+- **Files Modified / Created / Deleted:**
+  - `docs/nopa-chat-review.md` (Created, local only)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Reviewed phases 0 to 10 against the code and wrote the findings and a staged fix plan.
+  - Reopened eight checklist items that had been marked done but were incomplete.
+- **Verification / Checkpoints Executed:**
+  - Findings confirmed by reading the code at commit 88fb304. No code changed and no reproduction tests written yet.
+- **Status:** Completed
+
+### [2026-11-02 14:40] - Claude Code / Chat Review Fixes
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/tests/e2e/` (Created: runner, harness and six suites), `admin_panel/package.json`, `admin_panel/package-lock.json` (Modified: test:e2e, dev dependencies)
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261047_chat_review_fixes/` (Created)
+  - `admin_panel/src/modules/chat/groups.ts` (Created); `admin_panel/src/modules/chat/{access,bots,controller,evaluation,intergroup,manageController,reports,routes,service,settingsController,support,topics}.ts` (Modified)
+  - `admin_panel/src/controllers/{admin,analytics,caravan,caravanBanner,reward,submission}Controller.ts`, `admin_panel/src/services/economy.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/{chat-ops,chat-settings,challenges}.js` (Modified)
+  - `app/lib/screens/chat/{chat_groups_screen,channel_manager_profile_screen,challenge_chat_button}.dart` (Created)
+  - `app/lib/screens/chat/{chat_conversation_screen,chat_home_screen,chat_message_bubble,chat_cards,chat_topic_info_screen}.dart`, `app/lib/models/chat_models.dart`, `app/lib/services/{chat_repository,app_state_repository,api_service}.dart`, `app/lib/core/constants/api_constants.dart`, `app/lib/widgets/custom_drawer.dart`, `app/lib/screens/{student,mentor}/challenges/*_challenges_screen.dart`, `app/pubspec.yaml`, `app/pubspec.lock` (Modified)
+  - `docs/nopa-chat-review.md`, `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Fixed review findings A1 to A10, B1 to B7 and C1 to C15 except quiet hours: mentions, support membership, kalaf payment of old zarik challenges, minimum reward, correction errors, export link, deleted files, enter-groups in the panel, locked evidence, live room updates, inter-group judging lock, file entries, tiers in the panel, run-without-chat prizes, prize preview, closing competitions, card backfill and start dates, final answer, objections, budget totals, groups, mute, templates, panel files, support in the list, station baseline, panel top list, upload cleanup and quota.
+  - Mentors and channel managers can create, rename and delete media groups and manage their members, in the app and in the panel.
+  - App on HTTPS for real: the startup host logic had kept it on http://nopa-app.ir. Local-network host discovery is now development only.
+  - Emulator run fixed a header overflow, a keyboard layout collapse, a crash in every chat dialog, overlapping buttons and the previous-average figure.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 21/21, `npm run test:e2e` 6/6 suites in `admin_panel/` (including the panel in Chrome).
+  - `flutter analyze` no issues, `flutter test` 11/11 in `app/`.
+  - Android emulator against a local demo server: student and mentor flows through chat, live socket delivery, poll, evaluation and payment, groups.
+  - Not run: voice recording, file sending from a device, offline mode, the channel manager app shell, iOS, production WebSocket, migrations on production data.
+  - Note: one emulator login attempt with a demo number reached the production login before D1 was found; the server answered 404 and nothing was created.
+- **Status:** Completed (7.2 to 7.6 and quiet hours remain, listed in `docs/nopa-chat-review.md`)

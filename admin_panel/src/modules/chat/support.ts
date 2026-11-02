@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../../config/db';
+import { parseSectionGrants } from '../../utils/roles';
 import { AuthRequest } from '../../middleware/auth';
 import { ChatActor } from './access';
 import { handler } from './http';
@@ -29,18 +30,28 @@ export async function supportSpaceOf(userId: string) {
 
 /** A user's message opens a case unless one is already open. Staff hear about each new case. */
 export async function ensureOpenCase(spaceId: string, userId: string, body: string, seq: number) {
-  const open = await prisma.supportCase.findFirst({ where: { spaceId, status: { not: 'resolved' } } });
-  if (open) return open;
-  const created = await prisma.supportCase.create({
-    data: { spaceId, userId, subject: body.slice(0, 80) || 'پیام جدید', category: guessCategory(body), fromSeq: seq },
+  // Serialised per space: two first messages at once still open one case
+  const { found, created } = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${spaceId}))`;
+    const open = await tx.supportCase.findFirst({ where: { spaceId, status: { not: 'resolved' } } });
+    if (open) return { found: open, created: false };
+    const row = await tx.supportCase.create({
+      data: { spaceId, userId, subject: body.slice(0, 80) || 'پیام جدید', category: guessCategory(body), fromSeq: seq },
+    });
+    return { found: row, created: true };
   });
-  const staff = await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } });
-  if (staff.length) {
+  if (!created) return found;
+
+  const staff = await prisma.user.findMany({ where: { role: { in: ['admin', 'sub_admin'] } }, select: { id: true, role: true } });
+  const row = await prisma.rolePermission.findUnique({ where: { roleName: 'sub_admin' } });
+  const grants = parseSectionGrants(row?.permissionsJson);
+  const targets = staff.filter(s => s.role === 'admin' || grants.support);
+  if (targets.length) {
     await prisma.notification.createMany({
-      data: staff.map(a => ({ userId: a.id, title: 'پرونده‌ی جدید پشتیبانی', message: created.subject, type: 'alert' })),
+      data: targets.map(a => ({ userId: a.id, title: 'پرونده‌ی جدید پشتیبانی', message: found.subject, type: 'alert' })),
     });
   }
-  return created;
+  return found;
 }
 
 export const openSupport = handler(async (_req, res, actor) => {
@@ -100,7 +111,7 @@ export const replyCase = staff(async (req, res, actor) => {
   const found = await requireCase(req.params.id);
   const body = String(req.body?.body || '').trim();
   if (!body) throw new ChatError(400, 'متن پاسخ الزامی است');
-  const { message } = await publishMessage({ spaceId: found.spaceId, senderId: actor.id, body, attachmentIds: [], mentions: [] });
+  const { message } = await publishMessage({ spaceId: found.spaceId, senderId: actor.id, body, attachmentIds: [], mentions: [], stayOutside: true });
   await prisma.supportCase.update({ where: { id: found.id }, data: { status: 'reviewing', assigneeId: found.assigneeId || actor.id } });
   await notifyAbsent({ id: found.spaceId, type: 'support' }, actor.id, 'پشتیبانی نپا', body, []);
   res.status(201).json(message);

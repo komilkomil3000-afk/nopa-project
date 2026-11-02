@@ -5,8 +5,8 @@ import { changeBalance } from '../../services/ledger';
 import { isMentorRole } from '../../utils/roles';
 import { ChatActor } from './access';
 import { handler } from './http';
-import { publishBotMessage } from './publish';
-import { ChatError, globalSpace } from './service';
+import { publishBotMessage, publishUpdate } from './publish';
+import { ChatError, globalSpace, signFileUrl } from './service';
 
 export const TIERS = ['full', 'partner', 'minimal', 'inactive'] as const;
 export type Tier = typeof TIERS[number];
@@ -17,6 +17,11 @@ async function requireInterChallenge(id: string) {
   const challenge = await prisma.challenge.findUnique({ where: { id } });
   if (!challenge || challenge.category !== 'inter_group') throw new ChatError(404, 'چالش فراگروهی یافت نشد');
   return challenge;
+}
+
+/** Works stay private until the deadline passes or the admin opens judging: a mentor must not read a rival early. */
+export function judgingOpen(c: { dueDate: Date | null; judgingStartedAt: Date | null }, now = new Date()): boolean {
+  return !!c.judgingStartedAt || (!!c.dueDate && c.dueDate <= now);
 }
 
 /** A member's prize: the rank's amount times their effort. An absent member's share is never redistributed. */
@@ -54,13 +59,20 @@ export const submitEntry = handler(async (req, res, actor) => {
   if (challenge.rankingFinalizedAt) throw new ChatError(400, 'این رقابت پایان یافته است');
   const body = String(req.body?.body || '').trim().slice(0, 8000);
   if (!body) throw new ChatError(400, 'متن اثر الزامی است');
+  if (judgingOpen(challenge)) throw new ChatError(400, 'داوری شروع شده و اثر دیگر قابل تغییر نیست');
+  const attachmentId = req.body?.attachmentId ? String(req.body.attachmentId) : null;
+  if (attachmentId) {
+    const space = await prisma.chatSpace.findUnique({ where: { key: `challenges:${caravanId}` }, select: { id: true } });
+    const file = await prisma.chatAttachment.findUnique({ where: { id: attachmentId } });
+    if (!file || file.uploaderId !== actor.id || file.spaceId !== space?.id) throw new ChatError(400, 'فایل پیوست معتبر نیست');
+  }
 
   const entry = await prisma.$transaction(async (tx) => {
     const existing = await tx.interGroupEntry.findUnique({ where: { challengeId_caravanId: { challengeId: challenge.id, caravanId } } });
-    if (existing) return tx.interGroupEntry.update({ where: { id: existing.id }, data: { body, submittedBy: actor.id, submittedAt: new Date() } });
+    if (existing) return tx.interGroupEntry.update({ where: { id: existing.id }, data: { body, fileUrl: attachmentId, submittedBy: actor.id, submittedAt: new Date() } });
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${challenge.id}))`;
     const count = await tx.interGroupEntry.count({ where: { challengeId: challenge.id } });
-    return tx.interGroupEntry.create({ data: { challengeId: challenge.id, caravanId, anonCode: count + 1, body, submittedBy: actor.id } });
+    return tx.interGroupEntry.create({ data: { challengeId: challenge.id, caravanId, anonCode: count + 1, body, fileUrl: attachmentId, submittedBy: actor.id } });
   });
   res.status(201).json({ id: entry.id, anonCode: entry.anonCode });
 });
@@ -78,12 +90,13 @@ export const askJudge = handler(async (req, res, actor) => {
 export const judgeList = handler(async (req, res, actor) => {
   const challenge = await requireInterChallenge(req.params.id);
   if (!isAdmin(actor) && !isMentorRole(actor.role)) throw new ChatError(403, 'این بخش مخصوص داوران است');
+  if (!judgingOpen(challenge)) throw new ChatError(403, 'داوری پس از پایان مهلت شروع می‌شود');
   const entries = await prisma.interGroupEntry.findMany({
     where: { challengeId: challenge.id, caravanId: { notIn: actor.mentoredCaravanIds } },
     include: { scores: { where: { judgeId: actor.id } } },
     orderBy: { anonCode: 'asc' },
   });
-  res.json(entries.map(e => ({ id: e.id, code: e.anonCode, body: e.body, myScore: e.scores[0] || null })));
+  res.json(entries.map(e => ({ id: e.id, code: e.anonCode, body: e.body, fileUrl: e.fileUrl ? signFileUrl(e.fileUrl) : null, myScore: e.scores[0] || null })));
 });
 
 export const judgeEntry = handler(async (req, res, actor) => {
@@ -92,6 +105,7 @@ export const judgeEntry = handler(async (req, res, actor) => {
   if (!entry) throw new ChatError(404, 'اثر یافت نشد');
   if (actor.mentoredCaravanIds.includes(entry.caravanId)) throw new ChatError(403, 'راهبر اثر کاروان خود را داوری نمی‌کند');
   const challenge = await requireInterChallenge(entry.challengeId);
+  if (!judgingOpen(challenge)) throw new ChatError(403, 'داوری پس از پایان مهلت شروع می‌شود');
   if (challenge.rankingFinalizedAt) throw new ChatError(400, 'این رقابت پایان یافته است');
   const score = Number(req.body?.score);
   const strength = String(req.body?.strength || '').trim().slice(0, 300);
@@ -187,9 +201,17 @@ export async function interGroupBoard(challengeId: string) {
   return { challenge, rows, questions, config };
 }
 
+export const startJudging = handler(async (req, res, actor) => {
+  const challenge = await requireInterChallenge(req.params.id);
+  if (challenge.rankingFinalizedAt) throw new ChatError(400, 'این رقابت پایان یافته است');
+  await prisma.challenge.update({ where: { id: challenge.id }, data: { judgingStartedAt: new Date() } });
+  await prisma.auditLog.create({ data: { actorId: actor.id, actorName: actor.name, actorRole: 'ADMIN', action: 'START_INTERGROUP_JUDGING', targetEntity: 'Challenge', targetEntityId: challenge.id, details: challenge.title, ipAddress: req.ip || '' } });
+  res.json({ success: true });
+});
+
 export const adminBoard = handler(async (req, res) => {
   const { challenge, rows, questions } = await interGroupBoard(req.params.id);
-  res.json({ challenge: { id: challenge.id, title: challenge.title, dueDate: challenge.dueDate, finalized: !!challenge.rankingFinalizedAt }, rows, questions });
+  res.json({ challenge: { id: challenge.id, title: challenge.title, dueDate: challenge.dueDate, finalized: !!challenge.rankingFinalizedAt, judgingOpen: judgingOpen(challenge) }, rows, questions });
 });
 
 /** The money a finished ranking pays. Used for the preview and for the payment itself, so they agree. */
@@ -197,12 +219,35 @@ export async function prizePlan(challengeId: string, ranking: string[], particip
   const { config } = await getEconomyPolicy();
   const tiers = await prisma.interGroupMemberTier.findMany({ where: { challengeId } });
   const members = await prisma.user.findMany({ where: { caravanId: { in: participating }, role: 'student' }, select: { id: true, caravanId: true } });
+  const submissions = await prisma.submission.findMany({ where: { challengeId }, select: { studentId: true } });
+  const answered = new Set(submissions.map(s => s.studentId));
   return members.map(m => {
     const place = ranking.indexOf(m.caravanId!);
     const rankTier = place >= 0 ? RANK_TIERS[place] : 'cloth' as const;
-    const tier = (tiers.find(t => t.userId === m.id)?.tier ?? 'inactive') as Tier;
+    // Run without the chat there are no confirmed levels: whoever answered took part fully
+    const tier = (tiers.find(t => t.userId === m.id)?.tier ?? (answered.has(m.id) ? 'full' : 'inactive')) as Tier;
     return { userId: m.id, caravanId: m.caravanId!, rankTier, tier, amount: memberPrize(rankTier, tier, config) };
   });
+}
+
+/** Caravans that delivered a work but whose members' effort nobody confirmed. */
+export async function unconfirmedCaravans(challengeId: string, participating: { id: string; name: string }[]) {
+  const entries = await prisma.interGroupEntry.count({ where: { challengeId } });
+  if (entries === 0) return [];
+  const tiers = await prisma.interGroupMemberTier.groupBy({ by: ['caravanId'], where: { challengeId }, _count: { _all: true } });
+  const out = [];
+  for (const c of participating) {
+    const members = await prisma.user.count({ where: { caravanId: c.id, role: 'student' } });
+    if ((tiers.find(t => t.caravanId === c.id)?._count._all ?? 0) < members) out.push(c.name);
+  }
+  return out;
+}
+
+/** The competition is over: its conversations stop. */
+export async function closeCompetitionTopics(challengeId: string) {
+  const topics = await prisma.chatTopic.findMany({ where: { challengeId, status: { not: 'paid' } } });
+  await prisma.chatTopic.updateMany({ where: { challengeId }, data: { status: 'paid', closedAt: new Date() } });
+  for (const t of topics) await publishUpdate(t.messageId);
 }
 
 export async function payPrizes(tx: Prisma.TransactionClient, challenge: { id: string; title: string }, plan: { userId: string; amount: number }[], actorId: string) {

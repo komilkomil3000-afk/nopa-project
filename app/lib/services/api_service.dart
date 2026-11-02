@@ -387,6 +387,8 @@ class HttpApiService {
   Future<List<String>> _buildHostCandidates() async {
     final candidates = <String>[];
     candidates.add(_defaultHost);
+    // Only development looks around the local network: a release build never sends a token to a stranger
+    if (kReleaseMode) return candidates;
     if (_envHost.isNotEmpty && !candidates.contains(_envHost)) {
       candidates.add(_envHost);
     }
@@ -417,6 +419,8 @@ class HttpApiService {
     if (host.startsWith('http://') || host.startsWith('https://')) {
       return host.endsWith('/') ? host.substring(0, host.length - 1) : host;
     }
+    // The configured server keeps its scheme: this is what puts the app on HTTPS
+    if (host == ApiConstants.host) return ApiConstants.mediaBaseUrl;
     if (host == 'nopa-app.ir' || (!host.contains(':') && !RegExp(r'^\d+\.\d+\.\d+\.\d+$').hasMatch(host))) {
       return 'http://$host';
     }
@@ -464,7 +468,7 @@ class HttpApiService {
 
     // Always prefer the production domain (nopa-app.ir) if reachable,
     // avoiding being trapped on stale LAN IPs cached during development.
-    final targetHost = (_defaultHost == 'nopa-app.ir')
+    final targetHost = (_defaultHost == ApiConstants.host)
         ? _defaultHost
         : (cachedHost ?? (_envHost.isNotEmpty ? _envHost : _defaultHost));
     _activeHost = targetHost;

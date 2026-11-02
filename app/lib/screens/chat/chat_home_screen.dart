@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
+import 'package:nopa_app/screens/chat/chat_groups_screen.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
 import 'package:nopa_app/models/user_model.dart';
@@ -37,22 +38,10 @@ class ChatHomeScreen extends StatelessWidget {
                   color: ChatTheme.accent,
                   onRefresh: chat.refreshSpaces,
                   child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 84),
-                    itemCount: chat.spaces.length,
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 180),
+                    itemCount: chat.spaces.length + 1,
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) => _SpaceTile(space: chat.spaces[i]),
-                  ),
-                ),
-              if (Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike)
-                Positioned(
-                  left: 16,
-                  bottom: 68,
-                  child: FloatingActionButton.small(
-                    heroTag: 'chat-dashboard',
-                    backgroundColor: ChatTheme.surfaceTop,
-                    foregroundColor: ChatTheme.accent,
-                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChatDashboardScreen())),
-                    child: const Icon(Icons.dashboard_rounded, size: 20),
+                    itemBuilder: (context, i) => i == 0 ? const _StaffTools() : _SpaceTile(space: chat.spaces[i - 1]),
                   ),
                 ),
               Positioned(
@@ -106,6 +95,36 @@ class ChatHomeScreen extends StatelessWidget {
     if (space != null) {
       navigator.push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: space.id)));
     }
+  }
+}
+
+/// Mentors and channel managers reach their tools from the top of the list, not from floating buttons.
+class _StaffTools extends StatelessWidget {
+  const _StaffTools();
+
+  @override
+  Widget build(BuildContext context) {
+    final role = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    if (!role.isMentorLike && !role.isChannelManager) return const SizedBox.shrink();
+    Widget tool(IconData icon, String label, Widget screen) => Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: ChatTheme.card(),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Icon(icon, color: ChatTheme.accent, size: 18),
+                const SizedBox(width: 6),
+                Text(label, style: ChatTheme.caption.copyWith(color: ChatTheme.text, fontSize: 12.5)),
+              ]),
+            ),
+          ),
+        );
+    return Row(children: [
+      tool(Icons.group_add_rounded, 'گروه‌ها', const ChatGroupsScreen()),
+      if (role.isMentorLike) ...[const SizedBox(width: 10), tool(Icons.dashboard_rounded, 'داشبورد راهبر', const ChatDashboardScreen())],
+    ]);
   }
 }
 

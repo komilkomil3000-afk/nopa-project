@@ -146,6 +146,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     try {
       _appInForeground = state == AppLifecycleState.resumed;
+      ChatRepository.instance.setForeground(_appInForeground);
       if (state == AppLifecycleState.resumed) {
         recordActivity();
         if (_apiService.isAuthenticated) {

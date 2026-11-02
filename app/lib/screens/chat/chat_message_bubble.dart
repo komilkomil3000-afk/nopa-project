@@ -1,5 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class ChatMessageBubble extends StatelessWidget {
   final bool showSender;
   final bool seen;
   final String myId;
+  final List<Map<String, dynamic>> staffTags;
   final VoidCallback onLongPress;
   final VoidCallback? onOpenThread;
   final VoidCallback onRetry;
@@ -31,6 +33,7 @@ class ChatMessageBubble extends StatelessWidget {
     required this.showSender,
     required this.seen,
     required this.myId,
+    this.staffTags = const [],
     required this.onLongPress,
     required this.onOpenThread,
     required this.onRetry,
@@ -84,13 +87,14 @@ class ChatMessageBubble extends StatelessWidget {
           ),
         if (message.replyToId != null) _quote(),
         for (final attachment in message.attachments) _Attachment(attachment: attachment),
-        if (message.body.isNotEmpty) Text(message.body, style: ChatTheme.body, textDirection: _directionOf(message.body)),
-        if (message.tags.isNotEmpty || message.best)
+        if (message.body.isNotEmpty) _bodyText(),
+        if (message.tags.isNotEmpty || message.best || staffTags.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 5),
             child: Wrap(spacing: 4, runSpacing: 4, children: [
               if (message.best) const ChatChip(label: 'بهترین پاسخ', color: ChatTheme.accent),
               for (final tag in message.tags) ChatChip(label: tag['name'] ?? '', color: ChatChip.parse(tag['color'] ?? '#9292E2')),
+              for (final tag in staffTags) ChatChip(label: '${tag['name']} (راهبران)', color: ChatChip.parse(tag['color'] ?? '#9292E2')),
             ]),
           ),
         if (message.reactions.isNotEmpty) _reactions(),
@@ -98,6 +102,28 @@ class ChatMessageBubble extends StatelessWidget {
         _footer(),
       ],
     );
+  }
+
+  static final RegExp _link = RegExp(r'https?://[^\s]+');
+
+  /// Text with its links tappable.
+  Widget _bodyText() {
+    final direction = _directionOf(message.body);
+    if (!_link.hasMatch(message.body)) return Text(message.body, style: ChatTheme.body, textDirection: direction);
+    final spans = <InlineSpan>[];
+    var at = 0;
+    for (final m in _link.allMatches(message.body)) {
+      if (m.start > at) spans.add(TextSpan(text: message.body.substring(at, m.start)));
+      final url = m.group(0)!;
+      spans.add(TextSpan(
+        text: url,
+        style: const TextStyle(color: ChatTheme.accent, decoration: TextDecoration.underline),
+        recognizer: TapGestureRecognizer()..onTap = () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+      ));
+      at = m.end;
+    }
+    if (at < message.body.length) spans.add(TextSpan(text: message.body.substring(at)));
+    return RichText(textDirection: direction, text: TextSpan(style: ChatTheme.body, children: spans));
   }
 
   /// Latin text reads left to right inside the right-to-left conversation.

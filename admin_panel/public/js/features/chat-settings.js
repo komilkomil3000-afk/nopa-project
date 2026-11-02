@@ -79,6 +79,7 @@ window.openChatSpace = async function(spaceId) {
       <div class="u-flex u-gap-6 u-items-center u-mb-5 u-fs-12_5 u-c-text">
         <span class="u-flex-1">${esc(m.sender ? m.sender.name : 'سیستم')}: ${m.deleted ? 'این پیام حذف شده است' : esc(m.body || 'فایل')}</span>
         ${m.deleted ? '' : `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="deleteChatMessage" data-click-args="${esc(JSON.stringify([String(m.id)]))}">حذف</button>`}
+        ${m.sender && !m.deleted ? `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="muteChatMember" data-click-args="${esc(JSON.stringify([String(spaceId), String(m.sender.id), 60]))}">بی‌صدا</button>` : ''}
       </div>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">پیامی وجود ندارد.</div>';
   } catch (e) {
     showToast(e.message || 'خطا در دریافت پیام‌ها', 'error');

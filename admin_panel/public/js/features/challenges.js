@@ -351,11 +351,15 @@ window.submitChallengeRanking = async function(challengeId, places) {
     showToast('برای هر رتبه یک کاروان متفاوت انتخاب کنید.', 'error');
     return;
   }
-  if (!(await NopaConfirm('رتبه‌بندی نهایی می‌شود و قابل ویرایش نیست. ادامه می‌دهید؟'))) return;
+  const preview = await NopaApi.json(`/api/v1/admin/challenges/${challengeId}/ranking`, { method: 'POST', body: JSON.stringify({ ranking, preview: true }) }).catch(e => ({ error: e.message }));
+  if (preview.error) { showToast(preview.error, 'error'); return; }
+  const warning = preview.unconfirmed.length ? ` سطح اعضای این کاروان‌ها تأیید نشده و بدون جایزه می‌مانند: ${preview.unconfirmed.join('، ')}.` : '';
+  const question = `${Number(preview.total).toLocaleString('fa-IR')} زریک به ${Number(preview.paidMembers).toLocaleString('fa-IR')} نفر از ${Number(preview.members).toLocaleString('fa-IR')} عضو پرداخت می‌شود.${warning} رتبه‌بندی نهایی است و برنمی‌گردد. ادامه می‌دهید؟`;
+  if (!(await NopaConfirm(question))) return;
   const res = await request(`/api/v1/admin/challenges/${challengeId}/ranking`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ranking })
+    body: JSON.stringify({ ranking, acceptUnconfirmed: true })
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { showToast(data.error || 'خطا در ثبت رتبه‌بندی', 'error'); return; }

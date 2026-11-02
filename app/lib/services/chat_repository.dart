@@ -33,11 +33,18 @@ class ChatRepository extends ChangeNotifier {
   bool loadingSpaces = false;
   bool connected = false;
   final Map<String, List<ChatMessage>> _lists = {};
+  final Map<String, List<Map<String, dynamic>>> _staffTags = {};
+  bool _foreground = true;
   final Map<String, String> _typing = {};
   final Map<String, Timer> _typingTimers = {};
   DateTime _lastTypingSent = DateTime.fromMillisecondsSinceEpoch(0);
 
   static String _key(String spaceId, String? threadRootId) => '$spaceId|${threadRootId ?? ''}';
+
+  /// The app went to the background or came back: without a socket, polling waits for its return.
+  void setForeground(bool value) => _foreground = value;
+
+  List<Map<String, dynamic>> staffTagsOf(String messageId) => _staffTags[messageId] ?? const [];
 
   List<ChatMessage> messagesOf(String spaceId, {String? threadRootId}) => _lists[_key(spaceId, threadRootId)] ?? const [];
   String? typingIn(String spaceId) => _typing[spaceId];
@@ -64,7 +71,7 @@ class ChatRepository extends ChangeNotifier {
   /// Without a socket (a proxy may refuse WebSocket) chat still works, a few seconds behind:
   /// the conversation on screen and the list are fetched over HTTP, and the queue is retried.
   Future<void> _pollWhileOffline() async {
-    if (connected || _offlineRoundRunning || _userId == null) return;
+    if (connected || !_foreground || _offlineRoundRunning || _userId == null) return;
     _offlineRoundRunning = true;
     try {
       await refreshSpaces();
@@ -140,6 +147,7 @@ class ChatRepository extends ChangeNotifier {
     socket.on('message:update', (data) => _onUpdate(Map<String, dynamic>.from(data as Map)));
     socket.on('read', (data) => _onRead(Map<String, dynamic>.from(data as Map)));
     socket.on('typing', (data) => _onTyping(Map<String, dynamic>.from(data as Map)));
+    socket.on('space:update', (_) => refreshSpaces());
     socket.connect();
   }
 
@@ -187,7 +195,15 @@ class ChatRepository extends ChangeNotifier {
     }
     final page = await _fetch(spaceId, threadRootId: threadRootId);
     if (page == null) return;
-    final pending = (_lists[key] ?? []).where((m) => m.sendState != ChatSendState.sent);
+    final pending = (_lists[key] ?? []).where((m) => m.sendState != ChatSendState.sent).toList();
+    if (_userId != null) {
+      for (final item in await _store.loadOutbox(_userId!)) {
+        final payload = Map<String, dynamic>.from(item['payload'] as Map);
+        if (item['spaceId'] != spaceId || payload['threadRootId'] != threadRootId) continue;
+        final known = pending.any((m) => m.clientMessageId == item['clientId']) || page.any((m) => m.clientMessageId == item['clientId']);
+        if (!known) pending.add(_pendingFrom(spaceId, item['clientId'] as String, payload));
+      }
+    }
     _lists[key] = [...page, ...pending];
     notifyListeners();
     _save(page);
@@ -203,6 +219,10 @@ class ChatRepository extends ChangeNotifier {
     final res = await _api.chatCall('GET', path);
     if (res == null || res.statusCode != 200) return null;
     final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final staff = data['staffTags'];
+    if (staff is Map) {
+      staff.forEach((id, tags) => _staffTags[id as String] = (tags as List).map((t) => Map<String, dynamic>.from(t as Map)).toList());
+    }
     return (data['messages'] as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
   }
 
@@ -231,6 +251,18 @@ class ChatRepository extends ChangeNotifier {
     notifyListeners();
     _save(page);
   }
+
+  ChatMessage _pendingFrom(String spaceId, String clientId, Map<String, dynamic> payload) => ChatMessage.fromJson({
+        'id': 'pending-$clientId',
+        'spaceId': spaceId,
+        'seq': 0,
+        'body': payload['body'] ?? '',
+        'threadRootId': payload['threadRootId'],
+        'clientMessageId': clientId,
+        'createdAt': DateTime.now().toIso8601String(),
+        'sender': payload['sender'],
+      })
+        ..sendState = ChatSendState.sending;
 
   void _save(List<ChatMessage> messages) {
     if (_userId != null) _store.saveMessages(_userId!, messages.map((m) => m.raw).toList());
@@ -338,6 +370,7 @@ class ChatRepository extends ChangeNotifier {
     final clientId = _newClientId();
     final payload = <String, dynamic>{
       'body': body,
+      'sender': sender,
       'clientMessageId': clientId,
       'threadRootId': ?threadRootId,
       if (replyTo != null) 'replyToId': replyTo.id,
@@ -433,6 +466,12 @@ class ChatRepository extends ChangeNotifier {
   Future<List<ChatMessage>> taggedMessages(String spaceId, String tagId, {String? threadRootId}) async {
     final query = {'tagId': tagId, 'threadRootId': ?threadRootId};
     final res = await api('GET', Uri(path: '/chat/spaces/$spaceId/messages', queryParameters: query).toString());
+    if (!res.ok) return [];
+    return ((res.data as Map)['messages'] as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
+  }
+
+  Future<List<ChatMessage>> stationMessages(String spaceId, String stationId) async {
+    final res = await api('GET', Uri(path: '/chat/spaces/$spaceId/messages', queryParameters: {'stationId': stationId}).toString());
     if (!res.ok) return [];
     return ((res.data as Map)['messages'] as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
   }

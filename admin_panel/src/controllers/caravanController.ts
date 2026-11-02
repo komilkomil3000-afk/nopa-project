@@ -3,6 +3,7 @@ import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
 import { CapitalAsset, conversionRule, getEconomyPolicy } from '../services/economy';
 import { AuthRequest } from '../middleware/auth';
+import { refreshUserRooms } from '../modules/chat/realtime';
 import { isMentorRole } from '../utils/roles';
 
 // Explicit field list for a caravan's mentor: never return the full User row
@@ -59,6 +60,7 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
       where: { id: { in: userIds } },
       data: { caravanId: targetCaravanId }
     });
+    await refreshUserRooms(userIds);
     
     // Update member counts (approximate, or recalculate)
     await logAdminAction(req.user!.id, 'Admin', 'BULK_TRANSFER', 'Caravan', targetCaravanId || 'UNASSIGNED', `Transferred ${userIds.length} users`, req.ip || '');
@@ -308,6 +310,7 @@ export async function createCaravan(req: AuthRequest, res: Response) {
         where: { id: { in: studentIds } },
         data: { caravanId: caravan.id }
       });
+      await refreshUserRooms(studentIds);
 
     }
 
@@ -466,6 +469,7 @@ export async function addMemberToCaravan(req: AuthRequest, res: Response) {
       where: { id: studentId },
       data: { caravanId: id }
     });
+    await refreshUserRooms([studentId]);
 
     const memberCount = await prisma.user.count({ where: { caravanId: id } });
     await prisma.caravan.update({
@@ -486,6 +490,7 @@ export async function removeMemberFromCaravan(req: AuthRequest, res: Response) {
       where: { id: studentId },
       data: { caravanId: null }
     });
+    await refreshUserRooms([studentId]);
     const newCount = await prisma.user.count({ where: { caravanId: id } });
     await prisma.caravan.update({
       where: { id },
@@ -512,6 +517,7 @@ export async function transferMember(req: AuthRequest, res: Response) {
       where: { id: studentId },
       data: { caravanId: targetCaravanId }
     });
+    await refreshUserRooms([studentId]);
 
 
     res.json({ success: true });
@@ -631,6 +637,7 @@ export async function bulkAddMembersToCaravan(req: AuthRequest, res: Response) {
       },
       data: { caravanId }
     });
+    await refreshUserRooms(userIds);
 
     const memberCount = await prisma.user.count({ where: { caravanId } });
     await prisma.caravan.update({
@@ -656,10 +663,12 @@ export async function deleteCaravan(req: AuthRequest, res: Response) {
     if (!caravan) return res.status(404).json({ error: 'کاروان یافت نشد.' });
 
     // Release all members
+    const released = await prisma.user.findMany({ where: { caravanId: id }, select: { id: true } });
     await prisma.user.updateMany({
       where: { caravanId: id },
       data: { caravanId: null }
     });
+    await refreshUserRooms(released.map(u => u.id));
 
     // Soft delete caravan
     await prisma.caravan.update({

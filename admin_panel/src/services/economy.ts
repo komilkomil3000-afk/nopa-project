@@ -116,3 +116,10 @@ export function parseEconomyConfig(raw: any): { error: string } | { config: Econ
   }
   return { config };
 }
+
+/** The richest students by the official formula, with the fields the panel shows. */
+export async function topByCapital(take: number) {
+  const { config } = await getEconomyPolicy();
+  const students = await prisma.user.findMany({ where: { role: 'student' }, select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true } });
+  return students.map(s => ({ ...s, capital: capitalValue(s, config) })).sort((a, b) => b.capital - a.capital).slice(0, take);
+}

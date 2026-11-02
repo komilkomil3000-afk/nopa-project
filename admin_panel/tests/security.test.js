@@ -319,3 +319,22 @@ test('bots: commands, send times and tag colours', () => {
   assert.equal(isReadableColor('#DFB690'), true);
   assert.equal(isReadableColor('#101010'), false);
 });
+
+test('inter-group judging opens after the deadline or by the admin, not before', () => {
+  const { judgingOpen } = load('modules/chat/intergroup.js');
+  const now = new Date('2026-11-10T10:00:00Z');
+  assert.equal(judgingOpen({ dueDate: null, judgingStartedAt: null }, now), false);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-11T10:00:00Z'), judgingStartedAt: null }, now), false);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-09T10:00:00Z'), judgingStartedAt: null }, now), true);
+  assert.equal(judgingOpen({ dueDate: new Date('2026-11-11T10:00:00Z'), judgingStartedAt: now }, now), true);
+});
+
+test('a channel manager without "enter groups" stays out of caravan spaces only', () => {
+  const { managerMayEnter } = load('modules/chat/access.js');
+  const { DEFAULT_CHAT_PERMISSIONS: perms } = load('utils/roles.js');
+  const manager = { role: 'channel_manager', permissions: { ...perms, enterGroups: false } };
+  assert.equal(managerMayEnter(manager, { type: 'caravan' }), false);
+  assert.equal(managerMayEnter(manager, { type: 'media' }), false);
+  assert.equal(managerMayEnter(manager, { type: 'announcements' }), true);
+  assert.equal(managerMayEnter({ role: 'admin', permissions: perms }, { type: 'caravan' }), true);
+});

@@ -1,10 +1,10 @@
 import { Challenge } from '@prisma/client';
 import prisma from '../../config/db';
-import { canModerate, ChatActor } from './access';
+import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireMessage, requireSpace } from './http';
 import { publishBotMessage, publishUpdate } from './publish';
 import { refreshUserRooms } from './realtime';
-import { ChatError, directKey, ensureCaravanSpaces, ensureSpace, globalSpace } from './service';
+import { ChatError, directKey, ensureCaravanSpaces, ensureSpace, globalSpace, MESSAGE_INCLUDE, serializeMessage } from './service';
 import { generateInsight } from './insights';
 
 const CATEGORY_LABELS: Record<string, string> = { individual: 'شخصی', intra_group: 'درون‌گروهی', inter_group: 'فراگروهی' };
@@ -59,13 +59,18 @@ async function targetsOf(c: Challenge): Promise<{ spaceId: string; recipientId: 
 export async function syncChallengeCards(challengeId: string): Promise<void> {
   const challenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
   if (!challenge) return;
+  const existingTopics = await prisma.chatTopic.count({ where: { challengeId } });
+  // A timed challenge stays out of sight until it starts; the worker publishes it then
+  if (challenge.startDate && challenge.startDate > new Date() && existingTopics === 0) return;
   const meta = await cardMeta(challenge);
 
   for (const { spaceId, recipientId } of await targetsOf(challenge)) {
     const scopeKey = `${challenge.id}:${spaceId}:${recipientId || ''}`;
     const existing = await prisma.chatTopic.findUnique({ where: { scopeKey } });
     if (existing) {
-      await prisma.chatMessage.update({ where: { id: existing.messageId }, data: { meta, body: challenge.title } });
+      const current = await prisma.chatMessage.findUnique({ where: { id: existing.messageId }, select: { meta: true } });
+      const finalAnswer = (current?.meta as any)?.finalAnswer;
+      await prisma.chatMessage.update({ where: { id: existing.messageId }, data: { meta: { ...meta, finalAnswer }, body: challenge.title } });
       await publishUpdate(existing.messageId);
       continue;
     }
@@ -87,6 +92,16 @@ export async function removeChallengeCards(challengeId: string): Promise<void> {
     await prisma.chatMessage.update({ where: { id: t.messageId }, data: { deletedAt: new Date() } });
     await publishUpdate(t.messageId);
   }
+}
+
+/** Challenges still running when chat is switched on get their cards too. */
+export async function backfillChallengeCards(): Promise<void> {
+  const running = await prisma.challenge.findMany({
+    where: { chatTopics: { none: {} }, rankingFinalizedAt: null, OR: [{ dueDate: null }, { dueDate: { gt: new Date() } }] },
+    select: { id: true },
+    take: 500,
+  });
+  for (const c of running) await syncChallengeCards(c.id);
 }
 
 export async function requireTopic(actor: ChatActor, topicId: string) {
@@ -111,6 +126,32 @@ export const closeTopic = handler(async (req, res, actor) => {
   res.json({ status: 'closed' });
 });
 
+/** The message the group settled on. It goes on the card and into the answer's record. */
+export const setFinalAnswer = handler(async (req, res, actor) => {
+  const { topic, moderator } = await requireTopic(actor, req.params.id);
+  if (!moderator) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
+  const message = await prisma.chatMessage.findFirst({ where: { id: String(req.body?.messageId || ''), threadRootId: topic.messageId, deletedAt: null } });
+  if (!message) throw new ChatError(400, 'پیام انتخاب‌شده در این گفتگو نیست');
+  await prisma.chatTopic.update({ where: { id: topic.id }, data: { finalMessageId: message.id } });
+  const meta = { ...((topic.message.meta as any) ?? {}), finalAnswer: message.body.slice(0, 500) };
+  await prisma.chatMessage.update({ where: { id: topic.messageId }, data: { meta } });
+  await publishUpdate(topic.messageId);
+  res.json({ success: true });
+});
+
+/** From a challenge to its conversation: the first card this user can see. */
+export const topicByChallenge = handler(async (req, res, actor) => {
+  const topics = await prisma.chatTopic.findMany({ where: { challengeId: req.params.id, message: { deletedAt: null } }, orderBy: { createdAt: 'asc' } });
+  for (const t of topics) {
+    const seen = await requireSpace(actor, t.spaceId).catch(() => null);
+    if (!seen) continue;
+    if (seen.space.type === 'arena' && topics.length > 1) continue; // one's own caravan comes first
+    const message = await prisma.chatMessage.findUniqueOrThrow({ where: { id: t.messageId }, include: MESSAGE_INCLUDE });
+    return res.json({ spaceId: t.spaceId, message: serializeMessage(message) });
+  }
+  throw new ChatError(404, 'گفتگویی برای این چالش در دسترس نیست');
+});
+
 export const reopenTopic = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
@@ -132,7 +173,7 @@ export function isReadableColor(hex: string): boolean {
 
 export const listTags = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
-  const staff = canModerate(actor, space);
+  const staff = canTag(actor, space);
   const tags = await prisma.chatTag.findMany({
     where: { archivedAt: null, OR: [{ spaceId: space.id }, { spaceId: null }], ...(staff ? {} : { visibility: 'public' }) },
     orderBy: { name: 'asc' },
@@ -142,7 +183,7 @@ export const listTags = handler(async (req, res, actor) => {
 
 export const createTag = handler(async (req, res, actor) => {
   const { space } = await requireSpace(actor, req.params.id);
-  if (!canModerate(actor, space)) throw new ChatError(403, 'اجازه‌ی ساخت تگ ندارید');
+  if (!canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی ساخت تگ ندارید');
   const name = String(req.body?.name || '').trim().slice(0, 30);
   const color = String(req.body?.color || '');
   if (!name) throw new ChatError(400, 'نام تگ الزامی است');
@@ -173,7 +214,7 @@ export const archiveTag = handler(async (req, res, actor) => {
 
 export const toggleMessageTag = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
-  if (!canModerate(actor, space)) throw new ChatError(403, 'اجازه‌ی تگ‌گذاری ندارید');
+  if (!canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی تگ‌گذاری ندارید');
   const tagId = String(req.body?.tagId || '');
   const tag = await prisma.chatTag.findUnique({ where: { id: tagId } });
   if (!tag || tag.archivedAt || (tag.spaceId && tag.spaceId !== space.id)) throw new ChatError(400, 'تگ معتبر نیست');
@@ -189,12 +230,7 @@ export const toggleMark = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
   const mark = String(req.body?.mark || '');
   if (!['best', 'evidence'].includes(mark)) throw new ChatError(400, 'نشان معتبر نیست');
-  let allowed = canModerate(actor, space);
-  if (!allowed && message.threadRootId) {
-    const topic = await prisma.chatTopic.findUnique({ where: { messageId: message.threadRootId } });
-    if (topic) allowed = (await requireTopic(actor, topic.id)).moderator;
-  }
-  if (!allowed) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
+  if (!canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const marks = message.marks.includes(mark) ? message.marks.filter(m => m !== mark) : [...message.marks, mark];
   await prisma.chatMessage.update({ where: { id: message.id }, data: { marks } });
   await publishUpdate(message.id);

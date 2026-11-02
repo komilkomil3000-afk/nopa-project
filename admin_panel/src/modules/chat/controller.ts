@@ -6,24 +6,24 @@ import prisma from '../../config/db';
 import { AuthRequest } from '../../middleware/auth';
 import { ALLOWED_UPLOADS } from '../../controllers/mediaController';
 import { getChatSettings } from '../../services/chatSettings';
-import { canModerate, canPostTopLevel, canReply, canStartDirect, ChatActor } from './access';
+import { canModerate, canPostTopLevel, canReply, canStartDirect, canTag, ChatActor } from './access';
 import { blockedWord, runCommand } from './bots';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
 import { emitToSpace, refreshUserRooms } from './realtime';
 import { ensureOpenCase } from './support';
 import {
-  attachmentKind, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
+  attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
   randomStorageName, REACTION_TYPES, serializeMessage, signFileUrl, verifyFileToken, visibleSpaces,
 } from './service';
 
-const FILES_DIR = process.env.CHAT_FILES_DIR || path.join(__dirname, '../../../chat-files');
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
-fs.mkdirSync(FILES_DIR, { recursive: true });
+const DAILY_UPLOAD_BYTES = 200 * 1024 * 1024;
+fs.mkdirSync(CHAT_FILES_DIR, { recursive: true });
 
 export const chatUpload = multer({
   storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, FILES_DIR),
+    destination: (_req, _file, cb) => cb(null, CHAT_FILES_DIR),
     filename: (_req, file, cb) => cb(null, randomStorageName(path.extname(file.originalname).toLowerCase())),
   }),
   limits: { fileSize: MAX_FILE_BYTES, files: 1 },
@@ -68,6 +68,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       canPost: canPostTopLevel(actor, s),
       canReply: canReply(actor, s),
       canModerate: canModerate(actor, s),
+      canTag: canTag(actor, s),
       lastMessage: last && {
         senderName: last.sender?.name || '',
         preview: last.deletedAt ? '' : (last.body.slice(0, 80) || (last.kind === 'file' ? 'فایل' : '')),
@@ -131,7 +132,7 @@ export const listMessages = handler(async (req, res, actor) => {
     include: MESSAGE_INCLUDE,
   });
   const ordered = afterSeq ? rows : rows.reverse();
-  const staffTags = canModerate(actor, space)
+  const staffTags = canTag(actor, space)
     ? Object.fromEntries(ordered.map(m => [m.id, m.tags.map(t => t.tag).filter(t => t.visibility === 'staff')]).filter(([, tags]) => tags.length))
     : {};
   res.json({ messages: ordered.map(serializeMessage), lastReadSeq: member?.lastReadSeq ?? 0, staffTags });
@@ -142,7 +143,9 @@ export const sendMessage = handler(async (req, res, actor) => {
   const body = String(req.body?.body || '').trim();
   const threadRootId = req.body?.threadRootId ? String(req.body.threadRootId) : undefined;
   const attachmentIds: string[] = Array.isArray(req.body?.attachmentIds) ? req.body.attachmentIds.map(String) : [];
-  const mentions: string[] = Array.isArray(req.body?.mentions) ? req.body.mentions.map(String).slice(0, 20) : [];
+  const asked: string[] = Array.isArray(req.body?.mentions) ? req.body.mentions.map(String).slice(0, 20) : [];
+  const people = asked.length ? new Set((await peopleOf(space)).map(p => p.id)) : new Set<string>();
+  const mentions = asked.filter(id => people.has(id));
 
   if (!body && attachmentIds.length === 0) throw new ChatError(400, 'پیام خالی است');
   if (body.length > MAX_BODY) throw new ChatError(400, `پیام نباید بیشتر از ${MAX_BODY} نویسه باشد`);
@@ -179,10 +182,18 @@ export const sendMessage = handler(async (req, res, actor) => {
   res.status(created ? 201 : 200).json(message);
 });
 
+/** A closed challenge's conversation is the evidence of its evaluation. */
+async function assertNotEvidence(threadRootId: string | null) {
+  if (!threadRootId) return;
+  const topic = await prisma.chatTopic.findUnique({ where: { messageId: threadRootId } });
+  if (topic && topic.status !== 'open') throw new ChatError(403, 'پس از بسته‌شدن چالش، پیام‌های آن قابل تغییر نیست');
+}
+
 export const editMessage = handler(async (req, res, actor) => {
   const { message } = await requireMessage(actor, req.params.id);
   if (message.senderId !== actor.id) throw new ChatError(403, 'فقط پیام خودتان را می‌توانید ویرایش کنید');
   if (message.deletedAt) throw new ChatError(400, 'این پیام حذف شده است');
+  await assertNotEvidence(message.threadRootId);
   const body = String(req.body?.body || '').trim();
   if (!body || body.length > MAX_BODY) throw new ChatError(400, 'متن پیام معتبر نیست');
   await prisma.chatMessage.update({ where: { id: message.id }, data: { body, editedAt: new Date() } });
@@ -192,6 +203,7 @@ export const editMessage = handler(async (req, res, actor) => {
 export const deleteMessage = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
   if (message.senderId !== actor.id && !canModerate(actor, space)) throw new ChatError(403, 'اجازه‌ی حذف این پیام را ندارید');
+  if (!canModerate(actor, space)) await assertNotEvidence(message.threadRootId);
   await prisma.chatMessage.update({ where: { id: message.id }, data: { deletedAt: new Date(), deletedBy: actor.id, pinnedAt: null } });
   res.json(serializeMessage(await publishUpdate(message.id)));
 });
@@ -274,17 +286,43 @@ export const searchMessages = handler(async (req, res, actor) => {
   res.json(rows.map(serializeMessage));
 });
 
-/** People a member can mention in a space. */
-export const listPeople = handler(async (req, res, actor) => {
-  const { space } = await requireSpace(actor, req.params.id);
+async function peopleOf(space: { id: string; caravanId: string | null }) {
   const select = { id: true, name: true, avatarUrl: true, role: true, gender: true };
   if (space.caravanId) {
     const caravan = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { mentor: { select } } });
     const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student' }, select, take: 200 });
-    return res.json([...(caravan?.mentor ? [caravan.mentor] : []), ...members]);
+    return [...(caravan?.mentor ? [caravan.mentor] : []), ...members];
   }
   const members = await prisma.chatMember.findMany({ where: { spaceId: space.id }, select: { user: { select } }, take: 200 });
-  res.json(members.map(m => m.user));
+  return members.map(m => m.user);
+}
+
+/** People a member can mention in a space. */
+export const listPeople = handler(async (req, res, actor) => {
+  const { space } = await requireSpace(actor, req.params.id);
+  res.json(await peopleOf(space));
+});
+
+/** Moderators silence a member for a while; 0 lifts it. */
+export const muteMember = handler(async (req, res, actor) => {
+  const { space } = await requireSpace(actor, req.params.id);
+  if (!canModerate(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
+  const minutes = Number(req.body?.minutes);
+  if (!Number.isInteger(minutes) || minutes < 0 || minutes > 7 * 24 * 60) throw new ChatError(400, 'مدت معتبر نیست');
+  const mutedUntil = minutes ? new Date(Date.now() + minutes * 60000) : null;
+  await prisma.chatMember.upsert({
+    where: { spaceId_userId: { spaceId: space.id, userId: req.params.userId } },
+    update: { mutedUntil },
+    create: { spaceId: space.id, userId: req.params.userId, mutedUntil },
+  });
+  res.json({ mutedUntil });
+});
+
+/** Stations this conversation has material from, for the filter. */
+export const listSpaceStations = handler(async (req, res, actor) => {
+  const { space } = await requireSpace(actor, req.params.id);
+  const rows = await prisma.chatMessage.findMany({ where: { spaceId: space.id, stationId: { not: null } }, distinct: ['stationId'], select: { stationId: true } });
+  res.json(await prisma.station.findMany({ where: { id: { in: rows.map(r => r.stationId!) } }, select: { id: true, title: true }, orderBy: { orderIndex: 'asc' } }));
 });
 
 export const uploadFile = handler(async (req, res, actor) => {
@@ -292,6 +330,9 @@ export const uploadFile = handler(async (req, res, actor) => {
   if (!file) throw new ChatError(400, 'فایلی ارسال نشده است');
   try {
     const { space } = await requireSpace(actor, String(req.body?.spaceId || ''));
+    const day = new Date(Date.now() - 24 * 3600 * 1000);
+    const used = await prisma.chatAttachment.aggregate({ where: { uploaderId: actor.id, createdAt: { gte: day } }, _sum: { size: true } });
+    if ((used._sum.size || 0) + file.size > DAILY_UPLOAD_BYTES) throw new ChatError(400, 'سهمیه‌ی ارسال فایل امروز شما تمام شده است');
     const attachment = await prisma.chatAttachment.create({
       data: {
         spaceId: space.id,
@@ -316,14 +357,14 @@ export async function serveFile(req: AuthRequest, res: Response) {
     const { id } = req.params;
     if (!verifyFileToken(id, String(req.query.t || ''))) return res.status(403).json({ error: 'لینک فایل معتبر نیست' });
     if ((await getChatSettings()).mode === 'off') return res.status(403).json({ error: 'بخش چت غیرفعال است', code: 'CHAT_DISABLED' });
-    const attachment = await prisma.chatAttachment.findUnique({ where: { id } });
-    if (!attachment) return res.status(404).json({ error: 'فایل یافت نشد' });
+    const attachment = await prisma.chatAttachment.findUnique({ where: { id }, include: { message: { select: { deletedAt: true } } } });
+    if (!attachment || attachment.message?.deletedAt) return res.status(404).json({ error: 'فایل یافت نشد' });
 
     const inline = attachment.kind !== 'file';
     res.setHeader('Content-Type', attachment.mime);
     res.setHeader('Cache-Control', 'private, max-age=3600');
     res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(attachment.name)}`);
-    res.sendFile(path.basename(attachment.storageKey), { root: path.resolve(FILES_DIR) });
+    res.sendFile(path.basename(attachment.storageKey), { root: path.resolve(CHAT_FILES_DIR) });
   } catch (e) {
     console.error('chat serveFile error:', e);
     res.status(500).json({ error: 'خطا در دریافت فایل' });

@@ -1,0 +1,106 @@
+const { assert, prisma, ROOT, jwt, run, chromePath, hasChrome } = require('./harness');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+const { io } = require('socket.io-client');
+
+run(async () => {
+  const { origin, mk: mkUser, call: callApi, stop, wait: pause, realtime } = await require('./harness').start(5091);
+  const base = origin + '/api/v1';
+  const mk = mkUser, call = callApi;
+  const { changeBalance } = require('../../dist/services/ledger.js');
+  const { getEconomyPolicy, DEFAULT_ECONOMY } = require('../../dist/services/economy.js');
+  {
+  const p = await getEconomyPolicy();
+  assert.equal(p.version, 1); assert.deepEqual(p.config, DEFAULT_ECONOMY); console.log('policy v1 seeded OK');
+  const u = await prisma.user.create({ data: { phoneNumber: '09000000001', passwordHash: 'x', name: 't', role: 'student', zarikBalance: 100, nakh: 20 } });
+  const pay = { userId: u.id, asset: 'nakh', amount: 5, sourceType: 'submission_review', sourceId: 'sub1', reason: 'r', createdBy: 'x' };
+  const r = await Promise.allSettled(Array.from({ length: 8 }, () => prisma.$transaction(tx => changeBalance(tx, pay))));
+  assert.equal(r.filter(x => x.status === 'fulfilled').length, 1);
+  assert.equal((await prisma.user.findUnique({ where: { id: u.id } })).nakh, 25); console.log('8 parallel same payments -> 1 paid OK');
+  const debit = i => prisma.$transaction(tx => changeBalance(tx, { userId: u.id, asset: 'zarik', amount: -100, sourceType: 'test', sourceId: 'd' + i, reason: 'r', createdBy: 'x' }));
+  const d = await Promise.allSettled([0, 1, 2, 3, 4, 5].map(debit));
+  assert.equal(d.filter(x => x.status === 'fulfilled').length, 1);
+  assert.equal((await prisma.user.findUnique({ where: { id: u.id } })).zarikBalance, 0);
+  assert.equal(await prisma.zarikTransaction.count({ where: { userId: u.id } }), 1); console.log('6 parallel debits of whole balance -> 1 passed, never negative OK');
+  const v = await prisma.user.create({ data: { phoneNumber: '09000000002', passwordHash: 'x', name: 'v', role: 'student', zarikBalance: 7, farsh: 2 } });
+  const fs = require('fs');
+  const sql = fs.readFileSync('prisma/migrations/20261043_economy_policy_and_ledger/migration.sql', 'utf8');
+  await prisma.$executeRawUnsafe(sql.slice(sql.indexOf('INSERT INTO "AssetTransaction"')).replace(/;\s*$/, '').replace('WHERE b.amount <> 0', `WHERE b.amount <> 0 AND u."id" = '${v.id}'`));
+  const rows = await prisma.assetTransaction.findMany({ where: { userId: v.id } });
+  assert.deepEqual(rows.map(x => [x.asset, x.amount]).sort(), [['farsh', 2], ['zarik', 7]]); console.log('opening balance rows OK');
+  }
+
+  const admin = await mk('admin');
+  const sub = await mk('sub_admin');
+  const m1 = await mk('mentor'), m2 = await mk('mentor');
+  const c1 = await prisma.caravan.create({ data: { name: 'c1', mentorId: m1.id } });
+  const c2 = await prisma.caravan.create({ data: { name: 'c2', mentorId: m2.id } });
+  const s1 = await mk('student', { caravanId: c1.id, nakh: 25, farsh: 0, zarikBalance: 1000 });
+  const s2 = await mk('student', { caravanId: c2.id });
+  const conv = (b) => call(s1, 'POST', '/caravans/submit-exchange', b);
+
+  assert.equal((await call(s1, 'GET', '/economy')).body.nakhValue, 5000);
+  assert.equal((await conv({ sourceAsset: 'زریک', targetAsset: 'کلاف', sourceAmount: 500 })).status, 400); console.log('buying nakh rejected OK');
+  assert.equal((await conv({ sourceAsset: 'کلاف', targetAsset: 'قالیچه', sourceAmount: 5 })).status, 400); console.log('old rate 5 rejected OK');
+  const before = (await call(s1, 'GET', '/leagues/wealthiest')).body.find(x => x.id === s1.id).capital;
+  assert.equal(before, 1000 + 25 * 5000);
+  assert.equal((await conv({ sourceAsset: 'کلاف', targetAsset: 'قالیچه', sourceAmount: 20 })).status, 200);
+  const sale = await conv({ sourceAsset: 'قالیچه', targetAsset: 'زریک', sourceAmount: 1 });
+  assert.equal(sale.status, 200);
+  let u = await prisma.user.findUnique({ where: { id: s1.id } });
+  assert.deepEqual([u.nakh, u.farsh, u.zarikBalance], [5, 1, 51000]);
+  assert.equal((await call(s1, 'GET', '/leagues/wealthiest')).body.find(x => x.id === s1.id).capital, before); console.log('convert + sell keep ranking capital OK');
+  const leg = await prisma.assetTransaction.aggregate({ where: { userId: s1.id, asset: 'zarik' }, _sum: { amount: true } });
+  assert.equal(leg._sum.amount, 50000);
+  assert.equal((await call(admin, 'POST', `/admin/asset-conversions/${sale.body.request.id}/cancel`, { reason: 'x' })).status, 200);
+  u = await prisma.user.findUnique({ where: { id: s1.id } });
+  assert.deepEqual([u.farsh, u.zarikBalance], [2, 1000]); console.log('sale cancel restores OK');
+
+  const cfg = (await call(admin, 'GET', '/admin/economy')).body.config;
+  assert.equal((await call(sub, 'PUT', '/admin/economy', { config: cfg })).status, 403);
+  assert.equal((await call(m1, 'GET', '/admin/economy')).status, 403); console.log('economy super-admin only OK');
+  const dry = await call(admin, 'PUT', '/admin/economy', { config: { ...cfg, farshSalePrice: 60000 }, dryRun: true });
+  assert.ok(dry.body.preview.capitalAfter > dry.body.preview.capitalBefore);
+  assert.equal((await call(admin, 'GET', '/admin/economy')).body.version, 1);
+  const saved = await call(admin, 'PUT', '/admin/economy', { config: { ...cfg, nakhPerFarsh: 8 }, note: 't' });
+  assert.equal(saved.body.version, 2);
+  assert.equal((await call(s1, 'GET', '/economy')).body.nakhPerFarsh, 8);
+  assert.equal((await conv({ sourceAsset: 'کلاف', targetAsset: 'قالیچه', sourceAmount: 5 })).status, 400);
+  await prisma.user.update({ where: { id: s1.id }, data: { nakh: 8 } });
+  assert.equal((await conv({ sourceAsset: 'کلاف', targetAsset: 'قالیچه', sourceAmount: 8 })).status, 200); console.log('panel rate change applies at once OK');
+
+  assert.equal((await call(m2, 'POST', `/admin/caravans/${c1.id}/broadcast`, { message: 'x' })).status, 403);
+  assert.equal((await call(m1, 'POST', `/admin/caravans/${c1.id}/broadcast`, { message: 'x' })).status, 200); console.log('broadcast ownership OK');
+  const t = await call(s1, 'POST', '/support/tickets', { category: 'c', subject: 's' });
+  const tid = t.body.id;
+  assert.equal((await call(s2, 'POST', `/support/tickets/${tid}/reply`, { message: 'x' })).status, 403);
+  assert.equal((await call(m2, 'POST', `/support/tickets/${tid}/reply`, { message: 'x' })).status, 403);
+  assert.equal((await call(m2, 'POST', `/admin/tickets/${tid}/reply`, { message: 'x' })).status, 403);
+  assert.equal((await call(m1, 'POST', `/admin/tickets/${tid}/reply`, { message: 'x', mentorId: m2.id })).status, 200);
+  assert.equal((await prisma.supportTicketReply.findFirst({ where: { ticketId: tid } })).mentorId, m1.id);
+  assert.equal((await call(s2, 'PATCH', `/support/tickets/${tid}/resolve`, {})).status, 403);
+  assert.equal((await call(s1, 'POST', `/support/tickets/${tid}/reply`, { message: 'y' })).status, 200); console.log('ticket ownership OK');
+  assert.equal((await call(s1, "GET", `/chat/caravan/${c2.id}`)).status, 403);
+  assert.equal((await call(m1, 'GET', '/admin/chat')).status, 403); console.log('old chat closed OK');
+
+  const over = await call(m1, 'POST', '/challenges', { title: 't', description: 'd', type: 'skill', rewardAssetType: 'nakh', rewardMin: 0, rewardMax: 50, allMembers: true });
+  assert.equal(over.status, 400);
+  const legacy = await call(m1, 'POST', '/challenges', { title: 'old', description: 'd', type: 'skill', rewardAssetType: 'zarik', rewardMin: 50, rewardMax: 200, allMembers: true });
+  assert.equal(legacy.status, 201);
+  assert.deepEqual([legacy.body.rewardAssetType, legacy.body.rewardMin, legacy.body.rewardMax], ['nakh', 0, 10]); console.log('challenge rewards in nakh, capped OK');
+  const sub1 = await prisma.submission.create({ data: { challengeId: legacy.body.id, studentId: s1.id, status: 'pending' } });
+  const n0 = (await prisma.user.findUnique({ where: { id: s1.id } })).nakh;
+  const rev = await Promise.all([1, 2, 3, 4].map(() => call(m1, 'PATCH', `/submissions/${sub1.id}/review`, { status: 'approved', score: 7 })));
+  console.log('review statuses', rev.map(r => r.status).join(','));
+  assert.equal(rev.filter(r => r.status === 200).length, 1);
+  assert.equal((await prisma.user.findUnique({ where: { id: s1.id } })).nakh, n0 + 7); console.log('parallel reviews pay once OK');
+  assert.equal((await call(m1, 'PATCH', `/submissions/${sub1.id}/review`, { status: 'rejected', mentorFeedback: 'x' })).status, 200);
+  const again = await call(m1, 'PATCH', `/submissions/${sub1.id}/review`, { status: 'approved', score: 7 });
+  assert.equal(again.status, 400);
+  assert.equal((await prisma.user.findUnique({ where: { id: s1.id } })).nakh, n0 + 7); console.log('reject then re-approve pays once OK');
+  await prisma.submission.update({ where: { id: sub1.id }, data: { status: 'approved' } });
+  const del = await call(admin, 'DELETE', `/admin/challenges/${legacy.body.id}?revertRewards=true`);
+  console.log('delete status', del.status, JSON.stringify(del.body).slice(0, 120));
+  console.log('nakh after delete', (await prisma.user.findUnique({ where: { id: s1.id } })).nakh, 'expected', n0);
+  await stop();
+});

@@ -1,15 +1,17 @@
 import prisma from '../../config/db';
 import { capitalValue, getEconomyPolicy } from '../../services/economy';
-import { ChatActor, canModerate, SpaceRef } from './access';
+import fs from 'fs';
+import path from 'path';
+import { ChatActor, canModerate, managerMayEnter, SpaceRef } from './access';
 import { handler } from './http';
 import { generateInsight } from './insights';
 import { publishBotMessage, publishMessage, publishUpdate } from './publish';
-import { ChatError, ensureCaravanSpaces, globalSpace } from './service';
+import { CHAT_FILES_DIR, ChatError, ensureCaravanSpaces, globalSpace } from './service';
 import { syncChallengeCards } from './topics';
 import { buildEvaluation, suggestedNakh } from './evaluation';
 
 export const BOTS: Record<string, { name: string; settings?: object }> = {
-  announce: { name: 'ربات اعلان' },
+  announce: { name: 'ربات اعلان', settings: { templates: [] as { title: string; body: string }[] } },
   challenge: { name: 'ربات چالش' },
   station: { name: 'ربات منزلگاه' },
   moderation: { name: 'ربات نظم', settings: { bannedWords: [] as string[] } },
@@ -164,8 +166,7 @@ async function closeStationBooks(stationId: string) {
 export async function runStationEvents(now = new Date()): Promise<void> {
   const stations = await prisma.station.findMany({ orderBy: { orderIndex: 'asc' } });
   // First run ever: what is already open has been announced some other way
-  const baseline = (await prisma.stationEvent.count()) === 0;
-  if (baseline) {
+  if (await firstTime('baseline')) {
     await prisma.stationEvent.createMany({ data: stations.filter(s => stationIsOpen(s, now)).map(s => ({ key: `opened:${s.id}` })), skipDuplicates: true });
   }
   const { enabled } = await botRow('station');
@@ -215,14 +216,31 @@ export async function runChallengeReminders(now = new Date()): Promise<void> {
 /** A challenge whose card failed to appear gets it on the next round. */
 export async function runCardRepair(now = new Date()): Promise<void> {
   const since = new Date(now.getTime() - 24 * 3600 * 1000);
-  const missing = await prisma.challenge.findMany({ where: { createdAt: { gte: since }, chatTopics: { none: {} } }, select: { id: true }, take: 20 });
+  const missing = await prisma.challenge.findMany({
+    where: { chatTopics: { none: {} }, OR: [{ createdAt: { gte: since } }, { startDate: { gte: since, lte: now } }] },
+    select: { id: true },
+    take: 20,
+  });
   for (const c of missing) await syncChallengeCards(c.id);
+}
+
+/** Uploads never attached to a message, and not kept by a competition work. */
+export async function runFileCleanup(now = new Date()): Promise<void> {
+  const old = new Date(now.getTime() - 24 * 3600 * 1000);
+  const rows = await prisma.chatAttachment.findMany({ where: { messageId: null, createdAt: { lt: old } }, take: 200 });
+  if (rows.length === 0) return;
+  const kept = await prisma.interGroupEntry.findMany({ where: { fileUrl: { in: rows.map(r => r.id) } }, select: { fileUrl: true } });
+  const keep = new Set(kept.map(k => k.fileUrl));
+  for (const row of rows.filter(r => !keep.has(r.id))) {
+    await prisma.chatAttachment.delete({ where: { id: row.id } });
+    fs.unlink(path.join(CHAT_FILES_DIR, path.basename(row.storageKey)), () => undefined);
+  }
 }
 
 let worker: NodeJS.Timeout | null = null;
 export function startChatWorker(): void {
   const round = async () => {
-    for (const job of [runScheduledMessages, runStationEvents, runChallengeReminders, runCardRepair]) {
+    for (const job of [runScheduledMessages, runStationEvents, runChallengeReminders, runCardRepair, runFileCleanup]) {
       await job().catch(e => console.error('chat worker error:', e));
     }
   };
@@ -261,14 +279,17 @@ export const publishFromPanel = handler(async (req, res, actor) => {
   if (role === 'channel_manager' && !actor.permissions.publishChannels) throw new ChatError(403, 'دسترسی انتشار برای شما فعال نیست');
   const space = await prisma.chatSpace.findUnique({ where: { id: String(req.body?.spaceId || '') } });
   if (!space || ['direct', 'support'].includes(space.type)) throw new ChatError(404, 'فضا یافت نشد');
+  if (!managerMayEnter(actor, space)) throw new ChatError(403, 'دسترسی ورود به گروه‌ها برای شما فعال نیست');
   const body = String(req.body?.body || '').trim().slice(0, 4000);
-  if (!body) throw new ChatError(400, 'متن پیام الزامی است');
+  const attachmentIds: string[] = Array.isArray(req.body?.attachmentIds) ? req.body.attachmentIds.map(String) : [];
+  if (!body && attachmentIds.length === 0) throw new ChatError(400, 'متن پیام الزامی است');
+  if (req.body?.sendAt && attachmentIds.length) throw new ChatError(400, 'پیام زمان‌بندی‌شده فعلاً پیوست نمی‌پذیرد');
   if (req.body?.sendAt) {
     const sendAt = new Date(req.body.sendAt);
     if (Number.isNaN(sendAt.getTime()) || sendAt <= new Date()) throw new ChatError(400, 'زمان انتشار معتبر نیست');
     await prisma.chatScheduledMessage.create({ data: { spaceId: space.id, body, sendAt, createdBy: actor.id } });
     return res.status(201).json({ scheduled: true });
   }
-  await publishMessage({ spaceId: space.id, senderId: actor.id, body, attachmentIds: [], mentions: [] });
+  await publishMessage({ spaceId: space.id, senderId: actor.id, body, attachmentIds, mentions: [], stayOutside: true });
   res.status(201).json({ scheduled: false });
 });

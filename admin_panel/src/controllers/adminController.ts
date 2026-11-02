@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
 import { changeBalance } from '../services/ledger';
+import { capitalValue, getEconomyPolicy, topByCapital } from '../services/economy';
 import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
@@ -818,10 +819,11 @@ export async function getZarikLedger(req: AuthRequest, res: Response) {
 
 export async function getAssetLeaderboard(req: AuthRequest, res: Response) {
   try {
+    const { config } = await getEconomyPolicy();
     const students = await prisma.user.findMany({ where: { role: 'student' }, select: { id:true, name:true, phoneNumber:true, zarikBalance:true, nakh:true, beyragh:true, farsh:true } });
     const enriched = students.map(s => ({
       ...s,
-      totalAssets: (s.zarikBalance || 0) + (s.nakh || 0) + (s.beyragh || 0) + (s.farsh || 0)
+      totalAssets: capitalValue(s, config),
     }));
     enriched.sort((a,b) => b.totalAssets - a.totalAssets);
     res.json(enriched.slice(0, 200));
@@ -933,11 +935,7 @@ export async function getZarikAnalytics(req: AuthRequest, res: Response) {
       _sum: { zarikBalance: true },
     });
 
-    const topWealthy = await prisma.user.findMany({
-      take: 5,
-      orderBy: { zarikBalance: 'desc' },
-      select: { name: true, zarikBalance: true },
-    });
+    const topWealthy = await topByCapital(5);
 
     const categoriesDistribution = await prisma.zarikTransaction.groupBy({
       by: ['category'],
@@ -978,11 +976,7 @@ export async function getEconomyHub(req: AuthRequest, res: Response) {
       },
     });
 
-    const topIndividuals = await prisma.user.findMany({
-      take: 5,
-      orderBy: { zarikBalance: 'desc' },
-      select: { name: true, zarikBalance: true, nakh: true, beyragh: true, farsh: true },
-    });
+    const topIndividuals = await topByCapital(5);
 
     res.json({
       totalZarik: aggregates._sum.zarikBalance || 0,

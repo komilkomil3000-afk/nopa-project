@@ -2,7 +2,8 @@ import jwt from 'jsonwebtoken';
 import prisma from '../../config/db';
 import { getJwtSecret } from '../../config/secrets';
 import { AuthRequest } from '../../middleware/auth';
-import { ChatActor, loadActor } from './access';
+import { ChatActor, loadActor, managerMayEnter } from './access';
+import { canUseChat, getChatSettings } from '../../services/chatSettings';
 import { logAdminAction } from '../../controllers/adminController';
 import { handler, requireMessage } from './http';
 import { publishUpdate } from './publish';
@@ -67,6 +68,7 @@ function sendExport(res: any, name: string, format: string, title: string, rows:
 export const exportSpace = handler(async (req, res, actor) => {
   const space = await prisma.chatSpace.findFirst({ where: { id: req.params.id, type: { notIn: ['direct', 'support'] } } });
   if (!space) throw new ChatError(404, 'فضا یافت نشد');
+  if (!managerMayEnter(actor, space)) throw new ChatError(403, 'دسترسی ورود به گروه‌ها برای شما فعال نیست');
   if (String(actor.role).toLowerCase() === 'channel_manager' && !actor.permissions.export) throw new ChatError(403, 'دسترسی خروجی برای شما فعال نیست');
   const from = req.query.from ? new Date(String(req.query.from)) : undefined;
   const to = req.query.to ? new Date(String(req.query.to)) : undefined;
@@ -113,6 +115,10 @@ export async function serveTopicExport(req: AuthRequest, res: any) {
     const payload = jwt.verify(String(req.query.t || ''), getJwtSecret(), { algorithms: ['HS256'], audience: 'chat-export' }) as { topic?: string; user?: string };
     const actor = payload.topic === req.params.id && payload.user ? await loadActor(payload.user) : null;
     if (!actor) return res.status(403).json({ error: 'لینک معتبر نیست' });
+    const account = await prisma.user.findUnique({ where: { id: actor.id }, select: { blocked: true, isDeleted: true, accountStatus: true } });
+    if (!account || account.blocked || account.isDeleted || account.accountStatus === 'SUSPENDED' || !canUseChat(actor, await getChatSettings())) {
+      return res.status(403).json({ error: 'لینک معتبر نیست' });
+    }
     await writeTopicExport(req, res, actor);
   } catch (e) {
     res.status(e instanceof ChatError ? e.status : 403).json({ error: e instanceof ChatError ? e.message : 'لینک معتبر نیست' });
@@ -135,7 +141,7 @@ export const mentorDashboard = handler(async (_req, res, actor) => {
     }),
     prisma.chatTopic.findMany({ where: { spaceId: { in: spaceIds }, status: 'open', challenge: { dueDate: { lte: new Date(Date.now() + 48 * 3600 * 1000) } } }, include: { challenge: { select: { title: true, dueDate: true } } }, take: 10 }),
     prisma.chatTopic.count({ where: { spaceId: { in: spaceIds }, status: 'closed' } }),
-    prisma.challengeEvaluation.findMany({ where: { objection: { not: null }, topic: { spaceId: { in: spaceIds } } }, select: { topicId: true, objection: true }, take: 10 }),
+    prisma.challengeEvaluation.findMany({ where: { objectionStatus: 'pending', topic: { spaceId: { in: spaceIds } } }, select: { topicId: true, userId: true, objection: true }, take: 10 }),
     prisma.user.findMany({ where: { caravanId: { in: caravanIds }, role: 'student' }, select: { id: true, name: true } }),
     prisma.chatMessage.findMany({ where: { spaceId: { in: spaceIds }, createdAt: { gte: new Date(Date.now() - 7 * 24 * 3600 * 1000) } }, distinct: ['senderId'], select: { senderId: true } }),
   ]);
