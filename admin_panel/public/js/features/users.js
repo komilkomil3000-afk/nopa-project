@@ -22,7 +22,7 @@ async function loadLevelsAndCertificatesTab() {
       
       let physicalReqs = 'ندارد';
       if (user.physicalOrders && user.physicalOrders.length > 0) {
-        physicalReqs = user.physicalOrders.map(o => `<span class="badge u-c-black" style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
+        physicalReqs = user.physicalOrders.map(o => `<span class="badge u-c-black" data-style="background:${o.status === 'PENDING_PRINT' ? 'var(--accent)' : 'var(--success)'}">${o.status === 'PENDING_PRINT' ? 'در انتظار چاپ' : 'ارسال شده'}</span>`).join(' ');
       }
 
       const tr = document.createElement('tr');
@@ -121,7 +121,7 @@ async function loadUsers() {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${u.userCode || '-'}</td>
-        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-2xs">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-2xs" style="background:#db2777">زن</span>' : ''} ${blockBadge}</td>
+        <td><strong>${esc(u.name)}</strong> ${u.gender === 'male' ? '<span class="badge u-bg-info-strong u-c-white u-fs-2xs">مرد</span>' : u.gender === 'female' ? '<span class="badge u-c-white u-fs-2xs u-bg-pink-strong">زن</span>' : ''} ${blockBadge}</td>
         <td class="u-mono">${esc(u.phoneNumber)}</td>
         <td>${roleBadge}</td>
         <td>${esc(u.caravanName || '-')}</td>
@@ -130,7 +130,7 @@ async function loadUsers() {
         <td>
           <div class="u-flex u-items-center u-gap-8">
             <div class="progress-bar-container u-flex-1 u-m-0 u-w-60">
-              <div class="progress-bar-fill" style="width: ${Number(u.completionRate) || 0}%"></div>
+              <div class="progress-bar-fill" data-style="width: ${Number(u.completionRate) || 0}%"></div>
             </div>
             <span class="u-fs-2xs">${Number(u.completionRate) || 0}%</span>
           </div>
@@ -138,7 +138,7 @@ async function loadUsers() {
         <td>
           <button title="مشاهده‌ی جزئیات کاربر" aria-label="مشاهده‌ی جزئیات کاربر" class="page-btn btn-view u-p-4-8 u-fs-2xs" data-click="viewUserDetails" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-eye"></i></button>
           <button title="ویرایش کاربر" aria-label="ویرایش کاربر" class="page-btn btn-edit u-p-4-8 u-fs-2xs" data-click="openUserModal" data-click-args="${esc(JSON.stringify([String(u.id), String(u.name), String(u.role), String(u.caravanId || ''), (u.levelFrame), (u.mentorLevel || 1), String(u.nationalId || ''), String(u.dateOfBirth || '')]))}"><i class="fa-solid fa-edit"></i></button>
-          <button title="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" aria-label="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" class="page-btn btn-block u-p-4-8 u-fs-2xs" style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
+          <button title="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" aria-label="${u.blocked ? 'رفع مسدودیت' : 'مسدود کردن'}" class="page-btn btn-block u-p-4-8 u-fs-2xs" data-style="color: ${u.blocked ? 'var(--color-success)' : 'var(--color-warning)'}" data-click="toggleBlockUser" data-click-args="${esc(JSON.stringify([String(u.id), (!u.blocked)]))}"><i class="fa-solid ${u.blocked ? 'fa-unlock' : 'fa-ban'}"></i></button>
           <button title="حذف کاربر" aria-label="حذف کاربر" class="page-btn btn-delete u-p-4-8 u-fs-2xs u-c-color-danger" data-click="deleteUser" data-click-args="${esc(JSON.stringify([String(u.id)]))}"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
@@ -231,7 +231,7 @@ async function viewUserDetails(userId) {
               </div>
             </div>
 
-            <div id="tab-class-progress" class="drawer-tab-content" style="display:none;">
+            <div id="tab-class-progress" class="drawer-tab-content" data-style="display:none;">
               <div class="panel-card glass u-p-14">
                 <!-- 5 Stats Summary Cards Bar -->
                 <div class="u-grid u-cols-fit-115 u-gap-8 u-mb-14">
@@ -251,8 +251,8 @@ async function viewUserDetails(userId) {
                     <div class="u-fs-2xs u-c-accent-text u-bold"><i class="fa-solid fa-spell-check"></i> آزمون‌ها</div>
                     <div id="drawer-stat-quizzes" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
-                  <div class="u-r-10 u-p-10 u-text-center" style="background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.3)">
-                    <div class="u-fs-2xs u-bold" style="color: #f472b6"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
+                  <div class="u-r-10 u-p-10 u-text-center u-bg-pink-12 u-bd-pink-30">
+                    <div class="u-fs-2xs u-bold u-c-pink-text"><i class="fa-solid fa-trophy"></i> چالش‌ها</div>
                     <div id="drawer-stat-challenges" class="u-fs-md u-fw-800 u-c-text u-mt-4">۰ از ۰</div>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ async function viewUserDetails(userId) {
                         <th class="u-w-140"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> کلاس</th>
                         <th class="u-w-150"><i class="fa-solid fa-circle-play u-c-success-text"></i> پارت</th>
                         <th class="u-w-130"><i class="fa-solid fa-spell-check u-c-accent-text"></i> آزمون</th>
-                        <th class="u-w-140"><i class="fa-solid fa-trophy" style="color: #f472b6;"></i> چالش</th>
+                        <th class="u-w-140"><i class="fa-solid fa-trophy u-c-pink-text"></i> چالش</th>
                         <th class="u-w-110 u-text-center">وضعیت پیشرفت</th>
                       </tr>
                     </thead>
@@ -293,7 +293,7 @@ async function viewUserDetails(userId) {
               </div>
             </div>
 
-            <div id="tab-support" class="drawer-tab-content" style="display:none;">
+            <div id="tab-support" class="drawer-tab-content" data-style="display:none;">
               <div class="panel-card glass u-p-12 u-mb-12">
                 <h5 class="u-c-color-neon-blue u-bb-fg-10 u-pb-6">اطلاعات کاروان</h5>
                 <p class="u-mt-10"><strong>نام کاروان:</strong> ${esc(user.caravanName || 'در هیچ کاروانی عضو نیست')}</p>
@@ -308,7 +308,7 @@ async function viewUserDetails(userId) {
         </div>
       </div>
       
-      <div id="mentor-view-container" class="u-p-20" style="display:none">
+      <div id="mentor-view-container" class="u-p-20" data-style="display:none">
         <h3 class="u-c-color-warning u-text-center u-mb-20">داشبورد و آمار اختصاصی راهبر</h3>
         <div class="grid-cards u-cols-2">
            <div class="stat-card glass">
@@ -687,17 +687,17 @@ window.renderDrawerClassProgressTable = function() {
     if (r.clips && r.clips.length > 0) {
       partCell = `
         <div class="u-flex u-col u-gap-4">
-          <span class="badge u-fs-2xs u-w-fit-content" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
+          <span class="badge u-fs-2xs u-w-fit-content" data-style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.2)' : 'rgb(var(--primary-rgb) / 0.15)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--primary)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--primary-rgb) / 0.3)'}">
             <i class="fa-solid fa-circle-play u-ml-4"></i>${r.clips.length} پارت
           </span>
-          <div class="u-fs-2xs" style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
+          <div class="u-fs-2xs" data-style="color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}">
             ${r.isWatched ? 'کامل مشاهده شده' : `${esc(r.clips[0]?.title || 'پارت ۱')} (مشاهده نشده)`}
           </div>
         </div>`;
     } else if (r.sessionId) {
       partCell = `
         <div class="u-flex u-items-center u-gap-6">
-          <span class="badge u-fs-2xs" style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
+          <span class="badge u-fs-2xs" data-style="background:${r.isWatched ? 'rgb(var(--success-rgb) / 0.18)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${r.isWatched ? 'var(--success-text)' : 'var(--text-muted)'}; border: 1px solid ${r.isWatched ? 'rgb(var(--success-rgb) / 0.3)' : 'rgb(var(--fg-rgb) / 0.1)'}">
             <i class="fa-solid ${r.isWatched ? 'fa-check' : 'fa-video'} u-ml-4"></i>${r.isWatched ? '۱ پارت (مشاهده شده)' : '۱ پارت اصلی'}
           </span>
         </div>`;
@@ -772,7 +772,7 @@ window.renderDrawerClassProgressTable = function() {
       } else {
         challengeCell = `
           <div class="u-flex u-col u-gap-4">
-            <span class="badge u-fs-2xs u-w-fit-content" style="background:rgba(236, 72, 153, 0.12); color:#f472b6; border: 1px solid rgba(236, 72, 153, 0.25)">
+            <span class="badge u-fs-2xs u-w-fit-content u-bg-pink-12 u-c-pink-text u-bd-pink-25">
               <i class="fa-regular fa-circle u-ml-4"></i>انجام نشده (${chTypeLabel})
             </span>
             <span class="u-fs-2xs u-c-text-secondary" title="${esc(ch.title)}">${esc(ch.title)}</span>
@@ -790,9 +790,9 @@ window.renderDrawerClassProgressTable = function() {
     const progressCell = `
       <div class="u-flex u-col u-items-center u-gap-4 u-minw-85">
         <div class="u-w-full u-h-6 u-bg-fg-10 u-r-4 u-overflow-hidden">
-          <div class="u-h-full u-r-4 u-tr-width-0_3s-ease" style="width:${pct}%; background:${barColor}"></div>
+          <div class="u-h-full u-r-4 u-tr-width-0_3s-ease" data-style="width:${pct}%; background:${barColor}"></div>
         </div>
-        <span class="u-fs-2xs u-bold" style="color:${barColor}">${statusText}</span>
+        <span class="u-fs-2xs u-bold" data-style="color:${barColor}">${statusText}</span>
       </div>`;
 
     return `

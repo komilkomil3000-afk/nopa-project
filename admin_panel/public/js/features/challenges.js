@@ -93,7 +93,7 @@ function renderAdminChallenges(challenges) {
     let creatorBadge = '';
     if (isByAdmin) {
       creatorBadge = `
-        <span class="badge u-fw-800 u-fs-xs u-p-4-10 u-inline-flex u-items-center u-gap-6 u-nowrap" style="background: linear-gradient(135deg, rgb(var(--primary-rgb) / 0.25), rgba(236, 72, 153, 0.25)); color: #f472b6; border: 1px solid rgba(244, 114, 182, 0.45)">
+        <span class="badge u-fw-800 u-fs-xs u-p-4-10 u-inline-flex u-items-center u-gap-6 u-nowrap u-grad-primary-pink-soft u-c-pink-text u-bd-pink-45">
           <i class="fa-solid fa-shield-halved"></i> توسط مدیر سیستم
         </span>
       `;
@@ -323,7 +323,7 @@ window.openChallengeRanking = async function(challengeId) {
 
     if (data.challenge.finalized) {
       body.innerHTML = '<div class="u-mb-10 u-c-success-text"><i class="fa-solid fa-circle-check"></i> رتبه‌بندی تایید شده و درفش‌ها اعطا شده‌اند.</div>' +
-        data.result.map(r => `<div class="u-flex u-justify-between u-p-8-12 u-mb-6 u-bg-fg-4 u-r-8"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
+        data.result.map(r => `<div class="u-flex u-justify-between u-p-8-12 u-mb-6 u-bg-fg-4 u-r-8"><span>${r.rank ? 'رتبه ' + r.rank + ': ' : ''}${esc(r.caravanName)}</span><b data-style="color:${tierColor[r.tier]};">${esc(tierName[r.tier])}</b></div>`).join('');
       return;
     }
     if (!data.caravans.length) {
@@ -335,7 +335,7 @@ window.openChallengeRanking = async function(challengeId) {
     const options = '<option value="">انتخاب کاروان...</option>' + data.caravans.map(c => `<option value="${c.id}">${esc(c.name)}${c.mentorName ? ' - ' + esc(c.mentorName) : ''} (${c.answers} پاسخ)</option>`).join('');
     let html = `<div class="u-mb-12 u-c-text-muted">${data.caravans.length} کاروان شرکت کرده‌اند. بقیه‌ی کاروان‌ها ${esc(tierName.cloth)} می‌گیرند. این تایید قابل بازگشت نیست.</div>`;
     for (let i = 0; i < places; i++) {
-      html += `<label class="u-block u-fs-xs u-bold u-m-10-0-4" style="color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]}">${placeLabel[i]}</label>
+      html += `<label class="u-block u-fs-xs u-bold u-m-10-0-4" data-style="color:${[tierColor.gold, tierColor.silver, tierColor.bronze][i]}">${placeLabel[i]}</label>
         <select class="ranking-select u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text">${options}</select>`;
     }
     html += `<button type="button" data-click="submitChallengeRanking" data-click-args="${esc(JSON.stringify([String(challengeId), (places)]))}" class="u-mt-16 u-w-full u-p-10 u-bg-accent u-c-text-soft u-bold u-bd-none u-r-8 u-pointer">تایید نهایی رتبه‌بندی و اعطای درفش</button>`;
@@ -782,8 +782,8 @@ window.openChallengeStepsModal = function(challengeId) {
               ${opts.map((opt, oIdx) => {
                 const isCorrect = (oIdx === correctIdx);
                 return `
-                  <div class="u-flex u-items-center u-gap-10 u-p-8-12 u-r-8 u-fs-sm" style="background: ${isCorrect ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--shade-rgb) / 0.2)'}; border: 1px solid ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color: ${isCorrect ? 'var(--success-text)' : 'var(--border-strong)'}">
-                    <span class="u-w-22 u-h-22 u-r-50p u-flex u-items-center u-justify-center u-fs-2xs u-c-white u-bold" style="background: ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.1)'}">${oIdx + 1}</span>
+                  <div class="u-flex u-items-center u-gap-10 u-p-8-12 u-r-8 u-fs-sm" data-style="background: ${isCorrect ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--shade-rgb) / 0.2)'}; border: 1px solid ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color: ${isCorrect ? 'var(--success-text)' : 'var(--border-strong)'}">
+                    <span class="u-w-22 u-h-22 u-r-50p u-flex u-items-center u-justify-center u-fs-2xs u-c-white u-bold" data-style="background: ${isCorrect ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.1)'}">${oIdx + 1}</span>
                     <span class="u-flex-1">${esc(opt)}</span>
                     ${isCorrect ? '<span class="u-c-success-text u-bold u-fs-2xs"><i class="fa-solid fa-check"></i> گزینه صحیح</span>' : ''}
                   </div>
@@ -1103,7 +1103,7 @@ function renderAdminSubmissions(submissions) {
         </td>
         <td>
           <div class="u-maxw-250">
-            <div role="button" tabindex="0" class="u-fs-sm u-c-text u-lh-1_5 u-maxh-44 u-overflow-hidden u-ellipsis u-pointer" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="برای مشاهده کامل پاسخ کلیک فرمایید">
+            <div role="button" tabindex="0" class="u-fs-sm u-c-text u-lh-1_5 u-maxh-44 u-overflow-hidden u-ellipsis u-pointer u-clamp-2" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" title="برای مشاهده کامل پاسخ کلیک فرمایید">
               ${esc(answer)}
             </div>
             <button type="button" data-click="openViewSubmissionModal" data-click-args="${esc(JSON.stringify([String(s.id)]))}" class="u-bg-none u-bd-none u-c-primary-text u-fs-2xs u-pointer u-p-4-0-0-0 u-inline-flex u-items-center u-gap-4 u-bold">

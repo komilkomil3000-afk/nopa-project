@@ -27,7 +27,7 @@
     const fam = STATUS_FAMILY[key];
     const tint = fam ? `rgb(var(--${fam}-rgb) / ` : 'rgb(var(--muted-rgb) / ';
     const text = fam ? `var(--${fam}-text)` : 'var(--text-muted)';
-    return `<span class="u-p-2-10 u-r-8 u-fs-xs u-bold" style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4)">${esc(STATUS_LABEL[key] || key)}</span>`;
+    return `<span class="u-p-2-10 u-r-8 u-fs-xs u-bold" data-style="background:${tint}0.13); color:${text}; border:1px solid ${tint}0.4)">${esc(STATUS_LABEL[key] || key)}</span>`;
   }
 
   function ensureView() {
@@ -71,7 +71,7 @@
           <tbody id="support-tbody"></tbody>
         </table>
       </div>
-      <div id="support-ticket-modal" class="modal-overlay u-items-center u-justify-center" style="display:none">
+      <div id="support-ticket-modal" class="modal-overlay u-items-center u-justify-center" data-style="display:none">
         <div class="modal-content glass u-maxw-760 u-w-92p u-flex u-col u-bg-surface-2-97">
           <div class="modal-header u-bb-fg-10">
             <h3 id="support-modal-title" class="u-m-0">پیام پشتیبانی</h3>

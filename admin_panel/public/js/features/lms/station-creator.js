@@ -32,7 +32,7 @@ window.addGalleryItemCard = function(containerId, data = null) {
       </div>
       <div class="u-flex u-gap-10 u-items-start">
         ${isImage
-          ? `<img class="modal-anim-preview u-w-64 u-h-64 u-fit-cover u-r-8 u-bd-border-strong u-bg-surface" src="${esc(url)}" alt="" style="${url ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">`
+          ? `<img class="modal-anim-preview u-w-64 u-h-64 u-fit-cover u-r-8 u-bd-border-strong u-bg-surface" src="${esc(url)}" alt="" data-style="${url ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">`
           : `<div class="u-w-64 u-h-64 u-r-8 u-bd-border-strong u-bg-surface u-flex u-items-center u-justify-center u-c-primary-text" title="ویدیو"><i class="fa-solid fa-film"></i></div>`}
         <div class="u-flex-1 u-flex u-col u-gap-8">
           <input type="text" class="modal-anim-title input-ctrl u-bg-surface-2" value="${esc(title)}" placeholder="عنوان تصویر">
@@ -40,14 +40,14 @@ window.addGalleryItemCard = function(containerId, data = null) {
             <input type="text" id="${inputId}" class="modal-anim-url input-ctrl u-bg-surface-2 u-direction-ltr u-text-left u-flex-1" value="${esc(url)}" placeholder="https://... یا /uploads/..." data-input="NopaActions.previewSrcIn" data-input-args="[&quot;$this&quot;,&quot;.modal-animation-card&quot;,&quot;.modal-anim-preview&quot;]">
             <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-6-10 u-r-6 u-pointer u-fs-2xs u-inline-flex u-items-center u-gap-4 u-nowrap">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
-              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", String(inputId)]))}">
+              <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", String(inputId)]))}">
             </label>
           </div>
           <div class="u-flex u-gap-6">
             <input type="text" id="${inputId}-cover" class="modal-anim-cover input-ctrl u-bg-surface-2 u-direction-ltr u-text-left u-flex-1" value="${esc(data?.coverImageUrl || '')}" placeholder="لینک کاور (فقط برای ویدیو، اختیاری)">
             <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-6-10 u-r-6 u-pointer u-fs-2xs u-inline-flex u-items-center u-gap-4 u-nowrap">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود کاور
-              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", (String(inputId) + "-cover")]))}">
+              <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", (String(inputId) + "-cover")]))}">
             </label>
           </div>
           <textarea class="modal-anim-desc input-ctrl u-bg-surface-2" rows="1" placeholder="توضیح (اختیاری)">${esc(desc)}</textarea>
@@ -138,10 +138,10 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
   const badgeBg = catIndex % 2 === 1 ? 'var(--info-strong)' : 'var(--primary-strong)';
 
   const cardHtml = `
-    <div id="${blockId}" class="modal-category-card u-bg-surface-2-70 u-r-12 u-p-14 u-shadow-0-4-12-shade-20" data-cat-id="${catData?.id || ''}" style="border: 1px solid ${color}55">
+    <div id="${blockId}" class="modal-category-card u-bg-surface-2-70 u-r-12 u-p-14 u-shadow-0-4-12-shade-20" data-cat-id="${catData?.id || ''}" data-style="border: 1px solid ${color}55">
       <div class="u-flex u-justify-between u-items-center u-mb-10 u-bb-fg-6 u-pb-8">
-        <h4 class="modal-cat-badge-title u-m-0 u-fs-base u-flex u-items-center u-gap-8" style="color: ${color}">
-          <span class="badge u-c-text u-p-4-8 u-r-6 u-bold u-fs-2xs" style="background: ${badgeBg}">دسته ${catIndex}</span>
+        <h4 class="modal-cat-badge-title u-m-0 u-fs-base u-flex u-items-center u-gap-8" data-style="color: ${color}">
+          <span class="badge u-c-text u-p-4-8 u-r-6 u-bold u-fs-2xs" data-style="background: ${badgeBg}">دسته ${catIndex}</span>
           <i class="fa-solid fa-graduation-cap"></i> <span class="cat-label-display">${defaultTitle}</span>
         </h4>
         <button type="button" data-click="removeCategoryBlockFromCreatorModal" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-bg-danger-15 u-c-danger-text u-bd-danger-35 u-r-6 u-p-4-10 u-fs-2xs u-pointer u-flex u-items-center u-gap-4" title="حذف این دسته کلاس">
@@ -159,11 +159,11 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
             <label class="u-fs-xs u-c-text-soft"><i class="fa-solid fa-chalkboard-user u-c-primary-text"></i> استاد / اساتید دوره:</label>
             <a href="#" data-click="openInstructorModalQuick" data-click-args="${esc(JSON.stringify([String(blockId)]))}" class="u-fs-2xs u-c-primary-text u-no-underline u-flex u-items-center u-gap-4" title="افزودن استاد جدید به بانک اساتید"><i class="fa-solid fa-plus-circle"></i> + استاد جدید</a>
           </div>
-          <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}" style="display:none;">
+          <input type="text" class="modal-cat-instructor input-ctrl" value="${esc(defaultInstructor)}" readonly data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}" data-style="display:none;">
           <div role="button" tabindex="0" id="inst-picker-box-${blockId}" class="inst-picker-box u-bg-surface-2 u-bd-primary-35 u-r-6 u-p-6-10 u-minh-38 u-pointer u-flex u-wrap u-gap-4 u-items-center" data-click="toggleInstructorDropdown" data-click-args="${esc(JSON.stringify([String(blockId), "$event"]))}">
             <!-- Selected badges rendered here -->
           </div>
-          <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu u-absolute u-top-100p u-right-0 u-left-0 u-z-z-panel-raised u-bg-surface u-bd-primary-45 u-r-8 u-p-8 u-maxh-220 u-scroll-y u-mt-4" style="display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.7)">
+          <div id="inst-dropdown-${blockId}" class="inst-dropdown-menu u-absolute u-top-100p u-right-0 u-left-0 u-z-z-panel-raised u-bg-surface u-bd-primary-45 u-r-8 u-p-8 u-maxh-220 u-scroll-y u-mt-4 u-shadow-dropdown" data-style="display:none">
             <!-- Checklist from globalInstructorsList -->
           </div>
         </div>
@@ -173,7 +173,7 @@ window.addCategoryBlockToCreatorModal = function(catData = null) {
         </div>
         <div class="form-group">
           <label class="u-fs-xs u-c-primary-text u-bold"><i class="fa-solid fa-film"></i> پارت هر جلسه:</label>
-          <input type="number" class="modal-cat-parts input-ctrl u-bg-surface-2" value="${defaultParts}" min="1" max="20" style="border-color: ${color}" title="تعداد پارت‌های ویدیویی در هر جلسه">
+          <input type="number" class="modal-cat-parts input-ctrl u-bg-surface-2" value="${defaultParts}" min="1" max="20" data-style="border-color: ${color}" title="تعداد پارت‌های ویدیویی در هر جلسه">
         </div>
       </div>
 

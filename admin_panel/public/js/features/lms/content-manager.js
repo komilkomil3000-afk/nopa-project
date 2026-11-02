@@ -167,11 +167,11 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
         <div>
           <label class="u-fs-2xs u-c-text-soft u-block u-mb-4"><i class="fa-solid fa-image u-c-primary-text"></i> تصویر منزلگاه (در صفحه اول، آموزگاه و منزلگاه یکسان نمایش داده می‌شود):</label>
           <div class="u-flex u-gap-6 u-items-center">
-            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" class="u-w-44 u-h-62 u-fit-cover u-r-6 u-bd-border-strong u-bg-surface" style="${station.iconUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+            <img id="content-modal-st-icon-preview" src="${esc(station.iconUrl || '')}" alt="" class="u-w-44 u-h-62 u-fit-cover u-r-6 u-bd-border-strong u-bg-surface" data-style="${station.iconUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
             <input type="text" id="content-modal-st-icon" class="input-ctrl u-bg-surface u-bdc-border-strong u-c-text u-direction-ltr u-text-left u-flex-1" value="${esc(station.iconUrl || '')}" placeholder="https://... یا /uploads/..." data-input="NopaActions.previewSrc" data-input-args="[&quot;content-modal-st-icon-preview&quot;,&quot;$value&quot;]">
             <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-6-10 u-r-6 u-pointer u-fs-2xs u-inline-flex u-items-center u-gap-4 u-nowrap" title="آپلود تصویر منزلگاه">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود تصویر
-              <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;content-modal-st-icon&quot;]">
+              <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;content-modal-st-icon&quot;]">
             </label>
           </div>
         </div>
@@ -218,17 +218,17 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
     const sessions = cat.sessions || [];
 
     html += `
-      <div class="u-r-12 u-p-16 u-mb-20" style="background:${bg}; border:1px solid ${color}44">
+      <div class="u-r-12 u-p-16 u-mb-20" data-style="background:${bg}; border:1px solid ${color}44">
         
         <!-- Editable Category Header & Controls -->
-        <div class="u-m-0-0-14-0 u-bg-surface-85 u-r-10 u-p-12-14 u-flex u-items-center u-justify-between u-wrap u-gap-12" style="border:1px solid ${color}55">
+        <div class="u-m-0-0-14-0 u-bg-surface-85 u-r-10 u-p-12-14 u-flex u-items-center u-justify-between u-wrap u-gap-12" data-style="border:1px solid ${color}55">
           <div class="u-flex u-items-center u-gap-10 u-flex-1 u-minw-280">
-            <span class="badge u-c-white u-p-6-10 u-r-6 u-fs-xs u-bold u-nowrap" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
+            <span class="badge u-c-white u-p-6-10 u-r-6 u-fs-xs u-bold u-nowrap" data-style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
               ${isSkill ? 'دسته ۱ (مهارتی)' : 'دسته ۲ (رسانه‌ای)'}
             </span>
             <div class="u-flex-1 u-flex u-items-center u-gap-6">
-              <label for="cat-title-${cat.id}" class="u-fs-2xs u-c-text-soft u-nowrap"><i class="fa-solid fa-pen" style="color:${color};"></i> عنوان دسته کلاس:</label>
-              <input type="text" id="cat-title-${cat.id}"" class="input-ctrl u-bg-surface u-c-text u-bold u-fs-sm u-p-6-12" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." style="border-color:${color}66">
+              <label for="cat-title-${cat.id}" class="u-fs-2xs u-c-text-soft u-nowrap"><i class="fa-solid fa-pen" data-style="color:${color};"></i> عنوان دسته کلاس:</label>
+              <input type="text" id="cat-title-${cat.id}"" class="input-ctrl u-bg-surface u-c-text u-bold u-fs-sm u-p-6-12" value="${esc(cat.title || (isSkill ? 'کلاس‌های مهارتی' : 'کلاس‌های رسانه‌ای'))}" placeholder="عنوان دسته کلاس..." data-style="border-color:${color}66">
             </div>
           </div>
           
@@ -236,7 +236,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             <span class="u-fs-xs u-c-text-soft u-bg-shade-40 u-p-6-12 u-r-6 u-bd-fg-6 u-bold">
               ${sessions.length} جلسه
             </span>
-            <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-c-white u-bd-none u-p-6-14 u-r-6 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30" style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'})" title="ذخیره مستقیم عنوان این دسته">
+            <button type="button" data-click="saveCategoryTitle" data-click-args="${esc(JSON.stringify([String(cat.id), String(station.id)]))}" class="u-c-white u-bd-none u-p-6-14 u-r-6 u-fs-2xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-2-6-shade-30" data-style="background:linear-gradient(135deg, ${color}, ${isSkill ? 'var(--primary)' : 'var(--primary-strong)'})" title="ذخیره مستقیم عنوان این دسته">
               <i class="fa-solid fa-save"></i> ذخیره عنوان دسته
             </button>
           </div>
@@ -300,7 +300,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             <!-- Session Top Header with Glowing Date Badge -->
             <div class="u-flex u-justify-between u-items-center u-mb-12 u-bb-fg-8 u-pb-10 u-wrap u-gap-10">
               <div class="u-flex u-items-center u-gap-8">
-                <span class="badge u-c-white u-p-4-10 u-r-6 u-fs-2xs u-bold" style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
+                <span class="badge u-c-white u-p-4-10 u-r-6 u-fs-2xs u-bold" data-style="background:${isSkill ? 'var(--primary)' : 'var(--primary-strong)'}">
                   جلسه ${sessOrder}
                 </span>
                 <span class="u-fs-sm u-bold u-c-text">
@@ -330,9 +330,9 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
             <div class="u-grid u-cols-1_2fr-1fr-1fr-1fr-auto u-gap-10 u-items-end u-mb-12 u-bg-shade-30 u-p-12 u-r-10 u-bd-fg-5">
               <div>
                 <label for="sess-title-${sess.id}" class="u-fs-2xs u-c-text-soft u-block u-mb-4 u-bold">
-                  <i class="fa-solid fa-book-open" style="color:${color};"></i> عنوان کلاس/جلسه:
+                  <i class="fa-solid fa-book-open" data-style="color:${color};"></i> عنوان کلاس/جلسه:
                 </label>
-                <input type="text" id="sess-title-${sess.id}"" class="input-ctrl u-fs-xs u-bold u-c-text u-bg-surface u-p-8-10" value="${sess.title || `جلسه ${sessOrder}`}" placeholder="عنوان جلسه..." style="border-color:${color}55">
+                <input type="text" id="sess-title-${sess.id}"" class="input-ctrl u-fs-xs u-bold u-c-text u-bg-surface u-p-8-10" value="${sess.title || `جلسه ${sessOrder}`}" placeholder="عنوان جلسه..." data-style="border-color:${color}55">
               </div>
 
               <div>
@@ -407,8 +407,8 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                     <div class="u-flex u-items-center u-gap-4">
                       <input type="number" id="clip-order-${clip.id}" min="1" max="50" class="input-ctrl u-fs-xs u-p-4 u-text-center u-bg-surface u-bold u-c-primary-text u-w-45" value="${clip.clipOrder || (cIdx + 1)}">
                       <div class="u-flex u-col u-gap-2">
-                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx - 1)]))}" ${isFirstClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-2xs u-flex u-items-center u-justify-center" style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">▲</button>
-                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx + 1)]))}" ${isLastClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-2xs u-flex u-items-center u-justify-center" style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLastClip ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">▼</button>
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx - 1)]))}" ${isFirstClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-2xs u-flex u-items-center u-justify-center" data-style="background:${isFirstClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isFirstClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isFirstClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isFirstClip ? 'not-allowed' : 'pointer'}" title="حرکت به بالا">▲</button>
+                        <button type="button" data-click="moveClipInSession" data-click-args="${esc(JSON.stringify([String(sess.id), (cIdx), (cIdx + 1)]))}" ${isLastClip ? 'disabled' : ''} class="u-r-3 u-w-20 u-h-15 u-fs-2xs u-flex u-items-center u-justify-center" data-style="background:${isLastClip ? 'rgb(var(--fg-rgb) / 0.03)' : 'var(--surface-2)'}; color:${isLastClip ? 'var(--text-faint)' : 'var(--primary)'}; border:1px solid ${isLastClip ? 'transparent' : 'rgb(var(--primary-rgb) / 0.3)'}; cursor:${isLastClip ? 'not-allowed' : 'pointer'}" title="حرکت به پایین">▼</button>
                       </div>
                     </div>
                   </div>
@@ -424,11 +424,11 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
                   <div>
                     <label class="u-fs-2xs u-c-primary-text u-block u-mb-4"><i class="fa-solid fa-image"></i> لینک کاور (پیش‌نمایش ویدیو در اپلیکیشن):</label>
                     <div class="u-flex u-gap-6 u-items-center">
-                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" class="u-w-46 u-h-30 u-fit-cover u-r-4 u-bd-border-strong u-bg-surface" style="${clip.coverImageUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
+                      <img id="clip-cover-preview-${clip.id}" src="${esc(clip.coverImageUrl || '')}" alt="" class="u-w-46 u-h-30 u-fit-cover u-r-4 u-bd-border-strong u-bg-surface" data-style="${clip.coverImageUrl ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args="[&quot;$this&quot;,&quot;hidden&quot;]" data-load="NopaActions.setVisibility" data-load-args="[&quot;$this&quot;,&quot;visible&quot;]">
                       <input type="text" id="clip-cover-${clip.id}" class="input-ctrl u-fs-xs u-p-6-10 u-direction-ltr u-bg-surface u-flex-1" value="${esc(clip.coverImageUrl || '')}" placeholder="https://... یا /uploads/... (اختیاری)" data-input="NopaActions.previewSrc" data-input-args="${esc(JSON.stringify(['clip-cover-preview-' + clip.id, '$value']))}">
                       <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-6-10 u-r-6 u-pointer u-fs-2xs u-nowrap" title="آپلود تصویر کاور">
                         <i class="fa-solid fa-cloud-arrow-up"></i> آپلود
-                        <input type="file" accept="image/*" style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", ("clip-cover-" + String(clip.id))]))}">
+                        <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${esc(JSON.stringify(["$this", ("clip-cover-" + String(clip.id))]))}">
                       </label>
                     </div>
                   </div>
@@ -559,7 +559,7 @@ window.openStationContentManagerModal = function(stationId, filterCat) {
 
                     <div class="u-grid u-cols-2 u-gap-6 u-fs-2xs">
                       ${opts.map((opt, oIdx) => `
-                        <div class="u-p-6-8 u-r-6 u-flex u-items-center u-gap-6" style="background:${oIdx === correctIdx ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--surface-rgb) / 0.5)'}; border:1px solid ${oIdx === correctIdx ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${oIdx === correctIdx ? 'var(--success-text)' : 'var(--border-strong)'}">
+                        <div class="u-p-6-8 u-r-6 u-flex u-items-center u-gap-6" data-style="background:${oIdx === correctIdx ? 'rgb(var(--success-rgb) / 0.15)' : 'rgb(var(--surface-rgb) / 0.5)'}; border:1px solid ${oIdx === correctIdx ? 'var(--success)' : 'rgb(var(--fg-rgb) / 0.06)'}; color:${oIdx === correctIdx ? 'var(--success-text)' : 'var(--border-strong)'}">
                           <i class="fa-solid ${oIdx === correctIdx ? 'fa-circle-check' : 'fa-circle'} u-fs-xs"></i>
                           <span><strong>گزینه ${oIdx + 1}:</strong> ${esc(opt || '-')}</span>
                           ${oIdx === correctIdx ? '<span class="u-c-success-text u-bold u-mr-auto u-fs-2xs">(پاسخ صحیح)</span>' : ''}

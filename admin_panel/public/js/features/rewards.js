@@ -188,7 +188,7 @@ async function loadCaravansLeaderboard() {
         <td class="u-minw-110">
           <div class="u-flex u-items-center u-gap-6">
             <div class="u-flex-1 u-h-6 u-bg-fg-10 u-r-3 u-overflow-hidden">
-              <div class="u-h-full u-r-3" style="width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, var(--success), var(--primary))"></div>
+              <div class="u-h-full u-r-3" data-style="width: ${Math.min(100, c.overallProgress || 0)}%; background: linear-gradient(to left, var(--success), var(--primary))"></div>
             </div>
             <span class="u-fs-2xs u-fw-600 u-c-text-secondary">${c.overallProgress || 0}%</span>
           </div>
@@ -317,7 +317,7 @@ async function loadIndividualsLeaderboard() {
         <td class="u-minw-100">
           <div class="u-flex u-items-center u-gap-6">
             <div class="u-flex-1 u-h-6 u-bg-fg-10 u-r-3 u-overflow-hidden">
-              <div class="u-h-full u-r-3" style="width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, var(--primary), var(--primary))"></div>
+              <div class="u-h-full u-r-3" data-style="width: ${Math.min(100, u.progressPercentage || 0)}%; background: linear-gradient(to left, var(--primary), var(--primary))"></div>
             </div>
             <span class="u-fs-2xs u-fw-600 u-c-text-secondary">${u.progressPercentage || 0}%</span>
           </div>
@@ -379,7 +379,7 @@ async function loadLedger() {
       tr.innerHTML = `
         <td><strong>${esc(t.userName)}</strong></td>
         <td class="u-mono">${esc(t.userPhone)}</td>
-        <td><strong style="color: ${amountColor};">${amountPrefix}${t.amount} زریک</strong></td>
+        <td><strong data-style="color: ${amountColor};">${amountPrefix}${t.amount} زریک</strong></td>
         <td><span class="badge badge-student">${esc(t.category)}</span></td>
         <td>${esc(t.reason)}</td>
         <td>${esc(t.createdBy)}</td>

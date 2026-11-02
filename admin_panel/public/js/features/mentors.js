@@ -155,7 +155,7 @@ window.renderMentorsRows = function(mentorsList, tbody) {
     return `
       <tr class="u-tr-all-0_2s-ease">
         <td class="u-text-center">
-          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-sm u-m-0-auto u-shadow-0-2-6-shade-30" style="background:linear-gradient(135deg, var(--primary), var(--primary))">
+          <div class="u-w-38 u-h-38 u-r-50p u-flex u-items-center u-justify-center u-bold u-c-white u-fs-sm u-m-0-auto u-shadow-0-2-6-shade-30 u-bg-primary">
             ${avatarInitials}
           </div>
         </td>
@@ -265,7 +265,7 @@ window.viewMentorDossier = async function(mentorId) {
           <div><strong class="u-c-text-muted">تاریخ تولد:</strong> <span class="u-c-text">${esc(mentor?.dateOfBirth || 'ثبت نشده')}</span></div>
           <div><strong class="u-c-text-muted">شهر محل سکونت:</strong> <span class="u-c-text">${esc(mentor?.city || 'ثبت نشده')}</span></div>
           <div><strong class="u-c-text-muted">پلتفرم پیام‌رسان:</strong> <span class="u-c-text">${esc(mentor?.socialPlatform || 'ثبت نشده')} (${esc(mentor?.socialMessengerHandle || '-')})</span></div>
-          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
+          <div><strong class="u-c-text-muted">وضعیت احراز هویت:</strong> <span data-style="color:${mentor?.identityVerified ? 'var(--success-text)' : 'var(--accent)'};">${mentor?.identityVerified ? 'تایید شده' : 'در انتظار بررسی'}</span></div>
         </div>
       </div>
 
@@ -284,7 +284,7 @@ window.viewMentorDossier = async function(mentorId) {
                 </div>
                 <div class="u-fs-2xs u-c-text-muted u-mb-6">پیشرفت کلی کاروان: ${c.progress || 0}%</div>
                 <div class="u-bg-shade-30 u-h-6 u-r-3 u-overflow-hidden">
-                  <div class="u-h-full" style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
+                  <div class="u-h-full" data-style="background:linear-gradient(90deg, var(--primary), var(--success)); width:${c.progress || 0}%"></div>
                 </div>
               </div>
             `).join('')}
@@ -362,7 +362,7 @@ window.renderDossierStudents = function(students, mentorId) {
           <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-12 u-p-14 u-flex u-justify-between u-items-center u-wrap u-gap-14 u-transition" data-hover="border-primary">
             <!-- Student Bio & Info -->
             <div class="u-flex u-items-center u-gap-12 u-minw-240">
-              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-md u-c-white u-bd-2-solid-fg-20 u-shrink-0" style="background:linear-gradient(135deg, var(--success), var(--primary))">
+              <div class="u-w-44 u-h-44 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-md u-c-white u-bd-2-solid-fg-20 u-shrink-0 u-grad-success-primary">
                 ${initials}
               </div>
               <div>
@@ -397,11 +397,11 @@ window.renderDossierStudents = function(students, mentorId) {
 
             <!-- Action Buttons for Tickets & Challenges -->
             <div class="u-flex u-gap-8 u-items-center u-wrap">
-              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--accent-rgb) / 0.18), rgb(var(--accent-rgb) / 0.28))" data-hover="accent-fill">
+              <button type="button" data-click="openStudentTicketsModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-accent-50 u-c-accent-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-accent-soft" data-hover="accent-fill">
                 <i class="fa-solid fa-comments"></i> مشاهده تیکت‌ها (${s.stats.totalTickets})
               </button>
 
-              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition" style="background:linear-gradient(135deg, rgb(var(--primary-rgb) / 0.18), rgb(var(--primary-rgb) / 0.28))" data-hover="primary-fill">
+              <button type="button" data-click="openStudentChallengesModal" data-click-args="${esc(JSON.stringify([String(mentorId), String(s.id)]))}" class="u-bd-primary-50 u-c-primary-text u-p-8-14 u-r-8 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-transition u-grad-primary-soft" data-hover="primary-fill">
                 <i class="fa-solid fa-trophy"></i> رفت و برگشت چالش‌ها (${s.stats.totalSubmissions})
               </button>
             </div>
@@ -676,7 +676,7 @@ window.openStudentChallengesModal = function(mentorId, studentId) {
             <div class="u-fs-xs u-bold u-c-primary-text u-mb-8 u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-pen-to-square"></i> ثبت / بازنویسی نمره و بازخورد راهبر:
             </div>
-            <div class="u-grid u-gap-10 u-items-center" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto">
+            <div class="u-grid u-gap-10 u-items-center u-cols-fit-140-auto">
               <select id="review-status-${sub.id}" class="u-bg-surface-2 u-bd-fg-20 u-c-text u-p-8-10 u-r-6 u-fs-xs">
                 <option value="approved" ${sub.status === 'approved' || sub.status === 'APPROVED' ? 'selected' : ''}>تایید تکلیف (قبول)</option>
                 <option value="rejected" ${sub.status === 'rejected' || sub.status === 'REJECTED' ? 'selected' : ''}>رد تکلیف (نیاز به اصلاح)</option>

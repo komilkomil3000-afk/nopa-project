@@ -202,7 +202,7 @@ window.renderLmsDirectoryRows = function(list, selectedCategoryFilter = 'all', s
               const badgeStyle = isMatch
                 ? 'background:rgb(var(--primary-rgb) / 0.3); color:var(--primary-text); border:1px solid var(--primary);'
                 : 'background:rgb(var(--fg-rgb) / 0.06); color:var(--text-soft); border:1px solid rgb(var(--fg-rgb) / 0.08);';
-              return `<span class="badge u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4" style="${badgeStyle} font-size:var(--text-2xs)">
+              return `<span class="badge u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4" data-style="${badgeStyle} font-size:var(--text-2xs)">
                 <i class="fa-solid fa-chalkboard-user u-fs-2xs u-c-primary-text"></i> ${esc(inst)}
               </span>`;
             }).join('')}

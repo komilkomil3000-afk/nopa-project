@@ -409,7 +409,7 @@ window.renderNewsTable = function(newsList) {
           ${n.subtitle ? `<div class="u-fs-2xs u-c-text-muted u-lh-1_4">${esc(n.subtitle)}</div>` : ''}
         </td>
         <td class="u-text-center">
-          <span class="badge u-fs-2xs u-p-4-8 u-r-6 u-bold" style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}">
+          <span class="badge u-fs-2xs u-p-4-8 u-r-6 u-bold" data-style="background:${catStyle.bg}; color:${esc(catStyle.text)}; border:1px solid ${catStyle.border}">
             ${esc(n.category || 'عمومی')}
           </span>
         </td>

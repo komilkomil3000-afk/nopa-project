@@ -71,7 +71,7 @@ window.renderInstructorsTable = function(list = null) {
       : `<span class="u-c-text-faint u-fs-2xs">تعریف‌نشده</span>`;
 
     const resumeDisplay = inst.resume
-      ? `<div class="u-maxw-240 u-fs-xs u-c-text-muted u-lh-1_4 u-overflow-hidden" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
+      ? `<div class="u-maxw-240 u-fs-xs u-c-text-muted u-lh-1_4 u-overflow-hidden u-clamp-2" title="${esc(inst.resume)}">${esc(inst.resume)}</div>`
       : `<span class="u-c-text-faint u-fs-2xs">-</span>`;
 
     html += `
@@ -390,7 +390,7 @@ window.populateInstructorDropdownOptions = function(blockId) {
   instructors.forEach(inst => {
     const isChecked = selectedNames.has(inst.name);
     html += `
-      <label class="u-flex u-items-center u-justify-between u-p-6-8 u-r-6 u-pointer u-tr-background-0_15s" style="background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'}" data-hover="primary-soft">
+      <label class="u-flex u-items-center u-justify-between u-p-6-8 u-r-6 u-pointer u-tr-background-0_15s" data-style="background: ${isChecked ? 'rgb(var(--primary-rgb) / 0.15)' : 'transparent'}" data-hover="primary-soft">
         <div class="u-flex u-items-center u-gap-8">
           <input type="checkbox" ${isChecked ? 'checked' : ''} data-change="selectInstructorForBlock" data-change-args="${esc(JSON.stringify([String(blockId), String(inst.name), "$checked"]))}" class="u-pointer u-w-15 u-h-15 u-accent-primary">
           <div>

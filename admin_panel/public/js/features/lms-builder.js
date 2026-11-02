@@ -54,7 +54,7 @@ function addCategoryUI(catData = null) {
   catDiv.style.cssText = 'background: rgb(var(--fg-rgb) / 0.03); border: 1px solid rgb(var(--fg-rgb) / 0.05); border-radius: 10px; padding: 15px; position: relative;';
   catDiv.innerHTML = `
     <div class="u-flex u-gap-10 u-items-center u-mb-10 u-wrap">
-      <span class="u-bold u-fs-sm" style="color: #EC4899">دسته کلاس:</span>
+      <span class="u-bold u-fs-sm u-c-pink-text">دسته کلاس:</span>
       <input type="text" class="input-ctrl cat-title-input u-flex-2 u-minw-150 u-h-32 u-fs-xs" value="${esc(catTitle)}" required placeholder="عنوان دسته (مانند: پودمان اول)">
       <input type="number" class="input-ctrl cat-order-input u-w-70 u-h-32 u-fs-xs" value="${catOrder}" required placeholder="ترتیب">
       <button type="button" class="btn-primary u-bg-success u-p-4-10 u-fs-2xs u-h-32" data-click="addClassUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-category-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن کلاس</button>
@@ -113,7 +113,7 @@ function addClassUI(catEl, classData = null) {
     </div>
     <div class="u-flex u-gap-8 u-mb-10">
       <button type="button" class="btn-primary u-bg-accent u-p-4-8 u-fs-2xs" data-click="addClipUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-video"></i> + پارت/کلیپ ویدیو</button>
-      <button type="button" class="btn-primary u-p-4-8 u-fs-2xs" style="background:#e040fb" data-click="addQuizUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
+      <button type="button" class="btn-primary u-p-4-8 u-fs-2xs u-bg-pink" data-click="addQuizUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-class-item&quot;}]"><i class="fa-solid fa-circle-question"></i> + آزمون ارزیابی</button>
       <button type="button" class="page-btn btn-danger u-p-4-8 u-fs-2xs u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-class-item&quot;]"><i class="fa-solid fa-trash"></i> حذف کلاس</button>
     </div>
     
@@ -240,7 +240,7 @@ function addQuizUI(classEl, quizData = null) {
   quizDiv.style.cssText = 'background: rgba(224,64,251,0.03); border: 1px solid rgba(224,64,251,0.08); border-radius: 6px; padding: 10px;';
   quizDiv.innerHTML = `
     <div class="u-flex u-gap-10 u-items-center u-mb-8">
-      <span class="u-fs-2xs u-bold" style="color: #e040fb">آزمون ارزیابی:</span>
+      <span class="u-fs-2xs u-bold u-c-pink-text">آزمون ارزیابی:</span>
       <input type="text" class="input-ctrl quiz-title-input u-flex-2 u-h-28 u-fs-2xs" value="${esc(quizTitle)}" required placeholder="عنوان آزمون">
       <select class="select-ctrl quiz-type-input u-w-100 u-h-28 u-fs-2xs">
         <option value="MULTIPLE_CHOICE" ${quizType === 'MULTIPLE_CHOICE' ? 'selected' : ''}>تستی (۴ گزینه‌ای)</option>
@@ -248,11 +248,11 @@ function addQuizUI(classEl, quizData = null) {
         <option value="FILE" ${quizType === 'FILE' ? 'selected' : ''}>ارسال فایل</option>
       </select>
       <input type="number" class="input-ctrl quiz-zarik-input u-w-85 u-h-28 u-fs-2xs" value="${rewardZarik}" required placeholder="پاداش زریک">
-      <button type="button" class="btn-primary u-p-2-8 u-fs-2xs" style="background:#e040fb" data-click="addQuizQuestionUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-quiz-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
+      <button type="button" class="btn-primary u-p-2-8 u-fs-2xs u-bg-pink" data-click="addQuizQuestionUI" data-click-args="[{&quot;$closest&quot;:&quot;.builder-quiz-item&quot;}]"><i class="fa-solid fa-plus"></i> افزودن سوال/فیلد</button>
       <button type="button" class="page-btn btn-danger u-p-2-8 u-fs-2xs u-mr-auto" data-click="NopaActions.removeClosest" data-click-args="[&quot;$this&quot;,&quot;.builder-quiz-item&quot;]"><i class="fa-solid fa-times"></i> حذف آزمون</button>
     </div>
     
-    <div class="quiz-questions-container u-flex u-col u-gap-8 u-mt-8 u-pr-10" style="border-right: 2px dashed rgba(224,64,251,0.2)">
+    <div class="quiz-questions-container u-flex u-col u-gap-8 u-mt-8 u-pr-10 u-br-dashed-pink-20">
       <!-- Questions list -->
     </div>
   `;

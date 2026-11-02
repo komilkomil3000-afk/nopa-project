@@ -109,7 +109,7 @@ window.renderCaravansTable = function() {
           <span>${progress}%</span>
         </div>
         <div class="progress-bar-container u-m-0 u-h-6">
-          <div class="progress-bar-fill" style="width: ${progress}%"></div>
+          <div class="progress-bar-fill" data-style="width: ${progress}%"></div>
         </div>
       </td>
       <td>
@@ -478,11 +478,11 @@ window.viewStudentDetails = async function(studentId) {
         const pct = st.totalClasses > 0 ? Math.min(100, Math.round(((st.completedClasses || 0) / st.totalClasses) * 100)) : 0;
 
         stationsHtml += `
-          <div class="u-r-10 u-p-10-12 u-fs-xs" style="background:${cardBg}; border:1px solid ${cardBorder}">
+          <div class="u-r-10 u-p-10-12 u-fs-xs" data-style="background:${cardBg}; border:1px solid ${cardBorder}">
             <div class="u-flex u-justify-between u-items-center u-mb-8 u-bb-fg-5 u-pb-6">
               <div>
                 <span class="u-bg-primary-20 u-c-primary-text u-fs-2xs u-bold u-p-2-8 u-r-6 u-ml-6">منزلگاه ${stNum}</span>
-                <strong class="u-fs-sm" style="color:${titleColor}">${esc(st.title)}</strong>
+                <strong class="u-fs-sm" data-style="color:${titleColor}">${esc(st.title)}</strong>
               </div>
               ${statusBadge}
             </div>
@@ -1447,15 +1447,15 @@ window.searchCandidateMembers = async function(query) {
         : `<span class="u-c-success-text u-fs-2xs u-bg-success-15 u-bd-success-30 u-p-2-8 u-r-6 u-inline-flex u-items-center u-gap-4"><i class="fa-solid fa-check u-fs-2xs"></i> فاقد کاروان (آماده عضویت)</span>`;
 
       return `
-        <div class="u-flex u-justify-between u-items-center u-p-10-12 u-bb-fg-5 u-fs-sm" style="opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'}">
-          <label class="u-flex u-items-center u-gap-12 u-flex-1 u-m-0" style="cursor:${hasCaravan ? 'not-allowed' : 'pointer'}">
+        <div class="u-flex u-justify-between u-items-center u-p-10-12 u-bb-fg-5 u-fs-sm" data-style="opacity: ${hasCaravan ? '0.6' : '1'}; background: ${hasCaravan ? 'rgb(var(--shade-rgb) / 0.15)' : 'transparent'}">
+          <label class="u-flex u-items-center u-gap-12 u-flex-1 u-m-0" data-style="cursor:${hasCaravan ? 'not-allowed' : 'pointer'}">
             <input type="checkbox" 
                    ${hasCaravan ? 'disabled' : `data-change="toggleCandidateSelection" data-change-args="${esc(JSON.stringify(["$this", String(u.id)]))}"`} 
                    ${isChecked}
-                   style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
+                   data-style="${hasCaravan ? 'cursor:not-allowed; opacity:0.3;' : 'cursor:pointer;'}">
             <div class="u-flex u-col u-gap-2">
               <div class="u-flex u-items-center u-gap-8">
-                <strong style="color:${hasCaravan ? 'var(--text-muted)' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
+                <strong data-style="color:${hasCaravan ? 'var(--text-muted)' : 'white'};">${esc(u.name || 'بدون نام')}</strong>
                 <span class="u-c-text-muted u-fs-2xs u-mono" dir="ltr">${esc(u.phoneNumber || '-')}</span>
                 <span class="u-c-primary-text u-fs-2xs u-bg-primary-10 u-p-1-6 u-r-4">دانش‌آموز</span>
               </div>

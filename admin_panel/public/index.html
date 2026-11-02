@@ -267,7 +267,7 @@
       </div>
 
       <!-- DASHBOARD (Bento). Filled by js/features/dashboard.js; tiles appear only for granted sections -->
-      <section id="dashboard-tab" class="tab-panel" style="display: none;">
+      <section id="dashboard-tab" class="tab-panel" data-style="display: none;">
         <div class="dash-toolbar">
           <div class="dash-greeting">
             <strong id="dash-greeting">سلام</strong>
@@ -421,7 +421,7 @@
               <button type="button" class="date-filter-trigger" id="users-date-filter-trigger" title="فیلتر تاریخ عضویت">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span id="users-date-filter-summary">تاریخ عضویت</span>
-                <span class="date-filter-badge" id="users-date-filter-badge" style="display:none;"></span>
+                <span class="date-filter-badge" id="users-date-filter-badge" data-style="display:none;"></span>
                 <i class="fa-solid fa-chevron-down date-filter-caret"></i>
               </button>
               <div class="date-filter-panel glass" id="users-date-filter-panel">
@@ -489,7 +489,7 @@
       </section>
 
       <!-- TAB: MENTOR DOCUMENTS -->
-      <section id="mentors-docs-tab" class="tab-panel" style="display: none;">
+      <section id="mentors-docs-tab" class="tab-panel" data-style="display: none;">
         <div class="actions-header glass">
           <div class="filters-group">
             <h3 class="u-m-0">صف انتظار تایید مدارک مربیان</h3>
@@ -517,7 +517,7 @@
       </section>
 
       <!-- TAB: INSTRUCTORS (بانک اساتید) -->
-      <section id="instructors-tab" class="tab-panel" style="display: none;">
+      <section id="instructors-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20 u-flex u-col u-gap-16">
           <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-bb-fg-8 u-pb-14">
             <div class="u-flex u-items-center u-gap-10">
@@ -540,14 +540,14 @@
           <div class="u-flex u-gap-12 u-items-center">
             <div class="form-group u-m-0 u-flex-1">
               <div class="u-relative">
-                <i class="fa-solid fa-magnifying-glass u-absolute u-right-12 u-top-50p u-c-text-muted u-fs-sm" style="transform: translateY(-50%)"></i>
+                <i class="fa-solid fa-magnifying-glass u-absolute u-right-12 u-top-50p u-c-text-muted u-fs-sm u-center-y"></i>
                 <input aria-label="جستجوی اساتید" type="text" id="instructor-search-input" class="input-ctrl u-bg-surface u-bdc-fg-12 u-c-text u-p-8-32-8-12 u-fs-sm u-w-full" placeholder="جستجو بر اساس نام استاد، کد ملی، شماره تماس، مدرک یا کلاس‌های تدریس..." data-input="filterInstructorsList">
               </div>
             </div>
           </div>
 
           <!-- وضعیت خالی بودن -->
-          <div id="instructors-empty-state" class="u-p-40 u-text-center u-c-text-muted" style="display: none">
+          <div id="instructors-empty-state" class="u-p-40 u-text-center u-c-text-muted" data-style="display: none">
             <i class="fa-solid fa-chalkboard-user u-fs-40 u-c-text-faint u-mb-12"></i>
             <div class="u-fs-base u-bold">هیچ استادی یافت نشد</div>
             <div class="u-fs-xs u-c-text-faint u-mt-4">با کلیک بر روی دکمه «ثبت استاد جدید» مشخصات اساتید را به بانک اضافه فرمایید.</div>
@@ -575,7 +575,7 @@
       </section>
 
       <!-- TAB 2: REWARDS & LEDGER -->
-      <section id="assets-tab" class="tab-panel" style="display: none;">
+      <section id="assets-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-maxw-760">
           <div class="panel-title"><i class="fa-solid fa-tags u-c-primary-text u-ml-8"></i>نام دارایی‌ها</div>
           <div class="u-fs-sm u-c-text-muted u-m-6-0-16 u-lh-1_8">
@@ -585,7 +585,7 @@
         </div>
       </section>
 
-      <section id="rewards-tab" class="tab-panel" style="display: none;">
+      <section id="rewards-tab" class="tab-panel" data-style="display: none;">
         <div class="ledger-grid">
           <!-- Adjustments and Analytics -->
           <div>
@@ -633,7 +633,7 @@
                 </div>
 
                 <!-- Role Filter (for Individuals) -->
-                <div id="league-role-filter-box" class="u-items-center u-gap-6" style="display: none">
+                <div id="league-role-filter-box" class="u-items-center u-gap-6" data-style="display: none">
                   <span class="u-fs-xs u-c-text-secondary u-nowrap"><i class="fa-solid fa-user-tag"></i> نقش:</span>
                   <select id="league-role-filter" class="select-ctrl u-minw-120" data-change="applyLeagueFilters">
                     <option value="all">همه نقش‌ها</option>
@@ -653,7 +653,7 @@
                 <!-- Search box -->
                 <div class="u-relative u-flex-1 u-minw-180">
                   <input aria-label="جستجو در رتبه‌بندی" type="text" id="league-search-input" class="input-ctrl u-w-full u-pr-32" placeholder="جستجوی نام، تلفن یا کاروان..." data-input="debounceLeagueSearch">
-                  <i class="fa-solid fa-magnifying-glass u-absolute u-right-10 u-top-50p u-c-text-secondary u-fs-xs" style="transform: translateY(-50%)"></i>
+                  <i class="fa-solid fa-magnifying-glass u-absolute u-right-10 u-top-50p u-c-text-secondary u-fs-xs u-center-y"></i>
                 </div>
 
                 <!-- Export options -->
@@ -696,7 +696,7 @@
               </div>
 
               <!-- VIEW 2: Individuals Leaderboard -->
-              <div id="league-individuals-container" class="u-maxw-100p u-overflow-hidden" style="display: none">
+              <div id="league-individuals-container" class="u-maxw-100p u-overflow-hidden" data-style="display: none">
                 <div class="table-container u-mb-0 u-maxh-420 u-overflow-auto u-maxw-100p">
                   <table class="data-table u-minw-880" id="individuals-leaderboard-table">
                     <thead class="u-pos-sticky u-top-0 u-z-10">
@@ -851,7 +851,7 @@
       </section>
 
       <!-- TAB: LEVELS AND CERTIFICATES -->
-      <section id="levels-tab" class="tab-panel" style="display: none;">
+      <section id="levels-tab" class="tab-panel" data-style="display: none;">
         <div class="actions-header glass u-mb-20">
           <div class="filters-group">
             <h3 class="u-m-0">دایرکتوری سطوح و گواهینامه‌ها</h3>
@@ -880,7 +880,7 @@
       </section>
 
       <!-- TAB 3: RBAC MATRIX -->
-      <section id="roles-tab" class="tab-panel" style="display: none;">
+      <section id="roles-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass">
           <div class="panel-title">ماتریس سطوح دسترسی مدیران (RBAC Security)</div>
           <div class="rbac-matrix">
@@ -1060,7 +1060,7 @@
       </section>
 
       <!-- TAB 4: CARAVANS & MENTORS -->
-      <section id="caravans-tab" class="tab-panel" style="display: none;">
+      <section id="caravans-tab" class="tab-panel" data-style="display: none;">
         <div class="u-flex u-justify-between u-items-center u-mb-20">
           <h3>مدیریت و فهرست کاروان‌ها</h3>
           <div class="u-flex u-gap-10">
@@ -1094,7 +1094,7 @@
 
         <div class="table-container glass caravans-table-scroll-container u-maxh-420 u-scroll-y u-scroll-x u-overscroll-contain u-relative u-r-12">
           <table class="data-table" id="caravan-performance-table">
-            <thead class="u-pos-sticky u-top-0 u-z-10 u-bg-surface" style="box-shadow: 0 2px 8px rgba(0,0,0,0.5)">
+            <thead class="u-pos-sticky u-top-0 u-z-10 u-bg-surface u-shadow-pop-sm">
               <tr>
                 <th class="u-bg-surface">نام کاروان</th>
                 <th class="u-bg-surface">راهبر(ان)</th>
@@ -1183,7 +1183,7 @@
 
 
       <!-- TAB 6: AUDIT LOGS -->
-      <section id="audit-tab" class="tab-panel" style="display: none;">
+      <section id="audit-tab" class="tab-panel" data-style="display: none;">
         <!-- Role filter + search (merged from a duplicate, unreachable audit-tab) -->
         <div class="panel-card glass u-mb-20">
           <div class="u-flex u-gap-10 u-wrap">
@@ -1246,7 +1246,7 @@
 
       <!-- MESSAGING: one page for the two kinds of outgoing messages (Phase 7 merge of the former
            content-tab and notifications-tab). Form ids and handlers are unchanged. -->
-      <section id="notifications-tab" class="tab-panel" style="display: none;">
+      <section id="notifications-tab" class="tab-panel" data-style="display: none;">
         <div class="ledger-grid">
         <div class="panel-card glass">
           <div class="msg-modes" role="tablist" aria-label="نوع پیام">
@@ -1282,7 +1282,7 @@
                   <option value="caravan">کاروان خاص</option>
                 </select>
               </div>
-              <div class="form-group u-flex-1" style="display: none" id="notif-caravan-container">
+              <div class="form-group u-flex-1" data-style="display: none" id="notif-caravan-container">
                 <label for="notif-target-caravan">انتخاب کاروان</label>
                 <select id="notif-target-caravan"" class="select-ctrl u-w-full">
                   <!-- Dynamically populated -->
@@ -1362,7 +1362,7 @@
       </section>
 
       <!-- TAB 7: MEDIA & ASSETS -->
-      <section id="media-tab" class="tab-panel" style="display: none;">
+      <section id="media-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20">
           <div class="panel-title">آپلود رسانه جدید (ویدیو، تصویر، بنر)</div>
           <form id="media-upload-form" enctype="multipart/form-data">
@@ -1390,7 +1390,7 @@
             <button type="submit" class="btn-primary" id="btn-upload-media">
               <i class="fa-solid fa-cloud-arrow-up"></i> آپلود فایل و ثبت متادیتا
             </button>
-            <div id="media-upload-progress" class="u-mt-10 u-fs-base" style="display: none; color: #D946EF">در حال آپلود... لطفا صبر کنید</div>
+            <div id="media-upload-progress" class="u-mt-10 u-fs-base u-c-pink-text" data-style="display:none">در حال آپلود... لطفا صبر کنید</div>
           </form>
         </div>
 
@@ -1428,7 +1428,7 @@
 </section>
 
       <!-- CHAT OVERSIGHT TAB -->
-      <section id="chat-tab" class="tab-panel" style="display: none;">
+      <section id="chat-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20">
           <div class="panel-title">مدیریت گفتگوها و چت‌ها</div>
           <div class="u-flex u-gap-10 u-mt-16">
@@ -1458,7 +1458,7 @@
 
       <!-- PLACEHOLDER TABS FOR NEW SECTIONS -->
       <!-- Mentors -->
-      <section id="mentors-profile-tab" class="tab-panel" style="display: none;">
+      <section id="mentors-profile-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20 u-flex u-col u-gap-16">
           <div class="u-flex u-justify-between u-items-center u-wrap u-gap-12 u-bb-fg-8 u-pb-14">
             <div class="u-flex u-items-center u-gap-10">
@@ -1540,11 +1540,11 @@
         </div>
 
         <!-- 1. MENTOR DOSSIER MODAL (شناسنامه جامع راهبر) -->
-        <div id="mentor-dossier-modal" class="modal-overlay u-z-z-modal" style="display: none">
+        <div id="mentor-dossier-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
           <div class="modal-content glass u-maxw-900 u-w-95p u-maxh-90vh u-scroll-y u-border-box u-r-18 u-bg-surface u-bd-primary-35 u-shadow-modal-8 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
               <div class="u-flex u-items-center u-gap-12">
-                <div id="dossier-avatar" class="u-w-52 u-h-52 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-lg u-c-white u-bd-2-solid-fg-20" style="background:linear-gradient(135deg, var(--info), var(--primary))">
+                <div id="dossier-avatar" class="u-w-52 u-h-52 u-r-50p u-flex u-items-center u-justify-center u-bold u-fs-lg u-c-white u-bd-2-solid-fg-20 u-grad-info-primary">
                   را
                 </div>
                 <div>
@@ -1571,7 +1571,7 @@
         </div>
 
         <!-- 1.1 STUDENT TICKETS MODAL (تیکت‌های دانش‌آموز با راهبر) -->
-        <div id="student-tickets-modal" class="modal-overlay u-z-z-modal-stacked" style="display: none">
+        <div id="student-tickets-modal" class="modal-overlay u-z-z-modal-stacked" data-style="display: none">
           <div class="modal-content glass u-maxw-850 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-18 u-bg-surface u-bd-accent-40 u-shadow-modal-9 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
               <div class="u-flex u-items-center u-gap-12">
@@ -1597,7 +1597,7 @@
         </div>
 
         <!-- 1.2 STUDENT CHALLENGES MODAL (رفت و برگشت چالش‌ها و تکالیف دانش‌آموز با راهبر) -->
-        <div id="student-challenges-modal" class="modal-overlay u-z-z-modal-stacked" style="display: none">
+        <div id="student-challenges-modal" class="modal-overlay u-z-z-modal-stacked" data-style="display: none">
           <div class="modal-content glass u-maxw-900 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-18 u-bg-surface u-bd-primary-40 u-shadow-modal-9 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
               <div class="u-flex u-items-center u-gap-12">
@@ -1623,7 +1623,7 @@
         </div>
 
         <!-- 3. MENTOR MODERATION MODAL (مدیریت وضعیت و تعلیق راهبر) -->
-        <div id="mentor-moderation-modal" class="modal-overlay u-z-z-modal" style="display: none">
+        <div id="mentor-moderation-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
           <div class="modal-content glass u-maxw-580 u-w-95p u-border-box u-r-16 u-bg-surface u-bd-danger-40 u-shadow-modal-8 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
               <div>
@@ -1660,7 +1660,7 @@
                 </div>
               </div>
 
-              <div id="mod-temp-date-container" class="u-mb-14" style="display: none">
+              <div id="mod-temp-date-container" class="u-mb-14" data-style="display: none">
                 <label for="mod-suspended-until" class="u-fs-xs u-c-accent-text u-mb-4 u-block">تاریخ پایان تعلیق موقت:</label>
                 <input type="date" id="mod-suspended-until"" class="input-ctrl u-bg-surface-2 u-c-text">
               </div>
@@ -1676,7 +1676,7 @@
         </div>
       </section>
 
-      <section id="mentors-tickets-tab" class="tab-panel" style="display: none;">
+      <section id="mentors-tickets-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20">
           <div class="panel-title">میزکار و تیکت‌های راهبران</div>
         </div>
@@ -1701,7 +1701,7 @@
       </section>
 
       <!-- LMS -->
-      <section id="lms-tab" class="tab-panel" style="display: none;">
+      <section id="lms-tab" class="tab-panel" data-style="display: none;">
         <div class="u-flex u-justify-between u-items-center u-mb-20">
           <h3>ساختار منزلگاه‌ها و مدیریت کلاس‌ها و آزمون‌ها</h3>
           <div class="u-flex u-gap-10">
@@ -1803,7 +1803,7 @@
         </div>
 
         <!-- Station Inspector & Edit Modal -->
-        <div id="lms-station-creator-modal" class="modal-overlay u-z-z-drawer" style="display: none">
+        <div id="lms-station-creator-modal" class="modal-overlay u-z-z-drawer" data-style="display: none">
           <div class="modal-content glass u-maxw-860 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-primary-30 u-shadow-modal-7 u-p-24 u-c-text">
             
             <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
@@ -1916,7 +1916,7 @@
         </div>
 
         <!-- Station Reorder & Unique Numbering Modal -->
-        <div id="lms-station-reorder-modal" class="modal-overlay u-z-z-modal" style="display: none">
+        <div id="lms-station-reorder-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
           <div class="modal-content glass u-maxw-680 u-w-95p u-maxh-85vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-success-35 u-shadow-modal-8 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
               <div>
@@ -1945,7 +1945,7 @@
         </div>
 
         <!-- LMS Session Content, Video Links & Mini-Quiz Manager Modal -->
-        <div id="lms-content-manager-modal" class="modal-overlay" style="display: none;">
+        <div id="lms-content-manager-modal" class="modal-overlay" data-style="display: none;">
           <div class="modal-content glass u-maxw-900 u-w-95p u-maxh-90vh u-scroll-y u-p-24">
             <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-16">
               <div>
@@ -1978,7 +1978,7 @@
         </div>
 
         <!-- LMS Two-Step Confirmation Modal for Final Save -->
-        <div id="lms-final-confirm-modal" class="modal-overlay u-z-z-modal-confirm" style="display: none">
+        <div id="lms-final-confirm-modal" class="modal-overlay u-z-z-modal-confirm" data-style="display: none">
           <div class="modal-content glass u-maxw-520 u-w-92p u-p-24 u-r-16 u-bg-surface u-bd-success-50 u-shadow-modal-9 u-text-right">
             <div class="u-flex u-items-center u-gap-12 u-mb-16">
               <div class="u-w-44 u-h-44 u-r-12 u-bg-success-15 u-flex u-items-center u-justify-center u-c-success-text u-fs-xl u-bd-success-30">
@@ -2011,7 +2011,7 @@
         </div>
 
         <!-- Quiz Editor Modal for Mini-Quizzes -->
-        <div id="lms-quiz-editor-modal" class="modal-overlay u-z-z-modal-nested" style="display: none">
+        <div id="lms-quiz-editor-modal" class="modal-overlay u-z-z-modal-nested" data-style="display: none">
           <div class="modal-content glass u-maxw-680 u-w-95p u-maxh-88vh u-scroll-y u-border-box u-r-16 u-bg-surface u-bd-accent-40 u-shadow-modal-8 u-p-24 u-c-text">
             <div class="u-flex u-justify-between u-items-center u-mb-16 u-bb-fg-10 u-pb-12">
               <div>
@@ -2091,7 +2091,7 @@
       </section>
 
       <!-- DYNAMIC FORM BUILDER -->
-      <section id="form-builder-tab" class="tab-panel" style="display: none;">
+      <section id="form-builder-tab" class="tab-panel" data-style="display: none;">
         <div class="panel-card glass u-mb-20">
           <div class="panel-title">فرم‌ساز داینامیک و تعیین محل نمایش</div>
           <form id="dyn-form-builder" class="u-flex u-gap-10 u-mt-16 u-items-grid-end u-wrap" data-submit="submitDynamicForm" data-submit-args="[&quot;$event&quot;]">
@@ -2145,7 +2145,7 @@
       </section>
 
       <!-- CHALLENGES & SUBMISSIONS REVIEW TAB -->
-      <section id="submissions-tab" class="tab-panel" style="display: none;">
+      <section id="submissions-tab" class="tab-panel" data-style="display: none;">
         <!-- Header with Title, Desc, and Refresh Button -->
         <div class="u-flex u-justify-between u-items-center u-mb-20 u-wrap u-gap-12">
           <div>
@@ -2333,7 +2333,7 @@
       </section>
 
       <!-- JARCHI NEWS & BANNERS TAB -->
-      <section id="news-tab" class="tab-panel" style="display: none;">
+      <section id="news-tab" class="tab-panel" data-style="display: none;">
         <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-12">
           <div>
             <h3 class="u-m-0 u-c-text u-fs-lg u-flex u-items-center u-gap-8">
@@ -2357,12 +2357,12 @@
             <i class="fa-solid fa-newspaper"></i> اطلاعیه‌ها و اخبار جارچی
           </button>
           <button type="button" id="subtab-btn-support" data-click="switchJarchiSubTab" data-click-args="[&quot;support&quot;]" class="u-bg-fg-6 u-c-text-muted u-bd-fg-10 u-r-8 u-p-10-20 u-bold u-pointer u-flex u-items-center u-gap-8 u-transition">
-            <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" class="u-bg-danger u-r-10 u-p-1-8 u-fs-2xs" style="display:none; color:#fff"></span>
+            <i class="fa-solid fa-headset"></i> پیام‌های پشتیبانی <span id="support-open-count" class="u-bg-danger u-r-10 u-p-1-8 u-fs-2xs u-c-white" data-style="display:none"></span>
           </button>
         </div>
 
         <!-- SUBVIEW 3: SUPPORT MESSAGES (sent from the app's "ارسال پیام به پشتیبانی") -->
-        <div id="jarchi-support-view" style="display: none;"></div>
+        <div id="jarchi-support-view" data-style="display: none;"></div>
 
         <!-- SUBVIEW 1: BANNERS MANAGEMENT -->
         <div id="jarchi-banners-view">
@@ -2429,7 +2429,7 @@
         </div>
 
         <!-- SUBVIEW 2: NEWS & ANNOUNCEMENTS -->
-        <div id="jarchi-news-view" style="display: none;">
+        <div id="jarchi-news-view" data-style="display: none;">
           <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-10">
             <h4 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-6">
               <i class="fa-solid fa-newspaper u-c-primary-text"></i> لیست اخبار و اطلاعیه‌های جارچی
@@ -2549,7 +2549,7 @@
             <option value="admin">سوپر ادمین</option>
           </select>
         </div>
-        <div class="form-group" id="panel-access-group" style="display:none;">
+        <div class="form-group" id="panel-access-group" data-style="display:none;">
           <label for="modal-user-panel-access">دسترسی به پنل مدیریت (فقط سوپر ادمین)</label>
           <select id="modal-user-panel-access"" class="select-ctrl u-w-full">
             <option value="default">طبق تنظیمات نقش</option>
@@ -2557,7 +2557,7 @@
             <option value="false">غیرمجاز</option>
           </select>
         </div>
-        <div class="form-group" id="mentor-level-group" style="display:none;">
+        <div class="form-group" id="mentor-level-group" data-style="display:none;">
           <label for="modal-user-mentor-level">سطح مربی (ویژه مربیان)</label>
           <select id="modal-user-mentor-level"" class="select-ctrl u-w-full u-mb-16">
             <option value="1">سطح ۱: یاور (Junior)</option>
@@ -2586,7 +2586,7 @@
 
   <!-- COMPREHENSIVE MENTOR EDIT MODAL -->
   <!-- MENTOR MODAL (REGISTER / EDIT) -->
-  <div class="modal-overlay u-z-z-modal" id="mentor-modal-overlay" style="display: none">
+  <div class="modal-overlay u-z-z-modal" id="mentor-modal-overlay" data-style="display: none">
     <div class="modal-content glass u-maxw-850 u-w-92p u-maxh-90vh u-flex u-col u-bg-surface u-bd-primary-30 u-r-16 u-shadow-modal-85 u-c-text u-p-0 u-overflow-hidden">
       <div class="modal-header u-bb-fg-10 u-p-20-24 u-flex u-justify-between u-items-center u-bg-surface-2-50">
         <h3 id="mentor-modal-form-title" class="u-m-0 u-c-primary-text u-fs-md u-flex u-items-center u-gap-8">
@@ -2595,7 +2595,7 @@
         <button aria-label="بستن" type="button" id="btn-close-mentor-modal" class="modal-close" data-click="NopaActions.hide" data-click-args="[&quot;mentor-modal-overlay&quot;]">&times;</button>
       </div>
 
-      <div class="u-p-24 u-scroll-y" style="max-height: calc(90vh - 80px)">
+      <div class="u-p-24 u-scroll-y u-maxh-modal-body">
         <form id="mentor-form" data-submit="handleMentorFormSubmit" data-submit-args="[&quot;$event&quot;]" class="u-flex u-col u-gap-20">
           <input type="hidden" id="modal-mentor-id">
           
@@ -2672,7 +2672,7 @@
           </div>
 
           <!-- Certificates Verification Pipeline (Optional preview if present) -->
-          <div id="modal-mentor-certs-section" class="panel-card u-bg-surface-2-50 u-bd-primary-30 u-r-12 u-p-16" style="display: none">
+          <div id="modal-mentor-certs-section" class="panel-card u-bg-surface-2-50 u-bd-primary-30 u-r-12 u-p-16" data-style="display: none">
             <h4 class="u-c-primary-text u-m-0-0-12-0 u-fs-base"><i class="fa-solid fa-file-certificate"></i> گواهینامه‌ها و مدارک ارسالی</h4>
             <div class="table-container u-bg-shade-20 u-r-8">
               <table class="data-table u-fs-sm">
@@ -2717,7 +2717,7 @@
   </div>
 
     <!-- Mentor Document Approve/Reject Modal -->
-    <div id="mentor-doc-modal" class="modal-overlay" style="display:none;">
+    <div id="mentor-doc-modal" class="modal-overlay" data-style="display:none;">
       <div class="modal-content glass u-maxw-820">
         <div class="modal-header">
           <h3 id="mentor-doc-modal-title">بررسی مدرک مربی</h3>
@@ -2738,7 +2738,7 @@
     </div>
 
     <!-- Caravan Builder Wizard Modal -->
-    <div id="caravan-wizard-modal" class="modal-overlay" style="display:none;">
+    <div id="caravan-wizard-modal" class="modal-overlay" data-style="display:none;">
       <div class="modal-content glass u-maxw-800">
         <div class="modal-header">
           <h3>ساخت کاروان جدید</h3>
@@ -2791,7 +2791,7 @@
     </div>
 
     <!-- Ticket Drawer Modal -->
-    <div id="ticket-drawer-modal" class="modal-overlay" style="display:none;">
+    <div id="ticket-drawer-modal" class="modal-overlay" data-style="display:none;">
       <div class="modal-content glass u-maxw-820 u-w-90p u-flex u-col u-bg-surface-2-95">
         <div class="modal-header u-bb-fg-10">
           <h3 id="ticket-drawer-title">جزئیات تیکت</h3>
@@ -2809,7 +2809,7 @@
     </div>
 
     <!-- Caravan Operations Drawer Modal (Glassmorphic) -->
-    <div id="caravan-drawer-modal" class="modal-overlay" style="display:none;">
+    <div id="caravan-drawer-modal" class="modal-overlay" data-style="display:none;">
       <div class="modal-content glass u-maxw-1000 u-flex u-col u-bg-surface-95 u-backdrop-blur-16 u-bd-fg-10 u-r-16">
         <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-16">
           <div>
@@ -2859,13 +2859,13 @@
           </div>
 
           <!-- Tab 2: Wealth & Progress -->
-          <div id="cd-wealth" class="cd-tab-content" style="display:none;">
+          <div id="cd-wealth" class="cd-tab-content" data-style="display:none;">
             <div class="u-flex u-gap-20">
               <div class="panel-card glass u-flex-1">
                  <h4 class="u-c-color-neon-blue u-mb-16"><i class="fa-solid fa-graduation-cap"></i> وضعیت مشارکت اعضا در مسیر</h4>
                  <div class="u-flex u-items-center u-gap-10 u-mt-16">
-                    <div class="u-flex-1 u-bg-shade-30 u-h-12 u-r-6 u-overflow-hidden" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.5)">
-                      <div id="cd-progress-bar" class="u-w-0p u-h-full u-r-6 u-tr-width-0_5s-ease" style="background: linear-gradient(90deg, var(--success), var(--success))"></div>
+                    <div class="u-flex-1 u-bg-shade-30 u-h-12 u-r-6 u-overflow-hidden u-shadow-inset">
+                      <div id="cd-progress-bar" class="u-w-0p u-h-full u-r-6 u-tr-width-0_5s-ease u-bg-success"></div>
                     </div>
                     <span id="cd-progress-text" class="u-fs-md u-bold u-c-success-text">0%</span>
                  </div>
@@ -2880,7 +2880,7 @@
                      <h3 id="cd-wealth-zarik" class="u-m-6-0-0-0 u-c-text">0</h3>
                    </div>
                    <div class="u-bg-shade-20 u-p-10 u-r-8 u-text-center">
-                     <span class="u-fs-lg u-block" style="color:#d946ef"><i class="fa-solid fa-gem"></i></span>
+                     <span class="u-fs-lg u-block u-c-pink-text"><i class="fa-solid fa-gem"></i></span>
                      <span class="u-fs-xs u-c-text-secondary">کلاف</span>
                      <h3 id="cd-wealth-nakh" class="u-m-6-0-0-0 u-c-text">0</h3>
                    </div>
@@ -2900,7 +2900,7 @@
           </div>
 
           <!-- Tab 3: Quick Actions -->
-          <div id="cd-actions" class="cd-tab-content" style="display:none;">
+          <div id="cd-actions" class="cd-tab-content" data-style="display:none;">
              <div class="u-grid u-cols-2 u-gap-20">
                <div role="button" tabindex="0" class="panel-card glass u-text-center u-pointer u-tr-0_2s" data-click="openAddMemberToCaravanModal">
                  <i class="fa-solid fa-user-plus u-fs-2xl u-c-info-text u-mb-10"></i>
@@ -2934,7 +2934,7 @@
     </div>
 
     <!-- Student Detail Modal -->
-    <div id="caravan-student-detail-modal" class="modal-overlay u-z-z-mobile-nav" style="display:none">
+    <div id="caravan-student-detail-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
       <div class="modal-content glass u-maxw-800 u-flex u-col u-bg-surface-95 u-backdrop-blur-16 u-bd-fg-10 u-r-16">
         <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-16">
           <div>
@@ -2988,13 +2988,13 @@
           <input type="password" id="login-password" class="input-ctrl" placeholder="******" autocomplete="current-password" required>
         </div>
         <button type="submit" id="admin-login-btn" class="btn-primary login-submit">ورود به پنل کاربری</button>
-        <div id="login-error" class="error-msg" style="display:none;">شماره همراه یا رمز عبور نامعتبر است</div>
+        <div id="login-error" class="error-msg" data-style="display:none;">شماره همراه یا رمز عبور نامعتبر است</div>
       </form>
     </div>
   </div>
 
   <!-- Bulk Transfer Modal -->
-  <div id="bulk-transfer-modal" class="modal-overlay" style="display:none;">
+  <div id="bulk-transfer-modal" class="modal-overlay" data-style="display:none;">
     <div class="modal-content glass u-maxw-800 u-flex u-col u-bg-surface-95 u-backdrop-blur-16 u-bd-fg-10 u-r-16">
       <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-16">
         <h3 class="u-m-0 u-c-color-neon-blue u-fs-xl"><i class="fa-solid fa-exchange-alt"></i> انتقال گروهی اعضا</h3>
@@ -3030,7 +3030,7 @@
   </div>
 
   <!-- Add Member To Caravan Modal -->
-  <div id="add-member-to-caravan-modal" class="modal-overlay u-z-z-mobile-nav" style="display:none">
+  <div id="add-member-to-caravan-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
     <div class="modal-content glass u-maxw-600 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-fg-10">
       <div class="u-flex u-justify-between u-items-center u-mb-20">
         <h3 class="u-c-text u-fs-md u-bold u-m-0"><i class="fa-solid fa-user-plus u-c-success-text"></i> افزودن عضو جدید به کاروان</h3>
@@ -3078,8 +3078,8 @@
   </div>
 
   <!-- Rename Caravan Modal (تغییر نام کاروان) -->
-  <div id="rename-caravan-modal" class="modal-overlay u-z-z-mobile-nav" style="display:none">
-    <div class="modal-content glass u-maxw-440 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-success-35" style="box-shadow:0 20px 40px rgba(0,0,0,0.6)">
+  <div id="rename-caravan-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
+    <div class="modal-content glass u-maxw-440 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-success-35 u-shadow-pop-lg">
       <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-8 u-pb-12">
         <h3 class="u-c-text u-fs-md u-bold u-m-0 u-flex u-items-center u-gap-8">
           <i class="fa-solid fa-pen-to-square u-c-success-text"></i> ویرایش و تغییر نام کاروان
@@ -3102,7 +3102,7 @@
     </div>
   </div>
 
-  <div id="change-caravan-mentor-modal" class="modal-overlay u-z-z-mobile-nav" style="display:none">
+  <div id="change-caravan-mentor-modal" class="modal-overlay u-z-z-mobile-nav" data-style="display:none">
     <div class="modal-content glass u-maxw-420 u-w-90p u-p-24 u-r-16 u-bg-surface-2 u-bd-fg-10">
       <div class="u-flex u-justify-between u-items-center u-mb-20">
         <h3 class="u-c-text u-fs-md u-bold u-m-0"><i class="fa-solid fa-user-gear u-c-primary-text"></i> تغییر راهبر کاروان</h3>
@@ -3126,7 +3126,7 @@
   </div>
 
   <!-- Jarchi News Modal -->
-  <div id="news-modal" class="modal-overlay hidden u-z-z-modal u-p-20" style="display: none">
+  <div id="news-modal" class="modal-overlay hidden u-z-z-modal u-p-20" data-style="display: none">
     <div class="modal-content glass u-maxw-650 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-primary-30 u-shadow-modal-8 u-c-text">
       <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
         <h3 id="news-modal-title" class="u-c-primary-text u-fs-lg u-m-0 u-flex u-items-center u-gap-8">
@@ -3199,7 +3199,7 @@
           <label class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-image u-c-primary-text"></i> تصویر خبر (اختیاری)</label>
           <div class="u-flex u-gap-12 u-items-center u-mt-6">
             <input aria-label="فایل تصویر خبر" type="file" id="news-file" accept="image/*" class="input-ctrl u-flex-1 u-p-8 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" data-change="previewNewsImage" data-change-args="[&quot;$event&quot;]">
-            <img id="news-image-preview" src="" class="u-w-60 u-h-60 u-r-8 u-fit-cover u-bd-primary" style="display: none" />
+            <img id="news-image-preview" src="" class="u-w-60 u-h-60 u-r-8 u-fit-cover u-bd-primary" data-style="display: none" />
           </div>
         </div>
         
@@ -3214,7 +3214,7 @@
   </div>
 
   <!-- BANNER CREATE / EDIT MODAL -->
-  <div id="banner-modal" class="modal-overlay hidden u-z-z-modal u-p-20" style="display: none">
+  <div id="banner-modal" class="modal-overlay hidden u-z-z-modal u-p-20" data-style="display: none">
     <div class="modal-content glass u-maxw-600 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-accent-30 u-shadow-modal-8 u-c-text">
       <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
         <h3 id="banner-modal-title" class="u-c-accent-text u-fs-lg u-m-0 u-flex u-items-center u-gap-8">
@@ -3255,7 +3255,7 @@
           <label class="u-c-text-soft u-fs-xs u-bold"><i class="fa-solid fa-cloud-arrow-up u-c-accent-text"></i> فایل تصویر بنر *</label>
           <div class="u-flex u-gap-12 u-items-center u-mt-6">
             <input aria-label="فایل تصویر بنر" type="file" id="banner-file" accept="image/*" class="input-ctrl u-flex-1 u-p-8 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text" data-change="previewBannerImage" data-change-args="[&quot;$event&quot;]">
-            <img id="banner-image-preview" src="" class="u-w-80 u-h-50 u-r-6 u-fit-cover u-bd-accent" style="display: none" />
+            <img id="banner-image-preview" src="" class="u-w-80 u-h-50 u-r-6 u-fit-cover u-bd-accent" data-style="display: none" />
           </div>
           <small class="u-c-text-faint u-fs-2xs u-mt-4 u-block">فرمت‌های مجاز: JPG, PNG, WEBP (حداکثر ۵ مگابایت)</small>
         </div>
@@ -3278,7 +3278,7 @@
   </div>
   
     <!-- CHALLENGE STEPS MODAL -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="challenge-steps-modal" style="display: none">
+    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="challenge-steps-modal" data-style="display: none">
       <div class="modal-content glass u-maxw-650 u-w-95p u-maxh-90vh u-scroll-y u-bd-primary-30 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9">
         <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
           <div>
@@ -3299,7 +3299,7 @@
     </div>
 
     <!-- CREATE CHALLENGE MODAL (ADMIN) -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="create-challenge-modal" style="display: none">
+    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="create-challenge-modal" data-style="display: none">
       <div class="modal-content glass u-maxw-720 u-w-95p u-maxh-90vh u-scroll-y u-bd-primary-40 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9 u-c-text u-flex u-col">
         <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
           <div>
@@ -3349,7 +3349,7 @@
                 <select id="new-chal-caravan-id"" required data-change="handleChallengeAudienceChange" data-change-args="[&quot;new&quot;]" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
                   <option value="inter_group">عمومی (میان‌گروهی)</option>
                 </select>
-                <div id="new-chal-mentor-notice" class="u-fs-2xs u-c-primary-text u-mt-6 u-bg-primary-10 u-p-6-8 u-r-6 u-bd-primary-25 u-lh-1_5" style="display: none"></div>
+                <div id="new-chal-mentor-notice" class="u-fs-2xs u-c-primary-text u-mt-6 u-bg-primary-10 u-p-6-8 u-r-6 u-bd-primary-25 u-lh-1_5" data-style="display: none"></div>
               </div>
               <div>
                 <label for="new-chal-type" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">نوع چالش *</label>
@@ -3409,7 +3409,7 @@
     </div>
 
     <!-- EDIT CHALLENGE MODAL (ADMIN) -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="ranking-modal" style="display: none">
+    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="ranking-modal" data-style="display: none">
       <div class="glass u-w-full u-maxw-520 u-p-24 u-r-16 u-bd-fg-10">
         <div class="u-flex u-justify-between u-items-center u-mb-14">
           <div id="ranking-title" class="u-fs-md u-bold u-c-text">رتبه‌بندی کاروان‌ها</div>
@@ -3419,7 +3419,7 @@
       </div>
     </div>
 
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="edit-challenge-modal" style="display: none">
+    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="edit-challenge-modal" data-style="display: none">
       <div class="modal-content glass u-maxw-720 u-w-95p u-maxh-90vh u-scroll-y u-bd-info-40 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9 u-c-text u-flex u-col">
         <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
           <div>
@@ -3526,7 +3526,7 @@
     </div>
 
     <!-- VIEW & EVALUATE SUBMISSION MODAL -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="view-submission-modal" style="display: none">
+    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="view-submission-modal" data-style="display: none">
       <div class="modal-content glass u-maxw-750 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-primary-40 u-shadow-modal-9 u-c-text">
         <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
           <div>
@@ -3611,8 +3611,8 @@
     </div>
 
     <!-- STATION ACCESS & LOCK CONTROL MODAL -->
-    <div id="station-access-modal" class="modal-overlay u-z-z-panel-raised u-p-16" style="display: none">
-      <div class="glass-panel u-bg-surface u-bd-primary-30 u-r-16 u-w-full u-maxw-580 u-maxh-90vh u-scroll-y u-p-24 u-c-text" style="box-shadow: 0 20px 50px rgba(0,0,0,0.6)">
+    <div id="station-access-modal" class="modal-overlay u-z-z-panel-raised u-p-16" data-style="display: none">
+      <div class="glass-panel u-bg-surface u-bd-primary-30 u-r-16 u-w-full u-maxw-580 u-maxh-90vh u-scroll-y u-p-24 u-c-text u-shadow-pop-xl">
         
         <!-- Modal Header -->
         <div class="u-flex u-justify-between u-items-center u-bb-fg-10 u-pb-14 u-mb-20">
@@ -3661,7 +3661,7 @@
               <option value="all">همه کاروان‌ها (سراسری)</option>
               <option value="custom">کاروان‌های انتخاب‌شده...</option>
             </select>
-            <div id="sam-caravans-custom-box" class="u-mt-10 u-maxh-120 u-scroll-y u-bg-shade-25 u-bd-fg-8 u-r-8 u-p-8-12" style="display: none">
+            <div id="sam-caravans-custom-box" class="u-mt-10 u-maxh-120 u-scroll-y u-bg-shade-25 u-bd-fg-8 u-r-8 u-p-8-12" data-style="display: none">
               <!-- Populated with checkboxes of caravans -->
             </div>
           </div>
@@ -3679,7 +3679,7 @@
           <div class="u-fs-xs u-c-text-muted u-lh-1_6 u-mb-12">
             منزلگاه تا پیش از فرا رسیدن این زمان به صورت خودکار برای کاروان‌ها <strong>بسته و قفل</strong> خواهد بود و در تاریخ و ساعت مشخص‌شده بازگشایی می‌شود.
           </div>
-          <div id="sam-schedule-inputs-box" class="u-cols-2 u-gap-10" style="display: none">
+          <div id="sam-schedule-inputs-box" class="u-cols-2 u-gap-10" data-style="display: none">
             <div>
               <label for="sam-schedule-date" class="u-block u-fs-xs u-c-text-soft u-mb-4">تاریخ بازگشایی:</label>
               <input type="date" id="sam-schedule-date"" class="input-ctrl u-w-full u-bg-surface-2 u-c-text u-bd-border-strong u-r-8 u-p-8-10 u-fs-sm" data-change="updateSamSchedulePreview">
@@ -3689,7 +3689,7 @@
               <input type="time" id="sam-schedule-time"" class="input-ctrl u-w-full u-bg-surface-2 u-c-text u-bd-border-strong u-r-8 u-p-8-10 u-fs-sm" data-change="updateSamSchedulePreview">
             </div>
           </div>
-          <div id="sam-schedule-status-preview" class="u-mt-10 u-fs-xs u-c-primary-text u-bg-primary-10 u-bd-primary-25 u-r-8 u-p-8-12" style="display: none">
+          <div id="sam-schedule-status-preview" class="u-mt-10 u-fs-xs u-c-primary-text u-bg-primary-10 u-bd-primary-25 u-r-8 u-p-8-12" data-style="display: none">
             <!-- Live status text -->
           </div>
         </div>
@@ -3722,8 +3722,8 @@
     </div>
 
     <!-- MODAL: ADD / EDIT INSTRUCTOR -->
-    <div id="instructor-form-modal" class="modal-overlay u-z-z-modal" style="display: none">
-      <div class="modal-box glass u-w-90p u-maxw-650 u-maxh-90vh u-scroll-y u-bg-surface u-bd-primary-30 u-r-16 u-p-24" style="box-shadow: 0 20px 40px rgba(0,0,0,0.6)">
+    <div id="instructor-form-modal" class="modal-overlay u-z-z-modal" data-style="display: none">
+      <div class="modal-box glass u-w-90p u-maxw-650 u-maxh-90vh u-scroll-y u-bg-surface u-bd-primary-30 u-r-16 u-p-24 u-shadow-pop-lg">
         <div class="u-flex u-justify-between u-items-center u-bb-fg-8 u-pb-14 u-mb-20">
           <div>
             <h3 id="instructor-modal-title" class="u-m-0 u-c-primary-text u-fs-md u-flex u-items-center u-gap-8">
@@ -3770,10 +3770,10 @@
               <input aria-label="آدرس تصویر استاد" type="text" id="inst-avatar" class="input-ctrl u-bg-surface-2 u-bdc-border-strong u-direction-ltr u-text-left u-flex-1" placeholder="https://... یا /uploads/...">
               <label class="u-bg-primary-18 u-bd-primary u-c-primary-text u-p-8-14 u-r-7 u-pointer u-fs-xs u-inline-flex u-items-center u-gap-6 u-nowrap">
                 <i class="fa-solid fa-cloud-arrow-up"></i> آپلود عکس
-                <input type="file" accept="image/*" style="display: none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;inst-avatar&quot;]">
+                <input type="file" accept="image/*" data-style="display: none;" data-change="handleDirectFileUpload" data-change-args="[&quot;$this&quot;,&quot;inst-avatar&quot;]">
               </label>
             </div>
-            <div id="inst-avatar-preview-container" class="u-mt-8" style="display: none">
+            <div id="inst-avatar-preview-container" class="u-mt-8" data-style="display: none">
               <img id="inst-avatar-preview" src="" class="u-w-50 u-h-50 u-r-50p u-fit-cover u-bd-2-solid-primary">
             </div>
           </div>
@@ -3798,6 +3798,7 @@
       </div>
     </div>
 
+    <script src="js/ui/style-attr.js"></script>
     <script src="js/app/sw-register.js"></script>
     <script src="safe.js"></script>
     <script src="auth.js"></script>

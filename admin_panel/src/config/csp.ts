@@ -2,8 +2,9 @@
 //
 // The panel has no inline scripts or on…="" handlers any more (delegated data-* handlers,
 // public/js/ui/actions.js), so scripts are 'self' only: an injected <script> or attribute handler
-// does not run. Styles: stylesheets are 'self' only; inline style *attributes* are still allowed
-// (the remaining style="" mostly hold JS-toggled display:none).
+// does not run. No style="" attributes either: per-element styles are data-style="…", applied through
+// the CSSOM by public/js/ui/style-attr.js (CSSOM changes are not restricted by CSP), so no 'unsafe-inline'
+// anywhere.
 // Also: no third-party scripts, no connections to other origins (an injected script cannot send the
 // token elsewhere via fetch/XHR), no plugins/objects, no framing by other sites, and forms only to
 // this origin.
@@ -12,7 +13,7 @@ export const cspDirectives: Record<string, string[]> = {
   scriptSrc: ["'self'"],
   scriptSrcAttr: ["'none'"],
   styleSrc: ["'self'"],
-  styleSrcAttr: ["'unsafe-inline'"],
+  styleSrcAttr: ["'none'"],
   imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
   mediaSrc: ["'self'", 'blob:', 'https:'],
   fontSrc: ["'self'", 'data:'],

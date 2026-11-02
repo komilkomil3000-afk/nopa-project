@@ -2695,3 +2695,23 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Headless Chrome: step 3 suite 9/9, blank-container check 0, before/after screenshots (1440 / 390px); Phase 3–8 suites (incl. a11y and CSP), open-everything, smoke, handler static check green.
   - `npx tsc --noEmit`; `npm test` 10/10 in `admin_panel/`.
 - **Status:** Completed (redesign roadmap Phases 1–8 done)
+
+### [2026-11-02 11:28] - Claude Code (Opus 5.5) / Admin Panel — Follow-ups: CSP without 'unsafe-inline', pink token, brand PWA icons
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/style-attr.js` (Created — data-style → element.style via the CSSOM)
+  - `admin_panel/src/config/csp.ts` (Modified — `style-src-attr 'none'`)
+  - `admin_panel/tests/security.test.js` (Modified — no 'unsafe-inline' anywhere)
+  - `admin_panel/public/index.html`, `admin_panel/public/instructors.js`, `admin_panel/public/support.js`, `admin_panel/public/js/features/*.js`, `admin_panel/public/js/features/lms/*.js` (Modified — every style="" → class or data-style)
+  - `admin_panel/public/css/tokens.css` (Modified — --pink family), `admin_panel/public/css/components.css` (Modified — pink / one-off classes, pre-script hide rule)
+  - `admin_panel/public/icons/*` (Modified — regenerated in the brand gradient), `admin_panel/public/manifest.webmanifest` (Modified — brand colours)
+  - `admin_panel/public/sw.js` (Modified — cache nopa-admin-v17)
+  - `admin_panel/REDESIGN_ROADMAP.md` (Modified — local, git-ignored)
+- **Description of Changes:**
+  - CSP now has no 'unsafe-inline' at all: the panel ships no style attributes; data-dependent and JS-toggled styles go through data-style + CSSOM (allowed by CSP), with identical computed results.
+  - Five ad-hoc pinks unified into a --pink token (contrast-safe in the light theme). PWA icons and manifest colours moved to the brand purple.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome under the real header: CSP suite 9/9 (no violations over all tabs, clicks and modals; injected style attributes blocked; data-style applied for late inserts). Computed-style diff at 1440 / 390 px and light theme shows only the pink / gradient changes. Phase 3–8 suites, a11y, open-everything, smoke, blank-state check green.
+  - `npx tsc --noEmit`; `npm run build`; `npm test` 10/10 in `admin_panel/`. Deploy: rebuild on the server for the new header.
+- **Status:** Completed
