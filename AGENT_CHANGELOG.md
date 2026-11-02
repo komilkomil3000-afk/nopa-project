@@ -3031,3 +3031,81 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - `node --check` on every changed CRM JS file: OK
   - Not run: on-device check, server deploy, the repair script against the database
 - **Status:** Completed
+
+### [2026-11-02 20:39] - Claude Code (Agent 2: Flutter App & LMS Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/chat/channel_manager_shell.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+- **Description of Changes:**
+  - Redesigned the chat home per the supplied mockup: golden radial header reaching under the status bar (dark NOPA logo, connection state "درحال اتصال..." / "گفتگوها", drawer button), light filter bar (همه / چالش ها / شخصی / دورهمی / آموزگاه) with a marker over the selected tab, and flat conversation rows (ringed avatar, name, preview, time, gold unread badge or green read ticks, fading separator).
+  - Filters map space types: challenges+arena / direct+support / caravan+public+mentors+groups / announcements+media.
+  - The shell's AppTopBar is hidden on the chat tab (and in ChannelManagerShell when chat is on) so the chat header replaces it.
+  - When `chatEnabled` is on, the notification bell is removed from AppTopBar app-wide and the "پیام ها" (notifications) item is hidden from the student and mentor profile menus; nothing changes when chat is off.
+  - `ChatSpace.previewSenderId` + `ChatRepository.userId` to tell one's own last message (for ticks); the spaces API now returns `lastMessage.senderId` (needs backend redeploy; until then ticks simply don't show).
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (from `app/`): no issues. `npx tsc --noEmit` in `admin_panel/`: no errors.
+- **Status:** Completed
+
+### [2026-11-02 20:56] - Flutter Dev (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/screens/chat/channel_manager_shell.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_profile_screen.dart` (Modified)
+  - `app/lib/screens/shell/app_shell.dart` (Modified)
+  - `app/lib/screens/student/profile/student_profile_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/widgets/app_top_bar.dart` (Modified)
+  - `app/pubspec.lock` (Modified)
+  - `app/pubspec.yaml` (Modified)
+- **Description of Changes:**
+  - Removed flutter_image_compress (KGP warning, no fixed release)
+  - replaced with pure-Dart image package in chat_conversation_screen.dart (_shrink resizes to 1600px, JPEG q80, in isolate)
+  - pubspec.yaml/pubspec.lock updated
+- **Verification / Checkpoints Executed:**
+  - flutter pub get; flutter analyze chat_conversation_screen.dart (no issues)
+- **Status:** Completed
+
+### [2026-11-02 22:10] - Claude Code (Agent 2: Flutter App & LMS Specialist + Agent 3: Integration)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/profiles.ts` (Created)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `admin_panel/src/modules/chat/realtime.ts` (Modified)
+  - `admin_panel/src/modules/chat/routes.ts` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_menu.dart` (Created)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Created)
+  - `app/lib/screens/chat/chat_widgets.dart` (Created)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/test/chat_ui_test.dart` (Modified)
+- **Description of Changes:**
+  - Backend: presence (`presence` socket events on first connect / last disconnect, `online` on people and direct peers, `onlineUserIds`); new `GET /chat/spaces/:id/profile` (counts, caravan rank, members), `GET /chat/spaces/:id/members/:userId` (balances, rank in caravan, participation stats for self/mentor/moderators), `GET /chat/spaces/:id/media?kind=image|audio|link|session&userId=` (sessions = threads/challenge topics, never in private chats). `peopleOf` moved to profiles.ts.
+  - Conversation screen redesigned per mockup: golden header (face, name, online/offline or member/online counts, typing), safe 16px gutter, wallpaper slot (`assets/images/chat_pattern.png`, optional), bubbles per chat type (private / group with names / channel full-width cards with "ارسال نظر"), gold bubbles for others and lavender for own with tail and avatar at the end of a run.
+  - Message menu opens on tap (text or beside it) as a light reactions bar + options card; long-press removed.
+  - Composer: light bar, voice + attach morph into send while typing, emoji panel (built-in, no new dependency), stays above the keyboard (own Scaffold with resizeToAvoidBottomInset).
+  - Profile screens per mockup: group/channel (members with online state, add-member for custom groups) and person (زریک/کلاف/قالیچه/درفش, rank, private message, participation analysis + link to the mentor report card), tabs photos/voices/links/sessions.
+  - Space classification fixed: `media` is a mentor's custom group; channels = announcements/public/arena (home filter tabs updated).
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (from `app/`): no issues. `flutter test`: 17/17 passed. `npx tsc --noEmit` in `admin_panel/`: no errors.
+  - Not run on a device; backend must be redeployed for presence, profiles and media.
+- **Status:** Completed

@@ -28,9 +28,11 @@ class ChannelManagerShell extends StatelessWidget {
         backgroundColor: Colors.transparent,
         drawer: CustomDrawer(role: user.role, currentIndex: -1, onTabSelected: (_) {}),
         body: SafeArea(
+          top: !user.chatEnabled,
           child: Column(
             children: [
-              const AppTopBar(showBackButton: false, showNotificationIcon: true, showDrawerButton: true),
+              // With chat on, the chat screen draws its own header
+              if (!user.chatEnabled) const AppTopBar(showBackButton: false, showNotificationIcon: true, showDrawerButton: true),
               Expanded(
                 child: user.chatEnabled
                     ? const ChatHomeScreen()

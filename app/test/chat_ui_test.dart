@@ -14,7 +14,7 @@ ChatMessage _message(Map<String, dynamic> extra) => ChatMessage.fromJson({
       ...extra,
     });
 
-Widget _bubble(ChatMessage message, {bool mine = false, VoidCallback? onThread, void Function(String)? onReact}) {
+Widget _bubble(ChatMessage message, {bool mine = false, VoidCallback? onThread, void Function(String)? onReact, void Function(Rect)? onTap, ChatBubbleStyle style = ChatBubbleStyle.group}) {
   return MaterialApp(
     home: Directionality(
       textDirection: TextDirection.rtl,
@@ -22,10 +22,12 @@ Widget _bubble(ChatMessage message, {bool mine = false, VoidCallback? onThread, 
         body: ChatMessageBubble(
           message: message,
           mine: mine,
+          style: style,
           showSender: true,
+          showAvatar: true,
           seen: false,
           myId: 'u1',
-          onLongPress: () {},
+          onTap: onTap ?? (_) {},
           onOpenThread: onThread,
           onRetry: () {},
           onReact: onReact ?? (_) {},
@@ -52,6 +54,21 @@ void main() {
     expect(find.text('سلام'), findsWidgets);
     await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
     expect(reacted, 'bravo');
+  });
+
+  testWidgets('a tap on the text, or beside it on its row, opens the message menu', (tester) async {
+    Rect? at;
+    await tester.pumpWidget(_bubble(_message({}), onTap: (r) => at = r));
+    await tester.tap(find.text('سلام').first);
+    expect(at, isNotNull);
+    at = null;
+    await tester.tapAt(const Offset(400, 20)); // empty space on the same row
+    expect(at, isNotNull);
+  });
+
+  testWidgets('a channel post offers comments even before the first reply', (tester) async {
+    await tester.pumpWidget(_bubble(_message({}), onThread: () {}, style: ChatBubbleStyle.channel));
+    expect(find.text('ارسال نظر'), findsWidgets);
   });
 
   testWidgets('a deleted message hides its content', (tester) async {

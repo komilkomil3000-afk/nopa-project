@@ -26,6 +26,9 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // With chat switched on, conversations take the place of notifications everywhere in the app.
+    final chatEnabled = context.select<AppRepository, bool>((r) => r.currentUser.chatEnabled);
+    final showNotificationIcon = this.showNotificationIcon && !chatEnabled;
     return Padding(
       padding: const EdgeInsets.only(left: 18, right: 18, top: 10, bottom: 6),
       child: Directionality(

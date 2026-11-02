@@ -10,7 +10,8 @@ import { canModerate, canPostTopLevel, canReply, canStartDirect, canTag, ChatAct
 import { blockedWord, runCommand } from './bots';
 import { handler, requireMessage, requireSpace } from './http';
 import { notifyAbsent, publishMessage, publishUpdate } from './publish';
-import { emitToSpace, refreshUserRooms } from './realtime';
+import { emitToSpace, isOnline, refreshUserRooms } from './realtime';
+import { peopleOf } from './profiles';
 import { ensureOpenCase } from './support';
 import {
   attachmentKind, CHAT_FILES_DIR, ChatError, directKey, findVisibleSpace, MAX_BODY, MESSAGE_INCLUDE, PAGE_SIZE,
@@ -43,7 +44,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       where: { spaceId: { in: ids }, threadRootId: null },
       orderBy: { seq: 'desc' },
       distinct: ['spaceId'],
-      select: { spaceId: true, body: true, kind: true, deletedAt: true, createdAt: true, sender: { select: { name: true } } },
+      select: { spaceId: true, body: true, kind: true, deletedAt: true, createdAt: true, senderId: true, sender: { select: { name: true } } },
     }),
     prisma.chatMember.findMany({
       where: { spaceId: { in: spaces.filter(s => s.type === 'direct').map(s => s.id) }, userId: { not: actor.id } },
@@ -59,7 +60,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       id: s.id,
       type: s.type,
       title: peer?.user.name || (s.caravan && s.type === 'caravan' ? s.caravan.name : s.title),
-      peer: peer?.user || null,
+      peer: peer ? { ...peer.user, online: isOnline(peer.user.id) } : null,
       peerReadSeq: peer?.lastReadSeq ?? 0,
       lastSeq: s.lastSeq,
       lastReadSeq: me?.lastReadSeq ?? 0,
@@ -70,6 +71,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       canModerate: canModerate(actor, s),
       canTag: canTag(actor, s),
       lastMessage: last && {
+        senderId: last.senderId,
         senderName: last.sender?.name || '',
         preview: last.deletedAt ? '' : (last.body.slice(0, 80) || (last.kind === 'file' ? 'فایل' : '')),
         createdAt: last.createdAt,
@@ -285,17 +287,6 @@ export const searchMessages = handler(async (req, res, actor) => {
   });
   res.json(rows.map(serializeMessage));
 });
-
-async function peopleOf(space: { id: string; caravanId: string | null }) {
-  const select = { id: true, name: true, avatarUrl: true, role: true, gender: true };
-  if (space.caravanId) {
-    const caravan = await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { mentor: { select } } });
-    const members = await prisma.user.findMany({ where: { caravanId: space.caravanId, role: 'student' }, select, take: 200 });
-    return [...(caravan?.mentor ? [caravan.mentor] : []), ...members];
-  }
-  const members = await prisma.chatMember.findMany({ where: { spaceId: space.id }, select: { user: { select } }, take: 200 });
-  return members.map(m => m.user);
-}
 
 /** People a member can mention in a space. */
 export const listPeople = handler(async (req, res, actor) => {

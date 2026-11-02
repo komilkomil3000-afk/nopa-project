@@ -107,7 +107,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                 fallbackIcon: Icons.settings_rounded,
                 onTap: () => _openEditProfile(currentUser),
               ),
-              _buildProfileMenuItem(
+              if (!currentUser.chatEnabled) _buildProfileMenuItem(
                 title: 'پیام ها',
                 svgAsset: '',
                 fallbackIcon: Icons.notifications_none_rounded,

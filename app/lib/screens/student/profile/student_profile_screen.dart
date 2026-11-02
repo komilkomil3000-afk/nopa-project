@@ -108,7 +108,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 fallbackIcon: Icons.settings_rounded,
                 onTap: () => _openEditProfile(currentUser),
               ),
-              _buildProfileMenuItem(
+              if (!currentUser.chatEnabled) _buildProfileMenuItem(
                 title: 'پیام ها',
                 svgAsset: '',
                 fallbackIcon: Icons.notifications_none_rounded,

@@ -1,22 +1,27 @@
 import 'dart:io' as io;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
+import 'package:nopa_app/screens/chat/chat_message_menu.dart';
+import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/services/local_cache.dart';
-import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +42,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final ChatRepository _chat = ChatRepository.instance;
   final ScrollController _scroll = ScrollController();
   final AudioRecorder _recorder = AudioRecorder();
+  final FocusNode _focus = FocusNode();
   late final DraftTextController _input = DraftTextController(draftKey: 'chat-${widget.spaceId}-${widget.threadRoot?.id ?? ''}');
 
   ChatMessage? _replyTo;
@@ -45,7 +51,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _reachedStart = false;
   bool _uploading = false;
   bool _recording = false;
+  bool _emojiOpen = false;
   List<Map<String, dynamic>> _people = [];
+  Map<String, dynamic>? _profile;
   List<Map<String, dynamic>> _cases = [];
   List<Map<String, dynamic>> _mentionMatches = [];
   final Set<String> _mentions = {};
@@ -58,10 +66,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _chat.watch(widget.spaceId, threadRootId: _threadId);
     _chat.open(widget.spaceId, threadRootId: _threadId).then((_) => _chat.markRead(widget.spaceId));
     _chat.people(widget.spaceId).then((people) {
-      if (mounted) _people = people;
+      if (mounted) setState(() => _people = people);
     });
+    final space = _chat.spaceById(widget.spaceId);
+    if (space != null && !space.isPrivate) {
+      _chat.spaceProfile(widget.spaceId).then((profile) {
+        if (mounted) setState(() => _profile = profile);
+      });
+    }
     _scroll.addListener(_onScroll);
     _input.addListener(_onTyping);
+    _focus.addListener(() {
+      if (_focus.hasFocus && _emojiOpen) setState(() => _emojiOpen = false);
+    });
     _chat.addListener(_markReadWhileOpen);
     _chat.commandResult.addListener(_showCommandResult);
     _loadCases();
@@ -74,6 +91,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _chat.commandResult.removeListener(_showCommandResult);
     _scroll.dispose();
     _input.dispose();
+    _focus.dispose();
     _recorder.dispose();
     super.dispose();
   }
@@ -113,6 +131,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     navigateToMainTab(2);
   }
 
+  /// The profile behind the header: the other person in a private chat, otherwise the group or channel.
+  void _openProfile(ChatSpace? space) {
+    if (space == null || space.type == 'support') return;
+    final screen = space.isDirect && space.peerId != null
+        ? ChatMemberProfileScreen(spaceId: space.id, userId: space.peerId!)
+        : ChatSpaceProfileScreen(spaceId: space.id);
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  void _openMember(String? userId) {
+    if (userId == null) return;
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatMemberProfileScreen(spaceId: widget.spaceId, userId: userId)));
+  }
+
   void _markReadWhileOpen() {
     final space = _chat.spaceById(widget.spaceId);
     if (space != null && space.unread > 0 && mounted) _chat.markRead(widget.spaceId);
@@ -144,6 +176,25 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _input.selection = TextSelection.collapsed(offset: _input.text.length);
     _mentions.add(person['id']);
     setState(() => _mentionMatches = []);
+  }
+
+  /// The emoji panel takes the keyboard's place, and the keyboard the panel's.
+  void _toggleEmoji() {
+    if (_emojiOpen) {
+      setState(() => _emojiOpen = false);
+      _focus.requestFocus();
+    } else {
+      _focus.unfocus();
+      setState(() => _emojiOpen = true);
+    }
+  }
+
+  void _insertEmoji(String emoji) {
+    final value = _input.value;
+    final start = value.selection.isValid ? value.selection.start : value.text.length;
+    final end = value.selection.isValid ? value.selection.end : value.text.length;
+    final text = value.text.replaceRange(start, end, emoji);
+    _input.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: start + emoji.length));
   }
 
   Map<String, dynamic> _me() {
@@ -178,11 +229,23 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     try {
       final dir = await getTemporaryDirectory();
       final target = p.join(dir.path, 'chat-${DateTime.now().millisecondsSinceEpoch}.jpg');
-      final out = await FlutterImageCompress.compressAndGetFile(file.path, target, quality: 80, minWidth: 1600, minHeight: 1600);
-      return out == null ? file : io.File(out.path);
+      final bytes = await compute(_shrinkBytes, await file.readAsBytes());
+      if (bytes == null) return file;
+      return await io.File(target).writeAsBytes(bytes);
     } catch (e) {
       return file;
     }
+  }
+
+  /// Pure Dart (no native plugin): decode, fit within 1600px, re-encode as JPEG.
+  static List<int>? _shrinkBytes(Uint8List input) {
+    final decoded = img.decodeImage(input);
+    if (decoded == null) return null;
+    final longest = decoded.width > decoded.height ? decoded.width : decoded.height;
+    final resized = longest > 1600
+        ? img.copyResize(decoded, width: decoded.width >= decoded.height ? 1600 : null, height: decoded.height > decoded.width ? 1600 : null)
+        : decoded;
+    return img.encodeJpg(resized, quality: 80);
   }
 
   Future<void> _sendFile(io.File original) async {
@@ -225,60 +288,38 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: widget.spaceId, threadRoot: message)));
   }
 
-  Future<void> _showActions(ChatMessage message, ChatSpace? space, bool mine) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-      builder: (ctx) {
-        Widget item(String value, IconData icon, String label) => ListTile(
-              leading: Icon(icon, color: ChatTheme.lavender),
-              title: Text(label, style: ChatTheme.body),
-              onTap: () => Navigator.pop(ctx, value),
-            );
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      for (final entry in ChatTheme.reactions.entries)
-                        Tooltip(
-                          message: entry.value.label,
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(ctx, 'react:${entry.key}'),
-                            icon: Icon(entry.value.icon, color: ChatTheme.accent, size: 26),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                item('reply', Icons.reply_rounded, 'پاسخ'),
-                if (_threadId == null) item('thread', Icons.forum_rounded, 'ورود به گفتگوی زیر پیام'),
-                if (message.body.isNotEmpty) item('copy', Icons.copy_rounded, 'کپی متن'),
-                if (mine && message.body.isNotEmpty && !_threadIsClosed) item('edit', Icons.edit_rounded, 'ویرایش'),
-                if (space?.canModerate == true) item('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
-                if (space?.canModerate == true && !mine && message.senderId != null) item('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
-                if (space?.canTag == true) ...[
-                  item('tag', Icons.label_rounded, 'برچسب'),
-                  if (_threadId != null) ...[
-                    item('best', Icons.workspace_premium_rounded, 'بهترین پاسخ'),
-                    item('evidence', Icons.verified_rounded, 'شاهد امتیاز'),
-                    if (widget.threadRoot?.topicId != null) item('final', Icons.task_alt_rounded, 'پاسخ نهایی گروه'),
-                  ],
-                ],
-                if (!mine && space?.isDirect != true) item('report', Icons.flag_rounded, 'گزارش تخلف'),
-                if ((mine && !_threadIsClosed) || space?.canModerate == true) item('delete', Icons.delete_rounded, 'حذف'),
-              ],
-            ),
-          ),
-        );
-      },
+  bool _canWrite(ChatSpace? space) => !_threadIsClosed && (_threadId != null ? space?.canReply != false : space?.canPost != false);
+
+  /// A tap on a message opens its reactions and choices next to it.
+  Future<void> _showActions(ChatMessage message, ChatSpace? space, bool mine, Rect anchor, {bool card = false}) async {
+    final moderator = space?.canModerate == true;
+    final items = <ChatMenuItem>[
+      if (_canWrite(space)) const ChatMenuItem('reply', Icons.reply_rounded, 'پاسخ'),
+      // Sessions under a message belong to groups and channels, not to a private chat
+      if (_threadId == null && space?.isPrivate != true) const ChatMenuItem('thread', Icons.forum_rounded, 'ورود به گفتگوی زیر پیام'),
+      if (message.body.isNotEmpty) const ChatMenuItem('copy', Icons.copy_rounded, 'کپی متن'),
+      if (mine && message.body.isNotEmpty && !_threadIsClosed && !card) const ChatMenuItem('edit', Icons.edit_rounded, 'ویرایش'),
+      if (moderator) ChatMenuItem('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
+      if (!mine && message.senderId != null && space?.isPrivate != true) const ChatMenuItem('profile', Icons.person_rounded, 'پروفایل فرستنده'),
+      if (moderator && !mine && message.senderId != null) const ChatMenuItem('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
+      if (space?.canTag == true) ...[
+        const ChatMenuItem('tag', Icons.label_rounded, 'برچسب'),
+        if (_threadId != null) ...[
+          const ChatMenuItem('best', Icons.workspace_premium_rounded, 'بهترین پاسخ'),
+          const ChatMenuItem('evidence', Icons.verified_rounded, 'شاهد امتیاز'),
+          if (widget.threadRoot?.topicId != null) const ChatMenuItem('final', Icons.task_alt_rounded, 'پاسخ نهایی گروه'),
+        ],
+      ],
+      if (!mine && space?.isDirect != true) const ChatMenuItem('report', Icons.flag_rounded, 'گزارش تخلف', danger: true),
+      if ((mine && !_threadIsClosed) || moderator) const ChatMenuItem('delete', Icons.delete_rounded, 'حذف', danger: true),
+    ];
+    final myId = Provider.of<AppRepository>(context, listen: false).currentUser.id;
+    final action = await showChatMessageMenu(
+      context,
+      anchor: anchor,
+      alignRight: mine || card,
+      items: items,
+      myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (action == null || !mounted) return;
 
@@ -286,6 +327,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       await _chat.react(message, action.substring(6));
     } else if (action == 'reply') {
       setState(() => _replyTo = message);
+      _focus.requestFocus();
     } else if (action == 'thread') {
       _openThread(message);
     } else if (action == 'copy') {
@@ -294,6 +336,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     } else if (action == 'edit') {
       setState(() => _editing = message);
       _input.text = message.body;
+      _focus.requestFocus();
+    } else if (action == 'profile') {
+      _openMember(message.senderId);
     } else if (action == 'pin') {
       await _chat.togglePin(message);
     } else if (action == 'delete') {
@@ -485,45 +530,62 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final myId = Provider.of<AppRepository>(context, listen: false).currentUser.id;
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: ListenableBuilder(
-          listenable: _chat,
-          builder: (context, _) {
-            final space = _chat.spaceById(widget.spaceId);
-            final messages = _chat.messagesOf(widget.spaceId, threadRootId: _threadId);
-            final threadClosed = widget.threadRoot?.topicId != null && _rootStatus(messages) != 'open';
-            final canWrite = !threadClosed && (_threadId != null ? space?.canReply != false : space?.canPost != false);
-            return Column(
-              children: [
-                _header(space),
-                // With the keyboard open the conversation needs every pixel
-                if (widget.threadRoot != null && MediaQuery.of(context).viewInsets.bottom == 0) _threadOrigin(),
-                if (space?.type == 'support') _caseBar(),
-                Expanded(child: _list(messages, space, myId)),
-                if (_chat.typingIn(widget.spaceId) != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                    child: Align(alignment: Alignment.centerRight, child: Text('${_chat.typingIn(widget.spaceId)} در حال نوشتن است', style: ChatTheme.caption)),
-                  ),
-                canWrite ? _composer() : _readOnlyBar(threadClosed),
-              ],
-            );
-          },
+    return PopScope(
+      canPop: !_emojiOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _emojiOpen) setState(() => _emojiOpen = false);
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: AppColors.screenBackgroundGradient,
+          image: DecorationImage(image: AssetImage('assets/images/login_bg.png'), fit: BoxFit.cover),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          // The composer rides on top of the keyboard
+          resizeToAvoidBottomInset: true,
+          body: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListenableBuilder(
+              listenable: _chat,
+              builder: (context, _) {
+                final space = _chat.spaceById(widget.spaceId);
+                final messages = _chat.messagesOf(widget.spaceId, threadRootId: _threadId);
+                final threadClosed = widget.threadRoot?.topicId != null && _rootStatus() != 'open';
+                return Column(
+                  children: [
+                    _header(space),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          const Positioned.fill(child: _ChatWallpaper()),
+                          Column(
+                            children: [
+                              // With the keyboard open the conversation needs every pixel
+                              if (widget.threadRoot != null && MediaQuery.viewInsetsOf(context).bottom == 0) _threadOrigin(),
+                              if (space?.type == 'support') _caseBar(),
+                              Expanded(child: _list(messages, space, myId)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    _canWrite(space) ? _composer() : _readOnlyBar(threadClosed),
+                    if (_emojiOpen) _emojiPanel(),
+                  ],
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
   }
 
-  bool get _threadIsClosed => widget.threadRoot?.topicId != null && _rootStatus(const []) != 'open';
+  bool get _threadIsClosed => widget.threadRoot?.topicId != null && _rootStatus() != 'open';
 
-  String? _rootStatus(List<ChatMessage> _) {
-    final top = _chat.messagesOf(widget.spaceId);
-    for (final m in top) {
+  String? _rootStatus() {
+    for (final m in _chat.messagesOf(widget.spaceId)) {
       if (m.id == _threadId) return m.topicStatus;
     }
     return widget.threadRoot?.topicStatus;
@@ -553,41 +615,67 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  /// Title and search stay in sight; the rest of the tools sit in one menu so the title always fits.
+  /// The line under the title: typing, online or not, or how many people are here.
+  String _status(ChatSpace? space) {
+    final typing = _chat.typingIn(widget.spaceId);
+    if (typing != null) return space?.isDirect == true ? 'در حال نوشتن...' : '$typing در حال نوشتن...';
+    if (space == null) return '';
+    if (_threadId != null) return space.title;
+    if (space.type == 'support') return 'پشتیبانی نپا';
+    if (space.isDirect) return space.peerOnline || (space.peerId != null && _chat.isOnline(space.peerId!)) ? 'آنلاین' : 'آفلاین';
+    final members = _people.isNotEmpty ? _people.length : (_profile?['memberCount'] as num?)?.toInt();
+    if (members == null) return '';
+    final online = _people.isNotEmpty ? _people.where((p) => _chat.isOnline(p['id'] ?? '')).length : (_profile?['onlineCount'] as num?)?.toInt() ?? 0;
+    final noun = space.isChannel ? 'عضو' : 'همسفر';
+    return online > 0 ? '$members $noun · $online آنلاین' : '$members $noun';
+  }
+
+  /// Golden header: face, name and status on the right (a tap opens the profile), tools and back on the left.
   Widget _header(ChatSpace? space) {
-    final title = _threadId != null ? 'گفتگوی زیر پیام' : (space?.title ?? '');
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
-      child: Row(
-        children: [
-          Expanded(child: Text(title, style: ChatTheme.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
-          if (_threadId == null) ...[
-            IconButton(onPressed: _search, icon: const Icon(Icons.search_rounded, color: ChatTheme.lavender, size: 22)),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, color: ChatTheme.lavender),
-              color: ChatTheme.surfaceBottom,
-              onSelected: (value) {
-                switch (value) {
-                  case 'tags':
-                    _chooseTag(null);
-                  case 'stations':
-                    _chooseStation();
-                  case 'pins':
-                    _showList('پیام‌های سنجاق‌شده', () => _chat.pins(widget.spaceId));
-                  case 'mute':
-                    if (space != null) _chat.setMuted(space, !space.muted);
-                }
-              },
-              itemBuilder: (_) => [
-                _menuItem('pins', Icons.push_pin_rounded, 'پیام‌های سنجاق‌شده'),
-                _menuItem('tags', Icons.label_rounded, 'پیام‌های برچسب‌دار'),
-                _menuItem('stations', Icons.flag_rounded, 'پیام‌های هر منزلگاه'),
-                if (space != null)
-                  _menuItem('mute', space.muted ? Icons.notifications_rounded : Icons.notifications_off_rounded, space.muted ? 'روشن کردن اعلان' : 'بی‌صدا کردن گفتگو'),
-              ],
-            ),
-          ],
+    final thread = _threadId != null;
+    final title = thread ? 'گفتگوی زیر پیام' : (space?.title ?? '');
+    final online = space?.isDirect == true && space!.peerOnline;
+    final avatar = thread
+        ? const ChatIconAvatar(icon: Icons.forum_rounded, radius: 21)
+        : (space == null ? const ChatIconAvatar(icon: Icons.chat_rounded, radius: 21) : ChatSpaceAvatar(space: space, radius: 21));
+    return ChatGoldHeader(
+      actions: [
+        if (!thread) ...[
+          IconButton(onPressed: _search, tooltip: 'جستجو', icon: const Icon(Icons.search_rounded, color: ChatTheme.ink, size: 23)),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: ChatTheme.ink),
+            color: ChatTheme.paper,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            onSelected: (value) {
+              switch (value) {
+                case 'profile':
+                  _openProfile(space);
+                case 'tags':
+                  _chooseTag(null);
+                case 'stations':
+                  _chooseStation();
+                case 'pins':
+                  _showList('پیام‌های سنجاق‌شده', () => _chat.pins(widget.spaceId));
+                case 'mute':
+                  if (space != null) _chat.setMuted(space, !space.muted);
+              }
+            },
+            itemBuilder: (_) => [
+              if (space != null && space.type != 'support') _menuItem('profile', Icons.info_outline_rounded, space.isDirect ? 'پروفایل مخاطب' : 'اطلاعات و اعضا'),
+              _menuItem('pins', Icons.push_pin_rounded, 'پیام‌های سنجاق‌شده'),
+              _menuItem('tags', Icons.label_rounded, 'پیام‌های برچسب‌دار'),
+              _menuItem('stations', Icons.flag_rounded, 'پیام‌های هر منزلگاه'),
+              if (space != null)
+                _menuItem('mute', space.muted ? Icons.notifications_rounded : Icons.notifications_off_rounded, space.muted ? 'روشن کردن اعلان' : 'بی‌صدا کردن گفتگو'),
+            ],
+          ),
         ],
+      ],
+      child: ChatHeaderTitle(
+        avatar: ChatRing(online: online, child: avatar),
+        title: title,
+        subtitle: _status(space),
+        onTap: thread ? null : () => _openProfile(space),
       ),
     );
   }
@@ -597,9 +685,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         child: Directionality(
           textDirection: TextDirection.rtl,
           child: Row(children: [
-            Icon(icon, color: ChatTheme.lavender, size: 18),
+            Icon(icon, color: ChatTheme.ink.withValues(alpha: 0.75), size: 18),
             const SizedBox(width: 10),
-            Text(label, style: ChatTheme.body),
+            Text(label, style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600)),
           ]),
         ),
       );
@@ -608,7 +696,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final root = widget.threadRoot!;
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 10, ChatTheme.gutter, 4),
       padding: const EdgeInsets.all(10),
       decoration: ChatTheme.card(highlighted: true),
       child: Column(
@@ -621,24 +709,49 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
+  /// Cards (challenges, polls) open the same menu as bubbles, from wherever they were tapped.
+  Widget _tappableCard(ChatMessage message, ChatSpace? space, Widget child) => Builder(
+        key: ValueKey(message.id),
+        builder: (ctx) => GestureDetector(
+          onTap: () {
+            final box = ctx.findRenderObject() as RenderBox?;
+            if (box != null) _showActions(message, space, false, box.localToGlobal(Offset.zero) & box.size, card: true);
+          },
+          child: child,
+        ),
+      );
+
+  ChatBubbleStyle _styleOf(ChatSpace? space) {
+    if (space == null) return ChatBubbleStyle.group;
+    if (space.isPrivate) return ChatBubbleStyle.private;
+    // The comments under a channel post are a conversation of their own
+    if (space.isChannel && _threadId == null) return ChatBubbleStyle.channel;
+    return ChatBubbleStyle.group;
+  }
+
+  static bool _isCard(ChatMessage m) => !m.deleted && const {'challenge', 'station', 'result', 'poll'}.contains(m.kind);
+
   Widget _list(List<ChatMessage> messages, ChatSpace? space, String myId) {
     if (messages.isEmpty) {
       return Center(child: Text('هنوز پیامی ارسال نشده است.', style: ChatTheme.caption.copyWith(fontSize: 13)));
     }
+    final style = _styleOf(space);
     return ListView.builder(
       controller: _scroll,
       reverse: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(ChatTheme.gutter, 12, ChatTheme.gutter, 12),
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final message = messages[messages.length - 1 - index];
-        final previous = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
+        final older = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
+        final newer = index > 0 ? messages[messages.length - index] : null;
         final mine = message.senderId == myId;
         if (message.kind == 'challenge' && !message.deleted && message.topicId != null) {
-          return GestureDetector(
-            key: ValueKey(message.id),
-            onLongPress: () => _showActions(message, space, false),
-            child: ChallengeCard(
+          return _tappableCard(
+            message,
+            space,
+            ChallengeCard(
               message: message,
               onOpenThread: () => _openThread(message),
               onOpenInfo: () => _openInfo(message, space),
@@ -649,22 +762,25 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         if (message.kind == 'station' && !message.deleted) return StationCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'result' && !message.deleted) return ResultCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'poll' && !message.deleted) {
-          return GestureDetector(
-            key: ValueKey(message.id),
-            onLongPress: () => _showActions(message, space, false),
-            child: PollCard(message: message, myId: myId, onVote: (o) => _chat.vote(message, o)),
-          );
+          return _tappableCard(message, space, PollCard(message: message, myId: myId, onVote: (o) => _chat.vote(message, o)));
         }
+        // A run is a sender's consecutive messages: the name goes over its first, the face and tail under its last
+        final startsRun = older == null || older.senderId != message.senderId || _isCard(older);
+        final endsRun = newer == null || newer.senderId != message.senderId || _isCard(newer);
+        final threadAllowed = _threadId == null && (space?.isPrivate != true || message.threadReplies > 0);
         return ChatMessageBubble(
           key: ValueKey(message.clientMessageId ?? message.id),
           message: message,
           mine: mine,
+          style: style,
           myId: myId,
           staffTags: _chat.staffTagsOf(message.id),
-          showSender: previous?.senderId != message.senderId && space?.isDirect != true,
+          showSender: style == ChatBubbleStyle.channel ? message.senderId != null && startsRun : (style == ChatBubbleStyle.group && !mine && startsRun),
+          showAvatar: endsRun,
           seen: space != null && space.isDirect && message.seq > 0 && message.seq <= space.peerReadSeq,
-          onLongPress: () => _showActions(message, space, mine),
-          onOpenThread: _threadId == null ? () => _openThread(message) : null,
+          onTap: (rect) => _showActions(message, space, mine, rect, card: style == ChatBubbleStyle.channel),
+          onOpenThread: threadAllowed ? () => _openThread(message) : null,
+          onOpenSender: message.senderId == null || mine ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
           onReact: (type) => _chat.react(message, type),
         );
@@ -672,93 +788,217 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  Widget _readOnlyBar(bool closed) => Padding(
-        padding: const EdgeInsets.all(14),
+  Widget _readOnlyBar(bool closed) => Container(
+        width: double.infinity,
+        color: ChatTheme.paper,
+        padding: EdgeInsets.fromLTRB(ChatTheme.gutter, 14, ChatTheme.gutter, 14 + MediaQuery.paddingOf(context).bottom),
         child: Text(
           closed
               ? 'این چالش بسته شده است.'
-              : (_chat.spaceById(widget.spaceId)?.canReply == false ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.' : 'برای گفتگو، روی «ورود به گفتگو» در کارت چالش یا اعلان بزنید.'),
-          style: ChatTheme.caption,
+              : (_chat.spaceById(widget.spaceId)?.canReply == false
+                  ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.'
+                  : (_chat.spaceById(widget.spaceId)?.isChannel == true
+                      ? 'برای گفتگو، روی «ارسال نظر» زیر هر پست بزنید.'
+                      : 'برای گفتگو، روی «ورود به گفتگو» در کارت چالش یا اعلان بزنید.')),
+          style: TextStyle(color: ChatTheme.ink.withValues(alpha: 0.7), fontFamily: AppTheme.fontFamily, fontSize: 12),
           textAlign: TextAlign.center,
         ),
       );
 
+  /// Light bar at the bottom: voice and attach on the right turn into send while typing; emoji on the left.
   Widget _composer() {
     final context_ = _editing ?? _replyTo;
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: ChatTheme.card(),
+    final inkSoft = ChatTheme.ink.withValues(alpha: 0.7);
+    final caption = TextStyle(color: inkSoft, fontFamily: AppTheme.fontFamily, fontSize: 12);
+    return Container(
+      decoration: BoxDecoration(
+        color: ChatTheme.paper,
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, -2))],
+      ),
+      child: SafeArea(
+        top: false,
+        // The emoji panel under the bar already keeps clear of the system bar
+        bottom: !_emojiOpen,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final person in _mentionMatches)
-              ListTile(dense: true, title: Text(person['name'] ?? '', style: ChatTheme.body), onTap: () => _pickMention(person)),
+              InkWell(
+                onTap: () => _pickMention(person),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: ChatTheme.gutter, vertical: 10),
+                  child: Row(children: [
+                    Icon(Icons.alternate_email_rounded, size: 16, color: inkSoft),
+                    const SizedBox(width: 8),
+                    Text(person['name'] ?? '', style: caption.copyWith(color: ChatTheme.ink, fontSize: 13)),
+                  ]),
+                ),
+              ),
             if (context_ != null)
-              Row(
+              Container(
+                margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 8, ChatTheme.gutter - 8, 0),
+                padding: const EdgeInsetsDirectional.only(start: 10),
+                decoration: const BoxDecoration(border: BorderDirectional(start: BorderSide(color: AppColors.buttonCamel, width: 2))),
+                child: Row(
+                  children: [
+                    Icon(_editing != null ? Icons.edit_rounded : Icons.reply_rounded, size: 15, color: AppColors.buttonCamel),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _editing != null ? 'ویرایش پیام' : 'پاسخ به ${context_.senderName}: ${context_.body.isEmpty ? 'فایل' : context_.body}',
+                        style: caption,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        if (_editing != null) _input.clear();
+                        setState(() {
+                          _editing = null;
+                          _replyTo = null;
+                        });
+                      },
+                      icon: Icon(Icons.close_rounded, size: 16, color: inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(ChatTheme.gutter - 8, 4, ChatTheme.gutter - 8, 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const SizedBox(width: 8),
-                  Icon(_editing != null ? Icons.edit_rounded : Icons.reply_rounded, size: 15, color: ChatTheme.accent),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(context_.body.isEmpty ? 'فایل' : context_.body, style: ChatTheme.caption, maxLines: 1, overflow: TextOverflow.ellipsis)),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () {
-                      if (_editing != null) _input.clear();
-                      setState(() {
-                        _editing = null;
-                        _replyTo = null;
-                      });
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _input,
+                    builder: (context, value, _) {
+                      final typing = value.text.trim().isNotEmpty || _editing != null;
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                        child: typing
+                            ? Padding(
+                                key: const ValueKey('send'),
+                                padding: const EdgeInsets.all(4),
+                                child: Material(
+                                  color: ChatTheme.accent,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: _send,
+                                    child: const SizedBox(
+                                      width: 40,
+                                      height: 40,
+                                      child: Icon(Icons.send_rounded, color: ChatTheme.ink, size: 20),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                key: const ValueKey('tools'),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: _recording ? 'پایان ضبط و ارسال' : 'پیام صوتی',
+                                    onPressed: _toggleRecording,
+                                    icon: Icon(_recording ? Icons.stop_circle_rounded : Icons.mic_none_rounded, color: _recording ? ChatTheme.danger : inkSoft, size: 25),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'پیوست',
+                                    onPressed: _uploading || _recording ? null : _pickFile,
+                                    icon: _uploading
+                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.buttonCamel))
+                                        : Transform.rotate(angle: 0.6, child: Icon(Icons.attach_file_rounded, color: inkSoft, size: 24)),
+                                  ),
+                                ],
+                              ),
+                      );
                     },
-                    icon: const Icon(Icons.close_rounded, size: 16, color: ChatTheme.muted),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: TextField(
+                        controller: _input,
+                        focusNode: _focus,
+                        minLines: 1,
+                        maxLines: 5,
+                        maxLength: 4000,
+                        cursorColor: AppColors.buttonCamel,
+                        textInputAction: TextInputAction.newline,
+                        style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 14, height: 1.5),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          isDense: true,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                          hintText: _recording ? 'در حال ضبط صدا...' : 'پیام...',
+                          hintStyle: caption.copyWith(fontSize: 13, color: _recording ? ChatTheme.danger : ChatTheme.ink.withValues(alpha: 0.45)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(width: 1, height: 26, margin: const EdgeInsets.only(bottom: 11), color: ChatTheme.ink.withValues(alpha: 0.15)),
+                  IconButton(
+                    tooltip: _emojiOpen ? 'صفحه‌کلید' : 'ایموجی',
+                    onPressed: _toggleEmoji,
+                    icon: Icon(_emojiOpen ? Icons.keyboard_alt_outlined : Icons.emoji_emotions_outlined, color: inkSoft, size: 24),
                   ),
                 ],
               ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: _uploading ? null : _pickFile,
-                  icon: _uploading
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: ChatTheme.accent))
-                      : const Icon(Icons.attach_file_rounded, color: ChatTheme.lavender, size: 22),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _input,
-                    minLines: 1,
-                    maxLines: 5,
-                    maxLength: 4000,
-                    style: ChatTheme.body,
-                    decoration: InputDecoration(
-                      counterText: '',
-                      isDense: true,
-                      border: InputBorder.none,
-                      hintText: _recording ? 'در حال ضبط صدا...' : 'پیام...',
-                      hintStyle: ChatTheme.caption.copyWith(fontSize: 13),
-                    ),
-                  ),
-                ),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _input,
-                  builder: (context, value, _) => value.text.trim().isEmpty && _editing == null
-                      ? IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: _toggleRecording,
-                          icon: Icon(_recording ? Icons.stop_circle_rounded : Icons.mic_rounded, color: _recording ? ChatTheme.danger : ChatTheme.lavender, size: 23),
-                        )
-                      : IconButton(
-                          visualDensity: VisualDensity.compact,
-                          onPressed: _send,
-                          icon: const Icon(Icons.send_rounded, color: ChatTheme.accent, size: 22),
-                        ),
-                ),
-              ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  static const List<String> _emojis = [
+    '😀', '😁', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤩', '🙂', '😉', '😇', '🤗', '🤔', '🤨',
+    '😐', '😶', '🙄', '😏', '😮', '😴', '😌', '😛', '😜', '🤪', '😒', '😔', '😕', '🙃', '😲', '😢',
+    '😭', '😤', '😠', '😡', '🤯', '😳', '🥺', '😱', '😨', '😰', '😓', '🤭', '🤫', '😬', '🥳', '🤓',
+    '👍', '👎', '👏', '🙌', '🙏', '🤝', '💪', '✌️', '👌', '🤞', '👋', '✋', '☝️', '👉', '👈', '🫡',
+    '❤️', '🧡', '💛', '💚', '💙', '💜', '🤍', '💔', '💯', '✨', '🔥', '⭐', '🌟', '🎉', '🎯', '🏆',
+    '📚', '📖', '✍️', '📝', '💡', '🧠', '⏰', '✅', '❌', '❓', '❗', '🌹', '🌙', '☀️', '🐪', '🏕️',
+  ];
+
+  Widget _emojiPanel() {
+    return Container(
+      height: 260 + MediaQuery.paddingOf(context).bottom,
+      color: ChatTheme.surfaceBottom,
+      padding: EdgeInsets.fromLTRB(ChatTheme.gutter - 8, 8, ChatTheme.gutter - 8, MediaQuery.paddingOf(context).bottom),
+      child: GridView.count(
+        crossAxisCount: 8,
+        children: [
+          for (final e in _emojis)
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _insertEmoji(e),
+              child: Center(child: Text(e, style: const TextStyle(fontSize: 24))),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The conversation's backdrop: the pattern of travel drawings over the app's background, when the
+/// pattern image is in the app (assets/images/chat_pattern.png); without it, the plain background.
+class _ChatWallpaper extends StatelessWidget {
+  const _ChatWallpaper();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.09,
+        child: Image.asset(
+          'assets/images/chat_pattern.png',
+          repeat: ImageRepeat.repeat,
+          fit: BoxFit.none,
+          scale: 2,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ),
     );

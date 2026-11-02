@@ -179,19 +179,22 @@ class MainScreenState extends State<AppShell> {
         body: SizedBox(
           width: double.infinity,
           height: double.infinity,
+          // The chat tab draws its own golden header, which reaches under the status bar
           child: SafeArea(
+            top: _currentIndex != AppTabs.chat,
             child: Column(
               children: [
-                AppTopBar(
-                  showBackButton: _currentIndex != 0,
-                  showNotificationIcon: true,
-                  showDrawerButton: true,
-                  onBackTap: () {
-                    setState(() {
-                      _currentIndex = 0;
-                    });
-                  },
-                ),
+                if (_currentIndex != AppTabs.chat)
+                  AppTopBar(
+                    showBackButton: _currentIndex != 0,
+                    showNotificationIcon: true,
+                    showDrawerButton: true,
+                    onBackTap: () {
+                      setState(() {
+                        _currentIndex = 0;
+                      });
+                    },
+                  ),
                 Expanded(
                   child: IndexedStack(index: _currentIndex, children: screens),
                 ),

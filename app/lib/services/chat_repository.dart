@@ -48,6 +48,9 @@ class ChatRepository extends ChangeNotifier {
 
   List<ChatMessage> messagesOf(String spaceId, {String? threadRootId}) => _lists[_key(spaceId, threadRootId)] ?? const [];
   String? typingIn(String spaceId) => _typing[spaceId];
+
+  /// The signed-in user chat is running for.
+  String? get userId => _userId;
   int get totalUnread => spaces.where((s) => !s.muted).fold(0, (sum, s) => sum + s.unread);
   ChatSpace? spaceById(String id) {
     for (final s in spaces) {
@@ -148,6 +151,7 @@ class ChatRepository extends ChangeNotifier {
     socket.on('read', (data) => _onRead(Map<String, dynamic>.from(data as Map)));
     socket.on('typing', (data) => _onTyping(Map<String, dynamic>.from(data as Map)));
     socket.on('space:update', (_) => refreshSpaces());
+    socket.on('presence', (data) => _onPresence(Map<String, dynamic>.from(data as Map)));
     socket.connect();
   }
 
@@ -294,6 +298,7 @@ class ChatRepository extends ChangeNotifier {
       if (message.threadRootId == null) {
         space.preview = message.body.isEmpty ? 'فایل' : message.body;
         space.previewSender = message.senderName;
+        space.previewSenderId = message.senderId;
         space.lastActivity = message.createdAt;
         _sortSpaces();
       }
@@ -323,6 +328,29 @@ class ChatRepository extends ChangeNotifier {
       space.unread = max(0, space.lastSeq - space.lastReadSeq);
     } else {
       space.peerReadSeq = max(space.peerReadSeq, seq);
+    }
+    notifyListeners();
+  }
+
+  /// Who is connected, as far as this device has heard (from the server lists and presence events).
+  final Map<String, bool> _online = {};
+
+  bool isOnline(String userId) => _online[userId] ?? false;
+
+  /// Seeds presence from a list of people the server sent, each with an 'online' flag.
+  void notePresence(Iterable<Map<String, dynamic>> people) {
+    for (final p in people) {
+      if (p['id'] is String) _online[p['id']] = p['online'] == true;
+    }
+  }
+
+  void _onPresence(Map<String, dynamic> json) {
+    final userId = json['userId'] as String?;
+    if (userId == null) return;
+    final online = json['online'] == true;
+    _online[userId] = online;
+    for (final s in spaces) {
+      if (s.peerId == userId) s.peerOnline = online;
     }
     notifyListeners();
   }
@@ -559,7 +587,33 @@ class ChatRepository extends ChangeNotifier {
     return (jsonDecode(res.body) as List).map((u) => Map<String, dynamic>.from(u as Map)).toList();
   }
 
-  Future<List<Map<String, dynamic>>> people(String spaceId) => _people('/chat/spaces/$spaceId/people');
+  Future<List<Map<String, dynamic>>> people(String spaceId) async {
+    final list = await _people('/chat/spaces/$spaceId/people');
+    notePresence(list);
+    return list;
+  }
+
+  /// A group or channel: counts, rank and members.
+  Future<Map<String, dynamic>?> spaceProfile(String spaceId) async {
+    final res = await api('GET', '/chat/spaces/$spaceId/profile');
+    if (!res.ok || res.data is! Map) return null;
+    final data = Map<String, dynamic>.from(res.data as Map);
+    notePresence(((data['members'] as List?) ?? []).map((m) => Map<String, dynamic>.from(m as Map)));
+    return data;
+  }
+
+  /// A member as seen from a space, with participation numbers when the caller may see them.
+  Future<Map<String, dynamic>?> memberProfile(String spaceId, String userId) async {
+    final res = await api('GET', '/chat/spaces/$spaceId/members/$userId');
+    if (!res.ok || res.data is! Map) return null;
+    final data = Map<String, dynamic>.from(res.data as Map);
+    notePresence([data]);
+    return data;
+  }
+
+  /// Photos (image), voices (audio), links (link) or sessions (session) of a space.
+  Future<List<Map<String, dynamic>>> media(String spaceId, String kind, {String? userId}) =>
+      _people(Uri(path: '/chat/spaces/$spaceId/media', queryParameters: {'kind': kind, 'userId': ?userId}).toString());
   Future<List<Map<String, dynamic>>> contacts() => _people('/chat/contacts');
 
   /// Opens a private conversation and returns it.

@@ -36,6 +36,20 @@ export function isOnline(userId: string): boolean {
   return (io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) > 0;
 }
 
+/** Everyone with at least one live socket. */
+export function onlineUserIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const room of io?.sockets.adapter.rooms.keys() ?? []) if (room.startsWith('user:')) ids.add(room.slice(5));
+  return ids;
+}
+
+/** Tells the spaces of a user that they came online or went away (first socket in, last socket out). */
+function announcePresence(socket: Socket, userId: string, online: boolean): void {
+  for (const room of socket.rooms) {
+    if (room.startsWith('space:')) socket.to(room).emit('presence', { spaceId: room.slice(6), userId, online });
+  }
+}
+
 /** Puts a socket in the room of every space its user can see, and only those. */
 async function syncRooms(socket: Socket, userId: string): Promise<boolean> {
   const actor = await loadActor(userId);
@@ -101,11 +115,16 @@ export function attachChatSocket(server: HttpServer): void {
     try {
       await syncRooms(socket, userId);
       socket.emit('ready');
+      if ((io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) === 1) announcePresence(socket, userId, true);
     } catch (e) {
       console.error('chat socket join error:', e);
       socket.disconnect(true);
       return;
     }
+
+    socket.on('disconnecting', () => {
+      if ((io?.sockets.adapter.rooms.get(`user:${userId}`)?.size ?? 0) <= 1) announcePresence(socket, userId, false);
+    });
 
     socket.on('typing', (spaceId: unknown) => {
       if (typeof spaceId === 'string' && socket.rooms.has(`space:${spaceId}`)) {
