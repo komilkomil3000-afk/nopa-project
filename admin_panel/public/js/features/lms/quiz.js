@@ -22,7 +22,7 @@ window.openQuizModalForClip = function(sessionId, clipId) {
   document.getElementById('quiz-opt-3').value = 'گزینه نادرست سوم';
   document.getElementById('opt-radio-0').checked = true;
 
-  document.getElementById('quiz-modal-title').innerHTML = '<i class="fa-solid fa-circle-question"></i> طراحی آزمونک جدید برای پارت';
+  document.getElementById('quiz-modal-title').textContent = 'آزمونک جدید برای پارت';
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal-nested)';
 };
@@ -99,7 +99,7 @@ window.editQuizRecord = async function(quizId) {
   const radioEl = document.getElementById(`opt-radio-${correctIdx}`) || document.getElementById('opt-radio-0');
   if (radioEl) radioEl.checked = true;
 
-  document.getElementById('quiz-modal-title').innerHTML = `<i class="fa-solid fa-circle-question"></i> ویرایش آزمونک: ${esc(foundQuiz.title || '')}`;
+  document.getElementById('quiz-modal-title').textContent = `ویرایش آزمونک: ${foundQuiz.title || ''}`;
   modal.style.display = 'flex';
   modal.style.zIndex = 'var(--z-modal-nested)';
 };
@@ -149,12 +149,8 @@ window.saveQuizFromModal = async function(e) {
       showToast('آزمونک (متن سوال، گزینه‌ها، پاسخ صحیح و پاداش زریک) با موفقیت در دیتابیس ذخیره شد', 'success');
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
       await window.fetchLiveLmsStations();
-      if (sessionId) {
-        const st = window.lmsStationsMasterList.find(s => 
-          (s.categories || []).some(c => (c.sessions || []).some(sess => sess.id === sessionId))
-        );
-        if (st) window.openStationContentManagerModal(st.id);
-      }
+      // the station editor redraws with its unsaved draft kept (js/features/lms/station-editor.js)
+      if (typeof window.lmsEditorRefresh === 'function') window.lmsEditorRefresh();
     } else {
       const data = await res.json();
       showToast('خطا در ذخیره‌سازی آزمونک: ' + (data.error || 'خطای ناشناخته'), 'error');
@@ -176,6 +172,7 @@ window.deleteQuizRecord = async function(quizId) {
       showToast('آزمونک با موفقیت حذف شد', 'success');
       await window.fetchLiveLmsStations();
       document.getElementById('lms-quiz-editor-modal').style.display = 'none';
+      if (typeof window.lmsEditorRefresh === 'function') window.lmsEditorRefresh();
     }
   } catch (err) {
     console.error('Delete quiz error:', err);

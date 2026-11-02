@@ -3032,6 +3032,7 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Not run: on-device check, server deploy, the repair script against the database
 - **Status:** Completed
 
+<<<<<<< HEAD
 ### [2026-11-02 20:39] - Claude Code (Agent 2: Flutter App & LMS Specialist)
 - **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
 - **Target Component(s):** app, admin_panel
@@ -3108,4 +3109,295 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `flutter analyze` (from `app/`): no issues. `flutter test`: 17/17 passed. `npx tsc --noEmit` in `admin_panel/`: no errors.
   - Not run on a device; backend must be redeployed for presence, profiles and media.
+=======
+### [2026-11-02 18:41] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/css/stations.css` (Created)
+  - `admin_panel/public/js/features/lms/station-view.js` (Created)
+  - `admin_panel/public/js/features/lms/directory.js` (Modified)
+- **Description of Changes:**
+  - Stations (LMS) tab redesigned as a bento overview: a large tile holding every station as an image card (plus a "+" card for a new station) with search, and side tiles for overall stats (same `lms-stat-*` ids), access status (active / scheduled / locked bar), quick access, upcoming unlocks, active instructors and "needs completing" (no image, no category/session, sessions without parts, no instructor). The old filters + table remain inside a collapsed "نمای جدولی" section.
+  - Clicking a station opens a single-station view: a strip of station circles on top (image, label, enlarged on hover, active ringed, last circle on the left is "+" for a new station); below, a 3-column grid: station info/stats/actions on the right (edit, access, content manager, delete), the parts area in the centre (category chips, one card per session with parts/quizzes/instructor/date/reward, a "+" card per category for a new session, category move/delete, add-category input), and the instructors panel on the left (avatar, name, degree, sessions/categories in this station, phone, edit / register in bank, remove from station; assign an instructor from the bank to all sessions or one category; new instructor; open the instructors bank).
+  - Instructor assignment/removal edits each session's comma-separated `instructor` field through the existing `PUT /api/v1/admin/lms/sessions/:id` (sends `instructor` and `teacher` so an empty list really clears it). No backend change.
+  - `filterLmsTable` now also re-renders the bento and the open station view; `fetchInstructorsList` is wrapped so instructor edits refresh the view.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on `station-view.js` and `directory.js`: OK
+  - `npm test` in `admin_panel/`: "admin panel CSP: no inline scripts or handlers" passes; 10 unrelated tests fail because `dist/` is not built on this machine
+  - Rendered the tab with mock data in headless Chrome (Puppeteer) and checked both the overview and the station view at 1440px; no horizontal overflow
+  - Not run: against the live API / real station data
+- **Status:** Completed
+
+### [2026-11-02 19:20] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Single-station view restyled after the user's reference screenshot: one large rounded board with the title, the station circles in a notch at the top centre (status-coloured number badge, enlarge on hover, "+" circle last/left) and round outline action buttons; inside it the categories as connected columns (session rows with instructor avatar or number, part/quiz counts, done tick, hover delete, "+" row for a new session), a dashed "new category" column and a tile grid of station actions (inverted primary tile).
+  - Bottom row: "وضعیت منزلگاه" panel (cover, description, fact pills, SVG donuts for sessions with parts and sessions per category) on the right; instructors table (avatar, name/phone, degree, sessions, categories, bank status pill, round edit/remove buttons; "+" toggles the assign-from-bank form) on the left.
+  - Overview tiles get the same 24px rounding. Category chip filter of the previous version removed (columns replace it).
+- **Verification / Checkpoints Executed:**
+  - `node --check station-view.js`: OK
+  - Headless Chrome screenshots with mock data in dark and light themes at 1440px; no horizontal overflow
+  - Not run: against the live API
+- **Status:** Completed
+
+### [2026-11-02 19:55] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/flip.js` (Created)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/js/features/lms/directory.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+  - `admin_panel/public/index.html` (Modified: loads `js/ui/flip.js`)
+- **Description of Changes:**
+  - New generic `NopaFlip` helper (Web Animations API, CSP-safe, honours prefers-reduced-motion): `render(container, fn)` diff-animates innerHTML re-renders by `data-anim-key` (moved = glide, added = fade/scale in with stagger, removed = fading ghost copy), `data-anim-size` animates height/width, `data-anim-dash` animates SVG donut arcs; `enter()` staggered entrance; `count()` number tween.
+  - Stations overview and single-station view use it: station cards, list items, status bar widths, category columns, session rows, instructor rows, assign form, panels and donut segments are keyed. Opening/closing a station cross-fades between overview and station view; switching stations re-enters the columns/panels and pops the selected circle; overview stats count to their new values.
+  - Extra CSS transitions for remaining hover/focus state changes.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on flip.js, station-view.js, directory.js: OK
+  - Headless Chrome with a stateful mock API: delete session (ghost created, 9 running animations), add session, move category, switch station, close view; no page errors
+  - Not run: against the live API
+- **Status:** Completed
+
+### [2026-11-02 20:20] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/flip.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+- **Description of Changes:**
+  - Per user request, animation applies to cards only, not their content: animation keys kept on station cards (overview), station circles, category columns/cards and connectors, the add-category and action-tile columns, the board and bottom panels; removed from session rows, instructor table rows, assign form, list items, status bar and donut arcs.
+  - `NopaFlip.settled()` added (promise of all running animations). Station-view actions (move/delete category, add/delete session, add category, assign/remove instructor) and the wrapped `saveCompleteStation`, `saveStationsReorder`, `saveStationAccessSettings` hold their `showToast` calls until the cards finish moving.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on both files: OK
+  - Headless Chrome with mock API: moving a category animates only lsv-col / lsv-col-card / lsv-link; toast fired at 450 ms with 0 running animations; delete toast likewise
+- **Status:** Completed
+
+### [2026-11-02 20:55] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Created)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/js/ui/flip.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+  - `admin_panel/public/index.html` (Modified: loads station-dnd.js)
+- **Description of Changes:**
+  - Moves were slow because each one waited for sequential PUTs plus a full reload before the screen changed. Category moves (arrow buttons) and session drags are now optimistic: local data is updated and re-rendered at once, the PUTs run in parallel in the background (`lmsSaveInBackground`), the toast appears after the cards stop, and any failure shows an error and reloads from the server.
+  - Pointer-based drag and drop of session cards within a category or into another category (mouse anywhere on the card after 5px, touch from the grip handle; Escape cancels): floating card, dashed placeholder, target column highlight, other cards slide in 150 ms, edge auto-scroll of the column strip, the click after a drag does not open the content manager. Saves `categoryId` + `orderIndex` via `PUT /api/v1/admin/lms/sessions/:id`; renders are deferred while dragging.
+  - Session rows keyed again for FLIP (they are the moved cards); FLIP durations shortened (move 240 ms, in 230 ms, out 170 ms).
+- **Verification / Checkpoints Executed:**
+  - `node --check` on changed JS: OK
+  - Headless Chrome, real mouse drag with a mock API (300 ms latency): x13 moved from c1a to top of c1b on screen during the drag, mock DB updated, toast after animations (+473 ms), content manager not opened; category arrow move reorders columns synchronously, toast +264 ms
+  - Not run: against the live API, touch device
+- **Status:** Completed
+
+### [2026-11-02 21:30] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Modified: rewritten as a generic sortable engine)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Drag and drop added for stations (overview station cards; station circles at the top of a station) and for category columns; sessions keep theirs. One pointer engine with per-sortable config (list / row / grid placement, RTL aware, edge auto-scroll, floating copy, dashed placeholder, 150 ms slide of the other items, Escape cancels, click after drag swallowed, native image drag blocked).
+  - Station order saves through `POST /api/v1/admin/lms/stations/reorder` (`stationIds`), categories through parallel `PUT /lms/classes/:id` (`orderIndex`); both optimistic with rollback-by-reload on failure and toast after the animation. Station drag in the overview is disabled while search/filters are active (they show a subset). Bento render deferred while dragging.
+  - Grip handles (touch drags from them): station card corner, category column header; dashed links between columns are rebuilt while a column moves.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on changed JS: OK
+  - Headless Chrome real mouse drags with mock API: overview card s1 → after s3 (screen + DB s2,s3,s1,s4,s5, station not opened); column c1a after c1b (2 links kept, saved); circle s5 → first (saved, view stays on its station); Escape restores order
+  - Not run: live API, touch device
+- **Status:** Completed
+
+### [2026-11-02 22:05] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel (app read only, not modified)
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/icons/stations/lock01.svg`, `lock02.svg`, `imagenot01.svg` (Created: copied from `app/assets/svg_icons/`)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Station cards in the stations overview now reproduce the Flutter home-screen `StationCard` (`app/lib/widgets/station_card.dart`): 0.65 aspect ratio, 1.2px horizontal gradient border #3A3A6A→#9292E2→#3A3A6A with radius 22 and black 35% shadow, inner vertical gradient #3D3C67/#36345C/#333359, #2E2E50 image area with the app's "no image" icon, lock badge top-right (lock01 + #DE9959 border when open; lock02 + #676296 border + 35% shade when locked/scheduled), gradient divider, 50px bar with Persian number (#9292E2, 17px bold) and pure name (#F4EFEA, 12.5px).
+  - Same rules as the app: picture = `iconUrl`/`imageUrl` only (`Station.imageFrom`), name = `Station.getPureName` port. Admin status chip and counts moved under the card. The "new station" card uses the same frame. Fixed colours in both panel themes, like the app.
+- **Verification / Checkpoints Executed:**
+  - `node --check station-view.js`: OK
+  - Headless Chrome via a local static server (real `/admin/...` paths), dark and light themes: image, missing image fallback, locked/scheduled/open badges render; no 404s
+  - `git status app/`: no changes
+- **Status:** Completed
+
+### [2026-11-02 22:50] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel (app read only, not modified)
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Modified: dark theme)
+  - `admin_panel/public/style.css` (Modified: body background adds `--page-gradient`)
+  - `admin_panel/public/css/dashboard.css`, `admin_panel/public/css/landing.css` (Modified: last hard-coded old gold/purple)
+  - `admin_panel/public/index.html`, `admin_panel/public/manifest.webmanifest`, `admin_panel/public/theme.js` (Modified: theme-color #201A36; refresh buttons call `reloadLmsStations`)
+  - `admin_panel/public/js/features/lms/directory.js`, `admin_panel/public/js/features/lms/station-view.js`, `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Dark theme rebuilt from the colours the Flutter app's screens use: page = `screenBackgroundGradient` #383155→#201A36→#0F0B1A; surfaces #28274A / #333359 / #1E1D38; borders lavender 16% / #454270; text #EDE9F6 / #D3D0E3 / #9D99B8 / #7A709E; primary lavender (fill #6B68A8, text #9E9CD6, tints 146 146 226); accent camel/gold (#C09268, text #DFB690, gold gradient #CD8449→#E1BC96); info sky #38BDF8; success/danger unchanged (app emerald/red). Light theme unchanged.
+  - Stations tab loading state like the dashboard: a light band sweeps over every bento tile (`lmsSetStationsLoading`); first load shows skeleton station cards in the app card frame and skeleton list lines; the refresh buttons show the shimmer over the current content (`reloadLmsStations`). Saves still reload silently.
+  - Broken station pictures in the circles / cover fall back to the number / pin icon.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on changed JS: OK
+  - Headless Chrome via local static server: skeleton + shimmer during a delayed load, loaded overview, station view and landing page in the new dark theme
+  - `git status app/`: no changes
+- **Status:** Completed
+
+### [2026-11-02 23:10] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/tokens.css` (Modified: light theme)
+  - `admin_panel/public/theme.js` (Modified: light theme-color fallback #F3F2FA)
+- **Description of Changes:**
+  - Light theme rebuilt on the app palette used by the dark theme: lavender-white page gradient #E7E6F6→#F3F2FA→#FBFAFE, surfaces #FFFFFF / #EEEDF8 / #F8F7FD, borders in the app stroke tone #3A3A6A (12%) / #D6D5EC, text in the app's deep tones #201A36 / #3A3A6A / #6B6890 / #9D99B8, primary lavender (#6B68A8 fill, #5A5794 text), accent camel/gold (#C09268 fill, #8A5E34 text for contrast on white, gold gradient), info sky #0284C7; success/danger/pink kept at their contrast-safe light values. Station cards keep the app's own (dark) card colours in both themes.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome via local static server, light theme: stations overview, station view, landing page
+- **Status:** Completed
+
+### [2026-11-02 23:30] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Station cards no longer stay dark in the light theme: their colours are now `--app-card-*` variables. Dark keeps the app's StationCard colours exactly; light uses the same design in the light app palette (stroke #D6D5EC→#9292E2→#D6D5EC, fill white→#F8F7FD→#F1F0FA, image area #ECEBF8, number #6B68A8, title #201A36, white lock badge with camel / lavender ring, lavender shadows, softer locked shade). Skeleton placeholders, the "new station" card and the drag copy follow the theme too.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome via local static server: overview loaded + skeleton in light, overview in dark (unchanged)
+- **Status:** Completed
+
+### [2026-11-03 00:05] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel (app read only, not modified)
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/images/bg-dark.svg` (Created: the user's wave background redrawn as SVG)
+  - `admin_panel/public/images/bg-light.svg` (Created: same bands in the light palette)
+  - `admin_panel/public/images/bg-mobile-dark.png` (Created: copy of `app/assets/images/login_bg.png`)
+  - `admin_panel/public/images/bg-mobile-light.svg` (Created: light counterpart of the app background)
+  - `admin_panel/public/css/tokens.css`, `admin_panel/public/style.css` (Modified)
+- **Description of Changes:**
+  - The user's 2752×1536 JPG (1.4 MB) redrawn as a ~2 KB SVG: colours sampled from the image; six nested curved bands from the top-left (#8088E0 at 5.5% each) over a diagonal base gradient, a lavender glow top-left, a dark pool on the right and a plum tint bottom-right; `preserveAspectRatio="xMidYMid slice"` so it covers any screen. Light version uses the same bands in light lavender with a warm gold tint.
+  - Phones (≤768px) use the Flutter app's own background (`login_bg.png`) in dark and a light lavender counterpart in light.
+  - New token `--page-bg-image` per theme / breakpoint (absolute `/admin/images/...` URLs); the page background is drawn on a fixed `body::before` layer (background-attachment: fixed is unreliable on mobile) with `--page-gradient` underneath; the old radial glows on body were removed.
+- **Verification / Checkpoints Executed:**
+  - Side-by-side render of the original JPG and the SVG in headless Chrome
+  - Headless Chrome via local static server: stations tab at 1440px dark/light, landing at 1440px dark, landing at 390px dark/light (computed `body::before` image = mobile assets, all image requests 200)
+  - `git status app/`: no changes
+- **Status:** Completed
+
+### [2026-11-03 00:45] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/index.html` (Modified: removed the "sort stations" header button, the quick-access sort tile and the `lms-station-reorder-modal`)
+  - `admin_panel/public/js/features/lms/reorder-export.js` (Modified: removed openReorderStationsModal / renderReorderList / moveStationInReorder / saveStationsReorder)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified: removed column ◀▶ buttons, the "station order" tile and lmsMoveCategoryFromView)
+  - `admin_panel/public/js/features/lms/content-manager.js` (Modified: removed category ▲▼ and part ▲▼ + order number input, moveCategoryInStation and moveClipInSession; parts get a grip, a "پارت N" badge and a hidden `clip-order-*` input kept for the save functions)
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Modified: new "clip" sortable, vertical auto-scroll, optional onFail for lmsSaveInBackground)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Per user request, every reorder control that drag and drop now covers is gone: stations (cards / circles), categories (columns) and session cards were already draggable; video parts in the content manager became draggable by their grip (they are full of inputs), saved through the existing `POST /lms/sessions/:id/clips/reorder` (`clipIds`), optimistic, part numbers and hidden order inputs renumbered in place, toast after the animation, modal redrawn from the server on failure.
+  - An odd last tile in the quick-access / station action grids spans the row.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on all LMS JS files: OK; `<div>` open/close counts in index.html balanced
+  - Headless Chrome with a test page rebuilt from the current lms-tab markup and a mock API: header shows only "new station", reorder modal absent, no ▲▼ left in the content manager, part 3 dragged to first → screen `v11c#1, v11a#2, v11b#3` with hidden inputs 1..3, request `{"clipIds":["v11c","v11a","v11b"]}`
+  - Not run: live API
+- **Status:** Completed
+
+### [2026-11-03 01:10] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/style.css`, `admin_panel/public/css/dashboard.css`, `admin_panel/public/css/stations.css`, `admin_panel/public/css/landing.css` (Modified)
+- **Description of Changes:**
+  - One glass level for every main box, taken from the station page panels (surface at 55%, no blur) and made a little glassier as asked: `--glass-bg: rgb(var(--surface-rgb) / 0.5)` + `--glass-blur: blur(16px) saturate(1.2)` + `--glass-border`. Applied to `.glass` (panel cards, tables, stat cards, action headers, bento tiles — was 78% + 12px blur), dashboard `.tile` (was opaque), station page board / panels, and the landing hero tiles, feature cards, roles and steps.
+  - Modals keep a near-opaque `--glass-modal-bg` (94%) for readability.
+- **Verification / Checkpoints Executed:**
+  - Headless Chrome via local static server: stations overview and station page in dark/light, landing in dark/light (computed `rgba(surface, 0.5)` + `blur(16px) saturate(1.2)`)
+  - Not run: dashboard and other tabs while logged in
+- **Status:** Completed
+
+### [2026-11-03 01:25] - Claude Code (Agent 1: CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos (git author: rokni99)
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+- **Description of Changes:**
+  - Station cards in the stations overview showed only `iconUrl` / `imageUrl` (the app's `Station.imageFrom` rule), so stations whose picture lives in their gallery showed the "no image" icon while the station page circles showed the picture. The cards now use the same `lmsStationImage` as the circles and cover: `iconUrl`, then `imageUrl`, then the first gallery picture (a video entry's cover). `lmsStationImage` gained the `imageUrl` step; `lmsAppStationImage` removed.
+- **Verification / Checkpoints Executed:**
+  - `node --check station-view.js`: OK
+  - Headless Chrome with mock data: a station with no icon and one gallery picture now shows that picture on its overview card; a broken link still falls back to the "no image" icon
+- **Status:** Completed
+
+### [2026-11-02 20:40] - Claude Code (CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/js/features/lms/directory.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Modified)
+  - `admin_panel/public/js/features/lms/content-manager.js` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Removed the collapsed stations table view ("نمای جدولی منزلگاه‌ها و فیلترها") from the stations tab, with its category / instructor filter selects and duplicate export / refresh buttons (both remain in the quick-access tile). Removed `renderLmsDirectoryRows` and `refreshLmsCategoryFilterOptions`; `filterLmsTable` now only applies the stations-tile search box (title, description, category titles, session titles, instructors). `fetchLiveLmsStations` no longer depends on the table body. `station-dnd.js` and `content-manager.js` no longer read the removed filter selects.
+  - Station cards in the overview flip on hover (and keyboard focus) to a back face showing the station's instructors (avatar, name, session count; top 3 + "N more") and its class categories / sections (session and part counts; first 4 + "N more"), plus "click to enter". New `lmsStationCardBack` in station-view.js; flip styles and `--app-card-line` / `--app-card-muted` tokens (dark + light) in stations.css. Flip is limited to `(hover: hover)` devices, disabled during drag and in the drag ghost, and instant under reduced motion. The hover lift now applies only to the "new station" card.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on directory.js, station-view.js, station-dnd.js, content-manager.js: OK
+  - Headless Chrome with mock stations: back face renders instructors, categories, "more" rows and empty states correctly; data-style colour dots applied
+- **Status:** Completed
+
+### [2026-11-02 22:10] - Claude Code (CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/features/lms/station-editor.js` (Created)
+  - `admin_panel/public/js/features/lms/content-manager.js` (Modified - rewritten)
+  - `admin_panel/public/js/features/lms/station-creator.js` (Deleted)
+  - `admin_panel/public/js/features/lms/quiz.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Modified)
+  - `admin_panel/public/instructors.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+- **Description of Changes:**
+  - Replaced the three station modals ("تعریف / ویرایش منزلگاه", the content manager and its two-step "ثبت نهایی" confirmation) with one station editor (#lms-station-editor-modal). Editing has three tabs: مشخصات (fields + live home-screen card preview), نگارستان (image grid, reorder, upload), بخش‌ها و محتوا (categories/sessions list beside the selected session: title, instructors, date, time, description, video parts with link/cover/unlock schedule, quizzes; or the selected category: title and batch instructor / zarik tools). Creating a station uses the same modal as a 4-step wizard (مشخصات → نگارستان → بخش‌ها → مرور و ثبت) with one create request at the end.
+  - One save: every field edit goes into a draft; "ذخیره تغییرات" / Ctrl+S sends only what changed (station PUT, one batch-content request for category titles and parts, one PUT per changed session, which also carries the session description). Footer shows the unsaved-change count; tabs and session rows get a dot. All per-field save buttons and the confirmation modal are gone. Add/delete of categories, sessions, parts and quizzes and the batch tools still save immediately, but now redraw the editor with the draft kept (they used to rebuild the modal and drop unsaved edits). Closing (button or Esc) with unsaved changes asks first; a failed save keeps the unsaved edits.
+  - Station save now sends the current subtitle and release time, so saving details no longer clears them. Session date/time fields no longer show hard-coded placeholder dates as real values. New parts are created as "پارت N" without a prompt.
+  - Styling follows the station page (glass panel, notch tabs, round buttons, inverted pills, dark + light, phone width); the quiz editor uses the same shell. Toasts are lifted above the footer while the editor is open.
+  - content-manager.js now holds only the immediate server actions (+ handleDirectFileUpload, which now dispatches an input event). instructors.js picker dispatches an input event on change. station-view.js: session rows open the editor on that session; the gallery button opens the gallery tab. station-dnd.js: part dragging targets the new modal.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on all changed JS files: OK
+  - Puppeteer + headless Chrome against the real modules with a mocked API: 23/23 checks passed (dirty tracking, live mirrors, instructor picker, draft surviving add-session redraw, single save sends exactly 3 requests with only changed fields, failed save keeps the draft, Esc confirm, wizard validation, create payload); screenshots reviewed in dark, light and 390px width
+  - Not run against the live backend
+- **Status:** Completed
+
+### [2026-11-02 23:30] - Claude Code (CRM & Analytics Specialist)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: ggos
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/public/js/ui/lightbox.js` (Created)
+  - `admin_panel/public/js/ui/modal.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-dnd.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-editor.js` (Modified)
+  - `admin_panel/public/js/features/lms/station-view.js` (Modified)
+  - `admin_panel/public/index.html` (Modified)
+  - `admin_panel/public/css/stations.css` (Modified)
+  - `admin_panel/public/css/components.css` (Modified)
+- **Description of Changes:**
+  - Drag and drop in the station editor: sessions in the side list (within a category and into another one) and the categories themselves (by their header) save immediately, like on the station page; gallery pictures and the wizard's new categories reorder the draft. Mouse drags from anywhere, touch from the grip. The session / category commit logic is now shared by the station page and the editor; a cancelled drag redraws the view it came from (video parts included).
+  - New NopaLightbox (js/ui/lightbox.js): video preview (Aparat links in Aparat's embed player, which the CSP already allows; files in <video>, with a fallback and an open-in-new-tab link) and picture zoom for any img[data-zoom], with next/previous inside a data-zoom-group. Used for part video links (play button), video gallery items, gallery pictures, the station card preview, part covers, the wizard review and the cover on the station page.
+  - Modal manager (js/ui/modal.js): a backdrop click now closes every modal, except when it has unsaved edits: a field the user focused no longer holds its value from then (search fields and [data-modal-nodirty] ignored; a form submit counts as saved), or the modal's own guard (NopaModal.guard) says so. Then it stays open, shakes and shows a hint. Before, any modal containing a form field never closed on a backdrop click. The station editor registers a guard on its draft (and the create wizard) and no longer has data-modal-static.
+- **Verification / Checkpoints Executed:**
+  - `node --check` on changed JS: OK
+  - Puppeteer + headless Chrome with a mocked API and real mouse drags: 20/21 new checks passed (session moved to another category -> PUT categoryId, category reorder -> PUT orderIndex, gallery and wizard drag, Aparat frame and <video> preview, zoom + arrow navigation, backdrop rules for the editor, a form modal and the lightbox); the one failure is the Aparat player logging an error for the fake video id used in the test. The earlier 23 editor checks still pass.
+  - Not run against the live backend
+>>>>>>> 0ecbcfcf48b078871112549edd7b43651ae89e80
 - **Status:** Completed

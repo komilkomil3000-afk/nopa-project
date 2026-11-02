@@ -35,8 +35,10 @@
   position: relative;
   min-width: 0;
   grid-column: span 4;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 20px;
   box-shadow: var(--shadow-sm);
@@ -134,7 +136,7 @@
 .kpi--brand .kpi-head i { background: rgb(255 255 255 / 0.2); color: #fff; }
 
 .kpi--gold {
-  background: linear-gradient(135deg, #FDE68A 0%, #EAB308 100%);
+  background: var(--gold-gradient);
   border-color: transparent;
   box-shadow: 0 14px 34px rgb(234 179 8 / 0.25);
 }

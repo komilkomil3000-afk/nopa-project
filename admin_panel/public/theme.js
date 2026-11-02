@@ -19,7 +19,7 @@
 
   function syncChrome(theme) {
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', cssVar('--bg') || (theme === 'light' ? '#F7F5FC' : '#120C1F'));
+    if (meta) meta.setAttribute('content', cssVar('--bg') || (theme === 'light' ? '#F3F2FA' : '#201A36'));
     document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
       var next = theme === 'dark' ? 'روشن' : 'تاریک';
       btn.setAttribute('aria-label', 'تغییر به تم ' + next);
