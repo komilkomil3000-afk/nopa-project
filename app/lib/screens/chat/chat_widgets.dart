@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Text;
+import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
@@ -191,4 +192,35 @@ String chatTimeLabel(DateTime? at) {
   if (days == 1) return 'دیروز';
   if (days < 7) return const ['دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه', 'یکشنبه'][local.weekday - 1];
   return '${local.month}/${local.day}';
+}
+
+/// A chat sub-page (groups, challenge info, dashboard...): the chat's golden header with the same back arrow
+/// as a conversation, over the app's background.
+class ChatPageScaffold extends StatelessWidget {
+  final String title;
+  final Widget body;
+  final List<Widget> actions;
+  const ChatPageScaffold({super.key, required this.title, required this.body, this.actions = const []});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(image: AssetImage('assets/images/login_bg.png'), fit: BoxFit.cover),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Column(
+          children: [
+            ChatGoldHeader(
+              actions: actions,
+              child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.bold)),
+            ),
+            Expanded(child: SafeArea(top: false, child: body)),
+          ],
+        ),
+      ),
+    );
+  }
 }

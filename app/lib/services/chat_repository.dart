@@ -289,6 +289,7 @@ class ChatRepository extends ChangeNotifier {
   void _onNew(Map<String, dynamic> json) {
     final message = ChatMessage.fromJson(json);
     _insert(message);
+    if (message.threadRootId != null) _addThreadFace(message);
     final space = spaceById(message.spaceId);
     if (space == null) {
       refreshSpaces();
@@ -308,10 +309,26 @@ class ChatRepository extends ChangeNotifier {
     _save([message]);
   }
 
+  /// Someone replied under a message: their face joins the row beside the way into that conversation.
+  void _addThreadFace(ChatMessage reply) {
+    if (reply.senderId == null) return;
+    final list = _lists[_key(reply.spaceId, null)];
+    final at = list?.indexWhere((m) => m.id == reply.threadRootId) ?? -1;
+    if (at < 0) return;
+    final root = list![at];
+    final faces = [
+      {'id': reply.senderId, 'name': reply.senderName, 'avatarUrl': reply.senderAvatarUrl, 'gender': reply.senderGender, 'role': reply.senderIsMentor ? 'mentor' : 'student'},
+      ...root.threadPeople.where((p) => p['id'] != reply.senderId),
+    ].take(4).toList();
+    list[at] = ChatMessage.fromJson({...root.raw, 'threadPeople': faces, 'threadOpen': true});
+  }
+
   void _onUpdate(Map<String, dynamic> json) {
+    final list = _lists[_key(json['spaceId'], json['threadRootId'])];
+    final at = list?.indexWhere((m) => m.id == json['id']) ?? -1;
+    // Live updates do not carry the faces of a thread: keep the ones already known
+    if (at >= 0 && !json.containsKey('threadPeople')) json = {...json, 'threadPeople': list![at].raw['threadPeople'] ?? const []};
     final message = ChatMessage.fromJson(json);
-    final list = _lists[_key(message.spaceId, message.threadRootId)];
-    final at = list?.indexWhere((m) => m.id == message.id) ?? -1;
     if (at >= 0) {
       list![at] = message;
       notifyListeners();

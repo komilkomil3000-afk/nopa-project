@@ -49,8 +49,44 @@ class ChatTheme {
         border: Border.all(color: (highlighted ? accent : stroke).withValues(alpha: 0.55), width: 1.2),
       );
 
-  /// One's own bubble is the deep lavender of the cards; other people's the gold of the accent.
-  static Color bubbleFill({required bool mine}) => mine ? mineFill : accent;
+  /// Bar of a conversation one cannot write in: the colour of the app's general feedback (toasts).
+  static const Color feedback = Color(0xFF3D3C67);
+  static const Color feedbackText = Color(0xFFE4E4FF);
+
+  /// A mentor, wherever they appear (name, challenge creator, reactions, marks): this blue and this badge.
+  static const Color mentor = AppColors.blue;
+  static const IconData mentorBadge = Icons.verified_rounded;
+
+  /// One's own bubble: the window of a station (lavender edge, deep fill).
+  static const LinearGradient mineStroke = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    stops: [0.0, 0.5, 1.0],
+    colors: [Color(0xFF3A3A6A), Color(0xFF9292E2), Color(0xFF3A3A6A)],
+  );
+  static const LinearGradient mineFillGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    stops: [0.0, 0.53, 1.0],
+    colors: [Color(0xFF3D3C67), Color(0xFF36345C), Color(0xFF333359)],
+  );
+
+  /// Everyone else's bubble: the selected زریک option (gold edge, copper fill).
+  static const LinearGradient otherStroke = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    stops: [0.0, 0.5, 1.0],
+    colors: [Color(0xFF8D5B2C), Color(0xFFFFD580), Color(0xFF8D5B2C)],
+  );
+  static const LinearGradient otherFillGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [Color(0xFFE5A66B), Color(0xFFC7844E)],
+  );
+
+  /// Fill under the tail, where the bubble meets its sender's face.
+  static Color bubbleFill({required bool mine}) => mine ? const Color(0xFF333359) : const Color(0xFFE5A66B);
+  static Color tailStroke({required bool mine}) => mine ? const Color(0xFF5B5B9E) : const Color(0xFFA9773F);
   static Color bubbleText({required bool mine}) => mine ? text : ink;
   static Color bubbleMuted({required bool mine}) => mine ? muted : ink.withValues(alpha: 0.6);
 

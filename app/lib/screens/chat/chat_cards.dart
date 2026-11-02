@@ -8,16 +8,30 @@ import 'package:nopa_app/widgets/fa_text.dart';
 class ChatChip extends StatelessWidget {
   final String label;
   final Color color;
-  const ChatChip({super.key, required this.label, this.color = ChatTheme.lavender});
+  final IconData? icon;
+  /// Solid colour with white text: the mentor's chips, readable on gold and on lavender alike.
+  final bool filled;
+  const ChatChip({super.key, required this.label, this.color = ChatTheme.lavender, this.icon, this.filled = false});
+
+  /// The mark of a mentor: blue, with the badge.
+  const ChatChip.mentor({super.key, required this.label}) : color = ChatTheme.mentor, icon = ChatTheme.mentorBadge, filled = true;
 
   static Color parse(String hex) => Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
 
   @override
   Widget build(BuildContext context) {
+    final fg = filled ? Colors.white : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.55))),
-      child: Text(label, style: ChatTheme.caption.copyWith(color: color, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: filled ? color : color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: filled ? 1 : 0.55)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (icon != null) ...[Icon(icon, size: 12, color: fg), const SizedBox(width: 3)],
+        Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: ChatTheme.caption.copyWith(color: fg, fontWeight: FontWeight.bold))),
+      ]),
     );
   }
 }

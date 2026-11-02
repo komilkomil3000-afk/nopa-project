@@ -1,10 +1,10 @@
+import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:provider/provider.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
-import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
@@ -50,10 +50,8 @@ class _ChannelManagerProfileScreenState extends State<ChannelManagerProfileScree
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context, listen: false).currentUser;
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'حساب کاربری',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: ListView(

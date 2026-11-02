@@ -3401,3 +3401,26 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Not run against the live backend
 >>>>>>> 0ecbcfcf48b078871112549edd7b43651ae89e80
 - **Status:** Completed
+
+### [2026-11-02 23:40] - Claude Code (Agent 2: Flutter App & LMS Specialist + Agent 3: Integration)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/assets/images/chat_bg.jpg` (Created — supplied wallpaper, 1536x2752 2.7MB → 720x1290 118KB)
+  - `app/lib/screens/chat/chat_format.dart` (Created)
+  - `app/lib/screens/chat/chat_conversation_screen.dart`, `chat_message_bubble.dart`, `chat_message_menu.dart`, `chat_profile_screen.dart`, `chat_widgets.dart`, `chat_theme.dart`, `chat_cards.dart`, `chat_home_screen.dart`, `chat_groups_screen.dart`, `chat_topic_info_screen.dart`, `channel_manager_profile_screen.dart` (Modified)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/test/chat_ui_test.dart` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts`, `service.ts`, `topics.ts` (Modified)
+- **Description of Changes:**
+  - Message menu is an overlay (not a route): the keyboard and composer stay up while reacting.
+  - Chat wallpaper from the supplied image (compressed, 75% opacity over the app background).
+  - Composer is a floating pill clear of edges/corners; send arrow points right; selection toolbar adds bold / italic / mention next to copy/cut/paste; `**bold**`, `__italic__`, `@mentions` rendered in bubbles, stripped in previews and push notifications.
+  - Bubbles: own = station-window frame (lavender gradient stroke), others = selected زریک option (gold stroke, copper fill); tail matched.
+  - Read-only bar uses the general feedback colour (AppToast info) as a floating pill.
+  - Threads: only moderators (mentor/admin/channel manager, never private chats) open a conversation under a message (`mark: 'thread'`); server refuses replies under unopened messages; challenges always have one. `threadOpen` + `threadPeople` (up to 4 faces) sent with messages; box «ورود به گفتگو» with faces under each open message.
+  - Challenges render as chat messages with small detail boxes (creator, station, deadline, reward, final answer) and actions in the tap menu; mentor identity = blue + verified badge on names, creator, reactions by staff and the best-answer mark (`creatorRole` added to challenge meta).
+  - Profiles: fallback from local data when the new endpoints are not deployed; same golden header/back as the chat with the panel under it. Chat sub-pages (groups, challenge info, dashboard, channel-manager account) use `ChatPageScaffold` with the same back button.
+  - Home filter bar: selection triangle removed.
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze`: no issues. `flutter test`: 19/19 passed. `npx tsc --noEmit` in `admin_panel/`: no errors. Not run on a device.
+- **Status:** Completed

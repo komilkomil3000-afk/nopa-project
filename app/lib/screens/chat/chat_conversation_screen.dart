@@ -9,6 +9,7 @@ import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
+import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 import 'package:nopa_app/screens/chat/chat_message_menu.dart';
 import 'package:nopa_app/screens/chat/chat_profile_screen.dart';
@@ -52,6 +53,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _uploading = false;
   bool _recording = false;
   bool _emojiOpen = false;
+  bool _menuOpen = false;
   List<Map<String, dynamic>> _people = [];
   Map<String, dynamic>? _profile;
   List<Map<String, dynamic>> _cases = [];
@@ -86,6 +88,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
   @override
   void dispose() {
+    dismissChatMessageMenu();
     _chat.unwatch(widget.spaceId, threadRootId: _threadId);
     _chat.removeListener(_markReadWhileOpen);
     _chat.commandResult.removeListener(_showCommandResult);
@@ -295,8 +298,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final moderator = space?.canModerate == true;
     final items = <ChatMenuItem>[
       if (_canWrite(space)) const ChatMenuItem('reply', Icons.reply_rounded, 'پاسخ'),
-      // Sessions under a message belong to groups and channels, not to a private chat
-      if (_threadId == null && space?.isPrivate != true) const ChatMenuItem('thread', Icons.forum_rounded, 'ورود به گفتگوی زیر پیام'),
+      if (_threadId == null && message.threadOpen && _threadAllowed(message, space)) const ChatMenuItem('thread', Icons.forum_rounded, 'ورود به گفتگو'),
+      // Only mentors, admins and channel managers open a conversation under a message, never in a private chat
+      if (_threadId == null && moderator && !message.threadOpen && space?.isPrivate != true) const ChatMenuItem('openThread', Icons.add_comment_rounded, 'باز کردن گفتگو زیر این پیام'),
+      if (message.kind == 'challenge') ...[
+        const ChatMenuItem('info', Icons.info_outline_rounded, 'اطلاعات و ارزیابی چالش'),
+        const ChatMenuItem('challenge', Icons.local_fire_department_rounded, 'جزئیات چالش'),
+      ],
       if (message.body.isNotEmpty) const ChatMenuItem('copy', Icons.copy_rounded, 'کپی متن'),
       if (mine && message.body.isNotEmpty && !_threadIsClosed && !card) const ChatMenuItem('edit', Icons.edit_rounded, 'ویرایش'),
       if (moderator) ChatMenuItem('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
@@ -314,6 +322,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if ((mine && !_threadIsClosed) || moderator) const ChatMenuItem('delete', Icons.delete_rounded, 'حذف', danger: true),
     ];
     final myId = Provider.of<AppRepository>(context, listen: false).currentUser.id;
+    setState(() => _menuOpen = true);
     final action = await showChatMessageMenu(
       context,
       anchor: anchor,
@@ -321,13 +330,22 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       items: items,
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
-    if (action == null || !mounted) return;
+    if (!mounted) return;
+    setState(() => _menuOpen = false);
+    if (action == null) return;
 
     if (action.startsWith('react:')) {
       await _chat.react(message, action.substring(6));
     } else if (action == 'reply') {
       setState(() => _replyTo = message);
       _focus.requestFocus();
+    } else if (action == 'openThread') {
+      final ok = await _chat.mark(message, 'thread');
+      if (mounted) ok ? AppToast.success(context, 'گفتگو زیر این پیام باز شد.') : AppToast.error(context, 'باز کردن گفتگو انجام نشد.');
+    } else if (action == 'info') {
+      _openInfo(message, space);
+    } else if (action == 'challenge') {
+      _openChallenge(message);
     } else if (action == 'thread') {
       _openThread(message);
     } else if (action == 'copy') {
@@ -531,14 +549,20 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   Widget build(BuildContext context) {
     final myId = Provider.of<AppRepository>(context, listen: false).currentUser.id;
     return PopScope(
-      canPop: !_emojiOpen,
+      canPop: !_emojiOpen && !_menuOpen,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && _emojiOpen) setState(() => _emojiOpen = false);
+        if (didPop) return;
+        if (_menuOpen) {
+          dismissChatMessageMenu();
+        } else if (_emojiOpen) {
+          setState(() => _emojiOpen = false);
+        }
       },
       child: Container(
+        // The chat wallpaper, a little faded into the app's background
         decoration: const BoxDecoration(
           gradient: AppColors.screenBackgroundGradient,
-          image: DecorationImage(image: AssetImage('assets/images/login_bg.png'), fit: BoxFit.cover),
+          image: DecorationImage(image: AssetImage('assets/images/chat_bg.jpg'), fit: BoxFit.cover, opacity: 0.75),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -558,7 +582,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     Expanded(
                       child: Stack(
                         children: [
-                          const Positioned.fill(child: _ChatWallpaper()),
                           Column(
                             children: [
                               // With the keyboard open the conversation needs every pixel
@@ -729,7 +752,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     return ChatBubbleStyle.group;
   }
 
-  static bool _isCard(ChatMessage m) => !m.deleted && const {'challenge', 'station', 'result', 'poll'}.contains(m.kind);
+  // Challenges read as messages now; only these stay as cards
+  static bool _isCard(ChatMessage m) => !m.deleted && const {'station', 'result', 'poll'}.contains(m.kind);
+
+  /// Conversations under messages live in groups and channels; in a private chat only a personal challenge has one.
+  bool _threadAllowed(ChatMessage message, ChatSpace? space) => space?.isPrivate != true || message.topicId != null;
+
+  /// Mentors and staff here, whose reactions wear the mentor's badge.
+  Set<String> get _staffIds => {
+        for (final p in _people)
+          if (const {'mentor', 'admin', 'sub_admin', 'channel_manager'}.contains(p['role'])) p['id'] as String,
+      };
+
+  Set<String> get _mentionNames => {for (final p in _people) (p['name'] ?? '').toString()};
 
   Widget _list(List<ChatMessage> messages, ChatSpace? space, String myId) {
     if (messages.isEmpty) {
@@ -747,18 +782,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         final older = index + 1 < messages.length ? messages[messages.length - 2 - index] : null;
         final newer = index > 0 ? messages[messages.length - index] : null;
         final mine = message.senderId == myId;
-        if (message.kind == 'challenge' && !message.deleted && message.topicId != null) {
-          return _tappableCard(
-            message,
-            space,
-            ChallengeCard(
-              message: message,
-              onOpenThread: () => _openThread(message),
-              onOpenInfo: () => _openInfo(message, space),
-              onOpenChallenge: () => _openChallenge(message),
-            ),
-          );
-        }
         if (message.kind == 'station' && !message.deleted) return StationCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'result' && !message.deleted) return ResultCard(key: ValueKey(message.id), message: message);
         if (message.kind == 'poll' && !message.deleted) {
@@ -767,7 +790,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         // A run is a sender's consecutive messages: the name goes over its first, the face and tail under its last
         final startsRun = older == null || older.senderId != message.senderId || _isCard(older);
         final endsRun = newer == null || newer.senderId != message.senderId || _isCard(newer);
-        final threadAllowed = _threadId == null && (space?.isPrivate != true || message.threadReplies > 0);
         return ChatMessageBubble(
           key: ValueKey(message.clientMessageId ?? message.id),
           message: message,
@@ -775,11 +797,13 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           style: style,
           myId: myId,
           staffTags: _chat.staffTagsOf(message.id),
+          staffIds: _staffIds,
+          mentionNames: _mentionNames,
           showSender: style == ChatBubbleStyle.channel ? message.senderId != null && startsRun : (style == ChatBubbleStyle.group && !mine && startsRun),
           showAvatar: endsRun,
           seen: space != null && space.isDirect && message.seq > 0 && message.seq <= space.peerReadSeq,
           onTap: (rect) => _showActions(message, space, mine, rect, card: style == ChatBubbleStyle.channel),
-          onOpenThread: threadAllowed ? () => _openThread(message) : null,
+          onOpenThread: _threadId == null && _threadAllowed(message, space) ? () => _openThread(message) : null,
           onOpenSender: message.senderId == null || mine ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
           onReact: (type) => _chat.react(message, type),
@@ -788,37 +812,127 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     );
   }
 
-  Widget _readOnlyBar(bool closed) => Container(
+  /// Where one cannot write: the same floating bar, in the colour of the app's general feedback.
+  Widget _readOnlyBar(bool closed) {
+    final space = _chat.spaceById(widget.spaceId);
+    final text = closed
+        ? 'این چالش بسته شده است.'
+        : (space?.canReply == false
+            ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.'
+            : (space?.isChannel == true
+                ? 'این کانال فقط خواندنی است؛ زیر پست‌هایی که گفتگو دارند، «ورود به گفتگو» را بزنید.'
+                : 'برای گفتگو، روی «ورود به گفتگو» زیر هر چالش یا پیام بزنید.'));
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.only(bottom: 10),
+      child: Container(
         width: double.infinity,
-        color: ChatTheme.paper,
-        padding: EdgeInsets.fromLTRB(ChatTheme.gutter, 14, ChatTheme.gutter, 14 + MediaQuery.paddingOf(context).bottom),
-        child: Text(
-          closed
-              ? 'این چالش بسته شده است.'
-              : (_chat.spaceById(widget.spaceId)?.canReply == false
-                  ? 'این میدان فقط خواندنی است؛ گفتگو در گروه چالش‌های کاروان شماست.'
-                  : (_chat.spaceById(widget.spaceId)?.isChannel == true
-                      ? 'برای گفتگو، روی «ارسال نظر» زیر هر پست بزنید.'
-                      : 'برای گفتگو، روی «ورود به گفتگو» در کارت چالش یا اعلان بزنید.')),
-          style: TextStyle(color: ChatTheme.ink.withValues(alpha: 0.7), fontFamily: AppTheme.fontFamily, fontSize: 12),
-          textAlign: TextAlign.center,
+        margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 6, ChatTheme.gutter, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          color: ChatTheme.feedback,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: ChatTheme.stroke.withValues(alpha: 0.6)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
         ),
-      );
+        child: Row(children: [
+          Icon(closed ? Icons.lock_rounded : Icons.info_outline_rounded, size: 18, color: ChatTheme.feedbackText.withValues(alpha: 0.8)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text, style: const TextStyle(color: ChatTheme.feedbackText, fontFamily: AppTheme.fontFamily, fontSize: 12, height: 1.6))),
+        ]),
+      ),
+    );
+  }
 
-  /// Light bar at the bottom: voice and attach on the right turn into send while typing; emoji on the left.
+  /// Selected text gets bold, italic and mention next to the usual copy, cut, paste and select-all.
+  Widget _selectionMenu(BuildContext context, EditableTextState state) {
+    final items = [...state.contextMenuButtonItems];
+    if (!state.textEditingValue.selection.isCollapsed) {
+      items.addAll([
+        ContextMenuButtonItem(
+          label: 'بولد',
+          onPressed: () {
+            _input.value = ChatFormat.toggle(_input.value, ChatFormat.bold);
+            state.hideToolbar();
+          },
+        ),
+        ContextMenuButtonItem(
+          label: 'ایتالیک',
+          onPressed: () {
+            _input.value = ChatFormat.toggle(_input.value, ChatFormat.italic);
+            state.hideToolbar();
+          },
+        ),
+        if (_people.isNotEmpty)
+          ContextMenuButtonItem(
+            label: 'منشن',
+            onPressed: () {
+              state.hideToolbar();
+              _mentionSelection();
+            },
+          ),
+      ]);
+    }
+    return AdaptiveTextSelectionToolbar.buttonItems(anchors: state.contextMenuAnchors, buttonItems: items);
+  }
+
+  /// Puts a person's name, as a mention, in place of the selected words.
+  Future<void> _mentionSelection() async {
+    final value = _input.value;
+    final selected = value.selection.textInside(value.text).trim();
+    final matches = _people.where((p) => selected.isEmpty || (p['name'] ?? '').toString().contains(selected)).toList();
+    final picked = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      backgroundColor: ChatTheme.surfaceBottom,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              for (final person in matches.isEmpty ? _people : matches)
+                ListTile(
+                  leading: const Icon(Icons.alternate_email_rounded, color: ChatTheme.accent),
+                  title: Text(person['name'] ?? '', style: ChatTheme.body),
+                  onTap: () => Navigator.pop(ctx, person),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final name = '@${picked['name'] ?? ''} ';
+    final start = value.selection.start, end = value.selection.end;
+    _input.value = TextEditingValue(
+      text: value.text.replaceRange(start, end, name),
+      selection: TextSelection.collapsed(offset: start + name.length),
+    );
+    _mentions.add(picked['id']);
+    _focus.requestFocus();
+  }
+
+  /// Floating light bar, clear of the screen's edges and corners: voice and attach on the right turn into
+  /// send while typing; emoji on the left.
   Widget _composer() {
     final context_ = _editing ?? _replyTo;
     final inkSoft = ChatTheme.ink.withValues(alpha: 0.7);
     final caption = TextStyle(color: inkSoft, fontFamily: AppTheme.fontFamily, fontSize: 12);
-    return Container(
-      decoration: BoxDecoration(
-        color: ChatTheme.paper,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 12, offset: const Offset(0, -2))],
-      ),
-      child: SafeArea(
-        top: false,
-        // The emoji panel under the bar already keeps clear of the system bar
-        bottom: !_emojiOpen,
+    return SafeArea(
+      top: false,
+      // The emoji panel under the bar already keeps clear of the system bar
+      bottom: !_emojiOpen,
+      minimum: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 6, ChatTheme.gutter, 0),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: ChatTheme.paper,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 4))],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -826,7 +940,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
               InkWell(
                 onTap: () => _pickMention(person),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: ChatTheme.gutter, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   child: Row(children: [
                     Icon(Icons.alternate_email_rounded, size: 16, color: inkSoft),
                     const SizedBox(width: 8),
@@ -836,7 +950,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
               ),
             if (context_ != null)
               Container(
-                margin: const EdgeInsets.fromLTRB(ChatTheme.gutter, 8, ChatTheme.gutter - 8, 0),
+                margin: const EdgeInsets.fromLTRB(16, 10, 8, 0),
                 padding: const EdgeInsetsDirectional.only(start: 10),
                 decoration: const BoxDecoration(border: BorderDirectional(start: BorderSide(color: AppColors.buttonCamel, width: 2))),
                 child: Row(
@@ -845,7 +959,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        _editing != null ? 'ویرایش پیام' : 'پاسخ به ${context_.senderName}: ${context_.body.isEmpty ? 'فایل' : context_.body}',
+                        _editing != null ? 'ویرایش پیام' : 'پاسخ به ${context_.senderName}: ${context_.body.isEmpty ? 'فایل' : ChatFormat.plain(context_.body)}',
                         style: caption,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -866,7 +980,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(ChatTheme.gutter - 8, 4, ChatTheme.gutter - 8, 4),
+              padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -887,10 +1001,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                                   child: InkWell(
                                     customBorder: const CircleBorder(),
                                     onTap: _send,
+                                    // The arrow points right, the way a message leaves in a right-to-left chat
                                     child: const SizedBox(
                                       width: 40,
                                       height: 40,
-                                      child: Icon(Icons.send_rounded, color: ChatTheme.ink, size: 20),
+                                      child: Directionality(textDirection: TextDirection.ltr, child: Icon(Icons.send_rounded, color: ChatTheme.ink, size: 20)),
                                     ),
                                   ),
                                 ),
@@ -917,29 +1032,27 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                     },
                   ),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: TextField(
-                        controller: _input,
-                        focusNode: _focus,
-                        minLines: 1,
-                        maxLines: 5,
-                        maxLength: 4000,
-                        cursorColor: AppColors.buttonCamel,
-                        textInputAction: TextInputAction.newline,
-                        style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 14, height: 1.5),
-                        decoration: InputDecoration(
-                          counterText: '',
-                          isDense: true,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                          hintText: _recording ? 'در حال ضبط صدا...' : 'پیام...',
-                          hintStyle: caption.copyWith(fontSize: 13, color: _recording ? ChatTheme.danger : ChatTheme.ink.withValues(alpha: 0.45)),
-                        ),
+                    child: TextField(
+                      controller: _input,
+                      focusNode: _focus,
+                      minLines: 1,
+                      maxLines: 6,
+                      maxLength: 4000,
+                      cursorColor: AppColors.buttonCamel,
+                      textInputAction: TextInputAction.newline,
+                      contextMenuBuilder: _selectionMenu,
+                      style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 14, height: 1.5),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        isDense: true,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.fromLTRB(8, 13, 8, 13),
+                        hintText: _recording ? 'در حال ضبط صدا...' : 'پیام...',
+                        hintStyle: caption.copyWith(fontSize: 13, color: _recording ? ChatTheme.danger : ChatTheme.ink.withValues(alpha: 0.45)),
                       ),
                     ),
                   ),
-                  Container(width: 1, height: 26, margin: const EdgeInsets.only(bottom: 11), color: ChatTheme.ink.withValues(alpha: 0.15)),
+                  Container(width: 1, height: 24, margin: const EdgeInsets.only(bottom: 12), color: ChatTheme.ink.withValues(alpha: 0.15)),
                   IconButton(
                     tooltip: _emojiOpen ? 'صفحه‌کلید' : 'ایموجی',
                     onPressed: _toggleEmoji,
@@ -978,28 +1091,6 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
               child: Center(child: Text(e, style: const TextStyle(fontSize: 24))),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// The conversation's backdrop: the pattern of travel drawings over the app's background, when the
-/// pattern image is in the app (assets/images/chat_pattern.png); without it, the plain background.
-class _ChatWallpaper extends StatelessWidget {
-  const _ChatWallpaper();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Opacity(
-        opacity: 0.09,
-        child: Image.asset(
-          'assets/images/chat_pattern.png',
-          repeat: ImageRepeat.repeat,
-          fit: BoxFit.none,
-          scale: 2,
-          errorBuilder: (_, _, _) => const SizedBox.shrink(),
-        ),
       ),
     );
   }

@@ -119,6 +119,10 @@ class ChatMessage {
   final bool pinned;
   final String? threadRootId;
   final int threadReplies;
+  /// Replies may be written under it (a challenge, or a message a moderator opened).
+  final bool threadOpen;
+  /// A few of the people who replied under it, newest first.
+  final List<Map<String, dynamic>> threadPeople;
   final String? clientMessageId;
   final DateTime createdAt;
   final String? senderId;
@@ -152,6 +156,8 @@ class ChatMessage {
     required this.pinned,
     required this.threadRootId,
     required this.threadReplies,
+    this.threadOpen = false,
+    this.threadPeople = const [],
     required this.clientMessageId,
     required this.createdAt,
     required this.senderId,
@@ -191,6 +197,8 @@ class ChatMessage {
       pinned: json['pinned'] == true,
       threadRootId: json['threadRootId'],
       threadReplies: json['threadReplies'] ?? 0,
+      threadOpen: json['threadOpen'] == true || (json['threadReplies'] ?? 0) > 0 || topic != null,
+      threadPeople: maps('threadPeople'),
       clientMessageId: json['clientMessageId'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '')?.toLocal() ?? DateTime.now(),
       senderId: sender?['id'],

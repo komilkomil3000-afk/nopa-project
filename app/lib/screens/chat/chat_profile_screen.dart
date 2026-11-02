@@ -45,7 +45,23 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   }
 
   Future<void> _load() async {
-    final profile = await _chat.spaceProfile(widget.spaceId);
+    var profile = await _chat.spaceProfile(widget.spaceId);
+    // A server without the profile endpoint yet: what the app already knows of the space and its people
+    if (profile == null) {
+      final space = _chat.spaceById(widget.spaceId);
+      final people = await _chat.people(widget.spaceId);
+      if (space != null) {
+        profile = {
+          'id': space.id,
+          'type': space.type,
+          'title': space.title,
+          'memberCount': people.length,
+          'onlineCount': people.where((p) => _chat.isOnline(p['id'] ?? '')).length,
+          'members': people,
+          'canModerate': space.canModerate,
+        };
+      }
+    }
     if (!mounted) return;
     setState(() {
       _profile = profile;
@@ -58,6 +74,7 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
     final space = _chat.spaceById(widget.spaceId);
     final profile = _profile;
     return _ProfileScaffold(
+      title: space?.isChannel == true ? 'اطلاعات کانال' : 'اطلاعات و اعضا',
       loading: _loading,
       failed: profile == null,
       onRetry: () {
@@ -144,7 +161,18 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
   }
 
   Future<void> _load() async {
-    final profile = await _chat.memberProfile(widget.spaceId, widget.userId);
+    var profile = await _chat.memberProfile(widget.spaceId, widget.userId);
+    // A server without the profile endpoint yet: the person as the conversation's member list has them
+    if (profile == null) {
+      final space = _chat.spaceById(widget.spaceId);
+      final people = await _chat.people(widget.spaceId);
+      final person = people.where((p) => p['id'] == widget.userId).firstOrNull;
+      if (person != null) {
+        profile = {...person};
+      } else if (space != null && space.peerId == widget.userId) {
+        profile = {'id': space.peerId, 'name': space.title, 'avatarUrl': space.peerAvatarUrl, 'gender': space.peerGender, 'role': space.peerIsMentor ? 'mentor' : 'student'};
+      }
+    }
     if (!mounted) return;
     setState(() {
       _profile = profile;
@@ -185,6 +213,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
     final me = Provider.of<AppRepository>(context, listen: false).currentUser;
     final space = _chat.spaceById(widget.spaceId);
     return _ProfileScaffold(
+      title: 'پروفایل',
       loading: _loading,
       failed: _profile == null,
       onRetry: () {
@@ -209,7 +238,7 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
                 subtitle: subtitle,
                 rank: isMentor ? null : (p['rank'] as num?)?.toInt(),
               ),
-              if (!isMentor) ...[
+              if (!isMentor && p.containsKey('zarik')) ...[
                 const SizedBox(height: 18),
                 Row(
                   children: [
@@ -236,11 +265,15 @@ class _ChatMemberProfileScreenState extends State<ChatMemberProfileScreen> {
 
 /// Golden top bar (logo, connection, back) over a scrolling page.
 class _ProfileScaffold extends StatelessWidget {
+  final String title;
   final bool loading;
   final bool failed;
   final VoidCallback onRetry;
   final List<Widget> Function() builder;
-  const _ProfileScaffold({required this.loading, required this.failed, required this.onRetry, required this.builder});
+  const _ProfileScaffold({required this.title, required this.loading, required this.failed, required this.onRetry, required this.builder});
+
+  /// Height of the golden header under the status bar.
+  static const double _headerHeight = 70;
 
   @override
   Widget build(BuildContext context) {
@@ -257,9 +290,13 @@ class _ProfileScaffold extends StatelessWidget {
         ]),
       );
     } else {
+      // The page scrolls under the header, so the lavender panel seems to come out of it
       body = ListenableBuilder(
         listenable: chat,
-        builder: (context, _) => ListView(padding: EdgeInsets.only(bottom: 24 + MediaQuery.paddingOf(context).bottom), children: builder()),
+        builder: (context, _) => ListView(
+          padding: EdgeInsets.only(top: top + _headerHeight - 30, bottom: 24 + MediaQuery.paddingOf(context).bottom),
+          children: builder(),
+        ),
       );
     }
     return Container(
@@ -271,45 +308,24 @@ class _ProfileScaffold extends StatelessWidget {
         backgroundColor: Colors.transparent,
         body: Directionality(
           textDirection: TextDirection.rtl,
-          child: Column(
+          child: Stack(
             children: [
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.fromLTRB(ChatTheme.gutter, top + 8, ChatTheme.gutter, 12),
-                decoration: ChatTheme.header,
-                child: SizedBox(
-                  height: 42,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Material(
-                          color: ChatTheme.ink,
-                          shape: const CircleBorder(),
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: () => Navigator.of(context).maybePop(),
-                            child: const SizedBox(width: 42, height: 42, child: Icon(Icons.arrow_back_rounded, color: AppColors.textPoetry, size: 22)),
-                          ),
-                        ),
-                      ),
-                      ListenableBuilder(
-                        listenable: chat,
-                        builder: (context, _) => Text(
-                          chat.connected ? 'پروفایل' : 'درحال اتصال...',
-                          style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('NOPA', style: TextStyle(color: ChatTheme.ink, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontFamily: AppTheme.logoFontFamily)),
-                      ),
-                    ],
+              Positioned.fill(child: loading || failed ? Padding(padding: EdgeInsets.only(top: top + _headerHeight), child: body) : body),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ChatGoldHeader(
+                  child: ListenableBuilder(
+                    listenable: chat,
+                    builder: (context, _) => ChatHeaderTitle(
+                      avatar: const SizedBox.shrink(),
+                      title: title,
+                      subtitle: chat.connected ? '' : 'درحال اتصال...',
+                    ),
                   ),
                 ),
               ),
-              Expanded(child: body),
             ],
           ),
         ),
@@ -327,7 +343,7 @@ class _ProfilePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.fromLTRB(ChatTheme.gutter + 8, 26, ChatTheme.gutter + 8, 20),
+      padding: const EdgeInsets.fromLTRB(ChatTheme.gutter + 8, 30 + 22, ChatTheme.gutter + 8, 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [ChatTheme.surfaceTop, ChatTheme.mineFill]),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(26)),

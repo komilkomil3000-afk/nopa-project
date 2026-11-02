@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' hide Text;
@@ -15,8 +16,17 @@ class ChatMenuItem {
   const ChatMenuItem(this.value, this.icon, this.label, {this.danger = false});
 }
 
+/// The menu now open, so a screen that goes away can take it along.
+VoidCallback? _closeOpenMenu;
+
+/// Closes the message menu if one is open (e.g. when its conversation is left).
+void dismissChatMessageMenu() => _closeOpenMenu?.call();
+
 /// Opens a message's menu beside it: the reactions on a light bar, the choices on a light card under it
 /// (or over it, near the bottom of the screen). Returns `react:<type>` or a choice's value.
+///
+/// It is an overlay, not a route: the text field keeps its focus, so an open keyboard (and the composer on
+/// top of it) stays where it is while the person reacts.
 Future<String?> showChatMessageMenu(
   BuildContext context, {
   required Rect anchor,
@@ -25,24 +35,30 @@ Future<String?> showChatMessageMenu(
   bool showReactions = true,
   Set<String> myReactions = const {},
 }) {
-  return showGeneralDialog<String>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: 'بستن',
-    barrierColor: Colors.black.withValues(alpha: 0.45),
-    transitionDuration: const Duration(milliseconds: 160),
-    transitionBuilder: (ctx, animation, _, child) => FadeTransition(
-      opacity: animation,
-      child: ScaleTransition(scale: Tween(begin: 0.96, end: 1.0).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)), child: child),
-    ),
-    pageBuilder: (ctx, _, _) => _ChatMessageMenu(
-      anchor: anchor,
-      alignRight: alignRight,
-      items: items,
-      showReactions: showReactions,
-      myReactions: myReactions,
+  dismissChatMessageMenu();
+  final done = Completer<String?>();
+  late final OverlayEntry entry;
+  late final VoidCallback cancel;
+  void close(String? value) {
+    if (done.isCompleted) return;
+    entry.remove();
+    if (identical(_closeOpenMenu, cancel)) _closeOpenMenu = null;
+    done.complete(value);
+  }
+
+  cancel = () => close(null);
+  _closeOpenMenu = cancel;
+  entry = OverlayEntry(
+    builder: (ctx) => TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+      builder: (ctx, t, child) => Opacity(opacity: t, child: Transform.scale(scale: 0.96 + 0.04 * t, child: child)),
+      child: _ChatMessageMenu(anchor: anchor, alignRight: alignRight, items: items, showReactions: showReactions, myReactions: myReactions, onClose: close),
     ),
   );
+  Overlay.of(context, rootOverlay: true).insert(entry);
+  return done.future;
 }
 
 class _ChatMessageMenu extends StatelessWidget {
@@ -51,8 +67,9 @@ class _ChatMessageMenu extends StatelessWidget {
   final List<ChatMenuItem> items;
   final bool showReactions;
   final Set<String> myReactions;
+  final void Function(String? value) onClose;
 
-  const _ChatMessageMenu({required this.anchor, required this.alignRight, required this.items, required this.showReactions, required this.myReactions});
+  const _ChatMessageMenu({required this.anchor, required this.alignRight, required this.items, required this.showReactions, required this.myReactions, required this.onClose});
 
   static const double _menuWidth = 230;
   static const double _itemHeight = 44;
@@ -64,7 +81,8 @@ class _ChatMessageMenu extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final top = padding.top + 12;
-    final bottom = size.height - padding.bottom - 12;
+    // Above the keyboard when it is open
+    final bottom = size.height - math.max(padding.bottom, MediaQuery.viewInsetsOf(context).bottom) - 12;
     final menuHeight = items.length * _itemHeight + 12;
     final reactionsWidth = math.min(size.width - ChatTheme.gutter * 2, ChatTheme.reactions.length * 48.0 + 16);
 
@@ -88,13 +106,20 @@ class _ChatMessageMenu extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Stack(
         children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onClose(null),
+              child: ColoredBox(color: Colors.black.withValues(alpha: 0.45)),
+            ),
+          ),
           if (showReactions)
             Positioned(
               top: reactionsTop,
               left: horizontal(reactionsWidth),
               width: reactionsWidth,
               height: _reactionsHeight,
-              child: _Reactions(myReactions: myReactions),
+              child: _Reactions(myReactions: myReactions, onPick: onClose),
             ),
           if (items.isNotEmpty)
             Positioned(
@@ -115,7 +140,7 @@ class _ChatMessageMenu extends StatelessWidget {
                       for (var i = 0; i < items.length; i++) ...[
                         if (i > 0 && items[i].danger && !items[i - 1].danger) Divider(height: 1, color: ChatTheme.ink.withValues(alpha: 0.08)),
                         InkWell(
-                          onTap: () => Navigator.pop(context, items[i].value),
+                          onTap: () => onClose(items[i].value),
                           child: SizedBox(
                             height: _itemHeight,
                             child: Padding(
@@ -154,7 +179,8 @@ class _ChatMessageMenu extends StatelessWidget {
 
 class _Reactions extends StatelessWidget {
   final Set<String> myReactions;
-  const _Reactions({required this.myReactions});
+  final void Function(String value) onPick;
+  const _Reactions({required this.myReactions, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +199,7 @@ class _Reactions extends StatelessWidget {
                 message: entry.value.label,
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: () => Navigator.pop(context, 'react:${entry.key}'),
+                  onTap: () => onPick('react:${entry.key}'),
                   child: Container(
                     width: 40,
                     height: 40,

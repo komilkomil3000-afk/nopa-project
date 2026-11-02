@@ -1,3 +1,4 @@
+import 'package:nopa_app/screens/chat/chat_widgets.dart';
 import 'dart:io' as io;
 
 import 'package:file_picker/file_picker.dart';
@@ -7,7 +8,6 @@ import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/services/chat_repository.dart';
-import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
@@ -143,10 +143,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   @override
   Widget build(BuildContext context) {
     final meta = widget.card.meta ?? const {};
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'اطلاعات چالش',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: _loading
@@ -618,10 +616,8 @@ class _ChatDashboardScreenState extends State<ChatDashboardScreen> {
   Widget build(BuildContext context) {
     final d = _data;
     List<dynamic> list(String key) => (d?[key] as List?) ?? const [];
-    return AppScaffold(
-      showBottomNavBar: false,
-      showDrawerButton: false,
-      showNotificationIcon: false,
+    return ChatPageScaffold(
+      title: 'داشبورد راهبر',
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: d == null

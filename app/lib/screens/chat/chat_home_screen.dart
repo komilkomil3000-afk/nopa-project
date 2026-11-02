@@ -4,6 +4,7 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_conversation_screen.dart';
+import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_groups_screen.dart';
 import 'package:nopa_app/screens/chat/chat_theme.dart';
 import 'package:nopa_app/screens/chat/chat_topic_info_screen.dart';
@@ -238,11 +239,6 @@ class _FilterBar extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    if (f == filter)
-                      const Positioned(
-                        top: 0,
-                        child: CustomPaint(size: Size(9, 6), painter: _MarkerPainter(ChatTheme.ink)),
-                      ),
                     Text(
                       f.label,
                       maxLines: 1,
@@ -261,25 +257,6 @@ class _FilterBar extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The small downward triangle above the selected filter.
-class _MarkerPainter extends CustomPainter {
-  final Color color;
-  const _MarkerPainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..close();
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(_MarkerPainter old) => old.color != color;
 }
 
 /// Mentors and channel managers reach their tools from the top of the list, not from floating buttons.
@@ -329,7 +306,7 @@ class _SpaceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final preview = space.preview.isEmpty
         ? 'هنوز پیامی ارسال نشده است'
-        : (space.isDirect || space.previewSender.isEmpty || _mine ? space.preview : '${space.previewSender}: ${space.preview}');
+        : ChatFormat.plain(space.isDirect || space.previewSender.isEmpty || _mine ? space.preview : '${space.previewSender}: ${space.preview}');
     final time = chatTimeLabel(space.lastActivity);
     final showBadge = space.unread > 0 && !space.muted;
 

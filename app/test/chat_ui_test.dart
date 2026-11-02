@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nopa_app/models/chat_models.dart';
 import 'package:nopa_app/screens/chat/chat_cards.dart';
+import 'package:nopa_app/screens/chat/chat_format.dart';
 import 'package:nopa_app/screens/chat/chat_message_bubble.dart';
 
 ChatMessage _message(Map<String, dynamic> extra) => ChatMessage.fromJson({
@@ -66,9 +67,42 @@ void main() {
     expect(at, isNotNull);
   });
 
-  testWidgets('a channel post offers comments even before the first reply', (tester) async {
-    await tester.pumpWidget(_bubble(_message({}), onThread: () {}, style: ChatBubbleStyle.channel));
-    expect(find.text('ارسال نظر'), findsWidgets);
+  testWidgets('a message a moderator opened shows the way into its conversation, with faces', (tester) async {
+    var opened = false;
+    await tester.pumpWidget(_bubble(
+      _message({
+        'threadOpen': true,
+        'threadPeople': [
+          {'id': 'u5', 'name': 'علی', 'role': 'student'},
+        ],
+      }),
+      onThread: () => opened = true,
+      style: ChatBubbleStyle.channel,
+    ));
+    expect(find.text('ورود به گفتگو'), findsWidgets);
+    await tester.tap(find.text('ورود به گفتگو').first);
+    expect(opened, isTrue);
+  });
+
+  testWidgets('a challenge reads as a message, with its details in small boxes and a mentor creator in blue', (tester) async {
+    await tester.pumpWidget(_bubble(_message({
+      'kind': 'challenge',
+      'topic': {'id': 't1', 'status': 'open'},
+      'meta': {'title': 'چالش نمونه', 'tag': 'درون‌گروهی', 'stationTitle': 'منزلگاه یک', 'creatorName': 'راهبر کاروان', 'creatorRole': 'mentor', 'reward': '10 کلاف'},
+    }), onThread: () {}));
+    expect(find.text('چالش نمونه'), findsWidgets);
+    expect(find.text('منزلگاه یک'), findsWidgets);
+    expect(find.text('10 کلاف'), findsWidgets);
+    expect(find.byIcon(Icons.verified_rounded), findsWidgets);
+    expect(find.text('ورود به گفتگو'), findsWidgets);
+  });
+
+  test('formatting: markers toggle around a selection and vanish in previews', () {
+    const value = TextEditingValue(text: 'سلام دنیا', selection: TextSelection(baseOffset: 5, extentOffset: 9));
+    final bold = ChatFormat.toggle(value, ChatFormat.bold);
+    expect(bold.text, 'سلام **دنیا**');
+    expect(ChatFormat.toggle(bold, ChatFormat.bold).text, 'سلام دنیا');
+    expect(ChatFormat.plain('**الف** و __ب__'), 'الف و ب');
   });
 
   testWidgets('a deleted message hides its content', (tester) async {
