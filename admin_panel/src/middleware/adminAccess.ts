@@ -68,6 +68,7 @@ const SUPER_ONLY: RegExp[] = [
   /^\/roles(\/|$)/i,
   /^\/security(\/|$)/i,
   /^\/settings(\/|$)/i,
+  /^\/economy(\/|$)/i,
   /^\/audit(\/|$)/i,
   /^\/export(\/|$)/i,
   /^\/users\/export$/i,

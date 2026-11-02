@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
+import { CapitalAsset, conversionRule, getEconomyPolicy } from '../services/economy';
 import { AuthRequest } from '../middleware/auth';
 import { isMentorRole } from '../utils/roles';
 
@@ -66,10 +68,8 @@ export async function bulkTransferMembers(req: AuthRequest, res: Response) {
   }
 }
 
-// Capital exchange rules: only zarik -> nakh and nakh -> farsh are allowed.
-// The rate is how many units of the source make one unit of the target.
-const ASSET_FIELDS: Record<string, 'zarik' | 'nakh' | 'farsh'> = { 'زریک': 'zarik', 'نخ': 'nakh', 'فرش': 'farsh', 'کلاف': 'nakh', 'قالیچه': 'farsh' };
-const CONVERSION_RATES: Record<string, number> = { 'zarik>nakh': 500, 'nakh>farsh': 5 };
+// The exchange rules live in the economy policy (services/economy.ts).
+const ASSET_FIELDS: Record<string, CapitalAsset> = { 'زریک': 'zarik', 'نخ': 'nakh', 'فرش': 'farsh', 'کلاف': 'nakh', 'قالیچه': 'farsh', zarik: 'zarik', nakh: 'nakh', farsh: 'farsh' };
 const CONVERSION_CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // Students convert their own capital immediately; the caravan mentor is only notified
@@ -92,34 +92,24 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
     const resolve = (n: string) => ASSET_FIELDS[n] ?? (['zarik', 'nakh', 'farsh'] as const).find(k => k === n || names[k] === n);
     const from = resolve(sourceAsset);
     const to = resolve(targetAsset);
-    const rate = from && to ? CONVERSION_RATES[`${from}>${to}`] : undefined;
-    if (!from || !to || !rate) {
+    const { config } = await getEconomyPolicy();
+    const rule = from && to ? conversionRule(from, to, config) : null;
+    if (!from || !to || !rule) {
       return res.status(400).json({ error: `تبدیل ${sourceAsset} به ${targetAsset} امکان‌پذیر نیست` });
     }
     if (!Number.isInteger(sourceAmount) || sourceAmount <= 0) {
       return res.status(400).json({ error: 'مقدار نامعتبر است' });
     }
-    if (sourceAmount % rate !== 0) {
-      return res.status(400).json({ error: `مقدار ${sourceAsset} باید مضربی از ${rate} باشد` });
+    if (sourceAmount % rule.step !== 0) {
+      return res.status(400).json({ error: `مقدار ${sourceAsset} باید مضربی از ${rule.step} باشد` });
     }
-    const targetAmount = sourceAmount / rate;
+    const targetAmount = (sourceAmount / rule.step) * rule.pays;
     const caravanId = user.caravanId;
 
     let reqRecord;
     try {
       reqRecord = await prisma.$transaction(async (tx) => {
-        // Guarded decrement: the balance can never go negative, even under concurrent requests
-        const debited = await tx.user.updateMany({
-          where: { id: user.id, [from]: { gte: sourceAmount } },
-          data: { [from]: { decrement: sourceAmount }, [to]: { increment: targetAmount } },
-        });
-        if (debited.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
-        if (from === 'zarik') {
-          await tx.zarikTransaction.create({
-            data: { userId: user.id, amount: -sourceAmount, category: 'Asset Exchange', reason: `تبدیل ${sourceAmount} ${names.zarik} به ${targetAmount} ${names.nakh}`, createdBy: user.id },
-          });
-        }
-        return tx.assetConversionRequest.create({
+        const record = await tx.assetConversionRequest.create({
           data: {
             caravanId,
             requestedBy: user.id,
@@ -131,6 +121,11 @@ export async function submitStudentAssetConversion(req: AuthRequest, res: Respon
             note: `تبدیل ${sourceAmount} ${sourceAsset} به ${targetAmount} ${targetAsset}`,
           },
         });
+        const reason = `تبدیل ${sourceAmount} ${names[from]} به ${targetAmount} ${names[to]}`;
+        const entry = { userId: user.id, sourceType: 'conversion', sourceId: record.id, reason, createdBy: user.id, zarikCategory: 'Asset Exchange' };
+        await changeBalance(tx, { ...entry, asset: from, amount: -sourceAmount });
+        await changeBalance(tx, { ...entry, asset: to, amount: targetAmount });
+        return record;
       });
     } catch (e: any) {
       if (e?.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'دارایی شما کافی نیست' });
@@ -201,16 +196,10 @@ export async function cancelAssetConversion(req: AuthRequest, res: Response) {
         });
         if (claimed.count !== 1) throw new Error('ALREADY_HANDLED');
         // The student must still hold the converted capital; no negative balances allowed
-        const reverted = await tx.user.updateMany({
-          where: { id: conversion.requestedBy, [to]: { gte: targetAmount } },
-          data: { [to]: { decrement: targetAmount }, [from]: { increment: sourceAmount } },
-        });
-        if (reverted.count !== 1) throw new Error('INSUFFICIENT_BALANCE');
-        if (from === 'zarik') {
-          await tx.zarikTransaction.create({
-            data: { userId: conversion.requestedBy, amount: sourceAmount, category: 'Asset Exchange', reason: `لغو مبادله: بازگشت ${sourceAmount} زریک`, createdBy: req.user!.id },
-          });
-        }
+        const ledgerReason = `لغو مبادله: ${conversion.note}`;
+        const entry = { userId: conversion.requestedBy, sourceType: 'conversion_cancel', sourceId: id, reason: ledgerReason, createdBy: req.user!.id, zarikCategory: 'Asset Exchange' };
+        await changeBalance(tx, { ...entry, asset: to, amount: -targetAmount });
+        await changeBalance(tx, { ...entry, asset: from, amount: sourceAmount });
       });
     } catch (e: any) {
       if (e?.message === 'ALREADY_HANDLED') return res.status(404).json({ error: 'مبادله معتبر یافت نشد' });

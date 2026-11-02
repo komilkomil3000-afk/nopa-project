@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/asset_names.dart';
+import '../core/economy_rates.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -161,6 +162,8 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Admin-editable asset names (once per session) – the app keeps its built-in defaults when this fails.
   Future<void> loadAssetNames() async {
+    final rates = await _apiService.getEconomyRates();
+    if (rates != null) EconomyRates.apply(rates);
     if (_assetNamesLoaded) return;
     final rows = await _apiService.getAssetTypes();
     if (rows.isEmpty) return;

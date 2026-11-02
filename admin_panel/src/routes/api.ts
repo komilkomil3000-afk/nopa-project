@@ -7,6 +7,7 @@ import { getMe, getMentorById, completeProfile, updateMyAvatar } from '../contro
 import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes } from '../controllers/mentorController';
 import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
 import { listAssetTypes } from '../controllers/assetController';
+import { getEconomyRates } from '../controllers/economyController';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
@@ -59,6 +60,7 @@ router.post('/certificates/:id/physical-order', authenticateJWT as any, requestP
 router.post('/challenges', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, createChallenge as any);
 router.get('/challenges', authenticateJWT as any, getChallenges as any);
 router.get('/assets', authenticateJWT as any, listAssetTypes as any);
+router.get('/economy', authenticateJWT as any, getEconomyRates as any);
 router.get('/my-caravan/banners', authenticateJWT as any, getMyCaravanBanners as any);
 router.patch('/challenges/:id', authenticateJWT as any, authorizeRoles('mentor', 'admin') as any, updateChallenge as any);
 router.post('/challenges/:id/submit-quiz', authenticateJWT as any, submitQuiz as any);

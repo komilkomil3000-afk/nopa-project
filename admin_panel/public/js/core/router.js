@@ -44,9 +44,9 @@
       load: () => { call('loadLedger'); call('loadZarikAnalytics'); call('loadAssetLeaderboard'); call('loadRewardRules'); },
     },
     'assets-tab': {
-      hashes: ['assets'], group: 'economy', label: 'نام دارایی‌ها', icon: 'fa-solid fa-tags', section: null,
-      title: 'نام دارایی‌ها', desc: 'تغییر نام زریک، کلاف، قالیچه و درفش در اپ، پنل و پیام‌ها',
-      load: () => call('loadAssetNames'),
+      hashes: ['assets'], group: 'economy', label: 'سرمایه‌ها', icon: 'fa-solid fa-scale-balanced', section: null,
+      title: 'سرمایه‌ها', desc: 'نام دارایی‌ها، نرخ‌ها، جوایز و قوانین مالی اپ',
+      load: () => { call('loadAssetNames'); call('loadEconomy'); },
     },
     'mentors-profile-tab': {
       hashes: ['mentors', 'mentors-profile', 'mentors-league'], group: 'mentors', label: 'پروفایل و شناسنامه', icon: 'fa-solid fa-id-card', section: 'mentors',

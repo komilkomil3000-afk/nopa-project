@@ -48,6 +48,7 @@ import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
 import { listAssetTypes, updateAssetType } from '../controllers/assetController';
+import { getEconomyAdmin, updateEconomy } from '../controllers/economyController';
 import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
@@ -151,6 +152,8 @@ router.get('/challenges/:id/ranking', getChallengeRanking as any);
 router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
 router.get('/assets', listAssetTypes as any);
 router.put('/assets/:key', updateAssetType as any);
+router.get('/economy', getEconomyAdmin as any);
+router.put('/economy', updateEconomy as any);
 router.get('/submissions', getPendingSubmissions as any);
 router.post('/submissions/:id/review', reviewSubmission as any);
 router.patch('/submissions/:id/review', reviewSubmission as any);

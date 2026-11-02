@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { STUDENT_AVATARS, isMentorRole } from '../utils/avatar';
 
 /**
@@ -200,10 +201,6 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'نقش کاربری نامعتبر' });
     }
 
-    if (isEligibleForReward) {
-      updateData.zarikBalance = { increment: rewardAmount };
-    }
-
     let updatedUser: any;
     await prisma.$transaction(async (tx) => {
       updatedUser = await tx.user.update({
@@ -212,15 +209,17 @@ export async function completeProfile(req: AuthRequest, res: Response) {
       });
 
       if (isEligibleForReward) {
-        await tx.zarikTransaction.create({
-          data: {
-            userId: user.id,
-            amount: rewardAmount,
-            category: 'Profile Completion',
-            reason: 'پاداش تکمیل پروفایل',
-            createdBy: 'SYSTEM'
-          }
+        await changeBalance(tx, {
+          userId: user.id,
+          asset: 'zarik',
+          amount: rewardAmount,
+          sourceType: 'profile_completion',
+          sourceId: user.id,
+          reason: 'پاداش تکمیل پروفایل',
+          createdBy: 'SYSTEM',
+          zarikCategory: 'Profile Completion'
         });
+        updatedUser = await tx.user.findUnique({ where: { id: user.id } });
 
         // Clean up prompt notifications
         await tx.notification.deleteMany({

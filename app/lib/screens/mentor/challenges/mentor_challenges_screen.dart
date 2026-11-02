@@ -1,3 +1,4 @@
+import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -1314,7 +1315,9 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
             ],
           ),
         );
-    String selectedAsset = 'زریک';
+    String selectedAsset = 'کلاف';
+    rewardMinCtrl.text = '0';
+    rewardMaxCtrl.text = EconomyRates.challengeMaxNakh.toString();
     bool submitting = false;
     String selectedType = 'چند گزینه ای';
     // Recipients: every member (default) or a non-empty selection of them
@@ -1324,10 +1327,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
     if (existing != null) {
       selectedType = existing['type'] == 'quiz' ? 'چند گزینه ای' : 'تشریحی';
-      selectedAsset = existing['rewardAsset'] == 'nakh' ? 'کلاف' : 'زریک';
-      final int exMax = (existing['rewardMax'] as num?)?.toInt() ?? 0;
-      rewardMaxCtrl.text = (exMax > 0 ? exMax : (existing['reward'] as num?)?.toInt() ?? 0).toString();
-      rewardMinCtrl.text = (exMax > 0 ? (existing['rewardMin'] as num?)?.toInt() ?? 0 : 0).toString();
+      // Older challenges may hold a zarik range: editing one moves it to the kalaf range
+      if (existing['rewardAsset'] == 'nakh') {
+        rewardMaxCtrl.text = ((existing['rewardMax'] as num?)?.toInt() ?? EconomyRates.challengeMaxNakh).toString();
+        rewardMinCtrl.text = ((existing['rewardMin'] as num?)?.toInt() ?? 0).toString();
+      }
       final qs = existing['questions'];
       if (existing['type'] == 'quiz' && qs is List && qs.isNotEmpty && qs.first is Map) {
         final q = qs.first as Map;
@@ -1510,7 +1514,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                         ),
                                         icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9E9CD6), size: 18),
                                         isExpanded: true,
-                                        items: ['زریک', 'کلاف']
+                                        items: ['کلاف']
                                             .map((a) => DropdownMenuItem(value: a, child: Text(AssetNames.labelFor(a))))
                                             .toList(),
                                         onChanged: (v) {

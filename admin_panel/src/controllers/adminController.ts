@@ -3,6 +3,7 @@ import { isMentorRole } from '../utils/roles';
 import { Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { createQuizMock } from './quizController';
 import { sendSystemNotification } from './notificationController';
 import bcrypt from 'bcryptjs';
@@ -881,29 +882,25 @@ export async function adjustZarik(req: AuthRequest, res: Response) {
     }
 
     // Transaction execution
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { zarikBalance: newBalance },
-      }),
-      prisma.zarikTransaction.create({
-        data: {
-          userId,
-          amount,
-          category,
-          reason,
-          createdBy: req.user?.phoneNumber || 'Admin',
-        },
-      }),
-      prisma.notification.create({
+    await prisma.$transaction(async (tx) => {
+      await changeBalance(tx, {
+        userId,
+        asset: 'zarik',
+        amount,
+        sourceType: 'zarik_adjust',
+        reason,
+        createdBy: req.user?.phoneNumber || 'Admin',
+        zarikCategory: category,
+      });
+      await tx.notification.create({
         data: {
           userId,
           title: 'تراکنش زریک',
           message: `موجودی شما تغییر کرد. مقدار: ${amount > 0 ? '+' : ''}${amount} زریک. بابت: ${reason}`,
           type: 'reward'
         }
-      })
-    ]);
+      });
+    });
 
     // Invalidate Cache
     zarikAnalyticsCache = null;
@@ -1794,22 +1791,17 @@ export async function grantUserLevel(req: AuthRequest, res: Response) {
     const user = await prisma.$transaction(async (tx) => {
       const updated = await tx.user.update({
         where: { id: targetUserId },
-        data: {
-          levelFrame,
-          zarikBalance: { increment: bonus }
-        }
+        data: { levelFrame }
       });
-      if (bonus > 0) {
-        await tx.zarikTransaction.create({
-          data: {
-            userId: targetUserId,
-            amount: bonus,
-            category: 'Special Campaigns',
-            reason: `هدیه ارتقا سطح به قاب ${levelFrame}`,
-            createdBy: req.user?.id || 'system'
-          }
-        });
-      }
+      await changeBalance(tx, {
+        userId: targetUserId,
+        asset: 'zarik',
+        amount: bonus,
+        sourceType: 'level_grant',
+        reason: `هدیه ارتقا سطح به قاب ${levelFrame}`,
+        createdBy: req.user?.id || 'system',
+        zarikCategory: 'Special Campaigns'
+      });
       return updated;
     });
 

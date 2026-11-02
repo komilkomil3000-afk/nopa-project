@@ -261,7 +261,7 @@ window.readChallengeReward = function(mode) {
   if (document.getElementById(`${mode}-chal-caravan-id`)?.value === 'inter_group') {
     return { rewardAssetType: 'derafsh', rewardMin: 0, rewardMax: 0, rewardZarik: 0 };
   }
-  const rewardAssetType = document.getElementById(`${mode}-chal-asset`)?.value === 'nakh' ? 'nakh' : 'zarik';
+  const rewardAssetType = 'nakh';
   const rewardMin = Number(document.getElementById(`${mode}-chal-reward-min`)?.value);
   const rewardMax = Number(document.getElementById(`${mode}-chal-reward-max`)?.value);
   if (!Number.isInteger(rewardMin) || !Number.isInteger(rewardMax) || rewardMin < 0 || rewardMax <= 0) {
@@ -574,7 +574,7 @@ window.openEditChallengeModal = function(challengeId) {
 
   document.getElementById('edit-chal-id').value = c.id;
   document.getElementById('edit-chal-title').value = c.title || '';
-  document.getElementById('edit-chal-asset').value = c.rewardAssetType === 'nakh' ? 'nakh' : 'zarik';
+  document.getElementById('edit-chal-asset').value = 'nakh';
   document.getElementById('edit-chal-reward-min').value = c.rewardMin || 0;
   document.getElementById('edit-chal-reward-max').value = c.rewardMax || c.rewardZarik || 50;
   document.getElementById('edit-chal-desc').value = c.description || '';

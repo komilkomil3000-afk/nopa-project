@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { stripAnswerKeys, stripStationAnswerKeys, isAdminRole } from '../utils/answerKeys';
 import { evaluateStudentProgress } from './certificateController';
 import { isMentorRole } from '../utils/roles';
@@ -1158,28 +1159,17 @@ export const submitSessionQuiz = async (req: any, res: Response) => {
       });
 
       if (isFirstPass) {
-        // Increment student balance and assets
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            zarikBalance: { increment: rewardZarik },
-            nakh: { increment: rewardNakh },
-            farsh: { increment: rewardFarsh }
-          }
-        });
-
-        // Log transaction in ZarikTransaction if zarik is awarded
-        if (rewardZarik > 0) {
-          await tx.zarikTransaction.create({
-            data: {
-              userId,
-              amount: rewardZarik,
-              category: 'Quiz Rewards',
-              reason: `پاداش شرکت در آزمون کلاس: ${session.title}`,
-              createdBy: userId
-            }
-          });
-        }
+        const reward = {
+          userId,
+          sourceType: 'class_quiz',
+          sourceId: submission.id,
+          reason: `پاداش شرکت در آزمون کلاس: ${session.title}`,
+          createdBy: userId,
+          zarikCategory: 'Quiz Rewards'
+        };
+        await changeBalance(tx, { ...reward, asset: 'zarik', amount: rewardZarik });
+        await changeBalance(tx, { ...reward, asset: 'nakh', amount: rewardNakh });
+        await changeBalance(tx, { ...reward, asset: 'farsh', amount: rewardFarsh });
 
         const clip = await tx.videoClip.findFirst({
           where: { sessionId: session.id, clipOrder: validQuiz.orderIndex }

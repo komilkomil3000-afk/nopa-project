@@ -581,6 +581,21 @@
           </div>
           <div id="asset-names-list" class="u-grid u-cols-2 u-gap-12"></div>
         </div>
+        <div class="panel-card glass u-maxw-760">
+          <div class="panel-title"><i class="fa-solid fa-scale-balanced u-c-primary-text u-ml-8"></i>قوانین مالی</div>
+          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">
+            هر ذخیره یک نسخه‌ی جدید می‌سازد و از همان لحظه اعمال می‌شود. موجودی کاربران و تراکنش‌های قبلی تغییر نمی‌کنند.
+          </div>
+          <div id="economy-settings"></div>
+          <input type="text" id="economy-note" maxlength="300" placeholder="دلیل تغییر (اختیاری)" class="u-w-full u-p-6-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-12_5 u-mb-14">
+          <div class="u-flex u-gap-6 u-items-center u-mb-14">
+            <button type="button" class="btn-action" data-click="previewEconomy">محاسبه‌ی اثر</button>
+            <button type="button" class="btn-action btn-add" data-click="saveEconomy">ذخیره</button>
+          </div>
+          <div id="economy-preview" class="u-fs-12_5 u-c-accent-text u-lh-1_8 u-mb-14"></div>
+          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">تاریخچه‌ی تغییرات</div>
+          <div id="economy-history"></div>
+        </div>
       </section>
 
       <section id="rewards-tab" class="tab-panel" style="display: none;">
@@ -3323,7 +3338,6 @@
               <div>
                 <label class="u-block u-c-text-soft u-fs-12 u-bold u-mb-5">نوع پاداش *</label>
                 <select id="new-chal-asset" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
-                  <option value="zarik">زریک</option>
                   <option value="nakh">کلاف</option>
                 </select>
               </div>
@@ -3332,11 +3346,11 @@
             <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
               <div>
                 <label class="u-block u-c-text-soft u-fs-12 u-bold u-mb-5">حداقل پاداش *</label>
-                <input type="number" id="new-chal-reward-min" min="0" step="1" value="10" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
+                <input type="number" id="new-chal-reward-min" min="0" step="1" value="0" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
               </div>
               <div>
                 <label class="u-block u-c-text-soft u-fs-12 u-bold u-mb-5">حداکثر پاداش *</label>
-                <input type="number" id="new-chal-reward-max" min="1" step="1" value="50" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
+                <input type="number" id="new-chal-reward-max" min="1" step="1" value="10" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
                 <div class="u-fs-11 u-c-text-muted u-mt-4">راهبر هنگام تأیید پاسخ، امتیاز را در این بازه انتخاب می‌کند. (در آزمون‌های تستی، پاداش نهایی به نسبت پاسخ‌های درست در همین بازه محاسبه می‌شود.)</div>
               </div>
             </div>
@@ -3441,7 +3455,6 @@
               <div>
                 <label class="u-block u-c-text-soft u-fs-12 u-bold u-mb-5">نوع پاداش *</label>
                 <select id="edit-chal-asset" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-13">
-                  <option value="zarik">زریک</option>
                   <option value="nakh">کلاف</option>
                 </select>
               </div>
@@ -3814,6 +3827,7 @@
     <script src="js/app/bootstrap.js"></script>
     <script src="js/app/shared.js"></script>
     <script src="js/features/asset-names.js"></script>
+    <script src="js/features/economy.js"></script>
     <script src="js/features/access.js"></script>
     <script src="js/features/users.js"></script>
     <script src="js/features/rewards.js"></script>

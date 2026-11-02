@@ -171,3 +171,31 @@ test('access tokens: expired and forged tokens are a 401, so clients refresh the
     if (save === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = save;
   }
 });
+
+test('economy: ranking capital, exchanges and policy validation', () => {
+  const { DEFAULT_ECONOMY: c, capitalValue, conversionRule, nakhValue, parseEconomyConfig } = load('services/economy.js');
+  assert.equal(nakhValue(c), 5000);
+  assert.equal(capitalValue({ zarikBalance: 100, nakh: 3, farsh: 2 }, c), 100 + 15000 + 100000);
+
+  // converting or selling must not move anyone in the ranking
+  assert.equal(capitalValue({ nakh: 10 }, c), capitalValue({ farsh: 1 }, c));
+  assert.equal(capitalValue({ farsh: 1 }, c), capitalValue({ zarikBalance: 50000 }, c));
+
+  assert.deepEqual(conversionRule('nakh', 'farsh', c), { step: 10, pays: 1 });
+  assert.deepEqual(conversionRule('farsh', 'zarik', c), { step: 1, pays: 50000 });
+  assert.equal(conversionRule('zarik', 'nakh', c), null, 'nakh cannot be bought');
+  assert.deepEqual(conversionRule('zarik', 'nakh', { ...c, allowBuyNakh: true }), { step: 500, pays: 1 });
+  assert.equal(conversionRule('zarik', 'farsh', c), null);
+
+  assert.ok('config' in parseEconomyConfig(c));
+  assert.ok('error' in parseEconomyConfig({ ...c, nakhPerFarsh: 0 }));
+  assert.ok('error' in parseEconomyConfig({ ...c, farshSalePrice: 1.5 }));
+  assert.ok('error' in parseEconomyConfig({ ...c, interGroup: { ...c.interGroup, rankWeights: { judges: 50, coverage: 25, delivery: 15 } } }));
+  assert.ok('error' in parseEconomyConfig({ ...c, interGroup: { ...c.interGroup, prizes: { gold: 1, silver: 2, bronze: 1, cloth: 1 } } }));
+  assert.ok('error' in parseEconomyConfig(null));
+});
+
+test('economy: changing the money rules is super-admin only', () => {
+  const { sectionForPath } = load('middleware/adminAccess.js');
+  assert.equal(sectionForPath('/economy'), undefined);
+});

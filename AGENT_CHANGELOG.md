@@ -2701,3 +2701,31 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - curl: https://nopa-app.ir has a valid certificate; http does not redirect.
   - Not run: ownership checks against a real database; the migration against any database; the app on a device.
 - **Status:** Completed
+
+
+### [2026-11-02 04:10] - Claude Code / Chat Plan Phase 1 (Economy)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/prisma/migrations/20261043_economy_policy_and_ledger/` (Created)
+  - `admin_panel/src/services/economy.ts`, `admin_panel/src/services/ledger.ts`, `admin_panel/src/controllers/economyController.ts` (Created)
+  - `admin_panel/src/controllers/{admin,caravan,challenge,league,lms,reward,student,submission,user}Controller.ts` (Modified)
+  - `admin_panel/src/routes/api.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/economy.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/features/challenges.js`, `admin_panel/public/sw.js` (Modified)
+  - `app/lib/core/economy_rates.dart` (Created)
+  - `app/lib/services/api_service.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/screens/student/market/student_market_screen.dart`, `app/lib/screens/mentor/market/mentor_market_screen.dart`, `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Versioned EconomyPolicy edited in the panel tab سرمایه‌ها (super admin only), with impact preview and history; the app reads it through GET /economy.
+  - AssetTransaction ledger for all assets, with opening rows. Every balance writer now goes through changeBalance, which blocks negative balances and repeat payments.
+  - Rules applied: nakh cannot be bought, 10 nakh make 1 farsh, farsh sells for 50,000 zarik, new personal and group challenges pay 0 to 10 nakh.
+  - One ranking formula: zarik plus nakh and farsh at zarik value, with nakh value derived from the farsh rules. Caravans rank by average member capital. Activity points no longer count.
+  - Existing balances are untouched. An existing zarik challenge keeps paying zarik until it is edited.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 13/13 in `admin_panel/`.
+  - `flutter analyze` no issues and `flutter test` pass in `app/`.
+  - Throwaway local Postgres: all migrations applied. Real HTTP API checks passed for conversions, sale and cancel, ranking neutrality, policy changes and access, Phase 0 ownership, parallel payments and reviews, and clawback.
+  - Not run: the panel page in a browser; the app on a device; the migration on production data.
+- **Status:** Completed

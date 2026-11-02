@@ -1867,6 +1867,20 @@ class HttpApiService {
     return [];
   }
 
+  /// Money rules set in the panel.
+  Future<Map<String, dynamic>?> getEconomyRates() async {
+    try {
+      final response = await _get(Uri.parse('$baseUrl/economy'), headers: _getHeaders());
+      if (response.statusCode == 200) {
+        final dynamic data = await parseJsonAsync(response.body);
+        if (data is Map<String, dynamic>) return data;
+      }
+    } catch (e) {
+      debugPrint('getEconomyRates error: $e');
+    }
+    return null;
+  }
+
   /// Banners (درفش) of the user's caravan: {total, byTier, items}. Mentors may pick the caravan.
   Future<Map<String, dynamic>?> getCaravanBanners({String? caravanId}) async {
     try {

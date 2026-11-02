@@ -94,6 +94,7 @@ model User {
   @@index([caravanId])
   @@index([zarikBalance])
   @@index([createdAt])
+  assetTransactions AssetTransaction[]
 }
 
 model UserSession {
@@ -290,6 +291,36 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+// Versioned money rules, edited in the panel. The newest version is in force.
+model EconomyPolicy {
+  version   Int      @id @default(autoincrement())
+  config    Json
+  note      String?
+  createdBy String
+  createdAt DateTime @default(now())
+}
+
+// Every balance movement of every asset. Summing a user's rows gives their balance.
+model AssetTransaction {
+  id            String   @id @default(uuid())
+  userId        String
+  asset         String   // "zarik" | "nakh" | "farsh" | "beyragh"
+  amount        Int
+  sourceType    String   // what caused it, e.g. "submission_review", "conversion", "admin_adjust"
+  sourceId      String?
+  reason        String
+  createdBy     String
+  policyVersion Int
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, userId, asset]) // the same payment cannot be made twice
+  @@index([userId])
+  @@index([asset])
+  @@index([createdAt])
 }
 
 model ZarikTransaction {

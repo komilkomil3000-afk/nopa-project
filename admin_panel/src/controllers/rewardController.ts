@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 import { AuthRequest } from '../middleware/auth';
 import { logAdminAction } from './adminController';
 
@@ -15,21 +16,15 @@ export async function grantPromotionalZarik(req: AuthRequest, res: Response) {
     const user = await prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) return res.status(404).json({ error: 'کاربر یافت نشد' });
     
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: targetUserId },
-        data: { zarikBalance: { increment: amount } }
-      }),
-      prisma.zarikTransaction.create({
-        data: {
-          userId: targetUserId,
-          amount,
-          category: 'Special Campaigns',
-          reason,
-          createdBy: req.user!.id
-        }
-      })
-    ]);
+    await prisma.$transaction(tx => changeBalance(tx, {
+      userId: targetUserId,
+      asset: 'zarik',
+      amount,
+      sourceType: 'promotional_grant',
+      reason,
+      createdBy: req.user!.id,
+      zarikCategory: 'Special Campaigns'
+    }));
     
     await logAdminAction(req.user!.id, 'Admin', 'GRANT_ZARIK', 'User', targetUserId, `Granted ${amount} Zarik. Reason: ${reason}`, req.ip || '');
     

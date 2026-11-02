@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { csvRow } from '../utils/csv';
 import prisma from '../config/db';
+import { capitalValue, getEconomyPolicy } from '../services/economy';
 
 export async function getCaravansLeaderboardDetailed(req: Request, res: Response) {
   try {
+    const { config } = await getEconomyPolicy();
     const sortBy = (req.query.sortBy as string) || 'totalScore';
     const search = ((req.query.search as string) || '').trim().toLowerCase();
     const exportAs = req.query.exportAs as string;
@@ -82,9 +84,8 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
       });
 
       const avgProgress = memberCount > 0 ? parseFloat((totalWatchedPercentages / memberCount).toFixed(1)) : 0;
-      const wealthScore = totalZarik + (totalNakh * 50) + (totalFarsh * 500) + (totalBeyragh * 200);
-      const activityScore = (totalQuizScore * 5) + (totalPassedQuizzes * 20) + (totalChallengeScore * 10) + (totalApprovedChallenges * 15);
-      const totalScore = wealthScore + activityScore + Math.round(avgProgress * 10);
+      const wealthScore = memberCount > 0 ? Math.round(capitalValue({ zarikBalance: totalZarik, nakh: totalNakh, farsh: totalFarsh }, config) / memberCount) : 0;
+      const totalScore = wealthScore;
 
       return {
         id: c.id,
@@ -167,6 +168,7 @@ export async function getCaravansLeaderboardDetailed(req: Request, res: Response
 
 export async function getIndividualsLeaderboard(req: Request, res: Response) {
   try {
+    const { config } = await getEconomyPolicy();
     const role = (req.query.role as string) || 'all'; // 'all' | 'student' | 'mentor'
     const caravanId = req.query.caravanId as string;
     const stationId = req.query.stationId as string;
@@ -245,9 +247,8 @@ export async function getIndividualsLeaderboard(req: Request, res: Response) {
         progressPercentage = Math.min(100, parseFloat((totalWatch / (totalSessions || 1)).toFixed(1)));
       }
 
-      const wealthScore = zarik + (nakh * 50) + (farsh * 500) + (beyragh * 200);
-      const activityScore = (quizScore * 5) + (passedQuizzes * 20) + (challengeScore * 10) + (approvedChallenges * 15);
-      const totalScore = wealthScore + activityScore + Math.round(progressPercentage * 10);
+      const wealthScore = capitalValue({ zarikBalance: zarik, nakh, farsh }, config);
+      const totalScore = wealthScore;
 
       return {
         id: u.id,
@@ -329,6 +330,7 @@ export async function getIndividualsLeaderboard(req: Request, res: Response) {
 
 export async function getCaravanLeague(req: Request, res: Response) {
   try {
+    const { config } = await getEconomyPolicy();
     const sortBy = (req.query.sortBy as string) || 'progress';
     const exportAs = req.query.exportAs as string;
     
@@ -349,7 +351,8 @@ export async function getCaravanLeague(req: Request, res: Response) {
     const totalAvailableCurriculumItems = totalSessions + totalQuizzes;
 
     const rankedCaravans = await Promise.all(caravans.map(async c => {
-      const totalWealth = c.members.reduce((sum, m) => sum + m.zarikBalance + m.nakh * 100 + m.farsh * 1000 + m.beyragh * 500, 0);
+      const totalWealth = c.members.reduce((sum, m) => sum + capitalValue(m, config), 0);
+      const averageWealth = c.members.length > 0 ? Math.round(totalWealth / c.members.length) : 0;
       const totalZarik = c.members.reduce((sum, m) => sum + m.zarikBalance, 0);
       const totalNakh = c.members.reduce((sum, m) => sum + m.nakh, 0);
       const totalFarsh = c.members.reduce((sum, m) => sum + m.farsh, 0);
@@ -393,12 +396,13 @@ export async function getCaravanLeague(req: Request, res: Response) {
         capacityLimit: c.capacityLimit,
         overallProgress: caravanProgress,
         totalWealth,
+        averageWealth,
         assets: { zarik: totalZarik, nakh: totalNakh, farsh: totalFarsh, beyragh: totalBeyragh }
       };
     }));
 
     if (sortBy === 'wealth') {
-      rankedCaravans.sort((a, b) => b.totalWealth - a.totalWealth);
+      rankedCaravans.sort((a, b) => b.averageWealth - a.averageWealth);
     } else {
       rankedCaravans.sort((a, b) => b.overallProgress - a.overallProgress);
     }
@@ -422,17 +426,23 @@ export async function getCaravanLeague(req: Request, res: Response) {
 
 export async function getWealthiestLeague(req: Request, res: Response) {
   try {
-    const wealthiest = await prisma.user.findMany({
+    const { config } = await getEconomyPolicy();
+    const students = await prisma.user.findMany({
       where: { role: 'student' },
-      orderBy: { zarikBalance: 'desc' },
       select: {
         id: true,
         name: true,
         zarikBalance: true,
+        nakh: true,
+        farsh: true,
         avatarUrl: true,
         levelFrame: true
       }
     });
+
+    const wealthiest = students
+      .map(s => ({ ...s, capital: capitalValue(s, config) }))
+      .sort((a, b) => b.capital - a.capital);
 
     res.json(wealthiest);
   } catch (error) {

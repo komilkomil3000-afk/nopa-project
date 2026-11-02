@@ -3,6 +3,7 @@ import { getAssetNames } from '../utils/assetNames';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { changeBalance } from '../services/ledger';
 
 export async function submitTask(req: AuthRequest, res: Response) {
   try {
@@ -373,28 +374,21 @@ export async function reviewSubmission(req: AuthRequest, res: Response) {
       updatedSubmission = await tx.submission.findUnique({ where: { id } });
 
       if (status === 'approved') {
-        // Credit the asset the challenge pays in
-        await tx.user.update({
-          where: { id: submission.studentId },
-          data: assetType === 'nakh' ? { nakh: { increment: reward } } : { zarikBalance: { increment: reward } }
+        await changeBalance(tx, {
+          userId: submission.studentId,
+          asset: assetType,
+          amount: reward,
+          sourceType: 'submission_review',
+          sourceId: id,
+          reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
+          createdBy: req.user!.id,
+          zarikCategory: 'Skill Tasks'
         });
-
-        // Zarik movements are ledgered; nakh has no ledger table
-        if (assetType === 'zarik' && reward > 0) {
-          await tx.zarikTransaction.create({
-            data: {
-              userId: submission.studentId,
-              amount: reward,
-              category: 'Skill Tasks',
-              reason: `پاداش تایید تکلیف: ${submission.challenge.title}`,
-              createdBy: req.user!.id
-            }
-          });
-        }
       }
     });
     } catch (e: any) {
-      if (e?.message === 'ALREADY_APPROVED') {
+      // P2002: a rejected answer approved again; its reward was already paid the first time
+      if (e?.message === 'ALREADY_APPROVED' || e?.code === 'P2002') {
         return res.status(400).json({ error: 'این تکلیف قبلاً تایید شده و پاداش آن ثبت گردیده است' });
       }
       throw e;
