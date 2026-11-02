@@ -153,8 +153,10 @@
 }
 .hero-tile {
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-sm);
   padding: 18px;
   min-height: 120px;
@@ -184,7 +186,7 @@
   height: 38px;
   border-radius: 50%;
   border: 2px solid rgb(255 255 255 / 0.85);
-  background: linear-gradient(135deg, #F5D0FE, #C4B5FD);
+  background: linear-gradient(135deg, #E2E0F0, #9292E2);
   margin-left: -10px;
 }
 .hero-avatars span:nth-child(2) { background: linear-gradient(135deg, #FDE68A, #FBBF24); }
@@ -199,7 +201,7 @@
   font-weight: 800;
 }
 .hero-bar { height: 8px; border-radius: 99px; background: rgb(255 255 255 / 0.25); overflow: hidden; }
-.hero-bar i { display: block; height: 100%; border-radius: inherit; background: #FACC15; }
+.hero-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent-text); }
 .hero-tile--station { grid-area: station; align-items: center; text-align: center; }
 .hero-ring {
   width: 66px;
@@ -223,7 +225,7 @@
 .hero-ring i { position: relative; }
 .hero-tile--zarik {
   grid-area: zarik;
-  background: linear-gradient(135deg, #FDE68A 0%, #EAB308 100%);
+  background: var(--gold-gradient);
   border-color: transparent;
   color: #422006;
   align-items: center;
@@ -284,8 +286,10 @@
   gap: 16px;
 }
 .landing-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 26px;
   box-shadow: var(--shadow-sm);
@@ -323,7 +327,9 @@
   position: relative;
   padding: 26px;
   border-radius: var(--radius-lg);
-  background: rgb(var(--surface-rgb) / 0.6);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px dashed rgb(var(--primary-rgb) / 0.35);
 }
 .landing-step-num {
@@ -350,8 +356,10 @@
   text-align: center;
   padding: 28px 22px;
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
 }
 .landing-role > i {
   font-size: 26px;

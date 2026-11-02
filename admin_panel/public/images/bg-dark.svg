@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 1116" preserveAspectRatio="xMidYMid slice">
+  <!-- Nopa admin panel background, dark theme: six curved bands fanning out from the top-left corner,
+       lavender there and near-black on the right, with a faint plum tint in the bottom-right -->
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#3D3766"/>
+      <stop offset="0.3" stop-color="#272340"/>
+      <stop offset="0.55" stop-color="#1D1A2C"/>
+      <stop offset="0.8" stop-color="#141220"/>
+      <stop offset="1" stop-color="#110F1A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1000" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7464AE" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#7464AE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="plum" cx="1880" cy="1116" r="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B1A4A" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3B1A4A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="deep" cx="1880" cy="560" r="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B0A12" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#0B0A12" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="2000" height="1116" fill="url(#base)"/>
+  <g fill="#8088E0" fill-opacity="0.055">
+    <path d="M0,0 H2000 V90 C1860,240 1760,430 1715,650 C1685,820 1670,980 1680,1116 H0 Z"/>
+    <path d="M0,0 H1670 C1480,140 1380,330 1345,520 C1320,700 1400,900 1340,1116 H0 Z"/>
+    <path d="M0,0 H1330 C1150,180 1090,400 1010,600 C900,880 700,1040 520,1116 H0 Z"/>
+    <path d="M0,0 H1070 C900,230 800,480 600,660 C430,810 230,880 0,905 Z"/>
+    <path d="M0,0 H850 C700,240 450,470 0,560 Z"/>
+    <path d="M0,0 H510 C380,170 200,300 0,345 Z"/>
+  </g>
+  <rect width="2000" height="1116" fill="url(#glow)"/>
+  <rect width="2000" height="1116" fill="url(#deep)"/>
+  <rect width="2000" height="1116" fill="url(#plum)"/>
+</svg>

@@ -1,5 +1,8 @@
 /* Design tokens for the Nopa admin panel.
-   Brand comes from the Flutter app (app/lib/core/theme/app_colors.dart): purple #8B5CF6 + gold #EAB308.
+   Dark theme = the Flutter app's own palette (the colours its screens use, app/lib/widgets + screens):
+   screen gradient #383155 → #201A36 → #0F0B1A (AppColors.screenBackgroundGradient), cards #28274A / #333359,
+   strokes #3A3A6A / #454270, lavender #9292E2 / #9E9CD6 as the main accent, camel / gold #C09268 / #DFB690
+   (AppColors.accentGradient #CD8449 → #E1BC96) as the second accent, text #EDE9F6 / #D3D0E3 / #9D99B8.
    Every colour in style.css, index.html and the JS templates resolves to these variables, so switching
    <html data-theme="dark|light"> re-themes the whole panel. The *-rgb triplets are for translucent
    tints: rgb(var(--primary-rgb) / 0.15). Use *-text for text on surfaces (contrast-safe in both themes)
@@ -10,37 +13,39 @@
   color-scheme: dark;
 
   /* Surfaces */
-  --bg: #120C1F;
-  --bg-rgb: 18 12 31;
-  --surface: #1E1633;
-  --surface-rgb: 30 22 51;
-  --surface-2: #2A2140;
-  --surface-2-rgb: 42 33 64;
-  --surface-inset: #150F26;
-  --border: rgb(255 255 255 / 0.08);
-  --border-strong: #3B3155;
+  --bg: #201A36;
+  --bg-rgb: 32 26 54;
+  --page-gradient: linear-gradient(180deg, #383155 0%, #201A36 45%, #0F0B1A 100%);
+  --page-bg-image: url("/admin/images/bg-dark.svg");
+  --surface: #28274A;
+  --surface-rgb: 40 39 74;
+  --surface-2: #333359;
+  --surface-2-rgb: 51 51 89;
+  --surface-inset: #1E1D38;
+  --border: rgb(146 146 226 / 0.16);
+  --border-strong: #454270;
   --fg-rgb: 255 255 255;      /* light-on-dark overlays (hover, hairlines) */
   --shade-rgb: 0 0 0;         /* darkening overlays */
-  --muted-rgb: 164 156 184;
-  --backdrop: rgb(8 5 16 / 0.78);
+  --muted-rgb: 157 153 184;
+  --backdrop: rgb(15 11 26 / 0.8);
 
   /* Text */
-  --text: #F1EEF8;
-  --text-soft: #D3CDE3;
-  --text-muted: #A49CB8;
-  --text-faint: #6F6787;
+  --text: #EDE9F6;
+  --text-soft: #D3D0E3;
+  --text-muted: #9D99B8;
+  --text-faint: #7A709E;
   --on-fill: #FFFFFF;         /* text on saturated fills (buttons, badges) */
 
   /* Brand */
-  --primary: #8B5CF6;
-  --primary-strong: #7C3AED;
-  --primary-text: #C4B5FD;
-  --primary-rgb: 139 92 246;
-  --accent: #EAB308;
-  --accent-strong: #CA8A04;
-  --accent-text: #FACC15;
-  --accent-rgb: 234 179 8;
-  --brand-gradient: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+  --primary: #6B68A8;
+  --primary-strong: #5A5794;
+  --primary-text: #9E9CD6;
+  --primary-rgb: 146 146 226;
+  --accent: #C09268;
+  --accent-strong: #A87B52;
+  --accent-text: #DFB690;
+  --accent-rgb: 192 146 104;
+  --brand-gradient: linear-gradient(135deg, #8B88E8 0%, #5A5794 100%);
   --gold-gradient: linear-gradient(135deg, #CD8449 0%, #E1BC96 100%);
 
   /* Status */
@@ -52,10 +57,10 @@
   --danger-strong: #DC2626;
   --danger-text: #F87171;
   --danger-rgb: 239 68 68;
-  --info: #3B82F6;
-  --info-strong: #2563EB;
-  --info-text: #93C5FD;
-  --info-rgb: 59 130 246;
+  --info: #38BDF8;
+  --info-strong: #0EA5E9;
+  --info-text: #7DD3FC;
+  --info-rgb: 56 189 248;
 
   /* Category colour (challenges, quizzes in the LMS builder, the female badge); replaces 5 ad-hoc pinks */
   --pink: #EC4899;
@@ -63,44 +68,50 @@
   --pink-text: #F472B6;
   --pink-rgb: 236 72 153;
 
-  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.25);
+  --shadow-sm: 0 2px 8px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 25px 50px -12px rgb(0 0 0 / 0.8);
-  --page-glow-1: rgb(139 92 246 / 0.16);
-  --page-glow-2: rgb(234 179 8 / 0.07);
+  --page-glow-1: rgb(146 146 226 / 0.1);
+  --page-glow-2: rgb(192 146 104 / 0.07);
 }
 
+/* Light theme = the same app palette turned light: the dark theme's lavender (#6B68A8 / #9292E2) and
+   camel / gold (#C09268 / #DFB690) on lavender-white surfaces, with the app's deep tones (#201A36, #3A3A6A)
+   as text. Text tokens are darkened where the dark-theme value would fail contrast on white. */
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --bg: #F7F5FC;
-  --bg-rgb: 247 245 252;
+  --bg: #F3F2FA;
+  --bg-rgb: 243 242 250;
+  --page-gradient: linear-gradient(180deg, #E7E6F6 0%, #F3F2FA 45%, #FBFAFE 100%);
+  --page-bg-image: url("/admin/images/bg-light.svg");
   --surface: #FFFFFF;
   --surface-rgb: 255 255 255;
-  --surface-2: #F1EDFA;
-  --surface-2-rgb: 241 237 250;
-  --surface-inset: #FAF8FE;
-  --border: rgb(40 24 80 / 0.1);
-  --border-strong: #D9D2EA;
-  --fg-rgb: 40 24 80;
-  --shade-rgb: 130 110 185;   /* lighter than dark mode's black: "darkening" tints read as soft lavender */
-  --muted-rgb: 107 99 128;
-  --backdrop: rgb(26 19 40 / 0.45);
+  --surface-2: #EEEDF8;
+  --surface-2-rgb: 238 237 248;
+  --surface-inset: #F8F7FD;
+  --border: rgb(58 58 106 / 0.12);
+  --border-strong: #D6D5EC;
+  --fg-rgb: 58 58 106;        /* overlays use the app's #3A3A6A stroke tone */
+  --shade-rgb: 107 104 168;   /* "darkening" tints read as soft lavender */
+  --muted-rgb: 107 104 144;
+  --backdrop: rgb(32 26 54 / 0.45);
 
-  --text: #1A1328;
-  --text-soft: #3D3452;
-  --text-muted: #6B6380;
-  --text-faint: #9A93AD;
+  --text: #201A36;
+  --text-soft: #3A3A6A;
+  --text-muted: #6B6890;
+  --text-faint: #9D99B8;
   --on-fill: #FFFFFF;
 
-  --primary: #7C3AED;
-  --primary-strong: #6D28D9;
-  --primary-text: #6D28D9;
-  --primary-rgb: 124 58 237;
-  --accent: #EAB308;
-  --accent-strong: #CA8A04;
-  --accent-text: #A16207;      /* plain #EAB308 fails text contrast on white */
-  --accent-rgb: 202 138 4;
-  --brand-gradient: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+  --primary: #6B68A8;
+  --primary-strong: #5A5794;
+  --primary-text: #5A5794;
+  --primary-rgb: 107 104 168;
+  --accent: #C09268;
+  --accent-strong: #A87B52;
+  --accent-text: #8A5E34;      /* the app's #DFB690 fails text contrast on white */
+  --accent-rgb: 192 146 104;
+  --brand-gradient: linear-gradient(135deg, #8B88E8 0%, #5A5794 100%);
+  --gold-gradient: linear-gradient(135deg, #CD8449 0%, #E1BC96 100%);
 
   --success: #059669;
   --success-strong: #047857;
@@ -110,20 +121,27 @@
   --danger-strong: #B91C1C;
   --danger-text: #B91C1C;
   --danger-rgb: 220 38 38;
-  --info: #2563EB;
-  --info-strong: #1D4ED8;
-  --info-text: #1D4ED8;
-  --info-rgb: 37 99 235;
+  --info: #0284C7;
+  --info-strong: #0369A1;
+  --info-text: #0369A1;
+  --info-rgb: 2 132 199;
 
   --pink: #DB2777;
   --pink-strong: #BE185D;
   --pink-text: #BE185D;        /* #F472B6 fails text contrast on white */
   --pink-rgb: 219 39 119;
 
-  --shadow-sm: 0 2px 8px rgb(60 40 110 / 0.08);
-  --shadow-lg: 0 25px 50px -12px rgb(60 40 110 / 0.25);
-  --page-glow-1: rgb(124 58 237 / 0.08);
-  --page-glow-2: rgb(234 179 8 / 0.08);
+  --shadow-sm: 0 2px 8px rgb(58 58 106 / 0.1);
+  --shadow-lg: 0 25px 50px -12px rgb(58 58 106 / 0.28);
+  --page-glow-1: rgb(146 146 226 / 0.14);
+  --page-glow-2: rgb(192 146 104 / 0.08);
+}
+
+/* Phones: the app's own background (app/assets/images/login_bg.png) and its light counterpart */
+@media (max-width: 768px) {
+  :root,
+  :root[data-theme="dark"] { --page-bg-image: url("/admin/images/bg-mobile-dark.png"); }
+  :root[data-theme="light"] { --page-bg-image: url("/admin/images/bg-mobile-light.svg"); }
 }
 
 /* Scales shared by both themes */
