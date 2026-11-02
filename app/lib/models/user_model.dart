@@ -3,12 +3,14 @@ enum UserRole {
   member,
   mentor,
   superMentor,
+  channelManager,
   admin,
 }
 
 extension UserRoleX on UserRole {
   /// True for every mentor level.
   bool get isMentorLike => this == UserRole.mentor || this == UserRole.superMentor;
+  bool get isChannelManager => this == UserRole.channelManager;
 }
 
 class UserModel {
@@ -34,6 +36,7 @@ class UserModel {
   final int totalTransactions;
   final int totalZarikPurchases;
   final String? socialGroupLink;
+  final bool chatEnabled;
   final int? userCode;
   final List<dynamic>? mentorDocuments;
   final String? city;
@@ -73,6 +76,7 @@ class UserModel {
     this.totalTransactions = 0,
     this.totalZarikPurchases = 0,
     this.socialGroupLink,
+    this.chatEnabled = false,
     this.userCode,
     this.mentorDocuments,
     this.city,
@@ -115,6 +119,7 @@ class UserModel {
     int? totalTransactions,
     int? totalZarikPurchases,
     String? socialGroupLink,
+    bool? chatEnabled,
     int? userCode,
     List<dynamic>? mentorDocuments,
     String? city,
@@ -154,6 +159,7 @@ class UserModel {
       totalTransactions: totalTransactions ?? this.totalTransactions,
       totalZarikPurchases: totalZarikPurchases ?? this.totalZarikPurchases,
       socialGroupLink: socialGroupLink ?? this.socialGroupLink,
+      chatEnabled: chatEnabled ?? this.chatEnabled,
       userCode: userCode ?? this.userCode,
       mentorDocuments: mentorDocuments ?? this.mentorDocuments,
       city: city ?? this.city,
@@ -182,6 +188,8 @@ class UserModel {
       parsedRole = UserRole.superMentor;
     } else if (rawRole == 'mentor') {
       parsedRole = UserRole.mentor;
+    } else if (rawRole == 'channel_manager') {
+      parsedRole = UserRole.channelManager;
     }
 
     return UserModel(
@@ -207,6 +215,7 @@ class UserModel {
       totalTransactions: json['totalTransactions'] ?? 0,
       totalZarikPurchases: json['totalZarikPurchases'] ?? 0,
       socialGroupLink: json['socialGroupLink'],
+      chatEnabled: json['features']?['chat'] == true,
       userCode: json['userCode'],
       mentorDocuments: json['mentorDocuments'],
       city: json['city'],

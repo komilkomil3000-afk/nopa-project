@@ -29,64 +29,6 @@ async function loadTickets() {
   }
 }
 
-// ---- CHAT OVERSIGHT ----
-let chatPage = 1;
-async function loadChats() {
-  try {
-    const filterCaravanId = document.getElementById('chat-filter-caravanId').value || '';
-    const res = await request(`/api/v1/admin/chat?page=${chatPage}&limit=50&caravanId=${encodeURIComponent(filterCaravanId)}`);
-    const data = await res.json();
-
-    const tbody = document.querySelector('#chat-logs-table tbody');
-    tbody.innerHTML = '';
-
-    if (data.messages.length === 0) {
-      NopaTable.empty(tbody, 'هیچ پیامی یافت نشد');
-      return;
-    }
-
-    data.messages.forEach(msg => {
-      const typeStr = msg.caravan ? `گروه: ${esc(msg.caravan.name)}` : `مستقیم به: ${esc(msg.receiver ? msg.receiver.name : '؟')}`;
-      const fileBadge = msg.fileUrl ? `<a href="${esc(msg.fileUrl)}" target="_blank" class="badge u-bg-success u-c-white"><i class="fa-solid fa-paperclip"></i> ${esc(msg.fileType)}</a>` : '-';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="u-direction-ltr u-text-right">${new Date(msg.createdAt).toLocaleString('fa-IR')}</td>
-        <td>${esc(msg.sender.name)}</td>
-        <td>${typeStr}</td>
-        <td class="u-maxw-250 u-overflow-hidden u-ellipsis u-nowrap">${esc(msg.messageText)}</td>
-        <td>${fileBadge}</td>
-        <td>
-          <button class="btn-icon u-c-danger" data-click="deleteChat" data-click-args="${esc(JSON.stringify([String(msg.id)]))}"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error('Failed to load chats:', err);
-  }
-}
-
-async function deleteChat(id) {
-  if (!(await NopaConfirm('آیا از حذف این پیام اطمینان دارید؟'))) return;
-  try {
-    const res = await request(`/api/v1/admin/chat/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('پیام حذف شد', 'success');
-      loadChats();
-    } else {
-      const d = await res.json();
-      showToast(d.error || 'خطا در حذف پیام', 'error');
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const loadChatsBtn = document.getElementById('btn-load-chats');
-  if (loadChatsBtn) loadChatsBtn.addEventListener('click', () => { chatPage = 1; loadChats(); });
-});
-
 // 2. Mentors Tickets Tab
 async function loadMentorTickets() {
   try {

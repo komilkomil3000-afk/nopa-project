@@ -402,6 +402,7 @@
               <option value="student">دانش‌آموز</option>
               <option value="mentor">مربی</option>
               <option value="sub_admin">ادمین (مدیر محتوایی)</option>
+              <option value="channel_manager">مسئول کانال و گروه‌ها</option>
               <option value="admin">سوپر ادمین</option>
             </select>
             <select id="filter-caravan-ctrl" class="select-ctrl">
@@ -1442,30 +1443,26 @@
 
       <!-- CHAT OVERSIGHT TAB -->
       <section id="chat-tab" class="tab-panel" style="display: none;">
-        <div class="panel-card glass u-mb-20">
-          <div class="panel-title">مدیریت گفتگوها و چت‌ها</div>
-          <div class="u-flex u-gap-10 u-mt-15">
-            <input type="text" id="chat-filter-caravanId" class="input-ctrl" placeholder="فیلتر با شناسه کاروان...">
-            <button class="btn-primary" id="btn-load-chats"><i class="fa-solid fa-magnifying-glass"></i> جستجو</button>
+        <div id="chat-settings-admin" class="panel-card glass u-maxw-760">
+          <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>وضعیت چت</div>
+          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">
+            با خاموش کردن چت، تب آن از اپ حذف می‌شود و پروفایل به نوار پایین برمی‌گردد. پیام‌ها پاک نمی‌شوند.
           </div>
+          <div class="u-flex u-gap-10 u-mb-14">
+            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="off">خاموش</label>
+            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="pilot">آزمایشی</label>
+            <label class="u-flex u-gap-6 u-items-center u-fs-12_5 u-c-text"><input type="radio" name="chat-mode" value="on">روشن</label>
+          </div>
+          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">کاروان‌های حالت آزمایشی</div>
+          <div class="u-fs-12 u-c-text-muted u-mb-5">در حالت آزمایشی، ادمین‌ها، راهبران، مسئول کانال و این کاروان‌ها چت را می‌بینند.</div>
+          <div id="chat-pilot-caravans" class="u-grid u-cols-2 u-gap-12 u-mb-14"></div>
+          <div class="u-c-text-soft u-fs-12 u-bold u-mb-5">دسترسی‌های مسئول کانال و گروه‌ها</div>
+          <div id="chat-manager-permissions" class="u-grid u-cols-2 u-gap-12 u-mb-14"></div>
+          <button type="button" class="btn-action btn-add" data-click="saveChatSettings">ذخیره</button>
         </div>
-
-        <div class="table-container glass">
-          <table class="data-table" id="chat-logs-table">
-            <thead>
-              <tr>
-                <th>تاریخ ارسال</th>
-                <th>فرستنده</th>
-                <th>گیرنده (کاروان / مستقیم)</th>
-                <th>متن پیام</th>
-                <th>فایل ضمیمه</th>
-                <th>عملیات</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Chat logs rows -->
-            </tbody>
-          </table>
+        <div id="chat-settings-manager" class="panel-card glass u-maxw-760" style="display: none;">
+          <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>مدیریت چت</div>
+          <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">ابزارهای مدیریت کانال‌ها و گروه‌ها پس از راه‌اندازی چت در این صفحه نمایش داده می‌شوند.</div>
         </div>
       </section>
 
@@ -2559,6 +2556,7 @@
             <option value="student">دانش‌آموز</option>
             <option value="mentor">مربی</option>
             <option value="sub_admin">ادمین (مدیر محتوایی)</option>
+              <option value="channel_manager">مسئول کانال و گروه‌ها</option>
             <option value="admin">سوپر ادمین</option>
           </select>
         </div>
@@ -3828,6 +3826,7 @@
     <script src="js/app/shared.js"></script>
     <script src="js/features/asset-names.js"></script>
     <script src="js/features/economy.js"></script>
+    <script src="js/features/chat-settings.js"></script>
     <script src="js/features/access.js"></script>
     <script src="js/features/users.js"></script>
     <script src="js/features/rewards.js"></script>

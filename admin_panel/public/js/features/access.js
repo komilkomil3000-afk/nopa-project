@@ -112,10 +112,17 @@ function roleLabel(role) {
   const r = String(role || '').toLowerCase().replace(/[\s-]/g, '_');
   if (r === 'admin') return 'سوپر ادمین';
   if (r === 'sub_admin') return 'ادمین (مدیر محتوایی)';
+  if (r === 'channel_manager') return 'مسئول کانال و گروه‌ها';
   if (r === 'mentor' || r === 'super_mentor' || r === 'supermentor') return 'مربی';
   return 'دانش‌آموز';
 }
 window.roleLabel = roleLabel;
+
+// A channel manager's panel is the chat tab alone
+function isChannelManagerUser() {
+  return String(NopaAuth.getUser().role || '').toLowerCase() === 'channel_manager';
+}
+window.isChannelManagerUser = isChannelManagerUser;
 
 const PANEL_SECTION_LABELS = {
   users: 'کاربران، مخاطبان و سطوح',
@@ -126,6 +133,7 @@ const PANEL_SECTION_LABELS = {
   lms: 'منزلگاه‌ها، کلاس‌ها و آزمون‌ها',
   challenges: 'چالش‌ها و تکالیف',
   support: 'تیکت‌ها، پیام‌ها و چت',
+  chat: 'مدیریت چت و کانال‌ها',
   content: 'جارچی، بنر، رسانه و فرم‌ها',
   notifications: 'اعلان‌ها و پیام‌رسانی',
   analytics: 'آمار و لیگ'
@@ -142,7 +150,7 @@ function isSuperAdminUser() {
 async function applyPanelPermissions() {
   try {
     const role = String((currentUser && currentUser.role) || '').toLowerCase().replace(/[\s-]/g, '_');
-    if (role !== 'sub_admin') {
+    if (role !== 'sub_admin' && role !== 'channel_manager') {
       NopaNav.applyAccess({ all: true });
       return;
     }
@@ -170,12 +178,12 @@ function setupUserModalAccessControls(role, panelAccess) {
   if (roleSelect) {
     Array.from(roleSelect.options).forEach(opt => {
       // Only a super admin may hand out admin levels
-      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin');
+      opt.hidden = !superAdmin && (opt.value === 'admin' || opt.value === 'sub_admin' || opt.value === 'channel_manager');
     });
     const refresh = () => {
       const group = document.getElementById('panel-access-group');
       const r = roleSelect.value;
-      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'mentor')) ? 'block' : 'none';
+      if (group) group.style.display = (superAdmin && (r === 'sub_admin' || r === 'channel_manager' || r === 'mentor')) ? 'block' : 'none';
     };
     roleSelect.addEventListener('change', refresh);
     refresh();

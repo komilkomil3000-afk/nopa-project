@@ -105,9 +105,9 @@
       load: () => call('loadMediaAssets'),
     },
     'chat-tab': {
-      hashes: ['chat'], group: 'outreach', label: 'نظارت بر گفتگوها', icon: 'fa-solid fa-comments', section: null,
-      title: 'مدیریت گفتگوها', desc: 'نظارت بر گفتگوهای کاروان‌ها و پیام‌های کاربران',
-      load: () => call('loadChats'),
+      hashes: ['chat'], group: 'outreach', label: 'مدیریت چت', icon: 'fa-solid fa-comments', section: 'chat',
+      title: 'مدیریت چت', desc: 'وضعیت چت و مدیریت کانال‌ها و گروه‌ها',
+      load: () => call('loadChatSettings'),
     },
     'roles-tab': {
       hashes: ['roles'], group: 'settings', label: 'نقش‌ها و دسترسی‌ها (RBAC)', icon: 'fa-solid fa-user-lock', section: null,
@@ -143,6 +143,7 @@
 
   function switchTab(tabId, updateUrl = true) {
     if (!TABS[tabId] && !document.getElementById(tabId)) tabId = DEFAULT_TAB;
+    if (window.isChannelManagerUser && window.isChannelManagerUser()) tabId = 'chat-tab';
     if (!tabId) tabId = DEFAULT_TAB;
     const meta = TABS[tabId] || {};
 

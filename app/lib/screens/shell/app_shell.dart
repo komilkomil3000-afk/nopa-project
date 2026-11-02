@@ -10,6 +10,9 @@ import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/widgets/custom_drawer.dart';
 import 'package:nopa_app/widgets/app_top_bar.dart';
 
+import 'package:nopa_app/screens/chat/channel_manager_shell.dart';
+import 'package:nopa_app/screens/chat/chat_home_screen.dart';
+
 // Student screen imports
 import 'package:nopa_app/screens/student/home/student_home_screen.dart';
 import 'package:nopa_app/screens/student/academy/student_academy_roadmap_screen.dart';
@@ -97,6 +100,17 @@ class MainScreenState extends State<AppShell> {
   Widget build(BuildContext context) {
     final repository = Provider.of<AppRepository>(context);
     final userRole = repository.currentUser.role;
+    final chatEnabled = repository.currentUser.chatEnabled;
+
+    if (userRole.isChannelManager) return const ChannelManagerShell();
+
+    // The admin switched chat off while it was open: back to home
+    if (_currentIndex == AppTabs.chat && !chatEnabled) {
+      _currentIndex = 0;
+      mainTabNotifier.value = 0;
+    }
+
+    final Widget chatTab = chatEnabled ? const ChatHomeScreen() : const SizedBox.shrink();
 
     final List<Widget> screens = userRole.isMentorLike
         ? [
@@ -105,6 +119,7 @@ class MainScreenState extends State<AppShell> {
             const MentorChallengesScreen(),
             const MentorMarketScreen(),
             const MentorProfileScreen(),
+            chatTab,
           ]
         : [
             const StudentHomeScreen(),
@@ -112,6 +127,7 @@ class MainScreenState extends State<AppShell> {
             const StudentChallengesScreen(),
             const StudentMarketScreen(),
             const StudentProfileScreen(),
+            chatTab,
           ];
 
     if (_currentIndex >= screens.length) {
@@ -184,6 +200,7 @@ class MainScreenState extends State<AppShell> {
         bottomNavigationBar: CustomBottomNavBar(
           currentIndex: _currentIndex,
           role: userRole,
+          chatEnabled: chatEnabled,
           onTap: (index) {
             setIndex(index);
           },

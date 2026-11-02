@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../config/db';
+import { canUseChat, getChatSettings } from '../services/chatSettings';
 import { changeBalance } from '../services/ledger';
 import { STUDENT_AVATARS, isMentorRole } from '../utils/avatar';
 
@@ -105,6 +106,8 @@ export async function getMe(req: AuthRequest, res: Response) {
       ? ((assignedCaravan as any).mentor || user)
       : user.caravan?.mentor;
 
+    const chatSettings = await getChatSettings();
+
     res.json({
       id: user.id,
       name: user.name,
@@ -112,6 +115,7 @@ export async function getMe(req: AuthRequest, res: Response) {
       userCode: user.userCode,
       role: user.role,
       isDualRole,
+      features: { chat: canUseChat(user, chatSettings) },
       caravanId: assignedCaravan ? assignedCaravan.id : user.caravanId,
       caravanName: assignedCaravan ? assignedCaravan.name : (user.caravan?.name || 'فاقد کاروان'),
       caravanMentor: assignedCaravan ? ((assignedCaravan as any).mentor?.name || user.name) : (user.caravan?.mentor?.name || 'تعیین نشده'),

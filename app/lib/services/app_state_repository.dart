@@ -102,6 +102,10 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
       _applyUser(user);
       notifyListeners();
     }
+    if (currentUser.role.isChannelManager) {
+      await fetchNotifications(onlyIfChanged: true);
+      return;
+    }
     await Future.wait([
       syncChallenges(onlyIfChanged: true),
       fetchNotifications(onlyIfChanged: true),

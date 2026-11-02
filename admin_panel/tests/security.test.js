@@ -199,3 +199,34 @@ test('economy: changing the money rules is super-admin only', () => {
   const { sectionForPath } = load('middleware/adminAccess.js');
   assert.equal(sectionForPath('/economy'), undefined);
 });
+
+test('channel manager: only chat areas of the API, private chats off by default', () => {
+  const { channelManagerMayCall, parseChatPermissions, DEFAULT_CHAT_PERMISSIONS } = load('utils/roles.js');
+  for (const ok of ['/users/me', '/auth/logout', '/notifications', '/assets', '/chat/status', '/admin/panel/me']) {
+    assert.equal(channelManagerMayCall(ok), true, ok);
+  }
+  for (const no of ['/challenges', '/economy', '/users/mentor/1', '/leagues/wealthiest', '/caravans/submit-exchange', '/support/tickets', '/assets/x']) {
+    assert.equal(channelManagerMayCall(no), false, no);
+  }
+  assert.equal(DEFAULT_CHAT_PERMISSIONS.privateChats, false);
+  assert.equal(parseChatPermissions('{"chat":{"export":true,"unknown":true}}').export, true);
+  assert.equal(parseChatPermissions('{"chat":{"export":true,"unknown":true}}').unknown, undefined);
+  assert.deepEqual(parseChatPermissions('not json'), DEFAULT_CHAT_PERMISSIONS);
+});
+
+test('chat switch: off for all, pilot for staff and chosen caravans, on for all', () => {
+  const { canUseChat } = load('services/chatSettings.js');
+  const student = c => ({ role: 'student', caravanId: c });
+  const off = { mode: 'off', pilotCaravanIds: ['a'] };
+  const pilot = { mode: 'pilot', pilotCaravanIds: ['a'] };
+  const on = { mode: 'on', pilotCaravanIds: [] };
+  assert.equal(canUseChat({ role: 'admin' }, off), false);
+  assert.equal(canUseChat(student('a'), off), false);
+  assert.equal(canUseChat(student('a'), pilot), true);
+  assert.equal(canUseChat(student('b'), pilot), false);
+  assert.equal(canUseChat(student(null), pilot), false);
+  for (const role of ['admin', 'sub_admin', 'mentor', 'SUPER_MENTOR', 'channel_manager']) {
+    assert.equal(canUseChat({ role }, pilot), true, role);
+  }
+  assert.equal(canUseChat(student(null), on), true);
+});

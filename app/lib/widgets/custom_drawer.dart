@@ -119,13 +119,16 @@ class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMentor = role.isMentorLike;
+    final isChannelManager = role.isChannelManager;
     final currentUser = Provider.of<AppRepository>(context).currentUser;
 
     final String displayName = currentUser.name.trim().isNotEmpty
         ? currentUser.name
         : (isMentor ? 'راهبر کاروان' : 'کمیل عباس');
 
-    final String displaySubtitle = currentUser.caravanName != null &&
+    final String displaySubtitle = isChannelManager
+        ? 'مسئول کانال و گروه‌ها'
+        : currentUser.caravanName != null &&
             currentUser.caravanName!.isNotEmpty &&
             currentUser.caravanName != 'فاقد کاروان'
         ? 'عضو ${currentUser.caravanName}'
@@ -279,6 +282,7 @@ class CustomDrawer extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   children: [
                     // Group 1: Main Tabs
+                    if (!isChannelManager) ...[
                     _buildMenuItem(
                       title: 'خانه',
                       svgPath: 'assets/svg_icons/home01.svg',
@@ -343,7 +347,10 @@ class CustomDrawer extends StatelessWidget {
                     // Middle Gradient Divider
                     _buildGradientDivider(),
 
+                    ],
+
                     // Group 2: Support, Help & Exit
+                    if (!isChannelManager)
                     _buildMenuItem(
                       title: 'پشتیبانی',
                       svgPath: 'assets/svg_icons/Support01.svg',

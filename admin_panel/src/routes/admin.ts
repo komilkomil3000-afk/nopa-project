@@ -39,7 +39,7 @@ import {
 import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/messageController';
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
-import { getAllChatsAdmin, deleteMessage } from '../controllers/chatController';
+import { getChatAdminSettings, updateChatAdminSettings } from '../modules/chat/settingsController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
 import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
@@ -75,7 +75,7 @@ const router = Router();
 
 // Apply JWT authentication and authorize only admin or mentor roles to the admin panel
 router.use(authenticateJWT as any);
-router.use(authorizeRoles('admin', 'sub_admin', 'mentor', 'SUPER_MENTOR') as any);
+router.use(authorizeRoles('admin', 'sub_admin', 'channel_manager', 'mentor', 'SUPER_MENTOR') as any);
 // Default-deny: mentors only reach the allowlist in middleware/adminAccess.ts; everything else is admin-only
 router.use(restrictNonAdmins as any);
 
@@ -288,9 +288,9 @@ router.get('/rewards/mentor-rules', getMentorRewardRules as any);
 router.post('/rewards/mentor-rules', createMentorRewardRule as any);
 router.delete('/rewards/mentor-rules/:id', deleteMentorRewardRule as any);
 
-// 11. Chat Oversight
-router.get('/chat', getAllChatsAdmin as any);
-router.delete('/chat/:id', deleteMessage as any);
+// 11. Chat switch and channel manager access (super admin only: not mapped to any section)
+router.get('/chat-settings', getChatAdminSettings as any);
+router.put('/chat-settings', updateChatAdminSettings as any);
 
 // 12. Instructors Management (بانک اساتید)
 router.get('/instructors', getInstructors as any);

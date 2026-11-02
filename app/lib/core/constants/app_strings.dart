@@ -10,6 +10,7 @@ class AppStrings {
   static const String navChallenges = 'چالش‌ها';
   static const String navMarket = 'بازار';
   static const String navProfile = 'پروفایل';
+  static const String navChat = 'چت';
 
   static const String stations = 'ایستگاه‌ها';
   static const String enter = 'ورود';

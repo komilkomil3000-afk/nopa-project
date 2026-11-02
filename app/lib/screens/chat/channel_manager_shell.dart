@@ -1,0 +1,46 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/screens/chat/chat_home_screen.dart';
+import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/widgets/app_top_bar.dart';
+import 'package:nopa_app/widgets/custom_drawer.dart';
+
+/// The whole app for a channel manager: chat only, without the student or mentor tabs.
+class ChannelManagerShell extends StatelessWidget {
+  const ChannelManagerShell({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Provider.of<AppRepository>(context).currentUser;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppColors.screenBackgroundGradient,
+        image: DecorationImage(
+          image: AssetImage('assets/images/login_bg.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        drawer: CustomDrawer(role: user.role, currentIndex: -1, onTabSelected: (_) {}),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const AppTopBar(showBackButton: false, showNotificationIcon: true, showDrawerButton: true),
+              Expanded(
+                child: user.chatEnabled
+                    ? const ChatHomeScreen()
+                    : const ChatNotice(
+                        title: 'بخش چت غیرفعال است',
+                        message: 'پس از فعال شدن چت توسط مدیر، می‌توانید از همین صفحه کار کنید.',
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

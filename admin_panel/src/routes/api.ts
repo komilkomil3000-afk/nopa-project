@@ -8,6 +8,7 @@ import { evaluateMentor as newEvaluateMentor, savePrivateNote, getPrivateNotes }
 import { createChallenge, getChallenges, submitQuiz, updateChallenge } from '../controllers/challengeController';
 import { listAssetTypes } from '../controllers/assetController';
 import { getEconomyRates } from '../controllers/economyController';
+import chatRouter from '../modules/chat/routes';
 import { getMyCaravanBanners } from '../controllers/caravanBannerController';
 import { submitTask, getPendingSubmissions, reviewSubmission, getSubmissionHistory } from '../controllers/submissionController';
 import { getStations, getBookmarks, addBookmark, heartbeatSessionWatch, getSessionWatchProgress, submitSessionQuiz, getUserProgress, markClipWatched, updateStationAccess, reportClipDuration, getMyQuizAnswers } from '../controllers/lmsController';
@@ -92,6 +93,7 @@ router.get('/banners', authenticateJWT as any, getBanners as any);
 
 // H. Admin CRM Routes
 router.use('/admin', adminRouter);
+router.use('/chat', chatRouter);
 
 // H. Media Routes
 router.post('/media/upload', authenticateJWT as any, upload.single('file'), uploadMedia as any);

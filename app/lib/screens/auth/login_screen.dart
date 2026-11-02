@@ -563,6 +563,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         resolvedRole = UserRole.superMentor;
       } else if (userRoleStr == 'mentor') {
         resolvedRole = UserRole.mentor;
+      } else if (userRoleStr == 'channel_manager') {
+        resolvedRole = UserRole.channelManager;
       }
 
       final userPhone = userData['phoneNumber'] ?? _phoneCtrl.text.trim();

@@ -2729,3 +2729,29 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Throwaway local Postgres: all migrations applied. Real HTTP API checks passed for conversions, sale and cancel, ranking neutrality, policy changes and access, Phase 0 ownership, parallel payments and reviews, and clawback.
   - Not run: the panel page in a browser; the app on a device; the migration on production data.
 - **Status:** Completed
+
+### [2026-11-02 05:20] - Claude Code / Chat Plan Phase 2 (Chat Switch and Channel Manager)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/migrations/20261044_channel_manager_role/` (Created)
+  - `admin_panel/src/services/chatSettings.ts`, `admin_panel/src/modules/chat/routes.ts`, `admin_panel/src/modules/chat/settingsController.ts` (Created)
+  - `admin_panel/src/controllers/chatController.ts` (Deleted)
+  - `admin_panel/src/utils/roles.ts`, `admin_panel/src/middleware/auth.ts`, `admin_panel/src/middleware/adminAccess.ts`, `admin_panel/src/routes/api.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/src/controllers/userController.ts`, `admin_panel/src/controllers/adminController.ts`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/js/features/chat-settings.js` (Created)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/core/router.js`, `admin_panel/public/js/app/bootstrap.js`, `admin_panel/public/js/features/access.js`, `admin_panel/public/js/features/tickets-chat.js` (Modified)
+  - `app/assets/svg_icons/chat01.svg`, `app/lib/screens/chat/chat_home_screen.dart`, `app/lib/screens/chat/channel_manager_shell.dart`, `app/test/chat_nav_test.dart` (Created)
+  - `app/lib/core/constants/app_strings.dart`, `app/lib/models/user_model.dart`, `app/lib/screens/auth/login_screen.dart`, `app/lib/screens/shell/app_shell.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/widgets/bottom_nav_bar.dart`, `app/lib/widgets/custom_drawer.dart` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Three-state chat switch (off, pilot, on) in the panel tab مدیریت چت, super admin only. It is enforced on the server by requireChatEnabled and reaches the app through features.chat in getMe. It stays off until an admin turns it on.
+  - The legacy chat oversight tab and its routes were removed; ChatMessage stays until Phase 3 replaces it.
+  - New channel_manager role with per-feature chat access in the panel. It is confined by an API allowlist in authenticateJWT and a default-deny gate on /admin.
+  - In the app chat takes the profile slot in the bottom bar while enabled; profile keeps index 4 and stays in the drawer. A channel manager gets a chat-only shell. The chat screen is an empty state until Phase 3.
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 15/15 in `admin_panel/`.
+  - `flutter analyze` no issues and `flutter test` 4/4 in `app/`.
+  - Throwaway Postgres and real HTTP API: switch states, role confinement, role assignment, and all Phase 0 and 1 checks again.
+  - Chrome: chat tab and economy tab as super admin, saving the switch, and the panel as a channel manager with no refused calls.
+  - Not run: the app on a device, including the channel manager shell and the switch taking effect live; the migration on production data.
+- **Status:** Completed

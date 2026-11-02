@@ -486,7 +486,7 @@ export async function createUser(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: 'نقش انتخاب‌شده نامعتبر است' });
     }
     // Only a super admin can create admin / sub admin accounts
-    if ((role === ROLE_ADMIN || role === 'sub_admin') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
+    if ((role === ROLE_ADMIN || role === 'sub_admin' || role === 'channel_manager') && canonicalRole(req.user?.role) !== ROLE_ADMIN) {
       return res.status(403).json({ error: 'ایجاد حساب مدیر فقط برای سوپر ادمین مجاز است' });
     }
     

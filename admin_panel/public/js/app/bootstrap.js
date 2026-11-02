@@ -90,7 +90,8 @@ function showLogin() {
 
 function showDashboard() {
   document.documentElement.setAttribute('data-session', 'in');
-  if (typeof window.loadAssetNames === 'function') window.loadAssetNames();
+  const chatOnly = window.isChannelManagerUser();
+  if (!chatOnly && typeof window.loadAssetNames === 'function') window.loadAssetNames();
   const modal = document.getElementById('login-modal');
   if (modal) modal.style.display = 'none';
   const layout = document.getElementById('app-layout');
@@ -108,6 +109,8 @@ function showDashboard() {
   } else if (typeof switchTab === 'function') {
     switchTab(NopaRouter.DEFAULT_TAB);
   }
+
+  if (chatOnly) return;
 
   // Load initial data
   if (typeof window.loadCaravansData === 'function') window.loadCaravansData();
