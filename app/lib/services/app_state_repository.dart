@@ -1,5 +1,6 @@
 import 'package:nopa_app/core/asset_names.dart';
 import '../core/economy_rates.dart';
+import 'chat_repository.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -74,6 +75,9 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Live-sync interval: profile, challenges and notifications are re-requested this often while the app is open.
   static const Duration pollInterval = Duration(seconds: 3);
+  /// While the chat socket is live, polling runs on every 5th tick (about 15 seconds).
+  static const int slowPollEvery = 5;
+  int _socketTicks = 0;
   bool _pollInFlight = false;
   bool _appInForeground = true;
 
@@ -83,6 +87,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
     _notificationPollTimer = Timer.periodic(pollInterval, (_) async {
       // One request round at a time (a slow network must not pile up requests) and none while in background.
       if (_pollInFlight || !_appInForeground || !_apiService.isAuthenticated) return;
+      if (ChatRepository.instance.connected && ++_socketTicks % slowPollEvery != 0) return;
       _pollInFlight = true;
       try {
         await _pollOnce(heavy: ++tick % 10 == 0);
@@ -328,6 +333,7 @@ class AppRepository extends ChangeNotifier with WidgetsBindingObserver {
   String? get activeCaravanId => currentUser.caravanId ?? _selectedCaravanId;
 
   Future<void> logout() async {
+    ChatRepository.instance.reset();
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(prefKeyLastActive);

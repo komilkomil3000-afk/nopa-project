@@ -40,6 +40,7 @@ import { sendMessage, getAdminMessages, replyToMessage } from '../controllers/me
 import { getStations, getClasses, getSessions, getClips, getQuizzes, createStation, updateStation, deleteStation, reorderStations, createClass, updateClass, deleteCategory as deleteClass, createSession, updateSession, deleteSession, createPart, updatePart, deleteClip, deleteClip as deletePart, reorderClips, createQuestion, updateQuestion, deleteQuiz, deleteQuiz as deleteQuestion, createOrUpdateStation, createOrUpdateCategory, createOrUpdateSession, createOrUpdateClip, createClipForSession, updateClipById, createOrUpdateQuiz, setBatchCategoryZarik, setBatchCategoryInstructor, batchSaveStationContent, updateStationAccess } from '../controllers/lmsController';
 import { getForms, createOrUpdateForm, deleteForm, createOrUpdateField, deleteField, submitForm, getFormSubmissions } from '../controllers/formController';
 import { getChatAdminSettings, updateChatAdminSettings } from '../modules/chat/settingsController';
+import { deleteManagedMessage, listManagedMessages, listManagedSpaces } from '../modules/chat/manageController';
 import { exportData } from '../controllers/exportController';
 import { revokeAllSessions, addBlacklist, removeBlacklist, getBlacklist } from '../controllers/securityController';
 import { toggleCaravanStatus, bulkTransferMembers, cancelAssetConversion, getAssetConversionsAdmin, getCaravanRequests } from '../controllers/caravanController';
@@ -291,6 +292,9 @@ router.delete('/rewards/mentor-rules/:id', deleteMentorRewardRule as any);
 // 11. Chat switch and channel manager access (super admin only: not mapped to any section)
 router.get('/chat-settings', getChatAdminSettings as any);
 router.put('/chat-settings', updateChatAdminSettings as any);
+router.get('/chat-manage/spaces', listManagedSpaces as any);
+router.get('/chat-manage/spaces/:id/messages', listManagedMessages as any);
+router.delete('/chat-manage/messages/:id', deleteManagedMessage as any);
 
 // 12. Instructors Management (بانک اساتید)
 router.get('/instructors', getInstructors as any);

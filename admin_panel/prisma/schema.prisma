@@ -74,8 +74,8 @@ model User {
   notifications                Notification[]
   zarikTransactions            ZarikTransaction[]
   adminMessages                AdminMessage[]
-  messagesSent                 ChatMessage[]  @relation("ChatSender")
-  messagesReceived             ChatMessage[]  @relation("ChatReceiver")
+  chatMessages                 ChatMessage[]
+  chatMemberships              ChatMember[]
   supportTickets               SupportTicket[] @relation("TicketStudent")
   supportReplies               SupportTicketReply[] @relation("ReplyMentor")
   assetConversions             AssetConversionRequest[]
@@ -127,7 +127,7 @@ model Caravan {
   // Relations
   mentor          User?         @relation("MentorCaravans", fields: [mentorId], references: [id], onDelete: SetNull)
   members         User[]        @relation("CaravanMembers")
-  chatMessages    ChatMessage[]
+  chatSpaces      ChatSpace[]
   assetConversions AssetConversionRequest[]
   challenges      Challenge[]
   banners         CaravanBanner[]
@@ -707,26 +707,103 @@ model AdminMessage {
   @@index([status])
 }
 
-model ChatMessage {
-  id          String   @id @default(uuid())
-  senderId    String
-  receiverId  String?
-  caravanId   String?
-  messageText String
-  fileUrl     String?
-  fileType    String?  // "image" | "audio" | "document"
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+// A conversation. Caravan spaces take their members from the caravan itself; direct, support and
+// media spaces use ChatMember. Unique key: "announcements", "caravan:<id>", "direct:<a>:<b>"...
+model ChatSpace {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  type      String   // "announcements" | "public" | "mentors" | "caravan" | "challenges" | "media" | "direct" | "support"
+  title     String
+  caravanId String?
+  lastSeq   Int      @default(0) // messages are numbered inside a space; unread = lastSeq - lastReadSeq
+  createdAt DateTime @default(now())
 
-  // Relations
-  sender      User     @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver    User?    @relation("ChatReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  caravan     Caravan? @relation(fields: [caravanId], references: [id], onDelete: Cascade)
+  caravan     Caravan?         @relation(fields: [caravanId], references: [id], onDelete: Cascade)
+  members     ChatMember[]
+  messages    ChatMessage[]
+  attachments ChatAttachment[]
 
-  @@index([senderId])
-  @@index([receiverId])
+  @@index([type])
   @@index([caravanId])
-  @@index([createdAt])
+}
+
+// Per-user state in a space, and the membership of private spaces
+model ChatMember {
+  id          String    @id @default(uuid())
+  spaceId     String
+  userId      String
+  role        String    @default("member") // "member" | "moderator"
+  lastReadSeq Int       @default(0)
+  muted       Boolean   @default(false)    // notifications off, chosen by the user
+  mutedUntil  DateTime?                    // cannot post until then, set by a moderator
+  createdAt   DateTime  @default(now())
+
+  space ChatSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id              String    @id @default(uuid())
+  spaceId         String
+  seq             Int
+  senderId        String?   // null for system and bot messages
+  kind            String    @default("text") // "text" | "file" | "system"
+  body            String    @default("")
+  clientMessageId String?   // set by the client; a retry cannot post twice
+  replyToId       String?
+  threadRootId    String?   // one level only: replies under a top-level message
+  threadReplies   Int       @default(0)
+  mentions        String[]  @default([])
+  pinnedAt        DateTime?
+  editedAt        DateTime?
+  deletedAt       DateTime?
+  deletedBy       String?
+  createdAt       DateTime  @default(now())
+
+  space       ChatSpace        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  sender      User?            @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  replyTo     ChatMessage?     @relation("ChatReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     ChatMessage[]    @relation("ChatReply")
+  attachments ChatAttachment[]
+  reactions   ChatReaction[]
+
+  @@unique([spaceId, seq])
+  @@unique([senderId, clientMessageId])
+  @@index([spaceId, threadRootId, seq])
+}
+
+model ChatReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  type      String   // "bravo" | "agree" | "idea" | "question" | "confused"
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, type])
+}
+
+// A private file. It is served only through a signed link, never from /uploads.
+model ChatAttachment {
+  id         String   @id @default(uuid())
+  spaceId    String
+  messageId  String?  // null until the message that carries it is sent
+  uploaderId String
+  storageKey String
+  name       String
+  mime       String
+  size       Int
+  kind       String   // "image" | "audio" | "video" | "file"
+  createdAt  DateTime @default(now())
+
+  space   ChatSpace    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  message ChatMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
 }
 
 model SupportTicket {

@@ -6,6 +6,7 @@ window.loadChatSettings = async function() {
   const managerBox = document.getElementById('chat-settings-manager');
   if (!adminBox) return;
 
+  window.loadChatSpaces();
   if (!isSuperAdminUser()) {
     adminBox.style.display = 'none';
     managerBox.style.display = 'block';
@@ -46,5 +47,50 @@ window.saveChatSettings = async function() {
     showToast('تنظیمات چت ذخیره شد و تا چند ثانیه در اپ اعمال می‌شود.', 'success');
   } catch (e) {
     showToast(e.message || 'خطا در ذخیره تنظیمات چت', 'error');
+  }
+};
+
+const CHAT_SPACE_LABELS = {
+  announcements: 'کانال اعلانات', public: 'کانال همگانی', mentors: 'اتاق راهبران',
+  caravan: 'گروه کاروان', challenges: 'گروه چالش‌ها', media: 'گروه رسانه‌ای',
+};
+
+window.loadChatSpaces = async function() {
+  const box = document.getElementById('chat-spaces-list');
+  try {
+    const spaces = await NopaApi.json('/api/v1/admin/chat-manage/spaces');
+    box.innerHTML = spaces.map(s => `
+      <div class="u-flex u-gap-6 u-items-center u-mb-5">
+        <span class="u-flex-1 u-fs-12_5 u-c-text">${esc(CHAT_SPACE_LABELS[s.type] || s.title)}${s.caravanName ? ` · ${esc(s.caravanName)}` : ''}</span>
+        <span class="u-fs-11 u-c-text-muted">${esc(String(s.messageCount))} پیام</span>
+        <button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="openChatSpace" data-click-args="${esc(JSON.stringify([String(s.id)]))}">مشاهده</button>
+      </div>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">هنوز فضایی ساخته نشده است. فضاها با اولین ورود کاربران به چت ساخته می‌شوند.</div>';
+  } catch (e) {
+    box.textContent = e.message || 'خطا در دریافت فضاها';
+  }
+};
+
+window.openChatSpace = async function(spaceId) {
+  const box = document.getElementById('chat-space-messages');
+  box.dataset.spaceId = spaceId;
+  try {
+    const messages = await NopaApi.json(`/api/v1/admin/chat-manage/spaces/${spaceId}/messages`);
+    box.innerHTML = messages.map(m => `
+      <div class="u-flex u-gap-6 u-items-center u-mb-5 u-fs-12_5 u-c-text">
+        <span class="u-flex-1">${esc(m.sender ? m.sender.name : 'سیستم')}: ${m.deleted ? 'این پیام حذف شده است' : esc(m.body || 'فایل')}</span>
+        ${m.deleted ? '' : `<button type="button" class="btn-action u-p-5-10 u-fs-11 u-pointer" data-click="deleteChatMessage" data-click-args="${esc(JSON.stringify([String(m.id)]))}">حذف</button>`}
+      </div>`).join('') || '<div class="u-fs-12_5 u-c-text-muted">پیامی وجود ندارد.</div>';
+  } catch (e) {
+    showToast(e.message || 'خطا در دریافت پیام‌ها', 'error');
+  }
+};
+
+window.deleteChatMessage = async function(id) {
+  if (!(await NopaConfirm('این پیام برای همه حذف می‌شود. ادامه می‌دهید؟'))) return;
+  try {
+    await NopaApi.json(`/api/v1/admin/chat-manage/messages/${id}`, { method: 'DELETE' });
+    window.openChatSpace(document.getElementById('chat-space-messages').dataset.spaceId);
+  } catch (e) {
+    showToast(e.message || 'خطا در حذف پیام', 'error');
   }
 };

@@ -2755,3 +2755,30 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
   - Chrome: chat tab and economy tab as super admin, saving the switch, and the panel as a channel manager with no refused calls.
   - Not run: the app on a device, including the channel manager shell and the switch taking effect live; the migration on production data.
 - **Status:** Completed
+
+### [2026-11-02 07:30] - Claude Code / Chat Plan Phase 3 (Chat Core)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, app, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified), `admin_panel/prisma/migrations/20261045_chat_core/` (Created)
+  - `admin_panel/src/modules/chat/{access,service,realtime,controller,manageController}.ts` (Created), `admin_panel/src/modules/chat/{routes,settingsController}.ts` (Modified)
+  - `admin_panel/src/server.ts`, `admin_panel/src/routes/admin.ts`, `admin_panel/package.json`, `admin_panel/package-lock.json`, `admin_panel/.gitignore`, `admin_panel/tests/security.test.js` (Modified)
+  - `admin_panel/public/index.html`, `admin_panel/public/sw.js`, `admin_panel/public/js/features/chat-settings.js` (Modified)
+  - `app/lib/models/chat_models.dart`, `app/lib/services/chat_repository.dart`, `app/lib/services/chat_local_store.dart`, `app/lib/screens/chat/{chat_theme,chat_message_bubble,chat_conversation_screen}.dart`, `app/test/chat_ui_test.dart` (Created)
+  - `app/lib/screens/chat/chat_home_screen.dart`, `app/lib/screens/chat/channel_manager_shell.dart`, `app/lib/screens/shell/app_shell.dart`, `app/lib/widgets/bottom_nav_bar.dart`, `app/lib/services/api_service.dart`, `app/lib/services/app_state_repository.dart`, `app/lib/main.dart`, `app/pubspec.yaml`, `app/pubspec.lock`, `app/android/app/src/main/AndroidManifest.xml`, `app/ios/Runner/Info.plist` (Modified)
+  - `docs/nopa-chat-plan.md` (Modified, local only)
+- **Description of Changes:**
+  - Spaces, per-user state, messages with per-space numbering, one-level threads, reactions, pins, mentions, search and private files behind expiring signed links.
+  - Caravan spaces take members from the caravan itself, so transfers need no sync. Direct conversations are for their members only, including against admins and the panel.
+  - Messages are stored first and then published over Socket.IO. Sockets are authenticated like HTTP, revalidated on a timer and whenever the switch changes.
+  - App: conversation list, conversation and thread screens, voice and file sending, offline cache and send queue on sqflite, unread badge, slower polling while the socket is live.
+  - The Dart client has no long-polling transport, so without WebSocket the app reads the open conversation over HTTP every 5 seconds.
+  - The old ChatMessage table is kept as ChatMessage_legacy.
+  - Not done: real push (3.18, only in-app notifications for offline users) and the pilot (3.19).
+- **Verification / Checkpoints Executed:**
+  - `npx tsc --noEmit`, `npm run build`, `npm test` 16/16 in `admin_panel/`.
+  - `flutter analyze` no issues, `flutter test` 8/8, `flutter build apk --debug` succeeded in `app/`.
+  - Throwaway Postgres, real HTTP and socket clients: access, no leak between caravans, retries, parallel sends, threads, reactions, private conversations, files, caravan transfer, panel oversight, and the switch closing live sockets.
+  - Real Dart socket client against the local server over WebSocket, including Persian text and model parsing.
+  - Not run: the app on a device or emulator; the HTTP fallback in the app; WebSocket through production nginx or CDN; the migration on production data.
+- **Status:** In Progress (3.18 and 3.19 pending)

@@ -4,6 +4,7 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/screens/chat/chat_home_screen.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/widgets/app_top_bar.dart';
+import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/widgets/custom_drawer.dart';
 
 /// The whole app for a channel manager: chat only, without the student or mentor tabs.
@@ -13,6 +14,7 @@ class ChannelManagerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = Provider.of<AppRepository>(context).currentUser;
+    WidgetsBinding.instance.addPostFrameCallback((_) => ChatRepository.instance.setEnabled(user.chatEnabled, user.id));
 
     return Container(
       decoration: const BoxDecoration(

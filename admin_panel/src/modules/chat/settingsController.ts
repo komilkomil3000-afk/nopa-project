@@ -4,6 +4,7 @@ import { AuthRequest } from '../../middleware/auth';
 import { logAdminAction } from '../../controllers/adminController';
 import { CHAT_MODES, ChatMode, getChatSettings, saveChatSettings } from '../../services/chatSettings';
 import { CHAT_PERMISSION_LABELS, ChatPermissions, parseChatPermissions, ROLE_CHANNEL_MANAGER } from '../../utils/roles';
+import { revalidateAllSockets } from './realtime';
 
 async function loadRolePermissions(): Promise<ChatPermissions> {
   const row = await prisma.rolePermission.findUnique({ where: { roleName: ROLE_CHANNEL_MANAGER } });
@@ -48,6 +49,7 @@ export async function updateChatAdminSettings(req: AuthRequest, res: Response) {
       req.user!.id, req.user!.phoneNumber || 'Admin', 'UPDATE_CHAT_SETTINGS', 'SystemSetting', 'chat',
       `حالت ${mode}، ${requested.length} کاروان آزمایشی، دسترسی‌ها: ${permissionsJson}`, req.ip || ''
     );
+    await revalidateAllSockets();
     res.json({ success: true });
   } catch (error) {
     console.error('updateChatAdminSettings error:', error);

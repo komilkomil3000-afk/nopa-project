@@ -230,3 +230,39 @@ test('chat switch: off for all, pilot for staff and chosen caravans, on for all'
   }
   assert.equal(canUseChat(student(null), on), true);
 });
+
+test('chat rules: who sees a space, who posts, who moderates', () => {
+  const { canSee, canPostTopLevel, canModerate } = load('modules/chat/access.js');
+  const { DEFAULT_CHAT_PERMISSIONS: perms } = load('utils/roles.js');
+  const actor = (role, extra = {}) => ({ id: 'u', name: 'n', role, caravanId: null, mentoredCaravanIds: [], permissions: perms, ...extra });
+  const student = actor('student', { caravanId: 'a' });
+  const mentor = actor('mentor', { mentoredCaravanIds: ['a'] });
+  const manager = actor('channel_manager');
+  const admin = actor('admin');
+  const space = (type, caravanId = null) => ({ id: 's', type, caravanId });
+
+  assert.equal(canSee(student, space('caravan', 'a'), false), true);
+  assert.equal(canSee(student, space('caravan', 'b'), false), false, 'another caravan stays closed');
+  assert.equal(canSee(mentor, space('challenges', 'a'), false), true);
+  assert.equal(canSee(mentor, space('caravan', 'b'), false), false);
+  assert.equal(canSee(student, space('mentors'), false), false);
+  assert.equal(canSee(manager, space('caravan', 'b'), false), true);
+  assert.equal(canSee({ ...manager, permissions: { ...perms, enterGroups: false } }, space('caravan', 'b'), false), false);
+  for (const who of [admin, mentor, manager, student]) {
+    assert.equal(canSee(who, space('direct'), false), false, 'private is for members alone');
+    assert.equal(canModerate(who, space('direct')), false);
+  }
+  assert.equal(canSee(student, space('direct'), true), true);
+
+  assert.equal(canPostTopLevel(student, space('announcements')), false);
+  assert.equal(canPostTopLevel(manager, space('announcements')), true);
+  assert.equal(canPostTopLevel({ ...manager, permissions: { ...perms, publishChannels: false } }, space('announcements')), false);
+  assert.equal(canPostTopLevel(student, space('challenges', 'a')), false);
+  assert.equal(canPostTopLevel(mentor, space('challenges', 'a')), true);
+  assert.equal(canPostTopLevel(student, space('caravan', 'a')), true);
+
+  assert.equal(canModerate(student, space('caravan', 'a')), false);
+  assert.equal(canModerate(mentor, space('caravan', 'a')), true);
+  assert.equal(canModerate(mentor, space('caravan', 'b')), false);
+  assert.equal(canModerate({ ...manager, permissions: { ...perms, moderate: false } }, space('public')), false);
+});

@@ -1867,6 +1867,41 @@ class HttpApiService {
     return [];
   }
 
+  /// A chat call, relative to the API root. Null when the network failed.
+  Future<http.Response?> chatCall(String method, String path, {Map<String, dynamic>? body}) async {
+    try {
+      final response = await _sendWithAuthRetry(
+        method,
+        Uri.parse('$baseUrl$path'),
+        headers: _getHeaders(),
+        body: body == null ? null : jsonEncode(body),
+      );
+      return response.statusCode == 503 ? null : response;
+    } catch (e) {
+      debugPrint('chatCall error: $e');
+      return null;
+    }
+  }
+
+  /// Uploads a private chat file: {id, name, kind, url}.
+  Future<Map<String, dynamic>?> uploadChatFile(io.File file, String spaceId) async {
+    try {
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/chat/uploads'));
+      if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+      request.fields['spaceId'] = spaceId;
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      final resp = await http.Response.fromStream(await request.send().timeout(const Duration(minutes: 3)));
+      if (resp.statusCode == 201) {
+        final data = await parseJsonAsync(resp.body);
+        return data as Map<String, dynamic>?;
+      }
+      debugPrint('uploadChatFile failed: ${resp.statusCode} ${resp.body}');
+    } catch (e) {
+      debugPrint('uploadChatFile error: $e');
+    }
+    return null;
+  }
+
   /// Money rules set in the panel.
   Future<Map<String, dynamic>?> getEconomyRates() async {
     try {

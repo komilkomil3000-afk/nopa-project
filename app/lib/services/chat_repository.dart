@@ -1,0 +1,476 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io' as io;
+import 'dart:math';
+
+import 'package:flutter/foundation.dart';
+import 'package:socket_io_client/socket_io_client.dart' as sio;
+
+import '../core/constants/api_constants.dart';
+import '../models/chat_models.dart';
+import 'api_service.dart';
+import 'chat_local_store.dart';
+
+/// All chat state: conversations, open message lists, the socket and the send queue.
+class ChatRepository extends ChangeNotifier {
+  ChatRepository._();
+  static final ChatRepository instance = ChatRepository._();
+
+  final HttpApiService _api = HttpApiService();
+  final ChatLocalStore _store = ChatLocalStore();
+  final Random _random = Random();
+  sio.Socket? _socket;
+  String? _userId;
+  bool _flushing = false;
+  Timer? _offlineTimer;
+  bool _offlineRoundRunning = false;
+  final Map<String, int> _watching = {};
+  static const Duration offlinePollInterval = Duration(seconds: 5);
+
+  List<ChatSpace> spaces = [];
+  bool loadingSpaces = false;
+  bool connected = false;
+  final Map<String, List<ChatMessage>> _lists = {};
+  final Map<String, String> _typing = {};
+  final Map<String, Timer> _typingTimers = {};
+  DateTime _lastTypingSent = DateTime.fromMillisecondsSinceEpoch(0);
+
+  static String _key(String spaceId, String? threadRootId) => '$spaceId|${threadRootId ?? ''}';
+
+  List<ChatMessage> messagesOf(String spaceId, {String? threadRootId}) => _lists[_key(spaceId, threadRootId)] ?? const [];
+  String? typingIn(String spaceId) => _typing[spaceId];
+  int get totalUnread => spaces.where((s) => !s.muted).fold(0, (sum, s) => sum + s.unread);
+  ChatSpace? spaceById(String id) {
+    for (final s in spaces) {
+      if (s.id == id) return s;
+    }
+    return null;
+  }
+
+  /// Follows the admin's switch: connects when chat is available to this user, otherwise cleans up.
+  void setEnabled(bool enabled, String userId) {
+    if (enabled && (_socket == null || _userId != userId)) {
+      _userId = userId;
+      _connect();
+      refreshSpaces();
+      _offlineTimer ??= Timer.periodic(offlinePollInterval, (_) => _pollWhileOffline());
+    } else if (!enabled && _socket != null) {
+      reset();
+    }
+  }
+
+  /// Without a socket (a proxy may refuse WebSocket) chat still works, a few seconds behind:
+  /// the conversation on screen and the list are fetched over HTTP, and the queue is retried.
+  Future<void> _pollWhileOffline() async {
+    if (connected || _offlineRoundRunning || _userId == null) return;
+    _offlineRoundRunning = true;
+    try {
+      await refreshSpaces();
+      for (final key in _watching.keys.toList()) {
+        final parts = key.split('|');
+        await loadNewer(parts[0], threadRootId: parts[1].isEmpty ? null : parts[1]);
+      }
+      await flushOutbox();
+    } finally {
+      _offlineRoundRunning = false;
+    }
+  }
+
+  /// The screen showing a conversation says so, so that it is kept fresh without a socket.
+  void watch(String spaceId, {String? threadRootId}) {
+    final key = _key(spaceId, threadRootId);
+    _watching[key] = (_watching[key] ?? 0) + 1;
+  }
+
+  void unwatch(String spaceId, {String? threadRootId}) {
+    final key = _key(spaceId, threadRootId);
+    final count = (_watching[key] ?? 1) - 1;
+    if (count <= 0) {
+      _watching.remove(key);
+    } else {
+      _watching[key] = count;
+    }
+  }
+
+  void reset() {
+    _offlineTimer?.cancel();
+    _offlineTimer = null;
+    _watching.clear();
+    _socket?.dispose();
+    _socket = null;
+    _userId = null;
+    connected = false;
+    spaces = [];
+    _lists.clear();
+    _typing.clear();
+    _store.close();
+    notifyListeners();
+  }
+
+  void _connect() {
+    _socket?.dispose();
+    final socket = sio.io(
+      ApiConstants.mediaBaseUrl,
+      sio.OptionBuilder()
+          // The Dart client has no long-polling transport: see _pollWhileOffline for the fallback
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .enableReconnection()
+          .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(20000)
+          .setAuth({'token': _api.token ?? ''})
+          .build(),
+    );
+    _socket = socket;
+
+    socket.on('ready', (_) {
+      connected = true;
+      notifyListeners();
+      _catchUp();
+    });
+    socket.onDisconnect((_) {
+      connected = false;
+      notifyListeners();
+    });
+    // The access token may have been refreshed since the last attempt
+    socket.onConnectError((_) => socket.auth = {'token': _api.token ?? ''});
+    socket.on('message:new', (data) => _onNew(Map<String, dynamic>.from(data as Map)));
+    socket.on('message:update', (data) => _onUpdate(Map<String, dynamic>.from(data as Map)));
+    socket.on('read', (data) => _onRead(Map<String, dynamic>.from(data as Map)));
+    socket.on('typing', (data) => _onTyping(Map<String, dynamic>.from(data as Map)));
+    socket.connect();
+  }
+
+  /// After a reconnect: what happened meanwhile, then whatever waited in the queue.
+  Future<void> _catchUp() async {
+    await refreshSpaces();
+    for (final key in _lists.keys.toList()) {
+      final parts = key.split('|');
+      await loadNewer(parts[0], threadRootId: parts[1].isEmpty ? null : parts[1]);
+    }
+    await flushOutbox();
+  }
+
+  Future<void> refreshSpaces() async {
+    loadingSpaces = spaces.isEmpty;
+    notifyListeners();
+    final res = await _api.chatCall('GET', '/chat/spaces');
+    loadingSpaces = false;
+    if (res != null && res.statusCode == 200) {
+      final data = jsonDecode(res.body) as List;
+      spaces = data.map((s) => ChatSpace.fromJson(Map<String, dynamic>.from(s as Map))).toList();
+      _sortSpaces();
+    }
+    notifyListeners();
+  }
+
+  void _sortSpaces() {
+    int rank(ChatSpace s) => s.type == 'announcements' ? 0 : 1;
+    spaces.sort((a, b) {
+      final byRank = rank(a).compareTo(rank(b));
+      if (byRank != 0) return byRank;
+      return (b.lastActivity ?? DateTime(2000)).compareTo(a.lastActivity ?? DateTime(2000));
+    });
+  }
+
+  /// Shows the saved messages at once, then replaces them with what the server has.
+  Future<void> open(String spaceId, {String? threadRootId}) async {
+    final key = _key(spaceId, threadRootId);
+    if (_userId != null && !_lists.containsKey(key)) {
+      final saved = await _store.loadMessages(_userId!, spaceId, threadRootId);
+      if (saved.isNotEmpty) {
+        _lists[key] = saved.map(ChatMessage.fromJson).toList();
+        notifyListeners();
+      }
+    }
+    final page = await _fetch(spaceId, threadRootId: threadRootId);
+    if (page == null) return;
+    final pending = (_lists[key] ?? []).where((m) => m.sendState != ChatSendState.sent);
+    _lists[key] = [...page, ...pending];
+    notifyListeners();
+    _save(page);
+  }
+
+  Future<List<ChatMessage>?> _fetch(String spaceId, {String? threadRootId, int? beforeSeq, int? afterSeq}) async {
+    final query = {
+      'threadRootId': ?threadRootId,
+      if (beforeSeq != null) 'beforeSeq': '$beforeSeq',
+      if (afterSeq != null) 'afterSeq': '$afterSeq',
+    };
+    final path = Uri(path: '/chat/spaces/$spaceId/messages', queryParameters: query.isEmpty ? null : query).toString();
+    final res = await _api.chatCall('GET', path);
+    if (res == null || res.statusCode != 200) return null;
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return (data['messages'] as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
+  }
+
+  /// Older messages when the user scrolls up. Returns false at the start of the conversation.
+  Future<bool> loadOlder(String spaceId, {String? threadRootId}) async {
+    final key = _key(spaceId, threadRootId);
+    final current = _lists[key] ?? [];
+    final sent = current.where((m) => m.seq > 0);
+    if (sent.isEmpty) return false;
+    final page = await _fetch(spaceId, threadRootId: threadRootId, beforeSeq: sent.first.seq);
+    if (page == null || page.isEmpty) return false;
+    _lists[key] = [...page, ...current];
+    notifyListeners();
+    return true;
+  }
+
+  Future<void> loadNewer(String spaceId, {String? threadRootId}) async {
+    final key = _key(spaceId, threadRootId);
+    final sent = (_lists[key] ?? []).where((m) => m.seq > 0);
+    if (sent.isEmpty) return open(spaceId, threadRootId: threadRootId);
+    final page = await _fetch(spaceId, threadRootId: threadRootId, afterSeq: sent.last.seq);
+    if (page == null) return;
+    for (final m in page) {
+      _insert(m);
+    }
+    notifyListeners();
+    _save(page);
+  }
+
+  void _save(List<ChatMessage> messages) {
+    if (_userId != null) _store.saveMessages(_userId!, messages.map((m) => m.raw).toList());
+  }
+
+  /// Adds a message to its list, in place of the pending copy when it is the same message.
+  void _insert(ChatMessage message) {
+    final key = _key(message.spaceId, message.threadRootId);
+    final list = _lists[key];
+    if (list == null) return;
+    final at = list.indexWhere((m) => m.id == message.id || (message.clientMessageId != null && m.clientMessageId == message.clientMessageId));
+    if (at >= 0) {
+      list[at] = message;
+    } else {
+      final firstPending = list.indexWhere((m) => m.seq == 0);
+      list.insert(firstPending < 0 ? list.length : firstPending, message);
+    }
+  }
+
+  void _onNew(Map<String, dynamic> json) {
+    final message = ChatMessage.fromJson(json);
+    _insert(message);
+    final space = spaceById(message.spaceId);
+    if (space == null) {
+      refreshSpaces();
+    } else {
+      space.lastSeq = max(space.lastSeq, message.seq);
+      if (message.senderId != _userId) space.unread += 1;
+      if (message.threadRootId == null) {
+        space.preview = message.body.isEmpty ? 'فایل' : message.body;
+        space.previewSender = message.senderName;
+        space.lastActivity = message.createdAt;
+        _sortSpaces();
+      }
+    }
+    _typing.remove(message.spaceId);
+    notifyListeners();
+    _save([message]);
+  }
+
+  void _onUpdate(Map<String, dynamic> json) {
+    final message = ChatMessage.fromJson(json);
+    final list = _lists[_key(message.spaceId, message.threadRootId)];
+    final at = list?.indexWhere((m) => m.id == message.id) ?? -1;
+    if (at >= 0) {
+      list![at] = message;
+      notifyListeners();
+    }
+    _save([message]);
+  }
+
+  void _onRead(Map<String, dynamic> json) {
+    final space = spaceById(json['spaceId']);
+    if (space == null) return;
+    final seq = (json['seq'] as num).toInt();
+    if (json['userId'] == _userId) {
+      space.lastReadSeq = max(space.lastReadSeq, seq);
+      space.unread = max(0, space.lastSeq - space.lastReadSeq);
+    } else {
+      space.peerReadSeq = max(space.peerReadSeq, seq);
+    }
+    notifyListeners();
+  }
+
+  void _onTyping(Map<String, dynamic> json) {
+    final spaceId = json['spaceId'] as String;
+    _typing[spaceId] = json['name'] ?? '';
+    _typingTimers[spaceId]?.cancel();
+    _typingTimers[spaceId] = Timer(const Duration(seconds: 4), () {
+      _typing.remove(spaceId);
+      notifyListeners();
+    });
+    notifyListeners();
+  }
+
+  void sendTyping(String spaceId) {
+    final now = DateTime.now();
+    if (now.difference(_lastTypingSent).inSeconds < 3) return;
+    _lastTypingSent = now;
+    _socket?.emit('typing', spaceId);
+  }
+
+  void markRead(String spaceId) {
+    final space = spaceById(spaceId);
+    if (space == null || space.lastSeq <= space.lastReadSeq) return;
+    final seq = space.lastSeq;
+    space.lastReadSeq = seq;
+    space.unread = 0;
+    notifyListeners();
+    _api.chatCall('POST', '/chat/spaces/$spaceId/read', body: {'seq': seq});
+  }
+
+  String _newClientId() => '${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 30)}';
+
+  /// Shows the message immediately, queues it on the device and sends it.
+  Future<void> send({
+    required String spaceId,
+    required Map<String, dynamic> sender,
+    String body = '',
+    String? threadRootId,
+    ChatMessage? replyTo,
+    List<String> mentions = const [],
+    List<ChatAttachment> attachments = const [],
+  }) async {
+    final clientId = _newClientId();
+    final payload = <String, dynamic>{
+      'body': body,
+      'clientMessageId': clientId,
+      'threadRootId': ?threadRootId,
+      if (replyTo != null) 'replyToId': replyTo.id,
+      if (mentions.isNotEmpty) 'mentions': mentions,
+      if (attachments.isNotEmpty) 'attachmentIds': attachments.map((a) => a.id).toList(),
+    };
+    final pending = ChatMessage.fromJson({
+      'id': 'pending-$clientId',
+      'spaceId': spaceId,
+      'seq': 0,
+      'kind': attachments.isEmpty ? 'text' : 'file',
+      'body': body,
+      'threadRootId': threadRootId,
+      'clientMessageId': clientId,
+      'createdAt': DateTime.now().toIso8601String(),
+      'sender': sender,
+      'attachments': attachments.map((a) => {'id': a.id, 'name': a.name, 'kind': a.kind, 'size': a.size, 'url': a.url}).toList(),
+      if (replyTo != null) 'replyTo': {'id': replyTo.id, 'senderName': replyTo.senderName, 'body': replyTo.body},
+    })
+      ..sendState = ChatSendState.sending;
+    _lists.putIfAbsent(_key(spaceId, threadRootId), () => []).add(pending);
+    notifyListeners();
+
+    if (_userId != null) await _store.addToOutbox(_userId!, clientId, spaceId, payload);
+    await _deliver(spaceId, clientId, payload, threadRootId);
+  }
+
+  Future<void> _deliver(String spaceId, String clientId, Map<String, dynamic> payload, String? threadRootId) async {
+    final res = await _api.chatCall('POST', '/chat/spaces/$spaceId/messages', body: payload);
+    final list = _lists[_key(spaceId, threadRootId)];
+    final at = list?.indexWhere((m) => m.clientMessageId == clientId) ?? -1;
+
+    if (res != null && (res.statusCode == 200 || res.statusCode == 201)) {
+      if (_userId != null) await _store.removeFromOutbox(_userId!, clientId);
+      final message = ChatMessage.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+      _insert(message);
+      final space = spaceById(spaceId);
+      if (space != null) {
+        space.lastSeq = max(space.lastSeq, message.seq);
+        space.lastReadSeq = max(space.lastReadSeq, message.seq);
+      }
+      _save([message]);
+    } else {
+      // Refused by the server: retrying cannot help, so it leaves the queue. A network failure stays in it.
+      final refused = res != null && res.statusCode >= 400 && res.statusCode < 500 && res.statusCode != 429;
+      if (refused && _userId != null) await _store.removeFromOutbox(_userId!, clientId);
+      if (at >= 0) list![at].sendState = ChatSendState.failed;
+    }
+    notifyListeners();
+  }
+
+  Future<void> retry(ChatMessage message) async {
+    final clientId = message.clientMessageId;
+    if (clientId == null || _userId == null) return;
+    message.sendState = ChatSendState.sending;
+    notifyListeners();
+    await _deliver(message.spaceId, clientId, {
+      'body': message.body,
+      'clientMessageId': clientId,
+      if (message.threadRootId != null) 'threadRootId': message.threadRootId,
+      if (message.replyToId != null) 'replyToId': message.replyToId,
+      if (message.attachments.isNotEmpty) 'attachmentIds': message.attachments.map((a) => a.id).toList(),
+    }, message.threadRootId);
+  }
+
+  /// Sends what was written while offline, including after the app was closed.
+  Future<void> flushOutbox() async {
+    if (_flushing || _userId == null) return;
+    _flushing = true;
+    try {
+      for (final item in await _store.loadOutbox(_userId!)) {
+        final payload = Map<String, dynamic>.from(item['payload'] as Map);
+        await _deliver(item['spaceId'] as String, item['clientId'] as String, payload, payload['threadRootId'] as String?);
+      }
+    } finally {
+      _flushing = false;
+    }
+  }
+
+  Future<ChatAttachment?> upload(io.File file, String spaceId) async {
+    final data = await _api.uploadChatFile(file, spaceId);
+    if (data == null) return null;
+    return ChatAttachment(
+      id: data['id'],
+      name: data['name'] ?? 'فایل',
+      kind: data['kind'] ?? 'file',
+      size: await file.length(),
+      url: data['url'] ?? '',
+    );
+  }
+
+  Future<bool> edit(ChatMessage message, String body) => _simple('PATCH', '/chat/messages/${message.id}', {'body': body});
+  Future<bool> delete(ChatMessage message) => _simple('DELETE', '/chat/messages/${message.id}', null);
+  Future<bool> react(ChatMessage message, String type) => _simple('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+  Future<bool> togglePin(ChatMessage message) => _simple('POST', '/chat/messages/${message.id}/pin', {});
+
+  Future<bool> setMuted(ChatSpace space, bool muted) async {
+    final ok = await _simple('POST', '/chat/spaces/${space.id}/mute', {'muted': muted});
+    if (ok) {
+      space.muted = muted;
+      notifyListeners();
+    }
+    return ok;
+  }
+
+  Future<bool> _simple(String method, String path, Map<String, dynamic>? body) async {
+    final res = await _api.chatCall(method, path, body: body);
+    return res != null && res.statusCode < 300;
+  }
+
+  Future<List<ChatMessage>> list(String path) async {
+    final res = await _api.chatCall('GET', path);
+    if (res == null || res.statusCode != 200) return [];
+    return (jsonDecode(res.body) as List).map((m) => ChatMessage.fromJson(Map<String, dynamic>.from(m as Map))).toList();
+  }
+
+  Future<List<ChatMessage>> pins(String spaceId) => list('/chat/spaces/$spaceId/pins');
+  Future<List<ChatMessage>> search(String spaceId, String query) =>
+      list(Uri(path: '/chat/spaces/$spaceId/search', queryParameters: {'q': query}).toString());
+
+  Future<List<Map<String, dynamic>>> _people(String path) async {
+    final res = await _api.chatCall('GET', path);
+    if (res == null || res.statusCode != 200) return [];
+    return (jsonDecode(res.body) as List).map((u) => Map<String, dynamic>.from(u as Map)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> people(String spaceId) => _people('/chat/spaces/$spaceId/people');
+  Future<List<Map<String, dynamic>>> contacts() => _people('/chat/contacts');
+
+  /// Opens a private conversation and returns it.
+  Future<ChatSpace?> openDirect(String userId) async {
+    final res = await _api.chatCall('POST', '/chat/direct', body: {'userId': userId});
+    if (res == null || res.statusCode != 200) return null;
+    final id = (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
+    await refreshSpaces();
+    return spaceById(id);
+  }
+}

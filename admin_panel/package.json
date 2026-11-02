@@ -32,6 +32,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
     "pdfmake": "^0.3.11",
+    "socket.io": "^4.8.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

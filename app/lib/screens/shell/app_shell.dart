@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
+import 'package:nopa_app/services/chat_repository.dart';
 import 'package:nopa_app/utils/asset_precache_helper.dart';
 import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/widgets/custom_drawer.dart';
@@ -101,6 +102,8 @@ class MainScreenState extends State<AppShell> {
     final repository = Provider.of<AppRepository>(context);
     final userRole = repository.currentUser.role;
     final chatEnabled = repository.currentUser.chatEnabled;
+    final userId = repository.currentUser.id;
+    WidgetsBinding.instance.addPostFrameCallback((_) => ChatRepository.instance.setEnabled(chatEnabled, userId));
 
     if (userRole.isChannelManager) return const ChannelManagerShell();
 
@@ -197,13 +200,17 @@ class MainScreenState extends State<AppShell> {
             ),
           ),
         ),
-        bottomNavigationBar: CustomBottomNavBar(
-          currentIndex: _currentIndex,
-          role: userRole,
-          chatEnabled: chatEnabled,
-          onTap: (index) {
-            setIndex(index);
-          },
+        bottomNavigationBar: ListenableBuilder(
+          listenable: ChatRepository.instance,
+          builder: (context, _) => CustomBottomNavBar(
+            currentIndex: _currentIndex,
+            role: userRole,
+            chatEnabled: chatEnabled,
+            chatUnread: ChatRepository.instance.totalUnread,
+            onTap: (index) {
+              setIndex(index);
+            },
+          ),
         ),
        ),
       ),

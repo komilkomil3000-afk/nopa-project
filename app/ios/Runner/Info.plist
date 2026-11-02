@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>برای ضبط و ارسال پیام صوتی در چت نپا</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>برای ارسال تصویر در چت نپا</string>
 </dict>
 </plist>

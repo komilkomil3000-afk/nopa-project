@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import app from './app';
 import prisma from './config/db';
 import { assertSecretsConfigured } from './config/secrets';
+import { attachChatSocket, closeChatSocket } from './modules/chat/realtime';
 
 // Load Environment Config
 dotenv.config();
@@ -53,6 +54,8 @@ const server = app.listen(Number(PORT), '0.0.0.0', () => {
   setInterval(runAuditLogCleanup, 3600000);
 });
 
+attachChatSocket(server);
+
 // Graceful shutdown (pm2 restart sends SIGINT/SIGTERM): stop accepting, finish in-flight, close DB
 let shuttingDown = false;
 function shutdown(signal: string) {
@@ -61,6 +64,7 @@ function shutdown(signal: string) {
   console.log(`[Shutdown] ${signal} received, closing server...`);
   const force = setTimeout(() => process.exit(1), 10000);
   force.unref();
+  closeChatSocket();
   server.close(async () => {
     try { await prisma.$disconnect(); } catch (e) { console.error(e); }
     process.exit(0);

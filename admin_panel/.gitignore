@@ -15,6 +15,7 @@ prisma/dev.db-shm
 prisma/dev.db-wal
 
 # Uploads (ignore uploaded content, preserve folder)
+chat-files/
 uploads/*
 !uploads/.gitkeep
 

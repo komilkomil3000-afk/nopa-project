@@ -14,6 +14,7 @@ class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final UserRole role;
   final bool chatEnabled;
+  final int chatUnread;
   final Function(int) onTap;
 
   const CustomBottomNavBar({
@@ -21,6 +22,7 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.currentIndex,
     required this.role,
     this.chatEnabled = false,
+    this.chatUnread = 0,
     required this.onTap,
   });
 
@@ -105,7 +107,18 @@ class CustomBottomNavBar extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildNavIcon(item, isSelected),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildNavIcon(item, isSelected),
+                        if (index == AppTabs.chat && chatUnread > 0)
+                          const Positioned(
+                            top: -2,
+                            right: -4,
+                            child: CircleAvatar(radius: 4.5, backgroundColor: Color(0xFFDFB690)),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       item.label,
