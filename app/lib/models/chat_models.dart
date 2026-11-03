@@ -140,6 +140,8 @@ class ChatMessage {
   final String? topicId;
   final String? topicStatus;
   final bool best;
+  /// The mentor chose to wear the mentor's badge on this message.
+  final bool mentorMark;
   final List<Map<String, dynamic>> tags;
   final List<Map<String, dynamic>> pollVotes;
   final Map<String, dynamic> raw;
@@ -175,6 +177,7 @@ class ChatMessage {
     required this.topicId,
     required this.topicStatus,
     required this.best,
+    this.mentorMark = false,
     required this.tags,
     required this.pollVotes,
     required this.raw,
@@ -218,6 +221,7 @@ class ChatMessage {
       topicId: topic?['id'],
       topicStatus: topic?['status'],
       best: json['best'] == true,
+      mentorMark: json['mentorMark'] == true,
       tags: maps('tags'),
       pollVotes: maps('pollVotes'),
       raw: json,

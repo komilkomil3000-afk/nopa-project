@@ -571,7 +571,14 @@ class ChatRepository extends ChangeNotifier {
 
   Future<bool> edit(ChatMessage message, String body) => _apply('PATCH', '/chat/messages/${message.id}', {'body': body});
   Future<bool> delete(ChatMessage message) => _apply('DELETE', '/chat/messages/${message.id}', null);
-  Future<bool> react(ChatMessage message, String type) => _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+  /// One reaction per person: choosing another takes the first one back (the server toggles by type).
+  Future<bool> react(ChatMessage message, String type) async {
+    final mine = message.reactions.where((r) => r['userId'] == _userId).map((r) => r['type'] as String).toSet();
+    for (final other in mine.where((t) => t != type)) {
+      await _apply('POST', '/chat/messages/${message.id}/reactions', {'type': other});
+    }
+    return _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+  }
   Future<bool> togglePin(ChatMessage message) => _apply('POST', '/chat/messages/${message.id}/pin', {});
 
   /// Like [_simple], but the message the server answers with replaces the one on screen at once,

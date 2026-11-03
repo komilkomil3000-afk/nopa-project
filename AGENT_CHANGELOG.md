@@ -4348,3 +4348,42 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `npx prisma validate`, `npx tsc --noEmit` (admin_panel/)
 - **Status:** Completed
+
+### [2026-11-03 16:00] - Agent 2 (Flutter App & LMS Specialist) / Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `app/lib/widgets/swipe_category_view.dart` (Created)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/widgets/app_scaffold.dart` (Modified)
+- **Description of Changes:**
+  - Sideways swipe between challenge categories (student: شخصی/گروهی/میان گروهی; mentor: درون گروهی/میان گروهی), with a slide-fade on the list
+  - AppScaffold's bottom bar (used by every pushed sub-screen) now shows chat instead of profile when chat is enabled, with the unread dot, like the main shell
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (app/)
+- **Status:** Completed
+
+### [2026-11-03 17:00] - Agent 2 (Flutter App & LMS Specialist) / Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `app/lib/widgets/swipe_category_view.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/screens/chat/chat_message_bubble.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `admin_panel/src/modules/chat/service.ts` (Modified)
+  - `admin_panel/src/modules/chat/topics.ts` (Modified)
+- **Description of Changes:**
+  - Swipe between challenge categories now works anywhere on the challenges page (raw pointer tracking), except the banner
+  - Chat filter tab that is open is scaled up and bolder
+  - Pencil button asks first: message to mentor / message to support
+  - Mentor blue badge no longer automatic: a mentor adds/removes it per own message from the message menu (new 'mentor' mark, serialized as mentorMark)
+  - react() removes the person's previous reaction before adding a new one (works with old and new server)
+  - Deleted messages are hidden from the conversation
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (app/), `npx tsc --noEmit` (admin_panel/)
+- **Status:** Completed

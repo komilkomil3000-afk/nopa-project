@@ -145,6 +145,8 @@ export function serializeMessage(m: MessageRow) {
     meta: m.meta,
     stationId: m.stationId,
     best: m.marks.includes('best'),
+    // The mentor chose to wear the mentor's badge on this message
+    mentorMark: m.marks.includes('mentor'),
     // Replies under a message: a challenge always has them; elsewhere a moderator opens them
     threadOpen: m.marks.includes('thread') || !!m.topic || m.threadReplies > 0,
     topic: m.topic,
