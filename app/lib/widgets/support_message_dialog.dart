@@ -254,7 +254,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                             onPressed: _submitRequest,
                             child: Text(
                               'ارسال',
-                              style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
+                              style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                             ),
                           ),
 
@@ -263,7 +263,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'لغو',
-                        style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                        style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                       ),
                     ),
                   ],

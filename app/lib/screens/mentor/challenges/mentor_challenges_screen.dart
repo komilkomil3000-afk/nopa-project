@@ -299,7 +299,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                             Expanded(
                               child: Text(
                                 challenge['title'] ?? '',
-                                style: AppTypography.h3.copyWith(color: Color(0xFFD6D3E6)),
+                                style: AppTypography.h3Strong.copyWith(color: Color(0xFFD6D3E6)),
                               ),
                             ),
                           ],
@@ -360,7 +360,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                       // Option Number on Right in RTL
                                       Text(
                                         optionNumber,
-                                        style: AppTypography.h3.copyWith(color: isSelected
+                                        style: AppTypography.h3Strong.copyWith(color: isSelected
                                               ? const Color(0xFFDE9959)
                                               : const Color(0xFF8E88B0)),
                                       ),
@@ -535,7 +535,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 },
                                 child: Text(
                                   'ارسال',
-                                  style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
+                                  style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                                 ),
                               ),
 
@@ -544,7 +544,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                                 onPressed: () => Navigator.pop(context),
                                 child: Text(
                                   'لغو',
-                                  style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                                  style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                                 ),
                               ),
                             ],
@@ -1806,7 +1806,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ),
                               child: Text(
                                 'ارسال',
-                                style: AppTypography.h3.copyWith(color: Color(0xFFE5A855)),
+                                style: AppTypography.h3Strong.copyWith(color: Color(0xFFE5A855)),
                               ),
                             ),
 
@@ -1818,7 +1818,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                               ),
                               child: Text(
                                 'لغو',
-                                style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                                style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                               ),
                             ),
                           ],
@@ -1874,7 +1874,7 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
   Widget _buildContactDialogValueText(String value) {
     return Text(
       value,
-      style: AppTypography.h3,
+      style: AppTypography.h3Strong,
     );
   }
 

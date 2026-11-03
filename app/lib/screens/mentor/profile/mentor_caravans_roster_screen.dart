@@ -386,7 +386,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       const Icon(Icons.phone_rounded, color: Color(0xFF8B88E8), size: 20),
                       Text(
                         member.phoneNumber,
-                        style: AppTypography.h3.copyWith(letterSpacing: 1),
+                        style: AppTypography.h3Strong.copyWith(letterSpacing: 1),
                       ),
                     ],
                   ),
@@ -692,7 +692,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                                 children: [
                                   Text(
                                     c.name,
-                                    style: AppTypography.h3.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
+                                    style: AppTypography.h3Strong.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(

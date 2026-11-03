@@ -534,7 +534,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                 Text(
                   ordinalTitle,
                   textAlign: TextAlign.right,
-                  style: AppTypography.h2,
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(height: 4),
 
@@ -715,7 +715,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         const Text(
           'نگارستان منزلگاه',
           textAlign: TextAlign.right,
-          style: AppTypography.h3,
+          style: AppTypography.h3Strong,
         ),
         const SizedBox(height: 10),
 

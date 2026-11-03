@@ -4222,3 +4222,79 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze run from app/ : 0 issues; flutter test: 32 passed (two consecutive full runs; one earlier run had a transient widget_test.dart load failure that did not reproduce); microphone recording itself not testable headless and not run on a device; dart format NOT run
 - **Status:** Completed
+
+### [2026-11-03 14:39] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+- **Description of Changes:**
+  - Market member-report names -> h3 (same token as challenge card and session titles)
+  - mentor quiz report title -> h3 to mirror student class quiz headers. Audit: mentor challenge/session/part/class tokens already identical to student counterparts
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:43] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+- **Description of Changes:**
+  - Scaled mentor typography down: challenge card titles -> bodyMedium w600
+  - class/report headers h2/h1 -> h3 (height 1.25)
+  - session titles h3 height 1.25 single-line
+  - quiz/part labels -> caption muted single-line ellipsis
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 14:54] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+- **Description of Changes:**
+  - Token sizes reduced: h1 20->18, h2 16->15, h3 14->13. Class title (student), asset pill label/value (student home, mentor home, market) moved to h3
+  - mentor challenge titles back to h3 so challenge/session/member-name/class-title/asset labels share one token
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed
+
+### [2026-11-03 15:02] - Flutter UI Typography Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `GENT_CHANGELOG.md` (Modified)
+  - `app/lib/core/theme/app_typography.dart` (Modified)
+  - `app/lib/screens/auth/login_screen.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/screens/mentor/academy/mentor_station_class1_screen.dart` (Modified)
+  - `app/lib/screens/mentor/challenges/mentor_challenges_screen.dart` (Modified)
+  - `app/lib/screens/mentor/home/mentor_home_screen.dart` (Modified)
+  - `app/lib/screens/mentor/profile/mentor_caravans_roster_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class1_screen.dart` (Modified)
+  - `app/lib/screens/student/academy/student_class2_screen.dart` (Modified)
+  - `app/lib/screens/student/challenges/student_challenges_screen.dart` (Modified)
+  - `app/lib/screens/student/home/student_home_screen.dart` (Modified)
+  - `app/lib/screens/student/profile/student_edit_profile_screen.dart` (Modified)
+  - `app/lib/widgets/challenge_submission_dialog.dart` (Modified)
+  - `app/lib/widgets/jarchi_item.dart` (Modified)
+  - `app/lib/widgets/nopa_modal_shell.dart` (Modified)
+  - `app/lib/widgets/support_message_dialog.dart` (Modified)
+- **Description of Changes:**
+  - h3 reduced to 12.5sp w400 (same look as station names on home)
+  - added h3Strong (13sp w600, previous h3) kept on the نگارستان header, numbered badges and dialog/bottom-sheet sites (35 usages)
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (app/): No issues found
+- **Status:** Completed

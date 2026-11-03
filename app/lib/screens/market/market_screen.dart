@@ -342,7 +342,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       // Left Value in RTL (Second child)
                       Text(
                         '${amountStr.toPersianDigits()} $_sourceAsset',
-                        style: AppTypography.h3.copyWith(color: Color(0xFFE2E0F0)),
+                        style: AppTypography.h3Strong.copyWith(color: Color(0xFFE2E0F0)),
                       ),
                     ],
                   ),
@@ -375,7 +375,7 @@ class _MarketScreenState extends State<MarketScreen> {
                       // Left Value in RTL (Second child)
                       Text(
                         '${resultStr.toPersianDigits()} $_targetAsset',
-                        style: AppTypography.h3.copyWith(color: Color(0xFFE2E0F0)),
+                        style: AppTypography.h3Strong.copyWith(color: Color(0xFFE2E0F0)),
                       ),
                     ],
                   ),
@@ -418,7 +418,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         },
                         child: Text(
                           'ارسال',
-                          style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
+                          style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                         ),
                       ),
 
@@ -427,7 +427,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         onPressed: () => Navigator.pop(ctx),
                         child: Text(
                           'لغو',
-                          style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                          style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                         ),
                       ),
                     ],
@@ -991,7 +991,7 @@ class _MarketScreenState extends State<MarketScreen> {
                           const SizedBox(width: 8),
                           Text(
                             name,
-                            style: AppTypography.bodyLarge,
+                            style: AppTypography.h3,
                           ),
                         ],
                       ),
@@ -1477,7 +1477,7 @@ class _MarketScreenState extends State<MarketScreen> {
             ),
             child: Text(
               value,
-              style: AppTypography.h3,
+              style: AppTypography.h3Strong,
             ),
           ),
         ),
@@ -1558,7 +1558,7 @@ class _MarketScreenState extends State<MarketScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: AppTypography.h3,
+                      style: AppTypography.h3Strong,
                     ),
                   ),
                 ),
@@ -1572,7 +1572,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 // Left: Value
                 Text(
                   value,
-                  style: AppTypography.h2,
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 2),
               ],

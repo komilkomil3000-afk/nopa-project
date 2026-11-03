@@ -379,7 +379,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                                 children: [
                                   Text(
                                     c.name,
-                                    style: AppTypography.h3.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
+                                    style: AppTypography.h3Strong.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -551,7 +551,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: AppTypography.h3,
+                      style: AppTypography.h3Strong,
                     ),
                   ),
                 ),
@@ -565,7 +565,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 // Left: Value
                 Text(
                   value,
-                  style: AppTypography.h2,
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 2),
               ],

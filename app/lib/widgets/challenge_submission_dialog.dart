@@ -448,7 +448,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
               children: [
                 Text(
                   (index + 1).toString().toPersianDigits(),
-                  style: AppTypography.h3.copyWith(color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF8E88B0)),
+                  style: AppTypography.h3Strong.copyWith(color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF8E88B0)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -646,7 +646,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
       onPressed: _sending ? null : () => Navigator.pop(context),
       child: Text(
         _readOnly ? 'بستن' : 'لغو',
-        style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+        style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
       ),
     );
     if (_readOnly) return Center(child: close);
@@ -664,7 +664,7 @@ class _ChallengeSubmissionDialogState extends State<ChallengeSubmissionDialog> {
                 )
               : Text(
                   widget.status == 'rejected' ? 'ارسال مجدد' : 'ارسال',
-                  style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
+                  style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCamel),
                 ),
         ),
         close,

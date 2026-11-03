@@ -479,7 +479,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   Text(
                     ordinalTitle,
                     textAlign: TextAlign.right,
-                    style: AppTypography.h2,
+                    style: AppTypography.h3.copyWith(height: 1.25),
                   ),
                   const SizedBox(height: 4),
 
@@ -731,7 +731,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           const Text(
             'نگارستان منزلگاه',
             textAlign: TextAlign.right,
-            style: AppTypography.h3,
+            style: AppTypography.h3Strong,
           ),
           const SizedBox(height: 10),
 
@@ -899,7 +899,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     return Center(
       child: Text(
         'گزارش آموزشی اعضا',
-        style: AppTypography.h1.copyWith(letterSpacing: 0.5),
+        style: AppTypography.h3.copyWith(height: 1.25),
       ),
     );
   }
@@ -1253,7 +1253,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 child: Text(
                   session['title']?.toString() ??
                       'جلسه ${(idx + 1).toPersian()}',
-                  style: AppTypography.h3.copyWith(color: Color(0xFFEDE9F6)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.h3.copyWith(height: 1.25, color: Color(0xFFEDE9F6)),
                 ),
               ),
               Text(
@@ -1294,7 +1296,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               clip['title']?.toString() ?? 'پارت ${(index + 1).toPersian()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
+              style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
             ),
           ),
           const SizedBox(width: 8),
@@ -1402,7 +1404,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 Text(
                   quiz['title']?.toString() ??
                       'آزمون شماره ${(idx + 1).toPersian()}',
-                  style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                 ),
                 if (subtitle.isNotEmpty)
                   Padding(
@@ -1656,7 +1660,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         ),
                         child: Text(
                           name,
-                          style: AppTypography.h3,
+                          style: AppTypography.h3Strong,
                         ),
                       ),
                     ),

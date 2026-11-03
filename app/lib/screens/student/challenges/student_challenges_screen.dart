@@ -1068,7 +1068,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               ),
                               child: Text(
                                 'ارسال',
-                                style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                                style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                               ),
                             ),
 
@@ -1080,7 +1080,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               ),
                               child: Text(
                                 'لغو',
-                                style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                                style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                               ),
                             ),
                           ],
@@ -1136,7 +1136,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   Widget _buildContactDialogValueText(String value) {
     return Text(
       value,
-      style: AppTypography.h3,
+      style: AppTypography.h3Strong,
     );
   }
 

@@ -330,7 +330,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: AppTypography.h3,
+                      style: AppTypography.h3Strong,
                     ),
                   ),
                 ),
@@ -338,13 +338,13 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                 // Middle: Label (زریک, درفش, نخ, فرش)
                 Text(
                   label,
-                  style: AppTypography.h2,
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 16),
                 // Left: Value (0, 100, etc.)
                 Text(
                   value,
-                  style: AppTypography.h2,
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 2),
               ],

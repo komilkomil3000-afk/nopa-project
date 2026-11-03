@@ -22,23 +22,26 @@ class AppTypography {
   static const String logoFontFamily = 'ChochoAura';
   static const TextStyle logo = TextStyle(fontFamily: logoFontFamily, fontSize: 21.0, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: colorWhite);
 
-  // Heading 1 — ~20sp, w800
-  static const TextStyle h1 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 20.0, fontWeight: FontWeight.w800, height: 1.3, color: colorWhite);
-  static const TextStyle h1Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 20.0, fontWeight: FontWeight.w800, height: 1.3, color: colorGold);
-  static const TextStyle h1Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 20.0, fontWeight: FontWeight.w800, height: 1.3, color: colorMuted);
-  static const TextStyle h1Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 20.0, fontWeight: FontWeight.w800, height: 1.3, color: colorDark);
+  // Heading 1 — 18sp, w800
+  static const TextStyle h1 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 18.0, fontWeight: FontWeight.w800, height: 1.3, color: colorWhite);
+  static const TextStyle h1Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 18.0, fontWeight: FontWeight.w800, height: 1.3, color: colorGold);
+  static const TextStyle h1Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 18.0, fontWeight: FontWeight.w800, height: 1.3, color: colorMuted);
+  static const TextStyle h1Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 18.0, fontWeight: FontWeight.w800, height: 1.3, color: colorDark);
 
-  // Heading 2 — 16sp, w700
-  static const TextStyle h2 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.3, color: colorWhite);
-  static const TextStyle h2Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.3, color: colorGold);
-  static const TextStyle h2Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.3, color: colorMuted);
-  static const TextStyle h2Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 16.0, fontWeight: FontWeight.w700, height: 1.3, color: colorDark);
+  // Heading 2 — 15sp, w700
+  static const TextStyle h2 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 15.0, fontWeight: FontWeight.w700, height: 1.3, color: colorWhite);
+  static const TextStyle h2Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 15.0, fontWeight: FontWeight.w700, height: 1.3, color: colorGold);
+  static const TextStyle h2Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 15.0, fontWeight: FontWeight.w700, height: 1.3, color: colorMuted);
+  static const TextStyle h2Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 15.0, fontWeight: FontWeight.w700, height: 1.3, color: colorDark);
 
-  // Heading 3 — 14sp, w600
-  static const TextStyle h3 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 14.0, fontWeight: FontWeight.w600, height: 1.3, color: colorWhite);
-  static const TextStyle h3Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 14.0, fontWeight: FontWeight.w600, height: 1.3, color: colorGold);
-  static const TextStyle h3Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 14.0, fontWeight: FontWeight.w600, height: 1.3, color: colorMuted);
-  static const TextStyle h3Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 14.0, fontWeight: FontWeight.w600, height: 1.3, color: colorDark);
+  // Heading 3 — 12.5sp, w400 (same look as station names on home)
+  static const TextStyle h3 = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.3, color: colorWhite);
+  static const TextStyle h3Gold = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.3, color: colorGold);
+  static const TextStyle h3Muted = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.3, color: colorMuted);
+  static const TextStyle h3Dark = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.3, color: colorDark);
+
+  // Heading 3 Strong — previous h3 look (13sp, w600): section headers inside dialogs, numbered badges, "نگارستان" header
+  static const TextStyle h3Strong = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 13.0, fontWeight: FontWeight.w600, height: 1.3, color: colorWhite);
 
   // Body 1 — 13.5sp, w500
   static const TextStyle bodyLarge = TextStyle(fontFamily: fontFamily, fontFamilyFallback: fontFamilyFallback, fontSize: 13.5, fontWeight: FontWeight.w500, height: 1.4, color: colorWhite);

@@ -1405,7 +1405,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                         children: [
                           Text(
                             'آزمون ${_toFarsiDigit(partIndex + 1)}ام از پارت ${_toFarsiDigit(partIndex + 1)}ام',
-                            style: AppTypography.h3.copyWith(color: Color(0xFFFBE4C8)),
+                            style: AppTypography.h3Strong.copyWith(color: Color(0xFFFBE4C8)),
                           ),
                           Text(
                             'سوال ${_toFarsiDigit(currentQuestionIndex + 1)} از ${_toFarsiDigit(quizQuestions.length)}',
@@ -1523,7 +1523,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                                   onPressed: () => Navigator.pop(context),
                                   child: Text(
                                     'بستن',
-                                    style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
+                                    style: AppTypography.h3Strong.copyWith(color: AppColors.buttonCancelPurple),
                                   ),
                                 ),
                               ),

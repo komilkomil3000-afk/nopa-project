@@ -190,7 +190,7 @@ class _ActionButton extends StatelessWidget {
               : Text(
                   action.label,
                   textAlign: TextAlign.center,
-                  style: AppTypography.h3.copyWith(color: color),
+                  style: AppTypography.h3Strong.copyWith(color: color),
                 ),
         ),
       ),

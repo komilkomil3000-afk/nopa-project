@@ -85,7 +85,7 @@ class JarchiItem extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       title, 
-                      style: AppTypography.h3,
+                      style: AppTypography.h3Strong,
                     ),
                     const SizedBox(height: 4),
                     Text(

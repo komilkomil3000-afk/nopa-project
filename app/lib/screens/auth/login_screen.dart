@@ -271,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         ),
                         trailing: Text(
                           item.code,
-                          style: AppTypography.h3.copyWith(color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D)),
+                          style: AppTypography.h3Strong.copyWith(color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D)),
                         ),
                         onTap: () {
                           setState(() {

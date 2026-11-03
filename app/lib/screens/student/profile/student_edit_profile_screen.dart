@@ -896,7 +896,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   children: [
                     Text(
                       'تاریخ تولد',
-                      style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
+                      style: AppTypography.h3Strong.copyWith(color: AppColors.accentGoldEnd),
                     ),
                     SizedBox(
                       height: 170,
