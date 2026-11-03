@@ -14,7 +14,18 @@ import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/safe_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const Map<String, String> tierLabels = {'full': 'فعال کامل', 'partner': 'همراه', 'minimal': 'حداقلی', 'inactive': 'غیرفعال'};
+/// How much a person took part, as the mentor judges it: a name that stands for a fixed percentage.
+const Map<String, ({String label, int percent})> participationLevels = {
+  'flagbearer': (label: 'پرچمدار', percent: 100),
+  'active': (label: 'فعال', percent: 75),
+  'semi': (label: 'نیمه‌فعال', percent: 50),
+  'companion': (label: 'همراه', percent: 25),
+  'tired': (label: 'خسته', percent: 0),
+};
+final Map<String, String> tierLabels = {for (final e in participationLevels.entries) e.key: '${e.value.label} (${e.value.percent}٪)'};
+
+/// The share of an amount a status earns, always rounded up to a whole unit.
+int participationShare(int amount, String status) => ((amount * (participationLevels[status]?.percent ?? 0)) / 100).ceil();
 
 InputDecoration chatField(String hint) => InputDecoration(
       hintText: hint,
@@ -62,7 +73,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   Map<String, dynamic>? _evaluation;
   Map<String, dynamic>? _report;
   Map<String, dynamic>? _insight;
-  final Map<String, int> _finals = {};
+  final Map<String, String> _statuses = {};
   final Map<String, TextEditingController> _reasons = {};
   bool _busy = false;
   bool _loading = true;
@@ -95,7 +106,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           _evaluation = Map<String, dynamic>.from(evaluation.data as Map);
           for (final row in _rows) {
             final id = row['userId'] as String;
-            _finals[id] = (row['finalNakh'] as num).toInt();
+            _statuses[id] = row['status']?.toString() ?? 'tired';
             _reasons.putIfAbsent(id, () => TextEditingController(text: row['reason'] ?? ''));
           }
         }
@@ -128,7 +139,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
   Future<void> _saveAndPay() async {
     final rows = _rows
         .where((r) => r['paid'] != true)
-        .map((r) => {'userId': r['userId'], 'finalNakh': _finals[r['userId']], 'reason': _reasons[r['userId']]?.text})
+        .map((r) => {'userId': r['userId'], 'status': _statuses[r['userId']], 'reason': _reasons[r['userId']]?.text})
         .toList();
     setState(() => _busy = true);
     final saved = await _chat.api('PUT', '/chat/topics/$_topicId/evaluation', body: {'rows': rows});
@@ -184,7 +195,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('${report['finalNakh']} کلاف', style: ChatTheme.title.copyWith(color: ChatTheme.accent, fontSize: 18)),
-          Text('سهم مشارکت شما: ${report['share']}٪', style: ChatTheme.body),
+          if (participationLevels[report['status']] != null)
+            Text('وضعیت مشارکت شما: ${participationLevels[report['status']]!.label} (${participationLevels[report['status']]!.percent}٪)', style: ChatTheme.body),
           const SizedBox(height: 6),
           Text('ارتباط با موضوع: ${criteria['relevance']}  ·  کیفیت: ${criteria['quality']}  ·  همکاری: ${criteria['collaboration']}  ·  ابتکار: ${criteria['initiative']}', style: ChatTheme.caption),
           if ((report['reason'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('توضیح راهبر: ${report['reason']}', style: ChatTheme.caption)),
@@ -252,7 +264,8 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
     final evidence = (row['evidenceMessages'] as List?) ?? const [];
     final max = (_evaluation?['topic']?['max'] as num?)?.toInt() ?? 10;
     final paid = row['paid'] == true;
-    final value = _finals[id] ?? 0;
+    final level = _statuses[id] ?? 'tired';
+    final value = paid ? (row['finalNakh'] as num).toInt() : participationShare(max, level);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -291,16 +304,31 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
               ]),
             ),
           const SizedBox(height: 6),
+          Text('وضعیت مشارکت', style: ChatTheme.caption),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final e in participationLevels.entries)
+                ChoiceChip(
+                  label: Text('${e.value.label} ${e.value.percent}٪', style: ChatTheme.caption.copyWith(color: level == e.key ? ChatTheme.surfaceBottom : ChatTheme.text)),
+                  selected: level == e.key,
+                  showCheckmark: false,
+                  selectedColor: ChatTheme.accent,
+                  backgroundColor: Colors.transparent,
+                  onSelected: paid ? null : (_) => setState(() => _statuses[id] = e.key),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
-              Text('کلاف نهایی', style: ChatTheme.caption),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value <= 0 ? null : () => setState(() => _finals[id] = value - 1), icon: const Icon(Icons.remove_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
-              Text('$value', style: ChatTheme.title),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value >= max ? null : () => setState(() => _finals[id] = value + 1), icon: const Icon(Icons.add_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
+              Text('پاداش: $value کلاف', style: ChatTheme.title),
               if (paid) ...[const Spacer(), ChatButton(label: 'اصلاح', primary: false, onPressed: () => _correct(id, value))],
             ],
           ),
-          if (!paid) TextField(controller: _reasons[id], style: ChatTheme.caption.copyWith(color: ChatTheme.text), decoration: chatField('دلیل (برای اختلاف زیاد با پیشنهاد لازم است)')),
+          if (!paid) TextField(controller: _reasons[id], style: ChatTheme.caption.copyWith(color: ChatTheme.text), decoration: chatField('توضیح برای دانش‌آموز (اختیاری)')),
         ],
       ),
     );
@@ -507,7 +535,7 @@ class _InterGroupSectionState extends State<InterGroupSection> {
           ChatButton(label: 'ثبت اثر', onPressed: () => _submit('POST', '$_base/entry', {'body': _entry.text, 'attachmentId': _file?.id}, 'اثر کاروان ثبت شد.')),
         ]),
         const SizedBox(height: 16),
-        Text('سطح تلاش اعضا', style: ChatTheme.title),
+        Text('وضعیت مشارکت اعضا', style: ChatTheme.title),
         for (final r in _tiers)
           Row(
             children: [
@@ -522,7 +550,7 @@ class _InterGroupSectionState extends State<InterGroupSection> {
               ),
             ],
           ),
-        if (_tiers.isNotEmpty) ChatButton(label: 'تأیید سطوح', onPressed: () => _submit('PUT', '$_base/tiers', {'tiers': _chosen}, 'سطوح ثبت شد.')),
+        if (_tiers.isNotEmpty) ChatButton(label: 'تأیید وضعیت‌ها', onPressed: () => _submit('PUT', '$_base/tiers', {'tiers': _chosen}, 'وضعیت‌ها ثبت شد.')),
         const SizedBox(height: 16),
         Text('داوری آثار ناشناس', style: ChatTheme.title),
         if (_works.isEmpty) Text(_judgingNote ?? 'اثری برای داوری وجود ندارد.', style: ChatTheme.caption),

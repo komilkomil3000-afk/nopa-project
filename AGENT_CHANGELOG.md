@@ -4313,3 +4313,38 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `flutter analyze` (app/): No issues found; `npx tsc --noEmit` (admin_panel/): no errors
 - **Status:** Completed
+
+### [2026-11-03 14:00] - Agent 2 (Flutter App & LMS Specialist) / Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/participation.ts` (Created)
+  - `admin_panel/prisma/migrations/20261060_participation_status/migration.sql` (Created)
+  - `admin_panel/prisma/schema.prisma` (Modified)
+  - `admin_panel/src/modules/chat/evaluation.ts` (Modified)
+  - `admin_panel/src/modules/chat/intergroup.ts` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `admin_panel/public/js/features/economy.js` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+- **Description of Changes:**
+  - Reactions: people may react to their own message again; still one reaction per person per message
+  - Participation statuses (flagbearer 100, active 75, semi 50, companion 25, tired 0) chosen by the mentor per participant
+  - Mentor-made challenges: kalaf = challenge max reward x percent, rounded up; zero-kalaf rows are not credited; ChallengeEvaluation.status column added; challenge past its due date closes itself on evaluation
+  - Admin (inter-group) challenges: mentor sets the status; prize = banner amount x percent, rounded up; legacy tiers map to the new statuses
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (app/), `npx tsc --noEmit` (admin_panel/): clean. Migration not applied.
+- **Status:** Completed
+
+### [2026-11-03 15:00] - Agent 3 (Integration & Sync Auditor) / Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/prisma/schema.prisma` (Modified: replaced with the server's latest copy, then re-added `ChallengeEvaluation.status`)
+  - `admin_panel/prisma/migrations/20261048_participation_status` -> `20261060_participation_status` (Renamed)
+- **Description of Changes:**
+  - Rebased the participation-status schema change onto the server's schema (adds the server's `handoutUrl/handoutTitle` and `AdminDraft`, which were missing locally)
+  - Migration renamed to a later number to avoid clashing with server migrations
+- **Verification / Checkpoints Executed:**
+  - `npx prisma validate`, `npx tsc --noEmit` (admin_panel/)
+- **Status:** Completed

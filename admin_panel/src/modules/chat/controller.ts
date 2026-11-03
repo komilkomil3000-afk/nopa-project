@@ -262,7 +262,6 @@ export const toggleReaction = handler(async (req, res, actor) => {
   const { message } = await requireMessage(actor, req.params.id);
   const type = String(req.body?.type || '');
   if (!REACTION_TYPES.includes(type)) throw new ChatError(400, 'واکنش نامعتبر است');
-  if (message.senderId === actor.id) throw new ChatError(400, 'روی پیام خودتان نمی‌توانید واکنش بدهید');
   // One reaction per person per message: the same one again takes it back, another one replaces it
   const mine = await prisma.chatReaction.findMany({ where: { messageId: message.id, userId: actor.id } });
   const same = mine.some(r => r.type === type);

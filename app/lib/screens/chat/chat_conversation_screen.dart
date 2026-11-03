@@ -327,8 +327,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       anchor: anchor,
       alignRight: mine || card,
       items: items,
-      // Reactions are for other people's messages only
-      showReactions: !mine && message.senderId != myId && !message.deleted,
+      showReactions: !message.deleted,
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (!mounted) return;
@@ -818,7 +817,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onOpenSender: message.senderId == null ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
           onReact: (type) {
-            if (mine || message.deleted) return;
+            if (message.deleted) return;
             _chat.react(message, type);
           },
         );
