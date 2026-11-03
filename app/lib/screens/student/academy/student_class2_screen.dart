@@ -20,6 +20,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/utils/mentor_contact.dart';
+import 'package:nopa_app/core/constants/api_constants.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Class 2 Screen (صفحه کلاس‌ها، مجموعه‌ها، پارت‌ها، پخش‌کننده ویدیو و آزمون‌ها)
 class StudentClass2Screen extends StatefulWidget {
@@ -1119,6 +1121,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     }
 
     final String sessionDesc = session['description']?.toString().trim() ?? '';
+    final String handoutUrl = session['handoutUrl']?.toString().trim() ?? '';
+    final String handoutTitle = session['handoutTitle']?.toString().trim() ?? '';
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -1228,23 +1232,32 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
           const SizedBox(height: 12),
 
-          // 3. دانلود جزوه و درسنامه آموزشی
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF241F3B),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.buttonCamel.withValues(alpha: 0.6)),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.download_rounded, color: Color(0xFFE5B888), size: 20),
-              title: Text(
-                'دانلود جزوه و درسنامه آموزشی',
-                style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
+          // 3. جزوه جلسه (فقط وقتی در پنل ادمین فایلی برای جلسه ثبت شده باشد)
+          if (handoutUrl.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF241F3B),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFC09268).withValues(alpha: 0.6)),
               ),
-              trailing: const Icon(Icons.chevron_left_rounded, color: Color(0xFF9D99B8), size: 18),
-              onTap: () => _showDownloadPamphletDialog(session['title'] ?? 'جزوه'),
+              child: ListTile(
+                leading: const Icon(Icons.download_rounded, color: Color(0xFFE5B888), size: 20),
+                title: Text(
+                  handoutTitle.isNotEmpty ? handoutTitle : 'دانلود جزوه و درسنامه آموزشی',
+                  style: const TextStyle(
+                    color: Color(0xFFDDD9EE),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
+                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_left_rounded, color: Color(0xFF9D99B8), size: 18),
+                onTap: () => _openHandout(handoutUrl),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1655,48 +1668,10 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
     });
   }
 
-  void _showDownloadPamphletDialog(String title) {
-    double progress = 0.0;
-    showNopaModal<void>(
-      context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          Future.delayed(const Duration(milliseconds: 250), () {
-            if (!context.mounted) return;
-            if (progress < 1.0) {
-              setDialogState(() {
-                progress += 0.25;
-              });
-            } else {
-              Navigator.pop(context);
-              AppToast.info(context, 'جزوه آموزشی با موفقیت دانلود شد!');
-            }
-          });
-
-          return NopaModalShell(
-            maxWidth: 360,
-            headerIcon: Icons.download_rounded,
-            title: 'در حال دریافت فایل جزوه...',
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.white10,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.buttonCamel),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${(progress * 100).toInt()}%',
-                  style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+  Future<void> _openHandout(String url) async {
+    final ok = await launchUrl(Uri.parse(ApiConstants.resolveImageUrl(url)), mode: LaunchMode.externalApplication)
+        .catchError((_) => false);
+    if (!ok && mounted) AppToast.info(context, 'باز کردن جزوه ممکن نشد.');
   }
 }
 

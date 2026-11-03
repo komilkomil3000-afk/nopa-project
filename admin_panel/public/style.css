@@ -1726,3 +1726,39 @@ body.modal-open {
   display: flex;
   gap: 8px;
 }
+
+/* LMS tab: "create station" button sits in the page-header row (left side) so no empty gap remains above the stations board */
+@media (min-width: 769px) {
+  #lms-overview-view > .lms-head-actions,
+  #submissions-tab > .lms-head-actions {
+    position: relative;
+    height: 0;
+    margin: 0;
+    z-index: 2;
+  }
+  #lms-overview-view > .lms-head-actions > div,
+  #submissions-tab > .lms-head-actions > div {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+  }
+}
+
+.nopa-confirm-alt[hidden] { display: none; }
+.nopa-confirm-actions { flex-wrap: wrap; }
+
+/* Confirm dialog: rounded like the editors; primary on the right, "close without saving" in red, cancel quiet */
+.nopa-confirm-box { max-width: 480px; padding: 22px 26px 24px; border-radius: 28px !important; }
+.nopa-confirm-box .modal-header { margin-bottom: 10px; }
+.nopa-confirm-box .modal-header h3 { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; }
+.nopa-confirm-box .modal-header h3 i { color: var(--primary-text); }
+.nopa-confirm-msg { margin: 0; line-height: 2; color: var(--text-soft); font-size: var(--text-sm); }
+.nopa-confirm-actions { justify-content: flex-start; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.nopa-confirm-actions button { min-width: 0; border-radius: 999px; padding: 9px 20px; font-weight: 700; font-size: var(--text-xs); }
+.nopa-confirm-ok { order: -1; }
+.nopa-confirm-cancel { background: transparent; border: 1px solid var(--border-strong); color: var(--text-soft); }
+.nopa-confirm-cancel:hover { background: rgb(var(--fg-rgb) / 0.06); color: var(--text); }
+.nopa-confirm-alt { background: transparent; border: 1px solid var(--border-strong); color: var(--text-soft); }
+.nopa-confirm-alt.is-danger { background: rgb(var(--danger-rgb) / 0.12); border-color: rgb(var(--danger-rgb) / 0.55); color: var(--danger-text); }
+.nopa-confirm-alt.is-danger:hover { background: var(--danger); border-color: var(--danger); color: var(--on-fill); }

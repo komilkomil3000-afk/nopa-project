@@ -54,9 +54,10 @@ import { grantPromotionalZarik, getZarikSalesStats, getMentorRewardRules, create
 import { getTickets } from '../controllers/supportController';
 import { getPendingSubmissions, reviewSubmission } from '../controllers/submissionController';
 import { getChallenges, createChallenge, updateChallenge, deleteChallenge } from '../controllers/challengeController';
+import { listDrafts, saveDraft, deleteDraft } from '../controllers/draftController';
 import { listAssetTypes, updateAssetType } from '../controllers/assetController';
 import { getEconomyAdmin, updateEconomy } from '../controllers/economyController';
-import { getChallengeRanking, finalizeChallengeRanking } from '../controllers/caravanBannerController';
+import { getChallengeRanking, finalizeChallengeRanking, editChallengeRanking } from '../controllers/caravanBannerController';
 import { getEconomyHubAnalytics } from '../controllers/walletController';
 import { 
   broadcastNotification, 
@@ -157,6 +158,7 @@ router.patch('/challenges/:id', updateChallenge as any);
 router.delete('/challenges/:id', deleteChallenge as any);
 router.get('/challenges/:id/ranking', getChallengeRanking as any);
 router.post('/challenges/:id/ranking', finalizeChallengeRanking as any);
+router.put('/challenges/:id/ranking', editChallengeRanking as any);
 router.get('/assets', listAssetTypes as any);
 router.put('/assets/:key', updateAssetType as any);
 router.get('/economy', getEconomyAdmin as any);
@@ -327,6 +329,11 @@ router.delete('/chat-manage/groups/:id', deleteGroup as any);
 router.post('/chat-manage/groups/:id/members', addGroupMembers as any);
 router.delete('/chat-manage/groups/:id/members/:userId', removeGroupMember as any);
 router.post('/intergroup/questions/:id/answer', answerQuestion as any);
+
+// Drafts of unfinished challenge / station forms (per admin)
+router.get('/drafts/:kind', listDrafts as any);
+router.put('/drafts/:kind/:key', saveDraft as any);
+router.delete('/drafts/:kind/:key', deleteDraft as any);
 
 // 12. Instructors Management (بانک اساتید)
 router.get('/instructors', getInstructors as any);

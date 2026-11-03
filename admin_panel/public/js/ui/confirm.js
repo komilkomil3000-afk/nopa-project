@@ -1,6 +1,6 @@
 // Non-blocking replacement for window.confirm(). Loaded before the feature modules (js/app, js/features).
 //   if (!(await NopaConfirm('حذف شود؟', { danger: true }))) return;
-// Options: title, okText, cancelText, danger (red confirm button).
+// Options: title, okText, cancelText, danger (red confirm button), altText (a third button between the two; resolves 'alt'), altDanger (red third button; on by itself for danger words like حذف).
 // Detects danger automatically from the wording (حذف / مسدود / تعلیق / لغو ...) when not given.
 (function () {
   const DANGER_WORDS = /حذف|مسدود|تعلیق|لغو|ابطال|پاک|رد |بازنشانی|delete|remove/i;
@@ -21,6 +21,7 @@
           <p id="nopa-confirm-msg" class="nopa-confirm-msg"></p>
           <div class="nopa-confirm-actions">
             <button type="button" class="btn-action nopa-confirm-cancel"></button>
+            <button type="button" class="btn-action nopa-confirm-alt" hidden></button>
             <button type="button" class="btn-primary nopa-confirm-ok${danger ? ' is-danger' : ''}"></button>
           </div>
         </div>`;
@@ -29,6 +30,13 @@
       overlay.querySelector('.nopa-confirm-msg').textContent = String(message == null ? '' : message);
       overlay.querySelector('.nopa-confirm-ok').textContent = opts.okText || (danger ? 'بله، انجام شود' : 'تایید');
       overlay.querySelector('.nopa-confirm-cancel').textContent = opts.cancelText || 'انصراف';
+
+      const alt = overlay.querySelector('.nopa-confirm-alt');
+      if (opts.altText) {
+        alt.textContent = opts.altText;
+        alt.hidden = false;
+        if (opts.altDanger || (opts.altDanger === undefined && DANGER_WORDS.test(opts.altText))) alt.classList.add('is-danger');
+      }
 
       let done = false;
       const finish = value => {
@@ -40,6 +48,7 @@
       };
       overlay.querySelector('.nopa-confirm-ok').addEventListener('click', () => finish(true));
       overlay.querySelector('.nopa-confirm-cancel').addEventListener('click', () => finish(false));
+      alt.addEventListener('click', () => finish('alt'));
       overlay.querySelector('.modal-close').addEventListener('click', () => finish(false));
       overlay.addEventListener('click', e => { if (e.target === overlay) finish(false); });
 

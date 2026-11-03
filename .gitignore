@@ -54,3 +54,4 @@ app.*.map.json
 *.md
 # Admin panel / backend project keeps its own docs
 !/admin_panel/**/*.md
+AGENT_CHANGELOG.md

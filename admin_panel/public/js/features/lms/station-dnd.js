@@ -7,9 +7,13 @@
 //   In the station editor (js/features/lms/station-editor.js):
 //   - sessions in the side list, also into another category   (.lse-tree-row[data-session-id] in .lse-tree-group[data-cat-id])
 //   - categories in the side list, by their header            (.lse-tree-group[data-cat-id] in .lse-tree)
-//   - video parts of the selected session                     (.lcm-clip[data-clip-id] in .lcm-clips[data-session-id])
+//   - video parts of the open session, in the side list        (.lse-tree-clip[data-clip-id] in .lse-tree-clips[data-session-id])
 //   - gallery pictures (draft only, saved with the editor)    (.lse-gitem[data-gi] in .lse-gallery)
 //   - the wizard's new categories (draft only)                (.lse-newcat[data-ni] in .lse-newcats)
+//   - questions in the challenge editor (draft only)           (.chl-qrow[data-qid] in .chl-qindex)
+//   - answer options of a question (draft only)                (.lse-option in .chl-opts)
+//   - answer options in the station quiz modal                 (.lse-option in #quiz-opts)
+//   - caravans in an inter-group challenge's ranking           (.chl-rank-item in .chl-rank-list)
 // Mouse: drag from anywhere on the item (after 5px; a plain click still clicks). Touch: from the grip handle only,
 // so swiping still scrolls. Video parts are full of inputs, so they move by their grip only. Escape cancels. Renders are deferred while dragging. Styles: css/stations.css.
 
@@ -73,7 +77,9 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
     const byId = new Map(list.map(s => [String(s.id), s]));
     const ordered = ids.map(id => byId.get(id)).filter(Boolean);
     if (ordered.length !== list.length || ordered.every((s, i) => s === list[i])) return false;
-    ordered.forEach((s, i) => { s.orderIndex = i + 1; });
+    // the first station keeps the lowest number (e.g. 0), the rest follow it in the new order
+    const base = Math.max(0, Math.min(...list.map(s => Number(s.orderIndex)).filter(Number.isFinite)));
+    ordered.forEach((s, i) => { s.orderIndex = base + i; });
     list.splice(0, list.length, ...ordered);
     window.lmsRefreshStationViews();
     window.lmsSaveInBackground(
@@ -82,7 +88,7 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stationIds: ordered.map(s => s.id) })
       })],
-      `ترتیب منزلگاه‌ها ذخیره شد (شماره‌گذاری ۱ تا ${ordered.length}).`,
+      `ترتیب منزلگاه‌ها ذخیره شد (شماره‌گذاری ${lmsFaDigits(base)} تا ${lmsFaDigits(base + ordered.length - 1)}).`,
       'ذخیره ترتیب منزلگاه‌ها انجام نشد؛ ترتیب قبلی بازگردانده شد.'
     );
     return true;
@@ -257,19 +263,21 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       commit: (item, notch, _to, sortable) => saveStationOrder(sortable.items(notch).map(c => c.getAttribute('data-station-id')))
     },
     {
+      // parts of a session, in the station editor's side list (the detail shows one part at a time)
       name: 'clip',
       mode: 'list',
-      match(e) {
-        const grip = e.target.closest('#lms-station-editor-modal .lcm-clip-grip');
-        return grip ? grip.closest('.lcm-clip[data-clip-id]') : null;
-      },
+      match: e => pickItem(e, '#lms-station-editor-modal .lse-tree-clip[data-clip-id]', '.lse-tree-clip-grip'),
       containers: item => [item.parentElement],
-      items: list => Array.from(list.querySelectorAll(':scope > .lcm-clip[data-clip-id]')),
-      anchor: () => null,
-      scroller: item => item.closest('.lse-detail'),
+      items: list => Array.from(list.querySelectorAll(':scope > .lse-tree-clip[data-clip-id]')),
+      anchor: list => list.querySelector(':scope > .lse-tree-clip-add'),
+      scroller: item => item.closest('.lse-tree'),
       // the station editor is drawn from the data; a cancelled drag redraws it
       refresh: editorRefresh,
-      commit: (item, list, _to, sortable) => saveClipOrder(list, sortable)
+      commit: (item, list, _to, sortable) => {
+        const saved = saveClipOrder(list, sortable);
+        if (saved) editorRefresh();
+        return saved;
+      }
     },
     {
       name: 'editor-session',
@@ -309,6 +317,54 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       scroller: item => item.closest('.lse-body'),
       refresh: editorRedraw,
       commit: (item, grid, _to, sortable) => window.lmsEditorGalleryReorder(sortable.items(grid).map(g => g.getAttribute('data-gi')))
+    },
+    {
+      // questions of a challenge, in the challenge editor's right-hand column (js/features/challenges.js)
+      name: 'chl-question',
+      mode: 'list',
+      match: e => pickItem(e, '.lse-overlay .chl-qrow[data-qid]', '.lse-tree-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .chl-qrow[data-qid]')),
+      anchor: () => null,
+      scroller: item => item.closest('.lse-body'),
+      refresh: () => ['new', 'edit'].forEach(m => { if (window.chlQuestionRedraw) window.chlQuestionRedraw(m); }),
+      commit: (item, box, _to, sortable) => window.chlQuestionReorder(String(box.id).indexOf('new-') === 0 ? 'new' : 'edit', sortable.items(box).map(r => r.getAttribute('data-qid')))
+    },
+    {
+      // answer options of a multiple-choice question in the challenge editor (js/features/challenges.js)
+      name: 'chl-option',
+      mode: 'list',
+      match: e => pickItem(e, '.lse-overlay .challenge-q-card .lse-option', '.chl-opt-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .lse-option')),
+      anchor: () => null,
+      scroller: item => item.closest('.lse-body'),
+      refresh: () => document.querySelectorAll('.challenge-q-card .chl-opts').forEach(b => window.chlOptionsRedraw && window.chlOptionsRedraw(b)),
+      commit: (item, box) => window.chlOptionsReorder(box)
+    },
+    {
+      // answer options in the station quiz modal (js/features/lms/quiz.js)
+      name: 'quiz-option',
+      mode: 'list',
+      match: e => pickItem(e, '#lms-quiz-editor-modal .lse-option', '.chl-opt-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .lse-option')),
+      anchor: () => null,
+      scroller: item => item.closest('.lse-body'),
+      refresh: () => window.quizRenumberOptions && window.quizRenumberOptions(),
+      commit: () => { window.quizRenumberOptions(); return true; }
+    },
+    {
+      // caravans of an inter-group challenge's ranking, while the ranking is open for arranging (js/features/challenges.js)
+      name: 'chl-rank',
+      mode: 'list',
+      match: e => pickItem(e, '#chl-detail-view .chl-rank-list.is-editable .chl-rank-item', '.chl-rank-grip'),
+      containers: item => [item.parentElement],
+      items: box => Array.from(box.querySelectorAll(':scope > .chl-rank-item')),
+      anchor: () => null,
+      scroller: () => null,
+      refresh: () => document.querySelectorAll('#chl-detail-view .chl-rank-list').forEach(b => window.chlRankRedraw && window.chlRankRedraw(b)),
+      commit: (item, box) => window.chlRankReorder(box)
     },
     {
       name: 'newcat',

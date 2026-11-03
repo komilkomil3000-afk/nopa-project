@@ -154,6 +154,18 @@ export const getQuizzes = async (req: Request, res: Response) => {
   }
 };
 
+// Stations are numbered consecutively in their order. Setting one station's number moves the whole run:
+// station at position p gets [number], the first one gets number - p (never below 0), and so on.
+async function renumberStationsAround(tx: any, stationId: string, number: number) {
+  const all = await tx.station.findMany({ orderBy: [{ orderIndex: 'asc' }, { createdAt: 'asc' }], select: { id: true } });
+  const pos = all.findIndex((s: any) => s.id === stationId);
+  if (pos < 0) return;
+  const base = Math.max(0, number - pos);
+  for (let i = 0; i < all.length; i++) {
+    await tx.station.update({ where: { id: all[i].id }, data: { orderIndex: base + i } });
+  }
+}
+
 export const createOrUpdateStation = async (req: Request, res: Response) => {
   try {
     const { id, title, subtitle, description, stayDuration, animationTitle, animationUrl, animations, animationsJson, iconUrl, orderIndex, releaseDate, releaseTime, scoringCriteriaJson, categories, instructors, schedule, category, sessionsCount, isLocked, status, scheduledUnlockTime, requirePreviousComplete, targetCaravansJson } = req.body;
@@ -203,13 +215,12 @@ export const createOrUpdateStation = async (req: Request, res: Response) => {
       if (id && !id.startsWith('new_')) {
         // When updating, ensure orderIndex is not duplicated with another station
         if (orderIndexVal >= 0) {
-          const duplicate = await tx.station.findFirst({
-            where: { orderIndex: orderIndexVal, id: { not: id } }
-          });
-          if (duplicate) {
-            const current = await tx.station.findUnique({ where: { id } });
-            orderIndexVal = current ? current.orderIndex : orderIndexVal;
+          const current = await tx.station.findUnique({ where: { id } });
+          if (current && current.orderIndex !== orderIndexVal) {
+            // A new display number for this station: the others follow it in their current order (so 0 can be the first)
+            await renumberStationsAround(tx, id, orderIndexVal);
           }
+          orderIndexVal = current ? (await tx.station.findUnique({ where: { id } }))!.orderIndex : orderIndexVal;
         } else {
           const current = await tx.station.findUnique({ where: { id } });
           orderIndexVal = current ? current.orderIndex : 1;
@@ -510,7 +521,7 @@ export const createOrUpdateCategory = async (req: Request, res: Response) => {
 export const createOrUpdateSession = async (req: Request, res: Response) => {
   try {
     const { id: paramId } = req.params;
-    const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, sessionDate, sessionTime, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
+    const { id, categoryId, subCourseId, title, description, videoUrl, instructor, teacher, sessionDate, sessionTime, handoutUrl, handoutTitle, minWatchThreshold, minPassScore, maxZarikReward, maxPointsReward, orderIndex } = req.body;
     const targetId = id || paramId;
     const finalCategoryId = categoryId || subCourseId;
     const finalInstructor = instructor || teacher;
@@ -525,6 +536,8 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
           ...(finalInstructor !== undefined ? { instructor: finalInstructor } : {}),
           ...(sessionDate !== undefined ? { sessionDate } : {}),
           ...(sessionTime !== undefined ? { sessionTime } : {}),
+          ...(handoutUrl !== undefined ? { handoutUrl: String(handoutUrl).trim() || null } : {}),
+          ...(handoutTitle !== undefined ? { handoutTitle: String(handoutTitle).trim() || null } : {}),
           ...(finalCategoryId ? { categoryId: finalCategoryId } : {}),
           // Saving a session's details must not reset what was not sent (order, rewards, watch threshold)
           ...(minWatchThreshold !== undefined ? { minWatchThreshold: Number(minWatchThreshold) || 70 } : {}),
@@ -544,6 +557,8 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
           instructor: finalInstructor,
           sessionDate,
           sessionTime,
+          handoutUrl: handoutUrl ? String(handoutUrl).trim() : null,
+          handoutTitle: handoutTitle ? String(handoutTitle).trim() : null,
           minWatchThreshold: Number(minWatchThreshold || 70), 
           minPassScore: Number(minPassScore || 0), 
           maxZarikReward: Number(maxZarikReward || 0), 
@@ -702,6 +717,8 @@ export const batchSaveStationContent = async (req: Request, res: Response) => {
                 ...(sess.instructor ? { instructor: sess.instructor } : {}),
                 ...(sess.sessionDate !== undefined ? { sessionDate: sess.sessionDate } : {}),
                 ...(sess.sessionTime !== undefined ? { sessionTime: sess.sessionTime } : {}),
+                ...(sess.handoutUrl !== undefined ? { handoutUrl: sess.handoutUrl || null } : {}),
+                ...(sess.handoutTitle !== undefined ? { handoutTitle: sess.handoutTitle || null } : {}),
               }
             });
           }
@@ -1437,6 +1454,10 @@ export const reorderStations = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'لیست شناسه‌های منزلگاه‌ها الزامی است' });
     }
 
+    // The first station keeps its display number (e.g. 0), so a drag never turns "منزلگاه ۰" into "۱"
+    const existing = await prisma.station.findMany({ select: { orderIndex: true } });
+    const base = existing.length ? Math.max(0, Math.min(...existing.map(s => s.orderIndex))) : 1;
+
     await prisma.$transaction(async (tx) => {
       // Step 1: Temporarily assign negative indices to prevent collisions
       for (let i = 0; i < orderedIds.length; i++) {
@@ -1445,11 +1466,11 @@ export const reorderStations = async (req: Request, res: Response) => {
           data: { orderIndex: -(i + 1) }
         });
       }
-      // Step 2: Assign strictly unique sequential orderIndex from 1 to N
+      // Step 2: Assign strictly unique sequential orderIndex from the base number
       for (let i = 0; i < orderedIds.length; i++) {
         await tx.station.update({
           where: { id: orderedIds[i] },
-          data: { orderIndex: i + 1 }
+          data: { orderIndex: base + i }
         });
       }
     });
