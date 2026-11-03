@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/app_toast.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -18,6 +20,7 @@ import 'package:nopa_app/screens/mentor/profile/mentor_edit_profile_screen.dart'
 import 'package:nopa_app/screens/mentor/profile/mentor_caravans_roster_screen.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
 import 'package:nopa_app/widgets/station_progress_stepper.dart';
+import '../../../widgets/story_dialog.dart';
 
 class MentorProfileScreen extends StatefulWidget {
   const MentorProfileScreen({super.key});
@@ -111,7 +114,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
                 title: 'پیام ها',
                 svgAsset: '',
                 fallbackIcon: Icons.notifications_none_rounded,
-                onTap: () => Navigator.pushNamed(context, '/notifications'),
+                onTap: () => Navigator.pushNamed(context, AppRoutes.notifications),
               ),
             ],
 
@@ -289,7 +292,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
         _buildProfileMenuItem(
           title: 'تیکت های شما',
           svgAsset: 'assets/svg_icons/ticket01.svg',
-          onTap: () => Navigator.pushNamed(context, '/tickets'),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.tickets),
         ),
       ],
     );
@@ -303,7 +306,7 @@ class _ProfileScreenState extends State<MentorProfileScreen> {
           title: 'داستان',
           svgAsset: 'assets/svg_icons/stor01.svg',
           fallbackIcon: Icons.info_outline_rounded,
-          onTap: () => _StoryDialog.show(context),
+          onTap: () => StoryDialog.show(context),
         ),
         _buildProfileMenuItem(
           title: 'پشتیبانی و ارتباط با ما',
@@ -470,7 +473,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -859,78 +862,3 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
     );
   }
 }
-
-
-
-// -----------------------------------------------------------------------------
-// DIALOG: داستان کاروان (Caravan Lore / Story)
-// -----------------------------------------------------------------------------
-class _StoryDialog {
-  static void show(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: const Color(0xFF28274A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(22),
-              side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Center(
-                      child: Text(
-                        'داستان سفر به سرزمین نپا',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w300,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'علاءالملک، حاکم سرزمین نپا با گنجینه‌ای حیرت‌آور و بی‌نظیر در انتظار زنان و مردانی است که شایستگی خود را برای کسب آن نشان دهند.\n\n'
-                      'تو در این مسیر، عضو کاروانی هستی که راهبری زبردست شما را به سوی سرزمین نپا می‌برد. مسیر مابین هر منزلگاه، عیار هر کس را می‌سنجد و توقف موقت هر کاروان در این منزلگاه‌ها، مقدمه‌ای برای طی کردن مسیرهای دشوار بعدی است.',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        color: Color(0xFFD6D3E6),
-                        fontSize: 12.5,
-                        height: 1.6,
-                        fontWeight: FontWeight.w300,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDE9959),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('متوجه شدم', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-
-typedef ProfileScreen = MentorProfileScreen;

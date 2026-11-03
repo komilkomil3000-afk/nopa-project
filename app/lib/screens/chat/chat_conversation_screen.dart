@@ -1,4 +1,5 @@
 import 'dart:io' as io;
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show compute;
@@ -131,7 +132,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final meta = card.meta ?? const {};
     challengeFocusRequest.value = (category: challengeCategoryIndex(meta['category']?.toString().replaceAll('intra_group', 'group')), id: meta['challengeId']?.toString() ?? '');
     Navigator.of(context).popUntil((route) => route.isFirst);
-    navigateToMainTab(2);
+    navigateToMainTab(AppTabs.challenges);
   }
 
   /// The profile behind the header: the other person in a private chat, otherwise the group or channel.

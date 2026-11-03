@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'dart:io' as io;
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPicker;
@@ -110,36 +111,52 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     String? pickedFileName;
     bool isUploading = false;
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: const Color(0xFF28274A),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+        builder: (context, setDialogState) => NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.upload_file_rounded,
+          title: 'ارسال فایل $title',
+          padding: const EdgeInsets.all(20),
+          actions: [
+            NopaModalAction(
+              label: 'آپلود فایل',
+              loading: isUploading,
+              onPressed: (pickedFile == null || isUploading) ? null : () async {
+                                  setDialogState(() => isUploading = true);
+                                  try {
+                                    final res = await HttpApiService().uploadMediaFile(
+                                      pickedFile!,
+                                      assetType: 'user_document',
+                                      title: title,
+                                    );
+                                    if (ctx.mounted) {
+                                      Navigator.pop(ctx);
+                                    }
+                                    if (context.mounted) {
+                                      final isSuccess = res != null;
+                                      if (isSuccess) {
+      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
+    } else {
+      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
+    }
+                                    }
+                                  } catch (e) {
+                                    setDialogState(() => isUploading = false);
+                                    if (context.mounted) {
+                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
+                                    }
+                                  }
+                                },
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'ارسال فایل $title',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TapExpander(child: GestureDetector(
+            NopaModalAction(
+              label: 'انصراف',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: isUploading ? null : () => Navigator.pop(ctx),
+            ),
+          ],
+          child: TapExpander(child: GestureDetector(
                     onTap: isUploading
                         ? null
                         : () async {
@@ -194,70 +211,6 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                       ),
                     ),
                   )),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isUploading ? null : () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF6B68A8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: (pickedFile == null || isUploading)
-                              ? null
-                              : () async {
-                                  setDialogState(() => isUploading = true);
-                                  try {
-                                    final res = await HttpApiService().uploadMediaFile(
-                                      pickedFile!,
-                                      assetType: 'user_document',
-                                      title: title,
-                                    );
-                                    if (ctx.mounted) {
-                                      Navigator.pop(ctx);
-                                    }
-                                    if (context.mounted) {
-                                      final isSuccess = res != null;
-                                      if (isSuccess) {
-      AppToast.info(context, 'فایل $title با موفقیت بارگذاری و ضمیمه شد');
-    } else {
-      AppToast.error(context, 'خطایی رخ داده است. خطا در بارگذاری فایل. لطفاً مجدداً تلاش کنید.');
-    }
-                                    }
-                                  } catch (e) {
-                                    setDialogState(() => isUploading = false);
-                                    if (context.mounted) {
-                                      AppToast.error(context, 'خطایی رخ داده است. خطا در ارتباط با سرور');
-                                    }
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFC09268),
-                            disabledBackgroundColor: const Color(0xFF454270),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          ),
-                          child: isUploading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                )
-                              : const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -957,10 +910,8 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
     final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
     var dayCtrl = FixedExtentScrollController(initialItem: day - 1);
 
-    final picked = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: const Color(0xFF1E1A33),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    final picked = await showNopaSheet<bool>(
+      context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           final maxDay = Jalali(year, month, 1).monthLength;

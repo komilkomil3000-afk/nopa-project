@@ -1,15 +1,15 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../services/app_state_repository.dart';
 import 'package:provider/provider.dart';
-import 'nopa_dialog_container.dart';
+import 'nopa_modal_shell.dart';
 
 class ContactUsDialog extends StatelessWidget {
   final UserModel? user;
@@ -53,44 +53,29 @@ class ContactUsDialog extends StatelessWidget {
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        child: NopaDialogContainer(
+        child: NopaModalShell(
           maxWidth: 420,
-          radius: 24,
+          headerIcon: Icons.headphones_rounded,
+          title: 'ارتباط با ما',
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header: Headphone Icon on right (in RTL) and Centered Title
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Headset Icon on right in RTL (aligned right)
-                    const Align(
-                      alignment: Alignment.centerRight,
-                      child: Icon(
-                        Icons.headphones_rounded,
-                        color: Color(0xFF9E9CD6),
-                        size: 34,
-                      ),
-                    ),
-
-                    // Centered Title
-                    const Text(
-                      'ارتباط با ما',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 22),
-
+          actions: [
+            NopaModalAction(
+              label: 'ارسال تیکت',
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.tickets);
+              },
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                 // 1. تلفن همراه
                 _buildContactRow(
                   context,
@@ -151,52 +136,7 @@ class ContactUsDialog extends StatelessWidget {
                 // 7. لوکیشن
                 _buildLocationRow(context),
 
-                const SizedBox(height: 24),
-
-                // Bottom Buttons: ارسال تیکت & لغو
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // ارسال تیکت (Right in RTL)
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/tickets');
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text(
-                        'ارسال تیکت',
-                        style: TextStyle(
-                          color: AppColors.buttonCamel,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-
-                    // لغو (Left in RTL)
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: const Text(
-                        'لغو',
-                        style: TextStyle(
-                          color: AppColors.buttonCancelPurple,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

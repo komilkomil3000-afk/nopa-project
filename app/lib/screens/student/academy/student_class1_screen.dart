@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/station_state.dart';
@@ -39,8 +41,6 @@ class StudentClass1Screen extends StatefulWidget {
   State<StudentClass1Screen> createState() => _Class1ScreenState();
 }
 
-/// Backwards compatibility alias
-typedef StationDetailScreen = Class1Screen;
 
 class _Class1ScreenState extends State<StudentClass1Screen> {
   Station? _station;
@@ -265,7 +265,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     });
     Navigator.pushNamed(
       context,
-      '/class2',
+      AppRoutes.class2,
       arguments: {
         'initialIndex': 0,
         'stationIndex': _currentStationIndex,
@@ -288,7 +288,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
     } else if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
-      navigateToMainTab(1);
+      navigateToMainTab(AppTabs.academy);
     }
   }
 
@@ -390,7 +390,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 1,
+      currentBottomNavIndex: AppTabs.academy,
       onBackTap: _handleBackAction,
       body: scrollableContent,
     );

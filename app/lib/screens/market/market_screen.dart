@@ -1,4 +1,7 @@
 import 'package:nopa_app/core/economy_rates.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
+import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -840,32 +843,14 @@ class _MarketScreenState extends State<MarketScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Mode Switcher Pill Tabs matching Mentor Station Screen
         Center(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildMentorTabButton('گزارش اعضا', 0),
-                    const SizedBox(width: 4),
-                    _buildMentorTabButton('مبادلات', 1),
-                  ],
-                ),
-              ),
-            ),
+          child: NopaPillTabs<int>(
+            selected: _selectedMentorMarketTab,
+            tabs: const [
+              NopaPillTab<int>(0, 'گزارش اعضا'),
+              NopaPillTab<int>(1, 'مبادلات'),
+            ],
+            onChanged: (v) => setState(() => _selectedMentorMarketTab = v),
           ),
         ),
 
@@ -880,36 +865,6 @@ class _MarketScreenState extends State<MarketScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildMentorTabButton(String title, int tabIndex) {
-    final bool isSelected = _selectedMentorMarketTab == tabIndex;
-
-    return TapExpander(child: GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedMentorMarketTab = tabIndex;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: isSelected ? AppColors.accentGradient : null,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF8E889D),
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
-        ),
-      ),
-    ));
   }
 
   /// List of Member Assets for Mentor
@@ -1169,7 +1124,7 @@ class _MarketScreenState extends State<MarketScreen> {
                         children: [
                           TapExpander(child: GestureDetector(
                             onTap: () {
-                              Navigator.pushNamed(context, '/tickets');
+                              Navigator.pushNamed(context, AppRoutes.tickets);
                             },
                             child: Container(
                               decoration: BoxDecoration(
@@ -1589,72 +1544,33 @@ class _MarketScreenState extends State<MarketScreen> {
   }) {
     final TextEditingController explanationController = TextEditingController();
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       builder: (BuildContext ctx) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Container(
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C274A),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: const Color(0xFF4C4578),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Top Header: Shield outline icon with user + Title
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFC09268).withValues(alpha: 0.7),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.shield_outlined,
-                            color: Color(0xFFDFB690),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                      const Text(
-                        'پیام به دانش آموز',
-                        style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.shield_outlined,
+          title: 'پیام به دانش آموز',
+          padding: const EdgeInsets.all(22),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال',
+              onPressed: () {
+                Navigator.pop(ctx);
+                onConfirmReject(explanationController.text.trim());
+              },
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                   // Field 1: نام و نام خانوادگی
                   _buildDialogField(
                     label: 'نام و نام خانوادگی',
@@ -1730,47 +1646,7 @@ class _MarketScreenState extends State<MarketScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
-
-                  // Bottom Buttons: ارسال (Right) & لغو (Left)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // ارسال (Send)
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          onConfirmReject(explanationController.text.trim());
-                        },
-                        child: const Text(
-                          'ارسال',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE5A855),
-                          ),
-                        ),
-                      ),
-
-                      // لغو (Cancel)
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text(
-                          'لغو',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF9E9CD6),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -2426,86 +2302,17 @@ class _MarketScreenState extends State<MarketScreen> {
         ),
         const SizedBox(height: 14),
 
-        // 2. Tab Switcher Box styled like Login OTP/Password Segmented Box
+        // 2. Tab switcher (shared segmented style)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: AppColors.strokeGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.all(AppColors.borderWidth),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.darkSurfaceGradient,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              padding: const EdgeInsets.all(3),
-              child: Directionality(
-                textDirection: TextDirection.rtl,
-                child: Row(
-                  children: [
-                    // Tab 0: برترین شرکت کننده ها
-                    Expanded(
-                      child: TapExpander(child: GestureDetector(
-                        onTap: () => setState(() => _selectedLeaderboardTab = 0),
-                        behavior: HitTestBehavior.opaque,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: _selectedLeaderboardTab == 0 ? AppColors.accentGradient : null,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'برترین شرکت کننده ها',
-                              style: TextStyle(
-                                color: _selectedLeaderboardTab == 0 ? Colors.white : const Color(0xFF8E889D),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-
-                    const SizedBox(width: 4),
-
-                    // Tab 1: برترین کاروان ها
-                    Expanded(
-                      child: TapExpander(child: GestureDetector(
-                        onTap: () => setState(() => _selectedLeaderboardTab = 1),
-                        behavior: HitTestBehavior.opaque,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: _selectedLeaderboardTab == 1 ? AppColors.accentGradient : null,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'برترین کاروان ها',
-                              style: TextStyle(
-                                color: _selectedLeaderboardTab == 1 ? Colors.white : const Color(0xFF8E889D),
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          child: NopaPillTabs<int>(
+            expand: true,
+            selected: _selectedLeaderboardTab,
+            tabs: const [
+              NopaPillTab<int>(0, 'برترین شرکت کننده ها'),
+              NopaPillTab<int>(1, 'برترین کاروان ها'),
+            ],
+            onChanged: (v) => setState(() => _selectedLeaderboardTab = v),
           ),
         ),
 

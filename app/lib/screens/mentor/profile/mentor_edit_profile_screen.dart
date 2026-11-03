@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -112,35 +113,28 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
   }
 
   void _openFileUploadDialog({required String title}) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.upload_file_rounded,
+        title: 'ارسال فایل $title',
+        padding: const EdgeInsets.all(20),
+        actions: [
+          NopaModalAction(
+            label: 'آپلود فایل',
+            onPressed: () {
+              Navigator.pop(ctx);
+              AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
+            },
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'ارسال فایل $title',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1D36),
@@ -165,39 +159,6 @@ class _EditProfileScreenState extends State<MentorEditProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          AppToast.info(context, 'فایل $title با موفقیت ضمیمه شد');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFC09268),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text('آپلود فایل', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,6 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 
 enum EventType { mediaClass, skillClass, overdue, assignment }
-typedef CalendarEventType = EventType;
 
 class CalendarEvent {
   final int year;
@@ -624,7 +624,7 @@ class _EducationCalendarState extends State<EducationCalendar> {
 
     Navigator.pushNamed(
       context,
-      '/class2',
+      AppRoutes.class2,
       arguments: {
         'stationIndex': stationIndex,
         'initialTab': tab,

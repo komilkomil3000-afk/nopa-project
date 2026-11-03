@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_dialog_container.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
 import 'package:nopa_app/core/station_categories.dart';
@@ -26,8 +29,6 @@ class StudentClass2Screen extends StatefulWidget {
   State<StudentClass2Screen> createState() => _Class2ScreenState();
 }
 
-/// Backwards compatibility alias
-typedef ClassPlayerScreen = Class2Screen;
 
 class _Class2ScreenState extends State<StudentClass2Screen> {
   // Navigation & Category state
@@ -628,7 +629,7 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 1,
+      currentBottomNavIndex: AppTabs.academy,
       onBackTap: () => Navigator.of(context).pop(),
       body: _isLoadingClasses
           ? const Center(
@@ -1458,17 +1459,14 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             // keep the box compact and let it scroll instead of stretching it past the screen height
             final bool landscape = MediaQuery.of(context).orientation == Orientation.landscape;
             return Dialog(
-              backgroundColor: const Color(0xFF241F3B),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
               insetPadding: landscape
                   ? const EdgeInsets.symmetric(horizontal: 40, vertical: 12)
                   : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
-              ),
-              child: ConstrainedBox(
+              child: NopaDialogContainer(
                 constraints: BoxConstraints(maxWidth: landscape ? 460 : 560),
-                child: Padding(
+                radius: 24,
                 padding: EdgeInsets.all(landscape ? 14 : 20),
                 child: Directionality(
                   textDirection: TextDirection.rtl,
@@ -1753,7 +1751,6 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
                   ),
                 ),
               ),
-              ),
             );
           },
         );
@@ -1767,8 +1764,8 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
 
   void _showDownloadPamphletDialog(String title) {
     double progress = 0.0;
-    showDialog(
-      context: context,
+    showNopaModal<void>(
+      context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           Future.delayed(const Duration(milliseconds: 250), () {
@@ -1783,39 +1780,25 @@ class _Class2ScreenState extends State<StudentClass2Screen> {
             }
           });
 
-          return Dialog(
-            backgroundColor: const Color(0xFF241F3B),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: const BorderSide(color: Color(0xFFC09268), width: 1.0),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(22),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'در حال دریافت فایل جزوه...',
-                    style: TextStyle(
-                      color: Color(0xFFFBE4C8),
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.white10,
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFFC09268)),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(progress * 100).toInt()}%',
-                    style: const TextStyle(color: Color(0xFF9D99B8), fontSize: 11),
-                  ),
-                ],
-              ),
+          return NopaModalShell(
+            maxWidth: 360,
+            headerIcon: Icons.download_rounded,
+            title: 'در حال دریافت فایل جزوه...',
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.white10,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.buttonCamel),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${(progress * 100).toInt()}%',
+                  style: const TextStyle(color: Color(0xFF9D99B8), fontSize: 11),
+                ),
+              ],
             ),
           );
         },

@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:provider/provider.dart';
@@ -58,7 +61,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
-      navigateToMainTab(0);
+      navigateToMainTab(AppTabs.home);
     }
   }
 
@@ -197,29 +200,24 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       messages.add({'mine': false, 'text': body, 'at': notify['createdAt']});
     }
 
-    await showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
-            padding: const EdgeInsets.all(16),
-            decoration: AppColors.loginDialogDecoration(radius: 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'گفتگو با پشتیبانی',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: ListView.separated(
+    await showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        maxHeight: 520,
+        scrollable: false,
+        headerIcon: Icons.support_agent_rounded,
+        title: 'گفتگو با پشتیبانی',
+        padding: const EdgeInsets.all(16),
+        actions: [
+          NopaModalAction(
+            label: 'بستن',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: messages.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -252,17 +250,6 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                       );
                     },
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('بستن',
-                      style: TextStyle(color: Color(0xFF9E9CD6), fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -347,7 +334,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       case _NotifTarget.market:
         _goToTab(3);
       case _NotifTarget.league:
-        if (mounted) Navigator.pushNamed(context, '/mentor_league');
+        if (mounted) Navigator.pushNamed(context, AppRoutes.mentorLeague);
       case _NotifTarget.none:
         if (mounted && notifId.isNotEmpty) {
           setState(() => _expandedItemIds.add(notifId));
@@ -967,8 +954,6 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
   }
 }
 
-
-typedef NotificationsScreen = StudentNotificationsScreen;
 
 enum _NotifTarget { news, profile, challenges, academy, market, league, none }
 

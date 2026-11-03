@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/core/constants/api_constants.dart';
 import 'package:nopa_app/core/constants/app_strings.dart';
@@ -677,45 +678,12 @@ class _SharedMediaState extends State<_SharedMedia> {
   }
 
   Widget _tabBar() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: ChatTheme.surfaceBottom,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: ChatTheme.stroke.withValues(alpha: 0.6)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < _tabs.length; i++) ...[
-            if (i > 0 && _tabs[i].$1 != _kind && _tabs[i - 1].$1 != _kind)
-              Container(width: 1, height: 16, color: ChatTheme.stroke.withValues(alpha: 0.6))
-            else if (i > 0)
-              const SizedBox(width: 1),
-            GestureDetector(
-              onTap: () => _select(_tabs[i].$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: _tabs[i].$1 == _kind
-                    ? BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.accentGoldEnd, AppColors.accentGoldStart], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-                        borderRadius: BorderRadius.circular(6),
-                      )
-                    : null,
-                child: Text(
-                  _tabs[i].$2,
-                  style: TextStyle(
-                    color: _tabs[i].$1 == _kind ? Colors.white : ChatTheme.text.withValues(alpha: 0.85),
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 12,
-                    fontWeight: _tabs[i].$1 == _kind ? FontWeight.bold : FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: NopaPillTabs<String>(
+        selected: _kind,
+        tabs: [for (final t in _tabs) NopaPillTab<String>(t.$1, t.$2)],
+        onChanged: _select,
       ),
     );
   }

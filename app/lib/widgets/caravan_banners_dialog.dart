@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/core/asset_names.dart';
-import 'package:nopa_app/core/theme/app_colors.dart';
+import 'package:nopa_app/widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 
 /// Banners (درفش) the caravan has won: totals per tier and where each one was earned.
@@ -47,16 +47,23 @@ class CaravanBannersDialog extends StatelessWidget {
       child: Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
-          padding: const EdgeInsets.all(20),
-          decoration: AppColors.loginDialogDecoration(radius: 24),
+        child: NopaModalShell(
+          maxWidth: 420,
+          maxHeight: 560,
+          scrollable: false,
+          headerIcon: Icons.flag_rounded,
+          title: '${AssetNames.of('derafsh')} کاروان: ${total.toString().toPersianDigits()}',
+          actions: [
+            NopaModalAction(
+              label: 'بستن',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(child: Text('${AssetNames.of('derafsh')} کاروان: ${total.toString().toPersianDigits()}', style: style(16, bold: true))),
-              const SizedBox(height: 14),
               for (final t in _tiers)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
@@ -108,11 +115,6 @@ class CaravanBannersDialog extends StatelessWidget {
                           );
                         },
                       ),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('بستن', style: style(14, color: const Color(0xFF9E9CD6), bold: true)),
               ),
             ],
           ),

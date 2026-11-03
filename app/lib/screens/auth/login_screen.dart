@@ -1,4 +1,7 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
+import '../../widgets/nopa_modal_shell.dart';
+import '../../widgets/nopa_dialog_container.dart';
 import 'dart:async';
 import 'package:nopa_app/widgets/app_toast.dart';
 import 'dart:convert';
@@ -152,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             _showDualRoleSelectionDialog(user);
           } else {
             AuthService.selectedRole = user.role;
-            Navigator.pushReplacementNamed(context, '/dashboard', arguments: user.role);
+            Navigator.pushReplacementNamed(context, AppRoutes.dashboard, arguments: user.role);
           }
           return;
         }
@@ -168,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     if (!mounted) return;
     await WelcomeDialog.show(context);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, '/dashboard', arguments: role);
+    Navigator.pushReplacementNamed(context, AppRoutes.dashboard, arguments: role);
   }
 
   String _toEnglishDigits(String input) {
@@ -224,12 +227,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _openCountryPickerModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1435),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+    showNopaSheet(
+      context,
       builder: (ctx) {
         return Directionality(
           textDirection: TextDirection.rtl,
@@ -420,10 +419,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 return Dialog(
                   backgroundColor: Colors.transparent,
                   insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                  child: NopaDialogContainer(
+                    maxWidth: 420,
+                    radius: 24,
                     padding: const EdgeInsets.all(22),
-                    decoration: AppColors.loginDialogDecoration(radius: 24),
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -615,10 +614,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             backgroundColor: Colors.transparent,
             elevation: 0,
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
+            child: NopaDialogContainer(
+              maxWidth: 420,
+              radius: 24,
               padding: const EdgeInsets.all(22.0),
-              decoration: AppColors.loginDialogDecoration(radius: 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -760,10 +759,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   void _showProfileSwitcher(List<dynamic> profiles) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1435),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    showNopaSheet(
+      context,
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(24.0),
@@ -1298,8 +1295,6 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 }
 
-
-typedef AuthScreen = LoginScreen;
 
 /// Shown on startup while a saved session is being verified.
 class _SessionLoading extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
 import 'package:nopa_app/core/economy_rates.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
@@ -1160,20 +1161,29 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
       return null;
     }
     final selected = current.isEmpty ? students.map((m) => m['id'].toString()).toSet() : <String>{...current};
-    return showDialog<({bool all, Set<String> ids, int total})>(
-      context: ctx,
+    return showNopaModal<({bool all, Set<String> ids, int total})>(
+      ctx,
       builder: (dctx) => StatefulBuilder(
         builder: (dctx, setState) {
           final bool everyone = selected.length == students.length;
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              backgroundColor: const Color(0xFF2C274A),
-              title: const Text(
-                'دریافت‌کننده‌ها',
-                style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+          return NopaModalShell(
+            maxWidth: 420,
+            headerIcon: Icons.groups_rounded,
+            title: 'دریافت‌کننده‌ها',
+            actions: [
+              NopaModalAction(
+                label: 'تایید',
+                onPressed: selected.isEmpty
+                    ? null
+                    : () => Navigator.pop(dctx, (all: everyone, ids: selected, total: students.length)),
               ),
-              content: SizedBox(
+              NopaModalAction(
+                label: 'لغو',
+                variant: NopaModalActionVariant.secondary,
+                onPressed: () => Navigator.pop(dctx),
+              ),
+            ],
+            child: SizedBox(
                 width: double.maxFinite,
                 child: ListView(
                   shrinkWrap: true,
@@ -1204,25 +1214,6 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: selected.isEmpty
-                      ? null
-                      : () => Navigator.pop(dctx, (all: everyone, ids: selected, total: students.length)),
-                  child: Text(
-                    'تایید',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      color: selected.isEmpty ? const Color(0xFF6C6A85) : const Color(0xFFE5A855),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dctx),
-                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-                ),
-              ],
-            ),
           );
         },
       ),
@@ -1250,18 +1241,31 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
       );
     }
 
-    return showDialog<DateTime>(
-      context: ctx,
+    return showNopaModal<DateTime>(
+      ctx,
       builder: (dctx) => StatefulBuilder(
         builder: (dctx, setState) {
           final maxDay = Jalali(year, month, 1).monthLength;
           if (day > maxDay) day = maxDay;
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: AlertDialog(
-              backgroundColor: const Color(0xFF2C274A),
-              title: const Text('انتخاب تاریخ', style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white)),
-              content: Row(
+          return NopaModalShell(
+            maxWidth: 420,
+            headerIcon: Icons.calendar_month_rounded,
+            title: 'انتخاب تاریخ',
+            actions: [
+              NopaModalAction(
+                label: 'تایید',
+                onPressed: () {
+                  final g = Jalali(year, month, day).toDateTime();
+                  Navigator.pop(dctx, DateTime(g.year, g.month, g.day));
+                },
+              ),
+              NopaModalAction(
+                label: 'لغو',
+                variant: NopaModalActionVariant.secondary,
+                onPressed: () => Navigator.pop(dctx),
+              ),
+            ],
+            child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   dropdown(day, [for (var d = 1; d <= maxDay; d++) d], (v) => v.toString().toPersianDigits(), (v) => setState(() => day = v)),
@@ -1269,20 +1273,6 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
                   dropdown(year, years..sort(), (v) => v.toString().toPersianDigits(), (v) => setState(() => year = v)),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    final g = Jalali(year, month, day).toDateTime();
-                    Navigator.pop(dctx, DateTime(g.year, g.month, g.day));
-                  },
-                  child: const Text('تایید', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(dctx),
-                  child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-                ),
-              ],
-            ),
           );
         },
       ),
@@ -1374,10 +1364,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
               child: Dialog(
                 backgroundColor: Colors.transparent,
                 insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                child: NopaDialogContainer(
+                  maxWidth: 420,
+                  radius: 24,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                  decoration: AppColors.loginDialogDecoration(radius: 24),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -2018,10 +2008,10 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
           child: Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
+            child: NopaDialogContainer(
+              maxWidth: 420,
+              radius: 24,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              decoration: AppColors.loginDialogDecoration(radius: 24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -2815,6 +2805,3 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
     );
   }
 }
-
-
-typedef ChallengesScreen = MentorChallengesScreen;

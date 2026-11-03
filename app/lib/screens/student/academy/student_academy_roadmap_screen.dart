@@ -1,4 +1,5 @@
 import 'package:nopa_app/core/station_numbering.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'dart:math' as math;
@@ -271,7 +272,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
 
                         final result = await Navigator.pushNamed(
                           context,
-                          '/class1',
+                          AppRoutes.class1,
                           arguments: Station(
                             id: item['id'] ?? '',
                             title: stationTitle,

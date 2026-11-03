@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -126,7 +127,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       onBackTap: () => Navigator.of(context).pop(),
       body: Column(
         children: [

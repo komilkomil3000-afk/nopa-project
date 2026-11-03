@@ -5,7 +5,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/user_model.dart';
 import '../utils/constants.dart';
 
+/// Indexes of the main shell tabs (same order for students and mentors).
 class AppTabs {
+  static const int home = 0;
+  static const int academy = 1;
+  static const int challenges = 2;
+  static const int market = 3;
   static const int profile = 4;
   static const int chat = 5;
 }

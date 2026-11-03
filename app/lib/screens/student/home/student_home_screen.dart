@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/station_state.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -132,7 +134,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                       imageUrl: currentStationMap == null ? '' : Station.imageFrom(currentStationMap),
                       orderIndex: stationOrder,
                     );
-                    Navigator.pushNamed(context, '/class1', arguments: station);
+                    Navigator.pushNamed(context, AppRoutes.class1, arguments: station);
                   },
                   child: _buildInfoColumn(
                     title: 'منزلگاه کنونی',
@@ -462,7 +464,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(1); // 1 is MapScreen
+                          context.findAncestorStateOfType<MainScreenState>()?.setIndex(AppTabs.academy); // 1 is MapScreen
                         },
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -530,7 +532,7 @@ class _HomeScreenState extends State<StudentHomeScreen> {
                             return StationCard(
                               station: station,
                               onTap: () async {
-                                final result = await Navigator.pushNamed(context, '/class1', arguments: station);
+                                final result = await Navigator.pushNamed(context, AppRoutes.class1, arguments: station);
                                 if (result is int && context.mounted) {
                                   navigateToMainTab(result);
                                 }

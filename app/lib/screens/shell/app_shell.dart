@@ -219,5 +219,3 @@ class MainScreenState extends State<AppShell> {
     );
   }
 }
-
-typedef MainScreen = AppShell;

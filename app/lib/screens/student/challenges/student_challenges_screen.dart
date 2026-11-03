@@ -1,4 +1,5 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import '../../../widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'dart:async';
@@ -11,7 +12,6 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/services/api_service.dart';
 import 'package:nopa_app/models/models.dart';
-import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/core/theme/app_theme.dart';
 import 'package:nopa_app/widgets/challenge_submission_dialog.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart';
@@ -739,10 +739,10 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
               child: Dialog(
                 backgroundColor: Colors.transparent,
                 insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                child: NopaDialogContainer(
+                  maxWidth: 420,
+                  radius: 24,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                  decoration: AppColors.loginDialogDecoration(radius: 24),
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1192,10 +1192,10 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           child: Dialog(
             backgroundColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
+            child: NopaDialogContainer(
+              maxWidth: 420,
+              radius: 24,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              decoration: AppColors.loginDialogDecoration(radius: 24),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1968,6 +1968,3 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
     );
   }
 }
-
-
-typedef ChallengesScreen = StudentChallengesScreen;

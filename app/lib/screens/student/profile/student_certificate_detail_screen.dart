@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:nopa_app/widgets/app_toast.dart';
@@ -46,88 +48,21 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
     final phoneCtrl = TextEditingController();
     bool isProcessing = false;
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 440),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2849),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header
-                      const Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Icon(
-                              Icons.card_membership_rounded,
-                              color: Color(0xFF9E9CD6),
-                              size: 32,
-                            ),
-                          ),
-                          Text(
-                            'درخواست نسخه فیزیکی گواهی',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      _buildModalRow('دوره:', widget.certificate['title'] ?? 'دوره آموزشی نپا'),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('تحویل‌گیرنده:', nameCtrl, 'نام و نام خانوادگی'),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09380346668', keyboardType: TextInputType.phone),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('آدرس:', addressCtrl, 'استان، شهر، خیابان، پلاک...', maxLines: 2),
-                      const SizedBox(height: 10),
-
-                      _buildModalInputField('کد پستی:', postalCodeCtrl, 'کد پستی ۱۰ رقمی', keyboardType: TextInputType.number),
-                      const SizedBox(height: 10),
-
-                      _buildModalRow('هزینه ارسال:', '۵۰,۰۰۰ تومان'),
-                      const SizedBox(height: 22),
-
-                      // Action Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          TextButton(
-                            onPressed: isProcessing
-                                ? null
-                                : () async {
+          return NopaModalShell(
+            maxWidth: 440,
+            headerIcon: Icons.card_membership_rounded,
+            title: 'درخواست نسخه فیزیکی گواهی',
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            actions: [
+              NopaModalAction(
+                label: 'پرداخت و ثبت نهایی',
+                loading: isProcessing,
+                onPressed: () async {
                                     if (nameCtrl.text.isEmpty || addressCtrl.text.isEmpty) {
                                       AppToast.error(context, 'لطفاً همه فیلدهای آدرس را تکمیل فرمایید');
                                       return;
@@ -145,40 +80,34 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                       setModalState(() => isProcessing = false);
                                     }
                                   },
-                            child: isProcessing
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFE1BC96)),
-                                  )
-                                : const Text(
-                                    'پرداخت و ثبت نهایی',
-                                    style: TextStyle(
-                                      color: Color(0xFFE1BC96),
-                                      fontSize: 14.5,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
-                                  ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            child: const Text(
-                              'انصراف',
-                              style: TextStyle(
-                                color: Color(0xFF9E9CD6),
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
               ),
+              NopaModalAction(
+                label: 'انصراف',
+                variant: NopaModalActionVariant.secondary,
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ],
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                      _buildModalRow('دوره:', widget.certificate['title'] ?? 'دوره آموزشی نپا'),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('تحویل‌گیرنده:', nameCtrl, 'نام و نام خانوادگی'),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('تلفن همراه:', phoneCtrl, '09380346668', keyboardType: TextInputType.phone),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('آدرس:', addressCtrl, 'استان، شهر، خیابان، پلاک...', maxLines: 2),
+                      const SizedBox(height: 10),
+
+                      _buildModalInputField('کد پستی:', postalCodeCtrl, 'کد پستی ۱۰ رقمی', keyboardType: TextInputType.number),
+                      const SizedBox(height: 10),
+
+                      _buildModalRow('هزینه ارسال:', '۵۰,۰۰۰ تومان'),
+              ],
             ),
           );
         },
@@ -271,7 +200,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       onBackTap: () => Navigator.of(context).pop(),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

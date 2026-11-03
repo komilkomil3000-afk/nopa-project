@@ -1,4 +1,5 @@
 import 'package:nopa_app/services/chat_repository.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 export 'screens/shell/app_shell.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -37,7 +38,7 @@ void main() async {
     AppRepository().handleUnauthorized();
     final navState = navigatorKey.currentState;
     if (navState != null && navState.mounted) {
-      navState.pushNamedAndRemoveUntil('/auth', (route) => false);
+      navState.pushNamedAndRemoveUntil(AppRoutes.auth, (route) => false);
     }
   };
 
@@ -99,55 +100,28 @@ class NepaApp extends StatelessWidget {
         ],
         supportedLocales: const [Locale('fa', 'IR')],
         locale: const Locale('fa', 'IR'),
-        initialRoute: '/auth',
+        initialRoute: AppRoutes.auth,
         routes: {
-          '/auth': (context) => const LoginScreen(),
-          '/main': (context) => const AppShell(),
-          '/dashboard': (context) => const AppShell(),
-          '/class1': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            Station? initStation;
-            if (args is Station) {
-              initStation = args;
-            } else if (args is Map<String, dynamic>) {
-              initStation = Station.fromJson(args);
-            }
-            return StudentClass1Screen(initialStation: initStation);
-          },
-          '/station_detail': (context) {
-            final args = ModalRoute.of(context)?.settings.arguments;
-            Station? initStation;
-            if (args is Station) {
-              initStation = args;
-            } else if (args is Map<String, dynamic>) {
-              initStation = Station.fromJson(args);
-            }
-            return StudentClass1Screen(initialStation: initStation);
-          },
-          '/class2': (context) => const StudentClass2Screen(),
-          '/mentor_league': (context) => const MentorAchievementsScreen(),
-          '/mentor_members': (context) => const MentorCaravansRosterScreen(),
-          '/tickets': (context) => const StudentNotificationsScreen(),
-          '/notifications': (context) => const StudentNotificationsScreen(),
+          AppRoutes.auth: (context) => const LoginScreen(),
+          AppRoutes.main: (context) => const AppShell(),
+          AppRoutes.dashboard: (context) => const AppShell(),
+          AppRoutes.class1: (context) => _class1Screen(ModalRoute.of(context)?.settings.arguments),
+          AppRoutes.stationDetail: (context) => _class1Screen(ModalRoute.of(context)?.settings.arguments),
+          AppRoutes.class2: (context) => const StudentClass2Screen(),
+          AppRoutes.mentorLeague: (context) => const MentorAchievementsScreen(),
+          AppRoutes.mentorMembers: (context) => const MentorCaravansRosterScreen(),
+          AppRoutes.tickets: (context) => const StudentNotificationsScreen(),
+          AppRoutes.notifications: (context) => const StudentNotificationsScreen(),
         },
         onGenerateRoute: (settings) {
           final uri = Uri.tryParse(settings.name ?? '');
-          if (uri != null && uri.path == '/class1') {
+          if (uri != null && uri.path == AppRoutes.class1) {
             return MaterialPageRoute(
               settings: settings,
-              builder: (context) {
-                final args = settings.arguments;
-                Station? initStation;
-                if (args is Station) {
-                  initStation = args;
-                } else if (args is Map<String, dynamic>) {
-                  initStation = Station.fromJson(args);
-                }
-                return StudentClass1Screen(initialStation: initStation);
-              },
+              builder: (context) => _class1Screen(settings.arguments),
             );
           }
-          if (uri != null && uri.path == '/class2') {
+          if (uri != null && uri.path == AppRoutes.class2) {
             return MaterialPageRoute(
               settings: settings,
               builder: (context) => const StudentClass2Screen(),
@@ -162,4 +136,15 @@ class NepaApp extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Shared builder for the '/class1' and '/station_detail' route aliases.
+Widget _class1Screen(Object? args) {
+  Station? initStation;
+  if (args is Station) {
+    initStation = args;
+  } else if (args is Map<String, dynamic>) {
+    initStation = Station.fromJson(args);
+  }
+  return StudentClass1Screen(initialStation: initStation);
 }

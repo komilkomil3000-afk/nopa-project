@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -11,6 +12,7 @@ import 'package:nopa_app/core/theme/app_colors.dart';
 import 'package:nopa_app/models/user_model.dart';
 import 'package:nopa_app/services/app_state_repository.dart';
 import 'package:nopa_app/widgets/app_scaffold.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 
 class MentorChallengeGradingScreen extends StatefulWidget {
   final Map<String, dynamic> challenge;
@@ -115,17 +117,20 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
           _ => (label: 'ارسال پاسخ', color: const Color(0xFF38BDF8)),
         };
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: Text(
-            'تاریخچه ${participant['name'] ?? ''}',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
-          ),
-          content: SizedBox(
+    await showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.history_rounded,
+          title: 'تاریخچه ${participant['name'] ?? ''}',
+          actions: [
+            NopaModalAction(
+              label: 'بستن',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: SizedBox(
             width: double.maxFinite,
             child: events.isEmpty
                 ? const Text(
@@ -178,14 +183,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                     },
                   ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('بستن', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
         ),
-      ),
     );
   }
 
@@ -195,75 +193,52 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     final explanationCtrl = TextEditingController();
     final dateStr = _jalali(DateTime.now());
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
       builder: (BuildContext ctx) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C274A),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF4C4578),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Top Header: Shield Icon Badge + Title
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF3F3765),
-                              border: Border.all(
-                                color: const Color(0xFFC09268).withValues(alpha: 0.7),
-                                width: 1.2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_outline_rounded,
-                              color: Color(0xFFDFB690),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        const Text(
-                          'پیام به دانش آموز',
-                          style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 16),
-
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.person_outline_rounded,
+          title: 'پیام به دانش آموز',
+          padding: const EdgeInsets.all(18),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال',
+              onPressed: () async {
+                            final feedback = explanationCtrl.text.trim();
+                            if (feedback.isEmpty) {
+                              AppToast.error(ctx, 'لطفاً توضیح اصلاح را بنویسید.');
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            final res = await HttpApiService().reviewSubmission(
+                              participant['id'].toString(),
+                              status: 'rejected',
+                              mentorFeedback: feedback,
+                            );
+                            if (!mounted) return;
+                            if (res['success'] == true) {
+                              setState(() {
+                                participant['status'] = 'needs_revision';
+                                participant['feedback'] = feedback;
+                              });
+                              AppToast.info(context, 'پاسخ برای اصلاح به $name بازگردانده شد');
+                            } else {
+                              AppToast.error(context, res['error']?.toString() ?? 'ثبت انجام نشد');
+                            }
+                          },
+            ),
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                     // Field 1: نام و نام خانوادگی
                     _buildDialogRow('نام و نام خانوادگی', name),
                     const SizedBox(height: 10),
@@ -330,64 +305,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
                       ],
                     ),
 
-                    const SizedBox(height: 18),
-
-                    // Bottom Action Buttons: ارسال & لغو
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () async {
-                            final feedback = explanationCtrl.text.trim();
-                            if (feedback.isEmpty) {
-                              AppToast.error(ctx, 'لطفاً توضیح اصلاح را بنویسید.');
-                              return;
-                            }
-                            Navigator.pop(ctx);
-                            final res = await HttpApiService().reviewSubmission(
-                              participant['id'].toString(),
-                              status: 'rejected',
-                              mentorFeedback: feedback,
-                            );
-                            if (!mounted) return;
-                            if (res['success'] == true) {
-                              setState(() {
-                                participant['status'] = 'needs_revision';
-                                participant['feedback'] = feedback;
-                              });
-                              AppToast.info(context, 'پاسخ برای اصلاح به $name بازگردانده شد');
-                            } else {
-                              AppToast.error(context, res['error']?.toString() ?? 'ثبت انجام نشد');
-                            }
-                          },
-                          child: const Text(
-                            'ارسال',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE5A855),
-                            ),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          child: const Text(
-                            'لغو',
-                            style: TextStyle(
-                              fontFamily: AppTheme.fontFamily,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF9E9CD6),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
         );
       },
@@ -452,17 +370,35 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
     final rewardCtrl = TextEditingController(text: max.toString());
     final String asset = _assetLabel;
 
-    final int? reward = await showDialog<int>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: Text(
-            'تایید پاسخ $name',
-            style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+    final int? reward = await showNopaModal<int>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.check_circle_outline_rounded,
+        title: 'تایید پاسخ $name',
+        actions: [
+          NopaModalAction(
+            label: 'ادامه',
+            onPressed: () {
+                final v = int.tryParse(rewardCtrl.text.trim().toEnglishDigits());
+                if (v == null || v < 0) {
+                  AppToast.error(ctx, 'مقدار نامعتبر است.');
+                  return;
+                }
+                if (v < min || v > max) {
+                  AppToast.error(ctx, 'مقدار باید بین ${min.toPersianDigits()} و ${max.toPersianDigits()} باشد.');
+                  return;
+                }
+                Navigator.pop(ctx, v);
+              },
           ),
-          content: Column(
+          NopaModalAction(
+            label: 'لغو',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -487,58 +423,32 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                final v = int.tryParse(rewardCtrl.text.trim().toEnglishDigits());
-                if (v == null || v < 0) {
-                  AppToast.error(ctx, 'مقدار نامعتبر است.');
-                  return;
-                }
-                if (v < min || v > max) {
-                  AppToast.error(ctx, 'مقدار باید بین ${min.toPersianDigits()} و ${max.toPersianDigits()} باشد.');
-                  return;
-                }
-                Navigator.pop(ctx, v);
-              },
-              child: const Text('ادامه', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('لغو', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
-        ),
       ),
     );
     if (reward == null || !mounted) return;
 
     // Final confirmation: nothing is credited until the mentor explicitly agrees
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: const Color(0xFF2C274A),
-          title: const Text(
-            'تایید نهایی',
-            style: TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 14, color: Colors.white),
+    final bool? confirmed = await showNopaModal<bool>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.verified_rounded,
+        title: 'تایید نهایی',
+        actions: [
+          NopaModalAction(
+            label: 'تایید و ثبت',
+            onPressed: () => Navigator.pop(ctx, true),
           ),
-          content: Text(
+          NopaModalAction(
+            label: 'بازگشت',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx, false),
+          ),
+        ],
+        child: Text(
             'با تایید شما ${reward.toPersianDigits()} $asset به حساب $name اضافه می‌شود و این کار قابل بازگشت نیست. ادامه می‌دهید؟',
             style: const TextStyle(fontFamily: AppTheme.fontFamily, fontSize: 12, height: 1.6, color: Color(0xFFC7C5DD)),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('تایید و ثبت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFFE5A855))),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('بازگشت', style: TextStyle(fontFamily: AppTheme.fontFamily, color: Color(0xFF9E9CD6))),
-            ),
-          ],
-        ),
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -615,7 +525,7 @@ class _MentorChallengeDetailsScreenState extends State<MentorChallengeGradingScr
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 2,
+      currentBottomNavIndex: AppTabs.challenges,
       body: Directionality(
         textDirection: TextDirection.rtl,
         child: SingleChildScrollView(

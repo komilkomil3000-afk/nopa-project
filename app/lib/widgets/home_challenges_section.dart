@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,7 +48,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                     ),
                     TextButton(
                       onPressed: () {
-                        context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
+                        context.findAncestorStateOfType<MainScreenState>()?.setIndex(AppTabs.challenges);
                       },
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -334,7 +335,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
           // Every challenge, even an expired or completed one, opens in the challenges page
           onTap: () {
             challengeFocusRequest.value = (category: item.category, id: item.id);
-            context.findAncestorStateOfType<MainScreenState>()?.setIndex(2);
+            context.findAncestorStateOfType<MainScreenState>()?.setIndex(AppTabs.challenges);
           },
           borderRadius: BorderRadius.circular(13),
           child: Row(

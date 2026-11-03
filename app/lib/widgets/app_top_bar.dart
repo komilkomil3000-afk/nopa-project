@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -110,7 +111,7 @@ class AppTopBar extends StatelessWidget {
                             child: TapExpander(child: InkWell(
                               onTap: () {
                                 repository.fetchNotifications();
-                                Navigator.pushNamed(context, '/notifications');
+                                Navigator.pushNamed(context, AppRoutes.notifications);
                               },
                               borderRadius: BorderRadius.circular(22),
                               child: Stack(

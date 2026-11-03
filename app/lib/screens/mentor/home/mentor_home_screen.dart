@@ -1,4 +1,7 @@
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import 'package:nopa_app/core/constants/app_routes.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
@@ -316,12 +319,8 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
   }
 
   void _showCaravanSelectionBottomSheet(BuildContext context, AppRepository appState) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1D34),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showNopaSheet(
+      context,
       builder: (ctx) {
         final caravans = appState.caravans;
         final selectedId = appState.selectedCaravanId;
@@ -645,17 +644,17 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
       {
         'title': 'منزلگاه ها',
         'icon': 'assets/svg_icons/qa_stations01.svg',
-        'onTap': () => navigateToMainTab(1),
+        'onTap': () => navigateToMainTab(AppTabs.academy),
       },
       {
         'title': 'اعضا و کاروان',
         'icon': 'assets/svg_icons/qa_members01.svg',
-        'onTap': () => Navigator.pushNamed(context, '/mentor_members'),
+        'onTap': () => Navigator.pushNamed(context, AppRoutes.mentorMembers),
       },
       {
         'title': 'چالش ها',
         'icon': 'assets/svg_icons/qa_challenges01.svg',
-        'onTap': () => navigateToMainTab(2),
+        'onTap': () => navigateToMainTab(AppTabs.challenges),
       },
     ];
 
@@ -1006,5 +1005,3 @@ class _MentorBannerCarouselState extends State<_MentorBannerCarousel> {
     );
   }
 }
-
-typedef MentorDashboardScreen = MentorHomeScreen;

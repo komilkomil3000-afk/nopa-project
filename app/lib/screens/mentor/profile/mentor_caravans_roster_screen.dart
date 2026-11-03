@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/widgets/bottom_nav_bar.dart';
+import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/asset_names.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -225,34 +227,42 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
     final phoneController = TextEditingController();
     final noteController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.person_add_alt_1_rounded,
+        title: 'درخواست اضافه کردن کاربر',
+        actions: [
+          NopaModalAction(
+            label: 'ارسال درخواست',
+            onPressed: () async {
+                            if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
+                              AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
+                              return;
+                            }
+                            Navigator.pop(ctx);
+                            try {
+                              await HttpApiService().createTicket(
+                                category: 'general',
+                                subject: 'درخواست اضافه کردن کاربر: ${nameController.text.trim()} (${phoneController.text.trim()}) - ${noteController.text.trim()}',
+                              );
+                            } catch (_) {}
+                            if (mounted) {
+                              AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
+                            }
+                          },
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'درخواست اضافه کردن کاربر',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
                   TextField(
                     controller: nameController,
                     style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
@@ -290,106 +300,24 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(ctx),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF6B68A8)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
-                              AppToast.error(context, 'لطفاً نام و شماره همراه را وارد کنید');
-                              return;
-                            }
-                            Navigator.pop(ctx);
-                            try {
-                              await HttpApiService().createTicket(
-                                category: 'general',
-                                subject: 'درخواست اضافه کردن کاربر: ${nameController.text.trim()} (${phoneController.text.trim()}) - ${noteController.text.trim()}',
-                              );
-                            } catch (_) {}
-                            if (mounted) {
-                              AppToast.info(context, 'درخواست اضافه کردن کاربر با موفقیت برای مدیریت ارسال شد');
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDE9959),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('ارسال درخواست', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          ],
         ),
       ),
     );
   }
 
   void _showDeleteMemberDialog(CaravanMemberModel member, CaravanModel caravan) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'درخواست حذف کاربر',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFFD6D3E6), fontSize: 13, height: 1.5, fontFamily: AppTheme.fontFamily),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('انصراف', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily)),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () async {
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.person_remove_alt_1_rounded,
+        title: 'درخواست حذف کاربر',
+        actions: [
+          NopaModalAction(
+            label: 'تایید حذف',
+            variant: NopaModalActionVariant.danger,
+            onPressed: () async {
                           Navigator.pop(ctx);
                           try {
                             await HttpApiService().removeMemberFromCaravan(caravan.id, member.id);
@@ -401,52 +329,51 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                             AppToast.info(context, 'درخواست حذف «${member.name}» با موفقیت ثبت شد');
                           }
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE11D48),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('تایید حذف', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
           ),
+          NopaModalAction(
+            label: 'انصراف',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+        ],
+        child: Text(
+          'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Color(0xFFD6D3E6), fontSize: 13, height: 1.5, fontFamily: AppTheme.fontFamily),
         ),
       ),
     );
   }
 
   void _showContactMemberDialog(CaravanMemberModel member) {
-    showDialog(
-      context: context,
-      builder: (ctx) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Dialog(
-          backgroundColor: const Color(0xFF28274A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF5A588B), width: 1.2),
+    showNopaModal<void>(
+      context,
+      builder: (ctx) => NopaModalShell(
+        maxWidth: 420,
+        headerIcon: Icons.call_rounded,
+        title: 'تماس با ${member.name}',
+        actions: [
+          NopaModalAction(
+            label: 'تماس تلفنی',
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final uri = Uri.parse('tel:${member.phoneNumber}');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'تماس با ${member.name}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
+          NopaModalAction(
+            label: 'کپی شماره',
+            variant: NopaModalActionVariant.secondary,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: member.phoneNumber));
+              Navigator.pop(ctx);
+              AppToast.info(context, 'شماره تماس کپی شد');
+            },
+          ),
+        ],
+        child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1D36),
@@ -463,48 +390,6 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          Clipboard.setData(ClipboardData(text: member.phoneNumber));
-                          Navigator.pop(ctx);
-                          AppToast.info(context, 'شماره تماس کپی شد');
-                        },
-                        icon: const Icon(Icons.copy_rounded, color: Colors.white70, size: 16),
-                        label: const Text('کپی شماره', style: TextStyle(color: Colors.white70, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFF6B68A8)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          final uri = Uri.parse('tel:${member.phoneNumber}');
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri);
-                          }
-                        },
-                        icon: const Icon(Icons.call_rounded, color: Colors.white, size: 16),
-                        label: const Text('تماس تلفنی', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily, fontSize: 12)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -532,7 +417,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         showNotificationIcon: true,
         showDrawerButton: true,
         showBottomNavBar: true,
-        currentBottomNavIndex: 4,
+        currentBottomNavIndex: AppTabs.profile,
         body: Center(child: CircularProgressIndicator(color: Color(0xFFCD8449))),
       );
     }
@@ -551,7 +436,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: RefreshIndicator(
         onRefresh: () async {
           await appState.fetchCaravans();
@@ -751,12 +636,8 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
   }
 
   void _showCaravanSelectionBottomSheet(BuildContext context, AppRepository appState) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1E1D34),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    showNopaSheet(
+      context,
       builder: (ctx) {
         final caravans = appState.caravans;
         final selectedId = appState.selectedCaravanId;
@@ -1165,7 +1046,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
       showNotificationIcon: true,
       showDrawerButton: true,
       showBottomNavBar: true,
-      currentBottomNavIndex: 4,
+      currentBottomNavIndex: AppTabs.profile,
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

@@ -1,4 +1,6 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import '../../../widgets/nopa_modal_shell.dart';
+import 'package:nopa_app/widgets/nopa_pill_tabs.dart';
 import 'package:nopa_app/widgets/station_gallery_item.dart';
 import 'package:nopa_app/core/station_numbering.dart';
 import 'package:nopa_app/core/schedule_utils.dart';
@@ -1041,81 +1043,35 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     );
   }
 
-  /// Pill Tabs styled like login screen mode switcher (strokeGradient, darkSurfaceGradient, accentGradient)
+  /// Report tabs: one per class category of the station, "جلسات" when the station has no
+  /// category yet, and "آزمون ها". Same segmented style as every other tab bar in the app.
   Widget _buildPillTabs(Map<String, dynamic> station) {
     final categories = _reportCategories(station);
+    const int quizzesTab = -1;
+    const int sessionsTab = -2;
+    final int selected = _reportQuizzesSelected
+        ? quizzesTab
+        : (categories.isEmpty ? sessionsTab : _reportCategoryIndex.clamp(0, categories.length - 1));
     return FittedBox(
       fit: BoxFit.scaleDown,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.strokeGradient,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.all(AppColors.borderWidth),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.darkSurfaceGradient,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          padding: const EdgeInsets.all(3),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // One tab per class category of the station, under its admin-panel title
-                for (int i = 0; i < categories.length; i++) ...[
-                  _buildTabButton(
-                    'کلاس ${StationCategories.shortLabel(categories[i].title)}',
-                    !_reportQuizzesSelected && _reportCategoryIndex == i,
-                    () {
-                      setState(() {
-                        _reportCategoryIndex = i;
-                        _reportQuizzesSelected = false;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                _buildTabButton(
-                  'آزمون ها',
-                  _reportQuizzesSelected || categories.isEmpty,
-                  () {
-                    setState(() {
-                      _reportQuizzesSelected = true;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String title, bool isSelected, VoidCallback onTap) {
-    return TapExpander(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            gradient: isSelected ? AppColors.accentGradient : null,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: isSelected ? Colors.white : const Color(0xFF8E889D),
-              fontSize: 11.5,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
-          ),
-        ),
+      child: NopaPillTabs<int>(
+        selected: selected,
+        tabs: [
+          for (int i = 0; i < categories.length; i++)
+            NopaPillTab<int>(i, 'کلاس ${StationCategories.shortLabel(categories[i].title)}'),
+          if (categories.isEmpty) const NopaPillTab<int>(sessionsTab, 'جلسات'),
+          const NopaPillTab<int>(quizzesTab, 'آزمون ها'),
+        ],
+        onChanged: (v) {
+          setState(() {
+            if (v == quizzesTab) {
+              _reportQuizzesSelected = true;
+            } else {
+              _reportQuizzesSelected = false;
+              if (v >= 0) _reportCategoryIndex = v;
+            }
+          });
+        },
       ),
     );
   }
@@ -1384,8 +1340,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     Map<String, dynamic> station,
   ) {
     final categories = _reportCategories(station);
-    if (_reportQuizzesSelected || categories.isEmpty) {
+    if (_reportQuizzesSelected) {
       return _buildQuizzesProgress(member, station);
+    }
+    if (categories.isEmpty) {
+      return _buildReportEmptyText('برای این منزلگاه جلسه‌ای ثبت نشده است');
     }
 
     final sessionList =
@@ -1825,64 +1784,56 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     final phone = member['phoneNumber']?.toString() ?? '';
     final controller = DraftTextController(draftKey: 'mentor_followup.${member['id']}');
 
-    showDialog(
-      context: context,
-      barrierDismissible: true,
+    showNopaModal<void>(
+      context,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       builder: (dialogCtx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 20,
+        return NopaModalShell(
+          maxWidth: 420,
+          headerIcon: Icons.chat_bubble_outline_rounded,
+          title: 'پیام به دانش‌آموز',
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          actions: [
+            NopaModalAction(
+              label: 'ارسال پیام',
+              onPressed: () async {
+                            final text = controller.text.trim();
+                            if (text.isEmpty) {
+                              AppToast.error(
+                                context,
+                                'لطفاً متن پیام را وارد کنید',
+                              );
+                              return;
+                            }
+                            final sent = await HttpApiService().sendMentorMessage(
+                              title: 'پیام راهبر',
+                              message: text,
+                              caravanId: Provider.of<AppRepository>(context, listen: false).activeCaravanId,
+                              userId: member['id']?.toString(),
+                            );
+                            if (!dialogCtx.mounted || !mounted) return;
+                            if (sent == null) {
+                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
+                              return;
+                            }
+                            controller.clearDraft();
+                            Navigator.pop(dialogCtx);
+                            AppToast.info(
+                              context,
+                              'پیام برای $name با موفقیت ارسال شد.',
+                            );
+                          },
             ),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2849),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header: Message Icon on right (in RTL) and Centered Title
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        const Align(
-                          alignment: Alignment.centerRight,
-                          child: Icon(
-                            Icons.chat_bubble_outline_rounded,
-                            color: Color(0xFF9E9CD6),
-                            size: 32,
-                          ),
-                        ),
-                        const Text(
-                          'پیام به دانش‌آموز',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-
+            NopaModalAction(
+              label: 'لغو',
+              variant: NopaModalActionVariant.secondary,
+              onPressed: () => Navigator.pop(dialogCtx),
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
                     // 1. Student Name
                     _buildDialogRow(
                       label: 'نام دانش‌آموز:',
@@ -1984,88 +1935,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       ],
                     ),
 
-                    const SizedBox(height: 24),
-
-                    // Bottom Buttons: ارسال پیام & لغو (matching ContactUsDialog)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // ارسال پیام (Right in RTL)
-                        TextButton(
-                          onPressed: () async {
-                            final text = controller.text.trim();
-                            if (text.isEmpty) {
-                              AppToast.error(
-                                context,
-                                'لطفاً متن پیام را وارد کنید',
-                              );
-                              return;
-                            }
-                            final sent = await HttpApiService().sendMentorMessage(
-                              title: 'پیام راهبر',
-                              message: text,
-                              caravanId: Provider.of<AppRepository>(context, listen: false).activeCaravanId,
-                              userId: member['id']?.toString(),
-                            );
-                            if (!dialogCtx.mounted || !mounted) return;
-                            if (sent == null) {
-                              AppToast.error(context, 'ارسال پیام انجام نشد. دوباره تلاش کنید.');
-                              return;
-                            }
-                            controller.clearDraft();
-                            Navigator.pop(dialogCtx);
-                            AppToast.info(
-                              context,
-                              'پیام برای $name با موفقیت ارسال شد.',
-                            );
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                          ),
-                          child: const Text(
-                            'ارسال پیام',
-                            style: TextStyle(
-                              color: Color(0xFF9E9CD6),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-
-                        // لغو (Left in RTL)
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                          ),
-                          child: const Text(
-                            'لغو',
-                            style: TextStyle(
-                              color: Color(0xFF9E9CD6),
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
         );
       },
     );
   }
 }
-
-typedef MentorStationScreen = MentorStationClass1Screen;

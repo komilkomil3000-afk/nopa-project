@@ -192,6 +192,3 @@ class AppTypography {
     color: Color(0xFFFFFFFF),
   );
 }
-
-/// Backwards-compatible alias
-typedef AppTextStyles = AppTypography;
