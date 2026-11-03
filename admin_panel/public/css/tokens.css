@@ -144,6 +144,11 @@
   :root[data-theme="light"] { --page-bg-image: url("/admin/images/bg-mobile-light.svg"); }
 }
 
+/* Installed web app (PWA): the dark theme uses the phone background at every width */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  :root[data-theme="dark"] { --page-bg-image: url("/admin/images/bg-mobile-dark.png"); }
+}
+
 /* Scales shared by both themes */
 :root {
   --space-1: 4px;

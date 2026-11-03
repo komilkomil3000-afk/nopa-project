@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="/admin/css/landing.css">
   <link rel="stylesheet" href="/admin/css/dashboard.css">
   <link rel="stylesheet" href="/admin/css/components.css">
+  <link rel="stylesheet" href="/admin/css/chat.css">
   <link rel="stylesheet" href="/admin/css/stations.css">
   <link rel="stylesheet" href="/admin/css/utilities.css">
   <!-- Chart.js (Local) -->
@@ -1477,6 +1478,83 @@
       </section>
 
       <section id="chat-tab" class="tab-panel" data-style="display: none;">
+        <div class="chm-views" role="tablist" aria-label="بخش‌های چت">
+          <button type="button" class="chm-view is-active" role="tab" aria-selected="true" data-chm-view="messenger"><i class="fa-solid fa-comments"></i>گفتگوها</button>
+          <button type="button" class="chm-view" role="tab" aria-selected="false" data-chm-view="manage"><i class="fa-solid fa-sliders"></i>مدیریت چت</button>
+        </div>
+
+        <!-- Messenger (js/features/chat-messenger.js): inbox on one side, the open conversation on the other -->
+        <div id="chat-messenger" class="chm" data-state="list">
+          <aside class="chm-side" aria-label="فهرست گفتگوها">
+            <div class="chm-side-head">
+              <div class="chm-side-title"><i class="fa-solid fa-comments"></i>گفتگوها<span class="chm-live" id="chm-live" title="اتصال"></span></div>
+              <button type="button" class="chm-icon-btn" id="chm-new-direct" title="گفتگوی خصوصی تازه" aria-label="گفتگوی خصوصی تازه"><i class="fa-solid fa-pen-to-square"></i></button>
+            </div>
+            <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="chm-filter-text" placeholder="جستجوی گفتگو..." autocomplete="off"></label>
+            <div class="chm-chips" id="chm-chips" role="tablist"></div>
+            <div class="chm-list" id="chm-list" aria-live="polite"></div>
+            <div class="chm-contacts" id="chm-contacts" hidden>
+              <div class="chm-contacts-head"><strong>گفتگوی خصوصی تازه</strong><button type="button" class="chm-icon-btn" id="chm-contacts-close" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button></div>
+              <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="chm-contacts-text" placeholder="جستجوی نام..." autocomplete="off"></label>
+              <div class="chm-list" id="chm-contacts-list"></div>
+            </div>
+          </aside>
+          <section class="chm-main" aria-label="گفتگو">
+            <div class="chm-empty" id="chm-empty">
+              <span class="chm-empty-icon"><i class="fa-regular fa-comments"></i></span>
+              <strong>یک گفتگو را انتخاب کنید</strong>
+              <span>پشتیبانی، راهبرها و کاروان‌ها از همین‌جا پیام می‌دهند و پاسخ می‌گیرند.</span>
+            </div>
+            <div class="chm-conv" id="chm-conv" hidden>
+              <header class="chm-head">
+                <button type="button" class="chm-icon-btn chm-back" id="chm-back" aria-label="بازگشت به فهرست"><i class="fa-solid fa-arrow-right"></i></button>
+                <span class="chm-avatar" id="chm-head-avatar"></span>
+                <div class="chm-head-text"><strong id="chm-head-title"></strong><span id="chm-head-sub"></span></div>
+                <div class="chm-head-tools">
+                  <span id="chm-case-tools" class="chm-case-tools" hidden>
+                    <button type="button" class="chm-pill-btn" id="chm-case-claim"><i class="fa-solid fa-hand"></i>برداشتن</button>
+                    <button type="button" class="chm-pill-btn is-ok" id="chm-case-resolve"><i class="fa-solid fa-circle-check"></i>بستن پرونده</button>
+                  </span>
+                  <button type="button" class="chm-icon-btn" id="chm-search-toggle" title="جستجو در گفتگو" aria-label="جستجو در گفتگو"><i class="fa-solid fa-magnifying-glass"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-pins-toggle" title="پیام‌های سنجاق‌شده" aria-label="پیام‌های سنجاق‌شده"><i class="fa-solid fa-thumbtack"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-mute-toggle" title="بی‌صدا کردن اعلان" aria-label="بی‌صدا کردن اعلان"><i class="fa-solid fa-bell"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-refresh" title="بازخوانی" aria-label="بازخوانی"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+              </header>
+              <div class="chm-searchbar" id="chm-searchbar" hidden>
+                <label class="search-box chm-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="chm-search-text" placeholder="جستجو در پیام‌های این گفتگو (حداقل ۲ حرف)" autocomplete="off"></label>
+              </div>
+              <button type="button" class="chm-pinbar" id="chm-pinbar" hidden><i class="fa-solid fa-thumbtack"></i><span id="chm-pinbar-text"></span></button>
+              <div class="chm-stream" id="chm-stream" tabindex="0" aria-live="polite"></div>
+              <button type="button" class="chm-jump" id="chm-jump" hidden aria-label="رفتن به آخرین پیام"><i class="fa-solid fa-chevron-down"></i><span id="chm-jump-count"></span></button>
+              <div class="chm-compose-wrap" id="chm-compose-wrap">
+                <div class="chm-notice" id="chm-notice" hidden></div>
+                <div class="chm-context" id="chm-context" hidden>
+                  <i class="fa-solid fa-reply" id="chm-context-icon"></i>
+                  <div class="chm-context-text"><strong id="chm-context-title"></strong><span id="chm-context-body"></span></div>
+                  <button type="button" class="chm-icon-btn" id="chm-context-cancel" aria-label="انصراف"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="chm-files" id="chm-files" hidden></div>
+                <div class="chm-sched" id="chm-sched" hidden>
+                  <i class="fa-solid fa-clock"></i><span>زمان‌بندی انتشار</span>
+                  <input type="datetime-local" id="chm-sched-at" aria-label="زمان انتشار">
+                  <button type="button" class="chm-icon-btn" id="chm-sched-clear" aria-label="حذف زمان‌بندی"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form class="chm-composer" id="chm-composer" autocomplete="off">
+                  <button type="button" class="chm-icon-btn" id="chm-attach" title="پیوست فایل" aria-label="پیوست فایل"><i class="fa-solid fa-paperclip"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-templates" title="قالب‌های پیام" aria-label="قالب‌های پیام"><i class="fa-solid fa-bolt"></i></button>
+                  <button type="button" class="chm-icon-btn" id="chm-sched-toggle" title="زمان‌بندی" aria-label="زمان‌بندی"><i class="fa-regular fa-clock"></i></button>
+                  <textarea id="chm-input" rows="1" maxlength="4000" placeholder="پیام خود را بنویسید..." aria-label="متن پیام"></textarea>
+                  <button type="submit" class="chm-send" id="chm-send" aria-label="ارسال"><i class="fa-solid fa-paper-plane"></i></button>
+                  <input type="file" id="chm-file" multiple hidden>
+                </form>
+              </div>
+            </div>
+          </section>
+          <div class="chm-menu" id="chm-menu" hidden role="menu"></div>
+        </div>
+
+        <div id="chat-manage-pane" hidden>
         <div id="chat-settings-admin" class="panel-card glass u-maxw-760">
           <div class="panel-title"><i class="fa-solid fa-comments u-c-primary-text u-ml-8"></i>وضعیت چت</div>
           <div class="u-fs-12_5 u-c-text-muted u-m-6-0-16 u-lh-1_8">
@@ -1538,6 +1616,7 @@
         <div class="panel-card glass u-maxw-760 u-mt-15">
           <div class="panel-title"><i class="fa-solid fa-chart-column u-c-primary-text u-ml-8"></i>مشارکت و ابهام</div>
           <div id="chat-analytics"></div>
+        </div>
         </div>
       </section>
 
@@ -3620,6 +3699,7 @@
     <script src="js/features/economy.js"></script>
     <script src="js/features/chat-settings.js"></script>
     <script src="js/features/chat-ops.js"></script>
+    <script src="js/features/chat-messenger.js"></script>
     <script src="js/features/access.js"></script>
     <script src="js/features/users.js"></script>
     <script src="js/features/rewards.js"></script>
