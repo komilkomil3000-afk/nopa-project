@@ -1788,9 +1788,10 @@
       <!-- LMS -->
       <section id="lms-tab" class="tab-panel" data-style="display: none;">
         <div id="lms-overview-view">
-        <div class="u-flex u-justify-between u-items-center u-mb-20">
-          <h3>ساختار منزلگاه‌ها و مدیریت کلاس‌ها و آزمون‌ها</h3>
+        <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
           <div class="u-flex u-gap-10">
+            <button type="button" id="lms-draft-chip" class="lse-btn" data-click="lmsResumeDraft" data-style="display: none"><i class="fa-solid fa-file-pen"></i> ادامه پیش‌نویس منزلگاه</button>
+            <button type="button" id="lms-draft-del" class="lsv-round lsv-round-danger" data-click="lmsDeleteDraft" title="حذف پیش‌نویس" aria-label="حذف پیش‌نویس" data-style="display: none"><i class="fa-solid fa-trash"></i></button>
             <button type="button" data-click="openCreateStationModal" class="btn-primary u-bgc-primary">
               <i class="fa-solid fa-plus"></i> ایجاد منزلگاه جدید
             </button>
@@ -1909,11 +1910,9 @@
                 </label>
 
                 <fieldset class="lse-options">
-                  <legend>گزینه‌ها <small>دایره کنار پاسخ درست را انتخاب کنید</small></legend>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="0" id="opt-radio-0" checked><span>۱</span><input type="text" id="quiz-opt-0" class="input-ctrl" placeholder="گزینه اول" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="1" id="opt-radio-1"><span>۲</span><input type="text" id="quiz-opt-1" class="input-ctrl" placeholder="گزینه دوم" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="2" id="opt-radio-2"><span>۳</span><input type="text" id="quiz-opt-2" class="input-ctrl" placeholder="گزینه سوم" required></label>
-                  <label class="lse-option"><input type="radio" name="quiz-correct-opt" value="3" id="opt-radio-3"><span>۴</span><input type="text" id="quiz-opt-3" class="input-ctrl" placeholder="گزینه چهارم" required></label>
+                  <legend>گزینه‌ها <small>دایره کنار پاسخ درست را انتخاب کنید؛ برای جابجایی، گزینه را بکشید</small></legend>
+                  <div class="chl-opts" id="quiz-opts"></div>
+                  <button type="button" class="lse-add-row chl-opt-add" id="quiz-opt-add"><i class="fa-solid fa-plus"></i> گزینه جدید</button>
                 </fieldset>
               </div>
 
@@ -1985,188 +1984,116 @@
 
       <!-- CHALLENGES & SUBMISSIONS REVIEW TAB -->
       <section id="submissions-tab" class="tab-panel" data-style="display: none;">
-        <!-- Header with Title, Desc, and Refresh Button -->
-        <div class="u-flex u-justify-between u-items-center u-mb-20 u-wrap u-gap-12">
-          <div>
-            <h3 class="u-m-0 u-c-text u-fs-lg u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-trophy u-c-accent-text"></i> بررسی و مدیریت چالش‌ها و تکالیف
-            </h3>
-            <p class="u-m-4-0-0-0 u-c-text-muted u-fs-xs">چالش‌های فعال نپا در اپلیکیشن موبایل، گام‌ها و مراحل آزمون، و بررسی پاسخ‌های ارسالی دانش‌آموزان</p>
-          </div>
+        <!-- Page-header row (left): draft chip and the create button, exactly like the stations tab -->
+        <div class="lms-head-actions u-flex u-justify-end u-items-center u-mb-20">
           <div class="u-flex u-gap-10">
-            <button type="button" data-click="loadChallengesAndSubmissionsTab" class="btn-action u-bg-accent-15 u-c-accent-text u-bd-accent-30 u-r-8 u-p-8-16 u-bold u-pointer u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-sync"></i> بروزرسانی اطلاعات
+            <button type="button" id="chl-draft-chip" class="lse-btn" data-click="chlResumeDraft" data-style="display: none"><i class="fa-solid fa-file-pen"></i> ادامه پیش‌نویس چالش</button>
+            <button type="button" id="chl-draft-del" class="lsv-round lsv-round-danger" data-click="chlDeleteDraft" title="حذف پیش‌نویس" aria-label="حذف پیش‌نویس" data-style="display: none"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" id="btn-open-create-challenge" data-click="openCreateChallengeModal" class="btn-primary u-bgc-primary">
+              <i class="fa-solid fa-plus"></i> ایجاد چالش جدید
             </button>
           </div>
         </div>
 
-        <!-- 3 Stat Cards for Challenges -->
-        <div class="u-grid u-cols-fit-220 u-gap-15 u-mb-24">
-          <div class="panel-card glass u-flex u-items-center u-gap-14 u-p-16">
-            <div class="u-w-46 u-h-46 u-r-12 u-bg-accent-15 u-c-accent-text u-flex u-items-center u-justify-center u-fs-lg">
-              <i class="fa-solid fa-bullseye"></i>
+        <!-- Bento: challenges + submissions (right, wide) and status tiles (left), like the stations tab -->
+        <div class="chl-bento">
+          <div class="lst-tile glass chl-main">
+            <div class="lst-tile-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-trophy"></i> چالش‌های فعال نپا و مراحل آن <span id="badge-challenges-total" class="lst-tile-sub">۰ چالش</span></h4>
+              <div class="search-box">
+                <i class="fa-solid fa-search"></i>
+                <input aria-label="جستجوی چالش‌ها" type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." data-input="filterChallengesList" class="input-ctrl">
+              </div>
             </div>
-            <div>
-              <div class="u-c-text-muted u-fs-xs u-bold">چالش‌های فعال اپلیکیشن</div>
-              <div id="stat-challenges-count" class="u-c-text u-fs-lg u-fw-800 u-mt-2">۰</div>
-            </div>
-          </div>
-          
-          <div class="panel-card glass u-flex u-items-center u-gap-14 u-p-16">
-            <div class="u-w-46 u-h-46 u-r-12 u-bg-danger-15 u-c-danger-text u-flex u-items-center u-justify-center u-fs-lg">
-              <i class="fa-solid fa-clock-rotate-left"></i>
-            </div>
-            <div>
-              <div class="u-c-text-muted u-fs-xs u-bold">تکالیف در انتظار ارزیابی</div>
-              <div id="stat-pending-submissions" class="u-c-text u-fs-lg u-fw-800 u-mt-2">۰</div>
-            </div>
-          </div>
-
-          <div class="panel-card glass u-flex u-items-center u-gap-14 u-p-16">
-            <div class="u-w-46 u-h-46 u-r-12 u-bg-success-15 u-c-success-text u-flex u-items-center u-justify-center u-fs-lg">
-              <i class="fa-solid fa-circle-check"></i>
-            </div>
-            <div>
-              <div class="u-c-text-muted u-fs-xs u-bold">تکالیف تایید شده</div>
-              <div id="stat-approved-submissions" class="u-c-text u-fs-lg u-fw-800 u-mt-2">۰</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SECTION 1: CHALLENGES DIRECTORY & STAGES -->
-        <div class="panel-card glass u-mb-24 u-p-20-20">
-          <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-12">
-            <div class="u-flex u-items-center u-gap-10">
-              <span class="u-fs-md u-bold u-c-text">
-                <i class="fa-solid fa-list-ol u-c-primary-text"></i> چالش‌های فعال نپا و مراحل آن (تفکیک کاروان، راهبر و مدیر)
-              </span>
-              <span id="badge-challenges-total" class="badge u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-fs-2xs">۰ چالش</span>
-            </div>
-            <div class="u-flex u-gap-10 u-wrap u-items-center">
-              <!-- Caravan Filter -->
-              <select aria-label="فیلتر کاروان" id="filter-challenges-caravan" data-change="filterChallengesList" class="u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs u-pointer">
+            <div class="chl-toolbar">
+              <select aria-label="فیلتر کاروان" id="filter-challenges-caravan" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه کاروان‌ها و راهبران</option>
+                <option value="public">فقط چالش‌های عمومی (همه کاروان‌ها)</option>
               </select>
-
-              <!-- Creator Filter (Admin vs Mentor) -->
-              <select aria-label="فیلتر سازنده" id="filter-challenges-creator" data-change="filterChallengesList" class="u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs u-pointer">
+              <select aria-label="فیلتر سازنده" id="filter-challenges-creator" data-change="filterChallengesList" class="select-ctrl">
                 <option value="all">همه سازندگان (مدیر و راهبر)</option>
                 <option value="admin">فقط ایجاد شده توسط مدیر</option>
                 <option value="mentor">فقط ایجاد شده توسط راهبران</option>
               </select>
+            </div>
+            <div id="admin-challenges-grid" class="chl-grid"></div>
+          </div>
 
-              <!-- Search -->
-              <input aria-label="جستجوی چالش‌ها" type="text" id="filter-challenges-search" placeholder="جستجوی عنوان یا کد چالش..." data-input="filterChallengesList" class="u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs u-w-190">
+          <div class="chl-side">
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-chart-simple"></i> آمار کلی</h4>
+              <div class="lst-mini-stats">
+                <div class="lst-mini-stat"><span class="stat-label">چالش‌های فعال</span><span class="stat-value u-c-primary-text" id="stat-challenges-count">۰</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">در انتظار ارزیابی</span><span class="stat-value u-c-accent-text" id="stat-pending-submissions">۰</span></div>
+                <div class="lst-mini-stat"><span class="stat-label">تایید شده</span><span class="stat-value u-c-success-text" id="stat-approved-submissions">۰</span></div>
+              </div>
+            </div>
 
-              <!-- Create Challenge Button -->
-              <button type="button" id="btn-open-create-challenge" class="btn-primary u-bg-grad-primary u-c-white u-bd-none u-r-8 u-p-8-16 u-fs-xs u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-primary-30" data-click="openCreateChallengeModal">
-                <i class="fa-solid fa-plus"></i> ایجاد چالش جدید
-              </button>
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-ranking-star"></i> رتبه‌بندی و امتیازات کاروان‌ها <span class="lst-tile-sub">بر اساس امتیاز گروهی</span></h4>
+              <div id="chl-bento-caravans"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-clipboard-check"></i> وضعیت پاسخ‌ها <span class="lst-tile-sub">بر اساس فیلتر وضعیت فعلی</span></h4>
+              <div id="chl-bento-status"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-layer-group"></i> ترکیب چالش‌ها</h4>
+              <div id="chl-bento-types"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-hourglass-half"></i> بیشترین پاسخ در انتظار</h4>
+              <div id="chl-bento-pending"></div>
+            </div>
+
+            <div class="lst-tile glass">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-bolt"></i> دسترسی سریع</h4>
+              <div class="lst-quick">
+                <button type="button" class="lst-quick-btn" data-click="openCreateChallengeModal"><i class="fa-solid fa-plus"></i> چالش جدید</button>
+                <button type="button" class="lst-quick-btn" data-click="loadChallengesAndSubmissionsTab"><i class="fa-solid fa-sync"></i> بروزرسانی</button>
+              </div>
             </div>
           </div>
 
-          <!-- Challenges Table -->
-          <div class="table-container">
-            <table class="data-table" id="admin-challenges-table">
-              <thead>
-                <tr>
-                  <th class="u-w-90">کد چالش</th>
-                  <th>عنوان چالش</th>
-                  <th class="u-w-190">تولید شده برای (مخاطبان)</th>
-                  <th class="u-w-170">تولید شده توسط (سازنده)</th>
-                  <th class="u-w-170 u-nowrap">نوع و پاداش</th>
-                  <th class="u-w-110 u-text-center">مشارکت</th>
-                  <th class="u-w-180 u-text-center">عملیات و مدیریت</th>
-                </tr>
-              </thead>
-              <tbody id="admin-challenges-tbody">
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- SECTION 2: SUBMISSIONS EVALUATION TABLE -->
-        <div class="panel-card glass u-p-20-20">
-          <div class="u-flex u-justify-between u-items-center u-mb-16 u-wrap u-gap-10">
-            <div class="u-flex u-items-center u-gap-10">
-              <span class="u-fs-md u-bold u-c-text">
-                <i class="fa-solid fa-clipboard-check u-c-success-text"></i> بررسی و ارزیابی پاسخ‌های ارسالی دانش‌آموزان
-              </span>
-              <span id="badge-submissions-filtered-count" class="badge u-bg-success-20 u-c-success-text u-bd-success-40 u-fs-2xs">۰ پاسخ</span>
+          <div class="lst-tile glass chl-main">
+            <div class="lst-tile-head">
+              <h4 class="lst-tile-title"><i class="fa-solid fa-clipboard-check"></i> بررسی و ارزیابی پاسخ‌های ارسالی دانش‌آموزان <span id="badge-submissions-filtered-count" class="lst-tile-sub">۰ پاسخ</span></h4>
             </div>
-          </div>
-
-          <!-- SUBMISSIONS FILTERS TOOLBAR -->
-          <div class="u-bg-surface-60 u-bd-fg-8 u-r-12 u-p-14 u-mb-16">
-            <div class="u-flex u-gap-10 u-wrap u-items-center">
-              <!-- Search Filter -->
-              <div class="u-flex-2-1-220 u-relative">
-                <input aria-label="جستجوی پاسخ‌ها" type="text" id="filter-submissions-search" placeholder="جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." data-input="filterAdminSubmissionsList" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-xs u-border-box">
+            <!-- Submissions filters: same search box, selects and buttons as the stations tab -->
+            <div class="chl-toolbar">
+              <div class="search-box chl-search-wide">
+                <i class="fa-solid fa-search"></i>
+                <input aria-label="جستجوی پاسخ‌ها" type="text" id="filter-submissions-search" placeholder="جستجوی نام، تلفن، چالش، کاروان، راهبر یا متن پاسخ..." data-input="filterAdminSubmissionsList" class="input-ctrl">
               </div>
-
-              <!-- Student Filter -->
-              <div class="u-flex-1-1-150">
-                <select aria-label="فیلتر کاربر" id="filter-submissions-student" data-change="filterAdminSubmissionsList" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-xs u-pointer u-border-box">
-                  <option value="all">همه دانش‌آموزان</option>
-                </select>
-              </div>
-
-              <!-- Caravan Filter -->
-              <div class="u-flex-1-1-150">
-                <select aria-label="فیلتر کاروان" id="filter-submissions-caravan" data-change="filterAdminSubmissionsList" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-xs u-pointer u-border-box">
-                  <option value="all">همه کاروان‌ها</option>
-                </select>
-              </div>
-
-              <!-- Mentor Filter -->
-              <div class="u-flex-1-1-150">
-                <select aria-label="فیلتر راهبر" id="filter-submissions-mentor" data-change="filterAdminSubmissionsList" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-xs u-pointer u-border-box">
-                  <option value="all">همه راهبران</option>
-                </select>
-              </div>
-
-              <!-- Status Filter -->
-              <div class="u-flex-1-1-140">
-                <select aria-label="فیلتر وضعیت" id="filter-submissions-status" data-change="loadAdminSubmissionsData" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-xs u-pointer u-border-box">
-                  <option value="pending">در انتظار بررسی</option>
-                  <option value="all">کلیه وضعیت‌ها</option>
-                  <option value="approved">تایید شده</option>
-                  <option value="rejected">رد شده</option>
-                </select>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="u-flex u-gap-8 u-items-center">
-                <button type="button" data-click="resetAdminSubmissionsFilters" class="btn-action u-bg-danger-15 u-c-danger-text u-bd-danger-30 u-r-8 u-p-8-14 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-nowrap" title="پاکسازی همه فیلترها">
+              <select aria-label="فیلتر کاربر" id="filter-submissions-student" data-change="filterAdminSubmissionsList" class="select-ctrl">
+                <option value="all">همه دانش‌آموزان</option>
+              </select>
+              <select aria-label="فیلتر کاروان" id="filter-submissions-caravan" data-change="filterAdminSubmissionsList" class="select-ctrl">
+                <option value="all">همه کاروان‌ها</option>
+              </select>
+              <select aria-label="فیلتر راهبر" id="filter-submissions-mentor" data-change="filterAdminSubmissionsList" class="select-ctrl">
+                <option value="all">همه راهبران</option>
+              </select>
+              <select aria-label="فیلتر وضعیت" id="filter-submissions-status" data-change="loadAdminSubmissionsData" class="select-ctrl">
+                <option value="pending">در انتظار بررسی</option>
+                <option value="all">کلیه وضعیت‌ها</option>
+                <option value="approved">تایید شده</option>
+                <option value="rejected">رد شده</option>
+              </select>
+              <span class="lsv-round-group">
+                <button type="button" data-click="resetAdminSubmissionsFilters" class="lse-btn chl-btn-reject" title="پاکسازی همه فیلترها">
                   <i class="fa-solid fa-rotate-left"></i> پاکسازی فیلترها
                 </button>
-                <button type="button" data-click="loadAdminSubmissionsData" class="btn-action u-bg-primary-15 u-c-primary-text u-bd-primary-30 u-r-8 u-p-8-14 u-fs-xs u-bold u-pointer u-inline-flex u-items-center u-gap-6 u-nowrap" title="بروزرسانی داده‌ها">
+                <button type="button" data-click="loadAdminSubmissionsData" class="lse-btn" title="بروزرسانی داده‌ها">
                   <i class="fa-solid fa-sync"></i> بروزرسانی
                 </button>
-              </div>
+              </span>
             </div>
-          </div>
 
-          <div class="table-container">
-            <table class="data-table" id="admin-submissions-table">
-              <thead>
-                <tr>
-                  <th class="u-w-160">دانش‌آموز</th>
-                  <th class="u-w-170">کاروان و راهبر</th>
-                  <th class="u-w-180">چالش / تکلیف</th>
-                  <th>پاسخ ارسالی دانش‌آموز</th>
-                  <th class="u-w-110">فایل پیوست</th>
-                  <th class="u-w-110">تاریخ ارسال</th>
-                  <th class="u-w-80">پاداش</th>
-                  <th class="u-w-120">وضعیت</th>
-                  <th class="u-text-center u-w-180">مشاهده و ارزیابی پاسخ</th>
-                </tr>
-              </thead>
-              <tbody id="admin-submissions-tbody">
-                <!-- Populated by JS -->
-              </tbody>
-            </table>
+            <div id="admin-submissions-list" class="chl-subs"></div>
           </div>
         </div>
       </section>
@@ -3118,333 +3045,365 @@
   </div>
   
     <!-- CHALLENGE STEPS MODAL -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="challenge-steps-modal" data-style="display: none">
-      <div class="modal-content glass u-maxw-650 u-w-95p u-maxh-90vh u-scroll-y u-bd-primary-30 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9">
-        <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
-          <div>
-            <h3 id="modal-challenge-title" class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-trophy u-c-accent-text"></i> عنوان چالش
-            </h3>
-            <span id="modal-challenge-badge" class="u-inline-block u-mt-4 u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-p-2-8 u-r-4 u-fs-2xs">کد: CH501</span>
+    <div class="modal-overlay lse-overlay u-z-z-modal" id="challenge-steps-modal" data-style="display: none">
+      <div class="lse lse-md">
+        <header class="lse-head lse-head-plain">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-list-check"></i></span>
+            <div class="lse-id-text">
+              <h3 id="modal-challenge-title">مراحل چالش</h3>
+              <span id="modal-challenge-badge">-</span>
+            </div>
           </div>
-          <button aria-label="بستن" class="modal-close" data-click="closeChallengeStepsModal">&times;</button>
-        </div>
-        <div id="modal-challenge-body" class="u-p-20-0 u-maxh-65vh u-scroll-y">
-          <!-- Dynamically populated steps/questions -->
-        </div>
-        <div class="u-flex u-justify-end u-bt-fg-10 u-pt-12">
-          <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text u-bd-none u-pointer" data-click="closeChallengeStepsModal">بستن</button>
-        </div>
+          <button type="button" class="lsv-round" data-click="closeChallengeStepsModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div class="lse-body" id="modal-challenge-body"></div>
+        <footer class="lse-foot">
+          <span class="lse-foot-note"><i class="fa-solid fa-circle-info"></i> این‌ها همان مراحلی است که دانش‌آموز در اپلیکیشن می‌بیند.</span>
+          <div class="lse-foot-actions">
+            <button type="button" class="lsv-pill" data-click="closeChallengeStepsModal">بستن</button>
+          </div>
+        </footer>
       </div>
     </div>
 
-    <!-- CREATE CHALLENGE MODAL (ADMIN) -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="create-challenge-modal" data-style="display: none">
-      <div class="modal-content glass u-maxw-720 u-w-95p u-maxh-90vh u-scroll-y u-bd-primary-40 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9 u-c-text u-flex u-col">
-        <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
-          <div>
-            <h3 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-trophy u-c-primary-text"></i> ایجاد چالش و تکلیف جدید (توسط مدیر)
-            </h3>
-            <span class="badge u-mt-4 u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-fs-2xs">ثبت با برچسب رسمی «توسط مدیر» + ارسال اعلان خودکار</span>
+    <div class="modal-overlay lse-overlay u-z-z-modal" id="create-challenge-modal" data-style="display: none">
+      <div class="lse lse-editor">
+        <header class="lse-head">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-plus"></i></span>
+            <div class="lse-id-text">
+              <h3>چالش جدید</h3>
+              <span>با نشان «توسط مدیر» ثبت می‌شود و برای کاروان هدف اعلان می‌فرستد</span>
+            </div>
           </div>
-          <button aria-label="بستن" class="modal-close" data-click="closeCreateChallengeModal">&times;</button>
-        </div>
+          <nav class="lse-tabs" aria-label="بخش‌های چالش">
+            <button type="button" class="lse-tab lse-step is-active" data-chl-tab="info" data-click="chlGoPane" data-click-args="[&quot;new&quot;,&quot;info&quot;]"><span class="lse-step-num">۱</span>مشخصات</button>
+            <button type="button" class="lse-tab lse-step" data-chl-tab="reward" data-click="chlGoPane" data-click-args="[&quot;new&quot;,&quot;reward&quot;]" disabled><span class="lse-step-num">۲</span>پاداش و مهلت</button>
+            <button type="button" class="lse-tab lse-step" data-chl-tab="steps" data-click="chlGoPane" data-click-args="[&quot;new&quot;,&quot;steps&quot;]" disabled><span class="lse-step-num">۳</span>مراحل و سوال‌ها</button>
+            <button type="button" class="lse-tab lse-step" data-chl-tab="review" data-click="chlGoPane" data-click-args="[&quot;new&quot;,&quot;review&quot;]" disabled><span class="lse-step-num">۴</span>مرور و ثبت</button>
+          </nav>
+          <button type="button" class="lsv-round" data-click="closeCreateChallengeModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
 
-        <div class="u-p-16-0 u-scroll-y u-flex-1">
-          <div class="u-bg-primary-10 u-bd-primary-30 u-r-8 u-p-10-14 u-mb-16 u-fs-xs u-c-primary-text u-lh-1_6">
-            <i class="fa-solid fa-bell u-c-accent-text"></i> چالش‌هایی که توسط مدیر ثبت می‌شوند با نشان اختصاصی <strong>«توسط مدیر»</strong> مشخص شده و بلافاصله به دانش‌آموزان کاروان هدف و راهبر مربوطه اعلان (Notification) ارسال می‌گردد.
-          </div>
-
-          <form id="create-challenge-form" data-submit="submitCreateChallenge" data-submit-args="[&quot;$event&quot;]">
-            <div class="u-grid u-cols-2fr-1fr u-gap-14 u-mb-14">
-              <div>
-                <label for="new-chal-title" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">عنوان چالش *</label>
-                <input type="text" id="new-chal-title" required placeholder="مثال: مسابقه استدلال و تحلیل منطقی" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-              </div>
-              <div>
-                <label for="new-chal-asset" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">نوع پاداش *</label>
-                <select id="new-chal-asset" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-sm">
-                  <option value="nakh">کلاف</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="new-chal-reward-min" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">حداقل پاداش *</label>
-                <input type="number" id="new-chal-reward-min" min="0" step="1" value="0" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-sm">
-              </div>
-              <div>
-                <label for="new-chal-reward-max" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">حداکثر پاداش *</label>
-                <input type="number" id="new-chal-reward-max" min="1" step="1" value="10" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-sm">
-                <div class="u-fs-2xs u-c-text-muted u-mt-4">راهبر هنگام تأیید پاسخ، امتیاز را در این بازه انتخاب می‌کند. (در آزمون‌های تستی، پاداش نهایی به نسبت پاسخ‌های درست در همین بازه محاسبه می‌شود.)</div>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="new-chal-caravan-id" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">کاروان و راهبر هدف *</label>
-                <select id="new-chal-caravan-id" required data-change="handleChallengeAudienceChange" data-change-args="[&quot;new&quot;]" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="inter_group">عمومی (میان‌گروهی)</option>
-                </select>
-                <div id="new-chal-mentor-notice" class="u-fs-2xs u-c-primary-text u-mt-6 u-bg-primary-10 u-p-6-8 u-r-6 u-bd-primary-25 u-lh-1_5" data-style="display: none"></div>
-              </div>
-              <div>
-                <label for="new-chal-type" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">نوع چالش *</label>
-                <select id="new-chal-type" data-change="handleChallengeTypeChange" data-change-args="[&quot;new&quot;]" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="new-chal-station-id" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">منزلگاه مرتبط (اختیاری):</label>
-                <select id="new-chal-station-id" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
-                </select>
-              </div>
-              <div>
-                <label class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">تاریخ شروع و پایان چالش (اختیاری):</label>
-                <div class="u-grid u-cols-2 u-gap-8">
-                  <input type="date" id="new-chal-start-date" title="تاریخ شروع" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]" class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <input type="date" id="new-chal-due-date" title="تاریخ پایان" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]" class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
+        <form id="create-challenge-form" class="lse-form" novalidate data-submit="submitCreateChallenge" data-submit-args="[&quot;$event&quot;]">
+          <div class="lse-body" id="new-chal-body">
+            <div class="chl-pane is-active" data-pane="info">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات چالش</h4>
+                <label class="lse-field">
+                  <span>عنوان چالش <b class="lse-req">*</b></span>
+                  <input type="text" id="new-chal-title" class="input-ctrl" placeholder="مثال: مسابقه استدلال و تحلیل منطقی" required>
+                </label>
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field">
+                    <span>نوع چالش <b class="lse-req">*</b></span>
+                    <select id="new-chal-type" class="select-ctrl" data-change="handleChallengeTypeChange" data-change-args="[&quot;new&quot;]">
+                      <option value="quiz">آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                      <option value="text">تشریحی (پاسخ متنی و فایل)</option>
+                    </select>
+                  </label>
+                  <label class="lse-field">
+                    <span>کاروان و راهبر هدف <b class="lse-req">*</b></span>
+                    <select id="new-chal-caravan-id" class="select-ctrl" data-change="handleChallengeAudienceChange" data-change-args="[&quot;new&quot;]" required>
+                      <option value="inter_group">عمومی (میان‌گروهی)</option>
+                    </select>
+                    <small id="new-chal-mentor-notice" class="lse-hint" data-style="display: none"></small>
+                  </label>
                 </div>
-                <div id="new-chal-duration" class="u-fs-2xs u-c-text-muted u-mt-4">مهلت: -</div>
-              </div>
+                <label class="lse-field">
+                  <span>منزلگاه مرتبط <small>اختیاری</small></span>
+                  <select id="new-chal-station-id" class="select-ctrl">
+                    <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
+                  </select>
+                </label>
+                <label class="lse-field">
+                  <span>صورت تکلیف <b class="lse-req">*</b></span>
+                  <textarea id="new-chal-desc" class="input-ctrl" rows="4" placeholder="دستورالعمل اجرای چالش برای دانش‌آموزان..." required></textarea>
+                </label>
+              </section>
             </div>
 
-            <div class="u-mb-16">
-              <label for="new-chal-desc" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">توضیحات / صورت تکلیف *</label>
-              <textarea id="new-chal-desc" rows="3" required placeholder="توضیحات و دستورالعمل اجرای چالش برای دانش‌آموزان..." class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm u-lh-1_6 u-resize-vertical"></textarea>
-            </div>
-
-            <!-- QUESTIONS / STEPS BUILDER -->
-            <div id="new-chal-questions-section" class="u-bg-shade-25 u-bd-fg-8 u-r-10 u-p-14 u-mb-16">
-              <div class="u-flex u-justify-between u-items-center u-mb-12">
-                <div class="u-fs-sm u-bold u-c-primary-text u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
+            <div class="chl-pane" data-pane="reward">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-coins"></i> پاداش</h4>
+                <div class="lse-grid lse-grid-3">
+                  <label class="lse-field">
+                    <span>نوع پاداش <b class="lse-req">*</b></span>
+                    <select id="new-chal-asset" class="select-ctrl">
+                      <option value="nakh">کلاف</option>
+                    </select>
+                  </label>
+                  <label class="lse-field">
+                    <span>حداقل پاداش <b class="lse-req">*</b></span>
+                    <input type="number" id="new-chal-reward-min" class="input-ctrl" min="0" step="1" value="0">
+                  </label>
+                  <label class="lse-field">
+                    <span>حداکثر پاداش <b class="lse-req">*</b></span>
+                    <input type="number" id="new-chal-reward-max" class="input-ctrl" min="1" step="1" value="10">
+                  </label>
                 </div>
-                <button type="button" data-click="addQuestionRow" data-click-args="[&quot;new&quot;]" class="u-bg-primary-20 u-c-primary-text u-bd-primary-40 u-r-6 u-p-4-10 u-fs-xs u-bold u-pointer u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-plus"></i> افزودن سوال
-                </button>
-              </div>
-              <div id="new-chal-questions-list" class="u-flex u-col u-gap-12">
-                <!-- Dynamically populated question cards -->
-              </div>
+                <p class="lse-hint">راهبر هنگام تایید پاسخ، امتیاز را در این بازه انتخاب می‌کند. در آزمون‌ها، پاداش به نسبت پاسخ‌های درست در همین بازه حساب می‌شود.</p>
+              </section>
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-regular fa-calendar"></i> مهلت <small>اختیاری</small></h4>
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field">
+                    <span>شروع چالش</span>
+                    <input type="date" id="new-chal-start-date" class="input-ctrl" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]">
+                  </label>
+                  <label class="lse-field">
+                    <span>پایان چالش</span>
+                    <input type="date" id="new-chal-due-date" class="input-ctrl" data-input="updateChallengeDuration" data-input-args="[&quot;new&quot;]">
+                  </label>
+                </div>
+                <small id="new-chal-duration" class="lse-hint">مهلت: -</small>
+              </section>
             </div>
 
-            <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-14">
-              <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="closeCreateChallengeModal">انصراف</button>
-              <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-primary u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-primary-35">
-                <i class="fa-solid fa-paper-plane"></i> ایجاد چالش و ارسال اعلان
-              </button>
+            <div class="chl-pane" data-pane="steps">
+              <div class="chl-split" id="new-chal-questions-section">
+                <aside class="lse-tree" aria-label="سوال‌ها">
+                  <p class="lse-hint lse-tree-hint"><i class="fa-solid fa-up-down-left-right"></i> سوال‌ها را بکشید تا ترتیب مرحله‌ها عوض شود.</p>
+                  <div id="new-chal-qindex" class="chl-qindex"></div>
+                  <button type="button" class="lse-btn lse-btn-dashed" data-click="addQuestionRow" data-click-args="[&quot;new&quot;]"><i class="fa-solid fa-plus"></i> سوال جدید</button>
+                </aside>
+                <section class="lse-detail">
+                  <div id="new-chal-questions-list" class="chl-qlist"></div>
+                </section>
+              </div>
+              <div class="lse-empty" id="new-chal-noq" data-style="display: none">
+                <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-pen"></i></span>
+                <strong>چالش تشریحی مرحله ندارد</strong>
+                <span>دانش‌آموز پاسخ را تایپ می‌کند و در صورت نیاز فایل ضمیمه می‌کند. برای سوال چهارگزینه‌ای، نوع چالش را «آزمون مرحله‌ای» بگذارید.</span>
+              </div>
             </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- EDIT CHALLENGE MODAL (ADMIN) -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="ranking-modal" data-style="display: none">
-      <div class="glass u-w-full u-maxw-520 u-p-24 u-r-16 u-bd-fg-10">
-        <div class="u-flex u-justify-between u-items-center u-mb-14">
-          <div id="ranking-title" class="u-fs-md u-bold u-c-text">رتبه‌بندی کاروان‌ها</div>
-          <button title="بستن" aria-label="بستن" type="button" data-click="NopaActions.hide" data-click-args="[&quot;ranking-modal&quot;]" class="u-bg-none u-bd-none u-c-text-muted u-fs-lg u-pointer"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <div id="ranking-body" class="u-c-text-soft u-fs-sm"></div>
-      </div>
-    </div>
-
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="edit-challenge-modal" data-style="display: none">
-      <div class="modal-content glass u-maxw-720 u-w-95p u-maxh-90vh u-scroll-y u-bd-info-40 u-bg-surface u-r-16 u-p-24 u-shadow-modal-9 u-c-text u-flex u-col">
-        <div class="modal-header u-bb-fg-10 u-flex u-justify-between u-items-center u-pb-12">
-          <div>
-            <h3 class="u-m-0 u-c-text u-fs-md u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-pen-to-square u-c-primary-text"></i> ویرایش و اصلاح چالش
-            </h3>
-            <span id="edit-chal-creator-badge" class="badge u-mt-4 u-fs-2xs">-</span>
+            <div class="chl-pane" data-pane="review" id="new-chal-review"></div>
           </div>
-          <button aria-label="بستن" class="modal-close" data-click="closeEditChallengeModal">&times;</button>
-        </div>
 
-        <div class="u-p-16-0 u-scroll-y u-flex-1">
-          <form id="edit-challenge-form" data-submit="submitEditChallenge" data-submit-args="[&quot;$event&quot;]">
+          <footer class="lse-foot">
+          <span class="lse-foot-note" id="new-chal-note"><i class="fa-solid fa-circle-info"></i> تا قدم آخر چیزی ذخیره نمی‌شود.</span>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="closeCreateChallengeModal">انصراف</button>
+            <button type="button" class="lse-btn" id="new-chal-prev" data-click="chlStep" data-click-args="[&quot;new&quot;,-1]" data-style="display: none"><i class="fa-solid fa-arrow-right"></i> قبلی</button>
+            <button type="button" class="lsv-pill" id="new-chal-next" data-click="chlStep" data-click-args="[&quot;new&quot;,1]">بعدی <i class="fa-solid fa-arrow-left"></i></button>
+            <button type="submit" class="lsv-pill" id="new-chal-submit" data-style="display: none"><i class="fa-solid fa-check"></i> ایجاد چالش</button>
+          </div>
+          </footer>
+        </form>
+      </div>
+    </div>
+
+    <!-- RANKING MODAL (inter-group challenges) -->
+    <div class="modal-overlay lse-overlay u-z-z-modal" id="ranking-modal" data-style="display: none">
+      <div class="lse lse-sm">
+        <header class="lse-head lse-head-plain">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-flag"></i></span>
+            <div class="lse-id-text">
+              <h3 id="ranking-title">رتبه‌بندی کاروان‌ها</h3>
+              <span>سه کاروان برتر را انتخاب کنید تا درفش بگیرند</span>
+            </div>
+          </div>
+          <button type="button" class="lsv-round" data-click="NopaActions.hide" data-click-args="[&quot;ranking-modal&quot;]" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div class="lse-body">
+          <div id="intergroup-desk"></div>
+          <div id="ranking-body"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay lse-overlay u-z-z-modal" id="edit-challenge-modal" data-style="display: none">
+      <div class="lse lse-editor">
+        <header class="lse-head">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-pen"></i></span>
+            <div class="lse-id-text">
+              <h3>ویرایش چالش</h3>
+              <span><span id="edit-chal-creator-badge">-</span></span>
+            </div>
+          </div>
+          <nav class="lse-tabs" aria-label="بخش‌های چالش">
+            <button type="button" class="lse-tab is-active" data-chl-tab="info" data-click="chlGoPane" data-click-args="[&quot;edit&quot;,&quot;info&quot;]"><i class="fa-solid fa-pen-to-square"></i>مشخصات</button>
+            <button type="button" class="lse-tab" data-chl-tab="reward" data-click="chlGoPane" data-click-args="[&quot;edit&quot;,&quot;reward&quot;]"><i class="fa-solid fa-coins"></i>پاداش و مهلت</button>
+            <button type="button" class="lse-tab" data-chl-tab="steps" data-click="chlGoPane" data-click-args="[&quot;edit&quot;,&quot;steps&quot;]"><i class="fa-solid fa-list-check"></i>مراحل و سوال‌ها</button>
+          </nav>
+          <button type="button" class="lsv-round" data-click="closeEditChallengeModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <form id="edit-challenge-form" class="lse-form" novalidate data-submit="submitEditChallenge" data-submit-args="[&quot;$event&quot;]">
+          <div class="lse-body" id="edit-chal-body">
             <input type="hidden" id="edit-chal-id">
-
-            <div class="u-grid u-cols-2fr-1fr u-gap-14 u-mb-14">
-              <div>
-                <label for="edit-chal-title" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">عنوان چالش *</label>
-                <input type="text" id="edit-chal-title" required class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-              </div>
-              <div>
-        <div id="intergroup-desk" class="u-mb-14"></div>
-        <div id="ranking-body" class="u-c-text-soft u-fs-sm"></div>
-                  <option value="nakh">کلاف</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="edit-chal-reward-min" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">حداقل پاداش *</label>
-                <input type="number" id="edit-chal-reward-min" min="0" step="1" value="" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-sm">
-              </div>
-              <div>
-                <label for="edit-chal-reward-max" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">حداکثر پاداش *</label>
-                <input type="number" id="edit-chal-reward-max" min="1" step="1" value="" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-accent-text u-bold u-fs-sm">
-                <div class="u-fs-2xs u-c-text-muted u-mt-4">راهبر هنگام تأیید پاسخ، امتیاز را در این بازه انتخاب می‌کند. (در آزمون‌های تستی، پاداش نهایی به نسبت پاسخ‌های درست در همین بازه محاسبه می‌شود.)</div>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="edit-chal-caravan-id" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">کاروان و راهبر هدف</label>
-                <select id="edit-chal-caravan-id" data-change="handleChallengeAudienceChange" data-change-args="[&quot;edit&quot;]" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="inter_group">عمومی (میان‌گروهی)</option>
-                </select>
-              </div>
-              <div>
-                <label for="edit-chal-type" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">نوع چالش *</label>
-                <select id="edit-chal-type" data-change="handleChallengeTypeChange" data-change-args="[&quot;edit&quot;]" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="quiz">کوئیز و آزمون مرحله‌ای (چهارگزینه‌ای)</option>
-                  <option value="text">تشریحی (پاسخ متنی، با امکان ارسال فایل)</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="u-grid u-cols-2 u-gap-14 u-mb-14">
-              <div>
-                <label for="edit-chal-station-id" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">منزلگاه مرتبط (اختیاری):</label>
-                <select id="edit-chal-station-id" class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
-                </select>
-              </div>
-              <div>
-                <label class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">تاریخ شروع و پایان چالش (اختیاری):</label>
-                <div class="u-grid u-cols-2 u-gap-8">
-                  <input type="date" id="edit-chal-start-date" title="تاریخ شروع" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]" class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
-                  <input type="date" id="edit-chal-due-date" title="تاریخ پایان" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]" class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm">
+            <div class="chl-pane is-active" data-pane="info">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-circle-info"></i> مشخصات چالش</h4>
+                <label class="lse-field">
+                  <span>عنوان چالش <b class="lse-req">*</b></span>
+                  <input type="text" id="edit-chal-title" class="input-ctrl">
+                </label>
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field">
+                    <span>نوع چالش <b class="lse-req">*</b></span>
+                    <select id="edit-chal-type" class="select-ctrl" data-change="handleChallengeTypeChange" data-change-args="[&quot;edit&quot;]">
+                      <option value="quiz">آزمون مرحله‌ای (چهارگزینه‌ای)</option>
+                      <option value="text">تشریحی (پاسخ متنی و فایل)</option>
+                    </select>
+                  </label>
+                  <label class="lse-field">
+                    <span>کاروان و راهبر هدف</span>
+                    <select id="edit-chal-caravan-id" class="select-ctrl" data-change="handleChallengeAudienceChange" data-change-args="[&quot;edit&quot;]">
+                      <option value="inter_group">عمومی (میان‌گروهی)</option>
+                    </select>
+                    <small id="edit-chal-mentor-notice" class="lse-hint" data-style="display: none"></small>
+                  </label>
                 </div>
-                <div id="edit-chal-duration" class="u-fs-2xs u-c-text-muted u-mt-4">مهلت: -</div>
-              </div>
+                <label class="lse-field">
+                  <span>منزلگاه مرتبط <small>اختیاری</small></span>
+                  <select id="edit-chal-station-id" class="select-ctrl">
+                    <option value="">بدون انتساب به منزلگاه (عمومی دوره)</option>
+                  </select>
+                </label>
+                <label class="lse-field">
+                  <span>صورت تکلیف <b class="lse-req">*</b></span>
+                  <textarea id="edit-chal-desc" class="input-ctrl" rows="4"></textarea>
+                </label>
+              </section>
             </div>
 
-            <div class="u-mb-16">
-              <label for="edit-chal-desc" class="u-block u-c-text-soft u-fs-xs u-bold u-mb-6">توضیحات / صورت تکلیف *</label>
-              <textarea id="edit-chal-desc" rows="3" required class="u-w-full u-p-8-12 u-bg-surface-2 u-bd-border-strong u-r-8 u-c-text u-fs-sm u-lh-1_6 u-resize-vertical"></textarea>
-            </div>
-
-            <!-- QUESTIONS / STEPS BUILDER -->
-            <div id="edit-chal-questions-section" class="u-bg-shade-25 u-bd-fg-8 u-r-10 u-p-14 u-mb-16">
-              <div class="u-flex u-justify-between u-items-center u-mb-12">
-                <div class="u-fs-sm u-bold u-c-info-text u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-list-check"></i> مراحل و سوالات آزمون مرحله‌ای
+            <div class="chl-pane" data-pane="reward">
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-solid fa-coins"></i> پاداش</h4>
+                <div class="lse-grid lse-grid-3">
+                  <label class="lse-field">
+                    <span>نوع پاداش <b class="lse-req">*</b></span>
+                    <select id="edit-chal-asset" class="select-ctrl">
+                      <option value="nakh">کلاف</option>
+                    </select>
+                  </label>
+                  <label class="lse-field">
+                    <span>حداقل پاداش <b class="lse-req">*</b></span>
+                    <input type="number" id="edit-chal-reward-min" class="input-ctrl" min="0" step="1">
+                  </label>
+                  <label class="lse-field">
+                    <span>حداکثر پاداش <b class="lse-req">*</b></span>
+                    <input type="number" id="edit-chal-reward-max" class="input-ctrl" min="1" step="1">
+                  </label>
                 </div>
-                <button type="button" data-click="addQuestionRow" data-click-args="[&quot;edit&quot;]" class="u-bg-info-20 u-c-info-text u-bd-info-40 u-r-6 u-p-4-10 u-fs-xs u-bold u-pointer u-flex u-items-center u-gap-6">
-                  <i class="fa-solid fa-plus"></i> افزودن سوال
-                </button>
-              </div>
-              <div id="edit-chal-questions-list" class="u-flex u-col u-gap-12">
-                <!-- Dynamically populated question cards -->
-              </div>
+                <p class="lse-hint">راهبر هنگام تایید پاسخ، امتیاز را در این بازه انتخاب می‌کند. در آزمون‌ها، پاداش به نسبت پاسخ‌های درست در همین بازه حساب می‌شود.</p>
+              </section>
+              <section class="lse-card">
+                <h4 class="lse-card-title"><i class="fa-regular fa-calendar"></i> مهلت <small>اختیاری</small></h4>
+                <div class="lse-grid lse-grid-2">
+                  <label class="lse-field">
+                    <span>شروع چالش</span>
+                    <input type="date" id="edit-chal-start-date" class="input-ctrl" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]">
+                  </label>
+                  <label class="lse-field">
+                    <span>پایان چالش</span>
+                    <input type="date" id="edit-chal-due-date" class="input-ctrl" data-input="updateChallengeDuration" data-input-args="[&quot;edit&quot;]">
+                  </label>
+                </div>
+                <small id="edit-chal-duration" class="lse-hint">مهلت: -</small>
+              </section>
             </div>
 
-            <div class="u-flex u-justify-end u-gap-10 u-bt-fg-10 u-pt-14">
-              <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="closeEditChallengeModal">انصراف</button>
-              <button type="submit" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-info u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-info-35">
-                <i class="fa-solid fa-floppy-disk"></i> ذخیره تغییرات چالش
-              </button>
+            <div class="chl-pane" data-pane="steps">
+              <div class="chl-split" id="edit-chal-questions-section">
+                <aside class="lse-tree" aria-label="سوال‌ها">
+                  <p class="lse-hint lse-tree-hint"><i class="fa-solid fa-up-down-left-right"></i> سوال‌ها را بکشید تا ترتیب مرحله‌ها عوض شود.</p>
+                  <div id="edit-chal-qindex" class="chl-qindex"></div>
+                  <button type="button" class="lse-btn lse-btn-dashed" data-click="addQuestionRow" data-click-args="[&quot;edit&quot;]"><i class="fa-solid fa-plus"></i> سوال جدید</button>
+                </aside>
+                <section class="lse-detail">
+                  <div id="edit-chal-questions-list" class="chl-qlist"></div>
+                </section>
+              </div>
+              <div class="lse-empty" id="edit-chal-noq" data-style="display: none">
+                <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-pen"></i></span>
+                <strong>چالش تشریحی مرحله ندارد</strong>
+                <span>دانش‌آموز پاسخ را تایپ می‌کند و در صورت نیاز فایل ضمیمه می‌کند. برای سوال چهارگزینه‌ای، نوع چالش را «آزمون مرحله‌ای» بگذارید.</span>
+              </div>
             </div>
-          </form>
-        </div>
+          </div>
+
+          <footer class="lse-foot">
+          <span class="lse-foot-note" id="edit-chal-note"><i class="fa-solid fa-circle-info"></i> همه تغییرات با یک دکمه ذخیره می‌شود.</span>
+          <div class="lse-foot-actions">
+            <button type="button" class="lse-btn" data-click="closeEditChallengeModal">بستن</button>
+            <button type="submit" class="lsv-pill"><i class="fa-solid fa-check"></i> ذخیره تغییرات</button>
+          </div>
+          </footer>
+        </form>
       </div>
     </div>
 
     <!-- VIEW & EVALUATE SUBMISSION MODAL -->
-    <div class="modal-overlay u-z-z-modal u-p-20 u-scroll-y" id="view-submission-modal" data-style="display: none">
-      <div class="modal-content glass u-maxw-750 u-w-95p u-maxh-90vh u-scroll-y u-p-24 u-r-16 u-bg-surface u-bd-primary-40 u-shadow-modal-9 u-c-text">
-        <div class="u-flex u-justify-between u-items-center u-mb-20 u-bb-fg-10 u-pb-12">
-          <div>
-            <h3 class="u-c-primary-text u-fs-lg u-m-0 u-flex u-items-center u-gap-8">
-              <i class="fa-solid fa-clipboard-check"></i> بررسی و مشاهده کامل پاسخ دانش‌آموز
-            </h3>
-            <span id="view-sub-meta-badge" class="badge u-mt-4 u-bg-primary-20 u-c-primary-text u-fs-2xs">-</span>
-          </div>
-          <button aria-label="بستن" type="button" class="modal-close" data-click="closeViewSubmissionModal">&times;</button>
-        </div>
-
-        <!-- Student & Challenge Profile Card -->
-        <div class="u-grid u-cols-2 u-gap-12 u-mb-16">
-          <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-10 u-p-12-14">
-            <div class="u-fs-2xs u-c-text-muted u-bold u-mb-4"><i class="fa-solid fa-user-graduate u-c-primary-text"></i> مشخصات دانش‌آموز:</div>
-            <div id="view-sub-student-name" class="u-fs-base u-bold u-c-text">-</div>
-            <div id="view-sub-student-phone" class="u-fs-xs u-c-text-faint u-mt-2">-</div>
-            <div id="view-sub-student-caravan" class="u-fs-xs u-c-primary-text u-mt-4">-</div>
-          </div>
-
-          <div class="u-bg-surface-2-70 u-bd-fg-8 u-r-10 u-p-12-14">
-            <div class="u-fs-2xs u-c-text-muted u-bold u-mb-4"><i class="fa-solid fa-trophy u-c-accent-text"></i> مشخصات چالش:</div>
-            <div id="view-sub-chal-title" class="u-fs-base u-bold u-c-primary-text">-</div>
-            <div id="view-sub-chal-reward" class="u-fs-xs u-c-accent-text u-bold u-mt-2">-</div>
-            <div id="view-sub-date" class="u-fs-xs u-c-text-muted u-mt-4">-</div>
-          </div>
-        </div>
-
-        <!-- Student Answer Text Container -->
-        <div class="u-mb-16">
-          <label class="u-flex u-justify-between u-items-center u-c-text-soft u-fs-sm u-bold u-mb-6">
-            <span><i class="fa-solid fa-comment-dots u-c-success-text"></i> متن پاسخ ارسالی دانش‌آموز:</span>
-            <button type="button" data-click="copySubmissionAnswerText" class="u-bg-fg-8 u-c-text-soft u-bd-fg-15 u-r-5 u-p-2-8 u-fs-2xs u-pointer">
-              <i class="fa-solid fa-copy"></i> کپی پاسخ
-            </button>
-          </label>
-          <div id="view-sub-answer-text" class="u-bg-surface-80 u-bd-fg-12 u-r-10 u-p-14 u-c-text u-fs-base u-lh-1_8 u-maxh-250 u-scroll-y u-ws-pre-wrap u-wb-break-word">
-            -
-          </div>
-        </div>
-
-        <!-- Attached File / Media -->
-        <div id="view-sub-file-section" class="u-mb-20">
-          <div class="u-fs-xs u-c-text-soft u-bold u-mb-6">
-            <i class="fa-solid fa-paperclip u-c-primary-text"></i> فایل پیوست ارسالی:
-          </div>
-          <div id="view-sub-file-container" class="u-bg-shade-25 u-bd-fg-8 u-r-8 u-p-12">
-            <!-- File link or Image Preview -->
-          </div>
-        </div>
-
-        <!-- Feedback & Evaluation Action Section -->
-        <div class="u-bg-primary-8 u-bd-primary-25 u-r-10 u-p-14 u-mb-16">
-          <div class="u-fs-sm u-bold u-c-primary-text u-mb-8">
-            <i class="fa-solid fa-pen-nib"></i> ارزیابی و ثبت نتیجه (به همراه ارسال اعلان به فرد و راهبر):
-          </div>
-          <div class="u-grid u-cols-2fr-1fr u-gap-10 u-mb-10">
-            <div>
-              <label for="view-sub-feedback-input" class="u-block u-c-text-muted u-fs-xs u-mb-4">یادداشت ارزیابی برای دانش‌آموز:</label>
-              <input type="text" id="view-sub-feedback-input" placeholder="مثال: پاسخ شما کامل و با خلاقیت بالا انجام شده است." class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-text u-fs-xs">
-            </div>
-            <div>
-              <label for="view-sub-reward-input" class="u-block u-c-text-muted u-fs-xs u-mb-4">پاداش زریک اهدایی ():</label>
-              <input type="number" id="view-sub-reward-input" min="0" max="5000" class="u-w-full u-p-8-10 u-bg-surface-2 u-bd-border-strong u-r-6 u-c-accent-text u-bold u-fs-sm">
+    <div class="modal-overlay lse-overlay u-z-z-modal" id="view-submission-modal" data-style="display: none">
+      <div class="lse lse-md">
+        <header class="lse-head lse-head-plain">
+          <div class="lse-id">
+            <span class="lse-id-icon is-accent"><i class="fa-solid fa-clipboard-check"></i></span>
+            <div class="lse-id-text">
+              <h3>بررسی پاسخ دانش‌آموز</h3>
+              <span id="view-sub-meta-badge">-</span>
             </div>
           </div>
+          <button type="button" class="lsv-round" data-click="closeViewSubmissionModal" title="بستن" aria-label="بستن"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <div class="lse-body">
+          <div class="lse-grid lse-grid-2">
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-user-graduate"></i> دانش‌آموز</h4>
+              <div class="chl-view-main" id="view-sub-student-name">-</div>
+              <div class="chl-view-sub" id="view-sub-student-phone">-</div>
+              <div class="chl-view-sub" id="view-sub-student-caravan">-</div>
+            </section>
+            <section class="lse-card">
+              <h4 class="lse-card-title"><i class="fa-solid fa-trophy"></i> چالش</h4>
+              <div class="chl-view-main" id="view-sub-chal-title">-</div>
+              <div class="chl-view-sub is-accent" id="view-sub-chal-reward">-</div>
+              <div class="chl-view-sub" id="view-sub-date">-</div>
+            </section>
+          </div>
+
+          <section class="lse-card">
+            <div class="lse-card-row">
+              <h4 class="lse-card-title"><i class="fa-solid fa-comment-dots"></i> پاسخ دانش‌آموز</h4>
+              <button type="button" class="lse-btn" data-click="copySubmissionAnswerText"><i class="fa-solid fa-copy"></i> کپی پاسخ</button>
+            </div>
+            <div id="view-sub-answer-text" class="chl-view-answer">-</div>
+          </section>
+
+          <section class="lse-card" id="view-sub-file-section">
+            <h4 class="lse-card-title"><i class="fa-solid fa-paperclip"></i> فایل پیوست</h4>
+            <div id="view-sub-file-container"></div>
+          </section>
+
+          <section class="lse-card">
+            <h4 class="lse-card-title"><i class="fa-solid fa-pen-nib"></i> ارزیابی</h4>
+            <div class="lse-grid lse-grid-quiz">
+              <label class="lse-field">
+                <span>یادداشت برای دانش‌آموز</span>
+                <input type="text" id="view-sub-feedback-input" class="input-ctrl" placeholder="مثال: پاسخ شما کامل و خلاقانه بود.">
+              </label>
+              <label class="lse-field">
+                <span><i class="fa-solid fa-coins"></i> پاداش زریک</span>
+                <input type="number" id="view-sub-reward-input" class="input-ctrl" min="0" max="5000">
+              </label>
+            </div>
+            <p class="lse-hint">نتیجه همراه با اعلان برای دانش‌آموز و راهبرش ارسال می‌شود.</p>
+          </section>
         </div>
 
-        <div class="u-flex u-justify-between u-items-center u-bt-fg-10 u-pt-14">
-          <button type="button" class="btn-action u-p-8-20 u-r-8 u-bg-fg-10 u-c-text-soft u-bd-none u-pointer" data-click="closeViewSubmissionModal">بستن</button>
-          
-          <div class="u-flex u-gap-8" id="view-sub-actions-container">
-            <button type="button" id="view-sub-btn-reject" class="btn-action u-p-8-20 u-r-8 u-bg-danger-20 u-c-danger-text u-bd-danger-40 u-bold u-pointer u-flex u-items-center u-gap-6">
-              <i class="fa-solid fa-times"></i> رد تکلیف
-            </button>
-            <button type="button" id="view-sub-btn-approve" class="btn-primary u-p-8-24 u-r-8 u-bg-grad-success u-c-white u-bd-none u-bold u-pointer u-flex u-items-center u-gap-6 u-shadow-0-4-12-success-35">
-              <i class="fa-solid fa-check"></i> تایید تکلیف و اعطای پاداش
-            </button>
+        <footer class="lse-foot">
+          <button type="button" class="lse-btn" data-click="closeViewSubmissionModal">بستن</button>
+          <div class="lse-foot-actions" id="view-sub-actions-container">
+            <button type="button" id="view-sub-btn-reject" class="lse-btn chl-btn-reject"><i class="fa-solid fa-xmark"></i> رد پاسخ</button>
+            <button type="button" id="view-sub-btn-approve" class="lsv-pill"><i class="fa-solid fa-check"></i> تایید و اعطای پاداش</button>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
 
@@ -3645,6 +3604,7 @@
     <script src="js/core/router.js"></script>
     <script src="js/ui/modal.js"></script>
     <script src="js/ui/confirm.js"></script>
+    <script src="js/ui/drafts.js"></script>
     <script src="js/ui/table.js"></script>
     <script src="js/ui/actions.js"></script>
     <script src="js/ui/person-fields.js"></script>

@@ -3,6 +3,72 @@
 
 // ==================== QUIZ EDITOR MODAL ====================
 
+// Options: 2 to 8 rows, dragged by their grip (sortable "quiz-option" in station-dnd.js), added and removed here
+const QUIZ_OPT_MIN = 2;
+const QUIZ_OPT_MAX = 8;
+const QUIZ_OPT_NAMES = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم', 'هشتم'];
+
+function quizOptionRow(text, checked) {
+  return `
+    <label class="lse-option">
+      <span class="chl-opt-grip lse-grip" title="برای جابجایی بکشید" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>
+      <input type="radio" name="quiz-correct-opt" value="0" ${checked ? 'checked' : ''}>
+      <span class="chl-opt-num"></span>
+      <input type="text" class="input-ctrl quiz-opt-text" value="${esc(text)}" required>
+      <button type="button" class="lsv-round lsv-round-sm lsv-round-danger chl-opt-del" title="حذف گزینه"><i class="fa-solid fa-xmark"></i></button>
+    </label>`;
+}
+
+window.quizRenumberOptions = function() {
+  const rows = Array.from(document.querySelectorAll('#quiz-opts .lse-option'));
+  rows.forEach((row, i) => {
+    const radio = row.querySelector('input[type="radio"]');
+    radio.value = String(i);
+    radio.setAttribute('aria-label', `گزینه‌ی ${i + 1} پاسخ درست است`);
+    row.querySelector('.chl-opt-num').textContent = lmsFaDigits(i + 1);
+    const input = row.querySelector('.quiz-opt-text');
+    input.setAttribute('aria-label', `متن گزینه‌ی ${i + 1}`);
+    input.placeholder = `گزینه ${QUIZ_OPT_NAMES[i] || lmsFaDigits(i + 1)}`;
+    row.querySelector('.chl-opt-del').disabled = rows.length <= QUIZ_OPT_MIN;
+  });
+  if (rows.length && !rows.some(r => r.querySelector('input[type="radio"]').checked)) rows[0].querySelector('input[type="radio"]').checked = true;
+  const add = document.getElementById('quiz-opt-add');
+  if (add) add.disabled = rows.length >= QUIZ_OPT_MAX;
+};
+
+function quizSetOptions(texts, correctIdx) {
+  const box = document.getElementById('quiz-opts');
+  if (!box) return;
+  const list = texts.slice(0, QUIZ_OPT_MAX);
+  while (list.length < QUIZ_OPT_MIN) list.push('');
+  box.innerHTML = list.map((t, i) => quizOptionRow(t, i === Number(correctIdx))).join('');
+  window.quizRenumberOptions();
+}
+
+(function bindQuizOptions() {
+  const bind = () => {
+    const box = document.getElementById('quiz-opts');
+    const add = document.getElementById('quiz-opt-add');
+    if (!box || !add || box.dataset.bound) return;
+    box.dataset.bound = '1';
+    add.addEventListener('click', () => {
+      if (box.querySelectorAll('.lse-option').length >= QUIZ_OPT_MAX) return;
+      box.insertAdjacentHTML('beforeend', quizOptionRow('', false));
+      window.quizRenumberOptions();
+      box.lastElementChild.querySelector('.quiz-opt-text').focus();
+    });
+    box.addEventListener('click', e => {
+      const del = e.target.closest('.chl-opt-del');
+      if (!del) return;
+      e.preventDefault();
+      if (box.querySelectorAll('.lse-option').length <= QUIZ_OPT_MIN) return;
+      del.closest('.lse-option').remove();
+      window.quizRenumberOptions();
+    });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+})();
+
 window.openQuizModalForClip = function(sessionId, clipId) {
   const modal = document.getElementById('lms-quiz-editor-modal');
   if (!modal) return;
@@ -16,11 +82,7 @@ window.openQuizModalForClip = function(sessionId, clipId) {
   document.getElementById('quiz-modal-zarik').value = 10;
   document.getElementById('quiz-modal-q-text').value = 'مفهوم اصلی مطرح‌شده در این پارت کدام است؟';
 
-  document.getElementById('quiz-opt-0').value = 'گزینه صحیح (پاسخ درست)';
-  document.getElementById('quiz-opt-1').value = 'گزینه نادرست اول';
-  document.getElementById('quiz-opt-2').value = 'گزینه نادرست دوم';
-  document.getElementById('quiz-opt-3').value = 'گزینه نادرست سوم';
-  document.getElementById('opt-radio-0').checked = true;
+  quizSetOptions(['گزینه صحیح (پاسخ درست)', 'گزینه نادرست اول', 'گزینه نادرست دوم', 'گزینه نادرست سوم'], 0);
 
   document.getElementById('quiz-modal-title').textContent = 'آزمونک جدید برای پارت';
   modal.style.display = 'flex';
@@ -91,13 +153,7 @@ window.editQuizRecord = async function(quizId) {
   }
 
   document.getElementById('quiz-modal-q-text').value = qText;
-  document.getElementById('quiz-opt-0').value = opts[0] || '';
-  document.getElementById('quiz-opt-1').value = opts[1] || '';
-  document.getElementById('quiz-opt-2').value = opts[2] || '';
-  document.getElementById('quiz-opt-3').value = opts[3] || '';
-
-  const radioEl = document.getElementById(`opt-radio-${correctIdx}`) || document.getElementById('opt-radio-0');
-  if (radioEl) radioEl.checked = true;
+  quizSetOptions(opts, correctIdx);
 
   document.getElementById('quiz-modal-title').textContent = `ویرایش آزمونک: ${foundQuiz.title || ''}`;
   modal.style.display = 'flex';
@@ -114,12 +170,7 @@ window.saveQuizFromModal = async function(e) {
   const rewardZarik = parseInt(document.getElementById('quiz-modal-zarik')?.value) || 10;
 
   const question = document.getElementById('quiz-modal-q-text')?.value;
-  const opts = [
-    document.getElementById('quiz-opt-0')?.value || '',
-    document.getElementById('quiz-opt-1')?.value || '',
-    document.getElementById('quiz-opt-2')?.value || '',
-    document.getElementById('quiz-opt-3')?.value || ''
-  ];
+  const opts = Array.from(document.querySelectorAll('#quiz-opts .quiz-opt-text')).map(i => i.value);
   const correctIndex = parseInt(document.querySelector('input[name="quiz-correct-opt"]:checked')?.value) || 0;
 
   const questionsJson = JSON.stringify([

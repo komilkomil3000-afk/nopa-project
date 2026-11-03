@@ -130,6 +130,7 @@
         case 'stayDuration': return st.stayDuration || '';
         case 'description': return st.description || '';
         case 'iconUrl': return st.iconUrl || '';
+        case 'orderIndex': return String(st.orderIndex ?? '');
         case 'gallery': return JSON.stringify(normGallery(lmsStationGallery(st)));
         default: return undefined;
       }
@@ -225,6 +226,7 @@
 
     const dirtySess = new Set();
     const dirtyCat = new Set();
+    const dirtyClip = new Set(keys.filter(k => k.startsWith('clip.')).map(k => k.split('.')[1]));
     keys.forEach(k => {
       const [kind, id] = k.split('.');
       if (kind === 'sess') dirtySess.add(id);
@@ -232,6 +234,7 @@
       else if (kind === 'clip') { const s = sessionOfClip(id); if (s) dirtySess.add(String(s.id)); }
     });
     m.querySelectorAll('[data-dirty-sess]').forEach(el => el.classList.toggle('is-dirty', dirtySess.has(el.getAttribute('data-dirty-sess'))));
+    m.querySelectorAll('[data-clip-id].lse-tree-clip').forEach(el => el.classList.toggle('is-dirty', dirtyClip.has(el.getAttribute('data-clip-id'))));
     m.querySelectorAll('[data-dirty-cat]').forEach(el => el.classList.toggle('is-dirty', dirtyCat.has(el.getAttribute('data-dirty-cat'))));
   }
 
@@ -311,6 +314,12 @@
       ED.edits = {};
       ED.sel = null;
     }
+    if (!same) {
+      const saved = NopaDrafts.load(`station:${st.id}`);
+      if (saved && saved.data && saved.data.edits && Object.keys(saved.data.edits).length) {
+        if ((await NopaDrafts.offerResume(`station:${st.id}`, 'پیش‌نویس تغییرات این منزلگاه')) === 'resume') ED.edits = saved.data.edits;
+      }
+    }
     ED.tab = opts.tab || (same ? ED.tab : 'info');
     if (opts.focus) ED.sel = resolveFocus(st, opts.focus);
     window.currentActiveContentStationId = st.id;
@@ -327,7 +336,7 @@
 
   // "cat:<index>" (a position, from older callers) or "cat:<id>" / "sess:<id>"
   function resolveFocus(st, focus) {
-    const m = String(focus).match(/^(cat|sess):(.+)$/);
+    const m = String(focus).match(/^(cat|sess|clip):(.+)$/);
     if (!m) return null;
     if (m[1] === 'cat' && /^\d+$/.test(m[2])) {
       const cat = window.lmsOrderedCategories(st)[Number(m[2])];
@@ -344,7 +353,7 @@
     return window.lmsOpenStationEditor(stationId, { tab: 'content', focus: f });
   };
 
-  window.openCreateStationModal = async function() {
+  window.openCreateStationModal = async function(resume) {
     if (isOpen() && isDirty()) {
       if (!(await NopaConfirm('تغییرات ذخیره‌نشده این پنجره از بین می‌رود. ادامه می‌دهید؟', { okText: 'ادامه بدون ذخیره', danger: true }))) return;
     }
@@ -364,21 +373,59 @@
     };
     ED.draftStart = JSON.stringify(ED.draft);
     window.currentActiveContentStationId = null;
+    const saved = NopaDrafts.load('station:new');
+    if (saved && saved.data && saved.data.draft) {
+      const ok = resume === true || (await NopaDrafts.offerResume('station:new', 'پیش‌نویس منزلگاه')) === 'resume';
+      if (ok) {
+        ED.draft = saved.data.draft;
+        ED.step = Math.min(saved.data.step || 0, STEPS.length - 1);
+        ED.maxStep = Math.max(saved.data.maxStep || 0, ED.step);
+      }
+    }
     show();
     render();
     document.getElementById('lse-st-title')?.focus();
   };
   window.openStationCreatorModal = window.openCreateStationModal;
 
+  const draftKey = () => (ED.mode === 'create' ? 'station:new' : `station:${ED.stationId}`);
+  const refreshDraftChip = () => {
+    const show = NopaDrafts.has('station:new') ? '' : 'none';
+    ['lms-draft-chip', 'lms-draft-del'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show; });
+  };
+  window.lmsRefreshDraftChip = refreshDraftChip;
+  document.addEventListener('nopa-drafts', refreshDraftChip);
+  refreshDraftChip();
+
+  window.lmsDeleteDraft = async function() {
+    if (!(await NopaConfirm('پیش‌نویس منزلگاه حذف شود؟ این کار قابل بازگشت نیست.', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+    NopaDrafts.remove('station:new');
+    showToast('پیش‌نویس حذف شد.', 'success');
+  };
+
   window.lmsEditorClose = async function() {
     if (ED.saving) return;
     if (isDirty()) {
-      const msg = ED.mode === 'create'
-        ? 'منزلگاه هنوز ایجاد نشده است. اطلاعات واردشده از بین می‌رود؛ پنجره بسته شود؟'
-        : `${lmsFaDigits(dirtyCount())} تغییر هنوز ذخیره نشده است و از بین می‌رود. پنجره بسته شود؟`;
-      if (!(await NopaConfirm(msg, { okText: 'بستن بدون ذخیره', cancelText: 'ادامه ویرایش', danger: true }))) return;
+      const choice = await NopaDrafts.askOnClose({
+        what: ED.mode === 'create' ? 'این منزلگاه' : `${lmsFaDigits(dirtyCount())} تغییر این منزلگاه`,
+        isNew: ED.mode === 'create'
+      });
+      if (choice === 'stay') return;
+      if (choice === 'save') {
+        const payload = ED.mode === 'create' ? { draft: ED.draft, step: ED.step, maxStep: ED.maxStep } : { edits: ED.edits };
+        if (NopaDrafts.save(draftKey(), payload)) showToast('پیش‌نویس ذخیره شد؛ بعداً می‌توانید ادامه دهید.', 'success');
+        else showToast('ذخیره پیش‌نویس در این مرورگر ممکن نشد.', 'error');
+      } else {
+        NopaDrafts.remove(draftKey());
+      }
     }
     hide();
+    refreshDraftChip();
+  };
+
+  // "ادامه پیش‌نویس منزلگاه" on the stations page
+  window.lmsResumeDraft = async function() {
+    await window.openCreateStationModal(true);
   };
 
   // Redraw after the station list reloaded (structural actions, quizzes, drag and drop); the draft is kept
@@ -410,7 +457,9 @@
       return nums.length ? Math.max(...nums) + 1 : 1;
     }
     const st = station();
-    return st ? (st.orderIndex ?? 1) : 1;
+    if (!st) return 1;
+    const typed = parseInt(val('station.orderIndex'), 10);
+    return Number.isFinite(typed) && typed >= 0 ? typed : (st.orderIndex ?? 1);
   }
 
   function previewImage() {
@@ -521,9 +570,9 @@
     });
   }
 
-  function upload(targetId, label = 'آپلود') {
+  function upload(targetId, label = 'آپلود', accept = 'image/*') {
     return `<label class="lse-btn lse-upload" title="آپلود فایل"><i class="fa-solid fa-cloud-arrow-up"></i> ${label}
-      <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${args('$this', targetId)}"></label>`;
+      <input type="file" accept="${accept}" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${args('$this', targetId)}"></label>`;
   }
 
   // The app's home-screen card, live
@@ -581,7 +630,12 @@
             <span>معرفی، داستان و سرفصل‌ها</span>
             <textarea class="input-ctrl" rows="6" data-f="station.description" placeholder="توضیحات، داستان و اهداف این منزلگاه...">${esc(field('description'))}</textarea>
           </label>
-          <p class="lse-hint"><i class="fa-solid fa-hashtag"></i> شماره منزلگاه خودکار است؛ ترتیب را با کشیدن کارت‌ها در صفحه منزلگاه‌ها تغییر دهید.</p>
+          ${ED.mode === 'edit' ? `
+          <label class="lse-field">
+            <span><i class="fa-solid fa-hashtag"></i> عدد نمایشی منزلگاه <small>در اپ و سایت نمایش داده می‌شود؛ منزلگاه‌های دیگر به‌ترتیب پشت سر آن شماره‌گذاری می‌شوند</small></span>
+            <input type="number" class="input-ctrl" dir="ltr" min="0" step="1" data-f="station.orderIndex" value="${esc(field('orderIndex'))}" placeholder="مثال: 0">
+          </label>` : ''}
+          <p class="lse-hint"><i class="fa-solid fa-hashtag"></i> با کشیدن کارت‌ها در صفحه منزلگاه‌ها ترتیب عوض می‌شود و شماره‌ها خودکار مرتب می‌شوند (اولین منزلگاه شماره خودش را نگه می‌دارد).</p>
         </section>
       </div>`;
   }
@@ -635,7 +689,7 @@
 
   function normalizeSel(st) {
     const cats = window.lmsOrderedCategories(st);
-    const m = String(ED.sel || '').match(/^(cat|sess):(.+)$/);
+    const m = String(ED.sel || '').match(/^(cat|sess|clip):(.+)$/);
     if (m && findEntity(m[1], m[2])) return;
     for (const c of cats) {
       const first = sessionsOf(c)[0];
@@ -648,18 +702,35 @@
     const st = station();
     normalizeSel(st);
     const cats = window.lmsOrderedCategories(st);
+    const selClip = /^clip:(.+)$/.exec(String(ED.sel || ''));
+    const openSessionId = selClip ? String((sessionOfClip(selClip[1]) || {}).id || '') : '';
     const tree = cats.map((c, ci) => {
       const sessions = sessionsOf(c);
       const rows = sessions.map((s, si) => {
         const clips = s.videoClips || [];
         const active = ED.sel === `sess:${s.id}`;
+        const open = active || openSessionId === String(s.id);
+        const partRows = !open ? '' : `
+          <div class="lse-tree-clips" data-session-id="${esc(s.id)}">
+            ${clipsOf(s).map((clip, k) => `
+            <button type="button" class="lse-tree-clip${ED.sel === `clip:${clip.id}` ? ' is-active' : ''}" data-clip-id="${esc(clip.id)}" data-click="lmsEditorSelect" data-click-args="${args('clip:' + clip.id)}"${ED.sel === `clip:${clip.id}` ? ' aria-current="true"' : ''}>
+              <span class="lse-tree-clip-grip lse-grip" title="برای جابجایی بکشید" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>
+              <span class="lse-tree-num">${lmsFaDigits(k + 1)}</span>
+              <span class="lse-tree-text"><strong data-live="clip.${esc(clip.id)}.title">${esc(val(`clip.${clip.id}.title`) || `پارت ${k + 1}`)}</strong></span>
+              <span class="lse-dot" title="تغییر ذخیره‌نشده"></span>
+            </button>`).join('')}
+            <button type="button" class="lse-tree-clip lse-tree-clip-add" data-click="addNewClipToSession" data-click-args="${args(s.id)}">
+              <span class="lse-tree-num"><i class="fa-solid fa-plus"></i></span>
+              <span class="lse-tree-text"><strong>پارت جدید</strong></span>
+            </button>
+          </div>`;
         return `
           <button type="button" class="lse-tree-row${active ? ' is-active' : ''}" data-session-id="${esc(s.id)}" data-dirty-sess="${esc(s.id)}" data-click="lmsEditorSelect" data-click-args="${args('sess:' + s.id)}"${active ? ' aria-current="true"' : ''}>
             <span class="lse-tree-grip lse-grip" title="برای جابجایی بکشید" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></span>
             <span class="lse-tree-num">${lmsFaDigits(si + 1)}</span>
             <span class="lse-tree-text"><strong data-live="sess.${esc(s.id)}.title">${esc(val(`sess.${s.id}.title`) || `جلسه ${si + 1}`)}</strong><small>${clips.length} پارت${clips.length ? '' : ' · ناقص'}</small></span>
             <span class="lse-dot" title="تغییر ذخیره‌نشده"></span>
-          </button>`;
+          </button>${partRows}`;
       }).join('');
       const catActive = ED.sel === `cat:${c.id}`;
       return `
@@ -680,18 +751,18 @@
         </div>`;
     }).join('');
 
-    const m = String(ED.sel || '').match(/^(cat|sess):(.+)$/);
+    const m = String(ED.sel || '').match(/^(cat|sess|clip):(.+)$/);
     const detail = !m ? `
         <div class="lse-empty">
           <span class="lsv-round lsv-round-lg"><i class="fa-solid fa-layer-group"></i></span>
           <strong>این منزلگاه هنوز دسته کلاسی ندارد</strong>
           <span>از ستون کناری یک دسته بسازید؛ هر دسته یک تب در صفحه کلاس‌های اپلیکیشن است.</span>
         </div>`
-      : (m[1] === 'cat' ? categoryDetail(st, m[2]) : sessionDetail(st, m[2]));
+      : (m[1] === 'cat' ? categoryDetail(st, m[2]) : (m[1] === 'clip' ? clipDetail(st, m[2]) : sessionDetail(st, m[2])));
 
     return `
       <aside class="lse-tree" aria-label="دسته‌ها و جلسات">
-        ${cats.length ? '<p class="lse-hint lse-tree-hint"><i class="fa-solid fa-up-down-left-right"></i> جلسه‌ها و دسته‌ها را بکشید تا جابجا شوند؛ بلافاصله ثبت می‌شود.</p>' : ''}
+        ${cats.length ? '<p class="lse-hint lse-tree-hint"><i class="fa-solid fa-up-down-left-right"></i> دسته‌ها، جلسه‌ها و پارت‌ها را بکشید تا جابجا شوند؛ بلافاصله ثبت می‌شود.</p>' : ''}
         ${tree}
         <div class="lse-tree-new">
           <input type="text" id="new-cat-title-${esc(st.id)}" class="input-ctrl" placeholder="عنوان دسته جدید" aria-label="عنوان دسته کلاس جدید" data-keydown="lmsEditorNewCatKey" data-keydown-args='["$event"]'>
@@ -771,6 +842,56 @@
     if (el) el.innerHTML = clipStateChip(clipId);
   }
 
+  // One part's boxes (video link, cover, unlock moment, quizzes); shown alone when the part is selected in the side list
+  function clipCardHtml(sess, clip, k) {
+    const cid = esc(clip.id);
+    const quizzes = quizzesOfClip(sess, clip, k);
+    const cover = val(`clip.${clip.id}.coverImageUrl`);
+    return `
+      <article class="lcm-clip lse-clip" data-clip-id="${cid}">
+        <header class="lse-clip-head">
+          <span class="lcm-clip-badge">پارت <span class="lcm-clip-num">${k + 1}</span></span>
+          <input type="text" class="input-ctrl lse-clip-title" data-f="clip.${cid}.title" value="${esc(val(`clip.${clip.id}.title`))}" placeholder="عنوان پارت" aria-label="عنوان پارت ${k + 1}">
+          <span id="lse-clip-state-${cid}" class="lse-clip-state">${clipStateChip(clip.id)}</span>
+          <button type="button" class="lsv-round lsv-round-sm lsv-round-danger" data-click="deleteClipRecord" data-click-args="${args(clip.id, sess.id)}" title="حذف پارت" aria-label="حذف پارت"><i class="fa-solid fa-trash"></i></button>
+        </header>
+        <div class="lse-grid lse-grid-2">
+          <div class="lse-field">
+            <label for="lse-clip-url-${cid}"><i class="fa-solid fa-video"></i> لینک ویدیو</label>
+            <span class="lse-inline">
+              <input type="text" id="lse-clip-url-${cid}" class="input-ctrl" dir="ltr" data-f="clip.${cid}.videoUrl" value="${esc(val(`clip.${clip.id}.videoUrl`))}" placeholder="https://www.aparat.com/v/...">
+              <button type="button" class="lsv-round lse-play-btn" data-click="lmsEditorPreviewClip" data-click-args="${args(clip.id)}" title="پیش‌نمایش ویدیو" aria-label="پیش‌نمایش ویدیو"><i class="fa-solid fa-play"></i></button>
+            </span>
+          </div>
+          <div class="lse-field">
+            <label for="lse-clip-cover-${cid}"><i class="fa-solid fa-image"></i> کاور ویدیو</label>
+            <span class="lse-inline">
+              <img class="lse-thumb" data-live-src="clip.${cid}.coverImageUrl" src="${esc(cover)}" alt="" data-zoom data-zoom-title="کاور پارت ${k + 1}" data-style="${cover ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args='["$this","hidden"]'>
+              <input type="text" id="lse-clip-cover-${cid}" class="input-ctrl" dir="ltr" data-f="clip.${cid}.coverImageUrl" value="${esc(cover)}" placeholder="اختیاری">
+              ${upload(`lse-clip-cover-${clip.id}`, '')}
+            </span>
+          </div>
+        </div>
+        <div class="lse-unlock">
+          <span class="lse-unlock-label"><i class="fa-solid fa-clock-rotate-left"></i> باز شدن پارت</span>
+          <input type="date" class="input-ctrl" data-f="clip.${cid}.unlockDate" value="${esc(val(`clip.${clip.id}.unlockDate`))}" aria-label="تاریخ باز شدن">
+          <input type="time" class="input-ctrl" data-f="clip.${cid}.unlockTime" value="${esc(val(`clip.${clip.id}.unlockTime`))}" aria-label="ساعت باز شدن">
+          <button type="button" class="lse-btn" data-click="lmsEditorClipAlwaysOpen" data-click-args="${args(clip.id)}"><i class="fa-solid fa-unlock"></i> همیشه باز</button>
+        </div>
+        <div class="lse-quizzes">
+          ${quizzes.map(q => `
+            <div class="lse-quiz">
+              <i class="fa-solid fa-circle-question"></i>
+              <span class="lse-quiz-q" title="${esc(quizQuestion(q))}">${esc(quizQuestion(q))}</span>
+              <span class="lse-zarik"><i class="fa-solid fa-coins"></i> ${q.rewardZarik ?? 10}</span>
+              <button type="button" class="lsv-round lsv-round-sm" data-click="editQuizRecord" data-click-args="${args(q.id)}" title="ویرایش آزمونک" aria-label="ویرایش آزمونک"><i class="fa-solid fa-pen"></i></button>
+              <button type="button" class="lsv-round lsv-round-sm lsv-round-danger" data-click="deleteQuizRecord" data-click-args="${args(q.id)}" title="حذف آزمونک" aria-label="حذف آزمونک"><i class="fa-solid fa-trash"></i></button>
+            </div>`).join('')}
+          <button type="button" class="lse-btn lse-btn-dashed" data-click="openQuizModalForClip" data-click-args="${args(sess.id, clip.id)}"><i class="fa-solid fa-plus"></i> آزمونک${quizzes.length ? ' دیگر' : ' انتهای پارت'}</button>
+        </div>
+      </article>`;
+  }
+
   function sessionDetail(st, sessId) {
     const cats = window.lmsOrderedCategories(st);
     const flat = [];
@@ -783,55 +904,6 @@
     const pickerId = `lse-pick-${sess.id}`;
     const clips = clipsOf(sess);
 
-    const clipCards = clips.map((clip, k) => {
-      const cid = esc(clip.id);
-      const quizzes = quizzesOfClip(sess, clip, k);
-      const cover = val(`clip.${clip.id}.coverImageUrl`);
-      return `
-        <article class="lcm-clip lse-clip" data-clip-id="${cid}">
-          <header class="lse-clip-head">
-            <span class="lcm-clip-grip" title="برای جابجایی بکشید" aria-label="جابجایی پارت"><i class="fa-solid fa-grip-vertical"></i></span>
-            <span class="lcm-clip-badge">پارت <span class="lcm-clip-num">${k + 1}</span></span>
-            <input type="text" class="input-ctrl lse-clip-title" data-f="clip.${cid}.title" value="${esc(val(`clip.${clip.id}.title`))}" placeholder="عنوان پارت" aria-label="عنوان پارت ${k + 1}">
-            <span id="lse-clip-state-${cid}" class="lse-clip-state">${clipStateChip(clip.id)}</span>
-            <button type="button" class="lsv-round lsv-round-sm lsv-round-danger" data-click="deleteClipRecord" data-click-args="${args(clip.id, sess.id)}" title="حذف پارت" aria-label="حذف پارت"><i class="fa-solid fa-trash"></i></button>
-          </header>
-          <div class="lse-grid lse-grid-2">
-            <div class="lse-field">
-              <label for="lse-clip-url-${cid}"><i class="fa-solid fa-video"></i> لینک ویدیو</label>
-              <span class="lse-inline">
-                <input type="text" id="lse-clip-url-${cid}" class="input-ctrl" dir="ltr" data-f="clip.${cid}.videoUrl" value="${esc(val(`clip.${clip.id}.videoUrl`))}" placeholder="https://www.aparat.com/v/...">
-                <button type="button" class="lsv-round lse-play-btn" data-click="lmsEditorPreviewClip" data-click-args="${args(clip.id)}" title="پیش‌نمایش ویدیو" aria-label="پیش‌نمایش ویدیو"><i class="fa-solid fa-play"></i></button>
-              </span>
-            </div>
-            <div class="lse-field">
-              <label for="lse-clip-cover-${cid}"><i class="fa-solid fa-image"></i> کاور ویدیو</label>
-              <span class="lse-inline">
-                <img class="lse-thumb" data-live-src="clip.${cid}.coverImageUrl" src="${esc(cover)}" alt="" data-zoom data-zoom-title="کاور پارت ${k + 1}" data-style="${cover ? '' : 'visibility:hidden;'}" data-error="NopaActions.setVisibility" data-error-args='["$this","hidden"]'>
-                <input type="text" id="lse-clip-cover-${cid}" class="input-ctrl" dir="ltr" data-f="clip.${cid}.coverImageUrl" value="${esc(cover)}" placeholder="اختیاری">
-                ${upload(`lse-clip-cover-${clip.id}`, '')}
-              </span>
-            </div>
-          </div>
-          <div class="lse-unlock">
-            <span class="lse-unlock-label"><i class="fa-solid fa-clock-rotate-left"></i> باز شدن پارت</span>
-            <input type="date" class="input-ctrl" data-f="clip.${cid}.unlockDate" value="${esc(val(`clip.${clip.id}.unlockDate`))}" aria-label="تاریخ باز شدن">
-            <input type="time" class="input-ctrl" data-f="clip.${cid}.unlockTime" value="${esc(val(`clip.${clip.id}.unlockTime`))}" aria-label="ساعت باز شدن">
-            <button type="button" class="lse-btn" data-click="lmsEditorClipAlwaysOpen" data-click-args="${args(clip.id)}"><i class="fa-solid fa-unlock"></i> همیشه باز</button>
-          </div>
-          <div class="lse-quizzes">
-            ${quizzes.map(q => `
-              <div class="lse-quiz">
-                <i class="fa-solid fa-circle-question"></i>
-                <span class="lse-quiz-q" title="${esc(quizQuestion(q))}">${esc(quizQuestion(q))}</span>
-                <span class="lse-zarik"><i class="fa-solid fa-coins"></i> ${q.rewardZarik ?? 10}</span>
-                <button type="button" class="lsv-round lsv-round-sm" data-click="editQuizRecord" data-click-args="${args(q.id)}" title="ویرایش آزمونک" aria-label="ویرایش آزمونک"><i class="fa-solid fa-pen"></i></button>
-                <button type="button" class="lsv-round lsv-round-sm lsv-round-danger" data-click="deleteQuizRecord" data-click-args="${args(q.id)}" title="حذف آزمونک" aria-label="حذف آزمونک"><i class="fa-solid fa-trash"></i></button>
-              </div>`).join('')}
-            <button type="button" class="lse-btn lse-btn-dashed" data-click="openQuizModalForClip" data-click-args="${args(sess.id, clip.id)}"><i class="fa-solid fa-plus"></i> آزمونک${quizzes.length ? ' دیگر' : ' انتهای پارت'}</button>
-          </div>
-        </article>`;
-    }).join('');
 
     return `
       <header class="lse-detail-head">
@@ -873,14 +945,51 @@
           <span>مشخصات جلسه <small>در تب «مشخصات جلسه» صفحه کلاس‌های اپلیکیشن</small></span>
           <textarea class="input-ctrl" rows="3" data-f="sess.${id}.description" placeholder="توضیحات، اهداف و سرفصل‌های این جلسه...">${esc(val(`sess.${sess.id}.description`))}</textarea>
         </label>
+        <div class="lse-grid lse-grid-2">
+          <label class="lse-field">
+            <span><i class="fa-solid fa-file-pdf"></i> عنوان جزوه</span>
+            <input type="text" class="input-ctrl" data-f="sess.${id}.handoutTitle" value="${esc(val(`sess.${sess.id}.handoutTitle`))}" placeholder="مثال: جزوه جلسه اول">
+          </label>
+          <label class="lse-field">
+            <span>فایل جزوه <small>در تب «مشخصات جلسه» اپ قابل دانلود است</small></span>
+            <span class="lse-inline">
+              <input type="text" id="lse-handout-${id}" class="input-ctrl" dir="ltr" data-f="sess.${id}.handoutUrl" value="${esc(val(`sess.${sess.id}.handoutUrl`))}" placeholder="https://... یا /uploads/...">
+              ${upload(`lse-handout-${id}`, 'آپلود', '.pdf,.doc,.docx,.ppt,.pptx,image/*')}
+            </span>
+          </label>
+        </div>
       </section>
 
-      <div class="lse-section-head">
+      <section class="lse-card lse-tool">
         <h5><i class="fa-solid fa-film"></i> پارت‌های ویدیو <span class="lsv-col-count">${clips.length}</span></h5>
-        ${clips.length > 1 ? '<span class="lse-hint">برای جابجایی، پارت را از دستگیره بکشید</span>' : ''}
-      </div>
-      ${clips.length ? `<div class="lcm-clips lse-clips" data-session-id="${id}">${clipCards}</div>` : '<div class="lse-empty lse-empty-sm"><span>این جلسه هنوز پارتی ندارد.</span></div>'}
-      <button type="button" class="lse-add-row" data-click="addNewClipToSession" data-click-args="${args(sess.id)}"><i class="fa-solid fa-plus"></i> پارت جدید</button>`;
+        <p>${clips.length ? 'برای ویرایش هر پارت (لینک ویدیو، کاور، زمان باز شدن و آزمونک‌ها)، آن را از ستون کناری انتخاب کنید. ترتیب پارت‌ها را همان‌جا با کشیدن عوض کنید.' : 'این جلسه هنوز پارتی ندارد.'}</p>
+        <button type="button" class="lse-add-row" data-click="addNewClipToSession" data-click-args="${args(sess.id)}"><i class="fa-solid fa-plus"></i> پارت جدید</button>
+      </section>`;
+  }
+
+  function clipDetail(st, clipId) {
+    const sess = sessionOfClip(clipId);
+    const cats = window.lmsOrderedCategories(st);
+    const ci = cats.findIndex(c => sessionsOf(c).some(x => sess && String(x.id) === String(sess.id)));
+    const cat = cats[ci];
+    const si = sessionsOf(cat).findIndex(x => String(x.id) === String(sess.id));
+    const clips = clipsOf(sess);
+    const k = clips.findIndex(x => String(x.id) === clipId);
+    const clip = clips[k];
+    const prev = clips[k - 1];
+    const next = clips[k + 1];
+    return `
+      <header class="lse-detail-head">
+        <div>
+          <span class="lse-crumb"><span class="lsv-col-dot" data-style="background:${window.lmsCategoryColor(ci)}"></span> <span data-live="cat.${esc(cat.id)}.title">${esc(val(`cat.${cat.id}.title`))}</span> · <a href="#" data-click="lmsEditorSelect" data-click-args="${args('sess:' + sess.id)}">جلسه ${lmsFaDigits(si + 1)}: <span data-live="sess.${esc(sess.id)}.title">${esc(val(`sess.${sess.id}.title`) || '')}</span></a></span>
+          <h4 data-live="clip.${esc(clip.id)}.title">${esc(val(`clip.${clip.id}.title`) || `پارت ${k + 1}`)}</h4>
+        </div>
+        <div class="lsv-round-group">
+          <button type="button" class="lsv-round" ${prev ? `data-click="lmsEditorSelect" data-click-args="${args('clip:' + prev.id)}"` : 'disabled'} title="پارت قبلی" aria-label="پارت قبلی"><i class="fa-solid fa-arrow-right"></i></button>
+          <button type="button" class="lsv-round" ${next ? `data-click="lmsEditorSelect" data-click-args="${args('clip:' + next.id)}"` : 'disabled'} title="پارت بعدی" aria-label="پارت بعدی"><i class="fa-solid fa-arrow-left"></i></button>
+        </div>
+      </header>
+      ${clipCardHtml(sess, clip, k)}`;
   }
 
   // ---- wizard steps 3 and 4 ----
@@ -1165,7 +1274,9 @@
         return;
       }
       ED.saving = false;
+      NopaDrafts.remove('station:new');
       hide();
+      refreshDraftChip();
       showToast(`«${payload.title}» ایجاد شد.`, 'success');
       await window.fetchLiveLmsStations();
       const newId = data && data.data && data.data.id;
@@ -1202,7 +1313,7 @@
     if (keys.some(k => k.startsWith('station.'))) {
       const body = {
         id: st.id,
-        orderIndex: st.orderIndex,
+        orderIndex: Math.max(0, parseInt(val('station.orderIndex'), 10) || 0),
         title: val('station.title').trim(),
         description: val('station.description'),
         releaseDate: val('station.releaseDate'),
@@ -1259,6 +1370,7 @@
     ED.saving = false;
     if (!failed.length) {
       ED.edits = {};
+      NopaDrafts.remove(`station:${st.id}`);
       showToast(`${lmsFaDigits(saved)} تغییر ذخیره شد.`, 'success');
     } else {
       // what was saved now equals the fresh data and drops out of the draft; the rest stays for another try
@@ -1295,3 +1407,4 @@
     }
   }, true);
 })();
+

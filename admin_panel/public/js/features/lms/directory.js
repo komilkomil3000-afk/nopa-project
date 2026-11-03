@@ -36,6 +36,7 @@ window.lmsCategoryColor = function(index) {
 };
 
 window.fetchLiveLmsStations = async function() {
+  if (window.NopaDrafts) NopaDrafts.sync();
   if (!document.getElementById('lms-bento-stations')) return;
   // shimmer on the bento tiles while the first load runs (js/features/lms/station-view.js)
   const firstLoad = !window.lmsStationsMasterList.length;

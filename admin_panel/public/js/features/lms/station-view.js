@@ -340,7 +340,7 @@ window.openLmsInstructorsBank = function() {
 
 // ==================== SINGLE-STATION VIEW ====================
 // Layout: one large board (title | station circles in a notch | round actions) holding the category columns
-// as a connected flow, an add-category column and quick-action tiles; below it, station stats (right) and
+// as a connected flow, an add-category column; below it, station stats (right) and
 // the station's instructors (left).
 
 window.lmsAssignFormOpen = false;
@@ -429,16 +429,23 @@ window.renderLmsStationView = function() {
   const circles = all.map((s, i) => {
     const sImg = lmsStationImage(s);
     const sNum = lmsStationNumber(s, i);
+    const sName = s.title || `منزلگاه ${sNum}`;
     const active = String(s.id) === String(st.id);
     return `
-      <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-station-id="${esc(s.id)}" data-anim-key="c:${esc(s.id)}" data-click="openLmsStationView" data-click-args="${lmsArgs(s.id)}" title="${esc(s.title || `منزلگاه ${sNum}`)}"${active ? ' aria-current="true"' : ''}>
-        <span class="lsv-circle-img">${sImg ? `<img src="${esc(sImg)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${sNum}"]'>` : `<span>${sNum}</span>`}</span>
-        <span class="lsv-circle-badge lsv-state-${lmsStationState(s)}">${sNum}</span>
+      <button type="button" class="lsv-circle${active ? ' is-active' : ''}" data-station-id="${esc(s.id)}" data-anim-key="c:${esc(s.id)}" data-click="openLmsStationView" data-click-args="${lmsArgs(s.id)}" title="${esc(sName)}"${active ? ' aria-current="true"' : ''}>
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img">${sImg ? `<img src="${esc(sImg)}" alt="" loading="lazy" data-error="lmsImageFallback" data-error-args='["$this", "${sNum}"]'>` : `<span>${sNum}</span>`}</span>
+          <span class="lsv-circle-badge lsv-state-${lmsStationState(s)}">${sNum}</span>
+        </span>
+        <span class="lsv-circle-name"><span>${esc(sName)}</span></span>
       </button>`;
   }).join('') + `
       <button type="button" class="lsv-circle lsv-circle-add" data-anim-key="c-add" data-click="openCreateStationModal" title="افزودن منزلگاه جدید" aria-label="افزودن منزلگاه جدید">
-        <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
-        <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
+        <span class="lsv-circle-main">
+          <span class="lsv-circle-img"><i class="fa-solid fa-plus"></i></span>
+          <span class="lsv-circle-badge lsv-state-add"><i class="fa-solid fa-plus"></i></span>
+        </span>
+        <span class="lsv-circle-name"><span>افزودن منزلگاه جدید</span></span>
       </button>`;
 
   // ---- one column per category: its sessions as rows, then a "+" row ----
@@ -495,18 +502,6 @@ window.renderLmsStationView = function() {
       <div class="lsv-col-label">دسته / بخش جدید</div>
     </div>`;
 
-  const tiles = `
-    <div class="lsv-col lsv-col-tiles" data-anim-key="col-tiles">
-      <div class="lsv-tiles">
-        <button type="button" class="lsv-tile is-primary" data-click="editStationModal" data-click-args="${sid}"><i class="fa-solid fa-pen-to-square"></i> ویرایش مشخصات</button>
-        <button type="button" class="lsv-tile" data-click="openStationAccessModal" data-click-args="${sid}"><i class="fa-solid fa-key"></i> دسترسی و بازگشایی</button>
-        <button type="button" class="lsv-tile" data-click="openStationContentManagerModal" data-click-args="${sid}"><i class="fa-solid fa-film"></i> مدیریت محتوا</button>
-        <button type="button" class="lsv-tile" data-click="exportLmsToExcel"><i class="fa-solid fa-file-excel"></i> خروجی اکسل</button>
-        <button type="button" class="lsv-tile is-danger" data-click="lmsDeleteActiveStation" data-click-args="${sid}"><i class="fa-solid fa-trash"></i> حذف منزلگاه</button>
-      </div>
-      <div class="lsv-col-label">اقدامات منزلگاه</div>
-    </div>`;
-
   const board = `
     <section class="lsv-board" data-anim-key="board" data-anim-size="h">
       <header class="lsv-board-head">
@@ -514,15 +509,17 @@ window.renderLmsStationView = function() {
           <h4>بخش‌ها و پارت‌های منزلگاه</h4>
           <span>${sum.categories} دسته · ${sum.sessions} جلسه · ${sum.parts} پارت</span>
         </div>
-        <nav class="lsv-notch" aria-label="منزلگاه‌ها">${circles}</nav>
+        <div class="lsv-notch-wrap"><nav class="lsv-notch" aria-label="منزلگاه‌ها">${circles}</nav></div>
         <div class="lsv-round-group">
-          ${lmsRoundBtn('fa-solid fa-plus', 'منزلگاه جدید', 'openCreateStationModal')}
-          ${lmsRoundBtn('fa-solid fa-pen', 'ویرایش منزلگاه', 'editStationModal', sid)}
-          ${lmsRoundBtn('fa-regular fa-calendar', 'زمان‌بندی و دسترسی', 'openStationAccessModal', sid)}
+          ${lmsRoundBtn('fa-solid fa-pen', 'ویرایش مشخصات', 'editStationModal', sid)}
+          ${lmsRoundBtn('fa-solid fa-key', 'دسترسی و بازگشایی', 'openStationAccessModal', sid)}
+          ${lmsRoundBtn('fa-solid fa-film', 'مدیریت محتوا', 'openStationContentManagerModal', sid)}
+          ${lmsRoundBtn('fa-solid fa-file-excel', 'خروجی اکسل', 'exportLmsToExcel')}
+          ${lmsRoundBtn('fa-solid fa-trash', 'حذف منزلگاه', 'lmsDeleteActiveStation', sid, 'lsv-round-danger')}
         </div>
       </header>
       <div class="lsv-flow">
-        ${columns}${cats.length ? '<div class="lsv-link" data-anim-key="link-new" aria-hidden="true"></div>' : ''}${addColumn}${tiles}
+        ${columns}${cats.length ? '<div class="lsv-link" data-anim-key="link-new" aria-hidden="true"></div>' : ''}${addColumn}
       </div>
     </section>`;
 
@@ -650,6 +647,8 @@ window.renderLmsStationView = function() {
     }
   }
 
+  lmsFitBoardNotch(view);
+
   // Centre the active circle inside the notch only (scrollIntoView would also scroll the page sideways)
   const notch = view.querySelector('.lsv-notch');
   const activeEl = notch && notch.querySelector('.lsv-circle.is-active');
@@ -659,6 +658,50 @@ window.renderLmsStationView = function() {
     notch.scrollLeft += (ar.left + ar.width / 2) - (nr.left + nr.width / 2);
   }
 };
+
+// The board's glass is cut away where the station circles hang from its top edge (so the page shows through, not a
+// fill), with concave flares at the cut's top corners. The cut is a clip-path measured from the circles' strip, and
+// the board's outline is an SVG stroke along the same path so it follows the curves instead of being cut off.
+let lmsBoardObserver = null;
+function lmsFitBoardNotch(view) {
+  const board = view.querySelector('.lsv-board');
+  if (!board) return;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  let svg = board.querySelector(':scope > .lsv-board-outline');
+  if (!svg) {
+    svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'lsv-board-outline');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.appendChild(document.createElementNS(SVG_NS, 'path'));
+    board.prepend(svg);
+  }
+  const fit = () => {
+    const wrap = board.querySelector('.lsv-notch-wrap');
+    const bw = board.offsetWidth, bh = board.offsetHeight;
+    const R = 28;
+    let d;
+    if (!wrap || wrap.offsetTop > 4) { // stacked layout: no cut
+      d = `M ${R} 0 H ${bw - R} A ${R} ${R} 0 0 1 ${bw} ${R} V ${bh - R} A ${R} ${R} 0 0 1 ${bw - R} ${bh} H ${R} A ${R} ${R} 0 0 1 0 ${bh - R} V ${R} A ${R} ${R} 0 0 1 ${R} 0 Z`;
+    } else {
+      const F = 22;
+      const x0 = wrap.offsetLeft, x1 = x0 + wrap.offsetWidth, h = wrap.offsetHeight;
+      const r = Math.min(24, h / 2);
+      d = `M ${R} 0 H ${x0 - F} A ${F} ${F} 0 0 1 ${x0} ${F} V ${h - r} A ${r} ${r} 0 0 0 ${x0 + r} ${h} H ${x1 - r} A ${r} ${r} 0 0 0 ${x1} ${h - r} V ${F} A ${F} ${F} 0 0 1 ${x1 + F} 0 H ${bw - R} A ${R} ${R} 0 0 1 ${bw} ${R} V ${bh - R} A ${R} ${R} 0 0 1 ${bw - R} ${bh} H ${R} A ${R} ${R} 0 0 1 0 ${bh - R} V ${R} A ${R} ${R} 0 0 1 ${R} 0 Z`;
+    }
+    board.style.setProperty('--board-clip', `path('${d}')`);
+    svg.setAttribute('width', bw);
+    svg.setAttribute('height', bh);
+    svg.firstChild.setAttribute('d', d);
+  };
+  fit();
+  if (lmsBoardObserver) lmsBoardObserver.disconnect();
+  if (typeof ResizeObserver === 'function') {
+    lmsBoardObserver = new ResizeObserver(fit);
+    lmsBoardObserver.observe(board);
+    const wrap = board.querySelector('.lsv-notch-wrap');
+    if (wrap) lmsBoardObserver.observe(wrap);
+  }
+}
 
 // ==================== STATION VIEW ACTIONS ====================
 

@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { getAssetNames } from '../utils/assetNames';
 import { closeCompetitionTopics, payPrizes, prizePlan, publishResults, unconfirmedCaravans } from '../modules/chat/intergroup';
 import { getEconomyPolicy } from '../services/economy';
+import { changeBalance } from '../services/ledger';
 
 const MEDALS = ['gold', 'silver', 'bronze'] as const;
 const TIER_KEYS: Record<string, string> = {
@@ -33,13 +34,26 @@ async function participatingCaravans(challengeId: string) {
   if (counts.size === 0) return [];
   const caravans = await prisma.caravan.findMany({
     where: { id: { in: Array.from(counts.keys()) } },
-    select: { id: true, name: true, mentor: { select: { name: true } } },
+    select: { id: true, name: true, coverImageUrl: true, groupPoints: true, mentor: { select: { name: true } }, _count: { select: { members: { where: { isDeleted: false } } } } },
   });
+  const approvedRows = await prisma.submission.findMany({
+    where: { challengeId, status: 'approved', student: { caravanId: { in: caravans.map(c => c.id) } } },
+    select: { student: { select: { caravanId: true } } },
+  });
+  const approved = new Map<string, number>();
+  for (const r of approvedRows) {
+    const cid = r.student?.caravanId;
+    if (cid) approved.set(cid, (approved.get(cid) || 0) + 1);
+  }
   return caravans.map(c => ({
     id: c.id,
     name: c.name,
     mentorName: c.mentor?.name || null,
+    coverImageUrl: c.coverImageUrl || null,
+    memberCount: c._count.members,
+    groupPoints: c.groupPoints,
     answers: counts.get(c.id) || 0,
+    approved: approved.get(c.id) || 0,
   }));
 }
 
@@ -55,10 +69,15 @@ export async function getChallengeRanking(req: AuthRequest, res: Response) {
     const caravans = await participatingCaravans(id);
     const banners = await prisma.caravanBanner.findMany({ where: { challengeId: id }, orderBy: [{ rank: 'asc' }] });
     const { config } = await getEconomyPolicy();
+    // What the panel proposes before the admin arranges it: most approved answers, then most answers, then group points
+    const suggested = [...caravans]
+      .sort((a, b) => b.approved - a.approved || b.answers - a.answers || b.groupPoints - a.groupPoints)
+      .map(c => c.id);
     res.json({
       challenge: { id: challenge.id, title: challenge.title, finalized: !!challenge.rankingFinalizedAt },
       prizes: config.interGroup.prizes,
       caravans,
+      suggested,
       result: banners.map(b => ({
         caravanId: b.caravanId,
         caravanName: caravans.find(c => c.id === b.caravanId)?.name || '',
@@ -158,6 +177,103 @@ export async function finalizeChallengeRanking(req: AuthRequest, res: Response) 
     }
     console.error('finalizeChallengeRanking error:', error);
     res.status(500).json({ error: 'خطا در ثبت رتبه‌بندی' });
+  }
+}
+
+/**
+ * Admin corrects an already confirmed ranking. The banners are replaced and every member is paid (or charged) only
+ * the difference between the new and the old prize. Body: { ranking: [...], preview?: true }.
+ * A member who already spent the prize makes the change impossible (the ledger refuses a negative balance).
+ */
+export async function editChallengeRanking(req: AuthRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const challenge = await prisma.challenge.findUnique({ where: { id } });
+    if (!challenge) return res.status(404).json({ error: 'چالش یافت نشد' });
+    if (challenge.category !== 'inter_group') {
+      return res.status(400).json({ error: 'رتبه‌بندی فقط برای چالش‌های میان‌گروهی است' });
+    }
+    if (!challenge.rankingFinalizedAt) {
+      return res.status(409).json({ error: 'رتبه‌بندی این چالش هنوز تایید نشده است' });
+    }
+
+    const ranking: string[] = Array.isArray(req.body?.ranking) ? req.body.ranking.map((r: any) => String(r)) : [];
+    const caravans = await participatingCaravans(id);
+    const places = Math.min(3, caravans.length);
+    if (places === 0 || ranking.length !== places || new Set(ranking).size !== places) {
+      return res.status(400).json({ error: 'رتبه‌ها را با کاروان‌های متفاوت مشخص کنید' });
+    }
+    const participating = caravans.map(c => c.id);
+    if (ranking.some(cid => !participating.includes(cid))) {
+      return res.status(400).json({ error: 'کاروان انتخاب‌شده در این چالش شرکت نکرده است' });
+    }
+
+    const oldBanners = await prisma.caravanBanner.findMany({ where: { challengeId: id, rank: { not: null } }, orderBy: { rank: 'asc' } });
+    const oldRanking = oldBanners.map(b => b.caravanId);
+    if (oldRanking.join() === ranking.join()) return res.json({ success: true, unchanged: true });
+
+    const oldPlan = await prizePlan(id, oldRanking, participating);
+    const newPlan = await prizePlan(id, ranking, participating);
+    const oldAmount = new Map(oldPlan.map(p => [p.userId, p.amount]));
+    const deltas = newPlan
+      .map(p => ({ userId: p.userId, amount: p.amount - (oldAmount.get(p.userId) || 0) }))
+      .filter(d => d.amount !== 0);
+    if (req.body?.preview === true) {
+      return res.json({
+        preview: true,
+        increase: deltas.filter(d => d.amount > 0).reduce((sum, d) => sum + d.amount, 0),
+        decrease: deltas.filter(d => d.amount < 0).reduce((sum, d) => sum - d.amount, 0),
+        members: deltas.length,
+      });
+    }
+
+    const rows = caravans.map(c => {
+      const idx = ranking.indexOf(c.id);
+      return idx >= 0
+        ? { caravanId: c.id, tier: MEDALS[idx] as string, rank: idx + 1 }
+        : { caravanId: c.id, tier: 'cloth', rank: null as number | null };
+    });
+    const revision = new Date().toISOString();
+    try {
+      await prisma.$transaction(async (tx) => {
+        for (const d of deltas) {
+          await changeBalance(tx, {
+            userId: d.userId, asset: 'zarik', amount: d.amount, sourceType: 'intergroup_prize_edit', sourceId: `${id}:${revision}`,
+            reason: `اصلاح رتبه‌بندی چالش فراگروهی: ${challenge.title}`, createdBy: req.user!.id, zarikCategory: 'Special Campaigns',
+          });
+        }
+        await tx.caravanBanner.deleteMany({ where: { challengeId: id } });
+        await tx.caravanBanner.createMany({ data: rows.map(r => ({ ...r, challengeId: id, awardedBy: req.user!.id })) });
+      });
+    } catch (e: any) {
+      if (e?.message === 'INSUFFICIENT_BALANCE') {
+        return res.status(409).json({ error: 'اصلاح ممکن نیست: بعضی اعضا جایزه قبلی را خرج کرده‌اند و موجودی کافی برای کسر تفاوت ندارند' });
+      }
+      throw e;
+    }
+
+    const names = await getAssetNames();
+    const caravanIds = rows.map(r => r.caravanId);
+    const students = await prisma.user.findMany({ where: { caravanId: { in: caravanIds } }, select: { id: true, caravanId: true } });
+    const mentors = await prisma.caravan.findMany({ where: { id: { in: caravanIds } }, select: { id: true, mentorId: true } });
+    const notes: { userId: string; title: string; message: string; type: string }[] = [];
+    for (const r of rows) {
+      const old = oldBanners.find(b => b.caravanId === r.caravanId)?.rank ?? null;
+      if (old === r.rank) continue;
+      const msg = r.rank
+        ? `رتبه‌ی کاروان شما در چالش میان‌گروهی "${challenge.title}" اصلاح شد: رتبه‌ی ${['اول', 'دوم', 'سوم'][r.rank - 1]} و ${names[TIER_KEYS[r.tier]]}.`
+        : `رتبه‌ی کاروان شما در چالش میان‌گروهی "${challenge.title}" اصلاح شد و ${names[TIER_KEYS.cloth]} دریافت کرد.`;
+      const recipients = new Set<string>(students.filter(m => m.caravanId === r.caravanId).map(m => m.id));
+      const mentorId = mentors.find(c => c.id === r.caravanId)?.mentorId;
+      if (mentorId) recipients.add(mentorId);
+      for (const userId of recipients) notes.push({ userId, title: `${names.derafsh} کاروان`, message: msg, type: 'reward' });
+    }
+    if (notes.length > 0) await prisma.notification.createMany({ data: notes });
+
+    res.json({ success: true, result: rows });
+  } catch (error) {
+    console.error('editChallengeRanking error:', error);
+    res.status(500).json({ error: 'خطا در اصلاح رتبه‌بندی' });
   }
 }
 
