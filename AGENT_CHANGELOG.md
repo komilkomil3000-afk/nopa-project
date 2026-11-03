@@ -4298,3 +4298,18 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (app/): No issues found
 - **Status:** Completed
+
+### [2026-11-03 12:00] - Agent 2 (Flutter App & LMS Specialist) / Claude Code
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+- **Description of Changes:**
+  - Reactions: one per person per message (a new one replaces the old, the same one again removes it); not allowed on one's own message (server rejects, menu hides the reaction bar, chips ignore taps)
+  - react/pin/edit/delete now apply the message returned by the server immediately, so menu actions show even when the live socket is not delivering updates; failed reaction shows an error toast
+  - Mentor/staff reaction badge: staff ids also include the private-chat mentor peer, the current mentor user and mentor senders, so the badge no longer depends on the people list having loaded
+- **Verification / Checkpoints Executed:**
+  - `flutter analyze` (app/): No issues found; `npx tsc --noEmit` (admin_panel/): no errors
+- **Status:** Completed

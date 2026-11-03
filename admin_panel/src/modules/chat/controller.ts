@@ -262,10 +262,12 @@ export const toggleReaction = handler(async (req, res, actor) => {
   const { message } = await requireMessage(actor, req.params.id);
   const type = String(req.body?.type || '');
   if (!REACTION_TYPES.includes(type)) throw new ChatError(400, 'واکنش نامعتبر است');
-  const key = { messageId_userId_type: { messageId: message.id, userId: actor.id, type } };
-  const existing = await prisma.chatReaction.findUnique({ where: key });
-  if (existing) await prisma.chatReaction.delete({ where: key });
-  else await prisma.chatReaction.create({ data: { messageId: message.id, userId: actor.id, type } });
+  if (message.senderId === actor.id) throw new ChatError(400, 'روی پیام خودتان نمی‌توانید واکنش بدهید');
+  // One reaction per person per message: the same one again takes it back, another one replaces it
+  const mine = await prisma.chatReaction.findMany({ where: { messageId: message.id, userId: actor.id } });
+  const same = mine.some(r => r.type === type);
+  await prisma.chatReaction.deleteMany({ where: { messageId: message.id, userId: actor.id } });
+  if (!same) await prisma.chatReaction.create({ data: { messageId: message.id, userId: actor.id, type } });
   res.json(serializeMessage(await publishUpdate(message.id)));
 });
 

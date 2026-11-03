@@ -327,6 +327,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       anchor: anchor,
       alignRight: mine || card,
       items: items,
+      // Reactions are for other people's messages only
+      showReactions: !mine && message.senderId != myId && !message.deleted,
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (!mounted) return;
@@ -334,7 +336,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (action == null) return;
 
     if (action.startsWith('react:')) {
-      await _chat.react(message, action.substring(6));
+      final ok = await _chat.react(message, action.substring(6));
+      if (!ok && mounted) AppToast.error(context, 'ثبت واکنش انجام نشد.');
     } else if (action == 'reply') {
       setState(() => _replyTo = message);
       _focus.requestFocus();
@@ -758,10 +761,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _threadAllowed(ChatMessage message, ChatSpace? space) => space?.isPrivate != true || message.topicId != null;
 
   /// Mentors and staff here, whose reactions wear the mentor's badge.
-  Set<String> get _staffIds => {
-        for (final p in _people)
-          if (const {'mentor', 'admin', 'sub_admin', 'channel_manager'}.contains(p['role'])) p['id'] as String,
-      };
+  Set<String> get _staffIds {
+    final space = _chat.spaceById(widget.spaceId);
+    final me = Provider.of<AppRepository>(context, listen: false).currentUser;
+    return {
+      for (final p in _people)
+        if (const {'mentor', 'admin', 'sub_admin', 'channel_manager'}.contains(p['role'])) p['id'] as String,
+      // The list of people may not have arrived yet, or leave out the other side of a private chat
+      if (space?.peerIsMentor == true && space?.peerId != null) space!.peerId!,
+      if (me.role.isMentorLike) me.id,
+      for (final m in _chat.messagesOf(widget.spaceId, threadRootId: _threadId))
+        if (m.senderIsMentor && m.senderId != null) m.senderId!,
+    };
+  }
 
   Set<String> get _mentionNames => {for (final p in _people) (p['name'] ?? '').toString()};
 
@@ -805,7 +817,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onOpenThread: _threadId == null && _threadAllowed(message, space) ? () => _openThread(message) : null,
           onOpenSender: message.senderId == null ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
-          onReact: (type) => _chat.react(message, type),
+          onReact: (type) {
+            if (mine || message.deleted) return;
+            _chat.react(message, type);
+          },
         );
       },
     );

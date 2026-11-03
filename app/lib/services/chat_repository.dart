@@ -569,10 +569,22 @@ class ChatRepository extends ChangeNotifier {
     );
   }
 
-  Future<bool> edit(ChatMessage message, String body) => _simple('PATCH', '/chat/messages/${message.id}', {'body': body});
-  Future<bool> delete(ChatMessage message) => _simple('DELETE', '/chat/messages/${message.id}', null);
-  Future<bool> react(ChatMessage message, String type) => _simple('POST', '/chat/messages/${message.id}/reactions', {'type': type});
-  Future<bool> togglePin(ChatMessage message) => _simple('POST', '/chat/messages/${message.id}/pin', {});
+  Future<bool> edit(ChatMessage message, String body) => _apply('PATCH', '/chat/messages/${message.id}', {'body': body});
+  Future<bool> delete(ChatMessage message) => _apply('DELETE', '/chat/messages/${message.id}', null);
+  Future<bool> react(ChatMessage message, String type) => _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+  Future<bool> togglePin(ChatMessage message) => _apply('POST', '/chat/messages/${message.id}/pin', {});
+
+  /// Like [_simple], but the message the server answers with replaces the one on screen at once,
+  /// so a reaction, pin or edit shows even when the live connection is down.
+  Future<bool> _apply(String method, String path, Map<String, dynamic>? body) async {
+    final res = await _api.chatCall(method, path, body: body);
+    if (res == null || res.statusCode >= 300) return false;
+    try {
+      final data = jsonDecode(res.body);
+      if (data is Map && data['id'] is String && data['spaceId'] is String) _onUpdate(Map<String, dynamic>.from(data));
+    } catch (_) {}
+    return true;
+  }
 
   Future<bool> setMuted(ChatSpace space, bool muted) async {
     final ok = await _simple('POST', '/chat/spaces/${space.id}/mute', {'muted': muted});
