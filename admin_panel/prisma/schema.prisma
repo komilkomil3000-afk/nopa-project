@@ -32,7 +32,7 @@ model User {
   createdAt                    DateTime       @default(now())
   blocked                      Boolean        @default(false)
   isDualRole                   Boolean        @default(false) // True if user is both Student and Mentor
-  
+
   // Security & Billing Additions
   tokenVersion                 Int            @default(0)
   failedLoginAttempts          Int            @default(0)
@@ -45,7 +45,7 @@ model User {
   deletedAt                    DateTime?
   suspendedUntil               DateTime?
   sessions                     UserSession[]
-  
+
   // Mentor Demographics & Tangible Assets
   city                           String?
   bio                            String?
@@ -57,7 +57,7 @@ model User {
   nakh                           Int            @default(0)
   beyragh                        Int            @default(0)
   farsh                          Int            @default(0)
-  
+
   // Relations
   certificates                 Certificate[]
   physicalOrders               PhysicalCertificateOrder[]
@@ -83,13 +83,13 @@ model User {
   mentorFeedbacks              MentorFeedback[] @relation("MentorFeedbacks")
   sessionWatchRecords          SessionWatchRecord[]
   videoBookmarks               VideoBookmark[]
-  
+
   evaluationsGiven             MentorEvaluation[] @relation("EvaluationsStudent")
   evaluationsReceived          MentorEvaluation[] @relation("EvaluationsMentor")
   studentNotes                 PrivateStudentNote[] @relation("StudentNotes")
   mentorNotesWritten           PrivateStudentNote[] @relation("MentorNotes")
   userProgress                 UserProgress[]
-  
+
   @@index([phoneNumber])
   @@index([role])
   @@index([caravanId])
@@ -120,7 +120,7 @@ model Caravan {
   socialGroupLink String?
   isDeleted       Boolean @default(false)
   deletedAt       DateTime?
-  
+
   description     String?
   coverImageUrl   String?
   targetStationId String?
@@ -156,7 +156,7 @@ model AssetConversionRequest {
   reviewedAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   caravan         Caravan  @relation(fields: [caravanId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [requestedBy], references: [id], onDelete: Cascade)
 
@@ -415,7 +415,7 @@ model PhysicalCertificateOrder {
   trackingCode   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
+
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   certificate    Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }
@@ -455,7 +455,7 @@ model MentorRewardRule {
   timeframe     String   // DAILY | PER_STATION | TOTAL
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
   @@index([mentorId])
   @@index([caravanId])
 }
@@ -548,7 +548,7 @@ model VideoClip {
 
   session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   quizzes      Quiz[]
-  
+
   @@index([sessionId])
   @@index([clipOrder])
 }
@@ -560,7 +560,7 @@ model VideoBookmark {
   videoSeconds Int
   noteText     String
   createdAt    DateTime     @default(now())
-  
+
   session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -636,7 +636,7 @@ model UserProgress {
   updatedAt    DateTime @updatedAt
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, clipId])
   @@index([userId, trackType])
 }
@@ -705,9 +705,9 @@ model AdminMessage {
   adminReply  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
   @@index([status])
 }
@@ -891,7 +891,7 @@ model FormSubmission {
 
   form        DynamicForm @relation(fields: [formId], references: [id], onDelete: Cascade)
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([formId])
   @@index([userId])
 }
@@ -1114,6 +1114,7 @@ model ChallengeEvaluation {
   share      Int       // percent of the conversation's participation
   suggested  Int
   finalNakh  Int
+  status     String?   // "flagbearer" | "active" | "semi" | "companion" | "tired": the mentor's participation verdict
   reason     String?
   flags      String[]  @default([])
   objection  String?
@@ -1157,13 +1158,14 @@ model InterGroupJudgeScore {
   @@unique([entryId, judgeId])
 }
 
-// Effort of one member in an inter-group challenge, confirmed by the mentor or the admin
+// Participation of one member in an inter-group challenge, confirmed by the mentor or the admin.
+// Current values: "flagbearer" | "active" | "semi" | "companion" | "tired" (older rows: "full" | "partner" | "minimal" | "inactive")
 model InterGroupMemberTier {
   id          String  @id @default(uuid())
   challengeId String
   caravanId   String
   userId      String
-  tier        String  // "full" | "partner" | "minimal" | "inactive"
+  tier        String
   confirmedBy String?
 
   @@unique([challengeId, userId])

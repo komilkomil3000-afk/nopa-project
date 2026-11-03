@@ -9,7 +9,7 @@ import { correctEvaluation, fileObjection, getEvaluation, myReport, payEvaluatio
 import { askJudge, getTiers, judgeEntry, judgeList, saveTiers, submitEntry } from './intergroup';
 import { exportTopic, exportTopicLink, mentorDashboard, reportMessage, serveTopicExport, topicInsight } from './reports';
 import { myCases, openSupport, rateCase } from './support';
-import { memberProfile, spaceMedia, spaceProfile } from './profiles';
+import { coverUpload, memberProfile, setSpaceCover, spaceMedia, spaceProfile } from './profiles';
 
 const router = Router();
 
@@ -38,7 +38,14 @@ function upload(req: AuthRequest, res: Response, next: NextFunction) {
   });
 }
 
-router.get('/status', (_req, res) => res.json({ enabled: true }));
+function coverMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+  coverUpload.single('file')(req as any, res as any, (err: any) => {
+    if (!err) return next();
+    res.status(400).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'حجم عکس نباید بیشتر از ۵ مگابایت باشد' : (err.message || 'فایل معتبر نیست') });
+  });
+}
+
+router.get('/status',(_req, res) => res.json({ enabled: true }));
 router.get('/spaces', chat.listSpaces as any);
 router.get('/contacts', chat.listContacts as any);
 router.post('/direct', chat.openDirect as any);
@@ -52,6 +59,8 @@ router.get('/spaces/:id/people', chat.listPeople as any);
 router.post('/spaces/:id/members/:userId/mute', chat.muteMember as any);
 router.get('/spaces/:id/stations', chat.listSpaceStations as any);
 router.get('/spaces/:id/profile', spaceProfile as any);
+router.put('/spaces/:id/cover', coverMiddleware as any, setSpaceCover as any);
+router.delete('/spaces/:id/cover', setSpaceCover as any);
 router.get('/spaces/:id/media', spaceMedia as any);
 router.get('/spaces/:id/members/:userId', memberProfile as any);
 router.patch('/messages/:id', chat.editMessage as any);

@@ -306,6 +306,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       ],
       if (message.body.isNotEmpty) const ChatMenuItem('copy', Icons.copy_rounded, 'کپی متن'),
       if (mine && message.body.isNotEmpty && !_threadIsClosed && !card) const ChatMenuItem('edit', Icons.edit_rounded, 'ویرایش'),
+      // A mentor decides where the mentor's badge appears: on their own messages, by choice
+      if (mine && !message.deleted && Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike)
+        ChatMenuItem('mentorMark', Icons.verified_rounded, message.mentorMark ? 'برداشتن نشان راهبر' : 'نشان راهبر'),
       if (moderator) ChatMenuItem('pin', Icons.push_pin_rounded, message.pinned ? 'برداشتن سنجاق' : 'سنجاق کردن'),
       if (!mine && message.senderId != null && space?.isPrivate != true) const ChatMenuItem('profile', Icons.person_rounded, 'پروفایل فرستنده'),
       if (moderator && !mine && message.senderId != null) const ChatMenuItem('mute', Icons.voice_over_off_rounded, 'بی‌صدا تا یک ساعت'),
@@ -327,6 +330,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       anchor: anchor,
       alignRight: mine || card,
       items: items,
+      showReactions: !message.deleted,
       myReactions: {for (final r in message.reactions) if (r['userId'] == myId) r['type'] as String},
     );
     if (!mounted) return;
@@ -334,7 +338,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (action == null) return;
 
     if (action.startsWith('react:')) {
-      await _chat.react(message, action.substring(6));
+      final ok = await _chat.react(message, action.substring(6));
+      if (!ok && mounted) AppToast.error(context, 'ثبت واکنش انجام نشد.');
     } else if (action == 'reply') {
       setState(() => _replyTo = message);
       _focus.requestFocus();
@@ -360,6 +365,9 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       await _chat.togglePin(message);
     } else if (action == 'delete') {
       await _chat.delete(message);
+    } else if (action == 'mentorMark') {
+      final ok = await _chat.mark(message, 'mentor');
+      if (!ok && mounted) AppToast.error(context, 'ثبت نشان انجام نشد.');
     } else if (action == 'best' || action == 'evidence') {
       await _chat.mark(message, action);
       if (mounted) AppToast.success(context, 'ثبت شد.');
@@ -758,10 +766,19 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   bool _threadAllowed(ChatMessage message, ChatSpace? space) => space?.isPrivate != true || message.topicId != null;
 
   /// Mentors and staff here, whose reactions wear the mentor's badge.
-  Set<String> get _staffIds => {
-        for (final p in _people)
-          if (const {'mentor', 'admin', 'sub_admin', 'channel_manager'}.contains(p['role'])) p['id'] as String,
-      };
+  Set<String> get _staffIds {
+    final space = _chat.spaceById(widget.spaceId);
+    final me = Provider.of<AppRepository>(context, listen: false).currentUser;
+    return {
+      for (final p in _people)
+        if (const {'mentor', 'admin', 'sub_admin', 'channel_manager'}.contains(p['role'])) p['id'] as String,
+      // The list of people may not have arrived yet, or leave out the other side of a private chat
+      if (space?.peerIsMentor == true && space?.peerId != null) space!.peerId!,
+      if (me.role.isMentorLike) me.id,
+      for (final m in _chat.messagesOf(widget.spaceId, threadRootId: _threadId))
+        if (m.senderIsMentor && m.senderId != null) m.senderId!,
+    };
+  }
 
   Set<String> get _mentionNames => {for (final p in _people) (p['name'] ?? '').toString()};
 
@@ -769,6 +786,8 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     if (messages.isEmpty) {
       return Center(child: Text('هنوز پیامی ارسال نشده است.', style: ChatTheme.caption.copyWith(fontSize: 13)));
     }
+    // A deleted message leaves no trace in the conversation
+    messages = messages.where((m) => !m.deleted).toList();
     final style = _styleOf(space);
     return ListView.builder(
       controller: _scroll,
@@ -805,7 +824,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           onOpenThread: _threadId == null && _threadAllowed(message, space) ? () => _openThread(message) : null,
           onOpenSender: message.senderId == null ? null : () => _openMember(message.senderId),
           onRetry: () => _chat.retry(message),
-          onReact: (type) => _chat.react(message, type),
+          onReact: (type) {
+            if (message.deleted) return;
+            _chat.react(message, type);
+          },
         );
       },
     );

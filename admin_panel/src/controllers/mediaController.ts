@@ -8,7 +8,7 @@ import prisma from '../config/db';
 
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../../uploads');
+export const uploadsDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }

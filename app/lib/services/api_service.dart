@@ -1906,6 +1906,27 @@ class HttpApiService {
     return null;
   }
 
+  /// Sets the caravan's picture from its group ([file] given) or removes it (null). Returns the response, or null on failure.
+  Future<Map<String, dynamic>?> setChatSpaceCover(String spaceId, io.File? file) async {
+    try {
+      final uri = Uri.parse('$baseUrl/chat/spaces/$spaceId/cover');
+      final http.Response resp;
+      if (file == null) {
+        resp = await http.delete(uri, headers: _getHeaders()).timeout(const Duration(seconds: 30));
+      } else {
+        final request = http.MultipartRequest('PUT', uri);
+        if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+        request.files.add(await http.MultipartFile.fromPath('file', file.path));
+        resp = await http.Response.fromStream(await request.send().timeout(const Duration(minutes: 2)));
+      }
+      if (resp.statusCode == 200) return (await parseJsonAsync(resp.body)) as Map<String, dynamic>?;
+      debugPrint('setChatSpaceCover failed: ${resp.statusCode} ${resp.body}');
+    } catch (e) {
+      debugPrint('setChatSpaceCover error: $e');
+    }
+    return null;
+  }
+
   /// Money rules set in the panel.
   Future<Map<String, dynamic>?> getEconomyRates() async {
     try {

@@ -61,6 +61,7 @@ class ChatSpaceAvatar extends StatelessWidget {
     if (space.isDirect) {
       return SafeAvatar(imageUrl: space.peerAvatarUrl, name: space.title, radius: radius, gender: space.peerGender, isMentor: space.peerIsMentor);
     }
+    if (space.coverImageUrl != null) return SafeAvatar(imageUrl: space.coverImageUrl, name: space.title, radius: radius);
     return ChatIconAvatar(icon: chatSpaceIcon(space.type), radius: radius);
   }
 }

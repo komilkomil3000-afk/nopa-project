@@ -86,7 +86,7 @@ export async function visibleSpaces(actor: ChatActor) {
         { id: { in: Array.from(members.keys()) } },
       ],
     },
-    include: { caravan: { select: { name: true } } },
+    include: { caravan: { select: { name: true, coverImageUrl: true } } },
   });
   return { spaces: candidates.filter(s => canSee(actor, s, members.has(s.id))), members };
 }
@@ -145,6 +145,8 @@ export function serializeMessage(m: MessageRow) {
     meta: m.meta,
     stationId: m.stationId,
     best: m.marks.includes('best'),
+    // The mentor chose to wear the mentor's badge on this message
+    mentorMark: m.marks.includes('mentor'),
     // Replies under a message: a challenge always has them; elsewhere a moderator opens them
     threadOpen: m.marks.includes('thread') || !!m.topic || m.threadReplies > 0,
     topic: m.topic,

@@ -1,4 +1,5 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import 'package:nopa_app/widgets/swipe_category_view.dart';
 import '../../../widgets/nopa_modal_shell.dart';
 import 'package:nopa_app/screens/shell/app_shell.dart' show challengeFocusRequest;
 import 'package:nopa_app/core/economy_rates.dart';
@@ -723,7 +724,11 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
     final caravanName = user.caravanName ?? 'کاروان پنجم رضا جلالی';
 
-    return RefreshIndicator(
+    return SwipeCategoryView(
+      index: _mentorSelectedCategoryIndex,
+      count: 2,
+      onChanged: (i) => setState(() => _mentorSelectedCategoryIndex = i),
+      child: RefreshIndicator(
       color: const Color(0xFFCD8449),
       backgroundColor: const Color(0xFF231C38),
       onRefresh: () async {
@@ -766,30 +771,33 @@ class _ChallengesScreenState extends State<MentorChallengesScreen> {
 
             const SizedBox(height: 18),
 
-            // Challenge Cards List
-            if (filtered.isEmpty)
-              _buildEmptyState()
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filtered.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = filtered[index];
-                  final String id = item['id']?.toString() ?? 'm_ch_$index';
-                  return _buildMentorChallengeCard(
-                    context: context,
-                    user: user,
-                    item: item,
-                    id: id,
-                  );
-                },
-              ),
+            // Challenge Cards List (a sideways swipe switches the category)
+            CategorySlide(
+              index: _mentorSelectedCategoryIndex,
+              child: filtered.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filtered.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        final String id = item['id']?.toString() ?? 'm_ch_$index';
+                        return _buildMentorChallengeCard(
+                          context: context,
+                          user: user,
+                          item: item,
+                          id: id,
+                        );
+                      },
+                    ),
+            ),
 
             const SizedBox(height: 40),
           ],
         ),
+      ),
       ),
     );
   }

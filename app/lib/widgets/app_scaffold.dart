@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../main.dart';
 import '../services/app_state_repository.dart';
+import '../services/chat_repository.dart';
 import 'app_top_bar.dart';
 import 'bottom_nav_bar.dart';
 import 'custom_drawer.dart';
@@ -37,6 +38,7 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userRole = Provider.of<AppRepository>(context, listen: false).currentUser.role;
+    final chatEnabled = context.select<AppRepository, bool>((r) => r.currentUser.chatEnabled);
 
     return PopScope(
       // A custom back handler takes over only when the user asks to go back.
@@ -71,15 +73,21 @@ class AppScaffold extends StatelessWidget {
                   )
                 : null),
         bottomNavigationBar: showBottomNavBar
-            ? CustomBottomNavBar(
-                currentIndex: currentBottomNavIndex,
-                role: userRole,
-                onTap: (idx) {
-                  if (Navigator.of(context).canPop()) {
-                    Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == AppRoutes.dashboard);
-                  }
-                  navigateToMainTab(idx);
-                },
+            ? ListenableBuilder(
+                listenable: ChatRepository.instance,
+                // Same bar as the main shell: chat takes profile's place whenever chat is on
+                builder: (context, _) => CustomBottomNavBar(
+                  currentIndex: currentBottomNavIndex,
+                  role: userRole,
+                  chatEnabled: chatEnabled,
+                  chatUnread: chatEnabled ? ChatRepository.instance.totalUnread : 0,
+                  onTap: (idx) {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == AppRoutes.dashboard);
+                    }
+                    navigateToMainTab(idx);
+                  },
+                ),
               )
             : null,
         body: SizedBox(

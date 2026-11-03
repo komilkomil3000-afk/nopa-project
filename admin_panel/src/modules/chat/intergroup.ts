@@ -6,10 +6,12 @@ import { isMentorRole } from '../../utils/roles';
 import { ChatActor } from './access';
 import { handler } from './http';
 import { publishBotMessage, publishUpdate } from './publish';
+import { normalizeStatus, PARTICIPATION_KEYS, ParticipationStatus, shareOf } from './participation';
 import { ChatError, globalSpace, signFileUrl } from './service';
 
-export const TIERS = ['full', 'partner', 'minimal', 'inactive'] as const;
-export type Tier = typeof TIERS[number];
+/** The mentor's participation status of a member: flagbearer 100, active 75, semi 50, companion 25, tired 0 percent. */
+export const TIERS = PARTICIPATION_KEYS;
+export type Tier = ParticipationStatus;
 
 const isAdmin = (a: ChatActor) => ['admin', 'sub_admin'].includes(String(a.role).toLowerCase());
 
@@ -24,18 +26,18 @@ export function judgingOpen(c: { dueDate: Date | null; judgingStartedAt: Date | 
   return !!c.judgingStartedAt || (!!c.dueDate && c.dueDate <= now);
 }
 
-/** A member's prize: the rank's amount times their effort. An absent member's share is never redistributed. */
+/** A member's prize: the banner's amount times the participation the mentor confirmed, rounded up. A tired member's share is never redistributed. */
 export function memberPrize(rankTier: 'gold' | 'silver' | 'bronze' | 'cloth', tier: Tier, config: EconomyConfig): number {
-  if (tier === 'inactive') return 0;
-  return Math.round((config.interGroup.prizes[rankTier] * config.interGroup.tiers[tier]) / 100);
+  return shareOf(config.interGroup.prizes[rankTier], tier);
 }
 
 /** Effort suggested from the caravan's private thread. The mentor confirms or changes it. */
 export function suggestTier(usefulMessages: number): Tier {
-  if (usefulMessages >= 5) return 'full';
-  if (usefulMessages >= 2) return 'partner';
-  if (usefulMessages >= 1) return 'minimal';
-  return 'inactive';
+  if (usefulMessages >= 8) return 'flagbearer';
+  if (usefulMessages >= 5) return 'active';
+  if (usefulMessages >= 3) return 'semi';
+  if (usefulMessages >= 1) return 'companion';
+  return 'tired';
 }
 
 /** The caravan's mark: the judges' average, the share of active members and delivery on time. */
@@ -146,7 +148,7 @@ export const getTiers = handler(async (req, res, actor) => {
     rows: members.map(m => {
       const s = saved.find(x => x.userId === m.id);
       const messages = useful.get(m.id) || 0;
-      return { user: m, usefulMessages: messages, suggested: suggestTier(messages), tier: s?.tier ?? suggestTier(messages), confirmed: !!s };
+      return { user: m, usefulMessages: messages, suggested: suggestTier(messages), tier: normalizeStatus(s?.tier) ?? suggestTier(messages), confirmed: !!s };
     }),
   });
 });
@@ -160,8 +162,8 @@ export const saveTiers = handler(async (req, res, actor) => {
   const members = await prisma.user.findMany({ where: { caravanId, role: 'student' }, select: { id: true } });
   for (const m of members) {
     const tier = tiers[m.id];
-    if (!tier) throw new ChatError(400, 'سطح همه‌ی اعضا را مشخص کنید');
-    if (!TIERS.includes(tier as Tier)) throw new ChatError(400, 'سطح انتخاب‌شده معتبر نیست');
+    if (!tier) throw new ChatError(400, 'وضعیت مشارکت همه‌ی اعضا را مشخص کنید');
+    if (!(PARTICIPATION_KEYS as string[]).includes(tier)) throw new ChatError(400, 'وضعیت انتخاب‌شده معتبر نیست');
   }
   await prisma.$transaction(members.map(m => prisma.interGroupMemberTier.upsert({
     where: { challengeId_userId: { challengeId: challenge.id, userId: m.id } },
@@ -187,7 +189,7 @@ export async function interGroupBoard(challengeId: string) {
   const rows = caravans.map(c => {
     const entry = entries.find(e => e.caravanId === c.id);
     const own = tiers.filter(t => t.caravanId === c.id);
-    const active = own.filter(t => t.tier !== 'inactive').length;
+    const active = own.filter(t => normalizeStatus(t.tier) !== 'tired').length;
     const judgeAverage = entry && entry.scores.length ? Math.round(entry.scores.reduce((s, x) => s + x.score, 0) / entry.scores.length) : 0;
     const activeShare = c.members.length ? Math.round((active / c.members.length) * 100) : 0;
     const onTime = !!entry && (!challenge.dueDate || entry.submittedAt <= challenge.dueDate);
@@ -225,7 +227,7 @@ export async function prizePlan(challengeId: string, ranking: string[], particip
     const place = ranking.indexOf(m.caravanId!);
     const rankTier = place >= 0 ? RANK_TIERS[place] : 'cloth' as const;
     // Run without the chat there are no confirmed levels: whoever answered took part fully
-    const tier = (tiers.find(t => t.userId === m.id)?.tier ?? (answered.has(m.id) ? 'full' : 'inactive')) as Tier;
+    const tier = normalizeStatus(tiers.find(t => t.userId === m.id)?.tier) ?? (answered.has(m.id) ? 'flagbearer' : 'tired');
     return { userId: m.id, caravanId: m.caravanId!, rankTier, tier, amount: memberPrize(rankTier, tier, config) };
   });
 }

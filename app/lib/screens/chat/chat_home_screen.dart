@@ -148,7 +148,48 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
     );
   }
 
+  /// The pencil: first choose whom to write to, the mentor or the support team.
   Future<void> _showContacts(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    final mentorLike = Provider.of<AppRepository>(context, listen: false).currentUser.role.isMentorLike;
+    final target = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: ChatTheme.surfaceBottom,
+      shape: ChatTheme.sheetShape,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person_rounded, color: ChatTheme.accent),
+              title: Text(mentorLike ? 'پیام به اعضا' : 'پیام به راهبر', style: ChatTheme.body),
+              onTap: () => Navigator.pop(ctx, 'mentor'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.support_agent_rounded, color: ChatTheme.accent),
+              title: Text('پیام به پشتیبانی', style: ChatTheme.body),
+              onTap: () => Navigator.pop(ctx, 'support'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (target == null || !context.mounted) return;
+    if (target == 'support') {
+      final space = await ChatRepository.instance.openSupport();
+      if (space != null) {
+        navigator.push(MaterialPageRoute(builder: (_) => ChatConversationScreen(spaceId: space.id)));
+      } else if (context.mounted) {
+        AppToast.error(context, 'باز کردن گفتگو با پشتیبانی انجام نشد.');
+      }
+      return;
+    }
+    await _showPeople(context);
+  }
+
+  Future<void> _showPeople(BuildContext context) async {
     final navigator = Navigator.of(context);
     final contacts = await ChatRepository.instance.contacts();
     if (!context.mounted) return;
@@ -274,10 +315,19 @@ class _FilterBar extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Text(
-                      f.label,
-                      maxLines: 1,
-                      style: AppTypography.bodyMedium.copyWith(color: f == filter ? ChatTheme.ink : ChatTheme.muted),
+                    // The open tab reads a little bigger and bolder
+                    AnimatedScale(
+                      scale: f == filter ? 1.14 : 1.0,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      child: Text(
+                        f.label,
+                        maxLines: 1,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: f == filter ? ChatTheme.ink : ChatTheme.muted,
+                          fontWeight: f == filter ? FontWeight.w700 : null,
+                        ),
+                      ),
                     ),
                   ],
                 ),

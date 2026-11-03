@@ -6,6 +6,7 @@ import { publishBotMessage, publishUpdate } from './publish';
 import { refreshUserRooms } from './realtime';
 import { ChatError, directKey, ensureCaravanSpaces, ensureSpace, globalSpace, MESSAGE_INCLUDE, serializeMessage } from './service';
 import { generateInsight } from './insights';
+import { isMentorRole } from '../../utils/roles';
 
 const CATEGORY_LABELS: Record<string, string> = { individual: 'شخصی', intra_group: 'درون‌گروهی', inter_group: 'فراگروهی' };
 
@@ -230,7 +231,11 @@ export const toggleMessageTag = handler(async (req, res, actor) => {
 export const toggleMark = handler(async (req, res, actor) => {
   const { message, space } = await requireMessage(actor, req.params.id);
   const mark = String(req.body?.mark || '');
-  if (!['best', 'evidence', 'thread'].includes(mark)) throw new ChatError(400, 'نشان معتبر نیست');
+  if (!['best', 'evidence', 'thread', 'mentor'].includes(mark)) throw new ChatError(400, 'نشان معتبر نیست');
+  // The mentor's badge: a mentor puts it on their own message, wherever they want it
+  if (mark === 'mentor') {
+    if (message.senderId !== actor.id || !(isMentorRole(actor.role) || canModerate(actor, space))) throw new ChatError(403, 'فقط راهبر روی پیام خودش می‌تواند نشان راهبر بگذارد');
+  } else
   // Opening the conversation under a message is for mentors, admins and channel managers; never in a private chat
   if (mark === 'thread' ? (!canModerate(actor, space) || message.threadRootId) : !canTag(actor, space)) throw new ChatError(403, 'اجازه‌ی این کار را ندارید');
   const marks = message.marks.includes(mark) ? message.marks.filter(m => m !== mark) : [...message.marks, mark];

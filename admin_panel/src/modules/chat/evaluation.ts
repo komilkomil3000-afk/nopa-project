@@ -7,6 +7,7 @@ import { isMentorRole } from '../../utils/roles';
 import { handler } from './http';
 import { publishBotMessage, publishUpdate } from './publish';
 import { ChatError } from './service';
+import { normalizeStatus, PARTICIPATION, PARTICIPATION_KEYS, shareOf, suggestStatus } from './participation';
 import { requireTopic } from './topics';
 
 export interface ThreadMessage {
@@ -162,9 +163,18 @@ function assertPaysKalaf(c: { rewardAssetType: string }) {
   if (c.rewardAssetType !== 'nakh') throw new ChatError(400, 'این چالش زریکی است و از صفحه‌ی بررسی پاسخ‌ها پرداخت می‌شود');
 }
 
+/** A challenge whose time is over closes by itself, so the mentor can evaluate it without closing it by hand. */
+async function closeIfDue(topicId: string) {
+  const topic = await prisma.chatTopic.findUnique({ where: { id: topicId }, include: { challenge: { select: { dueDate: true } } } });
+  if (!topic || topic.status !== 'open' || !topic.challenge.dueDate || topic.challenge.dueDate > new Date()) return;
+  const closed = await prisma.chatTopic.updateMany({ where: { id: topicId, status: 'open' }, data: { status: 'closed', closedAt: new Date() } });
+  if (closed.count === 1) await publishUpdate(topic.messageId);
+}
+
 export const getEvaluation = handler(async (req, res, actor) => {
   const { moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
+  await closeIfDue(req.params.id);
   const { topic, rows, messages } = await buildEvaluation(req.params.id);
   const saved = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id } });
   const users = await prisma.user.findMany({ where: { id: { in: rows.map(r => r.userId) } }, select: { id: true, name: true, avatarUrl: true, gender: true } });
@@ -172,16 +182,20 @@ export const getEvaluation = handler(async (req, res, actor) => {
   const range = await rangeOf(topic.challenge);
 
   res.json({
-    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, messageCount: messages.length, legacy: topic.challenge.rewardAssetType !== 'nakh' },
+    topic: { id: topic.id, status: topic.status, title: topic.challenge.title, min: range.min, max: range.max, statuses: PARTICIPATION_KEYS.map(k => ({ key: k, ...PARTICIPATION[k] })), messageCount: messages.length, legacy: topic.challenge.rewardAssetType !== 'nakh' },
     rows: rows.map(r => {
       const s = saved.find(x => x.userId === r.userId);
-      const suggested = suggestedNakh(r.score, range.min, range.max);
+      const suggestedStatus = suggestStatus(r.score);
+      const status = normalizeStatus(s?.status) ?? suggestedStatus;
+      const suggested = shareOf(range.max, suggestedStatus);
       const h = history.find(x => x.userId === r.userId);
       return {
         ...r,
         user: users.find(u => u.id === r.userId),
         suggested,
-        finalNakh: s?.finalNakh ?? suggested,
+        suggestedStatus,
+        status,
+        finalNakh: s?.status ? s.finalNakh : shareOf(range.max, status),
         reason: s?.reason ?? null,
         objection: s?.objection ?? null,
         objectionStatus: s?.objectionStatus ?? null,
@@ -197,10 +211,11 @@ export const getEvaluation = handler(async (req, res, actor) => {
   });
 });
 
-/** Body: { rows: [{ userId, finalNakh, reason }] }. A big step away from the suggestion needs a reason. */
+/** Body: { rows: [{ userId, status, reason? }] }. The kalaf follows from the status: the challenge's top reward times its percent, rounded up. */
 export const saveEvaluation = handler(async (req, res, actor) => {
   const { moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
+  await closeIfDue(req.params.id);
   const { topic, rows } = await buildEvaluation(req.params.id);
   if (topic.status === 'paid') throw new ChatError(400, 'این چالش پرداخت شده است');
   assertPaysKalaf(topic.challenge);
@@ -210,12 +225,12 @@ export const saveEvaluation = handler(async (req, res, actor) => {
   for (const item of input) {
     const row = rows.find(r => r.userId === item.userId);
     if (!row) throw new ChatError(400, 'فقط شرکت‌کنندگان واقعی ارزیابی می‌شوند');
-    const finalNakh = Number(item.finalNakh);
-    if (!Number.isInteger(finalNakh) || finalNakh < range.min || finalNakh > range.max) throw new ChatError(400, `مقدار کلاف باید بین ${range.min} و ${range.max} باشد`);
-    const suggested = suggestedNakh(row.score, range.min, range.max);
+    const status = normalizeStatus(item.status);
+    if (!status) throw new ChatError(400, 'وضعیت مشارکت همه‌ی افراد را مشخص کنید');
+    const finalNakh = shareOf(range.max, status);
+    const suggested = shareOf(range.max, suggestStatus(row.score));
     const reason = String(item.reason || '').trim().slice(0, 300) || null;
-    if (Math.abs(finalNakh - suggested) >= 3 && !reason) throw new ChatError(400, 'برای اختلاف زیاد با پیشنهاد سیستم، دلیل لازم است');
-    const data = { criteria: row.criteria as any, score: row.score, share: row.share, suggested, finalNakh, reason, flags: row.flags };
+    const data = { criteria: row.criteria as any, score: row.score, share: row.share, suggested, finalNakh, status, reason, flags: row.flags };
     await prisma.challengeEvaluation.upsert({
       where: { topicId_userId: { topicId: topic.id, userId: item.userId } },
       update: data,
@@ -230,6 +245,7 @@ export const payEvaluation = handler(async (req, res, actor) => {
   const { topic, moderator } = await requireTopic(actor, req.params.id);
   if (!moderator) throw new ChatError(403, 'این بخش مخصوص راهبر است');
   if (topic.challenge.category === 'inter_group') throw new ChatError(400, 'جایزه‌ی چالش فراگروهی از مسیر رتبه‌بندی پرداخت می‌شود');
+  await closeIfDue(req.params.id);
   assertPaysKalaf(topic.challenge);
   if (topic.status === 'open') throw new ChatError(400, 'اول چالش را ببندید');
   const rows = await prisma.challengeEvaluation.findMany({ where: { topicId: topic.id, paidAt: null } });
@@ -262,13 +278,13 @@ export const payEvaluation = handler(async (req, res, actor) => {
         update: { status: 'approved', score: row.finalNakh, mentorFeedback: row.reason },
         create: { challengeId: topic.challengeId, studentId: row.userId, status: 'approved', score: row.finalNakh, mentorFeedback: row.reason, answerText: finalAnswer || 'ارزیابی از گفتگوی چالش' },
       });
-      await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: 'nakh', amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
+      if (row.finalNakh > 0) await creditChallengeReward(tx, { submissionId: submission.id, studentId: row.userId, asset: 'nakh', amount: row.finalNakh, title: topic.challenge.title, actorId: actor.id });
       await tx.challengeEvaluation.update({ where: { id: row.id }, data: { paidAt: new Date() } });
       await tx.submissionEvent.create({
         data: { submissionId: submission.id, challengeId: topic.challengeId, studentId: row.userId, action: 'approved', feedback: row.reason, score: row.finalNakh, actorId: actor.id, actorName: actor.name },
       });
       await tx.notification.create({
-        data: { userId: row.userId, title: 'نتیجه‌ی چالش', message: `در چالش «${topic.challenge.title}» ${row.finalNakh} کلاف گرفتید. سهم مشارکت شما: ${row.share}٪`, type: 'reward' },
+        data: { userId: row.userId, title: 'نتیجه‌ی چالش', message: `در چالش «${topic.challenge.title}» با وضعیت «${PARTICIPATION[normalizeStatus(row.status) ?? 'tired'].label}» ${row.finalNakh} کلاف گرفتید.`, type: 'reward' },
       });
     }
   });
@@ -332,7 +348,7 @@ export const myReport = handler(async (req, res, actor) => {
   const { topic } = await requireTopic(actor, req.params.id);
   const row = await prisma.challengeEvaluation.findUnique({ where: { topicId_userId: { topicId: topic.id, userId: actor.id } } });
   if (!row?.paidAt) return res.json({ ready: false });
-  res.json({ ready: true, score: row.score, share: row.share, finalNakh: row.finalNakh, criteria: row.criteria, reason: row.reason, objection: row.objection, objectionStatus: row.objectionStatus, objectionResponse: row.objectionResponse, canObject: Date.now() - row.paidAt.getTime() < 24 * 3600 * 1000 && !row.objection });
+  res.json({ ready: true, status: normalizeStatus(row.status), statusLabel: row.status ? PARTICIPATION[normalizeStatus(row.status)!].label : null, score: row.score, share: row.share, finalNakh: row.finalNakh, criteria: row.criteria, reason: row.reason, objection: row.objection, objectionStatus: row.objectionStatus, objectionResponse: row.objectionResponse, canObject: Date.now() - row.paidAt.getTime() < 24 * 3600 * 1000 && !row.objection });
 });
 
 export const fileObjection = handler(async (req, res, actor) => {

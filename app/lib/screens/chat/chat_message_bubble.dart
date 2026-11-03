@@ -223,7 +223,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         onTap: widget.onOpenSender,
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Flexible(child: name),
-          if (m.senderIsMentor) ...[const SizedBox(width: 5), const ChatChip.mentor(label: 'راهبر')],
+          if (m.mentorMark) ...[const SizedBox(width: 5), const ChatChip.mentor(label: 'راهبر')],
         ]),
       ),
     );

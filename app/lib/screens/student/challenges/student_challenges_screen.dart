@@ -1,4 +1,5 @@
 import 'package:nopa_app/screens/chat/challenge_chat_button.dart';
+import 'package:nopa_app/widgets/swipe_category_view.dart';
 import 'package:nopa_app/core/theme/app_colors.dart';
 import '../../../widgets/nopa_dialog_container.dart';
 import 'package:nopa_app/widgets/tap_expander.dart';
@@ -28,6 +29,7 @@ class StudentChallengesScreen extends StatefulWidget {
 class _ChallengesScreenState extends State<StudentChallengesScreen> {
   // 0: فردی, 1: گروهی, 2: میان گروهی
   int _selectedCategoryIndex = 0;
+  final GlobalKey _bannerKey = GlobalKey();
   // 0: درون گروهی, 1: میان گروهی (ویژه راهبر)
   int _mentorSelectedCategoryIndex = 0;
   final Set<String> _expandedChallengeIds = {};
@@ -310,7 +312,12 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
       }
     }).toList();
 
-    return RefreshIndicator(
+    return SwipeCategoryView(
+      index: _selectedCategoryIndex,
+      count: 3,
+      excludeKey: _bannerKey,
+      onChanged: (i) => setState(() => _selectedCategoryIndex = i),
+      child: RefreshIndicator(
       color: const Color(0xFFCD8449),
       backgroundColor: const Color(0xFF231C38),
       onRefresh: () async {
@@ -332,31 +339,34 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
 
             const SizedBox(height: 18),
 
-            // 3. Challenge Cards List or Empty State
-            if (filtered.isEmpty)
-              _buildEmptyState()
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: filtered.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final item = filtered[index];
-                  final String id = item['id']?.toString() ?? 'ch_$index';
-                  final bool isExpanded = _expandedChallengeIds.contains(id);
+            // 3. Challenge Cards List or Empty State (a sideways swipe switches the category)
+            CategorySlide(
+              index: _selectedCategoryIndex,
+              child: filtered.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filtered.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        final String id = item['id']?.toString() ?? 'ch_$index';
+                        final bool isExpanded = _expandedChallengeIds.contains(id);
 
-                  return _buildChallengeCard(
-                    item: item,
-                    id: id,
-                    isExpanded: isExpanded,
-                  );
-                },
-              ),
+                        return _buildChallengeCard(
+                          item: item,
+                          id: id,
+                          isExpanded: isExpanded,
+                        );
+                      },
+                    ),
+            ),
 
             const SizedBox(height: 30),
           ],
         ),
+      ),
       ),
     );
   }
@@ -1147,6 +1157,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
+          key: _bannerKey,
           height: 82,
           child: PageView.builder(
             controller: _bannerPageCtrl,

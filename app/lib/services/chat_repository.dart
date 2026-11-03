@@ -569,10 +569,29 @@ class ChatRepository extends ChangeNotifier {
     );
   }
 
-  Future<bool> edit(ChatMessage message, String body) => _simple('PATCH', '/chat/messages/${message.id}', {'body': body});
-  Future<bool> delete(ChatMessage message) => _simple('DELETE', '/chat/messages/${message.id}', null);
-  Future<bool> react(ChatMessage message, String type) => _simple('POST', '/chat/messages/${message.id}/reactions', {'type': type});
-  Future<bool> togglePin(ChatMessage message) => _simple('POST', '/chat/messages/${message.id}/pin', {});
+  Future<bool> edit(ChatMessage message, String body) => _apply('PATCH', '/chat/messages/${message.id}', {'body': body});
+  Future<bool> delete(ChatMessage message) => _apply('DELETE', '/chat/messages/${message.id}', null);
+  /// One reaction per person: choosing another takes the first one back (the server toggles by type).
+  Future<bool> react(ChatMessage message, String type) async {
+    final mine = message.reactions.where((r) => r['userId'] == _userId).map((r) => r['type'] as String).toSet();
+    for (final other in mine.where((t) => t != type)) {
+      await _apply('POST', '/chat/messages/${message.id}/reactions', {'type': other});
+    }
+    return _apply('POST', '/chat/messages/${message.id}/reactions', {'type': type});
+  }
+  Future<bool> togglePin(ChatMessage message) => _apply('POST', '/chat/messages/${message.id}/pin', {});
+
+  /// Like [_simple], but the message the server answers with replaces the one on screen at once,
+  /// so a reaction, pin or edit shows even when the live connection is down.
+  Future<bool> _apply(String method, String path, Map<String, dynamic>? body) async {
+    final res = await _api.chatCall(method, path, body: body);
+    if (res == null || res.statusCode >= 300) return false;
+    try {
+      final data = jsonDecode(res.body);
+      if (data is Map && data['id'] is String && data['spaceId'] is String) _onUpdate(Map<String, dynamic>.from(data));
+    } catch (_) {}
+    return true;
+  }
 
   Future<bool> setMuted(ChatSpace space, bool muted) async {
     final ok = await _simple('POST', '/chat/spaces/${space.id}/mute', {'muted': muted});
@@ -617,6 +636,17 @@ class ChatRepository extends ChangeNotifier {
     final data = Map<String, dynamic>.from(res.data as Map);
     notePresence(((data['members'] as List?) ?? []).map((m) => Map<String, dynamic>.from(m as Map)));
     return data;
+  }
+
+  /// Sets (a file) or removes (null) the caravan's picture. Returns the new URL through [ok]; keeps the space list in step.
+  Future<({bool ok, String? url})> setSpaceCover(String spaceId, io.File? file) async {
+    final data = await _api.setChatSpaceCover(spaceId, file);
+    if (data == null) return (ok: false, url: null);
+    final url = data['coverImageUrl']?.toString();
+    final cleaned = (url == null || url.isEmpty) ? null : url;
+    spaceById(spaceId)?.coverImageUrl = cleaned;
+    notifyListeners();
+    return (ok: true, url: cleaned);
   }
 
   /// A member as seen from a space, with participation numbers when the caller may see them.
