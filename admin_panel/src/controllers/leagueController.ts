@@ -394,6 +394,7 @@ export async function getCaravanLeague(req: Request, res: Response) {
       return {
         id: c.id,
         name: c.name,
+        coverImageUrl: c.coverImageUrl || null,
         mentorName: c.mentor?.name || '-',
         memberCount: c.members.length,
         capacityLimit: c.capacityLimit,

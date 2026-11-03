@@ -7,6 +7,8 @@ class ChatSpace {
   final String? peerAvatarUrl;
   final String? peerGender;
   final bool peerIsMentor;
+  /// The caravan's picture, set by its mentor; only a caravan group has one.
+  String? coverImageUrl;
   bool peerOnline;
   int peerReadSeq;
   int lastSeq;
@@ -31,6 +33,7 @@ class ChatSpace {
     this.peerAvatarUrl,
     this.peerGender,
     this.peerIsMentor = false,
+    this.coverImageUrl,
     this.peerOnline = false,
     this.peerReadSeq = 0,
     this.lastSeq = 0,
@@ -70,6 +73,7 @@ class ChatSpace {
       peerAvatarUrl: peer?['avatarUrl'],
       peerGender: peer?['gender'],
       peerIsMentor: peer?['role'] == 'mentor',
+      coverImageUrl: (json['coverImageUrl']?.toString().trim().isNotEmpty ?? false) ? json['coverImageUrl'].toString().trim() : null,
       peerOnline: peer?['online'] == true,
       peerReadSeq: json['peerReadSeq'] ?? 0,
       lastSeq: json['lastSeq'] ?? 0,

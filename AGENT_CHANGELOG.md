@@ -4387,3 +4387,29 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - `flutter analyze` (app/), `npx tsc --noEmit` (admin_panel/)
 - **Status:** Completed
+
+### [2026-11-03 18:06] - Flutter App & Chat Specialist (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app, admin_panel
+- **Files Modified / Created / Deleted:**
+  - `dmin_panel/src/controllers/leagueController.ts` (Modified)
+  - `admin_panel/src/controllers/mediaController.ts` (Modified)
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `admin_panel/src/modules/chat/profiles.ts` (Modified)
+  - `admin_panel/src/modules/chat/routes.ts` (Modified)
+  - `admin_panel/src/modules/chat/service.ts` (Modified)
+  - `app/lib/models/chat_models.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_widgets.dart` (Modified)
+  - `app/lib/screens/market/market_screen.dart` (Modified)
+  - `app/lib/services/api_service.dart` (Modified)
+  - `app/lib/services/chat_repository.dart` (Modified)
+- **Description of Changes:**
+  - Mentor can set/remove the caravan group photo from the group info screen (PUT/DELETE /chat/spaces/:id/cover, images only, 5MB, stored in /uploads as caravan-*.ext, writes Caravan.coverImageUrl - no schema change)
+  - canEditCover + coverImageUrl added to space profile
+  - coverImageUrl added to /chat/spaces list and /leagues/caravans
+  - app shows it as the caravan group avatar in chat and the profile, and on the top-caravans podium (برترین ها)
+  - mediaController.uploadsDir exported
+- **Verification / Checkpoints Executed:**
+  - flutter analyze (lib/screens/chat, market, services, models) no issues; npx tsc --noEmit in admin_panel no errors; not run on device
+- **Status:** Completed

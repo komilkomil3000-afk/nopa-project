@@ -462,6 +462,7 @@ class _MarketScreenState extends State<MarketScreen> {
         _caravanIds = caravans.map((c) => c['id']?.toString() ?? '').toList();
         _topCaravans = caravans.take(3).map((c) => {
               'name': c['name']?.toString() ?? '-',
+              'avatarUrl': c['coverImageUrl']?.toString() ?? '',
               'zarik': '${_formatScore(c['averageWealth'] ?? c['totalWealth'])} زریک',
             }).toList();
       });
@@ -1981,8 +1982,8 @@ class _MarketScreenState extends State<MarketScreen> {
         'rank': i + 1,
         'name': hasItem ? source[i]['name'] : '-',
         'zarik': hasItem ? source[i]['zarik'] : '',
-        // Members show their own picture; caravans have none and keep the placeholder
-        'avatarUrl': isMembersTab && hasItem ? (source[i]['avatarUrl'] ?? '') : '',
+        // Members show their own picture, caravans the one their mentor chose; otherwise the placeholder
+        'avatarUrl': hasItem ? (source[i]['avatarUrl'] ?? '') : '',
         'color': podiumColors[i],
         'borderColor': podiumColors[i],
         'size': podiumSizes[i],

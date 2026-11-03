@@ -1,4 +1,6 @@
+import 'dart:io' as io;
 import 'dart:math' as math;
+import 'package:file_picker/file_picker.dart';
 import 'package:nopa_app/screens/chat/chat_waveform.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nopa_app/widgets/zoomable_avatar.dart';
@@ -41,11 +43,39 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
   bool _allMembers = false;
 
   static const int _shownMembers = 8;
+  bool _savingCover = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// The mentor picks a picture for the caravan (or removes it); it then shows in the chat, the profile and the rankings.
+  Future<void> _changeCover({bool remove = false}) async {
+    io.File? file;
+    if (!remove) {
+      final picked = await FilePicker.platform.pickFiles(type: FileType.image);
+      final path = picked?.files.single.path;
+      if (path == null) return;
+      file = io.File(path);
+      if (await file.length() > 5 * 1024 * 1024) {
+        if (mounted) AppToast.error(context, 'حجم عکس نباید بیشتر از ۵ مگابایت باشد.');
+        return;
+      }
+    }
+    setState(() => _savingCover = true);
+    final result = await _chat.setSpaceCover(widget.spaceId, file);
+    if (!mounted) return;
+    setState(() {
+      _savingCover = false;
+      if (result.ok) _profile = {...?_profile, 'coverImageUrl': result.url};
+    });
+    if (result.ok) {
+      AppToast.success(context, remove ? 'عکس گروه حذف شد.' : 'عکس گروه به‌روز شد.');
+    } else {
+      AppToast.error(context, 'تغییر عکس گروه انجام نشد.');
+    }
   }
 
   Future<void> _load() async {
@@ -95,11 +125,38 @@ class _ChatSpaceProfileScreenState extends State<ChatSpaceProfileScreen> {
           _ProfilePanel(
             children: [
               _IdentityRow(
-                avatar: ChatIconAvatar(icon: chatSpaceIcon(profile['type'] ?? ''), radius: 40),
+                avatar: (profile['coverImageUrl']?.toString() ?? '').isNotEmpty
+                    ? SafeAvatar(imageUrl: profile['coverImageUrl'].toString(), name: profile['title'] ?? '', radius: 40, cacheSize: 320)
+                    : ChatIconAvatar(icon: chatSpaceIcon(profile['type'] ?? ''), radius: 40),
                 name: profile['title'] ?? space?.title ?? '',
                 subtitle: '${isChannel ? 'تعداد اعضا' : 'تعداد همسفر'} ${memberCount.toString()}نفر    ${online.toString()}نفر آنلاین',
                 rank: (profile['rank'] as num?)?.toInt(),
               ),
+              if (profile['canEditCover'] == true) ...[
+                const SizedBox(height: 14),
+                Row(children: [
+                  InkWell(
+                    onTap: _savingCover ? null : () => _changeCover(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(children: [
+                        _savingCover
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: ChatTheme.lavender))
+                            : const Icon(Icons.add_a_photo_rounded, color: ChatTheme.lavender, size: 20),
+                        const SizedBox(width: 10),
+                        Text('تغییر عکس گروه', style: ChatTheme.body.copyWith(color: ChatTheme.lavender, fontSize: 13)),
+                      ]),
+                    ),
+                  ),
+                  if ((profile['coverImageUrl']?.toString() ?? '').isNotEmpty) ...[
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _savingCover ? null : () => _changeCover(remove: true),
+                      child: Text('حذف عکس', style: ChatTheme.caption.copyWith(color: ChatTheme.danger, fontSize: 12)),
+                    ),
+                  ],
+                ]),
+              ],
               if (profile['canModerate'] == true && profile['type'] == 'media') ...[
                 const SizedBox(height: 18),
                 InkWell(

@@ -60,6 +60,7 @@ export const listSpaces = handler(async (_req, res, actor) => {
       id: s.id,
       type: s.type,
       title: peer?.user.name || (s.caravan && s.type === 'caravan' ? s.caravan.name : s.title),
+      coverImageUrl: s.type === 'caravan' ? s.caravan?.coverImageUrl || null : null,
       peer: peer ? { ...peer.user, online: isOnline(peer.user.id) } : null,
       peerReadSeq: peer?.lastReadSeq ?? 0,
       lastSeq: s.lastSeq,

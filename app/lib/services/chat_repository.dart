@@ -638,6 +638,17 @@ class ChatRepository extends ChangeNotifier {
     return data;
   }
 
+  /// Sets (a file) or removes (null) the caravan's picture. Returns the new URL through [ok]; keeps the space list in step.
+  Future<({bool ok, String? url})> setSpaceCover(String spaceId, io.File? file) async {
+    final data = await _api.setChatSpaceCover(spaceId, file);
+    if (data == null) return (ok: false, url: null);
+    final url = data['coverImageUrl']?.toString();
+    final cleaned = (url == null || url.isEmpty) ? null : url;
+    spaceById(spaceId)?.coverImageUrl = cleaned;
+    notifyListeners();
+    return (ok: true, url: cleaned);
+  }
+
   /// A member as seen from a space, with participation numbers when the caller may see them.
   Future<Map<String, dynamic>?> memberProfile(String spaceId, String userId) async {
     final res = await api('GET', '/chat/spaces/$spaceId/members/$userId');

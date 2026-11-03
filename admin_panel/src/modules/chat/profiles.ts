@@ -1,4 +1,9 @@
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
 import prisma from '../../config/db';
+import { uploadsDir } from '../../controllers/mediaController';
 import { canModerate, canTag, ChatActor } from './access';
 import { handler, requireSpace } from './http';
 import { isOnline, onlineUserIds } from './realtime';
@@ -43,13 +48,64 @@ export const spaceProfile = handler(async (req, res, actor) => {
 
   let rank: number | null = null;
   let caravanName: string | null = null;
+  let coverImageUrl: string | null = null;
   if (space.caravanId) {
+    coverImageUrl = (await prisma.caravan.findUnique({ where: { id: space.caravanId }, select: { coverImageUrl: true } }))?.coverImageUrl || null;
     const caravans = await prisma.caravan.findMany({ where: { isDeleted: false }, select: { id: true, name: true, groupPoints: true }, orderBy: { groupPoints: 'desc' } });
     const at = caravans.findIndex(c => c.id === space.caravanId);
     if (at >= 0) { rank = at + 1; caravanName = caravans[at].name; }
   }
   const title = space.type === 'caravan' && caravanName ? caravanName : space.title;
-  res.json({ id: space.id, type: space.type, title, caravanName, memberCount, onlineCount, rank, members, canModerate: canModerate(actor, space) });
+  res.json({
+    id: space.id, type: space.type, title, caravanName, coverImageUrl, memberCount, onlineCount, rank, members,
+    canModerate: canModerate(actor, space),
+    canEditCover: canEditCover(actor, space),
+  });
+});
+
+const COVER_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+
+/** The caravan's picture is set by its mentor (or an admin) from the caravan group. */
+function canEditCover(actor: ChatActor, space: SpaceRow): boolean {
+  return space.type === 'caravan' && !!space.caravanId && canModerate(actor, space) && (actor.mentoredCaravanIds.includes(space.caravanId) || ['admin'].includes(String(actor.role).toLowerCase()));
+}
+
+export const coverUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename: (_req, file, cb) => cb(null, `caravan-${crypto.randomBytes(16).toString('hex')}${path.extname(file.originalname).toLowerCase()}`),
+  }),
+  limits: { fileSize: MAX_COVER_BYTES, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (!COVER_EXTENSIONS.has(path.extname(file.originalname || '').toLowerCase())) {
+      return cb(Object.assign(new Error('فقط تصویر (JPG، PNG یا WEBP) مجاز است'), { status: 400 }));
+    }
+    cb(null, true);
+  },
+});
+
+/** Removes a stored cover file, only when it is one this feature created. */
+function dropCoverFile(url: string | null | undefined) {
+  const name = url ? path.basename(url) : '';
+  if (name.startsWith('caravan-')) fs.unlink(path.join(uploadsDir, name), () => undefined);
+}
+
+/** Sets (file sent) or clears (no file) the picture of the caravan this group belongs to. */
+export const setSpaceCover = handler(async (req, res, actor) => {
+  const file = req.file;
+  try {
+    const { space } = await requireSpace(actor, req.params.id);
+    if (!canEditCover(actor, space)) throw new ChatError(403, 'فقط راهبر کاروان می‌تواند عکس گروه را تغییر دهد');
+    const current = await prisma.caravan.findUnique({ where: { id: space.caravanId! }, select: { coverImageUrl: true } });
+    const coverImageUrl = file ? `/uploads/${file.filename}` : null;
+    await prisma.caravan.update({ where: { id: space.caravanId! }, data: { coverImageUrl } });
+    dropCoverFile(current?.coverImageUrl);
+    res.json({ coverImageUrl });
+  } catch (e) {
+    if (file) fs.unlink(file.path, () => undefined);
+    throw e;
+  }
 });
 
 /** A member as seen from a space: public numbers for everyone, participation for those who guide them. */

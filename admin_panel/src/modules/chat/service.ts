@@ -86,7 +86,7 @@ export async function visibleSpaces(actor: ChatActor) {
         { id: { in: Array.from(members.keys()) } },
       ],
     },
-    include: { caravan: { select: { name: true } } },
+    include: { caravan: { select: { name: true, coverImageUrl: true } } },
   });
   return { spaces: candidates.filter(s => canSee(actor, s, members.has(s.id))), members };
 }
