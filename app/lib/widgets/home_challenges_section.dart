@@ -38,13 +38,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   children: [
                     const Text(
                       'چالش‌های مخصوص تو',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     TextButton(
                       onPressed: () {
@@ -57,12 +51,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       ),
                       child: const Text(
                         'همه',
-                        style: TextStyle(
-                          color: Color(0xFFB5B3C8),
-                          fontSize: 13.5,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.bodyLargeMuted,
                       ),
                     ),
                   ],
@@ -237,13 +226,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11.5,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
+                style: AppTypography.caption,
               ),
             ),
           ],
@@ -286,12 +269,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         child: Text(
           emptyText,
-          style: const TextStyle(
-            color: Color(0xFF9D99B8),
-            fontSize: 12,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9D99B8)),
         ),
       );
     }
@@ -367,13 +345,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                   item.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isExpired ? const Color(0xFF7E7E8E) : Colors.white,
-                    fontSize: 12,
-                    fontWeight: isExpired ? FontWeight.normal : FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3.copyWith(color: isExpired ? const Color(0xFF7E7E8E) : Colors.white),
                 ),
               ),
 
@@ -411,13 +383,7 @@ class _HomeChallengesSectionState extends State<HomeChallengesSection> {
                       'rejected' => 'اصلاح',
                       _ => 'مشاهده',
                     },
-                    style: TextStyle(
-                      color: isExpired ? const Color(0xFF787886) : const Color(0xFFC7B299),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: isExpired ? const Color(0xFF787886) : const Color(0xFFC7B299)),
                   ),
                 ),
               ),

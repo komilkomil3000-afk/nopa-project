@@ -266,10 +266,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
           children: [
                   TextField(
                     controller: nameController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.bodyLarge,
                     decoration: InputDecoration(
                       labelText: 'نام و نام خانوادگی دانش‌آموز',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
+                      labelStyle: AppTypography.bodyMediumMuted,
                       filled: true,
                       fillColor: const Color(0xFF1E1D36),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -279,10 +279,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.phone,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.bodyLarge,
                     decoration: InputDecoration(
                       labelText: 'شماره همراه دانش‌آموز',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
+                      labelStyle: AppTypography.bodyMediumMuted,
                       filled: true,
                       fillColor: const Color(0xFF1E1D36),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -292,10 +292,10 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   TextField(
                     controller: noteController,
                     maxLines: 2,
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.bodyLarge,
                     decoration: InputDecoration(
                       labelText: 'توضیحات یا علت درخواست (اختیاری)',
-                      labelStyle: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 12),
+                      labelStyle: AppTypography.bodyMediumMuted,
                       filled: true,
                       fillColor: const Color(0xFF1E1D36),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -340,7 +340,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
         child: Text(
           'آیا از ارسال درخواست حذف «${member.name}» از ${caravan.name} اطمینان دارید؟',
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFFD6D3E6), fontSize: 13, height: 1.5, fontFamily: AppTheme.fontFamily),
+          style: AppTypography.bodyLarge.copyWith(color: Color(0xFFD6D3E6)),
         ),
       ),
     );
@@ -386,7 +386,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       const Icon(Icons.phone_rounded, color: Color(0xFF8B88E8), size: 20),
                       Text(
                         member.phoneNumber,
-                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        style: AppTypography.h3.copyWith(letterSpacing: 1),
                       ),
                     ],
                   ),
@@ -472,15 +472,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                       minimumSize: const Size(0, 32),
                       tapTargetSize: MaterialTapTargetSize.padded,
                     ),
-                    child: const Text(
+                    child: Text(
                       'درخواست اضافه کردن کاربر',
-                      style: TextStyle(
-                        color: Color(0xFFE2E0F2),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                     ),
                   ),
                 ),
@@ -492,13 +486,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                   Container(
                     padding: const EdgeInsets.all(32),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'عضوی در این کاروان یافت نشد',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 13,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Colors.white54),
                     ),
                   )
                 else
@@ -580,22 +570,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     children: [
                       const Text(
                         'انتخاب کاروان',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3,
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'کاروان فعال: $activeCaravanName',
-                        style: const TextStyle(
-                          color: Color(0xFFDFB690),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFDFB690)),
                       ),
                     ],
                   ),
@@ -607,17 +587,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.buttonCamel, width: 1.0),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'تغییر',
-                        style: TextStyle(
-                          color: Color(0xFFDEB58A),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFDEB58A)),
                       ),
                       SizedBox(width: 4),
                       Icon(
@@ -664,22 +639,13 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                 const SizedBox(height: 18),
                 const Text(
                   'انتخاب کاروان تحت مدیریت',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h2,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'لطفاً کاروانی که می‌خواهید اطلاعات و اعضای آن مدیریت شود را انتخاب کنید:',
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 18),
@@ -726,21 +692,12 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                                 children: [
                                   Text(
                                     c.name,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : const Color(0xFFDDD9EE),
-                                      fontSize: 13.5,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h3.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${c.memberCount} عضو • ${c.activeStation}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF9D99B8),
-                                      fontSize: 11,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                                   ),
                                 ],
                               ),
@@ -826,13 +783,7 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                     const SizedBox(width: 10),
                     Text(
                       member.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3,
                     ),
                   ],
                 ),
@@ -853,14 +804,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         minimumSize: const Size(0, 26),
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
-                      child: const Text(
+                      child: Text(
                         'درخواست حذف',
-                        style: TextStyle(
-                          color: Color(0xFFE2E0F2),
-                          fontSize: 10.5,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -875,14 +821,9 @@ class _MentorMembersScreenState extends State<MentorCaravansRosterScreen> {
                         minimumSize: const Size(0, 26),
                         tapTargetSize: MaterialTapTargetSize.padded,
                       ),
-                      child: const Text(
+                      child: Text(
                         'تماس',
-                        style: TextStyle(
-                          color: Color(0xFFE2E0F2),
-                          fontSize: 10.5,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFE2E0F2)),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -1094,30 +1035,17 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                         children: [
                           Text(
                             member.name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h2,
                           ),
                           const SizedBox(height: 3),
                           Text(
                             'عضو ${widget.caravanName}',
-                            style: const TextStyle(
-                              color: Color(0xFFB5B3C8),
-                              fontSize: 11.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.captionMuted,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'شماره تماس: ${member.phoneNumber}',
-                            style: const TextStyle(
-                              color: AppColors.buttonCancelPurple,
-                              fontSize: 10.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                           ),
                         ],
                       ),
@@ -1133,14 +1061,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'وضعیت کلی مسافر در کاروان',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -1169,14 +1092,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'دارایی‌ها و پاداش‌ها',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -1201,12 +1119,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                   children: [
                     const Text(
                       'پیشرفت در منزلگاه‌ها',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 14),
                     if (!_loaded)
@@ -1312,12 +1225,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                     Expanded(
                       child: Text(
                         'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: TextStyle(
-                          color: isLocked ? Colors.white54 : Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
                       ),
                     ),
 
@@ -1397,12 +1305,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                               children: [
                                 Text(
                                   session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE),
-                                    fontSize: 12,
-                                    fontWeight: isSessionCompleted ? FontWeight.bold : FontWeight.w500,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
@@ -1411,11 +1314,7 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
                                       : (isLocked
                                           ? 'قفل شده'
                                           : 'دیده شده: ${_ofText((session['watched'] as int?) ?? 0, (session['total'] as int?) ?? 0)}'),
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
                                 ),
                               ],
                             ),
@@ -1483,10 +1382,10 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
         children: [
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+            child: Text(value, style: AppTypography.h2),
           ),
           const SizedBox(height: 4),
-          Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.captionMuted),
         ],
       ),
     );
@@ -1502,9 +1401,9 @@ class _StudentReportCardAndEvaluationScreenState extends State<StudentReportCard
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+          Text(value, style: AppTypography.h3.copyWith(color: color)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.caption.copyWith(color: Colors.white70)),
         ],
       ),
     );

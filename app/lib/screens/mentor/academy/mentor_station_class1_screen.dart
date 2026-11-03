@@ -356,12 +356,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   child: Text(
                     'اطلاعات آموزشی هر فرد در این منزلگاه برای شما نمایش داده میشود',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      fontSize: 12.5,
-                      color: Colors.white.withValues(alpha: 0.7),
-                    ),
+                    style: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.7)),
                   ),
                 ),
 
@@ -483,13 +478,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   Text(
                     ordinalTitle,
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 17.5,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.h2,
                   ),
                   const SizedBox(height: 4),
 
@@ -498,13 +487,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     builder: (context, constraints) {
                       final textSpan = TextSpan(
                         text: fullDescription,
-                        style: const TextStyle(
-                          color: Color(0xFFD3D0E3),
-                          fontSize: 10.5,
-                          height: 1.38,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                       );
                       final textPainter = TextPainter(
                         text: textSpan,
@@ -521,13 +504,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             Text(
                               fullDescription,
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Color(0xFFD3D0E3),
-                                fontSize: 10.5,
-                                height: 1.38,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                             ),
                             const SizedBox(height: 4),
                             TapExpander(
@@ -535,15 +512,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                 onTap: () => setState(
                                   () => _isDescriptionExpanded = false,
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'بستن (کمتر)',
                                   textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    color: Color(0xFFFFD574),
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFFFD574)),
                                 ),
                               ),
                             ),
@@ -555,13 +527,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         return Text(
                           fullDescription,
                           textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            color: Color(0xFFD3D0E3),
-                            fontSize: 10.5,
-                            height: 1.38,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                         );
                       }
 
@@ -573,29 +539,17 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             textAlign: TextAlign.right,
                             maxLines: 6,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFD3D0E3),
-                              fontSize: 10.5,
-                              height: 1.38,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                           ),
                           const SizedBox(height: 2),
                           TapExpander(
                             child: GestureDetector(
                               onTap: () =>
                                   setState(() => _isDescriptionExpanded = true),
-                              child: const Text(
+                              child: Text(
                                 'بیشتر...',
                                 textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Color(0xFFF4DCC5),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                  decoration: TextDecoration.underline,
-                                ),
+                                style: AppTypography.captionGold.copyWith(decoration: TextDecoration.underline),
                               ),
                             ),
                           ),
@@ -661,17 +615,15 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  maxLines: isExpanded ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppTypography.bodyMedium,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -680,13 +632,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   textAlign: TextAlign.right,
                   maxLines: isExpanded ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB3B0C7),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFFB3B0C7)),
                 ),
               ],
             ),
@@ -744,7 +690,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
                     Icons.menu_book_rounded,
                     color: Color(0xFFDFB690),
@@ -753,12 +699,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                   SizedBox(width: 7),
                   Text(
                     'ورود به صفحه کلاس‌ها',
-                    style: TextStyle(
-                      color: Color(0xFFEDE9F6),
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
                   ),
                   SizedBox(width: 4),
                   Icon(
@@ -789,13 +730,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
           const Text(
             'نگارستان منزلگاه',
             textAlign: TextAlign.right,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.h3,
           ),
           const SizedBox(height: 10),
 
@@ -849,13 +784,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                     textAlign: TextAlign.right,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF9D99B8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                   ),
                 ),
 
@@ -966,17 +895,10 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
 
   /// Big Centered Title: "گزارش آموزشی اعضا"
   Widget _buildEducationalReportSectionHeader() {
-    return const Center(
+    return Center(
       child: Text(
         'گزارش آموزشی اعضا',
-        style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
-          fontFamilyFallback: AppTheme.fontFamilyFallback,
-          fontSize: 22,
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-          letterSpacing: 0.5,
-        ),
+        style: AppTypography.h1.copyWith(letterSpacing: 0.5),
       ),
     );
   }
@@ -1018,13 +940,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 children: [
                   Text(
                     _isReportExpanded ? 'بستن' : 'مشاهده کامل',
-                    style: const TextStyle(
-                      color: Color(0xFFF4DCC5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLargeGold,
                   ),
                   const SizedBox(width: 4),
                   Icon(
@@ -1244,13 +1160,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             const SizedBox(width: 8),
                             Text(
                               name,
-                              style: const TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
+                              style: AppTypography.bodyLarge,
                             ),
                           ],
                         ),
@@ -1281,16 +1191,9 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                                       gradient: AppColors.darkSurfaceGradient,
                                       borderRadius: BorderRadius.circular(7),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'پیگیری',
-                                      style: TextStyle(
-                                        color: Color(0xFFC7B299),
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontFamilyFallback:
-                                            AppTheme.fontFamilyFallback,
-                                      ),
+                                      style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                     ),
                                   ),
                                 ),
@@ -1388,27 +1291,16 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 child: Text(
                   session['title']?.toString() ??
                       'جلسه ${(idx + 1).toPersian()}',
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFEDE9F6),
-                  ),
+                  style: AppTypography.h3.copyWith(color: Color(0xFFEDE9F6)),
                 ),
               ),
               Text(
                 'دیده شده: ${watched.toPersian()} از ${clips.length.toPersian()}',
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  fontSize: 10.5,
-                  color: clips.isNotEmpty && watched >= clips.length
+                style: AppTypography.caption.copyWith(color: clips.isNotEmpty && watched >= clips.length
                       ? const Color(0xFF4ADE80)
                       : (watched > 0
                             ? const Color(0xFFDFB690)
-                            : Colors.white.withValues(alpha: 0.45)),
-                ),
+                            : Colors.white.withValues(alpha: 0.45))),
               ),
             ],
           ),
@@ -1440,25 +1332,15 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
               clip['title']?.toString() ?? 'پارت ${(index + 1).toPersian()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                fontSize: 11.5,
-                color: Color(0xFFEDE9F6),
-              ),
+              style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             watched ? (when ?? 'دیده شده') : 'دیده نشده',
-            style: TextStyle(
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-              fontSize: 10.5,
-              color: watched
+            style: AppTypography.caption.copyWith(color: watched
                   ? const Color(0xFF4ADE80)
-                  : Colors.white.withValues(alpha: 0.45),
-            ),
+                  : Colors.white.withValues(alpha: 0.45)),
           ),
         ],
       ),
@@ -1558,12 +1440,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                 Text(
                   quiz['title']?.toString() ??
                       'آزمون شماره ${(idx + 1).toPersian()}',
-                  style: const TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 11.5,
-                    color: Color(0xFFEDE9F6),
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFFEDE9F6)),
                 ),
                 if (subtitle.isNotEmpty)
                   Padding(
@@ -1572,12 +1449,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.45),
-                      ),
+                      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.45)),
                     ),
                   ),
                 if (when != null)
@@ -1587,12 +1459,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                       attempts > 1
                           ? '$when • ${attempts.toPersian()} بار شرکت'
                           : when,
-                      style: TextStyle(
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.55),
-                      ),
+                      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.55)),
                     ),
                   ),
                 if (questionResults.length > 1)
@@ -1623,11 +1490,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             ),
                             child: Text(
                               (q + 1).toPersian(),
-                              style: const TextStyle(
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 9,
-                                color: Colors.white,
-                              ),
+                              style: AppTypography.caption,
                             ),
                           ),
                       ],
@@ -1642,23 +1505,12 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+                style: AppTypography.caption.copyWith(color: color),
               ),
               if (hasScore)
                 Text(
                   '${((result)['score'] as num? ?? 0).toInt().toPersian()} از ${((result)['total'] as num? ?? 1).toInt().toPersian()}',
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.6),
-                  ),
+                  style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.6)),
                 ),
             ],
           ),
@@ -1738,12 +1590,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
     child: Text(
       text,
       textAlign: TextAlign.center,
-      style: TextStyle(
-        fontFamily: AppTheme.fontFamily,
-        fontFamilyFallback: AppTheme.fontFamilyFallback,
-        fontSize: 11.5,
-        color: Colors.white.withValues(alpha: 0.5),
-      ),
+      style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.5)),
     ),
   );
 
@@ -1757,12 +1604,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFDDD9EE),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          fontFamily: AppTheme.fontFamily,
-        ),
+        style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
       ),
     );
   }
@@ -1852,12 +1694,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                         ),
                         child: Text(
                           name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3,
                         ),
                       ),
                     ),
@@ -1884,11 +1721,7 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                             phone,
                             textDirection: TextDirection.ltr,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFFDDD9EE),
-                              fontSize: 12.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                           ),
                         ),
                       ),
@@ -1914,19 +1747,11 @@ class _MentorStationScreenState extends State<MentorStationClass1Screen> {
                           child: TextField(
                             controller: controller,
                             maxLines: 4,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
-                            decoration: const InputDecoration(
+                            style: AppTypography.bodyMedium,
+                            decoration: InputDecoration(
                               hintText:
                                   'متن پیام یا پیگیری آموزشی برای این عضو را بنویسید...',
-                              hintStyle: TextStyle(
-                                color: Color(0xFF7E789F),
-                                fontSize: 12,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              hintStyle: AppTypography.bodyMedium.copyWith(color: Color(0xFF7E789F)),
                               contentPadding: EdgeInsets.all(12),
                               border: InputBorder.none,
                             ),

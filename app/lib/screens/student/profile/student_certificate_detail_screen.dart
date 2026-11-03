@@ -127,7 +127,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           ),
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFFDDD9EE), fontSize: 12, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
           ),
         ),
         const SizedBox(width: 10),
@@ -135,7 +135,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           child: Text(
             value,
             textAlign: TextAlign.left,
-            style: const TextStyle(color: AppColors.accentGoldEnd, fontSize: 13, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyLarge.copyWith(color: AppColors.accentGoldEnd),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -157,7 +157,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
           ),
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFFDDD9EE), fontSize: 12, fontWeight: FontWeight.w500, fontFamily: AppTheme.fontFamily),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
           ),
         ),
         const SizedBox(width: 10),
@@ -173,12 +173,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
               controller: controller,
               keyboardType: keyboardType,
               maxLines: maxLines,
-              style: const TextStyle(color: AppColors.accentGoldEnd, fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.accentGoldEnd),
               decoration: InputDecoration(
                 isDense: true,
                 border: InputBorder.none,
                 hintText: hintText,
-                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 11.5, fontFamily: AppTheme.fontFamily),
+                hintStyle: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                 contentPadding: const EdgeInsets.symmetric(vertical: 5),
               ),
             ),
@@ -219,19 +219,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                               width: 1.0,
                             ),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 18),
                               SizedBox(width: 8),
                               Text(
                                 'گواهی معتبر دیجیتال شما با موفقیت صادر شد',
-                                style: TextStyle(
-                                  color: Color(0xFF10B981),
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.bodyLarge.copyWith(color: Color(0xFF10B981)),
                               ),
                             ],
                           ),
@@ -283,28 +278,17 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     begin: Alignment.bottomCenter,
                                     end: Alignment.topCenter,
                                   ).createShader(bounds),
-                                  child: const Text(
+                                  child: Text(
                                     'NOPA',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 2.5,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h1.copyWith(fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 2.5),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
 
-                                const Text(
+                                Text(
                                   '«گواهی‌نامه رسمی آموزش و توانمندسازی کاروان»',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: AppColors.accentGoldEnd,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                 ),
                                 const SizedBox(height: 18),
 
@@ -316,25 +300,16 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 ),
                                 const SizedBox(height: 18),
 
-                                const Text(
+                                Text(
                                   'بدینوسیله گواهی می‌شود که مسافر گرامی:',
-                                  style: TextStyle(
-                                    color: Color(0xFFB5B0D8),
-                                    fontSize: 12,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
                                 ),
                                 const SizedBox(height: 10),
 
                                 // User Name
                                 Text(
                                   widget.userName,
-                                  style: const TextStyle(
-                                    color: AppColors.accentGoldEnd,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h1.copyWith(color: AppColors.accentGoldEnd),
                                 ),
                                 const SizedBox(height: 14),
 
@@ -342,12 +317,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 Text(
                                   'دوره آموزشی «$title» را با موفقیت و کسب مهارت‌های کاربردی لازم در بستر کاروان یادگیری نپا گذرانده است.',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Color(0xFFDDD9EE),
-                                    fontSize: 12.5,
-                                    height: 1.6,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 12),
 
@@ -364,11 +334,7 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                   ),
                                   child: Text(
                                     'تعداد جلسات: $sessions • راهبر / استاد: $teacher',
-                                    style: const TextStyle(
-                                      color: Color(0xFFC7B299),
-                                      fontSize: 11,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                                   ),
                                 ),
                                 const SizedBox(height: 24),
@@ -378,16 +344,12 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     // Signature
-                                    const Column(
+                                    Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'مهر و امضای دبیرخانه:',
-                                          style: TextStyle(
-                                            color: AppColors.buttonCancelPurple,
-                                            fontSize: 9.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                                         ),
                                         SizedBox(height: 4),
                                         Icon(Icons.draw_rounded, color: AppColors.buttonCamel, size: 22),
@@ -424,23 +386,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        const Text(
+                                        Text(
                                           'تاریخ صدور:',
-                                          style: TextStyle(
-                                            color: AppColors.buttonCancelPurple,
-                                            fontSize: 9.5,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           date,
-                                          style: const TextStyle(
-                                            color: Color(0xFFDDD9EE),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.caption.copyWith(color: Color(0xFFDDD9EE)),
                                         ),
                                       ],
                                     ),
@@ -482,19 +435,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                         color: AppColors.accentGoldEnd,
                                       ),
                                     )
-                                  : const Row(
+                                  : Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.download_rounded, color: AppColors.accentGoldEnd, size: 18),
                                         SizedBox(width: 8),
                                         Text(
                                           'دانلود مستقیم گواهی (PDF / تصویر)',
-                                          style: TextStyle(
-                                            color: AppColors.accentGoldEnd,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: AppTheme.fontFamily,
-                                          ),
+                                          style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                         ),
                                       ],
                                     ),
@@ -518,19 +466,14 @@ class _CertificateViewScreenState extends State<StudentCertificateDetailScreen> 
                                 width: 1.0,
                               ),
                             ),
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(Icons.local_shipping_outlined, color: Color(0xFFDDD9EE), size: 18),
                                 SizedBox(width: 8),
                                 Text(
                                   'درخواست نسخه فیزیکی و چاپی گواهی',
-                                  style: TextStyle(
-                                    color: Color(0xFFDDD9EE),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.h3.copyWith(color: Color(0xFFDDD9EE)),
                                 ),
                               ],
                             ),

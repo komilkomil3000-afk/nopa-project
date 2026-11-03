@@ -420,25 +420,13 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
           const Text(
             'این منزلگاه هنوز باز نشده است.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.h2,
           ),
           const SizedBox(height: 8),
           const Text(
             'جهت دسترسی به محتوا و کلاس‌های این منزلگاه، ابتدا مراحل و چالش‌های منزلگاه‌های قبلی را تکمیل نمایید.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFB5B3C8),
-              fontSize: 12,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-              height: 1.5,
-            ),
+            style: AppTypography.bodyMediumMuted,
           ),
         ],
       ),
@@ -546,13 +534,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                 Text(
                   ordinalTitle,
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17.5,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h2,
                 ),
                 const SizedBox(height: 4),
 
@@ -561,13 +543,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                   builder: (context, constraints) {
                     final textSpan = TextSpan(
                       text: fullDescription,
-                      style: const TextStyle(
-                        color: Color(0xFFD3D0E3),
-                        fontSize: 10.5,
-                        height: 1.38,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                     );
                     final textPainter = TextPainter(
                       text: textSpan,
@@ -584,13 +560,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                           Text(
                             fullDescription,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: Color(0xFFD3D0E3),
-                              fontSize: 10.5,
-                              height: 1.38,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                           ),
                           const SizedBox(height: 4),
                           TapExpander(
@@ -598,15 +568,10 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                               onTap: () => setState(
                                 () => _isDescriptionExpanded = false,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'بستن (کمتر)',
                                 textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: Color(0xFFFFD574),
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.caption.copyWith(color: Color(0xFFFFD574)),
                               ),
                             ),
                           ),
@@ -618,13 +583,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                       return Text(
                         fullDescription,
                         textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          color: Color(0xFFD3D0E3),
-                          fontSize: 10.5,
-                          height: 1.38,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                       );
                     }
 
@@ -636,29 +595,17 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                           textAlign: TextAlign.right,
                           maxLines: 6,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFD3D0E3),
-                            fontSize: 10.5,
-                            height: 1.38,
-                            fontFamily: AppTheme.fontFamily,
-                            fontFamilyFallback: AppTheme.fontFamilyFallback,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                         ),
                         const SizedBox(height: 2),
                         TapExpander(
                           child: GestureDetector(
                             onTap: () =>
                                 setState(() => _isDescriptionExpanded = true),
-                            child: const Text(
+                            child: Text(
                               'بیشتر...',
                               textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: Color(0xFFF4DCC5),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                decoration: TextDecoration.underline,
-                              ),
+                              style: AppTypography.captionGold.copyWith(decoration: TextDecoration.underline),
                             ),
                           ),
                         ),
@@ -722,17 +669,15 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.right,
-                  maxLines: isExpanded ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: AppTypography.bodyMedium,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -741,13 +686,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                   textAlign: TextAlign.right,
                   maxLines: isExpanded ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFFB3B0C7),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.normal,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFFB3B0C7)),
                 ),
               ],
             ),
@@ -776,13 +715,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         const Text(
           'نگارستان منزلگاه',
           textAlign: TextAlign.right,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.h3,
         ),
         const SizedBox(height: 10),
 
@@ -836,13 +769,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
                   textAlign: TextAlign.right,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF9D99B8),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                 ),
               ),
 
@@ -1014,13 +941,7 @@ class _Class1ScreenState extends State<StudentClass1Screen> {
         textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: enabled ? const Color(0xFFF4DCC5) : const Color(0xFF8C8A93),
-          fontSize: 10.5,
-          fontWeight: FontWeight.bold,
-          fontFamily: AppTheme.fontFamily,
-          fontFamilyFallback: AppTheme.fontFamilyFallback,
-        ),
+        style: AppTypography.caption.copyWith(color: enabled ? const Color(0xFFF4DCC5) : const Color(0xFF8C8A93)),
       ),
     );
     return Material(

@@ -131,12 +131,12 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: _stations.length,
-                              separatorBuilder: (context, index) => const Padding(
+                              separatorBuilder: (context, index) => Padding(
                                 padding: EdgeInsets.symmetric(vertical: 8),
                                 child: Center(
                                   child: Text(
                                     '↓',
-                                    style: TextStyle(color: Colors.white30, fontSize: 22, fontWeight: FontWeight.bold),
+                                    style: AppTypography.h1.copyWith(color: Colors.white30),
                                   ),
                                 ),
                               ),
@@ -360,13 +360,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   textAlign: TextAlign.right,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isLocked ? Colors.white54 : Colors.white,
-                                    fontSize: 15.5,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.h2.copyWith(color: isLocked ? Colors.white54 : Colors.white),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
@@ -374,12 +368,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   textAlign: TextAlign.right,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isLocked ? Colors.white30 : const Color(0xFFB5B3C8),
-                                    fontSize: 12,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: isLocked ? Colors.white30 : const Color(0xFFB5B3C8)),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -387,12 +376,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                                   textAlign: TextAlign.right,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 11,
-                                    fontFamily: AppTheme.fontFamily,
-                                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: Colors.white54),
                                 ),
                               ],
                             ),
@@ -471,34 +455,21 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                             Text(
                               'استاد راهنما: $teacherName',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Colors.white70),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'جلسات و سرفصل‌ها: ${totalSessions > 0 ? "${totalSessions.toPersian()} جلسه آموزشی" : "${categoriesList.length.toPersian()} سرفصل"}',
                               textAlign: TextAlign.right,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Colors.white70),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'وضعیت منزلگاه: ${isLocked ? 'قفل شده' : (isCompleted ? '۱۰۰٪ تکمیل شده' : (isCurrent ? 'در حال یادگیری' : 'باز'))}',
                               textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: isCurrent
+                              style: AppTypography.caption.copyWith(color: isCurrent
                                     ? const Color(0xFFFFD580)
-                                    : (isCompleted ? const Color(0xFF10B981) : Colors.white54),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                                    : (isCompleted ? const Color(0xFF10B981) : Colors.white54)),
                             ),
                           ],
                         ),
@@ -533,12 +504,7 @@ class _StudentAcademyRoadmapScreenState extends State<StudentAcademyRoadmapScree
                 ),
                 child: Text(
                   isLocked ? 'قفل' : (isCompleted ? 'تکمیل شده' : 'منزلگاه جاری'),
-                  style: TextStyle(
-                    color: isCurrent ? const Color(0xFF5A3114) : Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.caption.copyWith(color: isCurrent ? const Color(0xFF5A3114) : Colors.white),
                 ),
               ),
             ),

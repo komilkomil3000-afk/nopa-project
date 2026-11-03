@@ -43,18 +43,13 @@ class CustomDrawer extends StatelessWidget {
             onPressed: () => Navigator.pop(ctx),
           ),
         ],
-        child: const Text(
+        child: Text(
           'به کاروان یادگیری نپا خوش آمدید!\n\n'
           '**آموزگاه:** مشاهده نقشه‌ی سفر، گذراندن منزلگاه‌ها و جلسات مهارتی و رسانه‌ای.\n'
           '**چالش‌ها:** حل ماموریت‌ها و ارسال پاسخ جهت ارزیابی توسط راهبر کاروان.\n'
           '**بازارچه:** خرج سکه و جوایز کسب‌شده برای خرید تجهیزات و پاداش‌ها.\n'
           '**پشتیبانی:** ارتباط سریع با راهبر کاروان و کارشناسان نپا.',
-          style: TextStyle(
-            color: Color(0xFFD3D0E3),
-            fontSize: 12.5,
-            height: 1.7,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.bodyMedium.copyWith(color: Color(0xFFD3D0E3)),
         ),
       ),
     );
@@ -188,13 +183,7 @@ class CustomDrawer extends StatelessWidget {
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.h2,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -202,12 +191,7 @@ class CustomDrawer extends StatelessWidget {
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF9D99B8),
-                                fontSize: 11.5,
-                                fontFamily: AppTheme.fontFamily,
-                                fontFamilyFallback: AppTheme.fontFamilyFallback,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                             ),
                           ],
                         ),
@@ -447,13 +431,7 @@ class CustomDrawer extends StatelessWidget {
                   child: Text(
                     title,
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: effectiveTextColor,
-                      fontSize: 13.5,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: effectiveTextColor),
                   ),
                 ),
               ],

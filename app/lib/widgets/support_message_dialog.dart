@@ -140,12 +140,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                     ),
                     const Text(
                       'پیام به پشتیبانی',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h2,
                     ),
                   ],
                 ),
@@ -170,21 +165,12 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                       alignment: Alignment.center,
                       child: TextField(
                         controller: _subjectCtrl,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                         decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
                           hintText: 'موضوع پیام را بنویسید...',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            fontSize: 12,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                       ),
                     ),
@@ -210,12 +196,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                       alignment: Alignment.center,
                       child: Text(
                         _currentDateStr,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                       ),
                     ),
                   ),
@@ -242,20 +223,12 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                       child: TextField(
                         controller: _descCtrl,
                         maxLines: 4,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E0F0),
-                          fontSize: 12.5,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.bodyMedium.copyWith(color: Color(0xFFE2E0F0)),
                         decoration: InputDecoration(
                           isDense: true,
                           border: InputBorder.none,
                           hintText: 'ما را در جریان قرار دهید',
-                          hintStyle: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            fontSize: 12,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                         ),
                       ),
                     ),
@@ -279,28 +252,18 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
                           )
                         : TextButton(
                             onPressed: _submitRequest,
-                            child: const Text(
+                            child: Text(
                               'ارسال',
-                              style: TextStyle(
-                                color: AppColors.buttonCamel,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
                             ),
                           ),
 
                     // لغو on Left in RTL
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text(
+                      child: Text(
                         'لغو',
-                        style: TextStyle(
-                          color: AppColors.buttonCancelPurple,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                       ),
                     ),
                   ],
@@ -325,12 +288,7 @@ class _SupportMessageDialogState extends State<SupportMessageDialog> {
           width: 70,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
           ),
         ),
         const SizedBox(width: 8),

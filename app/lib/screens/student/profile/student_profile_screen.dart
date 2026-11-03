@@ -266,23 +266,12 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
               children: [
                 Text(
                   displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h1,
                 ),
                 const SizedBox(height: 5),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFFB5B3C8),
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.bodyMediumMuted,
                 ),
               ],
             ),
@@ -416,13 +405,7 @@ class _ProfileScreenState extends State<StudentProfileScreen> {
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
-                      color: enabled ? const Color(0xFFE2E0F2) : disabledColor,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: enabled ? const Color(0xFFE2E0F2) : disabledColor),
                   ),
                 ),
               ],
@@ -579,14 +562,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'وضعیت کلی مسافر در کاروان',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -609,14 +587,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'دارایی‌ها و پاداش‌ها',
-                      style: TextStyle(
-                        color: Color(0xFFFFD580),
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: Color(0xFFFFD580)),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -641,12 +614,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                   children: [
                     const Text(
                       'پیشرفت در منزلگاه‌ها',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 14),
                     if (_refreshing && stations.isEmpty)
@@ -659,7 +627,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           'اطلاعات منزلگاه‌ها دریافت نشد. اتصال اینترنت را بررسی کنید و دوباره وارد این صفحه شوید.',
-                          style: TextStyle(color: Color(0xFFB5B3C8), fontSize: 12, height: 1.6, fontFamily: AppTheme.fontFamily),
+                          style: AppTypography.bodyMediumMuted,
                         ),
                       )
                     else
@@ -761,12 +729,7 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                     Expanded(
                       child: Text(
                         'منزلگاه ${StationNumbering.numberAt(index + 1).toPersian()}: $stationTitle',
-                        style: TextStyle(
-                          color: isLocked ? Colors.white54 : Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3.copyWith(color: isLocked ? Colors.white54 : Colors.white),
                       ),
                     ),
 
@@ -855,23 +818,14 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
                               children: [
                                 Text(
                                   session['title']?.toString() ?? 'جلسه ${(sIdx + 1).toPersian()}',
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE),
-                                    fontSize: 12,
-                                    fontWeight: isSessionCompleted ? FontWeight.bold : FontWeight.w500,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.bodyMedium.copyWith(color: isSessionCompleted ? Colors.white : const Color(0xFFDDD9EE)),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   isSessionCompleted
                                       ? 'مشاهده‌شده و تایید شده'
                                       : (isLocked ? 'قفل شده' : 'آماده مشاهده و گذراندن'),
-                                  style: TextStyle(
-                                    color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E),
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: isSessionCompleted ? const Color(0xFF10B981) : const Color(0xFF8E8B9E)),
                                 ),
                               ],
                             ),
@@ -936,9 +890,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
   static Widget _buildStatBox(String label, String value) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+        Text(value, style: AppTypography.h2),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Color(0xFFB5B3C8), fontSize: 11, fontFamily: AppTheme.fontFamily)),
+        Text(label, style: AppTypography.captionMuted),
       ],
     );
   }
@@ -953,9 +907,9 @@ class _ReportCardAndAchievementsScreenState extends State<_ReportCardAndAchievem
       ),
       child: Column(
         children: [
-          Text(value, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+          Text(value, style: AppTypography.h3.copyWith(color: color)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+          Text(label, style: AppTypography.caption.copyWith(color: Colors.white70)),
         ],
       ),
     );

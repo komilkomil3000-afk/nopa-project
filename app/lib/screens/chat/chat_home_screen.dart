@@ -175,16 +175,16 @@ class _ChatHeader extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'NOPA',
-                      style: TextStyle(color: ChatTheme.ink, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.2, fontFamily: AppTheme.logoFontFamily),
+                      style: AppTypography.logo.copyWith(color: ChatTheme.ink),
                     ),
                   ),
                   Text(
                     connected ? 'گفتگوها' : 'درحال اتصال...',
-                    style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold),
+                    style: AppTypography.h3,
                   ),
                   if (scaffold?.hasDrawer ?? false)
                     Align(
@@ -242,12 +242,7 @@ class _FilterBar extends StatelessWidget {
                     Text(
                       f.label,
                       maxLines: 1,
-                      style: TextStyle(
-                        color: f == filter ? ChatTheme.ink : ChatTheme.muted,
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 12,
-                        fontWeight: f == filter ? FontWeight.bold : FontWeight.w500,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: f == filter ? ChatTheme.ink : ChatTheme.muted),
                     ),
                   ],
                 ),
@@ -358,7 +353,7 @@ class _SpaceTile extends StatelessWidget {
                           decoration: BoxDecoration(color: ChatTheme.accent, borderRadius: BorderRadius.circular(9)),
                           child: Text(
                             space.unread > 99 ? '99+' : '${space.unread}',
-                            style: const TextStyle(color: ChatTheme.surfaceBottom, fontFamily: AppTheme.fontFamily, fontSize: 10, fontWeight: FontWeight.bold, height: 1.2),
+                            style: AppTypography.caption.copyWith(color: ChatTheme.surfaceBottom),
                           ),
                         ),
                       ],

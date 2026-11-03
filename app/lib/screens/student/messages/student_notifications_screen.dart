@@ -237,13 +237,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(mine ? 'شما' : 'پشتیبانی',
-                                  style: const TextStyle(color: Color(0xFFDEB58A), fontSize: 10.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFFDEB58A))),
                               const SizedBox(height: 3),
                               Text(m['text'] as String,
-                                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.6, fontFamily: AppTheme.fontFamily)),
+                                  style: AppTypography.bodyMedium),
                               const SizedBox(height: 3),
                               Text(_formatDate(m['at'], null),
-                                  style: const TextStyle(color: Color(0xFF9D99B8), fontSize: 9.5, fontFamily: AppTheme.fontFamily)),
+                                  style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8))),
                             ],
                           ),
                         ),
@@ -406,10 +406,10 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   autofocus: true,
                   onChanged: (_) => setState(() {}),
                   textDirection: TextDirection.rtl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                  style: AppTypography.bodyLarge,
                   decoration: InputDecoration(
                     hintText: 'جستجو در پیام‌ها',
-                    hintStyle: const TextStyle(color: Color(0xFF9D99B8), fontSize: 12.5, fontFamily: AppTheme.fontFamily),
+                    hintStyle: AppTypography.bodyMedium.copyWith(color: Color(0xFF9D99B8)),
                     isDense: true,
                     filled: true,
                     fillColor: const Color(0xFF23223D),
@@ -481,13 +481,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
             children: [
               const Text(
                 'پیام‌ها و اعلان‌ها',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                  fontFamilyFallback: AppTheme.fontFamilyFallback,
-                ),
+                style: AppTypography.h2,
               ),
               if (unreadCount > 0) ...[
                 const SizedBox(width: 8),
@@ -499,12 +493,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   ),
                   child: Text(
                     '${unreadCount.toPersian()} جدید',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption,
                   ),
                 ),
               ],
@@ -524,17 +513,12 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.done_all_rounded, size: 16, color: AppColors.buttonCamel),
                       SizedBox(width: 4),
                       Text(
                         'خواندن همه',
-                        style: TextStyle(
-                          color: Color(0xFFDEB58A),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.bodyLarge.copyWith(color: Color(0xFFDEB58A)),
                       ),
                     ],
                   ),
@@ -604,13 +588,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                 Text(
                   'ارسال پیام به پشتیبانی',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFFF4DCC5),
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.captionGold,
                 ),
               ],
             ),
@@ -686,12 +664,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                           child: Text(
                             count.toPersian(),
-                            style: TextStyle(
-                              color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8),
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: isSelected ? const Color(0xFFDE9959) : const Color(0xFF9D99B8)),
                           ),
                         ),
                       ],
@@ -789,8 +762,8 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: const Color(0xFFDE9959).withValues(alpha: 0.7), width: 0.8),
                         ),
-                        child: const Text('پشتیبانی',
-                            style: TextStyle(color: Color(0xFFDEB58A), fontSize: 9.5, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                        child: Text('پشتیبانی',
+                            style: AppTypography.caption.copyWith(color: Color(0xFFDEB58A))),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -801,13 +774,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                         textAlign: TextAlign.right,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isRead ? const Color(0xFF9A9AA8) : Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.caption.copyWith(color: isRead ? const Color(0xFF9A9AA8) : Colors.white),
                       ),
                     ),
 
@@ -816,12 +783,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                     // Date in center-left (smaller font size)
                     Text(
                       dateStr,
-                      style: const TextStyle(
-                        color: Color(0xFF9D99B8),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                     ),
 
                     const SizedBox(width: 10),
@@ -843,13 +805,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
                           ),
                           child: Text(
                             actionLabel,
-                            style: const TextStyle(
-                              color: Color(0xFFC7B299),
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w300,
-                              fontFamily: AppTheme.fontFamily,
-                              fontFamilyFallback: AppTheme.fontFamilyFallback,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                           ),
                         ),
                       ),
@@ -879,27 +835,16 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'توضیحات:',
                     textAlign: TextAlign.right,
-                    style: TextStyle(
-                      color: Color(0xFFDEB58A),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFDEB58A)),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     body.isNotEmpty ? body : 'توضیحات تکمیلی برای این پیام ثبت نشده است.',
                     textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      color: Color(0xFFD3D0E3),
-                      fontSize: 11.5,
-                      height: 1.6,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                   ),
                 ],
               ),
@@ -921,7 +866,7 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Icon(
             Icons.notifications_none_rounded,
             size: 48,
@@ -930,23 +875,13 @@ class _NotificationsScreenState extends State<StudentNotificationsScreen> {
           SizedBox(height: 14),
           Text(
             'پیامی در این بخش وجود ندارد',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.h3,
           ),
           SizedBox(height: 6),
           Text(
             'اعلان‌ها و رویدادهای جدید کاروان نپا در این بخش نمایش داده می‌شوند.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF9D99B8),
-              fontSize: 11.5,
-              height: 1.5,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
           ),
         ],
       ),

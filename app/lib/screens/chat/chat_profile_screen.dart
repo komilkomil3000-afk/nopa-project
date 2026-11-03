@@ -377,7 +377,7 @@ class _IdentityRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.h1),
               const SizedBox(height: 4),
               Text(subtitle, maxLines: 2, style: ChatTheme.caption.copyWith(color: ChatTheme.lavender, fontSize: 11.5, fontWeight: FontWeight.w600)),
             ],
@@ -390,7 +390,7 @@ class _IdentityRow extends StatelessWidget {
             child: Column(children: [
               Text('رتبه', style: ChatTheme.caption.copyWith(color: ChatTheme.accent, fontSize: 11)),
               const SizedBox(height: 2),
-              Text('$rank', style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('$rank', style: AppTypography.h2),
             ]),
           ),
       ],
@@ -409,7 +409,7 @@ class _Stat extends StatelessWidget {
       child: Column(children: [
         Text(label, style: ChatTheme.caption.copyWith(color: ChatTheme.lavender, fontSize: 12)),
         const SizedBox(height: 4),
-        Text('${value ?? 0}', style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold)),
+        Text('${value ?? 0}', style: AppTypography.h3),
       ]),
     );
   }
@@ -434,7 +434,7 @@ class _PanelButton extends StatelessWidget {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(icon, size: 18, color: ChatTheme.ink),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.bold)),
+            Text(label, style: AppTypography.h3.copyWith(color: ChatTheme.ink)),
           ]),
         ),
       ),

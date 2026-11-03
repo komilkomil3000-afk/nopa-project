@@ -349,12 +349,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                               textAlign: TextAlign.right,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.h3,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -365,11 +360,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFB5B3C8),
-                              fontSize: 11,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.captionMuted,
                           ),
                           const SizedBox(height: 3),
 
@@ -379,11 +370,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                             textAlign: TextAlign.right,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xFFC7B299),
-                              fontSize: 10.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                           ),
 
                           const SizedBox(height: 8),
@@ -404,7 +391,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                       width: 1.0,
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -412,12 +399,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                       SizedBox(width: 5),
                                       Text(
                                         'دریافت',
-                                        style: TextStyle(
-                                          color: AppColors.accentGoldEnd,
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: AppTheme.fontFamily,
-                                        ),
+                                        style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                                       ),
                                     ],
                                   ),
@@ -441,11 +423,7 @@ class _CertificatesScreenState extends State<StudentCertificatesScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   course['progressText']?.toString() ?? 'در حال گذراندن',
-                                  style: const TextStyle(
-                                    color: AppColors.buttonCancelPurple,
-                                    fontSize: 10.5,
-                                    fontFamily: AppTheme.fontFamily,
-                                  ),
+                                  style: AppTypography.caption.copyWith(color: AppColors.buttonCancelPurple),
                                 ),
                               ],
                             ),

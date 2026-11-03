@@ -447,18 +447,13 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         const SizedBox(height: 8),
                         const Text(
                           'خطا در بارگذاری ویدیو',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3,
                         ),
                         const SizedBox(height: 10),
                         ElevatedButton.icon(
                           onPressed: () => _startVideo(),
                           icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.white),
-                          label: const Text('تلاش مجدد', style: TextStyle(color: Colors.white, fontSize: 11, fontFamily: AppTheme.fontFamily)),
+                          label: const Text('تلاش مجدد', style: AppTypography.caption),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.buttonCamel,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -579,12 +574,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                     widget.title ?? _aparatInfo?.title ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w300,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption,
                   ),
                 ),
 
@@ -616,7 +606,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                         ),
                         child: Text(
                           '${_playbackSpeed}x',
-                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: AppTypography.caption,
                         ),
                       ),
                     ),
@@ -638,7 +628,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                           ),
                           child: Text(
                             _selectedQuality ?? 'کیفیت',
-                            style: const TextStyle(color: Color(0xFFF4DCC5), fontSize: 10, fontWeight: FontWeight.bold),
+                            style: AppTypography.captionGold,
                           ),
                         ),
                         onSelected: (quality) {
@@ -739,7 +729,7 @@ class _NopaInlineVideoPlayerState extends State<NopaInlineVideoPlayer> {
                   Text(
                     '${_formatDuration(pos)} / ${_formatDuration(dur)}',
                     textDirection: TextDirection.ltr,
-                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.caption.copyWith(color: Colors.white70),
                   ),
                   const SizedBox(width: 8),
 
@@ -931,12 +921,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.h3,
                               ),
                             ),
                             Row(
@@ -950,7 +935,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                       color: Colors.white24,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: Text('${_speed}x', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    child: Text('${_speed}x', style: AppTypography.bodyMedium),
                                   ),
                                   onSelected: (s) {
                                     setState(() => _speed = s);
@@ -977,7 +962,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                                         color: AppColors.buttonCamel,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(_quality ?? 'کیفیت', style: const TextStyle(color: Color(0xFF1E1D34), fontSize: 12, fontWeight: FontWeight.bold)),
+                                      child: Text(_quality ?? 'کیفیت', style: AppTypography.bodyLarge.copyWith(color: Color(0xFF1E1D34))),
                                     ),
                                     onSelected: (q) {
                                       setState(() => _quality = q);
@@ -1053,7 +1038,7 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
                             const SizedBox(width: 8),
                             Text(
                               '${_formatDuration(pos)} / ${_formatDuration(dur)}',
-                              style: const TextStyle(color: Colors.white, fontSize: 13, fontFamily: AppTheme.fontFamily),
+                              style: AppTypography.bodyLarge,
                             ),
                             const SizedBox(width: 14),
                             Expanded(

@@ -153,15 +153,15 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 12.5,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              title,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              softWrap: false,
+              style: AppTypography.bodyMedium,
             ),
           ),
           const SizedBox(height: 3),
@@ -170,13 +170,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             textAlign: TextAlign.right,
             maxLines: isExpanded ? 3 : 1,
             overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFFB5B3C8),
-              fontSize: 10.5,
-              height: 1.25,
-              fontFamily: AppTheme.fontFamily,
-              fontFamilyFallback: AppTheme.fontFamilyFallback,
-            ),
+            style: AppTypography.captionMuted,
           ),
         ],
       ),
@@ -262,22 +256,12 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                       children: [
                         const Text(
                           'انتخاب کاروان',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h3,
                         ),
                         const SizedBox(height: 3),
                         Text(
                           'کاروان فعال: $activeCaravanName',
-                          style: const TextStyle(
-                            color: Color(0xFFDFB690),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFDFB690)),
                         ),
                       ],
                     ),
@@ -289,17 +273,12 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.buttonCamel, width: 1.0),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'تغییر',
-                          style: TextStyle(
-                            color: Color(0xFFDEB58A),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFDEB58A)),
                         ),
                         SizedBox(width: 4),
                         Icon(
@@ -347,22 +326,13 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 const SizedBox(height: 18),
                 const Text(
                   'انتخاب کاروان تحت مدیریت',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h2,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'لطفاً کاروانی که می‌خواهید اطلاعات و اعضای آن مدیریت شود را انتخاب کنید:',
-                  style: TextStyle(
-                    color: Color(0xFFDDD9EE),
-                    fontSize: 12,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 18),
@@ -409,21 +379,12 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                                 children: [
                                   Text(
                                     c.name,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.white : const Color(0xFFDDD9EE),
-                                      fontSize: 13.5,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.h3.copyWith(color: isSelected ? Colors.white : const Color(0xFFDDD9EE)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${c.memberCount} عضو • ${c.activeStation}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF9D99B8),
-                                      fontSize: 11,
-                                      fontFamily: AppTheme.fontFamily,
-                                    ),
+                                    style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                                   ),
                                 ],
                               ),
@@ -463,13 +424,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'سرمایه های کاروان',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h3,
             ),
           ),
         ),
@@ -596,13 +551,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                   child: Center(
                     child: Text(
                       badgeNumber,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.h3,
                     ),
                   ),
                 ),
@@ -610,25 +559,13 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 // Middle: Label
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h3,
                 ),
                 const SizedBox(width: 16),
                 // Left: Value
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.h2,
                 ),
                 const SizedBox(width: 2),
               ],
@@ -668,13 +605,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
             alignment: Alignment.centerRight,
             child: Text(
               'دسترسی سریع',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14.5,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-                fontFamilyFallback: AppTheme.fontFamilyFallback,
-              ),
+              style: AppTypography.h3,
             ),
           ),
         ),
@@ -758,12 +689,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.bodyMedium,
               ),
             ],
           ),
@@ -790,7 +716,7 @@ class _MentorHomeScreenState extends State<MentorHomeScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
             const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(fontSize: 16, color: Colors.white, fontFamily: AppTheme.fontFamily)),
+            Text(_errorMessage!, style: AppTypography.bodyLarge),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _fetchData,

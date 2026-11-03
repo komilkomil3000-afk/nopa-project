@@ -142,13 +142,13 @@ class ChatHeaderTitle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.bold)),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.h3),
                 if (subtitle.isNotEmpty)
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: subtitleColor ?? ChatTheme.ink.withValues(alpha: 0.65), fontFamily: AppTheme.fontFamily, fontSize: 11, fontWeight: FontWeight.w500),
+                    style: AppTypography.caption.copyWith(color: subtitleColor ?? ChatTheme.ink.withValues(alpha: 0.65)),
                   ),
               ],
             ),
@@ -215,7 +215,7 @@ class ChatPageScaffold extends StatelessWidget {
           children: [
             ChatGoldHeader(
               actions: actions,
-              child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontFamily: AppTheme.fontFamily, fontSize: 15, fontWeight: FontWeight.bold)),
+              child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.h3),
             ),
             Expanded(child: SafeArea(top: false, child: body)),
           ],

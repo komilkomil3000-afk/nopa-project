@@ -396,12 +396,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                 padding: const EdgeInsets.only(top: 2, right: 4, bottom: 12),
                 child: Text(
                   caravanName,
-                  style: TextStyle(
-                    fontFamily: AppTheme.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF9E9AC0).withValues(alpha: 0.9),
-                  ),
+                  style: AppTypography.h3.copyWith(color: const Color(0xFF9E9AC0).withValues(alpha: 0.9)),
                 ),
               ),
             ),
@@ -483,12 +478,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
             const SizedBox(width: 6),
             Text(
               title,
-              style: const TextStyle(
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: AppColors.accentGoldEnd,
-              ),
+              style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
             ),
           ],
         ),
@@ -512,14 +502,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Text(
                     'درون گروهی',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _mentorSelectedCategoryIndex == 0
+                    style: AppTypography.h2.copyWith(color: _mentorSelectedCategoryIndex == 0
                           ? const Color(0xFFDFB690)
-                          : const Color(0xFF8E88B0),
-                    ),
+                          : const Color(0xFF8E88B0)),
                   ),
                 ),
               )),
@@ -531,14 +516,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   child: Text(
                     'میان گروهی',
-                    style: TextStyle(
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _mentorSelectedCategoryIndex == 1
+                    style: AppTypography.h2.copyWith(color: _mentorSelectedCategoryIndex == 1
                           ? const Color(0xFFDFB690)
-                          : const Color(0xFF8E88B0),
-                    ),
+                          : const Color(0xFF8E88B0)),
                   ),
                 ),
               )),
@@ -636,13 +616,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.h3,
                       ),
                     ),
 
@@ -660,12 +634,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                         child: Text(
                           statusTag,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: statusColor),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -677,12 +646,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       children: [
                         Text(
                           (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
-                          style: const TextStyle(
-                            color: Color(0xFF9292E2),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w300,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFF9292E2)),
                         ),
                         const SizedBox(width: 4),
                         SvgPicture.asset(
@@ -763,12 +727,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             ),
                             const Text(
                               'ایجاد چالش',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.h2,
                               textAlign: TextAlign.center,
                             ),
                           ],
@@ -826,11 +785,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                     controller: rewardCtrl,
                                     textAlign: TextAlign.center,
                                     keyboardType: TextInputType.number,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontFamily: AppTheme.fontFamily,
-                                      fontSize: 13,
-                                    ),
+                                    style: AppTypography.bodyLarge,
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
                                       isDense: true,
@@ -858,11 +813,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                     child: DropdownButton<String>(
                                       value: selectedAsset,
                                       dropdownColor: const Color(0xFF2C2849),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 12,
-                                      ),
+                                      style: AppTypography.bodyMedium,
                                       icon: const Icon(
                                         Icons.keyboard_arrow_down,
                                         color: AppColors.buttonCancelPurple,
@@ -903,11 +854,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               child: DropdownButton<String>(
                                 value: selectedType,
                                 dropdownColor: const Color(0xFF2C2849),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: AppTheme.fontFamily,
-                                  fontSize: 12.5,
-                                ),
+                                style: AppTypography.bodyMedium,
                                 icon: const Icon(
                                   Icons.keyboard_arrow_down,
                                   color: AppColors.buttonCancelPurple,
@@ -943,11 +890,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             alignment: Alignment.center,
                             child: TextField(
                               controller: titleCtrl,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 13,
-                              ),
+                              style: AppTypography.bodyLarge,
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 isDense: true,
@@ -975,11 +918,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             child: TextField(
                               controller: questionCtrl,
                               maxLines: 2,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontFamily: AppTheme.fontFamily,
-                                fontSize: 12.5,
-                              ),
+                              style: AppTypography.bodyMedium,
                               decoration: const InputDecoration(
                                 border: InputBorder.none,
                                 isDense: true,
@@ -1016,11 +955,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                                         Expanded(
                                           child: TextField(
                                             controller: optionControllers[i],
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: AppTheme.fontFamily,
-                                              fontSize: 12.5,
-                                            ),
+                                            style: AppTypography.bodyMedium,
                                             decoration: const InputDecoration(
                                               border: InputBorder.none,
                                               isDense: true,
@@ -1138,14 +1073,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'ارسال',
-                                style: TextStyle(
-                                  color: AppColors.buttonCancelPurple,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                               ),
                             ),
 
@@ -1155,14 +1085,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'لغو',
-                                style: TextStyle(
-                                  color: AppColors.buttonCancelPurple,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: AppTheme.fontFamily,
-                                ),
+                                style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                               ),
                             ),
                           ],
@@ -1216,12 +1141,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                         const Text(
                           'ایجاد پیام',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.h2,
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -1274,11 +1194,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         alignment: Alignment.center,
                         child: TextField(
                           controller: titleCtrl,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 13,
-                          ),
+                          style: AppTypography.bodyLarge,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             isDense: true,
@@ -1306,11 +1222,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         child: TextField(
                           controller: messageCtrl,
                           maxLines: 3,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 12.5,
-                          ),
+                          style: AppTypography.bodyMedium,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             isDense: true,
@@ -1335,14 +1247,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           ),
-                          child: const Text(
+                          child: Text(
                             'ارسال',
-                            style: TextStyle(
-                              color: AppColors.buttonCancelPurple,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                           ),
                         ),
 
@@ -1352,14 +1259,9 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           ),
-                          child: const Text(
+                          child: Text(
                             'لغو',
-                            style: TextStyle(
-                              color: AppColors.buttonCancelPurple,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                           ),
                         ),
                       ],
@@ -1397,12 +1299,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           ),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFDDD9EE),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
             textAlign: TextAlign.center,
           ),
         ),
@@ -1418,12 +1315,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
   Widget _buildContactDialogValueText(String value) {
     return Text(
       value,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        fontFamily: AppTheme.fontFamily,
-      ),
+      style: AppTypography.h3,
     );
   }
 
@@ -1678,13 +1570,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
+                        style: AppTypography.h3,
                       ),
                     ),
 
@@ -1702,12 +1588,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                         ),
                         child: Text(
                           _stationNumberById[item['stationId']?.toString()]!.toPersianDigits(),
-                          style: const TextStyle(
-                            color: Color(0xFFB9B8F0),
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w300,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFFB9B8F0)),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -1722,12 +1603,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       ),
                       child: Text(
                         statusLabel,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w300,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.caption.copyWith(color: statusColor),
                       ),
                     ),
 
@@ -1739,12 +1615,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                       children: [
                         Text(
                           (item['rewardLabel']?.toString() ?? '+$reward').toPersianDigits(),
-                          style: const TextStyle(
-                            color: Color(0xFF9292E2),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w300,
-                            fontFamily: AppTheme.fontFamily,
-                          ),
+                          style: AppTypography.caption.copyWith(color: Color(0xFF9292E2)),
                         ),
                         const SizedBox(width: 4),
                         SvgPicture.asset(
@@ -1798,13 +1669,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                     Text(
                       desc,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: Color(0xFFD3D0E3),
-                        fontSize: 11.5,
-                        height: 1.55,
-                        fontFamily: AppTheme.fontFamily,
-                        fontFamilyFallback: AppTheme.fontFamilyFallback,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFD3D0E3)),
                     ),
                     const SizedBox(height: 10),
                   ],
@@ -1826,12 +1691,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           Expanded(
                             child: Text(
                               'توضیح راهبر: $feedback',
-                              style: const TextStyle(
-                                color: Color(0xFFFCA5A5),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFFCA5A5)),
                             ),
                           ),
                         ],
@@ -1851,30 +1711,15 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                           children: [
                             Text(
                               'نوع: $typeLabel',
-                              style: const TextStyle(
-                                color: Color(0xFFB8B5CE),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
                             ),
                             Text(
                               'مهلت: ${deadlineLabel.toPersianDigits()}',
-                              style: const TextStyle(
-                                color: Color(0xFFB8B5CE),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w400,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFFB8B5CE)),
                             ),
                             Text(
                               'تاریخ: $dateStr',
-                              style: const TextStyle(
-                                color: Color(0xFF9D99B8),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w400,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
                             ),
                           ],
                         ),
@@ -1906,12 +1751,7 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
                             status == 'rejected'
                                 ? 'اصلاح و ارسال'
                                 : (status == 'new' ? 'شرکت' : 'مشاهده'),
-                            style: const TextStyle(
-                              color: Color(0xFFF4DCC5),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.captionGold,
                           ),
                         ),
                       )),
@@ -1946,23 +1786,13 @@ class _ChallengesScreenState extends State<StudentChallengesScreen> {
           const SizedBox(height: 12),
           const Text(
             'چالشی در این دسته‌بندی وجود ندارد',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.h3,
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'چالش‌های جدید ثبت شده توسط راهبر یا مدیر در این بخش نمایش داده خواهند شد.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF9D99B8),
-              fontSize: 11.5,
-              height: 1.5,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.caption.copyWith(color: Color(0xFF9D99B8)),
           ),
         ],
       ),

@@ -172,12 +172,7 @@ class ContactUsDialog extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFFDDD9EE),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
               textAlign: TextAlign.center,
             ),
           ),
@@ -188,13 +183,7 @@ class ContactUsDialog extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.left,
-              style: const TextStyle(
-                color: AppColors.accentGoldEnd,
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                height: 1.4,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              style: AppTypography.bodyLarge.copyWith(color: AppColors.accentGoldEnd),
             ),
           ),
         ],
@@ -218,14 +207,9 @@ class ContactUsDialog extends StatelessWidget {
               width: 1.1,
             ),
           ),
-          child: const Text(
+          child: Text(
             'لوکیشن:',
-            style: TextStyle(
-              color: Color(0xFFDDD9EE),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFDDD9EE)),
             textAlign: TextAlign.center,
           ),
         ),
@@ -246,19 +230,14 @@ class ContactUsDialog extends StatelessWidget {
                 ),
               ),
               alignment: Alignment.center,
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.location_on_rounded, color: AppColors.accentGoldEnd, size: 18),
                   SizedBox(width: 6),
                   Text(
                     'مشاهده روی نقشه',
-                    style: TextStyle(
-                      color: AppColors.accentGoldEnd,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.bodyMedium.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ],
               ),

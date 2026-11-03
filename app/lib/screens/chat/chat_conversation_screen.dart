@@ -711,7 +711,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           child: Row(children: [
             Icon(icon, color: ChatTheme.ink.withValues(alpha: 0.75), size: 18),
             const SizedBox(width: 10),
-            Text(label, style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(label, style: AppTypography.h3.copyWith(color: ChatTheme.ink)),
           ]),
         ),
       );
@@ -839,7 +839,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         child: Row(children: [
           Icon(closed ? Icons.lock_rounded : Icons.info_outline_rounded, size: 18, color: ChatTheme.feedbackText.withValues(alpha: 0.8)),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(color: ChatTheme.feedbackText, fontFamily: AppTheme.fontFamily, fontSize: 12, height: 1.6))),
+          Expanded(child: Text(text, style: AppTypography.bodyMedium.copyWith(color: ChatTheme.feedbackText))),
         ]),
       ),
     );
@@ -920,7 +920,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   Widget _composer() {
     final context_ = _editing ?? _replyTo;
     final inkSoft = ChatTheme.ink.withValues(alpha: 0.7);
-    final caption = TextStyle(color: inkSoft, fontFamily: AppTheme.fontFamily, fontSize: 12);
+    final caption = AppTypography.bodyMedium.copyWith(color: inkSoft);
     return SafeArea(
       top: false,
       // The emoji panel under the bar already keeps clear of the system bar
@@ -1042,7 +1042,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                       cursorColor: AppColors.buttonCamel,
                       textInputAction: TextInputAction.newline,
                       contextMenuBuilder: _selectionMenu,
-                      style: const TextStyle(color: ChatTheme.ink, fontFamily: AppTheme.fontFamily, fontSize: 14, height: 1.5),
+                      style: AppTypography.bodyLarge.copyWith(color: ChatTheme.ink),
                       decoration: InputDecoration(
                         counterText: '',
                         isDense: true,

@@ -51,13 +51,7 @@ class StationProgressStepper extends StatelessWidget {
         // Stepper Header Title
         Text(
           title ?? 'منزلگاه را انتخاب کنید',
-          style: const TextStyle(
-            color: Color(0xFFEDE8F5),
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            fontFamily: AppTheme.fontFamily,
-            fontFamilyFallback: AppTheme.fontFamilyFallback,
-          ),
+          style: AppTypography.h3.copyWith(color: Color(0xFFEDE8F5)),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -260,14 +254,7 @@ class StationProgressStepper extends StatelessWidget {
         child: const Text(
                   'سرزمین نپا، مقصد نهایی شماست. جایی که گنجبنه‌ی علاء‌الملک زنان و مردان باهوش و سرسخت را به مبارزه با مسیری دشوار فراخوانده است. فراخوانی که در نهایت به میهمانی بزرگی ختم خواهد شد.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    height: 1.9,
-                    fontWeight: FontWeight.w300,
-                    fontFamily: AppTheme.fontFamily,
-                    fontFamilyFallback: AppTheme.fontFamilyFallback,
-                  ),
+                  style: AppTypography.bodyLarge,
                 ),
       ),
     );

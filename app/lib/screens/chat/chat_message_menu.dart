@@ -152,12 +152,7 @@ class _ChatMessageMenu extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       items[i].label,
-                                      style: TextStyle(
-                                        color: items[i].danger ? ChatTheme.danger : ChatTheme.ink,
-                                        fontFamily: AppTheme.fontFamily,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: AppTypography.bodyMedium.copyWith(color: items[i].danger ? ChatTheme.danger : ChatTheme.ink),
                                     ),
                                   ),
                                 ],

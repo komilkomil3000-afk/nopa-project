@@ -420,11 +420,11 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         ChatSendState.sending => Icon(Icons.schedule_rounded, size: 12, color: _mutedColor),
         ChatSendState.failed => GestureDetector(
             onTap: widget.onRetry,
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.refresh_rounded, size: 14, color: ChatTheme.danger),
-                Text(' تلاش دوباره', style: TextStyle(color: ChatTheme.danger, fontFamily: AppTheme.fontFamily, fontSize: 10)),
+                Text(' تلاش دوباره', style: AppTypography.caption.copyWith(color: ChatTheme.danger)),
               ],
             ),
           ),

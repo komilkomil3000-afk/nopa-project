@@ -1,4 +1,5 @@
 import 'package:nopa_app/widgets/tap_expander.dart';
+import 'package:nopa_app/core/theme/app_typography.dart';
 import 'nopa_modal_shell.dart';
 import 'package:flutter/material.dart' hide Text;
 import 'package:nopa_app/widgets/fa_text.dart';
@@ -84,17 +85,17 @@ class JarchiItem extends StatelessWidget {
                     const SizedBox(height: 14),
                     Text(
                       title, 
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'YekanBakh'),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       date, 
-                      style: const TextStyle(color: Colors.white38, fontSize: 10, fontFamily: 'YekanBakh'),
+                      style: AppTypography.caption.copyWith(color: Colors.white38),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       content,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.6, fontFamily: 'YekanBakh'),
+                      style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
                     ),
             ],
           ),
@@ -157,12 +158,7 @@ class JarchiItem extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        fontFamily: 'YekanBakh',
-                      ),
+                      style: AppTypography.h3,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -173,11 +169,7 @@ class JarchiItem extends StatelessWidget {
               // Left: Date info (renders on the leftmost side in RTL)
               Text(
                 date,
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10,
-                  fontFamily: 'YekanBakh',
-                ),
+                style: AppTypography.caption.copyWith(color: Colors.white38),
               ),
             ],
           ),

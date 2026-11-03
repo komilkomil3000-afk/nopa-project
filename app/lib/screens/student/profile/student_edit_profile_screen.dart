@@ -200,12 +200,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                           Text(
                             pickedFileName ?? 'برای انتخاب فایل مدرک یا سند کلیک کنید (PDF / تصویر)',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: pickedFileName != null ? Colors.white : const Color(0xFFC7C5DD),
-                              fontSize: 11.5,
-                              fontWeight: pickedFileName != null ? FontWeight.bold : FontWeight.normal,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.caption.copyWith(color: pickedFileName != null ? Colors.white : const Color(0xFFC7C5DD), fontWeight: pickedFileName != null ? FontWeight.bold : FontWeight.normal),
                           ),
                         ],
                       ),
@@ -469,14 +464,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                               color: Color(0xFFCD8449),
                                             ),
                                           )
-                                        : const Text(
+                                        : Text(
                                             'ثبت تغییرات',
-                                            style: TextStyle(
-                                              color: AppColors.accentGoldEnd,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
+                                            style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                                           ),
                                   ),
                                 ),
@@ -506,14 +496,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                                         width: 1.1,
                                       ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'لغو',
-                                      style: TextStyle(
-                                        color: Color(0xFFB5B0D8),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: AppTheme.fontFamily,
-                                      ),
+                                      style: AppTypography.h3.copyWith(color: Color(0xFFB5B0D8)),
                                     ),
                                   ),
                                 ),
@@ -666,12 +651,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -683,20 +663,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
             readOnly: readOnly || onTap != null,
             onTap: onTap,
             enableInteractiveSelection: !readOnly && onTap == null,
-            style: TextStyle(
-              color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8),
-              fontSize: 13,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyLarge.copyWith(color: readOnly ? const Color(0xFF8E889D) : const Color(0xFFEAE8F8)),
             decoration: InputDecoration(
               isDense: true,
               border: InputBorder.none,
               hintText: hintText,
-              hintStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.25),
-                fontSize: 12.5,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
             ),
           ),
@@ -720,12 +692,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -739,11 +706,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
               Expanded(
                 child: Text(
                   valueText,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -764,12 +727,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: AppColors.accentGoldEnd,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -797,12 +755,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9E9BB8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8)),
           ),
         ),
 
@@ -816,20 +769,12 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 child: TextField(
                   controller: controller,
                   maxLines: maxLines,
-                  style: const TextStyle(
-                    color: Color(0xFFEAE8F8),
-                    fontSize: 13,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                   decoration: InputDecoration(
                     isDense: true,
                     border: InputBorder.none,
                     hintText: hintText,
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.25),
-                      fontSize: 12.5,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                     contentPadding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                 ),
@@ -850,12 +795,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   ),
                   child: Text(
                     buttonLabel,
-                    style: const TextStyle(
-                      color: AppColors.accentGoldEnd,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.caption.copyWith(color: AppColors.accentGoldEnd),
                   ),
                 ),
               )),
@@ -938,7 +878,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                   (i) => Center(
                     child: Text(
                       label(i),
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: AppTheme.fontFamily),
+                      style: AppTypography.bodyLarge,
                     ),
                   ),
                 ),
@@ -954,9 +894,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'تاریخ تولد',
-                      style: TextStyle(color: AppColors.accentGoldEnd, fontSize: 14, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily),
+                      style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
                     ),
                     SizedBox(
                       height: 170,
@@ -1014,12 +954,7 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
         ),
         child: Text(
           label,
-          style: const TextStyle(
-            color: AppColors.accentGoldEnd,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.h3.copyWith(color: AppColors.accentGoldEnd),
         ),
       ),
     ));
@@ -1034,14 +969,9 @@ class _EditProfileScreenState extends State<StudentEditProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'ایجاد / تغییر رمز عبور ثابت',
-                style: TextStyle(
-                  color: AppColors.buttonCamel,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: AppTheme.fontFamily,
-                ),
+                style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1175,12 +1105,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                   // Center Title
                   const Text(
                     'پیام به پشتیبانی',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.h2,
                   ),
                 ],
               ),
@@ -1204,12 +1129,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.requestType,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1234,12 +1154,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     alignment: Alignment.center,
                     child: Text(
                       widget.currentDate,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0)),
                     ),
                   ),
                 ),
@@ -1266,20 +1181,12 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                     child: TextField(
                       controller: _descCtrl,
                       maxLines: 4,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E0F0),
-                        fontSize: 12.5,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.bodyMedium.copyWith(color: Color(0xFFE2E0F0)),
                       decoration: InputDecoration(
                         isDense: true,
                         border: InputBorder.none,
                         hintText: 'ما را در جریان قرار دهید',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          fontSize: 12,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        hintStyle: AppTypography.bodyMedium.copyWith(color: Colors.white.withValues(alpha: 0.25)),
                       ),
                     ),
                   ),
@@ -1303,28 +1210,18 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
                         )
                       : TextButton(
                           onPressed: _submitRequest,
-                          child: const Text(
+                          child: Text(
                             'ارسال',
-                            style: TextStyle(
-                              color: AppColors.buttonCamel,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h3.copyWith(color: AppColors.buttonCamel),
                           ),
                         ),
 
                   // لغو on Left in RTL
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'لغو',
-                      style: TextStyle(
-                        color: AppColors.buttonCancelPurple,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3.copyWith(color: AppColors.buttonCancelPurple),
                     ),
                   ),
                 ],
@@ -1349,12 +1246,7 @@ class _ChangeRequestSupportDialogState extends State<_ChangeRequestSupportDialog
           width: 70,
           child: Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFFB5B0D8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFFB5B0D8)),
           ),
         ),
         const SizedBox(width: 8),
@@ -1484,7 +1376,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
         Padding(
           padding: const EdgeInsets.only(bottom: 6, right: 4),
           child: Text(label,
-              style: const TextStyle(color: Color(0xFF9E9BB8), fontSize: 12, fontFamily: AppTheme.fontFamily)),
+              style: AppTypography.bodyMedium.copyWith(color: Color(0xFF9E9BB8))),
         ),
         Container(
           decoration: BoxDecoration(gradient: AppColors.strokeGradient, borderRadius: BorderRadius.circular(10)),
@@ -1500,7 +1392,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
                     controller: c,
                     obscureText: obscure && !visible,
                     keyboardType: keyboard,
-                    style: const TextStyle(color: Color(0xFFEAE8F8), fontSize: 13, fontFamily: AppTheme.fontFamily),
+                    style: AppTypography.bodyLarge.copyWith(color: Color(0xFFEAE8F8)),
                     decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                   ),
                 ),
@@ -1539,12 +1431,7 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
           child: _busy && primary
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFCD8449)))
               : Text(label,
-                  style: TextStyle(
-                    color: primary ? AppColors.accentGoldEnd : const Color(0xFFB5B0D8),
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  )),
+                  style: AppTypography.h3.copyWith(color: primary ? AppColors.accentGoldEnd : const Color(0xFFB5B0D8))),
         ),
       ),
     );
@@ -1554,9 +1441,9 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
     switch (_step) {
       case _PwStep.choose:
         return [
-          const Text('رمز قبلی خود را به یاد دارید؟',
+          Text('رمز قبلی خود را به یاد دارید؟',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFFE2E0F0), fontSize: 13, fontFamily: AppTheme.fontFamily)),
+              style: AppTypography.bodyLarge.copyWith(color: Color(0xFFE2E0F0))),
           const SizedBox(height: 16),
           _button('بله، یادم هست', () => setState(() {
                 _forgot = false;
@@ -1574,18 +1461,18 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
         ];
       case _PwStep.smsCode:
         return [
-          const Text('کد تایید برای شماره شما پیامک شد',
-              style: TextStyle(color: Color(0xFF9E9BB8), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+          Text('کد تایید برای شماره شما پیامک شد',
+              style: AppTypography.caption.copyWith(color: Color(0xFF9E9BB8))),
           const SizedBox(height: 10),
           _field('کد پیامک‌شده', _codeCtrl, keyboard: TextInputType.number),
           const SizedBox(height: 6),
           TapExpander(
             child: GestureDetector(
               onTap: _busy ? null : _sendSms,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 4, horizontal: 4),
                 child: Text('ارسال دوباره کد',
-                    style: TextStyle(color: AppColors.buttonCamel, fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                    style: AppTypography.caption.copyWith(color: AppColors.buttonCamel)),
               ),
             ),
           ),
@@ -1622,14 +1509,14 @@ class _PasswordChangeDialogState extends State<_PasswordChangeDialog> {
               children: [
                 const Text('تغییر رمز عبور',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                    style: AppTypography.h2),
                 const SizedBox(height: 18),
                 ..._body(),
                 if (_error != null) ...[
                   const SizedBox(height: 10),
                   Text(_error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 11.5, fontFamily: AppTheme.fontFamily)),
+                      style: AppTypography.caption.copyWith(color: Color(0xFFFF8A80))),
                 ],
                 const SizedBox(height: 12),
                 _button('انصراف', () => Navigator.pop(context), primary: false),

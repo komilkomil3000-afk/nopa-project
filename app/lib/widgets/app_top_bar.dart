@@ -57,15 +57,9 @@ class AppTopBar extends StatelessWidget {
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
                       ).createShader(bounds),
-                      child: const Text(
+                      child: Text(
                         'NOPA',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 21,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          fontFamily: AppTheme.logoFontFamily,
-                        ),
+                        style: AppTypography.logo,
                       ),
                     ),
                   ),
@@ -93,7 +87,7 @@ class AppTopBar extends StatelessWidget {
               ],
             ),
 
-            // Right Column: (Row: Notification Bell + Hamburger Menu) + Caravan Name underneath
+            // Right Column: (Row: Notification Bell + Hamburger Menu) 
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
@@ -148,13 +142,7 @@ class AppTopBar extends StatelessWidget {
                                         child: Center(
                                           child: Text(
                                             count > 9 ? '+۹' : count.toPersian(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.bold,
-                                              height: 1,
-                                              fontFamily: AppTheme.fontFamily,
-                                            ),
+                                            style: AppTypography.caption.copyWith(fontSize: 8, fontWeight: FontWeight.bold, height: 1),
                                           ),
                                         ),
                                       ),
@@ -193,27 +181,6 @@ class AppTopBar extends StatelessWidget {
                         ),
                       ),
                   ],
-                ),
-                Consumer<AppRepository>(
-                  builder: (context, repository, _) {
-                    final caravanName = repository.currentUser.caravanName;
-                    if (caravanName == null || caravanName.isEmpty) return const SizedBox.shrink();
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 3, right: 2),
-                      child: Text(
-                        caravanName,
-                        style: TextStyle(
-                          color: const Color(0xFFC7B299).withValues(alpha: 0.85),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: AppTheme.fontFamily,
-                          fontFamilyFallback: AppTheme.fontFamilyFallback,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  },
                 ),
               ],
             ),

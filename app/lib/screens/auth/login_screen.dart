@@ -248,12 +248,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 const SizedBox(height: 14),
                 const Text(
                   'انتخاب کشور و پیش‌شماره',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
+                  style: AppTypography.h2,
                 ),
                 const SizedBox(height: 12),
                 Flexible(
@@ -272,21 +267,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         leading: Text(item.flag, style: const TextStyle(fontSize: 22)),
                         title: Text(
                           item.name,
-                          style: TextStyle(
-                            color: isSelected ? AppColors.accentGoldEnd : Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 14,
-                          ),
+                          style: AppTypography.bodyLarge.copyWith(color: isSelected ? AppColors.accentGoldEnd : Colors.white),
                         ),
                         trailing: Text(
                           item.code,
-                          style: TextStyle(
-                            color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D),
-                            fontWeight: FontWeight.w600,
-                            fontFamily: AppTheme.fontFamily,
-                            fontSize: 14,
-                          ),
+                          style: AppTypography.h3.copyWith(color: isSelected ? AppColors.accentGoldEnd : const Color(0xFF8E889D)),
                         ),
                         onTap: () {
                           setState(() {
@@ -431,23 +416,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           const Text(
                             'تعیین رمز عبور جدید',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.h2,
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'برای ورود به برنامه ابتدا یک رمز عبور ثابت جدید تعیین کنید. دفعات بعد می‌توانید با همین رمز وارد شوید.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12.5,
-                              height: 1.5,
-                              fontFamily: AppTheme.fontFamily,
-                            ),
+                            style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
                           ),
                           const SizedBox(height: 18),
                           TextField(
@@ -476,11 +451,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             const SizedBox(height: 10),
                             Text(
                               errorText!,
-                              style: const TextStyle(
-                                color: Colors.redAccent,
-                                fontSize: 12,
-                                fontFamily: AppTheme.fontFamily,
-                              ),
+                              style: AppTypography.bodyMedium.copyWith(color: Colors.redAccent),
                             ),
                           ],
                           const SizedBox(height: 18),
@@ -501,12 +472,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                       )
                                     : const Text(
                                         'ثبت رمز و ورود',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: AppTheme.fontFamily,
-                                        ),
+                                        style: AppTypography.h3,
                                       ),
                               ),
                             ),
@@ -640,23 +606,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   const Text(
                     'انتخاب نقش ورود به سامانه',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.h2,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${user.name} عزیز، شما دارای دسترسی چندگانه هستید. مایلید با کدام نقش وارد شوید؟',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      height: 1.5,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.bodyLarge.copyWith(color: Colors.white70),
                   ),
                   const SizedBox(height: 22),
                   _buildRoleCard(
@@ -730,22 +686,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.h3,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        height: 1.3,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                      style: AppTypography.caption.copyWith(color: Colors.white60),
                     ),
                   ],
                 ),
@@ -767,7 +713,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('انتخاب حساب کاربری', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+              const Text('انتخاب حساب کاربری', style: AppTypography.h2),
               const SizedBox(height: 16),
               ...profiles.map((profile) {
                 return Card(
@@ -940,17 +886,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   const SizedBox(height: 14),
 
                   // Persian Poetry Subtitle
-                  const Text(
+                  Text(
                     'گر چه راهیست پر از بیم ز ما تا بر دوست\nرفتن آسان بود ار واقف منزل باشی',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFFC7B299),
-                      fontSize: 11.2,
-                      height: 1.55,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: AppTheme.fontFamily,
-                      fontFamilyFallback: AppTheme.fontFamilyFallback,
-                    ),
+                    style: AppTypography.caption.copyWith(color: Color(0xFFC7B299)),
                   ),
                 ],
               ),
@@ -1007,16 +946,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               keyboardType: TextInputType.phone,
               textDirection: TextDirection.ltr,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.0,
-              ),
-              decoration: const InputDecoration(
+              style: AppTypography.h2.copyWith(letterSpacing: 1.0),
+              decoration: InputDecoration(
                 hintText: '9123456789',
-                hintStyle: TextStyle(color: Colors.white24, fontFamily: AppTheme.fontFamily, fontSize: 14.5),
+                hintStyle: AppTypography.bodyLarge.copyWith(color: Colors.white24),
                 border: InputBorder.none,
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
@@ -1042,12 +975,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 children: [
                   Text(
                     _selectedCountry.code,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: AppTheme.fontFamily,
-                    ),
+                    style: AppTypography.h3,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -1101,12 +1029,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               )
             : Text(
                 buttonLabel,
-                style: TextStyle(
-                  color: isTimerActive ? const Color(0xFFC7B299) : AppColors.accentGoldEnd,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 11.5,
-                ),
+                style: AppTypography.caption.copyWith(color: isTimerActive ? const Color(0xFFC7B299) : AppColors.accentGoldEnd),
               ),
       ),
     ));
@@ -1133,12 +1056,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               keyboardType: isOtp ? TextInputType.number : TextInputType.text,
               textDirection: isOtp ? TextDirection.ltr : TextDirection.rtl,
               textAlign: isOtp ? TextAlign.right : TextAlign.right,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTypography.bodyLarge,
               decoration: const InputDecoration(
                 hintText: '', // No three dots or bullets
                 border: InputBorder.none,
@@ -1174,16 +1092,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // 1. Phone Label
-        const Align(
+        Align(
           alignment: Alignment.centerRight,
           child: Text(
             'شماره همراه خود را وارد کنید',
-            style: TextStyle(
-              color: Color(0xFF8E889D),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF8E889D)),
           ),
         ),
         const SizedBox(height: 8),
@@ -1196,12 +1109,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           alignment: Alignment.centerRight,
           child: Text(
             isOtp ? 'کد تایید پیامک‌شده را وارد کنید' : 'رمز خود را وارد کنید',
-            style: const TextStyle(
-              color: Color(0xFF8E889D),
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              fontFamily: AppTheme.fontFamily,
-            ),
+            style: AppTypography.bodyMedium.copyWith(color: Color(0xFF8E889D)),
           ),
         ),
         const SizedBox(height: 8),
@@ -1220,12 +1128,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             },
             child: Text(
               isOtp ? 'بازگشت به ورود با رمز عبور' : 'رمز عبور را فراموش کرده‌ام (ورود با کد پیامکی)',
-              style: const TextStyle(
-                color: AppColors.accentGoldEnd,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                fontFamily: AppTheme.fontFamily,
-              ),
+              style: AppTypography.bodyLarge.copyWith(color: AppColors.accentGoldEnd),
             ),
           )),
         ),
@@ -1252,12 +1155,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       )
                     : const Text(
                         'تایید و ورود',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: AppTheme.fontFamily,
-                        ),
+                        style: AppTypography.h3,
                       ),
               ),
             ),
@@ -1271,24 +1169,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget _buildBottomFooter() {
     return Column(
       children: [
-        const Text(
+        Text(
           'پویش خانواده انقلابی',
-          style: TextStyle(
-            color: Color(0xFFC7B299),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.bodyLarge.copyWith(color: Color(0xFFC7B299)),
         ),
         const SizedBox(height: 4),
         Text(
           'komeil 1.01.01',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.35),
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-            fontFamily: AppTheme.fontFamily,
-          ),
+          style: AppTypography.caption.copyWith(color: Colors.white.withValues(alpha: 0.35)),
         ),
       ],
     );
@@ -1319,7 +1207,7 @@ class _SessionLoading extends StatelessWidget {
           const SizedBox(height: 18),
           const Text(
             'در حال ورود به نپا',
-            style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+            style: AppTypography.bodyLarge,
           ),
         ],
       ),
