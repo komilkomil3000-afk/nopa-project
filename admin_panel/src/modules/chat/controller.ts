@@ -20,7 +20,8 @@ import {
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const DAILY_UPLOAD_BYTES = 200 * 1024 * 1024;
-fs.mkdirSync(CHAT_FILES_DIR, { recursive: true });
+// Private folder: only the server's own user may read it (files are chmod 600 after upload)
+fs.mkdirSync(CHAT_FILES_DIR, { recursive: true, mode: 0o700 });
 
 export const chatUpload = multer({
   storage: multer.diskStorage({
@@ -344,7 +345,8 @@ export const uploadFile = handler(async (req, res, actor) => {
   if (!file) throw new ChatError(400, 'فایلی ارسال نشده است');
   try {
     const { space } = await requireSpace(actor, String(req.body?.spaceId || ''));
-    const day = new Date(Date.now() - 24 * 3600 * 1000);
+    fs.chmod(file.path, 0o600, () => undefined);
+    const day =new Date(Date.now() - 24 * 3600 * 1000);
     const used = await prisma.chatAttachment.aggregate({ where: { uploaderId: actor.id, createdAt: { gte: day } }, _sum: { size: true } });
     if ((used._sum.size || 0) + file.size > DAILY_UPLOAD_BYTES) throw new ChatError(400, 'سهمیه‌ی ارسال فایل امروز شما تمام شده است');
     const attachment = await prisma.chatAttachment.create({
@@ -377,6 +379,10 @@ export async function serveFile(req: AuthRequest, res: Response) {
     const inline = attachment.kind !== 'file';
     res.setHeader('Content-Type', attachment.mime);
     res.setHeader('Cache-Control', 'private, max-age=3600');
+    // User content must never run as active content on our origin, whatever its bytes look like
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(attachment.name)}`);
     res.sendFile(path.basename(attachment.storageKey), { root: path.resolve(CHAT_FILES_DIR) });
   } catch (e) {

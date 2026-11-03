@@ -4413,3 +4413,19 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze (lib/screens/chat, market, services, models) no issues; npx tsc --noEmit in admin_panel no errors; not run on device
 - **Status:** Completed
+
+### [2026-11-03 18:28] - Claude Code (Integration & Sync Auditor)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** admin_panel, docs
+- **Files Modified / Created / Deleted:**
+  - `admin_panel/src/modules/chat/controller.ts` (Modified)
+  - `admin_panel/deploy/backup.sh` (Created)
+  - `admin_panel/docs/BACKUP_AND_PRIVACY.md` (Created)
+- **Description of Changes:**
+  - Chat files folder created with mode 700 and each upload chmod 600
+  - chat file responses now send nosniff, sandbox CSP and no-referrer headers
+  - added deploy/backup.sh (nightly pg_dump + chat-files + uploads + .env, gpg encryption, off-site copy, retention, dump sanity check)
+  - added docs/BACKUP_AND_PRIVACY.md (storage map, server hardening checklist, restore steps). Files: admin_panel/src/modules/chat/controller.ts (Modified), admin_panel/deploy/backup.sh (Created), admin_panel/docs/BACKUP_AND_PRIVACY.md (Created)
+- **Verification / Checkpoints Executed:**
+  - npx tsc --noEmit in admin_panel (clean); bash -n deploy/backup.sh (ok); backup script not run against a real DB
+- **Status:** Completed
