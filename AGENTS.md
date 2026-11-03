@@ -54,6 +54,17 @@ node scripts/append_agent_changelog.js --role "<Your Role>" --component "<Compon
 
 ---
 
+## 1b. Server-Side Requirements Rule
+
+> [!IMPORTANT]
+> **CRITICAL RULE 2: KEEP `admin_panel/docs/SERVER_CHECKLIST.md` CURRENT**
+> If a change you make needs anything to be done or checked **on the server** (or must be remembered when running or migrating a server), you **MUST** update [`admin_panel/docs/SERVER_CHECKLIST.md`](admin_panel/docs/SERVER_CHECKLIST.md) in the same turn, and tell the user in your final message exactly what they must do on the server.
+>
+> Triggers: a new/changed env variable (also add it to the server's `~/nopa.env`), a new persistent folder or file on disk (also add it to `deploy/backup.sh`), a new port/domain/nginx rule/WebSocket need, a new cron job or external service, a Prisma migration, a change to `deploy/` scripts, or any new secret.
+> Update the inventory table (section 1), the relevant migration checklist (sections 2/3) and the periodic tasks (section 4) as needed. If the change affects backup or privacy, update `admin_panel/docs/BACKUP_AND_PRIVACY.md` too.
+
+---
+
 ## 2. Agent Roles and Architecture References
 Refer to [`AGENT_ROLES.md`](file:///c:/Users/komeil/Projects/nopa_app/AGENT_ROLES.md) for details on specialized responsibilities:
 - **Agent 1 (CRM & Analytics Specialist):** Admin UI, mentor queues, CSV/Excel export.

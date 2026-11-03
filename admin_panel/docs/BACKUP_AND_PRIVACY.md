@@ -22,27 +22,61 @@
 ## بکاپ
 اسکریپت [`deploy/backup.sh`](../deploy/backup.sh) هر شب این‌ها را در یک آرشیو می‌گذارد: دیتابیس (pg_dump)، فایل‌های چت، `uploads/` و `.env`.
 
-نصب روی سرور بک‌اند:
+نصب روی سرور بک‌اند (قدم‌به‌قدم؛ فرض: دیتابیس روی سرور جدا و بک‌اند روی سرور دیگر است):
+
+**۱. کد را deploy کنید** تا `deploy/backup.sh` روی سرور برسد (همان `git push` معمول به ریموت سرور).
+
+**۲. ابزارها**
 ```bash
-chmod +x ~/nopa/deploy/backup.sh
-mkdir -p ~/backups
+sudo apt install -y postgresql-client gnupg rsync
+pg_dump --version      # باید >= نسخه‌ی PostgreSQL سرور دیتابیس باشد (روی سرور دیتابیس: docker exec supabase-db psql -V)
+```
 
-# کلید رمزنگاری بکاپ (یک‌بار). کلید خصوصی را خارج از سرور نگه دارید!
-gpg --quick-generate-key "nopa-backup" default default never
-# یا ساده‌تر: یک پسورد در فایل
+**۳. مسیر داده‌ی چت بیرون از پوشه‌ی deploy**
+```bash
+mkdir -p ~/nopa-data/chat-files && chmod 700 ~/nopa-data/chat-files
+echo 'CHAT_FILES_DIR=/home/ubuntu/nopa-data/chat-files' >> ~/nopa.env
+# اگر فایل چت قبلی در ~/nopa/chat-files هست آن را منتقل کنید:
+[ -d ~/nopa/chat-files ] && cp -a ~/nopa/chat-files/. ~/nopa-data/chat-files/
+cp ~/nopa.env ~/nopa/.env && pm2 restart nopa --update-env
+```
+
+**۴. پسورد رمزنگاری بکاپ**
+```bash
 openssl rand -base64 32 > ~/.backup-pass && chmod 600 ~/.backup-pass
+cat ~/.backup-pass     # همین را در password manager بگذارید (خارج از سرور)
+```
 
-# ~/backup.env
+**۵. فایل تنظیم `~/backup.env`** (`TENANT` و `PASSWORD` را از `DIRECT_URL` داخل `~/nopa.env` بردارید)
+```bash
 cat > ~/backup.env <<'EOF'
-BACKUP_PASSPHRASE_FILE=/home/ubuntu/.backup-pass     # یا BACKUP_GPG_RECIPIENT=nopa-backup
-OFFSITE_TARGET=backup@OTHER_SERVER:/srv/nopa-backups/ # یا rclone:remote:nopa
+BACKUP_PASSPHRASE_FILE=/home/ubuntu/.backup-pass
+CHAT_FILES_DIR=/home/ubuntu/nopa-data/chat-files
 KEEP_DAYS=14
-CHAT_FILES_DIR=/home/ubuntu/nopa/chat-files           # همان مقدار .env
+DATABASE_URL="postgresql://postgres.TENANT:PASSWORD@db.nopa-app.ir:5432/postgres"
+OFFSITE_TARGET=backup@OTHER_SERVER:/srv/nopa-backups/
 EOF
+chmod 600 ~/backup.env
+```
+- `DATABASE_URL` اینجا **باید** اتصال مستقیم (پورت 5432، بدون `pgbouncer`) باشد؛ پورت 6543 برای pg_dump کار نمی‌کند. چون دیتابیس روی سرور دیگری است، `docker exec` اسکریپت روی این سرور کاربرد ندارد.
+- برای `OFFSITE_TARGET` با rsync، کلید SSH سرور بک‌اند باید روی ماشین مقصد در `authorized_keys` باشد و یک‌بار دستی `ssh backup@OTHER_SERVER` بزنید تا host key تأیید شود. به‌جایش می‌شود `rclone:remote:nopa` گذاشت.
 
+**۶. اجرای دستی و بررسی**
+```bash
+chmod +x ~/nopa/deploy/backup.sh && mkdir -p ~/backups
+~/nopa/deploy/backup.sh
+ls -lh ~/backups       # باید nopa_*.tar.gpg و .sha256 باشد و در خروجی WARNING نباشد
+ssh backup@OTHER_SERVER ls -lh /srv/nopa-backups/    # فایل باید آنجا هم باشد
+```
+
+**۷. زمان‌بندی شبانه**
+```bash
 crontab -e
 # 30 3 * * * /home/ubuntu/nopa/deploy/backup.sh >> /home/ubuntu/backups/backup.log 2>&1
 ```
+اگر قبلاً کرون ساده‌ی `pg_dump` از بخش ۱۰ `SUPABASE_SELF_HOST.md` را روی سرور دیتابیس گذاشته‌اید، می‌توانید به‌عنوان بکاپ دوم نگهش دارید.
+
+**۸. همان لحظه یک بازیابی تمرینی** انجام دهید (بخش «بازیابی» پایین).
 نکته‌ها:
 - بکاپی که فقط روی همان سرور است با خود سرور از بین می‌رود. `OFFSITE_TARGET` را حتماً به ماشین یا فضای دیگری تنظیم کنید.
 - پسورد/کلید رمزگشایی را جدا از بکاپ نگه دارید (مثلاً در password manager). بدون آن بکاپ بی‌فایده است.
@@ -59,3 +93,11 @@ chmod 700 $CHAT_FILES_DIR && chmod 600 $CHAT_FILES_DIR/*
 pm2 restart nopa-backend
 ```
 هر چند ماه یک بار بازیابی را روی یک سرور تست انجام دهید؛ بکاپ تست‌نشده بکاپ نیست.
+
+## بعد از نصب، هر چند وقت باید کاری کرد؟
+نصب یک‌باره است و بکاپ خودکار اجرا می‌شود، ولی بدون نگاه‌کردن گاه‌به‌گاه، خراب‌شدن بی‌صدای آن را نمی‌فهمید:
+- **هفتگی (۲ دقیقه):** `tail -n 5 ~/backups/backup.log` باید `backup done` با تاریخ دیشب نشان دهد؛ حجم فایل منطقی باشد و روی ماشین مقصد هم فایل جدید باشد.
+- **ماهانه:** `df -h` روی هر دو سرور (پر نشدن دیسک) و `sudo apt update && sudo apt upgrade`.
+- **هر ۳ تا ۶ ماه:** بازیابی کامل روی سرور تست.
+- **هر بار سرور، آدرس مقصد، پسورد DB یا دامنه عوض شد:** چک‌لیست [`SERVER_CHECKLIST.md`](SERVER_CHECKLIST.md).
+- **هشدار خودکار (اختیاری):** آخر `backup.sh` یک `curl` به سرویس مانیتورینگ ساده (healthchecks.io یا ربات تلگرام) اضافه کنید تا نرسیدن بکاپ خبر شود.
