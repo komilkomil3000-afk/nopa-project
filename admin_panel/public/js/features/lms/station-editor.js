@@ -130,6 +130,7 @@
         case 'stayDuration': return st.stayDuration || '';
         case 'description': return st.description || '';
         case 'iconUrl': return st.iconUrl || '';
+        case 'orderIndex': return String(st.orderIndex ?? '');
         case 'gallery': return JSON.stringify(normGallery(lmsStationGallery(st)));
         default: return undefined;
       }
@@ -311,6 +312,12 @@
       ED.edits = {};
       ED.sel = null;
     }
+    if (!same) {
+      const saved = NopaDrafts.load(`station:${st.id}`);
+      if (saved && saved.data && saved.data.edits && Object.keys(saved.data.edits).length) {
+        if ((await NopaDrafts.offerResume(`station:${st.id}`, 'پیش‌نویس تغییرات این منزلگاه')) === 'resume') ED.edits = saved.data.edits;
+      }
+    }
     ED.tab = opts.tab || (same ? ED.tab : 'info');
     if (opts.focus) ED.sel = resolveFocus(st, opts.focus);
     window.currentActiveContentStationId = st.id;
@@ -344,7 +351,7 @@
     return window.lmsOpenStationEditor(stationId, { tab: 'content', focus: f });
   };
 
-  window.openCreateStationModal = async function() {
+  window.openCreateStationModal = async function(resume) {
     if (isOpen() && isDirty()) {
       if (!(await NopaConfirm('تغییرات ذخیره‌نشده این پنجره از بین می‌رود. ادامه می‌دهید؟', { okText: 'ادامه بدون ذخیره', danger: true }))) return;
     }
@@ -364,21 +371,59 @@
     };
     ED.draftStart = JSON.stringify(ED.draft);
     window.currentActiveContentStationId = null;
+    const saved = NopaDrafts.load('station:new');
+    if (saved && saved.data && saved.data.draft) {
+      const ok = resume === true || (await NopaDrafts.offerResume('station:new', 'پیش‌نویس منزلگاه')) === 'resume';
+      if (ok) {
+        ED.draft = saved.data.draft;
+        ED.step = Math.min(saved.data.step || 0, STEPS.length - 1);
+        ED.maxStep = Math.max(saved.data.maxStep || 0, ED.step);
+      }
+    }
     show();
     render();
     document.getElementById('lse-st-title')?.focus();
   };
   window.openStationCreatorModal = window.openCreateStationModal;
 
+  const draftKey = () => (ED.mode === 'create' ? 'station:new' : `station:${ED.stationId}`);
+  const refreshDraftChip = () => {
+    const show = NopaDrafts.has('station:new') ? '' : 'none';
+    ['lms-draft-chip', 'lms-draft-del'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show; });
+  };
+  window.lmsRefreshDraftChip = refreshDraftChip;
+  document.addEventListener('nopa-drafts', refreshDraftChip);
+  refreshDraftChip();
+
+  window.lmsDeleteDraft = async function() {
+    if (!(await NopaConfirm('پیش‌نویس منزلگاه حذف شود؟ این کار قابل بازگشت نیست.', { okText: 'حذف پیش‌نویس', danger: true }))) return;
+    NopaDrafts.remove('station:new');
+    showToast('پیش‌نویس حذف شد.', 'success');
+  };
+
   window.lmsEditorClose = async function() {
     if (ED.saving) return;
     if (isDirty()) {
-      const msg = ED.mode === 'create'
-        ? 'منزلگاه هنوز ایجاد نشده است. اطلاعات واردشده از بین می‌رود؛ پنجره بسته شود؟'
-        : `${lmsFaDigits(dirtyCount())} تغییر هنوز ذخیره نشده است و از بین می‌رود. پنجره بسته شود؟`;
-      if (!(await NopaConfirm(msg, { okText: 'بستن بدون ذخیره', cancelText: 'ادامه ویرایش', danger: true }))) return;
+      const choice = await NopaDrafts.askOnClose({
+        what: ED.mode === 'create' ? 'این منزلگاه' : `${lmsFaDigits(dirtyCount())} تغییر این منزلگاه`,
+        isNew: ED.mode === 'create'
+      });
+      if (choice === 'stay') return;
+      if (choice === 'save') {
+        const payload = ED.mode === 'create' ? { draft: ED.draft, step: ED.step, maxStep: ED.maxStep } : { edits: ED.edits };
+        if (NopaDrafts.save(draftKey(), payload)) showToast('پیش‌نویس ذخیره شد؛ بعداً می‌توانید ادامه دهید.', 'success');
+        else showToast('ذخیره پیش‌نویس در این مرورگر ممکن نشد.', 'error');
+      } else {
+        NopaDrafts.remove(draftKey());
+      }
     }
     hide();
+    refreshDraftChip();
+  };
+
+  // "ادامه پیش‌نویس منزلگاه" on the stations page
+  window.lmsResumeDraft = async function() {
+    await window.openCreateStationModal(true);
   };
 
   // Redraw after the station list reloaded (structural actions, quizzes, drag and drop); the draft is kept
@@ -410,7 +455,9 @@
       return nums.length ? Math.max(...nums) + 1 : 1;
     }
     const st = station();
-    return st ? (st.orderIndex ?? 1) : 1;
+    if (!st) return 1;
+    const typed = parseInt(val('station.orderIndex'), 10);
+    return Number.isFinite(typed) && typed >= 0 ? typed : (st.orderIndex ?? 1);
   }
 
   function previewImage() {
@@ -521,9 +568,9 @@
     });
   }
 
-  function upload(targetId, label = 'آپلود') {
+  function upload(targetId, label = 'آپلود', accept = 'image/*') {
     return `<label class="lse-btn lse-upload" title="آپلود فایل"><i class="fa-solid fa-cloud-arrow-up"></i> ${label}
-      <input type="file" accept="image/*" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${args('$this', targetId)}"></label>`;
+      <input type="file" accept="${accept}" data-style="display:none;" data-change="handleDirectFileUpload" data-change-args="${args('$this', targetId)}"></label>`;
   }
 
   // The app's home-screen card, live
@@ -581,7 +628,12 @@
             <span>معرفی، داستان و سرفصل‌ها</span>
             <textarea class="input-ctrl" rows="6" data-f="station.description" placeholder="توضیحات، داستان و اهداف این منزلگاه...">${esc(field('description'))}</textarea>
           </label>
-          <p class="lse-hint"><i class="fa-solid fa-hashtag"></i> شماره منزلگاه خودکار است؛ ترتیب را با کشیدن کارت‌ها در صفحه منزلگاه‌ها تغییر دهید.</p>
+          ${ED.mode === 'edit' ? `
+          <label class="lse-field">
+            <span><i class="fa-solid fa-hashtag"></i> عدد نمایشی منزلگاه <small>در اپ و سایت نمایش داده می‌شود؛ منزلگاه‌های دیگر به‌ترتیب پشت سر آن شماره‌گذاری می‌شوند</small></span>
+            <input type="number" class="input-ctrl" dir="ltr" min="0" step="1" data-f="station.orderIndex" value="${esc(field('orderIndex'))}" placeholder="مثال: 0">
+          </label>` : ''}
+          <p class="lse-hint"><i class="fa-solid fa-hashtag"></i> با کشیدن کارت‌ها در صفحه منزلگاه‌ها ترتیب عوض می‌شود و شماره‌ها خودکار مرتب می‌شوند (اولین منزلگاه شماره خودش را نگه می‌دارد).</p>
         </section>
       </div>`;
   }
@@ -873,6 +925,19 @@
           <span>مشخصات جلسه <small>در تب «مشخصات جلسه» صفحه کلاس‌های اپلیکیشن</small></span>
           <textarea class="input-ctrl" rows="3" data-f="sess.${id}.description" placeholder="توضیحات، اهداف و سرفصل‌های این جلسه...">${esc(val(`sess.${sess.id}.description`))}</textarea>
         </label>
+        <div class="lse-grid lse-grid-2">
+          <label class="lse-field">
+            <span><i class="fa-solid fa-file-pdf"></i> عنوان جزوه</span>
+            <input type="text" class="input-ctrl" data-f="sess.${id}.handoutTitle" value="${esc(val(`sess.${sess.id}.handoutTitle`))}" placeholder="مثال: جزوه جلسه اول">
+          </label>
+          <label class="lse-field">
+            <span>فایل جزوه <small>در تب «مشخصات جلسه» اپ قابل دانلود است</small></span>
+            <span class="lse-inline">
+              <input type="text" id="lse-handout-${id}" class="input-ctrl" dir="ltr" data-f="sess.${id}.handoutUrl" value="${esc(val(`sess.${sess.id}.handoutUrl`))}" placeholder="https://... یا /uploads/...">
+              ${upload(`lse-handout-${id}`, 'آپلود', '.pdf,.doc,.docx,.ppt,.pptx,image/*')}
+            </span>
+          </label>
+        </div>
       </section>
 
       <div class="lse-section-head">
@@ -1165,7 +1230,9 @@
         return;
       }
       ED.saving = false;
+      NopaDrafts.remove('station:new');
       hide();
+      refreshDraftChip();
       showToast(`«${payload.title}» ایجاد شد.`, 'success');
       await window.fetchLiveLmsStations();
       const newId = data && data.data && data.data.id;
@@ -1202,7 +1269,7 @@
     if (keys.some(k => k.startsWith('station.'))) {
       const body = {
         id: st.id,
-        orderIndex: st.orderIndex,
+        orderIndex: Math.max(0, parseInt(val('station.orderIndex'), 10) || 0),
         title: val('station.title').trim(),
         description: val('station.description'),
         releaseDate: val('station.releaseDate'),
@@ -1259,6 +1326,7 @@
     ED.saving = false;
     if (!failed.length) {
       ED.edits = {};
+      NopaDrafts.remove(`station:${st.id}`);
       showToast(`${lmsFaDigits(saved)} تغییر ذخیره شد.`, 'success');
     } else {
       // what was saved now equals the fresh data and drops out of the draft; the rest stays for another try
@@ -1295,3 +1363,4 @@
     }
   }, true);
 })();
+

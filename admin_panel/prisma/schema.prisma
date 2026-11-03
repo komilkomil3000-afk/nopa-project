@@ -509,6 +509,8 @@ model ClassSession {
   instructor        String?
   sessionDate       String?  // Shamsi date: e.g. "1405/07/02"
   sessionTime       String?  // Class time interval: e.g. "۱۸:۰۰ الی ۱۹:۳۰"
+  handoutUrl        String?  // Session notes (جزوه) file link, shown in the app's "مشخصات جلسه" tab
+  handoutTitle      String?
   minWatchThreshold Float    @default(70.0)
   minPassScore      Int      @default(0)
   maxZarikReward    Int      @default(0)
@@ -1189,4 +1191,19 @@ model TopicInsight {
   createdAt DateTime @default(now())
 
   topic ChatTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
+/// Unfinished challenge / station forms an admin saved to finish later (one row per admin, kind and item;
+/// key is "new" for a form that has not been created yet, else the id of the item being edited).
+model AdminDraft {
+  id        String   @id @default(uuid())
+  ownerId   String
+  kind      String
+  key       String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, kind, key])
+  @@index([ownerId, kind])
 }
