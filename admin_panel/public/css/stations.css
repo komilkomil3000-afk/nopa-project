@@ -1948,3 +1948,32 @@ body.lse-open #nopa-toast-container { bottom: 92px; }
 .chl-board-pts { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; line-height: 1.3; }
 .chl-board-pts b { font-size: var(--text-sm, 0.9rem); color: var(--primary-text); }
 .chl-board-pts small { font-size: 9.5px; color: var(--text-muted); }
+
+/* Parts of the open session in the editor's side list (dragged by their grip; the detail shows one part at a time) */
+.lse-tree-clips { display: flex; flex-direction: column; gap: 2px; margin: 2px 0 4px; padding-inline-start: 22px; border-inline-start: 2px solid rgb(var(--primary-rgb) / 0.25); margin-inline-start: 14px; }
+.lse-tree-clip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lse-tree-clip:hover, .lse-tree-clip:focus-visible { background: rgb(var(--fg-rgb) / 0.05); outline: none; }
+.lse-tree-clip.is-active { background: rgb(var(--primary-rgb) / 0.12); }
+.lse-tree-clip.is-active .lse-tree-num { background: var(--text); color: var(--bg); }
+.lse-tree-clip-grip { flex: 0 0 auto; width: 12px; display: inline-flex; justify-content: center; font-size: 0.7rem; opacity: 0; }
+.lse-tree-clip:hover .lse-tree-clip-grip, .lse-tree-clip:focus-visible .lse-tree-clip-grip { opacity: 1; }
+.lse-tree-clip-add .lse-tree-num { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-muted); }
+.lse-tree-clip-add .lse-tree-text strong { color: var(--text-muted); font-weight: 600; }
+.lse-tree-clip .lse-dot { margin-inline-start: auto; }
+.lse-tree-clip.is-drag-source { visibility: hidden; }
+.lms-drag-ghost-clip .lse-tree-clip-grip { opacity: 1; }
+/* a session or category being dragged: the part lists fold away so the rows can pass each other */
+body.lms-dragging:not(:has(.lms-drag-ghost-clip)) .lse-tree-clips { display: none; }

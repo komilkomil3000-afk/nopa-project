@@ -7,7 +7,7 @@
 //   In the station editor (js/features/lms/station-editor.js):
 //   - sessions in the side list, also into another category   (.lse-tree-row[data-session-id] in .lse-tree-group[data-cat-id])
 //   - categories in the side list, by their header            (.lse-tree-group[data-cat-id] in .lse-tree)
-//   - video parts of the selected session                     (.lcm-clip[data-clip-id] in .lcm-clips[data-session-id])
+//   - video parts of the open session, in the side list        (.lse-tree-clip[data-clip-id] in .lse-tree-clips[data-session-id])
 //   - gallery pictures (draft only, saved with the editor)    (.lse-gitem[data-gi] in .lse-gallery)
 //   - the wizard's new categories (draft only)                (.lse-newcat[data-ni] in .lse-newcats)
 //   - questions in the challenge editor (draft only)           (.chl-qrow[data-qid] in .chl-qindex)
@@ -263,19 +263,21 @@ window.lmsSaveInBackground = async function(requests, okMessage, errMessage, onF
       commit: (item, notch, _to, sortable) => saveStationOrder(sortable.items(notch).map(c => c.getAttribute('data-station-id')))
     },
     {
+      // parts of a session, in the station editor's side list (the detail shows one part at a time)
       name: 'clip',
       mode: 'list',
-      match(e) {
-        const grip = e.target.closest('#lms-station-editor-modal .lcm-clip-grip');
-        return grip ? grip.closest('.lcm-clip[data-clip-id]') : null;
-      },
+      match: e => pickItem(e, '#lms-station-editor-modal .lse-tree-clip[data-clip-id]', '.lse-tree-clip-grip'),
       containers: item => [item.parentElement],
-      items: list => Array.from(list.querySelectorAll(':scope > .lcm-clip[data-clip-id]')),
-      anchor: () => null,
-      scroller: item => item.closest('.lse-detail'),
+      items: list => Array.from(list.querySelectorAll(':scope > .lse-tree-clip[data-clip-id]')),
+      anchor: list => list.querySelector(':scope > .lse-tree-clip-add'),
+      scroller: item => item.closest('.lse-tree'),
       // the station editor is drawn from the data; a cancelled drag redraws it
       refresh: editorRefresh,
-      commit: (item, list, _to, sortable) => saveClipOrder(list, sortable)
+      commit: (item, list, _to, sortable) => {
+        const saved = saveClipOrder(list, sortable);
+        if (saved) editorRefresh();
+        return saved;
+      }
     },
     {
       name: 'editor-session',
