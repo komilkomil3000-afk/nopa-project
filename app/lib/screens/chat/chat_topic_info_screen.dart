@@ -206,6 +206,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('اعتراض به نتیجه', style: ChatTheme.title),
           content: TextField(controller: controller, maxLines: 3, maxLength: 500, style: ChatTheme.body, decoration: chatField('دلیل اعتراض')),
           actions: [ChatButton(label: 'ثبت', onPressed: () => Navigator.pop(ctx, controller.text))],
@@ -286,9 +287,9 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
           Row(
             children: [
               Text('کلاف نهایی', style: ChatTheme.caption),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value <= 0 ? null : () => setState(() => _finals[id] = value - 1), icon: const Icon(Icons.remove_circle_outline, color: ChatTheme.accent, size: 20)),
+              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value <= 0 ? null : () => setState(() => _finals[id] = value - 1), icon: const Icon(Icons.remove_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
               Text('$value', style: ChatTheme.title),
-              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value >= max ? null : () => setState(() => _finals[id] = value + 1), icon: const Icon(Icons.add_circle_outline, color: ChatTheme.accent, size: 20)),
+              IconButton(visualDensity: VisualDensity.compact, onPressed: paid || value >= max ? null : () => setState(() => _finals[id] = value + 1), icon: const Icon(Icons.add_circle_outline_rounded, color: ChatTheme.accent, size: 20)),
               if (paid) ...[const Spacer(), ChatButton(label: 'اصلاح', primary: false, onPressed: () => _correct(id, value))],
             ],
           ),
@@ -307,6 +308,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text(accept ? 'پذیرش اعتراض' : 'رد اعتراض', style: ChatTheme.title),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             if (accept) ...[
@@ -338,6 +340,7 @@ class _ChatTopicInfoScreenState extends State<ChatTopicInfoScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('اصلاح نتیجه', style: ChatTheme.title),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(controller: amount, keyboardType: TextInputType.number, style: ChatTheme.body, decoration: chatField('کلاف نهایی')),

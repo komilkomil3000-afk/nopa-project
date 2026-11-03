@@ -637,7 +637,7 @@ class _SharedMediaState extends State<_SharedMedia> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(ChatTheme.gutter),

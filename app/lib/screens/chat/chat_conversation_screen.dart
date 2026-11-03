@@ -386,7 +386,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final picked = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: ListView(
@@ -433,6 +433,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         child: StatefulBuilder(
           builder: (ctx, setDialog) => AlertDialog(
             backgroundColor: ChatTheme.surfaceBottom,
+            shape: ChatTheme.dialogShape,
             title: Text('تگ جدید', style: ChatTheme.title),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -442,7 +443,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                   for (final c in _tagColors)
                     GestureDetector(
                       onTap: () => setDialog(() => color = c),
-                      child: CircleAvatar(radius: c == color ? 15 : 12, backgroundColor: ChatChip.parse(c), child: c == color ? const Icon(Icons.check, size: 15, color: ChatTheme.surfaceBottom) : null),
+                      child: CircleAvatar(radius: c == color ? 15 : 12, backgroundColor: ChatChip.parse(c), child: c == color ? const Icon(Icons.check_rounded, size: 15, color: ChatTheme.surfaceBottom) : null),
                     ),
                 ]),
                 CheckboxListTile(
@@ -472,7 +473,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final picked = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: ListView(
@@ -495,7 +496,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: ConstrainedBox(
@@ -534,11 +535,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('جستجو در گفتگو', style: ChatTheme.title),
-          content: TextField(controller: controller, autofocus: true, style: ChatTheme.body, onSubmitted: (v) => Navigator.pop(ctx, v)),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, controller.text), child: Text('جستجو', style: ChatTheme.body.copyWith(color: ChatTheme.accent))),
-          ],
+          content: TextField(controller: controller, autofocus: true, style: ChatTheme.body, decoration: chatField('عبارت مورد نظر'), onSubmitted: (v) => Navigator.pop(ctx, v)),
+          actions: [ChatButton(label: 'جستجو', onPressed: () => Navigator.pop(ctx, controller.text))],
         ),
       ),
     );    if (query != null && query.trim().length >= 2) {
@@ -885,7 +885,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final picked = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: SafeArea(
@@ -1057,7 +1057,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
                   IconButton(
                     tooltip: _emojiOpen ? 'صفحه‌کلید' : 'ایموجی',
                     onPressed: _toggleEmoji,
-                    icon: Icon(_emojiOpen ? Icons.keyboard_alt_outlined : Icons.emoji_emotions_outlined, color: inkSoft, size: 24),
+                    icon: Icon(_emojiOpen ? Icons.keyboard_alt_rounded : Icons.emoji_emotions_rounded, color: inkSoft, size: 24),
                   ),
                 ],
               ),

@@ -3742,3 +3742,23 @@ When logging changes, append a new entry to the bottom of the "Change Entries" s
 - **Verification / Checkpoints Executed:**
   - flutter analyze run from app/ : 0 issues after each step; grep confirms no route-string or numeric tab-index literals left in call sites
 - **Status:** In Progress
+
+### [2026-11-03 12:34] - Flutter UI Architect (Claude)
+- **Triggered By:** GitHub: komilkomil3000-afk | System: komeil
+- **Target Component(s):** app
+- **Files Modified / Created / Deleted:**
+  - `pp/lib/screens/chat/chat_cards.dart` (Modified)
+  - `app/lib/screens/chat/chat_conversation_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_groups_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_home_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_profile_screen.dart` (Modified)
+  - `app/lib/screens/chat/chat_theme.dart` (Modified)
+  - `app/lib/screens/chat/chat_topic_info_screen.dart` (Modified)
+- **Description of Changes:**
+  - Phase 2C chat harmony (chat module only, NopaModalShell intentionally not used): replaced the 7 non-rounded chat icons with _rounded equivalents (chat_cards.dart, chat_conversation_screen.dart, chat_topic_info_screen.dart)
+  - added ChatTheme.dialogShape and ChatTheme.sheetShape (chat_theme.dart) and applied them to all 7 chat AlertDialogs and 7 bottom sheets (previously M3 default radius 28 / mixed 24-28, no stroke)
+  - chat search dialog now uses chatField() input and ChatButton instead of a raw accent TextButton
+  - chat bubble colours, message menu and popup left unchanged pending decision on incoming-bubble tone
+- **Verification / Checkpoints Executed:**
+  - flutter analyze run from app/ : 0 issues; grep shows no non-rounded Icons.* left in screens/chat and every chat sheet/AlertDialog uses the shared shape
+- **Status:** Completed

@@ -210,7 +210,7 @@ class PollCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(mine ? Icons.radio_button_checked : Icons.radio_button_off, size: 15, color: ChatTheme.accent),
+                          Icon(mine ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded, size: 15, color: ChatTheme.accent),
                           const SizedBox(width: 6),
                           Expanded(child: Text(options[i], style: ChatTheme.body)),
                           Text('$count', style: ChatTheme.caption),

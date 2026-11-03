@@ -44,6 +44,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text(title, style: ChatTheme.title),
           content: TextField(controller: controller, maxLength: 60, autofocus: true, style: ChatTheme.body, decoration: chatField('نام گروه')),
           actions: [ChatButton(label: 'ثبت', onPressed: () => Navigator.pop(ctx, controller.text.trim()))],
@@ -72,6 +73,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
         textDirection: TextDirection.rtl,
         child: AlertDialog(
           backgroundColor: ChatTheme.surfaceBottom,
+          shape: ChatTheme.dialogShape,
           title: Text('حذف گروه', style: ChatTheme.title),
           content: Text('گروه «${group['title']}» و همه‌ی پیام‌هایش برای همیشه حذف می‌شود.', style: ChatTheme.body),
           actions: [
@@ -94,7 +96,7 @@ class _ChatGroupsScreenState extends State<ChatGroupsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: StatefulBuilder(

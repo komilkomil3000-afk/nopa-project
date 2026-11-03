@@ -39,6 +39,16 @@ class ChatTheme {
 
   static const double radius = AppColors.borderRadiusValue;
 
+  /// One shape for every chat dialog and bottom sheet: card stroke, larger corner than a card.
+  static final ShapeBorder dialogShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(20),
+    side: BorderSide(color: stroke.withValues(alpha: 0.55), width: 1.2),
+  );
+  static final ShapeBorder sheetShape = RoundedRectangleBorder(
+    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+    side: BorderSide(color: stroke.withValues(alpha: 0.55), width: 1.2),
+  );
+
   static BoxDecoration card({bool highlighted = false}) => BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,

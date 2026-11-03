@@ -124,7 +124,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
     final picked = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: ChatTheme.surfaceBottom,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      shape: ChatTheme.sheetShape,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
         child: ListView(
