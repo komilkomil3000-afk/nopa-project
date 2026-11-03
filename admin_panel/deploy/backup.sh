@@ -32,7 +32,7 @@ STAMP="$(date +%F_%H%M)"
 WORK="$BACKUP_DIR/$STAMP"
 
 mkdir -p "$WORK"
-trap 'rm -rf "$WORK"' ERR
+trap 'rm -rf "$WORK"' ERR EXIT
 
 echo "[$(date -Is)] backup start -> $WORK"
 
@@ -44,7 +44,8 @@ else
 fi
 # A truncated dump is worse than none: it must at least decompress and contain the chat table
 gzip -t "$WORK/db.sql.gz"
-zcat "$WORK/db.sql.gz" | grep -q 'ChatMessage' || { echo "dump looks empty (no ChatMessage)"; exit 1; }
+# (grep -c reads the whole stream: `grep -q` exits early, zcat gets SIGPIPE and pipefail fails the check)
+[ "$(zcat "$WORK/db.sql.gz" | grep -c 'CREATE TABLE public."ChatMessage"')" -ge 1 ] || { echo "dump looks empty (no ChatMessage table)"; exit 1; }
 
 # 2 + 3. Files
 [ -d "$CHAT_FILES_DIR" ] && tar -czf "$WORK/chat-files.tar.gz" -C "$CHAT_FILES_DIR" .

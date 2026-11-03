@@ -22,7 +22,7 @@
 ## بکاپ
 اسکریپت [`deploy/backup.sh`](../deploy/backup.sh) هر شب این‌ها را در یک آرشیو می‌گذارد: دیتابیس (pg_dump)، فایل‌های چت، `uploads/` و `.env`.
 
-نصب روی سرور بک‌اند (قدم‌به‌قدم؛ فرض: دیتابیس روی سرور جدا و بک‌اند روی سرور دیگر است):
+نصب روی سرور بک‌اند (قدم‌به‌قدم؛ حالت پیش‌فرض: دیتابیس و بک‌اند روی یک سرور هستند و بکاپ با `docker exec supabase-db` گرفته می‌شود):
 
 **۱. کد را deploy کنید** تا `deploy/backup.sh` روی سرور برسد (همان `git push` معمول به ریموت سرور).
 
@@ -53,12 +53,13 @@ cat > ~/backup.env <<'EOF'
 BACKUP_PASSPHRASE_FILE=/home/ubuntu/.backup-pass
 CHAT_FILES_DIR=/home/ubuntu/nopa-data/chat-files
 KEEP_DAYS=14
-DATABASE_URL="postgresql://postgres.TENANT:PASSWORD@db.nopa-app.ir:5432/postgres"
+# فقط اگر دیتابیس روی سرور جدا است، خط بعد را از حالت کامنت دربیاورید:
+# DATABASE_URL="postgresql://postgres.TENANT:PASSWORD@db.nopa-app.ir:5432/postgres"
 OFFSITE_TARGET=backup@OTHER_SERVER:/srv/nopa-backups/
 EOF
 chmod 600 ~/backup.env
 ```
-- `DATABASE_URL` اینجا **باید** اتصال مستقیم (پورت 5432، بدون `pgbouncer`) باشد؛ پورت 6543 برای pg_dump کار نمی‌کند. چون دیتابیس روی سرور دیگری است، `docker exec` اسکریپت روی این سرور کاربرد ندارد.
+- `DATABASE_URL` فقط برای دیتابیسِ روی سرور جدا است و آن‌وقت **باید** اتصال مستقیم (پورت 5432، بدون `pgbouncer`) و نسخه‌ی `pg_dump` میزبان >= نسخه‌ی دیتابیس باشد. در حالت یک‌سرور از `pg_dump` داخل کانتینر استفاده می‌شود و نسخه‌ی میزبان مهم نیست.
 - برای `OFFSITE_TARGET` با rsync، کلید SSH سرور بک‌اند باید روی ماشین مقصد در `authorized_keys` باشد و یک‌بار دستی `ssh backup@OTHER_SERVER` بزنید تا host key تأیید شود. به‌جایش می‌شود `rclone:remote:nopa` گذاشت.
 
 **۶. اجرای دستی و بررسی**
